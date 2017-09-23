@@ -70,8 +70,9 @@ class FreshBase(object):
         self.dead = False
         self.cache_size = 0
         self.cache_uuid = None
+
+        # Can the kernel cache attributes?
         self.allow_attr_cache = True
-        self.allow_dirent_cache = True
 
     def invalidate(self):
         """Indicate that object contents should be refreshed from source."""
@@ -142,3 +143,13 @@ class FreshBase(object):
 
     def child_event(self, ev):
         pass
+
+    def time_to_next_poll(self):
+        if self._poll:
+            t = (self._last_update + self._poll_time) - self._atime
+            if t < 0:
+                return 0
+            else:
+                return t
+        else:
+            return self._poll_time

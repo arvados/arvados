@@ -150,12 +150,12 @@ class Directory(FreshBase):
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:
             _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
-            self.inodes.invalidate_entry(self.inode, i.encode(self.inodes.encoding))
+            self.inodes.invalidate_entry(self, i)
             self.inodes.del_entry(oldentries[i])
             changed = True
 
         if changed:
-            self.inodes.invalidate_inode(self.inode)
+            self.inodes.invalidate_inode(self)
             self._mtime = time.time()
 
         self.fresh()
@@ -182,16 +182,21 @@ class Directory(FreshBase):
         self._entries = {}
         for n in oldentries:
             oldentries[n].clear()
-            self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
             self.inodes.del_entry(oldentries[n])
-        self.inodes.invalidate_inode(self.inode)
         self.invalidate()
 
     def kernel_invalidate(self):
-        for n, e in self._entries.iteritems():
-            self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
-            e.kernel_invalidate()
-        self.inodes.invalidate_inode(self.inode)
+        # Invalidating the dentry on the parent implies invalidating all paths
+        # below it as well.
+        parent = self.inodes[self.parent_inode]
+
+        # Find self on the parent in order to invalidate this path.
+        # Calling the public items() method might trigger a refresh,
+        # which we definitely don't want, so read the internal dict directly.
+        for k,v in parent._entries.items():
+            if v is self:
+                self.inodes.invalidate_entry(parent, k)
+                break
 
     def mtime(self):
         return self._mtime
@@ -266,13 +271,13 @@ class CollectionDirectoryBase(Directory):
                 elif event == arvados.collection.DEL:
                     ent = self._entries[name]
                     del self._entries[name]
-                    self.inodes.invalidate_entry(self.inode, name.encode(self.inodes.encoding))
+                    self.inodes.invalidate_entry(self, name)
                     self.inodes.del_entry(ent)
                 elif event == arvados.collection.MOD:
                     if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-                        self.inodes.invalidate_inode(item.fuse_entry.inode)
+                        self.inodes.invalidate_inode(item.fuse_entry)
                     elif name in self._entries:
-                        self.inodes.invalidate_inode(self._entries[name].inode)
+                        self.inodes.invalidate_inode(self._entries[name])
 
     def populate(self, mtime):
         self._mtime = mtime
@@ -547,7 +552,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         if self.collection_record_file:
             with llfuse.lock:
                 self.collection_record_file.invalidate()
-            self.inodes.invalidate_inode(self.collection_record_file.inode)
+            self.inodes.invalidate_inode(self.collection_record_file)
             _logger.debug("%s invalidated collection record", self)
 
     def collection_record(self):
@@ -639,6 +644,7 @@ will appear if it exists.
             return False
 
         try:
+            e = None
             e = self.inodes.add_entry(CollectionDirectory(
                     self.inode, self.inodes, self.api, self.num_retries, k))
 
@@ -649,12 +655,13 @@ will appear if it exists.
                     self.inodes.del_entry(e)
                 return True
             else:
-                self.inodes.invalidate_entry(self.inode, k)
+                self.inodes.invalidate_entry(self, k)
                 self.inodes.del_entry(e)
                 return False
         except Exception as ex:
-            _logger.debug('arv-mount exception keep %s', ex)
-            self.inodes.del_entry(e)
+            _logger.exception("arv-mount lookup '%s':", k)
+            if e is not None:
+                self.inodes.del_entry(e)
             return False
 
     def __getitem__(self, item):
@@ -963,7 +970,7 @@ class ProjectDirectory(Directory):
         # Acually move the entry from source directory to this directory.
         del src._entries[name_old]
         self._entries[name_new] = ent
-        self.inodes.invalidate_entry(src.inode, name_old.encode(self.inodes.encoding))
+        self.inodes.invalidate_entry(src, name_old)
 
     @use_counter
     def child_event(self, ev):
@@ -1000,7 +1007,7 @@ class ProjectDirectory(Directory):
             if old_name in self._entries:
                 ent = self._entries[old_name]
                 del self._entries[old_name]
-                self.inodes.invalidate_entry(self.inode, old_name.encode(self.inodes.encoding))
+                self.inodes.invalidate_entry(self, old_name)
 
             if new_name:
                 if ent is not None:
