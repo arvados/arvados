@@ -297,6 +297,9 @@ class RunnerJob(Runner):
         if self.on_error:
             self.job_order["arv:on_error"] = self.on_error
 
+        if kwargs.get("debug"):
+            self.job_order["arv:debug"] = True
+
         return {
             "script": "cwl-runner",
             "script_version": "master",

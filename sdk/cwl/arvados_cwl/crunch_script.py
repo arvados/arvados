@@ -75,6 +75,8 @@ def run():
         output_tags = None
         enable_reuse = True
         on_error = "continue"
+        debug = False
+
         if "arv:output_name" in job_order_object:
             output_name = job_order_object["arv:output_name"]
             del job_order_object["arv:output_name"]
@@ -90,6 +92,10 @@ def run():
         if "arv:on_error" in job_order_object:
             on_error = job_order_object["arv:on_error"]
             del job_order_object["arv:on_error"]
+
+        if "arv:debug" in job_order_object:
+            debug = job_order_object["arv:debug"]
+            del job_order_object["arv:debug"]
 
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
@@ -108,7 +114,7 @@ def run():
         args.enable_reuse = enable_reuse
         args.on_error = on_error
         args.submit = False
-        args.debug = False
+        args.debug = debug
         args.quiet = False
         args.ignore_docker_for_reuse = False
         args.basedir = os.getcwd()
