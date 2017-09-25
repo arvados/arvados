@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require "arvados/keep"
+require "trashable"
 
 class Arvados::V1::CollectionsController < ApplicationController
   include DbCurrentTime
+  include TrashableController
 
   def self._index_requires_parameters
     (super rescue {}).
@@ -15,7 +17,6 @@ class Arvados::V1::CollectionsController < ApplicationController
         },
       })
   end
-
 
   def create
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
@@ -27,7 +28,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def find_objects_for_index
     if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
-      @objects = Collection.unscoped.readable_by(*@read_users)
+      @objects = Collection.readable_by(*@read_users, {include_trash: true, query_on: Collection.unscoped})
     end
     super
   end
@@ -58,39 +59,6 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
   end
 
-  def destroy
-    if !@object.is_trashed
-      @object.update_attributes!(trash_at: db_current_time)
-    end
-    earliest_delete = (@object.trash_at +
-                       Rails.configuration.blob_signature_ttl.seconds)
-    if @object.delete_at > earliest_delete
-      @object.update_attributes!(delete_at: earliest_delete)
-    end
-    show
-  end
-
-  def trash
-    if !@object.is_trashed
-      @object.update_attributes!(trash_at: db_current_time)
-    end
-    show
-  end
-
-  def untrash
-    if @object.is_trashed
-      @object.trash_at = nil
-
-      if params[:ensure_unique_name]
-        @object.save_with_unique_name!
-      else
-        @object.save!
-      end
-    else
-      raise InvalidStateTransitionError
-    end
-    show
-  end
 
   def find_collections(visited, sp, &b)
     case sp

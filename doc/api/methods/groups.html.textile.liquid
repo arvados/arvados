@@ -29,6 +29,9 @@ table(table table-bordered table-condensed).
 null|
 |description|text|||
 |writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||
+|trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed.||
+|delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
+|is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
 
 h2. Methods
 
@@ -66,7 +69,7 @@ table(table table-bordered table-condensed).
 
 h3. delete
 
-Delete an existing Group.
+Put a Group in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed group is invisible to most API calls unless the @include_trash@ parameter is true.  All objects directly or indirectly owned by the Group are considered trashed as well.
 
 Arguments:
 
@@ -110,3 +113,14 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group in question.|path||
 |group|object||query||
+
+h3. untrash
+
+Remove a Group from the trash.  This sets the @trash_at@ and @delete_at@ fields to @null@.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Group to untrash.|path||
+|ensure_unique_name|boolean (default false)|Rename project uniquely if untrashing it would fail with a unique name conflict.|query||

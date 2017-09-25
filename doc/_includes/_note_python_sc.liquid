@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 {% if rh_version %} On CentOS {{rh_version}} and RHEL {{rh_version}},
 {% else %} On CentOS and RHEL,
-{% endif %} these packages require a more recent version of Python from Software Collections.  The Software Collection will be installed automatically as long as Software Collections are enabled on your system.
+{% endif %} these packages require a more recent version from Software Collections.  The Software Collection will be installed automatically as long as Software Collections are enabled on your system.
 
 To "enable Software Collections on CentOS":https://wiki.centos.org/AdditionalResources/Repositories/SCL, run:
 
@@ -17,6 +17,13 @@ To "enable Software Collections on CentOS":https://wiki.centos.org/AdditionalRes
 </code></pre>
 </notextile>
 
-To enable Software Collections on RHEL, "follow section 2.1 of Red Hat's Installation chapter":https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/html/2.0_Release_Notes/chap-Installation.html.
+To enable Software Collections on RHEL:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum-config-manager --enable rhel-server-rhscl-7-rpms</span>
+</code></pre>
+</notextile>
+
+"See also section 2.1 of Red Hat's Installation chapter":https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/html/2.0_Release_Notes/chap-Installation.html .
 
 {% include 'notebox_end' %}

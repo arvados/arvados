@@ -3,17 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'can_be_an_owner'
+require 'refresh_permission_view'
 
 class User < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   include CanBeAnOwner
-
-  # To avoid upgrade bugs, when changing the permission cache value
-  # format, change PERM_CACHE_PREFIX too:
-  PERM_CACHE_PREFIX = "perm_v20170725_"
-  PERM_CACHE_TTL = 172800
 
   serialize :prefs, Hash
   has_many :api_client_authorizations
@@ -35,6 +31,7 @@ class User < ArvadosModel
     user.username.nil? and user.email
   }
   after_create :add_system_group_permission_link
+  after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
     Rails.configuration.auto_setup_new_users and
     (user.uuid != system_user_uuid) and
@@ -146,22 +143,24 @@ class User < ArvadosModel
       timestamp = DbCurrentTime::db_current_time.to_i if timestamp.nil?
       connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
     else
-      Rails.cache.delete_matched(/^#{PERM_CACHE_PREFIX}/)
+      refresh_permission_view
     end
+  end
+
+  def invalidate_permissions_cache(timestamp=nil)
+    User.invalidate_permissions_cache
   end
 
   # Return a hash of {user_uuid: group_perms}
   def self.all_group_permissions
-    install_view('permission')
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query('SELECT user_uuid, target_owner_uuid, max(perm_level)
-                  FROM permission_view
-                  WHERE target_owner_uuid IS NOT NULL
-                  GROUP BY user_uuid, target_owner_uuid',
+      exec_query("SELECT user_uuid, target_owner_uuid, perm_level, trashed
+                  FROM #{PERMISSION_VIEW}
+                  WHERE target_owner_uuid IS NOT NULL",
                   # "name" arg is a query label that appears in logs:
                   "all_group_permissions",
-                  ).rows.each do |user_uuid, group_uuid, max_p_val|
+                  ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
       all_perms[user_uuid] ||= {}
       all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
@@ -171,43 +170,21 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
-  def calculate_group_permissions
-    self.class.install_view('permission')
-
-    group_perms = {}
+  def group_permissions
+    group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
     ActiveRecord::Base.connection.
-      exec_query('SELECT target_owner_uuid, max(perm_level)
-                  FROM permission_view
+      exec_query("SELECT target_owner_uuid, perm_level, trashed
+                  FROM #{PERMISSION_VIEW}
                   WHERE user_uuid = $1
-                  AND target_owner_uuid IS NOT NULL
-                  GROUP BY target_owner_uuid',
+                  AND target_owner_uuid IS NOT NULL",
                   # "name" arg is a query label that appears in logs:
                   "group_permissions for #{uuid}",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
                   [[nil, uuid]],
-                  ).rows.each do |group_uuid, max_p_val|
+                ).rows.each do |group_uuid, max_p_val, trashed|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
-    Rails.cache.write "#{PERM_CACHE_PREFIX}#{self.uuid}", group_perms, expires_in: PERM_CACHE_TTL
     group_perms
-  end
-
-  # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
-  # and perm_hash[:write] are true if this user can read and write
-  # objects owned by group_uuid.
-  def group_permissions
-    r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
-    if r.nil?
-      if Rails.configuration.async_permissions_update
-        while r.nil?
-          sleep(0.1)
-          r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
-        end
-      else
-        r = calculate_group_permissions
-      end
-    end
-    r
   end
 
   # create links

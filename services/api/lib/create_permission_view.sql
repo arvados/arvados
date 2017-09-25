@@ -2,6 +2,9 @@
 --
 -- SPDX-License-Identifier: AGPL-3.0
 
+-- Note: this is not the current code used for permission checks (that is
+-- materialized_permission_view), but is retained here for migration purposes.
+
 CREATE TEMPORARY VIEW permission_view AS
 WITH RECURSIVE
 perm_value (name, val) AS (

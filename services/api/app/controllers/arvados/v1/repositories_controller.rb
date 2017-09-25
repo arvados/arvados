@@ -46,7 +46,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
           # group also has access to the repository. Access level is
           # min(group-to-repo permission, user-to-group permission).
           user_aks.each do |user_uuid, _|
-            perm_mask = all_group_permissions[user_uuid][perm.tail_uuid]
+            perm_mask = all_group_permissions[user_uuid].andand[perm.tail_uuid]
             if not perm_mask
               next
             elsif perm_mask[:manage] and perm.name == 'can_manage'

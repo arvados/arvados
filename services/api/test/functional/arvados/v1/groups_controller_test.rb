@@ -529,4 +529,181 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes(owners, groups(:aproject).uuid)
     assert_includes(owners, groups(:asubproject).uuid)
   end
+
+  ### trashed project tests ###
+
+  [:active, :admin].each do |auth|
+    # project: to query,    to untrash,    is visible, parent contents listing success
+    [[:trashed_project,     [],                 false, true],
+     [:trashed_project,     [:trashed_project], true,  true],
+     [:trashed_subproject,  [],                 false, false],
+     [:trashed_subproject,  [:trashed_project], true,  true],
+     [:trashed_subproject3, [:trashed_project], false, true],
+     [:trashed_subproject3, [:trashed_subproject3], false, false],
+     [:trashed_subproject3, [:trashed_project, :trashed_subproject3], true, true],
+    ].each do |project, untrash, visible, success|
+
+      test "contents listing #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :contents, {
+              id: groups(project).owner_uuid,
+              format: :json
+            }
+        if success
+          assert_response :success
+          item_uuids = json_response['items'].map do |item|
+            item['uuid']
+          end
+          if visible
+            assert_includes(item_uuids, groups(project).uuid)
+          else
+            assert_not_includes(item_uuids, groups(project).uuid)
+          end
+        else
+          assert_response 404
+        end
+      end
+
+      test "contents of #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :contents, {
+              id: groups(project).uuid,
+              format: :json
+            }
+        if visible
+          assert_response :success
+        else
+          assert_response 404
+        end
+      end
+
+      test "index #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :index, {
+              format: :json,
+            }
+        assert_response :success
+        item_uuids = json_response['items'].map do |item|
+          item['uuid']
+        end
+        if visible
+          assert_includes(item_uuids, groups(project).uuid)
+        else
+          assert_not_includes(item_uuids, groups(project).uuid)
+        end
+      end
+
+      test "show #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :show, {
+              id: groups(project).uuid,
+              format: :json
+            }
+        if visible
+          assert_response :success
+        else
+          assert_response 404
+        end
+      end
+
+      test "show include_trash #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :show, {
+              id: groups(project).uuid,
+              format: :json,
+              include_trash: true
+            }
+        assert_response :success
+      end
+
+      test "index include_trash #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :index, {
+              format: :json,
+              include_trash: true
+            }
+        assert_response :success
+        item_uuids = json_response['items'].map do |item|
+          item['uuid']
+        end
+        assert_includes(item_uuids, groups(project).uuid)
+      end
+    end
+
+    test "delete project #{auth}" do
+      authorize_with auth
+      [:trashed_project].each do |pr|
+        Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+      end
+      assert !Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
+      post :destroy, {
+            id: groups(:trashed_project).uuid,
+            format: :json,
+          }
+      assert_response :success
+      assert Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
+    end
+
+    test "untrash project #{auth}" do
+      authorize_with auth
+      assert Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
+      post :untrash, {
+            id: groups(:trashed_project).uuid,
+            format: :json,
+          }
+      assert_response :success
+      assert !Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
+    end
+
+    test "untrash project with name conflict #{auth}" do
+      authorize_with auth
+      [:trashed_project].each do |pr|
+        Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+      end
+      gc = Group.create!({owner_uuid: "zzzzz-j7d0g-trashedproject1",
+                         name: "trashed subproject 3",
+                         group_class: "project"})
+      post :untrash, {
+            id: groups(:trashed_subproject3).uuid,
+            format: :json,
+            ensure_unique_name: true
+           }
+      assert_response :success
+      assert_match /^trashed subproject 3 \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+    end
+
+    test "move trashed subproject to new owner #{auth}" do
+      authorize_with auth
+      assert_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
+      put :update, {
+            id: groups(:trashed_subproject).uuid,
+            group: {
+              owner_uuid: users(:active).uuid
+            },
+            include_trash: true,
+            format: :json,
+          }
+      assert_response :success
+      assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
+    end
+
+  end
 end

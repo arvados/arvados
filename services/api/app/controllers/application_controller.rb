@@ -180,7 +180,7 @@ class ApplicationController < ActionController::Base
   end
 
   def find_objects_for_index
-    @objects ||= model_class.readable_by(*@read_users)
+    @objects ||= model_class.readable_by(*@read_users, {:include_trash => (params[:include_trash] || 'untrash' == action_name)})
     apply_where_limit_order_params
   end
 

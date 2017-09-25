@@ -67,7 +67,6 @@ class ActiveSupport::TestCase
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
     restore_configuration
-    User.invalidate_permissions_cache
   end
 
   def assert_equal(expect, *args)

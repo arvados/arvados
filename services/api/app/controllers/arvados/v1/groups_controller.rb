@@ -2,7 +2,19 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require "trashable"
+
 class Arvados::V1::GroupsController < ApplicationController
+  include TrashableController
+
+  def self._index_requires_parameters
+    (super rescue {}).
+      merge({
+        include_trash: {
+          type: 'boolean', required: false, description: "Include items whose is_trashed attribute is true."
+        },
+      })
+  end
 
   def self._contents_requires_parameters
     params = _index_requires_parameters.
@@ -151,13 +163,14 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end.compact
 
-      if klass == Collection and params[:include_trash]
-        @objects = klass.unscoped.readable_by(*@read_users).
-          order(request_order).where(where_conds)
-      else
-        @objects = klass.readable_by(*@read_users).
-          order(request_order).where(where_conds)
-      end
+      query_on = if klass == Collection and params[:include_trash]
+                   klass.unscoped
+                 else
+                   klass
+                 end
+      @objects = query_on.readable_by(*@read_users, {:include_trash => params[:include_trash]}).
+                 order(request_order).where(where_conds)
+
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass

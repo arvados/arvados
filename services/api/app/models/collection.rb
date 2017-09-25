@@ -4,6 +4,7 @@
 
 require 'arvados/keep'
 require 'sweep_trashed_collections'
+require 'trashable'
 
 class Collection < ArvadosModel
   extend CurrentApiClient
@@ -11,20 +12,16 @@ class Collection < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include Trashable
 
   serialize :properties, Hash
 
-  before_validation :set_validation_timestamp
   before_validation :default_empty_manifest
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
-  before_validation :ensure_trash_at_not_in_past
-  before_validation :sync_trash_state
-  before_validation :default_trash_interval
   validate :ensure_pdh_matches_manifest_text
-  validate :validate_trash_and_delete_timing
   before_save :set_file_names
 
   # Query only untrashed collections by default.
@@ -486,81 +483,4 @@ class Collection < ArvadosModel
     super
   end
 
-  # Use a single timestamp for all validations, even though each
-  # validation runs at a different time.
-  def set_validation_timestamp
-    @validation_timestamp = db_current_time
-  end
-
-  # If trash_at is being changed to a time in the past, change it to
-  # now. This allows clients to say "expires {client-current-time}"
-  # without failing due to clock skew, while avoiding odd log entries
-  # like "expiry date changed to {1 year ago}".
-  def ensure_trash_at_not_in_past
-    if trash_at_changed? && trash_at
-      self.trash_at = [@validation_timestamp, trash_at].max
-    end
-  end
-
-  # Caller can move into/out of trash by setting/clearing is_trashed
-  # -- however, if the caller also changes trash_at, then any changes
-  # to is_trashed are ignored.
-  def sync_trash_state
-    if is_trashed_changed? && !trash_at_changed?
-      if is_trashed
-        self.trash_at = @validation_timestamp
-      else
-        self.trash_at = nil
-        self.delete_at = nil
-      end
-    end
-    self.is_trashed = trash_at && trash_at <= @validation_timestamp || false
-    true
-  end
-
-  def default_trash_interval
-    if trash_at_changed? && !delete_at_changed?
-      # If trash_at is updated without touching delete_at,
-      # automatically update delete_at to a sensible value.
-      if trash_at.nil?
-        self.delete_at = nil
-      else
-        self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
-      end
-    elsif !trash_at || !delete_at || trash_at > delete_at
-      # Not trash, or bogus arguments? Just validate in
-      # validate_trash_and_delete_timing.
-    elsif delete_at_changed? && delete_at >= trash_at
-      # Fix delete_at if needed, so it's not earlier than the expiry
-      # time on any permission tokens that might have been given out.
-
-      # In any case there are no signatures expiring after now+TTL.
-      # Also, if the existing trash_at time has already passed, we
-      # know we haven't given out any signatures since then.
-      earliest_delete = [
-        @validation_timestamp,
-        trash_at_was,
-      ].compact.min + Rails.configuration.blob_signature_ttl.seconds
-
-      # The previous value of delete_at is also an upper bound on the
-      # longest-lived permission token. For example, if TTL=14,
-      # trash_at_was=now-7, delete_at_was=now+7, then it is safe to
-      # set trash_at=now+6, delete_at=now+8.
-      earliest_delete = [earliest_delete, delete_at_was].compact.min
-
-      # If delete_at is too soon, use the earliest possible time.
-      if delete_at < earliest_delete
-        self.delete_at = earliest_delete
-      end
-    end
-  end
-
-  def validate_trash_and_delete_timing
-    if trash_at.nil? != delete_at.nil?
-      errors.add :delete_at, "must be set if trash_at is set, and must be nil otherwise"
-    elsif delete_at && delete_at < trash_at
-      errors.add :delete_at, "must not be earlier than trash_at"
-    end
-    true
-  end
 end

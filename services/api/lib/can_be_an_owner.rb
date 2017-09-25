@@ -15,6 +15,7 @@ module CanBeAnOwner
     ActiveRecord::Base.connection.tables.each do |t|
       next if t == base.table_name
       next if t == 'schema_migrations'
+      next if t == 'permission_refresh_lock'
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))
       base.has_many(t.to_sym,

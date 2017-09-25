@@ -1090,4 +1090,57 @@ EOS
     assert_nil json_response['delete_at']
     assert_match /^same name for trashed and persisted collections \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
   end
+
+  test 'cannot show collection in trashed subproject' do
+    authorize_with :active
+    get :show, {
+      id: collections(:collection_in_trashed_subproject).uuid,
+      format: :json
+    }
+    assert_response 404
+  end
+
+  test 'can show collection in untrashed subproject' do
+    authorize_with :active
+    Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+    get :show, {
+      id: collections(:collection_in_trashed_subproject).uuid,
+      format: :json,
+    }
+    assert_response :success
+  end
+
+  test 'cannot index collection in trashed subproject' do
+    authorize_with :active
+    get :index, { limit: 1000 }
+    assert_response :success
+    item_uuids = json_response['items'].map do |item|
+      item['uuid']
+    end
+    assert_not_includes(item_uuids, collections(:collection_in_trashed_subproject).uuid)
+  end
+
+  test 'can index collection in untrashed subproject' do
+    authorize_with :active
+    Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+    get :index, { limit: 1000 }
+    assert_response :success
+    item_uuids = json_response['items'].map do |item|
+      item['uuid']
+    end
+    assert_includes(item_uuids, collections(:collection_in_trashed_subproject).uuid)
+  end
+
+  test 'can index trashed subproject collection with include_trash' do
+    authorize_with :active
+    get :index, {
+          include_trash: true,
+          limit: 1000
+        }
+    assert_response :success
+    item_uuids = json_response['items'].map do |item|
+      item['uuid']
+    end
+    assert_includes(item_uuids, collections(:collection_in_trashed_subproject).uuid)
+  end
 end

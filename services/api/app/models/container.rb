@@ -297,17 +297,13 @@ class Container < ArvadosModel
   end
 
   def self.readable_by(*users_list)
-    if users_list.select { |u| u.is_admin }.any?
-      return self
+    # Load optional keyword arguments, if they exist.
+    if users_list.last.is_a? Hash
+      kwargs = users_list.pop
+    else
+      kwargs = {}
     end
-    user_uuids = users_list.map { |u| u.uuid }
-    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
-    uuid_list.uniq!
-    permitted = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:uuids))"
-    joins(:container_requests).
-      where("container_requests.uuid IN #{permitted} OR "+
-            "container_requests.owner_uuid IN (:uuids)",
-            uuids: uuid_list)
+    Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").exists)
   end
 
   def final?
