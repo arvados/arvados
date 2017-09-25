@@ -61,10 +61,9 @@ class RetryMixin(object):
     is a timer actor.)
 
     """
-    def __init__(self, retry_wait, max_retry_wait,
-                 logger, cloud, timer=None):
-        self.min_retry_wait = retry_wait
-        self.max_retry_wait = max_retry_wait
+    def __init__(self, retry_wait, max_retry_wait, logger, cloud, timer=None):
+        self.min_retry_wait = max(1, retry_wait)
+        self.max_retry_wait = max(self.min_retry_wait, max_retry_wait)
         self.retry_wait = retry_wait
         self._logger = logger
         self._cloud = cloud
@@ -80,16 +79,24 @@ class RetryMixin(object):
                     try:
                         ret = orig_func(self, *args, **kwargs)
                     except RateLimitReachedError as error:
-                        self.retry_wait = error.retry_after
+                        # If retry-after is zero, continue with exponential
+                        # backoff.
+                        if error.retry_after != 0:
+                            self.retry_wait = error.retry_after
                         should_retry = True
                     except BaseHTTPError as error:
                         if error.headers and error.headers.get("retry-after"):
                             try:
-                                self.retry_wait = \
-                                    int(error.headers["retry-after"])
+                                retry_after = int(error.headers["retry-after"])
+                                # If retry-after is zero, continue with
+                                # exponential backoff.
+                                if retry_after != 0:
+                                    self.retry_wait = retry_after
                                 should_retry = True
                             except ValueError:
-                                pass
+                                self._logger.warning(
+                                    "Unrecognizable Retry-After header: %s",
+                                    error, exc_info=error)
                         if error.code == 429 or error.code >= 500:
                             should_retry = True
                     except CLOUD_ERRORS as error:
@@ -106,9 +113,6 @@ class RetryMixin(object):
                         self.retry_wait = self.min_retry_wait
                         return ret
 
-                    if self.retry_wait < 0 or self.retry_wait > self.max_retry_wait:
-                        self.retry_wait = self.max_retry_wait
-
                     # Only got here if an exception was caught.  Now determine what to do about it.
                     if not should_retry:
                         self.retry_wait = self.min_retry_wait
@@ -116,6 +120,12 @@ class RetryMixin(object):
                             "Re-raising error (no retry): %s",
                             error, exc_info=error)
                         raise
+
+                    # Retry wait out of bounds?
+                    if self.retry_wait < self.min_retry_wait:
+                        self.retry_wait = self.min_retry_wait
+                    elif self.retry_wait > self.max_retry_wait:
+                        self.retry_wait = self.max_retry_wait
 
                     self._logger.warning(
                         "Client error: %s - %s %s seconds",
