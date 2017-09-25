@@ -234,9 +234,11 @@ class NodeManagerDaemonActor(actor_class):
         self._update_poll_time('arvados_nodes')
         # Check for stale node records
         for node in nodelist:
-            if node['crunch_worker_state'] == 'down' and \
-               node['slot_number'] and \
-               arvados_node_missing(node, self.node_stale_after):
+            if node['crunch_worker_state'] in ('down', None) and \
+               arvados_node_missing(node, self.node_stale_after) and \
+               any([node[attr] is not None for attr in (
+                       'slot_number', 'hostname', 'ip_address', 'first_ping_at',
+                       'last_ping_at')]):
                 self._logger.info(
                     "Requesting cleanup for stale Arvados node record %s, "
                     "slot number %s",
@@ -523,6 +525,16 @@ class NodeManagerDaemonActor(actor_class):
         # will keep offering the node as a candidate for shutdown.
         record.actor.stop()
         record.actor = None
+
+        # Cleanup related arvados node record
+        if record.arvados_node is not None:
+            self._logger.info(
+                "Cleaning up arvados node record %s, "
+                "slot number %s after successful cloud node shutdown.",
+                record.arvados_node['uuid'], 
+                record.arvados_node['slot_number'])
+            self._arvados_node_cleaner.clean_node(record.arvados_node['uuid'],
+                cleanup_reason='Cloud node successfully shutdown')
 
         # If the node went from being booted to being shut down without ever
         # appearing in the cloud node list, it will have the

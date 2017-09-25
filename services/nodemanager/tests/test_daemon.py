@@ -179,6 +179,21 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon([cloud_node], [arv_node])
         self.assertFalse(self.node_record_cleaner.clean_node.called)
 
+    def test_arvados_node_cleanup_after_cloud_node_shutdown(self):
+        cloud_node = testutil.cloud_node_mock(5)
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(5)])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.last_shutdown.success.get.return_value = True
+        self.last_shutdown.stop.side_effect = lambda: monitor.stop()
+        self.assertFalse(self.node_record_cleaner.clean_node.called,
+                         "arvados node record cleaned before shutdown")
+        self.daemon.node_finished_shutdown(self.last_shutdown).get(self.TIMEOUT)
+        self.busywait(lambda: 0 == self.paired_monitor_count())
+        self.assertTrue(self.node_record_cleaner.clean_node.called,
+                        "arvados node record not cleaned after shutdown")
+
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
