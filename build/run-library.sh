@@ -365,6 +365,15 @@ fpm_build () {
       COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
   fi
 
+  # 12271 - As FPM-generated packages don't include scripts by default, the
+  # packages cleanup on upgrade depends on files being listed on the %files
+  # section in the generated SPEC files. To remove DIRECTORIES, they need to
+  # be listed in that sectiontoo, so we need to add this parameter to properly
+  # remove lingering dirs.
+  if [[ rpm = "$FORMAT" ]]; then
+    COMMAND_ARR+=('--rpm-auto-add-directories')
+  fi
+
   if [[ "${DEBUG:-0}" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
