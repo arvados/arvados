@@ -54,6 +54,7 @@ type ArvTestClient struct {
 	Logs map[string]*bytes.Buffer
 	sync.Mutex
 	WasSetRunning bool
+	callraw       bool
 }
 
 type KeepTestClient struct {
@@ -221,7 +222,7 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
 	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
 	var j []byte
-	if method == "GET" && resourceType == "containers" && action == "" {
+	if method == "GET" && resourceType == "containers" && action == "" && !client.callraw {
 		j, err = json.Marshal(client.Container)
 	} else {
 		j = []byte(`{
@@ -1611,4 +1612,14 @@ func (s *TestSuite) TestStderrMount(c *C) {
 	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	c.Check(api.CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
+}
+
+func (s *TestSuite) TestNumberRoundTrip(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr.fetchContainerRecord()
+
+	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
+
+	c.Check(err, IsNil)
+	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
 }
