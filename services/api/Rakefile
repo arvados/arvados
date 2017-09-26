@@ -38,6 +38,7 @@ namespace :db do
       origfnm = File.expand_path('../db/structure.sql', __FILE__)
       tmpfnm = Tempfile.new 'structure.sql', File.expand_path('..', origfnm)
       copyright_done = false
+      started = false
       begin
         tmpfile = File.new tmpfnm, 'w'
         origfile = File.new origfnm
@@ -48,8 +49,16 @@ namespace :db do
             end
             copyright_done = true
           end
-          if /^SET lock_timeout = 0;/ =~ line
-            # Avoid edit wars between versions that do/don't write this line.
+
+          if !started && /^[^-\n]/ !~ line
+            # Ignore the "PostgreSQL database dump" comment block,
+            # which varies from one client version to the next.
+            next
+          end
+          started = true
+
+          if /^SET (lock_timeout|idle_in_transaction_session_timeout|row_security) = / =~ line
+            # Avoid edit wars between versions that do/don't write (and can/can't execute) this line.
             next
           elsif /^COMMENT ON EXTENSION/ =~ line
             # Avoid warning message when loading:
