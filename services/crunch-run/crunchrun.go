@@ -650,14 +650,11 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 		return fmt.Errorf("While retrieving container record from the API server: %v", err)
 	}
 	defer reader.Close()
-	// Read the API server response as []byte
-	json_bytes, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("While reading container record API server response: %v", err)
-	}
-	// Decode the JSON []byte
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
 	var cr map[string]interface{}
-	if err = json.Unmarshal(json_bytes, &cr); err != nil {
+	if err = dec.Decode(&cr); err != nil {
 		return fmt.Errorf("While decoding the container record JSON response: %v", err)
 	}
 	// Re-encode it using indentation to improve readability
@@ -1304,9 +1301,8 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Close()
 	}()
 
-	err = runner.ArvClient.Get("containers", runner.Container.UUID, nil, &runner.Container)
+	err = runner.fetchContainerRecord()
 	if err != nil {
-		err = fmt.Errorf("While getting container record: %v", err)
 		return
 	}
 
@@ -1367,6 +1363,24 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.finalState = "Complete"
 	}
 	return
+}
+
+// Fetch the current container record (uuid = runner.Container.UUID)
+// into runner.Container.
+func (runner *ContainerRunner) fetchContainerRecord() error {
+	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
+	if err != nil {
+		return fmt.Errorf("error fetching container record: %v", err)
+	}
+	defer reader.Close()
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
+	err = dec.Decode(&runner.Container)
+	if err != nil {
+		return fmt.Errorf("error decoding container record: %v", err)
+	}
+	return nil
 }
 
 // NewContainerRunner creates a new container runner.
