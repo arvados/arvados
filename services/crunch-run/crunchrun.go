@@ -650,14 +650,11 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 		return fmt.Errorf("While retrieving container record from the API server: %v", err)
 	}
 	defer reader.Close()
-	// Read the API server response as []byte
-	json_bytes, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("While reading container record API server response: %v", err)
-	}
-	// Decode the JSON []byte
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
 	var cr map[string]interface{}
-	if err = json.Unmarshal(json_bytes, &cr); err != nil {
+	if err = dec.Decode(&cr); err != nil {
 		return fmt.Errorf("While decoding the container record JSON response: %v", err)
 	}
 	// Re-encode it using indentation to improve readability
