@@ -58,6 +58,8 @@ class ArvPathMapper(PathMapper):
         if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
             self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), srcobj["class"], True)
 
+        debug = logger.isEnabledFor(logging.DEBUG)
+
         if src not in self._pathmap:
             if src.startswith("file:"):
                 # Local FS ref, may need to be uploaded or may be on keep
@@ -67,7 +69,7 @@ class ArvPathMapper(PathMapper):
                                                    fnPattern="keep:%s/%s",
                                                    dirPattern="keep:%s/%s",
                                                    raiseOSError=True)
-                with SourceLine(srcobj, "location", WorkflowException):
+                with SourceLine(srcobj, "location", WorkflowException, debug):
                     if isinstance(st, arvados.commands.run.UploadFile):
                         uploadfiles.add((src, ab, st))
                     elif isinstance(st, arvados.commands.run.ArvFile):
@@ -82,10 +84,10 @@ class ArvPathMapper(PathMapper):
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
-        with SourceLine(srcobj, "secondaryFiles", WorkflowException):
+        with SourceLine(srcobj, "secondaryFiles", WorkflowException, debug):
             for l in srcobj.get("secondaryFiles", []):
                 self.visit(l, uploadfiles)
-        with SourceLine(srcobj, "listing", WorkflowException):
+        with SourceLine(srcobj, "listing", WorkflowException, debug):
             for l in srcobj.get("listing", []):
                 self.visit(l, uploadfiles)
 

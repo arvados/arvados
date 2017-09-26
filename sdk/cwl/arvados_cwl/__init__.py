@@ -237,7 +237,7 @@ class ArvCwlRunner(object):
                 self.check_features(v)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):
-                with SourceLine(obj, i, UnsupportedRequirement):
+                with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v)
 
     def make_output_collection(self, name, tagsString, outputObj):
