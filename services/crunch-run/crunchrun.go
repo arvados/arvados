@@ -859,9 +859,9 @@ func (runner *ContainerRunner) StartContainer() error {
 	if err != nil {
 		var advice string
 		if strings.Contains(err.Error(), "no such file or directory") {
-			advice = fmt.Sprintf(" (perhaps command %q is missing, or has a missing #! interpreter, or was saved in DOS mode with cr-lf chars?)", runner.Container.Command[0])
+			advice = fmt.Sprintf("\nPossible causes: command %q is missing, the interpreter given in #! is missing, or script has Windows line endings.", runner.Container.Command[0])
 		}
-		return fmt.Errorf("could not start container%s: %v", advice, err)
+		return fmt.Errorf("could not start container: %v%s", err, advice)
 	}
 	runner.cStarted = true
 	return nil
