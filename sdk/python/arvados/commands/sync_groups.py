@@ -150,7 +150,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                     groups_created += 1
                 # Both group & user exist, check if user is a member
                 g_uuid = group_name_to_uuid[group]
-                if not user in remote_groups[g_uuid]['previous_members']:
+                if not (user in remote_groups[g_uuid]['previous_members'] or
+                        user in remote_groups[g_uuid]['current_members']):
                     # User wasn't a member, but should.
                     api_client.links().create(body={
                         'link_class': 'permission',
