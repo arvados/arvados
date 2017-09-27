@@ -95,8 +95,9 @@ class RetryMixin(object):
                                 should_retry = True
                             except ValueError:
                                 self._logger.warning(
-                                    "Unrecognizable Retry-After header: %s",
-                                    error, exc_info=error)
+                                    "Unrecognizable Retry-After header: %r",
+                                    error.headers["retry-after"],
+                                    exc_info=error)
                         if error.code == 429 or error.code >= 500:
                             should_retry = True
                     except CLOUD_ERRORS as error:
