@@ -11,7 +11,7 @@ from arvnodeman.computenode import ARVADOS_TIMEFMT
 
 from libcloud.compute.base import NodeSize, Node, NodeDriver, NodeState, NodeImage
 from libcloud.compute.drivers.gce import GCEDiskType
-from libcloud.common.exceptions import BaseHTTPError
+from libcloud.common.exceptions import BaseHTTPError, RateLimitReachedError
 
 all_nodes = []
 create_calls = 0
@@ -129,8 +129,11 @@ class RetryDriver(FakeDriver):
         global create_calls
         create_calls += 1
         if create_calls < 2:
+            raise RateLimitReachedError(429, "Rate limit exceeded",
+                                        retry_after=12)
+        elif create_calls < 3:
             raise BaseHTTPError(429, "Rate limit exceeded",
-                                {'retry-after': '12'})
+                                {'retry-after': '2'})
         else:
             return super(RetryDriver, self).create_node(name=name,
                     size=size,
