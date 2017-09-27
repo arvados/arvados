@@ -857,7 +857,11 @@ func (runner *ContainerRunner) StartContainer() error {
 	err := runner.Docker.ContainerStart(context.TODO(), runner.ContainerID,
 		dockertypes.ContainerStartOptions{})
 	if err != nil {
-		return fmt.Errorf("could not start container: %v", err)
+		var advice string
+		if strings.Contains(err.Error(), "no such file or directory") {
+			advice = fmt.Sprintf(" (perhaps command %q is missing, or has a missing #! interpreter, or was saved in DOS mode with cr-lf chars?)", runner.Container.Command[0])
+		}
+		return fmt.Errorf("could not start container%s: %v", advice, err)
 	}
 	runner.cStarted = true
 	return nil
