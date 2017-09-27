@@ -32,6 +32,7 @@ table(table table-bordered table-condensed).
 |_Distribution_|_State_|_Last supported version_|
 |CentOS 7|Supported|Latest|
 |Debian 8 ("jessie")|Supported|Latest|
+|Debian 9 ("stretch")|Supported|Latest|
 |Ubuntu 14.04 ("trusty")|Supported|Latest|
 |Ubuntu 16.04 ("xenial")|Supported|Latest|
 |Ubuntu 12.04 ("precise")|EOL|8ed7b6dd5d4df93a3f37096afe6d6f81c2a7ef6e (2017-05-03)|
@@ -59,7 +60,7 @@ gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-curoverse
 
 h3. Debian and Ubuntu
 
-Packages are available for Debian 8 ("jessie"), Ubuntu 14.04 ("trusty") and Ubuntu 16.04 ("xenial").
+Packages are available for Debian 8 ("jessie"), Debian 9 ("stretch"), Ubuntu 14.04 ("trusty") and Ubuntu 16.04 ("xenial").
 
 First, register the Curoverse signing key in apt's database:
 
@@ -70,6 +71,7 @@ Configure apt to retrieve packages from the Arvados package repository. This com
 table(table table-bordered table-condensed).
 |OS version|Command|
 |Debian 8 ("jessie")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ jessie main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Debian 9 ("stretch")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ stretch main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 14.04 ("trusty")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ trusty main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 16.04 ("xenial")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ xenial main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 
