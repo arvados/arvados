@@ -245,7 +245,8 @@ def stubs(func):
                 'vcpus': 1,
                 'ram': 1024*1024*1024
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -320,6 +321,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
+        expect_pipeline["properties"] = {"run_options": {"enable_job_reuse": False}}
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
@@ -495,9 +497,11 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
-        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  '--disable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["command"] = [
+            'arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+            '--disable-reuse', '--on-error=continue',
+            '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["use_existing"] = False
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -705,7 +709,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -820,7 +825,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {
+            'use_existing': True,
+            'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             }
         }
