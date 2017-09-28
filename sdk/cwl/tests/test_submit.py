@@ -321,6 +321,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
+        expect_pipeline["properties"] = {"run_options": {"enable_job_reuse": False}}
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))

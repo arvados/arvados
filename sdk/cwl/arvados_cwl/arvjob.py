@@ -327,12 +327,20 @@ class RunnerJob(Runner):
 
         del job_spec["owner_uuid"]
         job_spec["job"] = job
+
+        instance_spec = {
+            "owner_uuid": self.arvrunner.project_uuid,
+            "name": self.name,
+            "components": {
+                "cwl-runner": job_spec,
+            },
+            "state": "RunningOnServer",
+        }
+        if not self.enable_reuse:
+            instance_spec["properties"] = {"run_options": {"enable_job_reuse": False}}
+
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
-            body={
-                "owner_uuid": self.arvrunner.project_uuid,
-                "name": self.name,
-                "components": {"cwl-runner": job_spec },
-                "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
+            body=instance_spec).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
 
         if kwargs.get("wait") is False:
