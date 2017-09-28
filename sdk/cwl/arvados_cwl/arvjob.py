@@ -184,17 +184,19 @@ class ArvadosJob(object):
         if self.arvrunner.pipeline:
             self.arvrunner.pipeline["components"][self.name] = {"job": record}
             with Perf(metrics, "update_pipeline_component %s" % self.name):
-                self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
-                                                                                 body={
-                                                                                    "components": self.arvrunner.pipeline["components"]
-                                                                                 }).execute(num_retries=self.arvrunner.num_retries)
+                self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(
+                    uuid=self.arvrunner.pipeline["uuid"],
+                    body={
+                        "components": self.arvrunner.pipeline["components"]
+                    }).execute(num_retries=self.arvrunner.num_retries)
         if self.arvrunner.uuid:
             try:
                 job = self.arvrunner.api.jobs().get(uuid=self.arvrunner.uuid).execute()
                 if job:
                     components = job["components"]
                     components[self.name] = record["uuid"]
-                    self.arvrunner.api.jobs().update(uuid=self.arvrunner.uuid,
+                    self.arvrunner.api.jobs().update(
+                        uuid=self.arvrunner.uuid,
                         body={
                             "components": components
                         }).execute(num_retries=self.arvrunner.num_retries)

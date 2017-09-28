@@ -496,9 +496,10 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
-        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  '--disable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["command"] = [
+            'arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+            '--disable-reuse', '--on-error=continue',
+            '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["use_existing"] = False
 
         stubs.api.container_requests().create.assert_called_with(
