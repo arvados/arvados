@@ -245,7 +245,8 @@ def stubs(func):
                 'vcpus': 1,
                 'ram': 1024*1024*1024
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -498,6 +499,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
                                                   '--disable-reuse', '--on-error=continue',
                                                   '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["use_existing"] = False
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -705,7 +707,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -820,7 +823,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {
+            'use_existing': True,
+            'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             }
         }
