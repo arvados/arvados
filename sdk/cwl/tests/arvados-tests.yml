@@ -91,3 +91,8 @@
   output: {}
   tool: noreuse.cwl
   doc: "Test arv:ReuseRequirement"
+
+- job: 12213-keepref-job.yml
+  output: {}
+  tool: 12213-keepref-wf.cwl
+  doc: "Test manipulating keep references with expression tools"
