@@ -109,6 +109,11 @@ def run():
                                                   fs_access=make_fs_access(""),
                                                   num_retries=runner.num_retries))
 
+        if debug:
+            logger.setLevel(logging.DEBUG)
+            logging.getLogger('arvados').setLevel(logging.DEBUG)
+            logging.getLogger("cwltool").setLevel(logging.DEBUG)
+
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
         args.enable_reuse = enable_reuse
