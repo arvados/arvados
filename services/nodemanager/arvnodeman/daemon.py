@@ -498,7 +498,14 @@ class NodeManagerDaemonActor(actor_class):
         except pykka.ActorDeadError:
             return
         cloud_node_id = cloud_node.id
-        record = self.cloud_nodes[cloud_node_id]
+
+        try:
+            record = self.cloud_nodes[cloud_node_id]
+        except KeyError:
+            # Cloud node was already removed from the cloud node list
+            # supposedly while the destroy_node call was finishing its
+            # job.
+            return
         shutdown_actor.stop()
         record.shutdown_actor = None
 
