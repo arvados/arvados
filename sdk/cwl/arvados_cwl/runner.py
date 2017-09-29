@@ -293,6 +293,12 @@ class Runner(object):
         self.tool = tool
         self.job_order = job_order
         self.running = False
+        if enable_reuse:
+            # If reuse is permitted by command line arguments but
+            # disabled by the workflow itself, disable it.
+            reuse_req, _ = get_feature(self.tool, "http://arvados.org/cwl#ReuseRequirement")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
         self.enable_reuse = enable_reuse
         self.uuid = None
         self.final_output = None
