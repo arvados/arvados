@@ -24,13 +24,16 @@ RUN pip install -U setuptools
 
 ARG sdk
 ARG runner
+ARG salad
 ARG cwltool
 
 ADD python/dist/$sdk /tmp/
+ADD cwl/salad_dist/$salad /tmp/
 ADD cwl/cwltool_dist/$cwltool /tmp/
 ADD cwl/dist/$runner /tmp/
 
 RUN cd /tmp/arvados-python-client-* && python setup.py install
+RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && python setup.py install ; fi
 RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && python setup.py install ; fi
 RUN cd /tmp/arvados-cwl-runner-* && python setup.py install
 

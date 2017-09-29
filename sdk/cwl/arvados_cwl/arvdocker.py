@@ -33,7 +33,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if dockerRequirement["dockerImageId"] in cached_lookups:
             return dockerRequirement["dockerImageId"]
 
-    with SourceLine(dockerRequirement, "dockerImageId", WorkflowException):
+    with SourceLine(dockerRequirement, "dockerImageId", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
         sp = dockerRequirement["dockerImageId"].split(":")
         image_name = sp[0]
         image_tag = sp[1] if len(sp) > 1 else "latest"

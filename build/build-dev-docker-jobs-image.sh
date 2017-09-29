@@ -15,6 +15,7 @@ Syntax:
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 CWLTOOL=path           (optional) Path to cwltool git repository.
+SALAD=path             (optional) Path to schema_salad git repository.
 
 EOF
 
@@ -42,6 +43,14 @@ sdk=$(cd sdk/python/dist && ls -t arvados-python-client-*.tar.gz | head -n1)
 (cd sdk/cwl && python setup.py sdist)
 runner=$(cd sdk/cwl/dist && ls -t arvados-cwl-runner-*.tar.gz | head -n1)
 
+rm -rf sdk/cwl/salad_dist
+mkdir -p sdk/cwl/salad_dist
+if [[ -n "$SALAD" ]] ; then
+    (cd "$SALAD" && python setup.py sdist)
+    salad=$(cd "$SALAD/dist" && ls -t schema-salad-*.tar.gz | head -n1)
+    cp "$SALAD/dist/$salad" $WORKSPACE/sdk/cwl/salad_dist
+fi
+
 rm -rf sdk/cwl/cwltool_dist
 mkdir -p sdk/cwl/cwltool_dist
 if [[ -n "$CWLTOOL" ]] ; then
@@ -61,6 +70,6 @@ else
     gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
 fi
 
-docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$gittag "$WORKSPACE/sdk"
+docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$gittag "$WORKSPACE/sdk"
 echo arv-keepdocker arvados/jobs $gittag
 arv-keepdocker arvados/jobs $gittag
