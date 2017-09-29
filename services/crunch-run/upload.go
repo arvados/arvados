@@ -18,14 +18,15 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
 
 // Block is a data block in a manifest stream
@@ -265,8 +266,26 @@ type WalkUpload struct {
 // WalkFunc walks a directory tree, uploads each file found and adds it to the
 // CollectionWriter.
 func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
 
-	if info.IsDir() {
+	targetPath, targetInfo := path, info
+	if info.Mode()&os.ModeSymlink != 0 {
+		// Update targetpath/info to reflect the symlink
+		// target, not the symlink itself
+		targetPath, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return err
+		}
+		targetInfo, err = os.Stat(targetPath)
+		if err != nil {
+			return fmt.Errorf("stat symlink %q target %q: %s", path, targetPath, err)
+		}
+	}
+
+	if targetInfo.Mode()&os.ModeType != 0 {
+		// Skip directories, pipes, other non-regular files
 		return nil
 	}
 

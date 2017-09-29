@@ -181,9 +181,9 @@ type ContainerRunner struct {
 	networkMode   string // passed through to HostConfig.NetworkMode
 }
 
-// SetupSignals sets up signal handling to gracefully terminate the underlying
+// setupSignals sets up signal handling to gracefully terminate the underlying
 // Docker container and update state when receiving a TERM, INT or QUIT signal.
-func (runner *ContainerRunner) SetupSignals() {
+func (runner *ContainerRunner) setupSignals() {
 	runner.SigChan = make(chan os.Signal, 1)
 	signal.Notify(runner.SigChan, syscall.SIGTERM)
 	signal.Notify(runner.SigChan, syscall.SIGINT)
@@ -192,7 +192,6 @@ func (runner *ContainerRunner) SetupSignals() {
 	go func(sig chan os.Signal) {
 		<-sig
 		runner.stop()
-		signal.Stop(sig)
 	}(runner.SigChan)
 }
 
@@ -210,6 +209,13 @@ func (runner *ContainerRunner) stop() {
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
 		}
+	}
+}
+
+func (runner *ContainerRunner) teardown() {
+	if runner.SigChan != nil {
+		signal.Stop(runner.SigChan)
+		close(runner.SigChan)
 	}
 }
 
@@ -1303,6 +1309,8 @@ func (runner *ContainerRunner) Run() (err error) {
 		// a new one in case we needed to log anything while
 		// finalizing.
 		runner.CrunchLog.Close()
+
+		runner.teardown()
 	}()
 
 	err = runner.fetchContainerRecord()
@@ -1311,7 +1319,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	// setup signal handling
-	runner.SetupSignals()
+	runner.setupSignals()
 
 	// check for and/or load image
 	err = runner.LoadImage()

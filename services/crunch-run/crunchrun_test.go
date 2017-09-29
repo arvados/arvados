@@ -99,7 +99,7 @@ func NewTestDockerClient(exitCode int) *TestDockerClient {
 	t := &TestDockerClient{}
 	t.logReader, t.logWriter = io.Pipe()
 	t.finish = exitCode
-	t.stop = make(chan bool)
+	t.stop = make(chan bool, 1)
 	t.cwd = "/"
 	return t
 }
