@@ -920,6 +920,102 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 	return nil
 }
 
+// EvalSymlinks follows symlinks within the output directory.  If the symlink
+// leads to a keep mount, copy the manifest text from the keep mount into the
+// output manifestText.  Ensure that whether symlinks are relative or absolute,
+// they must remain within the output directory.
+//
+// Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
+func (runner *ContainerRunner) EvalSymlinks(path string, binds []string, symlinksToRemove *[]string) (manifestText string, err error) {
+	var links []string
+
+	defer func() {
+		if err != nil {
+			*symlinksToRemove = append(*symlinksToRemove, links...)
+		}
+	}()
+
+	for n := 0; n < 32; n++ {
+		var info os.FileInfo
+		info, err = os.Lstat(path)
+		if err != nil {
+			return
+		}
+
+		var tgt string
+		if info.Mode()&os.ModeSymlink == 0 {
+			// Not a symlink, nothing to do.
+			return
+		}
+
+		// Remember symlink for cleanup later
+		links = append(links, path)
+
+		tgt, err = os.Readlink(path)
+		if err != nil {
+			return
+		}
+		if !strings.HasPrefix(tgt, "/") {
+			// Relative symlink, resolve it to host path
+			tgt = filepath.Join(filepath.Dir(path), tgt)
+		}
+		if strings.HasPrefix(tgt, runner.Container.OutputPath+"/") && !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+			// Absolute symlink to container output path, adjust it to host output path.
+			tgt = filepath.Join(runner.HostOutputDir, tgt[len(runner.Container.OutputPath):])
+		}
+
+		runner.CrunchLog.Printf("Resolve %q to %q", path, tgt)
+
+		// go through mounts and try reverse map to collection reference
+		for _, bind := range binds {
+			mnt := runner.Container.Mounts[bind]
+			if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
+				// get path relative to bind
+				targetSuffix := tgt[len(bind):]
+
+				// Copy mount and adjust the path to add path relative to the bind
+				adjustedMount := mnt
+				adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
+
+				for _, l := range links {
+					// The chain of one or more symlinks
+					// terminates in this keep mount, so
+					// add them all to the manifest text at
+					// appropriate locations.
+					var m string
+					outputSuffix := l[len(runner.HostOutputDir):]
+					m, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
+					if err != nil {
+						return
+					}
+					manifestText = manifestText + m
+					*symlinksToRemove = append(*symlinksToRemove, l)
+				}
+				return
+			}
+		}
+
+		// If target is not a mount, it must be within the output
+		// directory, otherwise it is an error.
+		if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
+				path[len(runner.HostOutputDir):], tgt)
+			return
+		}
+
+		// Update symlink to host FS
+		os.Remove(path)
+		os.Symlink(tgt, path)
+
+		// Target is within the output directory, so loop and check if
+		// it is also a symlink.
+		path = tgt
+	}
+	// Got stuck in a loop or just a pathological number of links, give up.
+	err = fmt.Errorf("Too many symlinks.")
+	return
+}
+
 // HandleOutput sets the output, unmounts the FUSE mount, and deletes temporary directories
 func (runner *ContainerRunner) CaptureOutput() error {
 	if runner.finalState != "Complete" {
@@ -966,73 +1062,28 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if err != nil {
 		// Regular directory
 
+		var symlinksToRemove []string
+		var m string
 		// Find symlinks to arv-mounted files & dirs.
 		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			if info.Mode()&os.ModeSymlink == 0 {
-				return nil
+			m, err = runner.EvalSymlinks(path, binds, &symlinksToRemove)
+			if err == nil {
+				manifestText = manifestText + m
 			}
-			// read link to get container internal path
-			// only support 1 level of symlinking here.
-			var tgt string
-			tgt, err = os.Readlink(path)
-			if err != nil {
-				return err
-			}
-
-			// get path relative to output dir
-			outputSuffix := path[len(runner.HostOutputDir):]
-
-			if strings.HasPrefix(tgt, "/") {
-				// go through mounts and try reverse map to collection reference
-				for _, bind := range binds {
-					mnt := runner.Container.Mounts[bind]
-					if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
-						// get path relative to bind
-						targetSuffix := tgt[len(bind):]
-
-						// Copy mount and adjust the path to add path relative to the bind
-						adjustedMount := mnt
-						adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
-
-						// get manifest text
-						var m string
-						m, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
-						if err != nil {
-							return err
-						}
-						manifestText = manifestText + m
-						// delete symlink so WriteTree won't try to to dereference it.
-						os.Remove(path)
-						return nil
-					}
-				}
-			}
-
-			// Not a link to a mount.  Must be dereferencible and
-			// point into the output directory.
-			tgt, err = filepath.EvalSymlinks(path)
-			if err != nil {
-				os.Remove(path)
-				return err
-			}
-
-			// Symlink target must be within the output directory otherwise it's an error.
-			if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
-				os.Remove(path)
-				return fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
-					outputSuffix, tgt)
-			}
-			return nil
+			return err
 		})
+		runner.CrunchLog.Printf("sm %q", symlinksToRemove)
+		for _, l := range symlinksToRemove {
+			os.Remove(l)
+		}
 		if err != nil {
 			return fmt.Errorf("While checking output symlinks: %v", err)
 		}
 
 		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
-		var m string
 		m, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
 		manifestText = manifestText + m
 		if err != nil {

@@ -1523,6 +1523,46 @@ func (s *TestSuite) TestOutputError(c *C) {
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
+func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		rf, _ := os.Create(t.realTemp + "/2/realfile")
+		rf.Write([]byte("foo"))
+		rf.Close()
+		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
+		os.Symlink("realfile", t.realTemp+"/2/file2")
+		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
+		os.Symlink("file2", t.realTemp+"/2/file4")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals, ". 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile\n")
+			}
+		}
+	}
+}
+
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
