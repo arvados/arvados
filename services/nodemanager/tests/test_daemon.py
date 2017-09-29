@@ -401,7 +401,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_setup.start.called,
                         "second node not started after booted node stopped")
 
-    def test_booted_node_shut_down_after_being_orphaned(self):
+    def test_node_disappearing_during_shutdown(self):
         cloud_node = testutil.cloud_node_mock(6)
         setup = self.start_node_boot(cloud_node, id_num=6)
         self.daemon.node_setup_finished(setup).get(self.TIMEOUT)
@@ -414,10 +414,13 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         shutdown.cloud_node.get.return_value = cloud_node
         # Simulate a successful but slow node destroy call: the cloud node
         # list gets updated before the ShutdownActor finishes.
+        record = self.daemon.cloud_nodes.get().nodes.values()[0]
+        self.assertTrue(record.shutdown_actor is not None)
         self.daemon.cloud_nodes.get().nodes.clear()
         self.daemon.node_finished_shutdown(shutdown).get(self.TIMEOUT)
-        self.assertFalse(shutdown.stop.called,
-                        "shutdown actor shouldn't have been stopped")
+        self.assertTrue(
+            record.shutdown_actor is not None,
+            "test was ineffective -- failed to simulate the race condition")
 
     def test_booted_node_shut_down_when_never_listed(self):
         setup = self.start_node_boot()
