@@ -926,12 +926,12 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 // they must remain within the output directory.
 //
 // Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
-func (runner *ContainerRunner) EvalSymlinks(path string, binds []string, symlinksToRemove *[]string) (manifestText string, err error) {
+func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manifestText string, symlinksToRemove []string, err error) {
 	var links []string
 
 	defer func() {
 		if err != nil {
-			*symlinksToRemove = append(*symlinksToRemove, links...)
+			symlinksToRemove = append(symlinksToRemove, links...)
 		}
 	}()
 
@@ -989,7 +989,7 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string, symlink
 						return
 					}
 					manifestText = manifestText + m
-					*symlinksToRemove = append(*symlinksToRemove, l)
+					symlinksToRemove = append(symlinksToRemove, l)
 				}
 				return
 			}
@@ -1064,18 +1064,19 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 		var symlinksToRemove []string
 		var m string
+		var srm []string
 		// Find symlinks to arv-mounted files & dirs.
 		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			m, err = runner.EvalSymlinks(path, binds, &symlinksToRemove)
+			m, srm, err = runner.EvalSymlinks(path, binds)
+			symlinksToRemove = append(symlinksToRemove, srm...)
 			if err == nil {
 				manifestText = manifestText + m
 			}
 			return err
 		})
-		runner.CrunchLog.Printf("sm %q", symlinksToRemove)
 		for _, l := range symlinksToRemove {
 			os.Remove(l)
 		}

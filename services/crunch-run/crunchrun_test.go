@@ -1543,10 +1543,18 @@ func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
 		rf, _ := os.Create(t.realTemp + "/2/realfile")
 		rf.Write([]byte("foo"))
 		rf.Close()
+
+		os.Mkdir(t.realTemp+"/2/realdir", 0700)
+		rf, _ = os.Create(t.realTemp + "/2/realdir/subfile")
+		rf.Write([]byte("bar"))
+		rf.Close()
+
 		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
 		os.Symlink("realfile", t.realTemp+"/2/file2")
 		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
 		os.Symlink("file2", t.realTemp+"/2/file4")
+		os.Symlink("realdir", t.realTemp+"/2/dir1")
+		os.Symlink("/tmp/realdir", t.realTemp+"/2/dir2")
 		t.logWriter.Close()
 	})
 
@@ -1557,7 +1565,12 @@ func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
-				c.Check(manifest, Equals, ". 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile\n")
+				c.Check(manifest, Equals,
+					`. 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile
+./dir1 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./dir2 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./realdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+`)
 			}
 		}
 	}

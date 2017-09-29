@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -281,6 +282,20 @@ func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
 		targetInfo, err = os.Stat(targetPath)
 		if err != nil {
 			return fmt.Errorf("stat symlink %q target %q: %s", path, targetPath, err)
+		}
+		if targetInfo.Mode()&os.ModeDir != 0 {
+			// Symlinks to directories don't get walked, so do it
+			// here.  We've previously checked that they stay in
+			// the output directory and don't result in an endless
+			// loop.
+			var rd []os.FileInfo
+			rd, err = ioutil.ReadDir(path)
+			if err != nil {
+				return err
+			}
+			for _, ent := range rd {
+				err = filepath.Walk(filepath.Join(path, ent.Name()), m.WalkFunc)
+			}
 		}
 	}
 
