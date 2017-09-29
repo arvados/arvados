@@ -62,10 +62,10 @@ _group.add_argument(
 
 keepdocker_parser.add_argument(
     'image', nargs='?',
-    help="Docker image to upload, as a repository name or hash")
+    help="Docker image to upload: repo, repo:tag, or hash")
 keepdocker_parser.add_argument(
-    'tag', nargs='?', default='latest',
-    help="Tag of the Docker image to upload (default 'latest')")
+    'tag', nargs='?',
+    help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
 
 # Combine keepdocker options listed above with run_opts options of arv-put.
 # The options inherited from arv-put include --name, --project-uuid,
@@ -357,6 +357,16 @@ def main(arguments=None, stdout=sys.stdout):
             else:
                 raise
         sys.exit(0)
+
+    if ':' in args.image:
+        if args.tag is not None:
+            logger.error(
+                "image %r already includes a tag, cannot add tag argument %r",
+                args.image, args.tag)
+            sys.exit(1)
+        args.image, args.tag = args.image.split(':', 1)
+    elif args.tag is None:
+        args.tag = 'latest'
 
     # Pull the image if requested, unless the image is specified as a hash
     # that we already have.
