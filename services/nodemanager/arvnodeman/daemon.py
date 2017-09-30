@@ -78,7 +78,10 @@ class _ArvadosNodeTracker(_BaseNodeTracker):
     item_key = staticmethod(lambda arvados_node: arvados_node['uuid'])
 
     def find_stale_node(self, stale_time):
-        for record in self.nodes.itervalues():
+        # Try to select a stale node record that have an assigned slot first
+        for record in sorted(self.nodes.itervalues(),
+                             key=lambda r: r.arvados_node['slot_number'],
+                             reverse=True):
             node = record.arvados_node
             if (not cnode.timestamp_fresh(cnode.arvados_node_mtime(node),
                                           stale_time) and
