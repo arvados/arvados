@@ -22,10 +22,10 @@ expression: |
       }
     }
     var dirs = [];
-    for (var sampleid in samples) {
+    Object.keys(samples).sort().forEach(function(sampleid, _) {
       dirs.push({"class": "Directory",
                  "basename": sampleid,
                  "listing": samples[sampleid]});
-    }
+    });
     return {"out": dirs};
   }

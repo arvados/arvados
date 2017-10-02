@@ -4,7 +4,10 @@ requirements:
   ScatterFeatureRequirement: {}
 inputs:
   dir: Directory
-outputs: []
+outputs:
+  out:
+    type: File[]
+    outputSource: tool/out
 steps:
   ex:
     in:
@@ -14,6 +17,6 @@ steps:
   tool:
     in:
       fastqsdir: ex/out
-    out: []
+    out: [out]
     scatter: fastqsdir
     run: 12213-keepref-tool.cwl
