@@ -1,0 +1,25 @@
+digraph graphname {
+
+### To create the image:
+### dot -Tpng compute-nodes-state-diagram-proposed.dot > compute-nodes-state-diagram-proposed.png
+
+### States
+
+in_whishlist [label="in whishlist"];
+requested;
+assigned;
+paired;
+shutting_down [label="shutting down"];
+draining;
+gone;
+
+### Transitions
+
+in_whishlist -> requested    [ label = "request(size)" ];
+requested -> paired          [ label = "ping()" ]; 
+paired -> assigned           [ label = "assign_job(job_id)" ];
+assigned -> draining         [ label = "drain()" ]; 
+draining -> shutting_down    [ label = "shutdown()" ]; 
+shutting_down -> gone        [ label = "detected_gone()" ];
+
+}

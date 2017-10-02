@@ -1,0 +1,27 @@
+digraph graphname {
+
+### To create the image:
+### dot -Tpng compute-nodes-state-diagram-current.dot > compute-nodes-state-diagram-current.png
+
+### States
+
+in_whishlist [label="in whishlist"];
+unpaired;
+paired;
+stale;
+shutting_down [label="shutting down"];
+draining;
+gone;
+
+### Transitions
+
+in_whishlist -> unpaired    [ label = "create()" ];
+unpaired -> stale           [ label = "timeout(20m)" ]; 
+unpaired -> paired          [ label = "ping()" ];
+stale -> shutting_down      [ label = "shutdown()" ]; 
+paired -> draining          [ label = "finish_job()" ]; 
+stale -> gone               [ label = "detected_gone()" ];
+paired -> gone              [ label = "detected_down()" ];
+shutting_down -> gone       [ label = "detected_gone()" ]; 
+
+}
