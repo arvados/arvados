@@ -283,7 +283,7 @@ func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("stat symlink %q target %q: %s", path, targetPath, err)
 		}
-		if targetInfo.Mode()&os.ModeDir != 0 {
+		if targetInfo.IsDir() {
 			// Symlinks to directories don't get walked, so do it
 			// here.  We've previously checked that they stay in
 			// the output directory and don't result in an endless

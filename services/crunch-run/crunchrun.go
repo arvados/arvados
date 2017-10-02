@@ -942,7 +942,6 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manife
 			return
 		}
 
-		var tgt string
 		if info.Mode()&os.ModeSymlink == 0 {
 			// Not a symlink, nothing to do.
 			return
@@ -951,7 +950,9 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manife
 		// Remember symlink for cleanup later
 		links = append(links, path)
 
-		tgt, err = os.Readlink(path)
+		var readlinktgt string
+		readlinktgt, err = os.Readlink(path)
+		tgt := readlinktgt
 		if err != nil {
 			return
 		}
@@ -999,13 +1000,22 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manife
 		// directory, otherwise it is an error.
 		if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
 			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
-				path[len(runner.HostOutputDir):], tgt)
+				path[len(runner.HostOutputDir):], readlinktgt)
 			return
 		}
 
 		// Update symlink to host FS
-		os.Remove(path)
-		os.Symlink(tgt, path)
+		err = os.Remove(path)
+		if err != nil {
+			err = fmt.Errorf("Error removing symlink %q: %v", path, err)
+			return
+		}
+
+		err = os.Symlink(tgt, path)
+		if err != nil {
+			err = fmt.Errorf("Error updating symlink %q: %v", path, err)
+			return
+		}
 
 		// Target is within the output directory, so loop and check if
 		// it is also a symlink.
@@ -1062,7 +1072,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if err != nil {
 		// Regular directory
 
-		var symlinksToRemove []string
+		symlinksToRemove := make(map[string]bool)
 		var m string
 		var srm []string
 		// Find symlinks to arv-mounted files & dirs.
@@ -1071,14 +1081,24 @@ func (runner *ContainerRunner) CaptureOutput() error {
 				return err
 			}
 			m, srm, err = runner.EvalSymlinks(path, binds)
-			symlinksToRemove = append(symlinksToRemove, srm...)
+			for _, r := range srm {
+				symlinksToRemove[r] = true
+			}
 			if err == nil {
 				manifestText = manifestText + m
 			}
 			return err
 		})
-		for _, l := range symlinksToRemove {
-			os.Remove(l)
+		for l, _ := range symlinksToRemove {
+			err2 := os.Remove(l)
+			if err2 != nil {
+				if err == nil {
+					err = fmt.Errorf("Error removing symlink %q: %v", err2)
+				} else {
+					err = fmt.Errorf("%v\nError removing symlink %q: %v",
+						err, err2)
+				}
+			}
 		}
 		if err != nil {
 			return fmt.Errorf("While checking output symlinks: %v", err)

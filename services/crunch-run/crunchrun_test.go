@@ -1685,3 +1685,41 @@ func (s *TestSuite) TestNumberRoundTrip(c *C) {
 	c.Check(err, IsNil)
 	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
 }
+
+func (s *TestSuite) TestEvalSymlinks(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink("/etc/passwd", realTemp+"/p1")
+
+	// Relative outside output dir
+	os.Symlink("../..", realTemp+"/p2")
+
+	// Circular references
+	os.Symlink("p4", realTemp+"/p3")
+	os.Symlink("p5", realTemp+"/p4")
+	os.Symlink("p3", realTemp+"/p5")
+
+	symlinksToRemove := make(map[string]bool)
+	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
+		var srm []string
+		_, srm, err = cr.EvalSymlinks(realTemp+"/"+v, []string{})
+		c.Assert(err, NotNil)
+		for _, r := range srm {
+			symlinksToRemove[r] = true
+		}
+	}
+	c.Assert(len(symlinksToRemove), Equals, 5)
+
+	c.Assert(map[string]bool{realTemp + "/" + "p1": true,
+		realTemp + "/" + "p2": true,
+		realTemp + "/" + "p3": true,
+		realTemp + "/" + "p4": true,
+		realTemp + "/" + "p5": true}, DeepEquals, symlinksToRemove)
+}
