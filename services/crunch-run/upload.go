@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -288,14 +287,7 @@ func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
 			// here.  We've previously checked that they stay in
 			// the output directory and don't result in an endless
 			// loop.
-			var rd []os.FileInfo
-			rd, err = ioutil.ReadDir(path)
-			if err != nil {
-				return err
-			}
-			for _, ent := range rd {
-				err = filepath.Walk(filepath.Join(path, ent.Name()), m.WalkFunc)
-			}
+			filepath.Walk(path+"/.", m.WalkFunc)
 		}
 	}
 
