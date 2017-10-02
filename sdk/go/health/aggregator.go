@@ -38,6 +38,7 @@ func (agg *Aggregator) setup() {
 }
 
 func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	agg.setupOnce.Do(agg.setup)
 	sendErr := func(statusCode int, err error) {
 		resp.WriteHeader(statusCode)
 		json.NewEncoder(resp).Encode(map[string]interface{}{"error": err})
