@@ -130,3 +130,9 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['repo:tag'], sys.stderr)
         find_image_mock.assert_called_with('repo', 'tag')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['myreg.example:8888/repo/img:tag'], sys.stderr)
+        find_image_mock.assert_called_with('myreg.example:8888/repo/img', 'tag')

@@ -364,7 +364,8 @@ def main(arguments=None, stdout=sys.stdout):
                 "image %r already includes a tag, cannot add tag argument %r",
                 args.image, args.tag)
             sys.exit(1)
-        args.image, args.tag = args.image.split(':', 1)
+        # rsplit() accommodates "myrepo.example:8888/repo/image:tag"
+        args.image, args.tag = args.image.rsplit(':', 1)
     elif args.tag is None:
         args.tag = 'latest'
 
