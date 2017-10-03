@@ -2,6 +2,8 @@ package health
 
 import (
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -102,12 +104,13 @@ func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
+	_, port, _ := net.SplitHostPort(listen)
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
 		Keepstore: arvados.Keepstore{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkOK(c)
-	ep := resp.Checks["localhost/keepstore/_health/ping"]
+	ep := resp.Checks[fmt.Sprintf("keepstore+http://localhost:%d/_health/ping", port)]
 	c.Check(ep.Health, check.Equals, "OK")
 	c.Check(ep.Status, check.Equals, 200)
 }
@@ -115,8 +118,10 @@ func (s *AggregatorSuite) TestHealthy(c *check.C) {
 func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	srvH, listenH := s.stubServer(&healthyHandler{})
 	defer srvH.Close()
+	_, portH, _ := net.SplitHostPort(listenH)
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
+	_, portU, _ := net.SplitHostPort(listenU)
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
 		Keepstore: arvados.Keepstore{Listen: listenH},
 	}
@@ -125,10 +130,10 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkUnhealthy(c)
-	ep := resp.Checks["localhost/keepstore/_health/ping"]
+	ep := resp.Checks[fmt.Sprintf("keepstore+http://localhost:%d/_health/ping", portH)]
 	c.Check(ep.Health, check.Equals, "OK")
 	c.Check(ep.Status, check.Equals, 200)
-	ep = resp.Checks["127.0.0.1/keepstore/_health/ping"]
+	ep = resp.Checks[fmt.Sprintf("keepstore+http://127.0.0.1:%d/_health/ping", portU)]
 	c.Check(ep.Health, check.Equals, "ERROR")
 	c.Check(ep.Status, check.Equals, 200)
 }

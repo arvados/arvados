@@ -49,15 +49,6 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", "application/json")
 
-	if agg.Config == nil {
-		cfg, err := arvados.GetConfig()
-		if err != nil {
-			err = fmt.Errorf("arvados.GetConfig(): %s", err)
-			sendErr(http.StatusInternalServerError, err)
-			return
-		}
-		agg.Config = cfg
-	}
 	cluster, err := agg.Config.GetCluster("")
 	if err != nil {
 		err = fmt.Errorf("arvados.GetCluster(): %s", err)
@@ -119,11 +110,20 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 			wg.Add(1)
 			go func(node string) {
 				defer wg.Done()
-				pingResp := agg.ping(node, addr, cluster)
+				var pingResp CheckResponse
+				url, err := agg.pingURL(node, addr)
+				if err != nil {
+					pingResp = CheckResponse{
+						Health: "ERROR",
+						Error:  err.Error(),
+					}
+				} else {
+					pingResp = agg.ping(url, cluster)
+				}
 
 				mtx.Lock()
 				defer mtx.Unlock()
-				resp.Checks[node+"/"+svc+"/_health/ping"] = pingResp
+				resp.Checks[svc+"+"+url] = pingResp
 				svHealth := resp.Services[svc]
 				if pingResp.OK() {
 					svHealth.N++
@@ -148,7 +148,12 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 	return resp
 }
 
-func (agg *Aggregator) ping(node, addr string, cluster *arvados.Cluster) (result CheckResponse) {
+func (agg *Aggregator) pingURL(node, addr string) (string, error) {
+	_, port, err := net.SplitHostPort(addr)
+	return "http://" + node + ":" + port + "/_health/ping", err
+}
+
+func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckResponse) {
 	t0 := time.Now()
 
 	var err error
@@ -159,11 +164,7 @@ func (agg *Aggregator) ping(node, addr string, cluster *arvados.Cluster) (result
 		}
 	}()
 
-	_, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		return
-	}
-	req, err := http.NewRequest("GET", "http://"+node+":"+port+"/_health/ping", nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
 	}

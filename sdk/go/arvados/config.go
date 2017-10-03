@@ -3,20 +3,21 @@ package arvados
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
+
+const DefaultConfigFile = "/etc/arvados/config.yml"
 
 type Config struct {
 	Clusters map[string]Cluster
 }
 
 // GetConfig returns the current system config, loading it from
-// /etc if needed.
-func GetConfig() (*Config, error) {
+// configFile if needed.
+func GetConfig(configFile string) (*Config, error) {
 	var cfg Config
-	err := config.LoadFile(&cfg, "/etc/arvados/config.yml")
+	err := config.LoadFile(&cfg, configFile)
 	return &cfg, err
 }
 
@@ -63,14 +64,8 @@ func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
 // error is returned if the appropriate configuration can't be
 // determined (e.g., this does not appear to be a system node).
 func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
-	// Generally node is "a.b.ca", use the first of {"a.b.ca",
-	// "a.b", "a"} that has an entry in SystemNodes.
-	labels := strings.Split(node, ".")
-	for j := len(labels); j > 0; j-- {
-		hostpart := strings.Join(labels[:j], ".")
-		if cfg, ok := cc.SystemNodes[hostpart]; ok {
-			return &cfg, nil
-		}
+	if cfg, ok := cc.SystemNodes[node]; ok {
+		return &cfg, nil
 	}
 	// If node is not listed, but "*" gives a default system node
 	// config, use the default config.
