@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -11,18 +13,27 @@ func main() {
 	log.SetFormatter(&log.JSONFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	})
-	sysConf, err := arvados.GetSystemConfig()
+	cfg, err := arvados.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	clusterCfg, err := cfg.GetCluster("")
+	if err != nil {
+		log.Fatal(err)
+	}
+	nodeCfg, err := clusterCfg.GetThisSystemNode()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	srv := &httpserver.Server{
-		Addr: ":", // FIXME: should be dictated by Health on this SystemNode
-		Handler: &health.Aggregator{
-			SystemConfig: sysConf,
+		Addr: nodeCfg.Health.Listen,
+		Server: http.Server{
+			Handler: &health.Aggregator{
+				Config: cfg,
+			},
 		},
 	}
-	srv.HandleFunc()
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}

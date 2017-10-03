@@ -41,7 +41,7 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	agg.setupOnce.Do(agg.setup)
 	sendErr := func(statusCode int, err error) {
 		resp.WriteHeader(statusCode)
-		json.NewEncoder(resp).Encode(map[string]interface{}{"error": err})
+		json.NewEncoder(resp).Encode(map[string]string{"error": err.Error()})
 		if agg.Log != nil {
 			agg.Log(req, err)
 		}
@@ -119,7 +119,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 			wg.Add(1)
 			go func(node string) {
 				defer wg.Done()
-				pingResp := agg.ping(node, addr)
+				pingResp := agg.ping(node, addr, cluster)
 
 				mtx.Lock()
 				defer mtx.Unlock()
@@ -148,7 +148,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 	return resp
 }
 
-func (agg *Aggregator) ping(node, addr string) (result CheckResponse) {
+func (agg *Aggregator) ping(node, addr string, cluster *arvados.Cluster) (result CheckResponse) {
 	t0 := time.Now()
 
 	var err error
@@ -167,6 +167,7 @@ func (agg *Aggregator) ping(node, addr string) (result CheckResponse) {
 	if err != nil {
 		return
 	}
+	req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
 
 	ctx, cancel := context.WithCancel(req.Context())
 	go func() {
@@ -184,6 +185,7 @@ func (agg *Aggregator) ping(node, addr string) (result CheckResponse) {
 	result.Status = resp.StatusCode
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
+		err = fmt.Errorf("cannot decode response: %s", err)
 		return
 	}
 	if resp.StatusCode != http.StatusOK {

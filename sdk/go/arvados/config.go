@@ -24,7 +24,9 @@ func GetConfig() (*Config, error) {
 // cluster, or the default/only configured cluster if clusterID is "".
 func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 	if clusterID == "" {
-		if len(sc.Clusters) != 1 {
+		if len(sc.Clusters) == 0 {
+			return nil, fmt.Errorf("no clusters configured")
+		} else if len(sc.Clusters) > 1 {
 			return nil, fmt.Errorf("multiple clusters configured, cannot choose")
 		} else {
 			for id, cc := range sc.Clusters {
@@ -79,7 +81,12 @@ func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
 }
 
 type SystemNode struct {
+	Health    Health
 	Keepstore Keepstore
+}
+
+type Health struct {
+	Listen string
 }
 
 type Keepstore struct {
