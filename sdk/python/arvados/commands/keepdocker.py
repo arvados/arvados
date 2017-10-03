@@ -358,7 +358,8 @@ def main(arguments=None, stdout=sys.stdout):
                 raise
         sys.exit(0)
 
-    if ':' in args.image:
+    if re.search(r':\w[-.\w]{0,127}$', args.image):
+        # image ends with :valid-tag
         if args.tag is not None:
             logger.error(
                 "image %r already includes a tag, cannot add tag argument %r",
