@@ -55,32 +55,79 @@ class TrashTest < ActionDispatch::IntegrationTest
     assert_no_text expired2['uuid']
   end
 
-  test "trashed projects" do
-    deleted = api_fixture('groups')['trashed_project']
+  ["button","selection"].each do |method|
+    test "trashed projects using #{method}" do
+      deleted = api_fixture('groups')['trashed_project']
+      aproject = api_fixture('groups')['aproject']
 
-    # verify that the un-trashed item are missing in /groups page
-    visit page_with_token('active', "/groups")
-    assert_no_text deleted['uuid']
+      # verify that the un-trashed item are missing in /groups page
+      visit page_with_token('active', "/projects/zzzzz-tpzed-xurymjxw79nv3jz")
+      click_on "Subprojects"
+      assert_no_text deleted['name']
 
-    # visit trash page
-    visit page_with_token('active', "/trash")
-    click_on "Trashed projects"
+      # visit trash page
+      visit page_with_token('active', "/trash")
+      click_on "Trashed projects"
 
-    assert_text deleted['name']
-    assert_text deleted['uuid']
+      assert_text deleted['name']
+      assert_text deleted['uuid']
+      assert_no_text aproject['name']
+      assert_no_text aproject['uuid']
 
-    # Un-trash item using the recycle button
-    within('tr', text: deleted['name']) do
-      first('.fa-recycle').click
+      # Un-trash item
+      if method == "button"
+        within('tr', text: deleted['name']) do
+          first('.fa-recycle').click
+        end
+      else
+        within('tr', text: deleted['name']) do
+          first('input').click
+        end
+        click_button 'Selection...'
+        within('.selection-action-container') do
+          click_link 'Un-trash selected items'
+        end
+      end
+
+      wait_for_ajax
+
+      assert_no_text deleted['name']
+      visit current_path
+      assert_no_text deleted['name']
+
+      # check that the un-trashed item are now shown on parent project page
+      visit page_with_token('active', "/projects/zzzzz-tpzed-xurymjxw79nv3jz")
+      click_on "Subprojects"
+      assert_text deleted['name']
+      assert_text aproject['name']
+
+      # Trash another item
+      if method == "button"
+        within('tr', text: aproject['name']) do
+          first('.fa-trash-o').click
+        end
+      else
+        within('tr', text: aproject['name']) do
+          first('input').click
+        end
+        click_button 'Selection'
+        within('.selection-action-container') do
+          click_link 'Remove selected'
+        end
+      end
+
+      wait_for_ajax
+      assert_no_text aproject['name']
+      visit current_path
+      assert_no_text aproject['name']
+
+      # visit trash page
+      visit page_with_token('active', "/trash")
+      click_on "Trashed projects"
+
+      assert_text aproject['name']
+      assert_text aproject['uuid']
     end
-
-    wait_for_ajax
-
-    assert_no_text deleted['uuid']
-
-    # verify that the un-trashed item are now shown in /groups page
-    visit page_with_token('active', "/groups")
-    assert_text deleted['uuid']
   end
 
   test "trash page with search" do
