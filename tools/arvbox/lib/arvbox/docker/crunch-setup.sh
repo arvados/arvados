@@ -28,6 +28,8 @@ export CRUNCH_DISPATCH_LOCKFILE=/var/lock/$1-dispatch
 export CRUNCH_JOB_DOCKER_BIN=docker
 export HOME=/tmp/$1
 export CRUNCH_JOB_DOCKER_RUN_ARGS=--net=host
+# Stop excessive stat of /etc/localtime
+export TZ='America/New_York'
 
 cd /usr/src/arvados/services/api
 if test "$1" = "crunch0" ; then
