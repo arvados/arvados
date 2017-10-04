@@ -22,7 +22,7 @@ RUN apt-get update && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
-ENV RUBYVERSION 2.3.4
+ENV RUBYVERSION 2.3.5
 
 # Install Ruby from source
 RUN cd /tmp && \
