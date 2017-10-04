@@ -37,6 +37,25 @@ format_last_commit_here() {
     TZ=UTC git log -n1 --first-parent "--format=format:$format" .
 }
 
+version_from_latest_tag() {
+  # Generates a version number from the git log latest tag
+  # for the current directory, and writes it to stdout.
+  latest_tag=`git describe --abbrev=0`
+  #replace . with space so can split into an array
+  version_bits=(${latest_tag//./ })
+  #get number parts and increase last one by 1
+  vnum1=${version_bits0]}
+  vnum1=${version_bits[1]}
+  vnum2=${version_bits[2]}
+  vnum3=$BUILD_NUMBER
+  #create new tag
+  new_version_tag="$vnum1.$vnum2.$vnum3"
+  git rev-parse HEAD >Changelog
+  echo "$[new_version_tag}"
+  
+}
+
+
 version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
@@ -61,7 +80,7 @@ timestamp_from_git() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
+  if [ -n "$(find dist -name "*-$(version_from_latest_tag).tar.gz" -print -quit)" ]; then
     # This package doesn't need rebuilding.
     return
   fi
@@ -71,7 +90,7 @@ handle_python_package () {
 
 handle_ruby_gem() {
     local gem_name="$1"; shift
-    local gem_version="$(nohash_version_from_git)"
+    local gem_version="$(version_from_latest_tag)"
     local gem_src_dir="$(pwd)"
 
     if [[ -n "$ONLY_BUILD" ]] && [[ "$gem_name" != "$ONLY_BUILD" ]] ; then
@@ -106,7 +125,7 @@ package_go_binary() {
     (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
 
     cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
-    local version="$(version_from_git)"
+    local version="$(version_from_latest_tag)"
     local timestamp="$(timestamp_from_git)"
 
     # Update the version number and build a new package if the vendor
@@ -120,7 +139,7 @@ package_go_binary() {
         cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
         ts="$(timestamp_from_git)"
         if [[ "$ts" -gt "$timestamp" ]]; then
-            version=$(version_from_git)
+            version=$(version_from_latest_tag)
             timestamp="$ts"
         fi
     done
@@ -185,7 +204,7 @@ test_rails_package_presence() {
 
   cd $srcdir
 
-  local version="$(version_from_git)"
+  local version="$(version_from_latest_tag)"
 
   cd $tmppwd
 
@@ -264,7 +283,7 @@ handle_rails_package() {
         _build_rails_package_scripts "$pkgname" "$scripts_dir"
         cd "$srcdir"
         mkdir -p tmp
-        version_from_git >"$version_file"
+        version_from_latest_tag >"$version_file"
         git rev-parse HEAD >git-commit.version
         bundle package --all
     )
