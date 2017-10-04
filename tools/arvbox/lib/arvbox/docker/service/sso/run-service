@@ -9,7 +9,11 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/sso
-export RAILS_ENV=development
+if test -s /var/lib/arvados/sso_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvados/sso_rails_env)
+else
+  export RAILS_ENV=development
+fi
 
 run_bundler --without=development
 bundle exec passenger start --runtime-check-only --runtime-dir=/var/lib/passenger
@@ -35,7 +39,7 @@ if ! test -s /var/lib/arvados/self-signed.key ; then
 fi
 
 cat >config/application.yml <<EOF
-development:
+$RAILS_ENV:
   uuid_prefix: $uuid_prefix
   secret_token: $secret_token
   default_link_url: "http://$localip"

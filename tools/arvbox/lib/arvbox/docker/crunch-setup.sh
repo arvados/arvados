@@ -18,6 +18,12 @@ flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/servi
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/sdk/go/crunchrunner"
 install bin/crunchstat bin/crunchrunner /usr/local/bin
 
+if test -s /var/lib/arvados/api_rails_env ; then
+  RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+else
+  RAILS_ENV=development
+fi
+
 export ARVADOS_API_HOST=$localip:${services[api]}
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=$(cat /usr/src/arvados/services/api/superuser_token)
@@ -33,7 +39,7 @@ export TZ='America/New_York'
 
 cd /usr/src/arvados/services/api
 if test "$1" = "crunch0" ; then
-    exec bundle exec ./script/crunch-dispatch.rb development --jobs --pipelines
+    exec bundle exec ./script/crunch-dispatch.rb $RAILS_ENV --jobs --pipelines
 else
-    exec bundle exec ./script/crunch-dispatch.rb development --jobs
+    exec bundle exec ./script/crunch-dispatch.rb $RAILS_ENV --jobs
 fi
