@@ -55,6 +55,34 @@ class TrashTest < ActionDispatch::IntegrationTest
     assert_no_text expired2['uuid']
   end
 
+  test "trashed projects" do
+    deleted = api_fixture('groups')['trashed_project']
+
+    # verify that the un-trashed item are missing in /groups page
+    visit page_with_token('active', "/groups")
+    assert_no_text deleted['uuid']
+
+    # visit trash page
+    visit page_with_token('active', "/trash")
+    click_on "Trashed projects"
+
+    assert_text deleted['name']
+    assert_text deleted['uuid']
+
+    # Un-trash item using the recycle button
+    within('tr', text: deleted['name']) do
+      first('.fa-recycle').click
+    end
+
+    wait_for_ajax
+
+    assert_no_text deleted['uuid']
+
+    # verify that the un-trashed item are now shown in /groups page
+    visit page_with_token('active', "/groups")
+    assert_text deleted['uuid']
+  end
+
   test "trash page with search" do
     deleted = api_fixture('collections')['deleted_on_next_sweep']
     expired = api_fixture('collections')['unique_expired_collection']
