@@ -51,10 +51,8 @@ version_from_latest_tag() {
   #create new tag
   new_version_tag="$vnum1.$vnum2.$vnum3"
   git rev-parse HEAD >Changelog
-  echo "$[new_version_tag}"
-  
+  echo "${new_version_tag}"  
 }
-
 
 version_from_git() {
   # Generates a version number from the git log for the current working
