@@ -920,42 +920,47 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 	return nil
 }
 
-// EvalSymlinks follows symlinks within the output directory.  If the symlink
-// leads to a keep mount, copy the manifest text from the keep mount into the
-// output manifestText.  Ensure that whether symlinks are relative or absolute,
-// they must remain within the output directory.
+// UploadFile uploads files within the output directory, with special handling
+// for symlinks. If the symlink leads to a keep mount, copy the manifest text
+// from the keep mount into the output manifestText.  Ensure that whether
+// symlinks are relative or absolute, they must remain within the output
+// directory.
 //
 // Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
-func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manifestText string, symlinksToRemove []string, err error) {
-	var links []string
+func (runner *ContainerRunner) UploadOutputFile(
+	path string,
+	info os.FileInfo,
+	infoerr error,
+	binds []string,
+	walkUpload *WalkUpload,
+	relocateFrom string,
+	relocateTo string) (manifestText string, err error) {
 
-	defer func() {
-		if err != nil {
-			symlinksToRemove = append(symlinksToRemove, links...)
-		}
-	}()
+	if infoerr != nil {
+		return "", infoerr
+	}
 
+	relocated := relocateTo + path[len(relocateFrom):]
+
+	if info.Mode().IsRegular() {
+		return "", walkUpload.UploadFile(relocated, path)
+	}
+
+	// Not a regular file, try to follow symlinks
+	var nextlink = path
 	for n := 0; n < 32; n++ {
-		var info os.FileInfo
-		info, err = os.Lstat(path)
-		if err != nil {
-			return
-		}
-
 		if info.Mode()&os.ModeSymlink == 0 {
-			// Not a symlink, nothing to do.
+			// Not a symlink, don't do anything
 			return
 		}
-
-		// Remember symlink for cleanup later
-		links = append(links, path)
 
 		var readlinktgt string
-		readlinktgt, err = os.Readlink(path)
-		tgt := readlinktgt
+		readlinktgt, err = os.Readlink(nextlink)
 		if err != nil {
 			return
 		}
+
+		tgt := readlinktgt
 		if !strings.HasPrefix(tgt, "/") {
 			// Relative symlink, resolve it to host path
 			tgt = filepath.Join(filepath.Dir(path), tgt)
@@ -964,8 +969,6 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manife
 			// Absolute symlink to container output path, adjust it to host output path.
 			tgt = filepath.Join(runner.HostOutputDir, tgt[len(runner.Container.OutputPath):])
 		}
-
-		runner.CrunchLog.Printf("Resolve %q to %q", path, tgt)
 
 		// go through mounts and try reverse map to collection reference
 		for _, bind := range binds {
@@ -978,51 +981,56 @@ func (runner *ContainerRunner) EvalSymlinks(path string, binds []string) (manife
 				adjustedMount := mnt
 				adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
 
-				for _, l := range links {
-					// The chain of one or more symlinks
-					// terminates in this keep mount, so
-					// add them all to the manifest text at
-					// appropriate locations.
-					var m string
-					outputSuffix := l[len(runner.HostOutputDir):]
-					m, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
-					if err != nil {
-						return
-					}
-					manifestText = manifestText + m
-					symlinksToRemove = append(symlinksToRemove, l)
-				}
+				// Terminates in this keep mount, so add the
+				// manifest text at appropriate location.
+				outputSuffix := path[len(runner.HostOutputDir):]
+				manifestText, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
 				return
 			}
 		}
 
-		// If target is not a mount, it must be within the output
-		// directory, otherwise it is an error.
+		// If target is not a collection mount, it must be within the
+		// output directory, otherwise it is an error.
 		if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
 			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
 				path[len(runner.HostOutputDir):], readlinktgt)
 			return
 		}
 
-		// Update symlink to host FS
-		err = os.Remove(path)
+		info, err = os.Lstat(tgt)
 		if err != nil {
-			err = fmt.Errorf("Error removing symlink %q: %v", path, err)
+			// tgt doesn't exist or lacks permissions
+			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
+				path[len(runner.HostOutputDir):], readlinktgt)
 			return
 		}
 
-		err = os.Symlink(tgt, path)
-		if err != nil {
-			err = fmt.Errorf("Error updating symlink %q: %v", path, err)
+		if info.Mode().IsRegular() {
+			// Symlink leads to regular file.  Need to read from
+			// the target but upload it at the original path.
+			return "", walkUpload.UploadFile(relocated, tgt)
+		}
+
+		if info.Mode().IsDir() {
+			// Symlink leads to directory.  Walk() doesn't follow
+			// directory symlinks, so we walk the target directory
+			// instead.  Within the walk, file paths are relocated
+			// so they appear under the original symlink path.
+			err = filepath.Walk(tgt, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
+				var m string
+				m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr, binds, walkUpload, tgt, relocated)
+				if walkerr == nil {
+					manifestText = manifestText + m
+				}
+				return walkerr
+			})
 			return
 		}
 
-		// Target is within the output directory, so loop and check if
-		// it is also a symlink.
-		path = tgt
+		nextlink = tgt
 	}
 	// Got stuck in a loop or just a pathological number of links, give up.
-	err = fmt.Errorf("Too many symlinks.")
+	err = fmt.Errorf("Followed too many symlinks from path %q", path)
 	return
 }
 
@@ -1072,40 +1080,25 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if err != nil {
 		// Regular directory
 
-		symlinksToRemove := make(map[string]bool)
+		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
+		walkUpload := cw.BeginUpload(runner.HostOutputDir, runner.CrunchLog.Logger)
+
 		var m string
-		var srm []string
-		// Find symlinks to arv-mounted files & dirs.
 		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			m, srm, err = runner.EvalSymlinks(path, binds)
-			for _, r := range srm {
-				symlinksToRemove[r] = true
-			}
+			m, err = runner.UploadOutputFile(path, info, err, binds, walkUpload, "", "")
 			if err == nil {
 				manifestText = manifestText + m
 			}
 			return err
 		})
-		for l, _ := range symlinksToRemove {
-			err2 := os.Remove(l)
-			if err2 != nil {
-				if err == nil {
-					err = fmt.Errorf("Error removing symlink %q: %v", err2)
-				} else {
-					err = fmt.Errorf("%v\nError removing symlink %q: %v",
-						err, err2)
-				}
-			}
-		}
+
+		cw.EndUpload(walkUpload)
+
 		if err != nil {
-			return fmt.Errorf("While checking output symlinks: %v", err)
+			return fmt.Errorf("While uploading output files: %v", err)
 		}
 
-		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
-		m, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
+		m, err = cw.ManifestText()
 		manifestText = manifestText + m
 		if err != nil {
 			return fmt.Errorf("While uploading output files: %v", err)

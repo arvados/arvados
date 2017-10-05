@@ -1699,27 +1699,19 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 	os.Symlink("/etc/passwd", realTemp+"/p1")
 
 	// Relative outside output dir
-	os.Symlink("../..", realTemp+"/p2")
+	os.Symlink("..", realTemp+"/p2")
 
 	// Circular references
 	os.Symlink("p4", realTemp+"/p3")
 	os.Symlink("p5", realTemp+"/p4")
 	os.Symlink("p3", realTemp+"/p5")
 
-	symlinksToRemove := make(map[string]bool)
-	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
-		var srm []string
-		_, srm, err = cr.EvalSymlinks(realTemp+"/"+v, []string{})
-		c.Assert(err, NotNil)
-		for _, r := range srm {
-			symlinksToRemove[r] = true
-		}
-	}
-	c.Assert(len(symlinksToRemove), Equals, 5)
+	// Target doesn't exist
+	os.Symlink("p99", realTemp+"/p6")
 
-	c.Assert(map[string]bool{realTemp + "/" + "p1": true,
-		realTemp + "/" + "p2": true,
-		realTemp + "/" + "p3": true,
-		realTemp + "/" + "p4": true,
-		realTemp + "/" + "p5": true}, DeepEquals, symlinksToRemove)
+	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
+		info, err := os.Lstat(realTemp + "/" + v)
+		_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "")
+		c.Assert(err, NotNil)
+	}
 }
