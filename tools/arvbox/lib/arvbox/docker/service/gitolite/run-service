@@ -99,12 +99,17 @@ else
 fi
 
 cd /usr/src/arvados/services/api
-export RAILS_ENV=development
+
+if test -s /var/lib/arvados/api_rails_env ; then
+  RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+else
+  RAILS_ENV=development
+fi
 
 git_user_key=$(cat ~git/.ssh/id_rsa.pub)
 
 cat > config/arvados-clients.yml <<EOF
-development:
+$RAILS_ENV:
   gitolite_url: /var/lib/arvados/git/repositories/gitolite-admin.git
   gitolite_tmp: /var/lib/arvados/git
   arvados_api_host: $localip:${services[api]}
@@ -114,6 +119,6 @@ development:
 EOF
 
 while true ; do
-    bundle exec script/arvados-git-sync.rb development
+    bundle exec script/arvados-git-sync.rb $RAILS_ENV
     sleep 120
 done
