@@ -8,7 +8,6 @@
 # This is the timestamp about when we merged changed to include licenses
 # with Arvados packages.  We use it as a heuristic to add revisions for
 # older packages.
-build=$1
 LICENSE_PACKAGE_TS=20151208015500
 
 RAILS_PACKAGE_ITERATION=8
@@ -47,12 +46,11 @@ version_from_latest_tag() {
   #get number parts and increase last one by 1
   vnum1=${version_bits[0]}
   vnum2=${version_bits[1]}
-  vnum3=$build
+  vnum3=$BUILD_NUMBER
   #create new tag
-  echo "BUILDID: $build"
   new_version_tag="$vnum1.$vnum2.$vnum3"
   git rev-parse HEAD >Changelog
-  echo "ver version: ${new_version_tag}"  
+  echo "${new_version_tag}"  
 }
 
 version_from_git() {
