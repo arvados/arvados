@@ -76,8 +76,8 @@ exit_cleanly() {
 }
 
 COLUMNS=80
+echo "$WORKSPACE/build/run-library.sh $BUILD_NUMBER"
 . $WORKSPACE/build/run-library.sh $BUILD_NUMBER
-
 
 title "Start build packages"
 timer_reset
