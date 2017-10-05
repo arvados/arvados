@@ -48,9 +48,10 @@ version_from_latest_tag() {
   vnum2=${version_bits[2]}
   vnum3="$BUILD_NUMBER"
   #create new tag
+  echo "a ver el build num $BUILD_NUMBER"
   new_version_tag="$vnum1.$vnum2.$vnum3"
   git rev-parse HEAD >Changelog
-  echo "${new_version_tag}"  
+  echo "ver version: ${new_version_tag}"  
 }
 
 version_from_git() {
