@@ -940,6 +940,9 @@ func (runner *ContainerRunner) UploadOutputFile(
 		return "", infoerr
 	}
 
+	// When following symlinks, the source path may need to be logically
+	// relocated to some other path within the output collection.  Remove
+	// the relocateFrom prefix and replace it with relocateTo.
 	relocated := relocateTo + path[len(relocateFrom):]
 
 	if info.Mode().IsRegular() {
