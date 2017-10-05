@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-export BUILD_NUMBER
-
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build, test and (optionally) upload packages for one target
 
