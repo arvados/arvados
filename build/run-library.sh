@@ -46,10 +46,10 @@ version_from_latest_tag() {
   #get number parts and increase last one by 1
   vnum1=${version_bits[0]}
   vnum2=${version_bits[1]}
-  vnum3=$BUILD_NUMBER
+  vnum3=$1
   #create new tag
   echo "$vnum3"
-  echo "$BUILD_NUMBER"
+  echo "$1"
   new_version_tag="$vnum1.$vnum2.$vnum3"
   git rev-parse HEAD >Changelog
   echo "ver version: ${new_version_tag}"  
