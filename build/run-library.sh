@@ -44,6 +44,7 @@ version_from_latest_tag() {
   #replace . with space so can split into an array
   version_bits=(${latest_tag//./ })
   #get number parts and increase last one by 1
+  echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDD $BUILD_NUMBER DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   vnum1=${version_bits[0]}
   vnum2=${version_bits[1]}
   vnum3="5"
