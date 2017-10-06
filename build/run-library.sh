@@ -47,7 +47,6 @@ version_from_latest_tag() {
   vnum1=${version_bits[0]}
   vnum2=${version_bits[1]}
   vnum3=$(curl https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber)
-  vnum3=$((vnum3+1))
   #create new tag
   new_version_tag="$vnum1.$vnum2.$vnum3"
   git rev-parse HEAD >Changelog
