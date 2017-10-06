@@ -20,7 +20,7 @@ class TrashItemsController < ApplicationController
     trashed_items
 
     if @objects.any?
-      @objects = @objects.sort_by { |obj| obj.trash_at }.reverse
+      @objects = @objects.sort_by { |obj| obj.modified_at }.reverse
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: params[:partial],
                                 filters: @next_page_filters.to_json)
@@ -35,19 +35,19 @@ class TrashItemsController < ApplicationController
 
   def next_page_filters nextpage_operator
     next_page_filters = @filters.reject do |attr, op, val|
-      (attr == 'trash_at' and op == nextpage_operator) or
+      (attr == 'modified_at' and op == nextpage_operator) or
       (attr == 'uuid' and op == 'not in')
     end
 
     if @objects.any?
-      last_trash_at = @objects.last.trash_at
+      last_trash_at = @objects.last.modified_at
 
       last_uuids = []
       @objects.each do |obj|
         last_uuids << obj.uuid if obj.trash_at.eql?(last_trash_at)
       end
 
-      next_page_filters += [['trash_at', nextpage_operator, last_trash_at]]
+      next_page_filters += [['modified_at', nextpage_operator, last_trash_at]]
       next_page_filters += [['uuid', 'not in', last_uuids]]
     end
 
@@ -61,23 +61,62 @@ class TrashItemsController < ApplicationController
       query_on = Group
     end
 
+    last_mod_at = nil
+    last_uuids = []
+
     # API server index doesn't return manifest_text by default, but our
     # callers want it unless otherwise specified.
     @select ||= query_on.columns.map(&:name) - %w(id updated_at)
     limit = if params[:limit] then params[:limit].to_i else 100 end
     offset = if params[:offset] then params[:offset].to_i else 0 end
 
-    base_search = query_on.select(@select).include_trash(true).where(is_trashed: true)
-    base_search = base_search.filter(params[:filters]) if params[:filters]
+    @objects = []
+    while !@objects.any?
+      base_search = query_on.select(@select).include_trash(true)
+      base_search = base_search.filter(params[:filters]) if params[:filters]
 
-    if params[:search].andand.length.andand > 0
-      tags = Link.where(any: ['contains', params[:search]])
-      base_search = base_search.limit(limit).offset(offset)
-      @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
-                  base_search.where(any: ['contains', params[:search]])).
-                  uniq { |c| c.uuid }
-    else
-      @objects = base_search.limit(limit).offset(offset)
+      if !last_mod_at.nil?
+        base_search = base_search.filter([["modified_at", "<=", last_mod_at], ["uuid", "not in", last_uuids]])
+      end
+
+      if params[:search].andand.length.andand > 0
+        tags = Link.where(any: ['contains', params[:search]])
+        base_search = base_search.limit(limit).offset(offset)
+        @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+                    base_search.where(any: ['contains', params[:search]])).
+                   uniq { |c| c.uuid }
+      else
+        @objects = base_search.limit(limit).offset(offset)
+      end
+
+      if @objects.any?
+        owner_uuids = @objects.collect {|item| item.owner_uuid}.uniq
+        @owners = {}
+        @not_trashed = {}
+        Group.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
+          @owners[grp.uuid] = grp
+        end
+        User.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
+          @owners[grp.uuid] = grp
+        end
+
+        Group.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
+          @not_trashed[grp.uuid] = true
+        end
+        User.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
+          @not_trashed[grp.uuid] = true
+        end
+      else
+        return
+      end
+
+      last_mod_at = @objects.last.modified_at
+      last_uuids = []
+      @objects.each do |obj|
+        last_uuids << obj.uuid if obj.modified_at.eql?(last_mod_at)
+      end
+
+      @objects = @objects.select {|item| item.is_trashed || @not_trashed[item.owner_uuid].nil? }
     end
   end
 

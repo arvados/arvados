@@ -22,7 +22,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <% end %>
       </td>
       <td>
-        <%= link_to_if_arvados_object obj.owner_uuid, friendly_name: true %>
+        <%= link_to_if_arvados_object @owners[obj.owner_uuid], friendly_name: true %>
+        <% if @not_trashed[obj.owner_uuid].nil? %>
+          (trashed)
+        <% end %>
       </td>
       <td>
         <%= obj.uuid %><br /><%= obj.portable_data_hash %>
@@ -38,7 +41,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <% end %>
       </td>
       <td>
-        <%= render partial: 'untrash_item', locals: {object:obj} %>
+        <% if @not_trashed[obj.owner_uuid].nil? %>
+        <% else %>
+          <%= render partial: 'untrash_item', locals: {object:obj} %>
+        <% end %>
       </td>
     </tr>
 <% end %>
