@@ -69,82 +69,97 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type ClusterHealthResponse struct {
+	// "OK" if all needed services are OK, otherwise "ERROR".
+	Health string `json:"health"`
+
+	// An entry for each known health check of each known instance
+	// of each needed component: "instance of service S on node N
+	// reports health-check C is OK."
+	Checks map[string]CheckResult `json:"checks"`
+
+	// An entry for each service type: "service S is OK." This
+	// exposes problems that can't be expressed in Checks, like
+	// "service S is needed, but isn't configured to run
+	// anywhere."
+	Services map[string]ServiceHealth `json:"services"`
+}
+
+type CheckResult struct {
+	Health         string                 `json:"health"`
+	Error          string                 `json:"error,omitempty"`
+	HTTPStatusCode int                    `json:",omitempty"`
+	HTTPStatusText string                 `json:",omitempty"`
+	Response       map[string]interface{} `json:"response"`
+	ResponseTime   json.Number            `json:"responseTime"`
+}
+
 type ServiceHealth struct {
 	Health string `json:"health"`
 	N      int    `json:"n"`
 }
 
-type ClusterHealthResponse struct {
-	Health   string                   `json:"health"`
-	Checks   map[string]CheckResponse `json:"checks"`
-	Services map[string]ServiceHealth `json:"services"`
-}
-
-type CheckResponse struct {
-	Status       int         `json:"status"`
-	Health       string      `json:"health"`
-	Error        string      `json:"error,omitempty"`
-	ResponseTime json.Number `json:"responseTime"`
-}
-
-func (r *CheckResponse) OK() bool {
-	return r.Health == "OK" && r.Status == http.StatusOK
-}
-
 func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResponse {
 	resp := ClusterHealthResponse{
 		Health:   "OK",
-		Checks:   make(map[string]CheckResponse),
+		Checks:   make(map[string]CheckResult),
 		Services: make(map[string]ServiceHealth),
 	}
 
 	mtx := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	for node, nodeConfig := range cluster.SystemNodes {
-		for svc, addr := range map[string]string{
-			"keepstore": nodeConfig.Keepstore.Listen,
-		} {
+		for svc, addr := range nodeConfig.ServicePorts() {
+			// Ensure svc is listed in resp.Services.
+			mtx.Lock()
+			if _, ok := resp.Services[svc]; !ok {
+				resp.Services[svc] = ServiceHealth{Health: "ERROR"}
+			}
+			mtx.Unlock()
+
 			if addr == "" {
+				// svc is not expected on this node.
 				continue
 			}
+
 			wg.Add(1)
-			go func(node string) {
+			go func(node, svc, addr string) {
 				defer wg.Done()
-				var pingResp CheckResponse
+				var result CheckResult
 				url, err := agg.pingURL(node, addr)
 				if err != nil {
-					pingResp = CheckResponse{
+					result = CheckResult{
 						Health: "ERROR",
 						Error:  err.Error(),
 					}
 				} else {
-					pingResp = agg.ping(url, cluster)
+					result = agg.ping(url, cluster)
 				}
 
 				mtx.Lock()
 				defer mtx.Unlock()
-				resp.Checks[svc+"+"+url] = pingResp
-				svHealth := resp.Services[svc]
-				if pingResp.OK() {
-					svHealth.N++
+				resp.Checks[svc+"+"+url] = result
+				if result.Health == "OK" {
+					h := resp.Services[svc]
+					h.N++
+					h.Health = "OK"
+					resp.Services[svc] = h
 				} else {
 					resp.Health = "ERROR"
 				}
-				resp.Services[svc] = svHealth
-			}(node)
+			}(node, svc, addr)
 		}
 	}
 	wg.Wait()
 
-	for svc, svHealth := range resp.Services {
-		if svHealth.N > 0 {
-			svHealth.Health = "OK"
-		} else {
-			svHealth.Health = "ERROR"
+	// Report ERROR if a needed service didn't fail any checks
+	// merely because it isn't configured to run anywhere.
+	for _, sh := range resp.Services {
+		if sh.Health != "OK" {
+			resp.Health = "ERROR"
+			break
 		}
-		resp.Services[svc] = svHealth
 	}
-
 	return resp
 }
 
@@ -153,7 +168,7 @@ func (agg *Aggregator) pingURL(node, addr string) (string, error) {
 	return "http://" + node + ":" + port + "/_health/ping", err
 }
 
-func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckResponse) {
+func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckResult) {
 	t0 := time.Now()
 
 	var err error
@@ -161,6 +176,8 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 		result.ResponseTime = json.Number(fmt.Sprintf("%.6f", time.Since(t0).Seconds()))
 		if err != nil {
 			result.Health, result.Error = "ERROR", err.Error()
+		} else {
+			result.Health = "OK"
 		}
 	}()
 
@@ -170,26 +187,20 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 	}
 	req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
 
-	ctx, cancel := context.WithCancel(req.Context())
-	go func() {
-		select {
-		case <-time.After(time.Duration(agg.timeout)):
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
+	ctx, cancel := context.WithTimeout(req.Context(), time.Duration(agg.timeout))
+	defer cancel()
 	req = req.WithContext(ctx)
 	resp, err := agg.httpClient.Do(req)
 	if err != nil {
 		return
 	}
-	result.Status = resp.StatusCode
-	err = json.NewDecoder(resp.Body).Decode(&result)
+	result.HTTPStatusCode = resp.StatusCode
+	result.HTTPStatusText = resp.Status
+	err = json.NewDecoder(resp.Body).Decode(&result.Response)
 	if err != nil {
 		err = fmt.Errorf("cannot decode response: %s", err)
 		return
-	}
-	if resp.StatusCode != http.StatusOK {
+	} else if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP %d %s", resp.StatusCode, resp.Status)
 		return
 	}

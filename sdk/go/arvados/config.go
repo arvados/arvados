@@ -76,14 +76,30 @@ func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
 }
 
 type SystemNode struct {
-	Health    Health
-	Keepstore Keepstore
+	Health      SystemServiceInstance `json:"arvados-health"`
+	Keepproxy   SystemServiceInstance `json:"keepproxy"`
+	Keepstore   SystemServiceInstance `json:"keepstore"`
+	Keepweb     SystemServiceInstance `json:"keep-web"`
+	Nodemanager SystemServiceInstance `json:"arvados-node-manager"`
+	RailsAPI    SystemServiceInstance `json:"arvados-api-server"`
+	Websocket   SystemServiceInstance `json:"arvados-ws"`
+	Workbench   SystemServiceInstance `json:"arvados-workbench"`
 }
 
-type Health struct {
-	Listen string
+// ServicePorts returns the configured listening address (or "" if
+// disabled) for each service on the node.
+func (sn *SystemNode) ServicePorts() map[string]string {
+	return map[string]string{
+		"arvados-api-server":   sn.RailsAPI.Listen,
+		"arvados-node-manager": sn.Nodemanager.Listen,
+		"arvados-workbench":    sn.Workbench.Listen,
+		"arvados-ws":           sn.Websocket.Listen,
+		"keep-web":             sn.Keepweb.Listen,
+		"keepproxy":            sn.Keepproxy.Listen,
+		"keepstore":            sn.Keepstore.Listen,
+	}
 }
 
-type Keepstore struct {
+type SystemServiceInstance struct {
 	Listen string
 }
