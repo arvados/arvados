@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
    if (controller.andand.action_name == 'show') and params[:uuid]
-     check_trash = controller.model_class.include_trash(true).where(uuid: params[:uuid], is_trashed: true)
+     check_trash = controller.model_class.include_trash(true).where(uuid: params[:uuid])
      class_name = controller.model_class.to_s.underscore
      class_name_h = class_name.humanize(capitalize: false)
      req_item = safe_join([class_name_h, " with UUID ",
@@ -21,18 +21,27 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
     <p>The <%= req_item %> is in the trash.
 
-    <% object = check_trash.first %>
-    <% if object.editable? %>
-      <% msg = "Untrash '" + if !object.name.blank? then object.name else object.uuid end + "'?" %>
-      <%= link_to({action: 'untrash_items', selection: [object.uuid], controller: :trash_items}, remote: true, method: :post,
+      <% object = check_trash.first %>
+
+      <% if object.is_trashed
+         untrash_object = object
+         else
+       end %>
+
+        <% if untrash_object.editable? %>
+          <% msg = "Untrash '" + if !untrash_object.name.blank? then untrash_object.name else untrash_object.uuid end + "'?" %>
+          <%= link_to({action: 'untrash_items', selection: [untrash_object.uuid], controller: :trash_items}, remote: true, method: :post,
         title: "Untrash", style: 'cursor: pointer;') do %>
 
-      <% end %>
+          <% end %>
 
-      <%= form_tag url_for({action: 'untrash_items', controller: :trash_items}), {method: :post} %>
-      <%= hidden_field_tag :selection, [object.uuid] %>
-      <button type="submit">Click here to untrash this item <i class="fa fa-fw fa-recycle"></i></button>
-    <% end %>
+          <%= form_tag url_for({action: 'untrash_items', controller: :trash_items}), {method: :post} %>
+          <%= hidden_field_tag :selection, [untrash_object.uuid] %>
+          <button type="submit">Click here to untrash this item <i class="fa fa-fw fa-recycle"></i></button>
+        <% end %>
+      <% else %>
+        <% %>
+      <% end %>
     </p>
 
   <% else %>

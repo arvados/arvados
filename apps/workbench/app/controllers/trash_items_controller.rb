@@ -66,31 +66,33 @@ class TrashItemsController < ApplicationController
 
     # API server index doesn't return manifest_text by default, but our
     # callers want it unless otherwise specified.
-    @select ||= query_on.columns.map(&:name) - %w(id updated_at)
+    #@select ||= query_on.columns.map(&:name) - %w(id updated_at)
     limit = if params[:limit] then params[:limit].to_i else 100 end
     offset = if params[:offset] then params[:offset].to_i else 0 end
 
     @objects = []
     while !@objects.any?
-      base_search = query_on.select(@select).include_trash(true)
-      base_search = base_search.filter(params[:filters]) if params[:filters]
+      base_search = query_on
 
       if !last_mod_at.nil?
         base_search = base_search.filter([["modified_at", "<=", last_mod_at], ["uuid", "not in", last_uuids]])
       end
 
-      if params[:search].andand.length.andand > 0
-        tags = Link.where(any: ['contains', params[:search]])
-        base_search = base_search.limit(limit).offset(offset)
-        @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
-                    base_search.where(any: ['contains', params[:search]])).
-                   uniq { |c| c.uuid }
+      base_search = base_search.include_trash(true).limit(limit).offset(offset)
+
+      if params[:filters].andand.length.andand > 0
+        tags = Link.filter(params[:filters])
+        tagged = []
+        if tags.results.length > 0
+          tagged = query_on.include_trash(true).where(uuid: tags.collect(&:head_uuid))
+        end
+        @objects = (tagged | base_search.filter(params[:filters])).uniq(&:uuid)
       else
-        @objects = base_search.limit(limit).offset(offset)
+        @objects = base_search.where(is_trashed: true)
       end
 
       if @objects.any?
-        owner_uuids = @objects.collect {|item| item.owner_uuid}.uniq
+        owner_uuids = @objects.collect(&:owner_uuid).uniq
         @owners = {}
         @not_trashed = {}
         Group.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
@@ -98,12 +100,9 @@ class TrashItemsController < ApplicationController
         end
         User.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
           @owners[grp.uuid] = grp
-        end
-
-        Group.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
           @not_trashed[grp.uuid] = true
         end
-        User.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
+        Group.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
           @not_trashed[grp.uuid] = true
         end
       else
