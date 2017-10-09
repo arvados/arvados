@@ -138,7 +138,7 @@ package_go_binary() {
         ts="$(timestamp_from_git)"
         if [[ "$ts" -gt "$timestamp" ]]; then
             version=$(version_from_latest_tag)
-#            timestamp="$ts"
+            timestamp="$ts"
         fi
     done
 
