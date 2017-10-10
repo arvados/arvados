@@ -201,7 +201,7 @@ debug_echo -e "\nPerl packages\n"
 
 if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
   cd "$WORKSPACE/sdk/perl"
-  libarvados_perl_version="$(version_from_latest_tag)"
+  libarvados_perl_version="$(version_from_git)"
 
   cd $WORKSPACE/packages/$TARGET
   test_package_presence libarvados-perl "$libarvados_perl_version"
@@ -219,7 +219,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
         fpm_build install/lib/=/usr/share libarvados-perl \
-        "Curoverse, Inc." dir "$(version_from_latest_tag)" install/man/=/usr/share/man \
+        "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
   fi
@@ -261,7 +261,7 @@ handle_python_package
 (
     cd "$WORKSPACE"
     COMMIT_HASH=$(format_last_commit_here "%H")
-    arvados_src_version="$(version_from_latest_tag)"
+    arvados_src_version="$(version_from_git)"
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence arvados-src $arvados_src_version src ""
@@ -279,7 +279,7 @@ handle_python_package
       echo "$COMMIT_HASH" >git-commit.version
 
       cd "$SRC_BUILD_DIR"
-      PKG_VERSION=$(version_from_latest_tag)
+      PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
       fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
