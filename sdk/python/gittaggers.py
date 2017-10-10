@@ -23,11 +23,11 @@ class EggInfoFromGit(egg_info):
             self.tag_build = self.git_timestamp_tag()
         return egg_info.tags(self)
     """
-    
+
     def git_latest_tag(self):
         gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0'])
-        return gitinfo
+        return str(gitinfo)
 
     def tags(self):
         if self.tag_build is None:
