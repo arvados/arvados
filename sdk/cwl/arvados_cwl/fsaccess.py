@@ -81,14 +81,14 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def glob(self, pattern):
         collection, rest = self.get_collection(pattern)
-        if collection and not rest:
+        if collection is not None and not rest:
             return [pattern]
         patternsegments = rest.split("/")
         return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
 
     def open(self, fn, mode):
         collection, rest = self.get_collection(fn)
-        if collection:
+        if collection is not None:
             return collection.open(rest, mode)
         else:
             return super(CollectionFsAccess, self).open(self._abs(fn), mode)
@@ -105,7 +105,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def isfile(self, fn):  # type: (unicode) -> bool
         collection, rest = self.get_collection(fn)
-        if collection:
+        if collection is not None:
             if rest:
                 return isinstance(collection.find(rest), arvados.arvfile.ArvadosFile)
             else:
@@ -115,7 +115,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def isdir(self, fn):  # type: (unicode) -> bool
         collection, rest = self.get_collection(fn)
-        if collection:
+        if collection is not None:
             if rest:
                 return isinstance(collection.find(rest), arvados.collection.RichCollectionBase)
             else:
@@ -125,7 +125,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def listdir(self, fn):  # type: (unicode) -> List[unicode]
         collection, rest = self.get_collection(fn)
-        if collection:
+        if collection is not None:
             if rest:
                 dir = collection.find(rest)
             else:
@@ -147,7 +147,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if path.startswith("$(task.tmpdir)") or path.startswith("$(task.outdir)"):
             return path
         collection, rest = self.get_collection(path)
-        if collection:
+        if collection is not None:
             return path
         else:
             return os.path.realpath(path)
