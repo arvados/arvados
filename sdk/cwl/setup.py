@@ -57,7 +57,7 @@ setup(name='arvados-cwl-runner',
           'ruamel.yaml==0.13.7',
           'arvados-python-client>=0.1.20170526013812',
           'setuptools',
-          'ciso8601',
+          'ciso8601 >=1.0.0, <=1.0.4',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
