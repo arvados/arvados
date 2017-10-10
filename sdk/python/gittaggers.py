@@ -12,7 +12,7 @@ class EggInfoFromGit(egg_info):
     If a build tag has already been set (e.g., "egg_info -b", building
     from source package), leave it alone.
     """
-    def git_timestamp_tag(self):
+    """def git_timestamp_tag(self):
         gitinfo = subprocess.check_output(
             ['git', 'log', '--first-parent', '--max-count=1',
              '--format=format:%ct', '.']).strip()
@@ -21,4 +21,15 @@ class EggInfoFromGit(egg_info):
     def tags(self):
         if self.tag_build is None:
             self.tag_build = self.git_timestamp_tag()
+        return egg_info.tags(self)
+    """
+    
+    def git_latest_tag(self):
+        gitinfo = subprocess.check_output(
+            ['git', 'describe --abbrev=0'])
+        return gitinfo
+
+    def tags(self):
+        if self.tag_build is None:
+            self.tag_build = self.git_latest_tag()
         return egg_info.tags(self)
