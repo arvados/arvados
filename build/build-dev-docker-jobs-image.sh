@@ -61,8 +61,8 @@ fi
 
 . build/run-library.sh
 
-python_sdk_ts=$(cd sdk/python && version_from_latest_tag)
-cwl_runner_ts=$(cd sdk/cwl && version_from_latest_tag)
+python_sdk_ts=$(cd sdk/python && timestamp_from_git)
+cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
 
 if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
     gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
