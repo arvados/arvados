@@ -37,7 +37,7 @@ class EggInfoFromGit(egg_info):
     """
     def git_latest_tag(self):
         gitinfo = subprocess.check_output(
-            ['git', 'describe --abbrev=0'])
+            ['git', 'describe', '--abbrev=0'])
         return gitinfo
 
     def tags(self):
