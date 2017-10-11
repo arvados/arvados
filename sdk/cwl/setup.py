@@ -22,8 +22,8 @@ except ImportError:
 versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
 try:
     gitinfo = subprocess.check_output(
-        ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%H', gittaggers.choose_version_from()]).strip()
+            ['git', 'describe', '--abbrev=0'])
+        return str(gitinfo)
     with open(versionfile, "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
