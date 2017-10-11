@@ -65,9 +65,9 @@ python_sdk_ts=$(cd sdk/python && timestamp_from_git)
 cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
 
 if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
+    gittag=$(git describe --abbrev=0 sdk/python)
 else
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
+    gittag=$(git describe --abbrev=0 sdk/cwl)
 fi
 
 docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$gittag "$WORKSPACE/sdk"
