@@ -26,7 +26,7 @@ class EggInfoFromGit(egg_info):
 
     def git_latest_tag(self):
         gitinfo = subprocess.check_output(
-            ['git', 'describe', '--abbrev=0'])
+            ['git', 'describe', '--abbrev=0'], 'curl --silent https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber')
         return str(gitinfo)
 
     def tags(self):
