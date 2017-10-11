@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
@@ -150,6 +151,8 @@ type collectionFS struct {
 	collection *Collection
 	client     *Client
 	kc         keepClient
+	sizes      map[string]int64
+	sizesOnce  sync.Once
 }
 
 // FileSystem returns an http.FileSystem for the collection.
@@ -225,15 +228,14 @@ func (c *collectionFS) Open(name string) (http.File, error) {
 // fileSizes returns a map of files that can be opened. Each key
 // starts with "./".
 func (c *collectionFS) fileSizes() map[string]int64 {
-	var sizes map[string]int64
-	m := manifest.Manifest{Text: c.collection.ManifestText}
-	for ms := range m.StreamIter() {
-		for _, fss := range ms.FileStreamSegments {
-			if sizes == nil {
-				sizes = map[string]int64{}
+	c.sizesOnce.Do(func() {
+		c.sizes = map[string]int64{}
+		m := manifest.Manifest{Text: c.collection.ManifestText}
+		for ms := range m.StreamIter() {
+			for _, fss := range ms.FileStreamSegments {
+				c.sizes[ms.StreamName+"/"+fss.Name] += int64(fss.SegLen)
 			}
-			sizes[ms.StreamName+"/"+fss.Name] += int64(fss.SegLen)
 		}
-	}
-	return sizes
+	})
+	return c.sizes
 }

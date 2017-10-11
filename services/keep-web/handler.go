@@ -24,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"golang.org/x/net/webdav"
 )
 
 type handler struct {
@@ -31,6 +32,7 @@ type handler struct {
 	clientPool    *arvadosclient.ClientPool
 	setupOnce     sync.Once
 	healthHandler http.Handler
+	webdavLS      webdav.LockSystem
 }
 
 // parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
@@ -79,6 +81,8 @@ func (h *handler) setup() {
 		Token:  h.Config.ManagementToken,
 		Prefix: "/_health/",
 	}
+
+	h.webdavLS = webdav.NewMemLS()
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +93,20 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(status)
 }
+
+var (
+	webdavMethod = map[string]bool{
+		"OPTIONS":  true,
+		"PROPFIND": true,
+		"LOCK":     true,
+		"UNLOCK":   true,
+	}
+	fsMethod = map[string]bool{
+		"GET":  true,
+		"HEAD": true,
+		"POST": true,
+	}
+)
 
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
@@ -123,21 +141,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "OPTIONS" {
-		method := r.Header.Get("Access-Control-Request-Method")
-		if method != "GET" && method != "POST" {
+	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
+		if !fsMethod[method] && !webdavMethod[method] {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND, LOCK, UNLOCK")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
 		return
 	}
 
-	if r.Method != "GET" && r.Method != "POST" {
+	if !fsMethod[r.Method] && !webdavMethod[r.Method] {
 		statusCode, statusText = http.StatusMethodNotAllowed, r.Method
 		return
 	}
@@ -337,6 +354,23 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
 	}, kc)
+	if webdavMethod[r.Method] {
+		h := webdav.Handler{
+			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),
+			FileSystem: &webdavFS{httpfs: fs},
+			LockSystem: h.webdavLS,
+			Logger: func(_ *http.Request, err error) {
+				if os.IsNotExist(err) {
+					statusCode, statusText = http.StatusNotFound, err.Error()
+				} else if err != nil {
+					statusCode, statusText = http.StatusInternalServerError, err.Error()
+				}
+			},
+		}
+		h.ServeHTTP(w, r)
+		return
+	}
+
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
 		// Requested non-existent path
