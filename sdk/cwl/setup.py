@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 import setuptools.command.egg_info as egg_info_cmd
+import requests
 
 from setuptools import setup, find_packages
 
