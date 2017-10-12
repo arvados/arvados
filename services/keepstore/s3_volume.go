@@ -934,7 +934,14 @@ func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType st
 }
 
 func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
-	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.TickOutBytes), int64(len(data)), contType, perm, options)
+        var reader io.ReadCloser
+	// goamz will only send Content-Length: 0 when io.Reader is nil due to net.http.Request.ContentLength
+	// behavior. otherwise, Content-Length header is omitted which will cause some S3-like services (such
+	// as Ceph RadosGW) to fail to create empty objects
+        if data != nil {
+               reader = NewCountingReader(bytes.NewBuffer(data), b.stats.TickOutBytes)
+	}
+	err := b.Bucket.PutReader(path, reader, int64(len(data)), contType, perm, options)
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
 	b.stats.TickErr(err)
 	return err
