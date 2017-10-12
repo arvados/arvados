@@ -6,7 +6,6 @@ from setuptools.command.egg_info import egg_info
 import subprocess
 import time
 import os
-import requests
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 
@@ -37,10 +36,8 @@ class EggInfoFromGit(egg_info):
         return time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo)))
     """
     def git_latest_tag(self):
-        buildnumber = requests.get ('https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber')
         gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0'])
-        gitinfo = gitinfo + '-' + str(buildnumber.json())
         return str(gitinfo)
 
     def tags(self):

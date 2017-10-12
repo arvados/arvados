@@ -5,7 +5,6 @@
 from setuptools.command.egg_info import egg_info
 import subprocess
 import time
-import requests
 
 class EggInfoFromGit(egg_info):
     """Tag the build with git commit timestamp.
@@ -26,10 +25,8 @@ class EggInfoFromGit(egg_info):
     """
 
     def git_latest_tag(self):
-        buildnumber = requests.get ('https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber')
         gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0'])
-        gitinfo = gitinfo + '-' + str(buildnumber.json())
         return str(gitinfo)
 
     def tags(self):
