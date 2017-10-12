@@ -82,7 +82,7 @@ func (h *handler) setup() {
 		Prefix: "/_health/",
 	}
 
-	h.webdavLS = webdav.NewMemLS()
+	h.webdavLS = &noLockSystem{}
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
