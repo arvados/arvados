@@ -5,12 +5,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -550,7 +552,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			expect: nil,
 		},
 	} {
-		c.Logf("%q => %q", trial.uri, trial.expect)
+		c.Logf("HTML: %q => %q", trial.uri, trial.expect)
 		resp := httptest.NewRecorder()
 		u := mustParseURL("//" + trial.uri)
 		req := &http.Request{
@@ -586,6 +588,42 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="`+e+`".*`)
 			}
 			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`)
+		}
+
+		c.Logf("WebDAV: %q => %q", trial.uri, trial.expect)
+		req = &http.Request{
+			Method:     "OPTIONS",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header:     trial.header,
+			Body:       ioutil.NopCloser(&bytes.Buffer{}),
+		}
+		resp = httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		if trial.expect == nil {
+			c.Check(resp.Code, check.Equals, http.StatusNotFound)
+		} else {
+			c.Check(resp.Code, check.Equals, http.StatusOK)
+		}
+
+		req = &http.Request{
+			Method:     "PROPFIND",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header:     trial.header,
+			Body:       ioutil.NopCloser(&bytes.Buffer{}),
+		}
+		resp = httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		if trial.expect == nil {
+			c.Check(resp.Code, check.Equals, http.StatusNotFound)
+		} else {
+			c.Check(resp.Code, check.Equals, http.StatusMultiStatus)
+			for _, e := range trial.expect {
+				c.Check(resp.Body.String(), check.Matches, `(?ms).*<D:href>`+filepath.Join(u.Path, e)+`</D:href>.*`)
+			}
 		}
 	}
 }

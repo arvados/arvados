@@ -101,7 +101,7 @@ var (
 		"OPTIONS":  true,
 		"PROPFIND": true,
 	}
-	fsMethod = map[string]bool{
+	browserMethod = map[string]bool{
 		"GET":  true,
 		"HEAD": true,
 		"POST": true,
@@ -142,7 +142,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
-		if !fsMethod[method] && !webdavMethod[method] {
+		if !browserMethod[method] && !webdavMethod[method] {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
@@ -154,7 +154,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !fsMethod[r.Method] && !webdavMethod[r.Method] {
+	if !browserMethod[r.Method] && !webdavMethod[r.Method] {
 		statusCode, statusText = http.StatusMethodNotAllowed, r.Method
 		return
 	}
@@ -239,7 +239,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// * The token isn't embedded in the URL, so we don't
 		//   need to worry about bookmarks and copy/paste.
 		tokens = append(tokens, formToken)
-	} else if formToken != "" {
+	} else if formToken != "" && browserMethod[r.Method] {
 		// The client provided an explicit token in the query
 		// string, or a form in POST body. We must put the
 		// token in an HttpOnly cookie, and redirect to the
