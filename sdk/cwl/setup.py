@@ -21,8 +21,12 @@ except ImportError:
 
 versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
 try:
+    buildnumber = requests.get ('https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber')
     gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0'])
+    gitinfo = gitinfo + '-' + str(buildnumber.json())
+    return str(gitinfo)
+    
     with open(versionfile, "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
