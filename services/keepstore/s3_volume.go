@@ -420,7 +420,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 		if err != nil {
 			return
 		}
-		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+		err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", s3ACL, s3.Options{})
 	}()
 	select {
 	case <-ctx.Done():
@@ -452,7 +452,7 @@ func (v *S3Volume) Touch(loc string) error {
 	} else if err != nil {
 		return err
 	}
-	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", s3ACL, s3.Options{})
 	return v.translateError(err)
 }
 
@@ -466,7 +466,7 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// The data object X exists, but recent/X is missing.
-		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+		err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", s3ACL, s3.Options{})
 		if err != nil {
 			log.Printf("error: creating %q: %s", "recent/"+loc, err)
 			return zeroTime, v.translateError(err)
@@ -648,7 +648,7 @@ func (v *S3Volume) Untrash(loc string) error {
 	if err != nil {
 		return err
 	}
-	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", s3ACL, s3.Options{})
 	return v.translateError(err)
 }
 
@@ -927,14 +927,18 @@ func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Respons
 }
 
 func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
-	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.TickOutBytes), length, contType, perm, options)
-	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
-	b.stats.TickErr(err)
-	return err
-}
-
-func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
-	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.TickOutBytes), int64(len(data)), contType, perm, options)
+	if length == 0 {
+		// goamz will only send Content-Length: 0 when reader
+		// is nil due to net.http.Request.ContentLength
+		// behavior.  Otherwise, Content-Length header is
+		// omitted which will cause some S3 services
+		// (including AWS and Ceph RadosGW) to fail to create
+		// empty objects.
+		r = nil
+	} else {
+		r = NewCountingReader(r, b.stats.TickOutBytes)
+	}
+	err := b.Bucket.PutReader(path, r, length, contType, perm, options)
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
 	b.stats.TickErr(err)
 	return err
