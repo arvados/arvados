@@ -82,6 +82,8 @@ func (h *handler) setup() {
 		Prefix: "/_health/",
 	}
 
+	// Even though we don't accept LOCK requests, every webdav
+	// handler must have a non-nil LockSystem.
 	h.webdavLS = &noLockSystem{}
 }
 
@@ -98,8 +100,6 @@ var (
 	webdavMethod = map[string]bool{
 		"OPTIONS":  true,
 		"PROPFIND": true,
-		"LOCK":     true,
-		"UNLOCK":   true,
 	}
 	fsMethod = map[string]bool{
 		"GET":  true,
@@ -147,7 +147,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND, LOCK, UNLOCK")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK

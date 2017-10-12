@@ -87,6 +87,10 @@ func (f *webdavFile) Write([]byte) (int, error) {
 // However, it does also permit impossible operations, like acquiring
 // conflicting locks and releasing non-existent locks.  This might
 // confuse some clients if they try to probe for correctness.
+//
+// Currently this is a moot point: the LOCK and UNLOCK methods are not
+// accepted by keep-web, so it suffices to implement the
+// webdav.LockSystem interface.
 type noLockSystem struct{}
 
 func (*noLockSystem) Confirm(time.Time, string, string, ...webdav.Condition) (func(), error) {
