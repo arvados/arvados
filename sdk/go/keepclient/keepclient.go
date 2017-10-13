@@ -434,6 +434,10 @@ func (kc *KeepClient) cache() *BlockCache {
 	}
 }
 
+func (kc *KeepClient) ClearBlockCache() {
+	kc.cache().Clear()
+}
+
 var (
 	// There are four global http.Client objects for the four
 	// possible permutations of TLS behavior (verify/skip-verify)

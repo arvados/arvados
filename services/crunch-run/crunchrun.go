@@ -55,6 +55,7 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
+	ClearBlockCache()
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -265,7 +266,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.ContainerConfig.Image = imageID
 
-	keepclient.DefaultBlockCache.Clear()
+	runner.Kc.ClearBlockCache()
 
 	return nil
 }
@@ -1452,6 +1453,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s: %v", containerId, err)
 	}
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
 	var docker *dockerclient.Client

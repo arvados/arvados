@@ -30,7 +30,7 @@ const defaultMaxBlocks = 4
 // there are no more than MaxBlocks left.
 func (c *BlockCache) Sweep() {
 	max := c.MaxBlocks
-	if max < defaultMaxBlocks {
+	if max == 0 {
 		max = defaultMaxBlocks
 	}
 	c.mtx.Lock()
