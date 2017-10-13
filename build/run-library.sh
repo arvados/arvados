@@ -388,7 +388,7 @@ fpm_build () {
   # be listed in that sectiontoo, so we need to add this parameter to properly
   # remove lingering dirs.
   if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories' '--force')
+    COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
