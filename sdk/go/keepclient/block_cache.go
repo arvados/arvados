@@ -5,7 +5,8 @@
 package keepclient
 
 import (
-	"io/ioutil"
+	"bytes"
+	"io"
 	"sort"
 	"sync"
 	"time"
@@ -65,16 +66,16 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 		c.cache[cacheKey] = b
 		go func() {
 			rdr, _, _, err := kc.Get(locator)
-			var data []byte
+			data := bytes.NewBuffer(make([]byte, 0, BLOCKSIZE))
 			if err == nil {
-				data, err = ioutil.ReadAll(rdr)
+				_, err = io.Copy(data, rdr)
 				err2 := rdr.Close()
 				if err == nil {
 					err = err2
 				}
 			}
 			c.mtx.Lock()
-			b.data, b.err = data, err
+			b.data, b.err = data.Bytes(), err
 			c.mtx.Unlock()
 			close(b.fetched)
 			go c.Sweep()
@@ -94,6 +95,12 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 
 func (c *BlockCache) setup() {
 	c.cache = make(map[string]*cacheBlock)
+}
+
+func (c *BlockCache) Clear() {
+	c.mtx.Lock()
+	c.setup()
+	c.mtx.Unlock()
 }
 
 type timeSlice []time.Time

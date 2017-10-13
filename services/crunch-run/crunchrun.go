@@ -11,6 +11,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/lib/crunchstat"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,17 +24,13 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
-
-	"git.curoverse.com/arvados.git/lib/crunchstat"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
@@ -263,6 +264,8 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	}
 
 	runner.ContainerConfig.Image = imageID
+
+	keepclient.DefaultBlockCache.Clear()
 
 	return nil
 }
@@ -1429,6 +1432,7 @@ func main() {
 	networkMode := flag.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
+	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1472,9 +1476,21 @@ func main() {
 		cr.expectCgroupParent = p
 	}
 
-	err = cr.Run()
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
+	runerr := cr.Run()
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+		f.Close()
 	}
 
+	if runerr != nil {
+		log.Fatalf("%s: %v", containerId, runerr)
+	}
 }
