@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -388,7 +388,7 @@ fpm_build () {
   # be listed in that sectiontoo, so we need to add this parameter to properly
   # remove lingering dirs.
   if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories --rpm-use-file-permissions')
+    COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
