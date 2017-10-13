@@ -387,7 +387,7 @@ fpm_build () {
   # section in the generated SPEC files. To remove DIRECTORIES, they need to
   # be listed in that sectiontoo, so we need to add this parameter to properly
   # remove lingering dirs.
-  if [[ rpm = "$FORMAT" ]]; then
+  if [[ rpm = "$FORMAT" ] && ["$PACKAGE_NAME"!= "python33-python-six"*]]; then
     COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
