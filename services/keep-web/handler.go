@@ -357,7 +357,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if webdavMethod[r.Method] {
 		h := webdav.Handler{
 			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),
-			FileSystem: &webdavFS{httpfs: fs},
+			FileSystem: &webdavFS{collfs: fs},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
 				if os.IsNotExist(err) {
