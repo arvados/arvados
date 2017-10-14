@@ -75,7 +75,7 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 				}
 			}
 			c.mtx.Lock()
-			b.data, b.err = data.Bytes(), err
+			b.data, b.err = data, err
 			c.mtx.Unlock()
 			close(b.fetched)
 			go c.Sweep()
