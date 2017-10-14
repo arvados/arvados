@@ -5,7 +5,6 @@
 package keepclient
 
 import (
-	"bytes"
 	"io"
 	"sort"
 	"sync"
@@ -65,10 +64,11 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 		}
 		c.cache[cacheKey] = b
 		go func() {
-			rdr, _, _, err := kc.Get(locator)
-			data := bytes.NewBuffer(make([]byte, 0, BLOCKSIZE))
+			rdr, size, _, err := kc.Get(locator)
+			var data []byte
 			if err == nil {
-				_, err = io.Copy(data, rdr)
+				data := make([]byte, size, BLOCKSIZE)
+				_, err = io.ReadFull(rdr, data)
 				err2 := rdr.Close()
 				if err == nil {
 					err = err2
