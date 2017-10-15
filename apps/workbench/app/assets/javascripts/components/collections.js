@@ -171,3 +171,37 @@ window.CollectionsSearch = {
         ])
     },
 }
+
+window.CollectionBrowse = {
+    oninit: function(vnode) {
+        vnode.state.dirXML = m.stream()
+        m.request(vnode.attrs.keepWebUrl, {
+            method: 'PROPFIND',
+            headers: {
+                authorization: 'OAuth2 '+window.defaultSession.token,
+            },
+            extract: function(xhr) {
+                return xhr.responseXML
+            },
+        }).then(vnode.state.dirXML)
+        vnode.state.dirXML.map(function(x) { window.debugXML = x })
+    },
+    view: function(vnode) {
+        return m('div', [
+            m('ul', [
+                m('li', 'collection: ', vnode.attrs['collectionId']),
+                m('li', 'url: ', vnode.attrs['keepWebUrl']),
+            ]),
+            vnode.state.dirXML() && m('ul', [
+                Array.prototype.map.call(
+                    vnode.state.dirXML().getElementsByTagNameNS(
+                        vnode.state.dirXML().children[0].namespaceURI,
+                        'response'), 
+                    function(resp) {
+                        return m('li', resp.children[0].innerHTML)
+                    }
+                ),
+            ]),
+        ])
+    },
+}

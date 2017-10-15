@@ -1,0 +1,5 @@
+<!-- Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 -->
+
+<div data-mount-mithril="CollectionBrowse" data-collection-id="<%= @object.uuid %>" data-keep-web-url="<%=h(Rails.configuration.keep_web_download_url % {uuid_or_pdh: @object.uuid.gsub('+','-')})%>"></div>

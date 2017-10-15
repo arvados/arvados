@@ -24,7 +24,7 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    panes = %w(Files Upload Tags Provenance_graph Used_by Advanced)
+    panes = %w(Browse Files Upload Tags Provenance_graph Used_by Advanced)
     panes = panes - %w(Upload) unless (@object.editable? rescue false)
     panes
   end
@@ -169,6 +169,7 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
+    return super if params['tab_pane'] == 'Browse'
 
     @logs = []
 
