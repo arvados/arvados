@@ -529,6 +529,18 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 2,
 		},
 		{
+			uri:     "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken,
+			header:  nil,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID,
+			header:  authHeader,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 1,
+		},
+		{
 			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
@@ -571,7 +583,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 				Host:       u.Host,
 				URL:        u,
 				RequestURI: u.RequestURI(),
-				Header:     http.Header{},
+				Header:     trial.header,
 			}
 			cookies = append(cookies, (&http.Response{Header: resp.Header()}).Cookies()...)
 			for _, c := range cookies {

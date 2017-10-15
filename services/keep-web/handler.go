@@ -346,7 +346,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basename := targetPath[len(targetPath)-1]
+	var basename string
+	if len(targetPath) > 0 {
+		basename = targetPath[len(targetPath)-1]
+	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
 	fs := collection.FileSystem(&arvados.Client{
@@ -386,7 +389,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// ".../dirname/". This way, relative links in the
 		// listing for "dirname" can always be "fnm", never
 		// "dirname/fnm".
-		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
+		h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 	} else if stat.IsDir() {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, stripParts)
 	} else {
@@ -547,16 +550,16 @@ func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename
 }
 
 func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, location string, credentialsOK bool) {
-	if !credentialsOK {
-		// It is not safe to copy the provided token
-		// into a cookie unless the current vhost
-		// (origin) serves only a single collection or
-		// we are in TrustAllContent mode.
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	if formToken := r.FormValue("api_token"); formToken != "" {
+		if !credentialsOK {
+			// It is not safe to copy the provided token
+			// into a cookie unless the current vhost
+			// (origin) serves only a single collection or
+			// we are in TrustAllContent mode.
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		// The HttpOnly flag is necessary to prevent
 		// JavaScript code (included in, or loaded by, a page
 		// in the collection being served) from employing the
@@ -568,7 +571,6 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		// bar, and in the case of a POST request to avoid
 		// raising warnings when the user refreshes the
 		// resulting page.
-
 		http.SetCookie(w, &http.Cookie{
 			Name:     "arvados_api_token",
 			Value:    auth.EncodeTokenCookie([]byte(formToken)),
