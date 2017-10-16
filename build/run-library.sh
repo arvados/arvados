@@ -466,15 +466,14 @@ fpm_build () {
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done
-
-  if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=('--exclude opt/rh/python33') 
-  fi
   
   for i in "${fpm_exclude[@]}"; do
     COMMAND_ARR+=('--exclude' "$i")
   done
 
+  if [[ rpm = "$FORMAT" ]]; then
+    COMMAND_ARR+=("--exclude opt/rh/python33") 
+  fi
   # Append remaining function arguments directly to fpm's command line.
   for i; do
     COMMAND_ARR+=("$i")
