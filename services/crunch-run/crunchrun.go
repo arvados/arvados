@@ -936,6 +936,10 @@ func (runner *ContainerRunner) UploadOutputFile(
 	relocateFrom string,
 	relocateTo string) (manifestText string, err error) {
 
+	if info.Mode().IsDir() {
+		return
+	}
+
 	if infoerr != nil {
 		return "", infoerr
 	}
@@ -945,25 +949,23 @@ func (runner *ContainerRunner) UploadOutputFile(
 	// the relocateFrom prefix and replace it with relocateTo.
 	relocated := relocateTo + path[len(relocateFrom):]
 
-	if info.Mode().IsRegular() {
-		return "", walkUpload.UploadFile(relocated, path)
-	}
-
-	// Not a regular file, try to follow symlinks
-	var nextlink = path
-	for n := 0; n < 32; n++ {
-		if info.Mode()&os.ModeSymlink == 0 {
-			// Not a symlink, don't do anything
+	// Follow symlinks if necessary
+	tgt := path
+	nextlink := path
+	readlinktgt := ""
+	for followed := 0; info.Mode()&os.ModeSymlink != 0; followed++ {
+		if followed >= 32 {
+			// Got stuck in a loop or just a pathological number of links, give up.
+			err = fmt.Errorf("Followed too many symlinks from path %q", path)
 			return
 		}
 
-		var readlinktgt string
 		readlinktgt, err = os.Readlink(nextlink)
 		if err != nil {
 			return
 		}
 
-		tgt := readlinktgt
+		tgt = readlinktgt
 		if !strings.HasPrefix(tgt, "/") {
 			// Relative symlink, resolve it to host path
 			tgt = filepath.Join(filepath.Dir(path), tgt)
@@ -972,38 +974,17 @@ func (runner *ContainerRunner) UploadOutputFile(
 			// Absolute symlink to container output path, adjust it to host output path.
 			tgt = filepath.Join(runner.HostOutputDir, tgt[len(runner.Container.OutputPath):])
 		}
-
-		// go through mounts and try reverse map to collection reference
-		for _, bind := range binds {
-			mnt := runner.Container.Mounts[bind]
-			if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
-				// get path relative to bind
-				targetSuffix := tgt[len(bind):]
-
-				// Copy mount and adjust the path to add path relative to the bind
-				adjustedMount := mnt
-				adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
-
-				// Terminates in this keep mount, so add the
-				// manifest text at appropriate location.
-				outputSuffix := path[len(runner.HostOutputDir):]
-				manifestText, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
-				return
-			}
-		}
-
-		// If target is not a collection mount, it must be within the
-		// output directory, otherwise it is an error.
 		if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
-			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
-				path[len(runner.HostOutputDir):], readlinktgt)
-			return
+			// After dereferencing, symlink target must either be
+			// within output directory, or must point to a
+			// collection mount.
+			break
 		}
 
 		info, err = os.Lstat(tgt)
 		if err != nil {
-			// tgt doesn't exist or lacks permissions
-			err = fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
+			// tgt
+			err = fmt.Errorf("Symlink in output %q points to invalid location %q, must exist, be readable, and point to path within the output directory.",
 				path[len(runner.HostOutputDir):], readlinktgt)
 			return
 		}
@@ -1014,26 +995,56 @@ func (runner *ContainerRunner) UploadOutputFile(
 			return "", walkUpload.UploadFile(relocated, tgt)
 		}
 
-		if info.Mode().IsDir() {
-			// Symlink leads to directory.  Walk() doesn't follow
-			// directory symlinks, so we walk the target directory
-			// instead.  Within the walk, file paths are relocated
-			// so they appear under the original symlink path.
-			err = filepath.Walk(tgt, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
-				var m string
-				m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr, binds, walkUpload, tgt, relocated)
-				if walkerr == nil {
-					manifestText = manifestText + m
-				}
-				return walkerr
-			})
-			return
-		}
-
 		nextlink = tgt
 	}
-	// Got stuck in a loop or just a pathological number of links, give up.
-	err = fmt.Errorf("Followed too many symlinks from path %q", path)
+
+	// go through mounts and try reverse map to collection reference
+	for _, bind := range binds {
+		mnt := runner.Container.Mounts[bind]
+		if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
+			// get path relative to bind
+			targetSuffix := tgt[len(bind):]
+
+			// Copy mount and adjust the path to add path relative to the bind
+			adjustedMount := mnt
+			adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
+
+			// Terminates in this keep mount, so add the
+			// manifest text at appropriate location.
+			outputSuffix := path[len(runner.HostOutputDir):]
+			manifestText, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
+			return
+		}
+	}
+
+	// If target is not a collection mount, it must be located within the
+	// output directory, otherwise it is an error.
+	if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+		err = fmt.Errorf("Symlink in output %q points to invalid location %q, must point to path within the output directory.",
+			path[len(runner.HostOutputDir):], readlinktgt)
+		return
+	}
+
+	if info.Mode().IsRegular() {
+		return "", walkUpload.UploadFile(relocated, path)
+	}
+
+	if info.Mode().IsDir() {
+		// Symlink leads to directory.  Walk() doesn't follow
+		// directory symlinks, so we walk the target directory
+		// instead.  Within the walk, file paths are relocated
+		// so they appear under the original symlink path.
+		err = filepath.Walk(tgt, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
+			var m string
+			m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr, binds, walkUpload, tgt, relocated)
+			if walkerr == nil {
+				manifestText = manifestText + m
+			}
+			return walkerr
+		})
+		return
+	}
+
 	return
 }
 
