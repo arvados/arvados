@@ -466,6 +466,11 @@ fpm_build () {
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done
+
+  if [[ rpm = "$FORMAT" ]]; then
+    COMMAND_ARR+=('--exclude opt/rh/python33') 
+  fi
+  
   for i in "${fpm_exclude[@]}"; do
     COMMAND_ARR+=('--exclude' "$i")
   done
@@ -478,10 +483,6 @@ fpm_build () {
   COMMAND_ARR+=("${fpm_args[@]}")
 
   COMMAND_ARR+=("$PACKAGE")
-
-  if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=('--exclude opt/rh/python33') 
-  fi
 
   debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
