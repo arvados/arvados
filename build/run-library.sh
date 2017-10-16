@@ -370,6 +370,7 @@ fpm_build () {
               --python-install-lib "$PYTHON3_INSTALL_LIB" \
               --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
+              --exclude "opt/rh/python33" \
               --depends "$PYTHON3_PACKAGE"
           ;;
   esac
@@ -470,10 +471,6 @@ fpm_build () {
   for i in "${fpm_exclude[@]}"; do
     COMMAND_ARR+=('--exclude' "$i")
   done
-
-  if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=("--exclude opt/rh/python33") 
-  fi
 
   # Append remaining function arguments directly to fpm's command line.
   for i; do
