@@ -364,9 +364,15 @@ class ComputeNodeMonitorActor(config.actor_class):
     def get_state(self):
         """Get node state, one of ['unpaired', 'busy', 'idle', 'down']."""
 
-        # If this node is not associated with an Arvados node, return 'unpaired'.
+        # If this node is not associated with an Arvados node, return
+        # 'unpaired' if we're in the boot grace period, and 'down' if not,
+        # so it isn't counted towards usable nodes.
         if self.arvados_node is None:
-            return 'unpaired'
+            if timestamp_fresh(self.cloud_node_start_time,
+                               self.boot_fail_after):
+                return 'unpaired'
+            else:
+                return 'down'
 
         state = self.arvados_node['crunch_worker_state']
 
