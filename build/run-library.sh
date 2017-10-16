@@ -419,7 +419,7 @@ fpm_build () {
   fi
 
   if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=("--exclude opt/rh/python33") 
+    COMMAND_ARR+=('--exclude opt/rh/python33') 
   fi
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
