@@ -50,8 +50,8 @@ type Cluster struct {
 	SystemNodes     map[string]SystemNode
 }
 
-// GetThisSystemNodeConfig returns a SystemNode for the node we're
-// running on right now.
+// GetThisSystemNode returns a SystemNode for the node we're running
+// on right now.
 func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -60,9 +60,9 @@ func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
 	return cc.GetSystemNode(hostname)
 }
 
-// GetSystemNodeConfig returns a NodeConfig for the given node. An
-// error is returned if the appropriate configuration can't be
-// determined (e.g., this does not appear to be a system node).
+// GetSystemNode returns a SystemNode for the given hostname. An error
+// is returned if the appropriate configuration can't be determined
+// (e.g., this does not appear to be a system node).
 func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
 	if cfg, ok := cc.SystemNodes[node]; ok {
 		return &cfg, nil
