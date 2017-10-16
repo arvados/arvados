@@ -389,7 +389,6 @@ fpm_build () {
   # remove lingering dirs.
   if [[ rpm = "$FORMAT" ]]; then
     COMMAND_ARR+=('--rpm-auto-add-directories') 
-    COMMAND_ARR+=('--exclude opt/rh/python33')
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
@@ -479,6 +478,10 @@ fpm_build () {
   COMMAND_ARR+=("${fpm_args[@]}")
 
   COMMAND_ARR+=("$PACKAGE")
+
+  if [[ rpm = "$FORMAT" ]]; then
+    COMMAND_ARR+=('--exclude opt/rh/python33') 
+  fi
 
   debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
