@@ -246,6 +246,9 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				} else if resp.StatusCode == 404 {
 					count404++
 				}
+			} else if resp.ContentLength < 0 {
+				// Missing Content-Length
+				return nil, 0, "", fmt.Errorf("Missing Content-Length of block")
 			} else {
 				// Success.
 				if method == "GET" {
