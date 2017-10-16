@@ -146,7 +146,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
