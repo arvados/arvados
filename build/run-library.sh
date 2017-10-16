@@ -371,6 +371,7 @@ fpm_build () {
               --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --exclude "opt/rh/python33" \
+              --exclude "opt/rh/python33/root/usr" \
               --depends "$PYTHON3_PACKAGE"
           ;;
   esac
