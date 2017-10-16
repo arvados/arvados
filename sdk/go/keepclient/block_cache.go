@@ -67,7 +67,7 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 			rdr, size, _, err := kc.Get(locator)
 			var data []byte
 			if err == nil {
-				data := make([]byte, size, BLOCKSIZE)
+				data = make([]byte, size, BLOCKSIZE)
 				_, err = io.ReadFull(rdr, data)
 				err2 := rdr.Close()
 				if err == nil {
@@ -94,13 +94,13 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 }
 
 func (c *BlockCache) setup() {
+	c.mtx.Lock()
 	c.cache = make(map[string]*cacheBlock)
+	c.mtx.Unlock()
 }
 
 func (c *BlockCache) Clear() {
-	c.mtx.Lock()
 	c.setup()
-	c.mtx.Unlock()
 }
 
 type timeSlice []time.Time

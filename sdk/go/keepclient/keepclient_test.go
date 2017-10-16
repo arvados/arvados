@@ -111,7 +111,9 @@ func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 
 func RunFakeKeepServer(st http.Handler) (ks KeepServer) {
 	var err error
-	ks.listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: 0})
+	// If we don't explicitly bind it to localhost, ks.listener.Addr() will
+	// bind to 0.0.0.0 or [::] which is not a valid address for Dial()
+	ks.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: []byte{127, 0, 0, 1}, Port: 0})
 	if err != nil {
 		panic(fmt.Sprintf("Could not listen on any port"))
 	}
