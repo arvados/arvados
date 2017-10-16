@@ -18,9 +18,8 @@ type BlockCache struct {
 	// default size (currently 4) is used instead.
 	MaxBlocks int
 
-	cache     map[string]*cacheBlock
-	mtx       sync.Mutex
-	setupOnce sync.Once
+	cache map[string]*cacheBlock
+	mtx   sync.Mutex
 }
 
 const defaultMaxBlocks = 4
@@ -53,9 +52,11 @@ func (c *BlockCache) Sweep() {
 // Get returns data from the cache, first retrieving it from Keep if
 // necessary.
 func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
-	c.setupOnce.Do(c.setup)
 	cacheKey := locator[:32]
 	c.mtx.Lock()
+	if c.cache == nil {
+		c.cache = make(map[string]*cacheBlock)
+	}
 	b, ok := c.cache[cacheKey]
 	if !ok || b.err != nil {
 		b = &cacheBlock{
@@ -93,14 +94,10 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 	return b.data, b.err
 }
 
-func (c *BlockCache) setup() {
-	c.mtx.Lock()
-	c.cache = make(map[string]*cacheBlock)
-	c.mtx.Unlock()
-}
-
 func (c *BlockCache) Clear() {
-	c.setup()
+	c.mtx.Lock()
+	c.cache = nil
+	c.mtx.Unlock()
 }
 
 type timeSlice []time.Time

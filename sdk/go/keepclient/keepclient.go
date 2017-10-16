@@ -248,6 +248,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				}
 			} else if resp.ContentLength < 0 {
 				// Missing Content-Length
+				resp.Body.Close()
 				return nil, 0, "", fmt.Errorf("Missing Content-Length of block")
 			} else {
 				// Success.

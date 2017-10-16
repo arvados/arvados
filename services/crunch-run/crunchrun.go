@@ -1434,7 +1434,7 @@ func main() {
 	networkMode := flag.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
-	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
+	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1484,13 +1484,16 @@ func main() {
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
-			log.Fatal("could not create memory profile: ", err)
+			log.Printf("could not create memory profile: ", err)
 		}
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("could not write memory profile: ", err)
+			log.Printf("could not write memory profile: ", err)
 		}
-		f.Close()
+		closeerr := f.Close()
+		if closeerr != nil {
+			log.Printf("closing memprofile file: ", err)
+		}
 	}
 
 	if runerr != nil {
