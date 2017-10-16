@@ -920,6 +920,8 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 	return nil
 }
 
+var NotInOutputDirError = fmt.Errorf("Must point to path within the output directory")
+
 func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.FileInfo) (tgt string, readlinktgt string, info os.FileInfo, err error) {
 	// Follow symlinks if necessary
 	info = startinfo
@@ -927,7 +929,7 @@ func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.File
 	readlinktgt = ""
 	nextlink := path
 	for followed := 0; info.Mode()&os.ModeSymlink != 0; followed++ {
-		if followed >= 32 {
+		if followed >= 16 {
 			// Got stuck in a loop or just a pathological number of links, give up.
 			err = fmt.Errorf("Followed too many symlinks from path %q", path)
 			return
@@ -951,14 +953,15 @@ func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.File
 			// After dereferencing, symlink target must either be
 			// within output directory, or must point to a
 			// collection mount.
-			break
+			err = NotInOutputDirError
+			return
 		}
 
 		info, err = os.Lstat(tgt)
 		if err != nil {
 			// tgt
-			err = fmt.Errorf("Symlink in output %q points to invalid location %q, must exist, be readable, and point to path within the output directory.",
-				path[len(runner.HostOutputDir):], readlinktgt)
+			err = fmt.Errorf("Symlink in output %q points to invalid location %q: %v",
+				path[len(runner.HostOutputDir):], readlinktgt, err)
 			return
 		}
 
@@ -982,7 +985,8 @@ func (runner *ContainerRunner) UploadOutputFile(
 	binds []string,
 	walkUpload *WalkUpload,
 	relocateFrom string,
-	relocateTo string) (manifestText string, err error) {
+	relocateTo string,
+	followed int) (manifestText string, err error) {
 
 	if info.Mode().IsDir() {
 		return
@@ -992,13 +996,20 @@ func (runner *ContainerRunner) UploadOutputFile(
 		return "", infoerr
 	}
 
+	if followed >= 8 {
+		// Got stuck in a loop or just a pathological number of
+		// directory links, give up.
+		err = fmt.Errorf("Followed too many symlinks from path %q", path)
+		return
+	}
+
 	// When following symlinks, the source path may need to be logically
 	// relocated to some other path within the output collection.  Remove
 	// the relocateFrom prefix and replace it with relocateTo.
 	relocated := relocateTo + path[len(relocateFrom):]
 
 	tgt, readlinktgt, info, derefErr := runner.derefOutputSymlink(path, info)
-	if derefErr != nil {
+	if derefErr != nil && derefErr != NotInOutputDirError {
 		return "", derefErr
 	}
 
@@ -1023,7 +1034,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 
 	// If target is not a collection mount, it must be located within the
 	// output directory, otherwise it is an error.
-	if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+	if derefErr == NotInOutputDirError {
 		err = fmt.Errorf("Symlink in output %q points to invalid location %q, must point to path within the output directory.",
 			path[len(runner.HostOutputDir):], readlinktgt)
 		return
@@ -1040,7 +1051,8 @@ func (runner *ContainerRunner) UploadOutputFile(
 		// so they appear under the original symlink path.
 		err = filepath.Walk(tgt, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
 			var m string
-			m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr, binds, walkUpload, tgt, relocated)
+			m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr,
+				binds, walkUpload, tgt, relocated, followed+1)
 			if walkerr == nil {
 				manifestText = manifestText + m
 			}
@@ -1103,7 +1115,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 		var m string
 		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
-			m, err = runner.UploadOutputFile(path, info, err, binds, walkUpload, "", "")
+			m, err = runner.UploadOutputFile(path, info, err, binds, walkUpload, "", "", 0)
 			if err == nil {
 				manifestText = manifestText + m
 			}

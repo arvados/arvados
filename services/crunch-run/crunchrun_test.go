@@ -1715,3 +1715,21 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 		c.Assert(err, NotNil)
 	}
 }
+
+func (s *TestSuite) TestEvalSymlinkDir(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink(".", realTemp+"/loop")
+
+	v := "loop"
+	info, err := os.Lstat(realTemp + "/" + v)
+	_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "", 0)
+	c.Assert(err, NotNil)
+}
