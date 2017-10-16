@@ -920,39 +920,12 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 	return nil
 }
 
-// UploadFile uploads files within the output directory, with special handling
-// for symlinks. If the symlink leads to a keep mount, copy the manifest text
-// from the keep mount into the output manifestText.  Ensure that whether
-// symlinks are relative or absolute, they must remain within the output
-// directory.
-//
-// Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
-func (runner *ContainerRunner) UploadOutputFile(
-	path string,
-	info os.FileInfo,
-	infoerr error,
-	binds []string,
-	walkUpload *WalkUpload,
-	relocateFrom string,
-	relocateTo string) (manifestText string, err error) {
-
-	if info.Mode().IsDir() {
-		return
-	}
-
-	if infoerr != nil {
-		return "", infoerr
-	}
-
-	// When following symlinks, the source path may need to be logically
-	// relocated to some other path within the output collection.  Remove
-	// the relocateFrom prefix and replace it with relocateTo.
-	relocated := relocateTo + path[len(relocateFrom):]
-
+func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.FileInfo) (tgt string, readlinktgt string, info os.FileInfo, err error) {
 	// Follow symlinks if necessary
-	tgt := path
+	info = startinfo
+	tgt = path
+	readlinktgt = ""
 	nextlink := path
-	readlinktgt := ""
 	for followed := 0; info.Mode()&os.ModeSymlink != 0; followed++ {
 		if followed >= 32 {
 			// Got stuck in a loop or just a pathological number of links, give up.
@@ -989,13 +962,44 @@ func (runner *ContainerRunner) UploadOutputFile(
 			return
 		}
 
-		if info.Mode().IsRegular() {
-			// Symlink leads to regular file.  Need to read from
-			// the target but upload it at the original path.
-			return "", walkUpload.UploadFile(relocated, tgt)
-		}
-
 		nextlink = tgt
+	}
+
+	return
+}
+
+// UploadFile uploads files within the output directory, with special handling
+// for symlinks. If the symlink leads to a keep mount, copy the manifest text
+// from the keep mount into the output manifestText.  Ensure that whether
+// symlinks are relative or absolute, they must remain within the output
+// directory.
+//
+// Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
+func (runner *ContainerRunner) UploadOutputFile(
+	path string,
+	info os.FileInfo,
+	infoerr error,
+	binds []string,
+	walkUpload *WalkUpload,
+	relocateFrom string,
+	relocateTo string) (manifestText string, err error) {
+
+	if info.Mode().IsDir() {
+		return
+	}
+
+	if infoerr != nil {
+		return "", infoerr
+	}
+
+	// When following symlinks, the source path may need to be logically
+	// relocated to some other path within the output collection.  Remove
+	// the relocateFrom prefix and replace it with relocateTo.
+	relocated := relocateTo + path[len(relocateFrom):]
+
+	tgt, readlinktgt, info, derefErr := runner.derefOutputSymlink(path, info)
+	if derefErr != nil {
+		return "", derefErr
 	}
 
 	// go through mounts and try reverse map to collection reference
@@ -1026,7 +1030,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 	}
 
 	if info.Mode().IsRegular() {
-		return "", walkUpload.UploadFile(relocated, path)
+		return "", walkUpload.UploadFile(relocated, tgt)
 	}
 
 	if info.Mode().IsDir() {

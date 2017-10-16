@@ -1699,7 +1699,7 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 	os.Symlink("/etc/passwd", realTemp+"/p1")
 
 	// Relative outside output dir
-	os.Symlink("..", realTemp+"/p2")
+	os.Symlink("../zip", realTemp+"/p2")
 
 	// Circular references
 	os.Symlink("p4", realTemp+"/p3")
@@ -1711,7 +1711,7 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 
 	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
 		info, err := os.Lstat(realTemp + "/" + v)
-		_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "")
+		_, _, _, err = cr.derefOutputSymlink(realTemp+"/"+v, info)
 		c.Assert(err, NotNil)
 	}
 }
