@@ -388,7 +388,8 @@ fpm_build () {
   # be listed in that sectiontoo, so we need to add this parameter to properly
   # remove lingering dirs.
   if [[ rpm = "$FORMAT" ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories')
+    COMMAND_ARR+=('--rpm-auto-add-directories') 
+    COMMAND_ARR+=('--exclude opt/rh/python33')
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
