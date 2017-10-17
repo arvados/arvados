@@ -39,7 +39,7 @@ var DecodeTokenCookie func(string) ([]byte, error) = base64.URLEncoding.DecodeSt
 func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 	// Load plain token from "Authorization: OAuth2 ..." header
 	// (typically used by smart API clients)
-	if toks := strings.SplitN(r.Header.Get("Authorization"), " ", 2); len(toks) == 2 && toks[0] == "OAuth2" {
+	if toks := strings.SplitN(r.Header.Get("Authorization"), " ", 2); len(toks) == 2 && (toks[0] == "OAuth2" || toks[0] == "Bearer") {
 		a.Tokens = append(a.Tokens, toks[1])
 	}
 

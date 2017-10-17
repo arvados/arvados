@@ -75,6 +75,7 @@ services/arv-git-httpd
 services/crunchstat
 services/dockercleaner
 services/fuse
+services/health
 services/keep-web
 services/keepproxy
 services/keepstore
@@ -803,6 +804,7 @@ gostuff=(
     lib/crunchstat
     services/arv-git-httpd
     services/crunchstat
+    services/health
     services/keep-web
     services/keepstore
     sdk/go/keepclient

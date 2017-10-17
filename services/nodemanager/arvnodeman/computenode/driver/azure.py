@@ -82,7 +82,7 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
         # Azure only supports filtering node lists by resource group.
         # Do our own filtering based on tag.
         nodes = [node for node in
-                super(ComputeNodeDriver, self).list_nodes(ex_fetch_nic=False)
+                super(ComputeNodeDriver, self).list_nodes(ex_fetch_nic=False, ex_fetch_power_state=False)
                 if node.extra["tags"].get("arvados-class") == self.tags["arvados-class"]]
         for n in nodes:
             # Need to populate Node.size

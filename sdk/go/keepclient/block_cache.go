@@ -5,7 +5,7 @@
 package keepclient
 
 import (
-	"io/ioutil"
+	"io"
 	"sort"
 	"sync"
 	"time"
@@ -18,9 +18,8 @@ type BlockCache struct {
 	// default size (currently 4) is used instead.
 	MaxBlocks int
 
-	cache     map[string]*cacheBlock
-	mtx       sync.Mutex
-	setupOnce sync.Once
+	cache map[string]*cacheBlock
+	mtx   sync.Mutex
 }
 
 const defaultMaxBlocks = 4
@@ -29,7 +28,7 @@ const defaultMaxBlocks = 4
 // there are no more than MaxBlocks left.
 func (c *BlockCache) Sweep() {
 	max := c.MaxBlocks
-	if max < defaultMaxBlocks {
+	if max == 0 {
 		max = defaultMaxBlocks
 	}
 	c.mtx.Lock()
@@ -53,9 +52,11 @@ func (c *BlockCache) Sweep() {
 // Get returns data from the cache, first retrieving it from Keep if
 // necessary.
 func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
-	c.setupOnce.Do(c.setup)
 	cacheKey := locator[:32]
 	c.mtx.Lock()
+	if c.cache == nil {
+		c.cache = make(map[string]*cacheBlock)
+	}
 	b, ok := c.cache[cacheKey]
 	if !ok || b.err != nil {
 		b = &cacheBlock{
@@ -64,10 +65,11 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 		}
 		c.cache[cacheKey] = b
 		go func() {
-			rdr, _, _, err := kc.Get(locator)
+			rdr, size, _, err := kc.Get(locator)
 			var data []byte
 			if err == nil {
-				data, err = ioutil.ReadAll(rdr)
+				data = make([]byte, size, BLOCKSIZE)
+				_, err = io.ReadFull(rdr, data)
 				err2 := rdr.Close()
 				if err == nil {
 					err = err2
@@ -92,8 +94,10 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 	return b.data, b.err
 }
 
-func (c *BlockCache) setup() {
-	c.cache = make(map[string]*cacheBlock)
+func (c *BlockCache) Clear() {
+	c.mtx.Lock()
+	c.cache = nil
+	c.mtx.Unlock()
 }
 
 type timeSlice []time.Time

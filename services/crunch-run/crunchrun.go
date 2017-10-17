@@ -19,6 +19,8 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -54,6 +56,7 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
+	ClearBlockCache()
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -263,6 +266,8 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	}
 
 	runner.ContainerConfig.Image = imageID
+
+	runner.Kc.ClearBlockCache()
 
 	return nil
 }
@@ -1429,6 +1434,7 @@ func main() {
 	networkMode := flag.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
+	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1448,6 +1454,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s: %v", containerId, err)
 	}
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
 	var docker *dockerclient.Client
@@ -1472,9 +1479,24 @@ func main() {
 		cr.expectCgroupParent = p
 	}
 
-	err = cr.Run()
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
+	runerr := cr.Run()
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Printf("could not create memory profile: ", err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Printf("could not write memory profile: ", err)
+		}
+		closeerr := f.Close()
+		if closeerr != nil {
+			log.Printf("closing memprofile file: ", err)
+		}
 	}
 
+	if runerr != nil {
+		log.Fatalf("%s: %v", containerId, runerr)
+	}
 }

@@ -246,6 +246,10 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				} else if resp.StatusCode == 404 {
 					count404++
 				}
+			} else if resp.ContentLength < 0 {
+				// Missing Content-Length
+				resp.Body.Close()
+				return nil, 0, "", fmt.Errorf("Missing Content-Length of block")
 			} else {
 				// Success.
 				if method == "GET" {
@@ -432,6 +436,10 @@ func (kc *KeepClient) cache() *BlockCache {
 	} else {
 		return DefaultBlockCache
 	}
+}
+
+func (kc *KeepClient) ClearBlockCache() {
+	kc.cache().Clear()
 }
 
 var (
