@@ -792,7 +792,7 @@ gostuff=(
     sdk/go/arvadosclient
     sdk/go/blockdigest
     sdk/go/dispatch
-#    sdk/go/health
+    sdk/go/health
     sdk/go/httpserver
     sdk/go/manifest
     sdk/go/streamer
