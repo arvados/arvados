@@ -18,6 +18,7 @@ class ArvadosApiToken
     # First, clean up just in case we have a multithreaded server and thread
     # local variables are still set from a prior request.  Also useful for
     # tests that call this code to set up the environment.
+    Thread.current[:supplied_token] = nil
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
@@ -35,29 +36,41 @@ class ArvadosApiToken
     supplied_token =
       params["api_token"] ||
       params["oauth_token"] ||
-      env["HTTP_AUTHORIZATION"].andand.match(/OAuth2 ([a-zA-Z0-9]+)/).andand[1]
+      env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([-,a-zA-Z0-9]+)/).andand[2]
     if supplied_token
-      api_client_auth = ApiClientAuthorization.
-        includes(:api_client, :user).
-        where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
-        first
-      if api_client_auth.andand.user
-        user = api_client_auth.user
-        api_client = api_client_auth.api_client
+      case supplied_token[0..2]
+      when 'v2,'
+        _, uuid, secret = supplied_token.split(',')
+        auth = ApiClientAuthorization.
+               includes(:api_client, :user).
+               where('uuid=? and api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)',
+                     uuid, secret).
+               first
       else
-        # Token seems valid, but points to a non-existent (deleted?) user.
-        api_client_auth = nil
+        auth = ApiClientAuthorization.
+               includes(:api_client, :user).
+               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)',
+                     supplied_token).
+               first
+      end
+      if auth.andand.user
+        user = auth.user
+        api_client = auth.api_client
+      else
+        # Token is invalid, or belongs to a non-existent (deleted?) user.
+        auth = nil
       end
     end
+    Thread.current[:supplied_token] = supplied_token
     Thread.current[:api_client_ip_address] = remote_ip
-    Thread.current[:api_client_authorization] = api_client_auth
+    Thread.current[:api_client_authorization] = auth
     Thread.current[:api_client_uuid] = api_client.andand.uuid
     Thread.current[:api_client] = api_client
     Thread.current[:user] = user
-    if api_client_auth
-      api_client_auth.last_used_at = Time.now
-      api_client_auth.last_used_by_ip_address = remote_ip.to_s
-      api_client_auth.save validate: false
+    if auth
+      auth.last_used_at = Time.now
+      auth.last_used_by_ip_address = remote_ip.to_s
+      auth.save validate: false
     end
 
     @app.call env if @app

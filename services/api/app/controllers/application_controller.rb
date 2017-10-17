@@ -344,7 +344,19 @@ class ApplicationController < ActionController::Base
         .all
     end
     @read_auths.select! { |auth| auth.scopes_allow_request? request }
-    @read_users = @read_auths.map { |auth| auth.user }.uniq
+
+    # Use a salted token as a reader token for /groups/ and /users/current
+    if params[:remote_id] && (
+         request.path.start_with?('/arvados/v1/groups') ||
+         request.path.start_with?('/arvados/v1/users/current'))
+      auth = ApiClientAuthorization.validate(remote_id: params[:remote_id])
+      if auth && auth.user
+        Thread.current[:user] = auth.user
+        @read_auths << auth
+      end
+    end
+
+    @read_users = @read_auths.map(&:user).uniq
   end
 
   def require_login
