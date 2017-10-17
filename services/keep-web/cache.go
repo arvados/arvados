@@ -16,6 +16,7 @@ import (
 
 type cache struct {
 	TTL                  arvados.Duration
+	UUIDTTL              arvados.Duration
 	MaxCollectionEntries int
 	MaxCollectionBytes   int64
 	MaxPermissionEntries int
@@ -135,13 +136,12 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			return nil, err
 		}
 		if current.PortableDataHash == pdh {
-			exp := time.Now().Add(time.Duration(c.TTL))
 			c.permissions.Add(permKey, &cachedPermission{
-				expire: exp,
+				expire: time.Now().Add(time.Duration(c.TTL)),
 			})
 			if pdh != targetID {
 				c.pdhs.Add(targetID, &cachedPDH{
-					expire: exp,
+					expire: time.Now().Add(time.Duration(c.UUIDTTL)),
 					pdh:    pdh,
 				})
 			}
@@ -167,7 +167,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		expire: exp,
 	})
 	c.pdhs.Add(targetID, &cachedPDH{
-		expire: exp,
+		expire: time.Now().Add(time.Duration(c.UUIDTTL)),
 		pdh:    collection.PortableDataHash,
 	})
 	c.collections.Add(arv.ApiToken+"\000"+collection.PortableDataHash, &cachedCollection{
