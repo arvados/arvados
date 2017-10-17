@@ -16,7 +16,6 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 setup(name="arvados-docker-cleaner",
-      version="0.1",
       description="Arvados Docker cleaner",
       author="Arvados",
       author_email="info@arvados.org",
