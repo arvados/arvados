@@ -22,9 +22,9 @@ except ImportError:
 versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
 try:
     gitinfo = subprocess.check_output(
-            ['git', 'describe', '--abbrev=0'])
+            ['git', 'describe', '--abbrev=0']).strip()
     with open(versionfile, "w") as f:
-        f.write("__version__ = '%s'\n" % gitinfo.strip())
+        f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
     # When installing from package, it won't be part of a git repository, and
     # check_output() will raise an exception.  But the package should include the
