@@ -40,7 +40,7 @@ setup(name='arvados_fuse',
           ('share/doc/arvados_fuse', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-        'arvados-python-client>=0.1b-1.1.0',
+        'arvados-python-client>=1.1.0',
         'llfuse>=1.2',
         'python-daemon',
         'ciso8601',
