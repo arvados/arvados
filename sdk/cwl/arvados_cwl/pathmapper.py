@@ -91,18 +91,19 @@ class ArvPathMapper(PathMapper):
             for l in srcobj.get("listing", []):
                 self.visit(l, uploadfiles)
 
-    def addentry(self, obj, c, path, subdirs):
+    def addentry(self, obj, c, path, remap):
         if obj["location"] in self._pathmap:
             src, srcpath = self.arvrunner.fs_access.get_collection(self._pathmap[obj["location"]].resolved)
             if srcpath == "":
                 srcpath = "."
             c.copy(srcpath, path + "/" + obj["basename"], source_collection=src, overwrite=True)
+            remap.append((obj["location"], path + "/" + obj["basename"]))
             for l in obj.get("secondaryFiles", []):
-                self.addentry(l, c, path, subdirs)
+                self.addentry(l, c, path, remap)
         elif obj["class"] == "Directory":
             for l in obj.get("listing", []):
-                self.addentry(l, c, path + "/" + obj["basename"], subdirs)
-            subdirs.append((obj["location"], path + "/" + obj["basename"]))
+                self.addentry(l, c, path + "/" + obj["basename"], remap)
+            remap.append((obj["location"], path + "/" + obj["basename"]))
         elif obj["location"].startswith("_:") and "contents" in obj:
             with c.open(path + "/" + obj["basename"], "w") as f:
                 f.write(obj["contents"].encode("utf-8"))
@@ -154,13 +155,13 @@ class ArvPathMapper(PathMapper):
             self._pathmap[loc] = MapperEnt(urllib.quote(fn, "/:+@"), self.collection_pattern % fn[5:], cls, True)
 
         for srcobj in referenced_files:
-            subdirs = []
+            remap = []
             if srcobj["class"] == "Directory" and srcobj["location"] not in self._pathmap:
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
                                                   num_retries=self.arvrunner.num_retries)
                 for l in srcobj.get("listing", []):
-                    self.addentry(l, c, ".", subdirs)
+                    self.addentry(l, c, ".", remap)
 
                 check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
                 if not check["items"]:
@@ -174,7 +175,7 @@ class ArvPathMapper(PathMapper):
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
                                                   num_retries=self.arvrunner.num_retries                                                  )
-                self.addentry(srcobj, c, ".", subdirs)
+                self.addentry(srcobj, c, ".", remap)
 
                 check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
                 if not check["items"]:
@@ -187,10 +188,13 @@ class ArvPathMapper(PathMapper):
                     ab = self.collection_pattern % c.portable_data_hash()
                     self._pathmap["_:" + unicode(uuid.uuid4())] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
 
-            if subdirs:
-                for loc, sub in subdirs:
-                    # subdirs will all start with "./", strip it off
-                    ab = self.file_pattern % (c.portable_data_hash(), sub[2:])
+            if remap:
+                for loc, sub in remap:
+                    # subdirs start with "./", strip it off
+                    if sub.startswith("./"):
+                        ab = self.file_pattern % (c.portable_data_hash(), sub[2:])
+                    else:
+                        ab = self.file_pattern % (c.portable_data_hash(), sub)
                     self._pathmap[loc] = MapperEnt("keep:%s/%s" % (c.portable_data_hash(), sub[2:]),
                                                    ab, "Directory", True)
 

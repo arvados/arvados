@@ -291,7 +291,7 @@ func (rtr *router) MountsHandler(resp http.ResponseWriter, req *http.Request) {
 
 // PoolStatus struct
 type PoolStatus struct {
-	Alloc uint64 `json:"BytesAllocated"`
+	Alloc uint64 `json:"BytesAllocatedCumulative"`
 	Cap   int    `json:"BuffersMax"`
 	Len   int    `json:"BuffersInUse"`
 }

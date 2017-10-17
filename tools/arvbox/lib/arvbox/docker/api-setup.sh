@@ -9,7 +9,12 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/arvados/services/api
-export RAILS_ENV=development
+
+if test -s /var/lib/arvados/api_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+else
+  export RAILS_ENV=development
+fi
 
 set -u
 
@@ -41,7 +46,7 @@ else
 fi
 
 cat >config/application.yml <<EOF
-development:
+$RAILS_ENV:
   uuid_prefix: $uuid_prefix
   secret_token: $secret_token
   blob_signing_key: $blob_signing_key

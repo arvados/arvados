@@ -91,3 +91,29 @@
   output: {}
   tool: noreuse.cwl
   doc: "Test arv:ReuseRequirement"
+
+- job: 12213-keepref-job.yml
+  output: {
+    "out": [
+        {
+            "checksum": "sha1$1c78028c0d69163391eef89316b44a57bde3fead",
+            "location": "sample1_S01_R1_001.fastq.txt",
+            "class": "File",
+            "size": 32
+        },
+        {
+            "checksum": "sha1$83483b9c65d99967aecc794c14f9f4743314d186",
+            "location": "sample2_S01_R3_001.fastq.txt",
+            "class": "File",
+            "size": 32
+        }
+    ]
+  }
+  tool: 12213-keepref-wf.cwl
+  doc: "Test manipulating keep references with expression tools"
+
+- job: null
+  output:
+    out: null
+  tool: 12418-glob-empty-collection.cwl
+  doc: "Test glob output on empty collection"

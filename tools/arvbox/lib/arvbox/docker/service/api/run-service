@@ -9,7 +9,12 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/arvados/services/api
-export RAILS_ENV=development
+
+if test -s /var/lib/arvados/api_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+else
+  export RAILS_ENV=development
+fi
 
 run_bundler --without=development
 bundle exec passenger-config build-native-support

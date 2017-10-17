@@ -9,7 +9,12 @@ set -ex -o pipefail
 .  /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/arvados/apps/workbench
-export RAILS_ENV=development
+
+if test -s /var/lib/arvados/workbench_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvados/workbench_rails_env)
+else
+  export RAILS_ENV=development
+fi
 
 run_bundler --without=development
 bundle exec passenger start --runtime-check-only --runtime-dir=/var/lib/passenger
@@ -32,7 +37,7 @@ if ! test -s self-signed.key ; then
 fi
 
 cat >config/application.yml <<EOF
-development:
+$RAILS_ENV:
   secret_token: $secret_token
   arvados_login_base: https://$localip:${services[api]}/login
   arvados_v1_base: https://$localip:${services[api]}/arvados/v1

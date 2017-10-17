@@ -82,6 +82,7 @@ func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		if !ok {
 			resp.WriteHeader(http.StatusNotFound)
 		} else {
+			resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(buf)))
 			resp.Write(buf)
 		}
 	default:
