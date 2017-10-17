@@ -24,7 +24,7 @@ try:
     gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0'])
     with open(versionfile, "w") as f:
-        f.write("__version__ = '%s'\n" % gitinfo)
+        f.write("__version__ = '%s'\n" % gitinfo.strip())
 except Exception as e:
     # When installing from package, it won't be part of a git repository, and
     # check_output() will raise an exception.  But the package should include the
