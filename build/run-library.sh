@@ -351,8 +351,8 @@ fpm_build () {
           # Make sure we build with that for consistency.
           set -- "$@" --python-bin python2.7 \
               --python-easyinstall "$EASY_INSTALL2" \
-             # --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
-             #--prefix "$PYTHON2_PREFIX" \
+              --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
+              --prefix "$PYTHON2_PREFIX" \
               --python-install-lib "$PYTHON2_INSTALL_LIB" \
               --python-install-data . \
               --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
@@ -366,8 +366,8 @@ fpm_build () {
           PACKAGE_TYPE=python
           set -- "$@" --python-bin python3 \
               --python-easyinstall "$EASY_INSTALL3" \
-            #  --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
-            #  --prefix "$PYTHON3_PREFIX" \
+              --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
+              --prefix "$PYTHON3_PREFIX" \
               --python-install-lib "$PYTHON3_INSTALL_LIB" \
               --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
