@@ -357,6 +357,7 @@ func doMain() error {
 	groupsCreated := 0
 	membersAdded := 0
 	membersRemoved := 0
+	membersSkipped := 0
 
 	csvReader := csv.NewReader(f)
 	for {
@@ -369,9 +370,15 @@ func doMain() error {
 		}
 		groupName := record[0]
 		groupMember := record[1] // User ID (username or email)
+		if groupName == "" || groupMember == "" {
+			log.Printf("Warning: CSV record has at least one field empty (%s, %s). Skipping", groupName, groupMember)
+			membersSkipped++
+			continue
+		}
 		if _, found := userIDToUUID[groupMember]; !found {
 			// User not present on the system, skip.
 			log.Printf("Warning: there's no user with %s %q on the system, skipping.", *userID, groupMember)
+			membersSkipped++
 			continue
 		}
 		if _, found := groupNameToUUID[groupName]; !found {
@@ -471,7 +478,7 @@ func doMain() error {
 			membersRemoved++
 		}
 	}
-	log.Printf("Groups created: %d, members added: %d, members removed: %d", groupsCreated, membersAdded, membersRemoved)
+	log.Printf("Groups created: %d, members added: %d, members removed: %d, members skipped: %d", groupsCreated, membersAdded, membersRemoved, membersSkipped)
 
 	return nil
 }
