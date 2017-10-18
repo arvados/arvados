@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
@@ -69,8 +70,9 @@ func (l userList) offset() int {
 }
 
 type group struct {
-	UUID string `json:"uuid,omitempty"`
-	Name string `json:"name,omitempty"`
+	UUID      string `json:"uuid,omitempty"`
+	Name      string `json:"name,omitempty"`
+	OwnerUUID string `json:"owner_uuid,omitempty"`
 }
 
 // groupList implements resourceList interface
@@ -138,6 +140,7 @@ func main() {
 
 func doMain() error {
 	const groupTag string = "remote_group"
+	const remoteGroupParentName string = "Externally synchronized groups"
 	userIDOpts := []string{"email", "username"}
 
 	flags := flag.NewFlagSet("arv-sync-groups", flag.ExitOnError)
@@ -163,6 +166,13 @@ func doMain() error {
 		3,
 		"Maximum number of times to retry server requests that encounter "+
 			"temporary failures (e.g., server down).  Default 3.")
+
+	parentGroupUUID := flags.String(
+		"parent-group-uuid",
+		"",
+		"Use given group UUID as a parent for the remote groups. Should "+
+			"be owned by the system user. If not specified, a group named '"+
+			remoteGroupParentName+"' will be used (and created if nonexistant).")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
@@ -194,13 +204,73 @@ func doMain() error {
 			strings.Join(userIDOpts, ", "))
 	}
 
-	arv, err := arvadosclient.MakeArvadosClient()
+	// Arvados Client setup
+	ac := arvados.NewClientFromEnv()
+	arv, err := arvadosclient.New(ac)
 	if err != nil {
 		return fmt.Errorf("error setting up arvados client %s", err)
 	}
 	arv.Retries = *retries
 
-	log.Printf("Group sync starting. Using %q as users id", *userID)
+	// Check current user permissions & get System user's UUID
+	u, err := ac.CurrentUser()
+	if err != nil {
+		return fmt.Errorf("error getting the current user: %s", err)
+	}
+	if !u.IsActive || !u.IsAdmin {
+		return fmt.Errorf("current user (%s) is not an active admin user", u.UUID)
+	}
+	sysUserUUID := u.UUID[:12] + "000000000000000"
+
+	// Find/create parent group
+	var parentGroup group
+	if *parentGroupUUID == "" {
+		// UUID not provided, search for preexisting parent group
+		var gl groupList
+		err := arv.List("groups", arvadosclient.Dict{
+			"filters": [][]string{
+				{"name", "=", remoteGroupParentName},
+				{"owner_uuid", "=", sysUserUUID}},
+		}, &gl)
+		if err != nil {
+			return fmt.Errorf("error searching for parent group: %s", err)
+		}
+		if len(gl.Items) == 0 {
+			// Default parent group not existant, create one.
+			if *verbose {
+				log.Println("Default parent group not found, creating...")
+			}
+			err := arv.Create("groups", arvadosclient.Dict{
+				"group": arvadosclient.Dict{
+					"name":       remoteGroupParentName,
+					"owner_uuid": sysUserUUID},
+			}, &parentGroup)
+			if err != nil {
+				return fmt.Errorf("error creating system user owned group named %q: %s", remoteGroupParentName, err)
+			}
+		} else if len(gl.Items) == 1 {
+			// Default parent group found.
+			parentGroup = gl.Items[0]
+		} else {
+			// This should never happen, as there's an unique index for
+			// (owner_uuid, name) on groups.
+			return fmt.Errorf("found %d groups owned by system user and named %q", len(gl.Items), remoteGroupParentName)
+		}
+	} else {
+		// UUID provided. Check if exists and if it's owned by system user
+		err := arv.Get("groups", *parentGroupUUID, arvadosclient.Dict{}, &parentGroup)
+		if err != nil {
+			return fmt.Errorf("error searching for parent group with UUID %q: %s", *parentGroupUUID, err)
+		}
+		if parentGroup.UUID == "" {
+			return fmt.Errorf("parent group with UUID %q not found", *parentGroupUUID)
+		}
+		if parentGroup.OwnerUUID != sysUserUUID {
+			return fmt.Errorf("parent group %q (%s) must be owned by system user", parentGroup.Name, *parentGroupUUID)
+		}
+	}
+
+	log.Printf("Group sync starting. Using %q as users id and parent group UUID %q", *userID, parentGroup.UUID)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]user)
@@ -249,6 +319,7 @@ func doMain() error {
 	results, err = ListAll(arv, "groups", arvadosclient.Dict{
 		"filters": [][]interface{}{
 			{"uuid", "in", uuidList},
+			{"owner_uuid", "=", parentGroup.UUID},
 		},
 	}, &groupList{})
 	if err != nil {
@@ -282,8 +353,6 @@ func doMain() error {
 			PreviousMembers: membersSet,
 			CurrentMembers:  make(map[string]bool), // Empty set
 		}
-		// FIXME: There's an index (group_name, group.owner_uuid), should we
-		// ask for our own groups tagged as remote? (with own being 'system'?)
 		groupNameToUUID[group.Name] = group.UUID
 	}
 	log.Printf("Found %d remote groups", len(remoteGroups))
@@ -310,10 +379,14 @@ func doMain() error {
 		}
 		if _, found := groupNameToUUID[groupName]; !found {
 			// Group doesn't exist, create and tag it before continuing
+			if *verbose {
+				log.Printf("Remote group %q not found, creating...", groupName)
+			}
 			var group group
 			err := arv.Create("groups", arvadosclient.Dict{
 				"group": arvadosclient.Dict{
-					"name": groupName,
+					"name":       groupName,
+					"owner_uuid": parentGroup.UUID,
 				},
 			}, &group)
 			if err != nil {
