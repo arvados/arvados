@@ -78,6 +78,9 @@ module Server
       STDERR.puts("Defaulting to memory cache, " +
                   "because #{default_cache_path} #{why}")
       config.cache_store = :memory_store
+    else
+      require Rails.root.join('lib/safer_file_store')
+      config.cache_store = ::SaferFileStore.new(default_cache_path)
     end
   end
 end
