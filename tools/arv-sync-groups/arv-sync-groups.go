@@ -262,9 +262,6 @@ func doMain() error {
 		if err != nil {
 			return fmt.Errorf("error searching for parent group with UUID %q: %s", *parentGroupUUID, err)
 		}
-		if parentGroup.UUID == "" {
-			return fmt.Errorf("parent group with UUID %q not found", *parentGroupUUID)
-		}
 		if parentGroup.OwnerUUID != sysUserUUID {
 			return fmt.Errorf("parent group %q (%s) must be owned by system user", parentGroup.Name, *parentGroupUUID)
 		}
