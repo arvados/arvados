@@ -262,7 +262,7 @@ handle_python_package
 (
     cd "$WORKSPACE"
     COMMIT_HASH=$(format_last_commit_here "%H")
-    arvados_src_version="$(version_from_git)"
+    arvados_src_version="$(version_from_latest_tag)"
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence arvados-src $arvados_src_version src ""
@@ -437,7 +437,7 @@ fi
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
-# not omit the python- prefix first.
+# not omit the python- prefix first.dokc
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/fuse/build"
 arvados_fuse_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)
