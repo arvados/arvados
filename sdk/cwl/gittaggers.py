@@ -43,4 +43,3 @@ class EggInfoFromGit(egg_info):
     def tags(self):
         if self.tag_build is None:
             self.tag_build = self.git_latest_tag()
-        return egg_info.tags(self)

@@ -24,7 +24,6 @@ if '--short-tests-only' in sys.argv:
     sys.argv.remove('--short-tests-only')
 
 setup(name='arvados_fuse',
-      version='',
       description='Arvados FUSE driver',
       long_description=open(README).read(),
       author='Arvados',

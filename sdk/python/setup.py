@@ -24,7 +24,6 @@ if '--short-tests-only' in sys.argv:
     sys.argv.remove('--short-tests-only')
 
 setup(name='arvados-python-client',
-      version='0.3',
       description='Arvados client library',
       long_description=open(README).read(),
       author='Arvados',
