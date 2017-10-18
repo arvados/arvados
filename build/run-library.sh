@@ -411,7 +411,7 @@ fpm_build () {
   fi
   # We can always add an --iteration here.  If another one is specified in $@,
   # that will take precedence, as desired.
-  COMMAND_ARR+=(--iteration "$default_iteration_value")
+  #COMMAND_ARR+=(--iteration "$default_iteration_value")
 
   if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
   then
