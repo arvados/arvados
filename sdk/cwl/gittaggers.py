@@ -29,13 +29,13 @@ class EggInfoFromGit(egg_info):
     from source package), leave it alone.
     """
 
-    """def git_timestamp_tag(self):
+   def git_timestamp_tag(self):
         gitinfo = subprocess.check_output(
             ['git', 'log', '--first-parent', '--max-count=1',
              '--format=format:%ct', choose_version_from()]).strip()
         return time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo)))
-    """
-    def git_latest_tag(self):
+    
+    """def git_latest_tag(self):
         gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0']).strip()
         return (gitinfo)
@@ -44,3 +44,4 @@ class EggInfoFromGit(egg_info):
         if self.tag_build is None:
             self.tag_build = self.git_latest_tag()
         return egg_info.tags(self)
+    """
