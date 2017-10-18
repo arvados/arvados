@@ -132,7 +132,7 @@ class ActiveSupport::TestCase
     uuid = auth.uuid
     token = auth.api_token
     hmac = OpenSSL::HMAC.hexdigest('sha1', token, remote_id)
-    return "v2,#{uuid},#{hmac}"
+    return "v2/#{uuid}/#{hmac}"
   end
 
   def self.skip_slow_tests?

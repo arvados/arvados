@@ -349,7 +349,9 @@ class ApplicationController < ActionController::Base
     if params[:remote_id] && (
          request.path.start_with?('/arvados/v1/groups') ||
          request.path.start_with?('/arvados/v1/users/current'))
-      auth = ApiClientAuthorization.validate(remote_id: params[:remote_id])
+      auth = ApiClientAuthorization.
+             validate(token: Thread.current[:supplied_token],
+                      remote: params[:remote_id])
       if auth && auth.user
         Thread.current[:user] = auth.user
         @read_auths << auth

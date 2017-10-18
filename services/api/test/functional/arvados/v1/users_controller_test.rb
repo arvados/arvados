@@ -878,7 +878,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                                "HTTP_AUTHORIZATION" => "Bearer #{salted_token}")
       get :current, {remote_id: 'zbbbb'}
       if token_valid_for == 'zbbbb'
-        STDERR.puts json_response.inspect
         assert_equal(users(:active).uuid, json_response['uuid'])
         assert_response 200
       else

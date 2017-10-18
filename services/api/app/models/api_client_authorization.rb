@@ -82,22 +82,34 @@ class ApiClientAuthorization < ArvadosModel
     ["#{table_name}.id desc"]
   end
 
-  def self.validate(remote_id:)
-    token = Thread.current[:supplied_token]
+  def self.validate(token:, remote:)
     return nil if !token
-    version, uuid, secret = token.split(',')
-    return nil if version != 'v2'
-    auth = ApiClientAuthorization.
-           includes(:user).
-           where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', uuid).
-           first
-    if auth && secret == OpenSSL::HMAC.hexdigest('sha1', auth.api_token, remote_id)
-      return auth
+    remote ||= Rails.configuration.uuid_prefix
+
+    case token[0..2]
+    when 'v2/'
+      _, uuid, secret = token.split('/')
+      auth = ApiClientAuthorization.
+             includes(:user, :api_client).
+             where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', uuid).
+             first
+      if auth && auth.user &&
+         (secret == auth.api_token ||
+          secret == OpenSSL::HMAC.hexdigest('sha1', auth.api_token, remote))
+        return auth
+      end
     else
-      return nil
+      auth = ApiClientAuthorization.
+             includes(:user, :api_client).
+             where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
+             first
+      if auth && auth.user
+        return auth
+      end
     end
+    return nil
   end
-    
+
   protected
 
   def permission_to_create
