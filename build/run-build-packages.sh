@@ -523,7 +523,7 @@ while read -r line || [[ -n "$line" ]]; do
     continue
   fi
   name=${arr[1]}
-  #version=${arr[2]}
+  version=${arr[2]}
   iteration=${arr[3]}
   pkgtype=${arr[4]}
   arch=${arr[5]}
