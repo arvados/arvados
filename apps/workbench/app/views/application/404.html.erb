@@ -19,28 +19,51 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <% if check_trash.andand.any? %>
     <h2>Trashed</h2>
 
-    <p>The <%= req_item %> is in the trash.
-
       <% object = check_trash.first %>
 
-      <% if object.is_trashed
-         untrash_object = object
-         else
-       end %>
+      <% untrash_object = object %>
+      <% while !untrash_object.is_trashed %>
+        <% owner = Group.where(uuid: untrash_object.owner_uuid).include_trash(true).first %>
+        <% if owner.nil? then %>
+          <% break %>
+        <% else %>
+          <% untrash_object = owner %>
+        <% end %>
+      <% end %>
 
-        <% if untrash_object.editable? %>
-          <% msg = "Untrash '" + if !untrash_object.name.blank? then untrash_object.name else untrash_object.uuid end + "'?" %>
-          <%= link_to({action: 'untrash_items', selection: [untrash_object.uuid], controller: :trash_items}, remote: true, method: :post,
+      <% untrash_name = if !untrash_object.name.blank? then
+                 "'#{untrash_object.name}'"
+                 else
+                 untrash_object.uuid
+               end %>
+
+    <p>The <%= req_item %> is
+      <% if untrash_object == object %>
+        in the trash.
+      <% else %>
+        owned by trashed project <%= untrash_name %> (<code><%= untrash_object.uuid %></code>).
+      <% end %>
+    </p>
+
+
+    <p>
+      It will be permanently deleted at <%= render_localized_date(untrash_object.delete_at) %>.
+    </p>
+
+  <p>
+    <% if untrash_object != object %>
+      You must untrash the owner project to access this <%= class_name_h %>.
+    <% end %>
+      <% if untrash_object.editable? %>
+        <% msg = "Untrash '#{untrash_name}'?" %>
+        <%= link_to({action: 'untrash_items', selection: [untrash_object.uuid], controller: :trash_items}, remote: true, method: :post,
         title: "Untrash", style: 'cursor: pointer;') do %>
 
-          <% end %>
-
-          <%= form_tag url_for({action: 'untrash_items', controller: :trash_items}), {method: :post} %>
-          <%= hidden_field_tag :selection, [untrash_object.uuid] %>
-          <button type="submit">Click here to untrash this item <i class="fa fa-fw fa-recycle"></i></button>
         <% end %>
-      <% else %>
-        <% %>
+
+        <%= form_tag url_for({action: 'untrash_items', controller: :trash_items}), {method: :post} %>
+        <%= hidden_field_tag :selection, [untrash_object.uuid] %>
+        <button type="submit">Click here to untrash <%= untrash_name %> <i class="fa fa-fw fa-recycle"></i></button>
       <% end %>
     </p>
 

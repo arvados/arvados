@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <td colspan="2" class="trash-project-msg">
         <%= link_to_if_arvados_object @owners[obj.owner_uuid], friendly_name: true %>
         <br>
-        This item is contained within a trashed project.  You must untrash the parent project to recover it.
+        This item is contained within a trashed project.
       </td>
     <% end %>
     <td>
@@ -40,9 +40,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <% end %>
     </td>
     <td>
-      <% if obj.is_trashed %>
-        <%= render partial: 'untrash_item', locals: {object:obj} %>
-      <% end %>
+      <%= render partial: 'untrash_item', locals: {object:obj} %>
     </td>
   </tr>
 
