@@ -16,6 +16,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 setup(name="arvados-docker-cleaner",
+      version="1.1.1",
       description="Arvados Docker cleaner",
       author="Arvados",
       author_email="info@arvados.org",
@@ -30,7 +31,7 @@ setup(name="arvados-docker-cleaner",
           ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
-          'docker-py==1.7.2',
+          'docker-py>=1.7.2',
           'setuptools',
       ],
       tests_require=[
@@ -39,5 +40,4 @@ setup(name="arvados-docker-cleaner",
       ],
       test_suite='tests',
       zip_safe=False,
-      cmdclass={'egg_info': tagger},
 )
