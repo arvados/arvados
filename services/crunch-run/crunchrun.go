@@ -256,11 +256,17 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
 
-		response, err := runner.Docker.ImageLoad(context.TODO(), readCloser, false)
+		response, err := runner.Docker.ImageLoad(context.TODO(), readCloser, true)
 		if err != nil {
 			return fmt.Errorf("While loading container image into Docker: %v", err)
 		}
-		response.Body.Close()
+
+		defer response.Body.Close()
+		rbody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return fmt.Errorf("Reading response to image load: %v", err)
+		}
+		runner.CrunchLog.Printf("Docker response: %s", rbody)
 	} else {
 		runner.CrunchLog.Print("Docker image is available")
 	}
