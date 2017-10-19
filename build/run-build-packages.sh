@@ -280,7 +280,7 @@ handle_python_package
       echo "$COMMIT_HASH" >git-commit.version
 
       cd "$SRC_BUILD_DIR"
-      PKG_VERSION=$(version_from_git)
+      PKG_VERSION=$(version_from_latest_tag)
       cd $WORKSPACE/packages/$TARGET
       fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
