@@ -260,12 +260,13 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 		if err != nil {
 			return fmt.Errorf("While loading container image into Docker: %v", err)
 		}
+
+		defer response.Body.Close()
 		rbody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			return fmt.Errorf("While reading response to container image into Docker: %v", err)
+			return fmt.Errorf("Reading response to image load: %v", err)
 		}
-		log.Printf("Docker response: %v", string(rbody))
-		response.Body.Close()
+		runner.CrunchLog.Printf("Docker response: %s", rbody)
 	} else {
 		runner.CrunchLog.Print("Docker image is available")
 	}
