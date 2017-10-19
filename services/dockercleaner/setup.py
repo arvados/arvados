@@ -40,4 +40,5 @@ setup(name="arvados-docker-cleaner",
       ],
       test_suite='tests',
       zip_safe=False,
+      cmdclass={'egg_info': tagger},
 )
