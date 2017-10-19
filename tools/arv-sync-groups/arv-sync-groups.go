@@ -141,38 +141,34 @@ func main() {
 func doMain() error {
 	const groupTag string = "remote_group"
 	const remoteGroupParentName string = "Externally synchronized groups"
-	userIDOpts := []string{"email", "username"}
+	// Acceptable attributes to identify a user on the CSV file
+	userIDOpts := map[string]bool{
+		"email":    true, // default
+		"username": true,
+	}
 
+	// Command arguments
 	flags := flag.NewFlagSet("arv-sync-groups", flag.ExitOnError)
-
 	srcPath := flags.String(
 		"path",
 		"",
-		"Local file path containing a CSV format.")
-
+		"Local file path containing a CSV format: GroupName,UserID")
 	userID := flags.String(
 		"user-id",
 		"email",
-		"Attribute by which every user is identified. "+
-			"Valid values are: email (the default) and username.")
-
+		"Attribute by which every user is identified. Valid values are: email (the default) and username.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
-		"Log informational messages. By default is deactivated.")
-
+		"Log informational messages. Off by default.")
 	retries := flags.Int(
 		"retries",
 		3,
-		"Maximum number of times to retry server requests that encounter "+
-			"temporary failures (e.g., server down).  Default 3.")
-
+		"Maximum number of times to retry server requests that encounter temporary failures (e.g., server down). Default 3.")
 	parentGroupUUID := flags.String(
 		"parent-group-uuid",
 		"",
-		"Use given group UUID as a parent for the remote groups. Should "+
-			"be owned by the system user. If not specified, a group named '"+
-			remoteGroupParentName+"' will be used (and created if nonexistant).")
+		"Use given group UUID as a parent for the remote groups. Should be owned by the system user. If not specified, a group named '"+remoteGroupParentName+"' will be used (and created if nonexistant).")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
@@ -181,9 +177,15 @@ func doMain() error {
 	if *retries < 0 {
 		return fmt.Errorf("retry quantity must be >= 0")
 	}
-
 	if *srcPath == "" {
 		return fmt.Errorf("please provide a path to an input file")
+	}
+	if !userIDOpts[*userID] {
+		var options []string
+		for opt := range userIDOpts {
+			options = append(options, opt)
+		}
+		return fmt.Errorf("user ID must be one of: %s", strings.Join(options, ", "))
 	}
 
 	// Try opening the input file early, just in case there's problems.
@@ -192,17 +194,6 @@ func doMain() error {
 		return fmt.Errorf("%s", err)
 	}
 	defer f.Close()
-
-	validUserID := false
-	for _, opt := range userIDOpts {
-		if *userID == opt {
-			validUserID = true
-		}
-	}
-	if !validUserID {
-		return fmt.Errorf("user ID must be one of: %s",
-			strings.Join(userIDOpts, ", "))
-	}
 
 	// Arvados Client setup
 	ac := arvados.NewClientFromEnv()
@@ -294,6 +285,7 @@ func doMain() error {
 	remoteGroupUUIDs := make(map[string]bool)
 	results, err = ListAll(arv, "links", arvadosclient.Dict{
 		"filters": [][]string{
+			{"owner_uuid", "=", sysUserUUID},
 			{"link_class", "=", "tag"},
 			{"name", "=", groupTag},
 			{"head_kind", "=", "arvados#group"},
@@ -326,6 +318,7 @@ func doMain() error {
 		group := item.(group)
 		results, err := ListAll(arv, "links", arvadosclient.Dict{
 			"filters": [][]string{
+				{"owner_uuid", "=", sysUserUUID},
 				{"link_class", "=", "permission"},
 				{"name", "=", "can_read"},
 				{"tail_uuid", "=", group.UUID},
@@ -355,9 +348,9 @@ func doMain() error {
 	log.Printf("Found %d remote groups", len(remoteGroups))
 
 	groupsCreated := 0
-	membersAdded := 0
-	membersRemoved := 0
-	membersSkipped := 0
+	membershipsAdded := 0
+	membershipsRemoved := 0
+	membershipsSkipped := 0
 
 	csvReader := csv.NewReader(f)
 	for {
@@ -372,13 +365,13 @@ func doMain() error {
 		groupMember := record[1] // User ID (username or email)
 		if groupName == "" || groupMember == "" {
 			log.Printf("Warning: CSV record has at least one field empty (%s, %s). Skipping", groupName, groupMember)
-			membersSkipped++
+			membershipsSkipped++
 			continue
 		}
 		if _, found := userIDToUUID[groupMember]; !found {
 			// User not present on the system, skip.
 			log.Printf("Warning: there's no user with %s %q on the system, skipping.", *userID, groupMember)
-			membersSkipped++
+			membershipsSkipped++
 			continue
 		}
 		if _, found := groupNameToUUID[groupName]; !found {
@@ -394,20 +387,19 @@ func doMain() error {
 				},
 			}, &group)
 			if err != nil {
-				return fmt.Errorf("error creating group named %q: %s",
-					groupName, err)
+				return fmt.Errorf("error creating group named %q: %s", groupName, err)
 			}
 			link := make(map[string]interface{})
 			err = arv.Create("links", arvadosclient.Dict{
 				"link": arvadosclient.Dict{
+					"owner_uuid": sysUserUUID,
 					"link_class": "tag",
 					"name":       groupTag,
 					"head_uuid":  group.UUID,
 				},
 			}, &link)
 			if err != nil {
-				return fmt.Errorf("error creating tag for group %q: %s",
-					groupName, err)
+				return fmt.Errorf("error creating tag for newly created group %q (%s): %s", groupName, group.UUID, err)
 			}
 			// Update cached group data
 			groupNameToUUID[groupName] = group.UUID
@@ -429,6 +421,7 @@ func doMain() error {
 			link := make(map[string]interface{})
 			err := arv.Create("links", arvadosclient.Dict{
 				"link": arvadosclient.Dict{
+					"owner_uuid": sysUserUUID,
 					"link_class": "permission",
 					"name":       "can_read",
 					"tail_uuid":  groupUUID,
@@ -436,10 +429,9 @@ func doMain() error {
 				},
 			}, &link)
 			if err != nil {
-				return fmt.Errorf("error adding user %q to group %q: %s",
-					groupMember, groupName, err)
+				return fmt.Errorf("error adding user %q to group %q: %s", groupMember, groupName, err)
 			}
-			membersAdded++
+			membershipsAdded++
 		}
 		gi.CurrentMembers[groupMember] = true
 	}
@@ -450,11 +442,15 @@ func doMain() error {
 		evictedMembers := subtract(gi.PreviousMembers, gi.CurrentMembers)
 		groupName := gi.Group.Name
 		if len(evictedMembers) > 0 {
-			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
+			log.Printf("Removing %d users from group %q: %v", len(evictedMembers), groupName, evictedMembers)
 		}
 		for evictedUser := range evictedMembers {
+			if *verbose {
+				log.Printf("Getting group membership link for user %q (%s) on group %q (%s)", evictedUser, userIDToUUID[evictedUser], groupName, groupUUID)
+			}
 			links, err := ListAll(arv, "links", arvadosclient.Dict{
 				"filters": [][]string{
+					{"owner_uuid", "=", sysUserUUID},
 					{"link_class", "=", "permission"},
 					{"name", "=", "can_read"},
 					{"tail_uuid", "=", groupUUID},
@@ -475,10 +471,10 @@ func doMain() error {
 					return fmt.Errorf("error removing user %q from group %q: %s", evictedUser, groupName, err)
 				}
 			}
-			membersRemoved++
+			membershipsRemoved++
 		}
 	}
-	log.Printf("Groups created: %d, members added: %d, members removed: %d, members skipped: %d", groupsCreated, membersAdded, membersRemoved, membersSkipped)
+	log.Printf("Groups created: %d. Memberships added: %d, removed: %d, skipped: %d", groupsCreated, membershipsAdded, membershipsRemoved, membershipsSkipped)
 
 	return nil
 }
