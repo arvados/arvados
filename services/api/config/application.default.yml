@@ -383,6 +383,19 @@ common:
   reuse_job_if_outputs_differ: false
 
   ###
+  ### Federation support.
+  ###
+
+  # Map known prefixes to hosts. Example:
+  # remote_hosts:
+  #   zzzzz: zzzzz.example.com
+  remote_hosts: {}
+
+  # Use {prefix}.arvadosapi.com for any prefix not given in
+  # remote_hosts above.
+  remote_hosts_via_dns: true
+
+  ###
   ### Remaining assorted configuration options.
   ###
 

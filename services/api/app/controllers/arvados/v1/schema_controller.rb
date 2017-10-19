@@ -17,7 +17,13 @@ class Arvados::V1::SchemaController < ApplicationController
 
   def index
     expires_in 24.hours, public: true
-    discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
+    send_json discovery_doc
+  end
+
+  protected
+
+  def discovery_doc
+    Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       discovery = {
         kind: "discovery#restDescription",
@@ -49,6 +55,8 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogThrottleLines: Rails.application.config.crunch_log_throttle_lines,
         crunchLimitLogBytesPerJob: Rails.application.config.crunch_limit_log_bytes_per_job,
         crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
+        remoteHosts: Rails.configuration.remote_hosts,
+        remoteHostsViaDNS: Rails.configuration.remote_hosts_via_dns,
         websocketUrl: Rails.application.config.websocket_address,
         parameters: {
           alt: {
@@ -379,6 +387,5 @@ class Arvados::V1::SchemaController < ApplicationController
       end
       discovery
     end
-    send_json discovery
   end
 end

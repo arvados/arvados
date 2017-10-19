@@ -6,6 +6,7 @@ class ApiClientAuthorization < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  extend CurrentApiClient
 
   belongs_to :api_client
   belongs_to :user
@@ -82,6 +83,12 @@ class ApiClientAuthorization < ArvadosModel
     ["#{table_name}.id desc"]
   end
 
+  def self.remote_host(uuid:)
+    Rails.configuration.remote_hosts[uuid[0..4]] ||
+      (Rails.configuration.remote_hosts_via_dns &&
+       uuid[0..4]+".arvadosapi.com")
+  end
+
   def self.validate(token:, remote:)
     return nil if !token
     remote ||= Rails.configuration.uuid_prefix
@@ -97,6 +104,33 @@ class ApiClientAuthorization < ArvadosModel
          (secret == auth.api_token ||
           secret == OpenSSL::HMAC.hexdigest('sha1', auth.api_token, remote))
         return auth
+      elsif uuid[0..4] != Rails.configuration.uuid_prefix
+        # Token was issued by a different cluster. If it's expired or
+        # missing in our database, ask the originating cluster to
+        # [re]validate it.
+        arv = Arvados.new(api_host: remote_host(uuid: uuid),
+                          api_token: token)
+        remote_user = arv.user.current(remote_id: Rails.configuration.uuid_prefix)
+        if remote_user && remote_user[:uuid][0..4] == uuid[0..4]
+          act_as_system_user do
+            # Add/update user and token in our database so we can
+            # validate subsequent requests faster.
+            user = User.find_or_create_by(uuid: remote_user[:uuid])
+            user.update_attributes!(remote_user)
+            auth = ApiClientAuthorization.
+                   includes(:user).
+                   find_or_create_by(uuid: uuid,
+                                     api_token: token,
+                                     user: user,
+                                     api_client_id: 0)
+            # Accept this token (and don't reload the user record) for
+            # 5 minutes. TODO: Request the actual api_client_auth
+            # record from the remote server in case it wants the token
+            # to expire sooner.
+            auth.update_attributes!(expires_at: Time.now + 5.minutes)
+          end
+          return auth
+        end
       end
     else
       auth = ApiClientAuthorization.

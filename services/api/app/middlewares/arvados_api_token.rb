@@ -28,17 +28,17 @@ class ArvadosApiToken
 
     auth = ApiClientAuthorization.
            validate(token: Thread.current[:supplied_token], remote: false)
-    if auth
-      auth.last_used_at = Time.now
-      auth.last_used_by_ip_address = remote_ip.to_s
-      auth.save validate: false
-    end
-
     Thread.current[:api_client_ip_address] = remote_ip
     Thread.current[:api_client_authorization] = auth
     Thread.current[:api_client_uuid] = auth.andand.api_client.andand.uuid
     Thread.current[:api_client] = auth.andand.api_client
     Thread.current[:user] = auth.andand.user
+
+    if auth
+      auth.last_used_at = Time.now
+      auth.last_used_by_ip_address = remote_ip.to_s
+      auth.save validate: false
+    end
 
     @app.call env if @app
   end
