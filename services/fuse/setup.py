@@ -24,6 +24,7 @@ if '--short-tests-only' in sys.argv:
     sys.argv.remove('--short-tests-only')
 
 setup(name='arvados_fuse',
+      version="1.1.1",
       description='Arvados FUSE driver',
       long_description=open(README).read(),
       author='Arvados',
@@ -48,5 +49,4 @@ setup(name='arvados_fuse',
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False,
-      cmdclass={'egg_info': tagger},
       )
