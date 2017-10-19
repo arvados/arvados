@@ -35,6 +35,7 @@ setup(name="arvados-docker-cleaner",
           'setuptools',
       ],
       tests_require=[
+          'requests',
           'pbr<1.7.0',
           'mock',
       ],
