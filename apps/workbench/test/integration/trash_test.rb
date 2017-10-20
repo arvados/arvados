@@ -46,7 +46,9 @@ class TrashTest < ActionDispatch::IntegrationTest
 
     wait_for_ajax
 
-    assert_no_text expired1['name']
+    assert_text "The collection with UUID #{expired1['uuid']} is in the trash"
+
+    click_on "Click here to untrash '#{expired1['name']}'"
 
     # verify that the two un-trashed items are now shown in /collections page
     visit page_with_token('active', "/collections")
@@ -76,24 +78,22 @@ class TrashTest < ActionDispatch::IntegrationTest
 
       # Un-trash item
       if method == "button"
-        within('tr', text: deleted['name']) do
+        within('tr', text: deleted['uuid']) do
           first('.fa-recycle').click
         end
+        assert_text "The group with UUID #{deleted['uuid']} is in the trash"
+        click_on "Click here to untrash '#{deleted['name']}'"
       else
-        within('tr', text: deleted['name']) do
+        within('tr', text: deleted['uuid']) do
           first('input').click
         end
         click_button 'Selection...'
         within('.selection-action-container') do
           click_link 'Un-trash selected items'
         end
+        wait_for_ajax
+        assert_no_text deleted['uuid']
       end
-
-      wait_for_ajax
-
-      assert_no_text deleted['name']
-      visit current_path
-      assert_no_text deleted['name']
 
       # check that the un-trashed item are now shown on parent project page
       visit page_with_token('active', "/projects/zzzzz-tpzed-xurymjxw79nv3jz")
