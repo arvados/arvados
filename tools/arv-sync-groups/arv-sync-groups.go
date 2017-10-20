@@ -18,9 +18,8 @@ import (
 )
 
 type resourceList interface {
-	items() []interface{}
-	itemsAvailable() int
-	offset() int
+	Len() int
+	GetItems() []interface{}
 }
 
 type groupInfo struct {
@@ -48,25 +47,18 @@ func (u user) GetID(idSelector string) (string, error) {
 
 // userList implements resourceList interface
 type userList struct {
-	Items          []user `json:"items"`
-	ItemsAvailable int    `json:"items_available"`
-	Offset         int    `json:"offset"`
+	Items []user `json:"items"`
 }
 
-func (l userList) items() []interface{} {
-	var out []interface{}
+func (l userList) Len() int {
+	return len(l.Items)
+}
+
+func (l userList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
 	}
-	return out
-}
-
-func (l userList) itemsAvailable() int {
-	return l.ItemsAvailable
-}
-
-func (l userList) offset() int {
-	return l.Offset
+	return
 }
 
 type group struct {
@@ -77,25 +69,18 @@ type group struct {
 
 // groupList implements resourceList interface
 type groupList struct {
-	Items          []group `json:"items"`
-	ItemsAvailable int     `json:"items_available"`
-	Offset         int     `json:"offset"`
+	Items []group `json:"items"`
 }
 
-func (l groupList) items() []interface{} {
-	var out []interface{}
+func (l groupList) Len() int {
+	return len(l.Items)
+}
+
+func (l groupList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
 	}
-	return out
-}
-
-func (l groupList) itemsAvailable() int {
-	return l.ItemsAvailable
-}
-
-func (l groupList) offset() int {
-	return l.Offset
+	return
 }
 
 type link struct {
@@ -110,30 +95,22 @@ type link struct {
 
 // linkList implements resourceList interface
 type linkList struct {
-	Items          []link `json:"items"`
-	ItemsAvailable int    `json:"items_available"`
-	Offset         int    `json:"offset"`
+	Items []link `json:"items"`
 }
 
-func (l linkList) items() []interface{} {
-	var out []interface{}
+func (l linkList) Len() int {
+	return len(l.Items)
+}
+
+func (l linkList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
 	}
-	return out
-}
-
-func (l linkList) itemsAvailable() int {
-	return l.ItemsAvailable
-}
-
-func (l linkList) offset() int {
-	return l.Offset
+	return
 }
 
 func main() {
-	err := doMain()
-	if err != nil {
+	if err := doMain(); err != nil {
 		log.Fatalf("%v", err)
 	}
 }
@@ -218,12 +195,11 @@ func doMain() error {
 	if *parentGroupUUID == "" {
 		// UUID not provided, search for preexisting parent group
 		var gl groupList
-		err := arv.List("groups", arvadosclient.Dict{
+		if err := arv.List("groups", arvadosclient.Dict{
 			"filters": [][]string{
 				{"name", "=", remoteGroupParentName},
 				{"owner_uuid", "=", sysUserUUID}},
-		}, &gl)
-		if err != nil {
+		}, &gl); err != nil {
 			return fmt.Errorf("error searching for parent group: %s", err)
 		}
 		if len(gl.Items) == 0 {
@@ -231,12 +207,11 @@ func doMain() error {
 			if *verbose {
 				log.Println("Default parent group not found, creating...")
 			}
-			err := arv.Create("groups", arvadosclient.Dict{
+			if err := arv.Create("groups", arvadosclient.Dict{
 				"group": arvadosclient.Dict{
 					"name":       remoteGroupParentName,
 					"owner_uuid": sysUserUUID},
-			}, &parentGroup)
-			if err != nil {
+			}, &parentGroup); err != nil {
 				return fmt.Errorf("error creating system user owned group named %q: %s", remoteGroupParentName, err)
 			}
 		} else if len(gl.Items) == 1 {
@@ -249,8 +224,7 @@ func doMain() error {
 		}
 	} else {
 		// UUID provided. Check if exists and if it's owned by system user
-		err := arv.Get("groups", *parentGroupUUID, arvadosclient.Dict{}, &parentGroup)
-		if err != nil {
+		if err := arv.Get("groups", *parentGroupUUID, arvadosclient.Dict{}, &parentGroup); err != nil {
 			return fmt.Errorf("error searching for parent group with UUID %q: %s", *parentGroupUUID, err)
 		}
 		if parentGroup.OwnerUUID != sysUserUUID {
@@ -384,25 +358,23 @@ func doMain() error {
 				log.Printf("Remote group %q not found, creating...", groupName)
 			}
 			var group group
-			err := arv.Create("groups", arvadosclient.Dict{
+			if err := arv.Create("groups", arvadosclient.Dict{
 				"group": arvadosclient.Dict{
 					"name":       groupName,
 					"owner_uuid": parentGroup.UUID,
 				},
-			}, &group)
-			if err != nil {
+			}, &group); err != nil {
 				return fmt.Errorf("error creating group named %q: %s", groupName, err)
 			}
 			link := make(map[string]interface{})
-			err = arv.Create("links", arvadosclient.Dict{
+			if err = arv.Create("links", arvadosclient.Dict{
 				"link": arvadosclient.Dict{
 					"owner_uuid": sysUserUUID,
 					"link_class": "tag",
 					"name":       groupTag,
 					"head_uuid":  group.UUID,
 				},
-			}, &link)
-			if err != nil {
+			}, &link); err != nil {
 				return fmt.Errorf("error creating tag for newly created group %q (%s): %s", groupName, group.UUID, err)
 			}
 			// Update cached group data
@@ -423,7 +395,7 @@ func doMain() error {
 			}
 			// User wasn't a member, but should.
 			link := make(map[string]interface{})
-			err := arv.Create("links", arvadosclient.Dict{
+			if err := arv.Create("links", arvadosclient.Dict{
 				"link": arvadosclient.Dict{
 					"owner_uuid": sysUserUUID,
 					"link_class": "permission",
@@ -431,11 +403,10 @@ func doMain() error {
 					"tail_uuid":  groupUUID,
 					"head_uuid":  userIDToUUID[groupMember],
 				},
-			}, &link)
-			if err != nil {
+			}, &link); err != nil {
 				return fmt.Errorf("error adding read group %q -> user %q permission: %s", groupName, groupMember, err)
 			}
-			err = arv.Create("links", arvadosclient.Dict{
+			if err = arv.Create("links", arvadosclient.Dict{
 				"link": arvadosclient.Dict{
 					"owner_uuid": sysUserUUID,
 					"link_class": "permission",
@@ -443,8 +414,7 @@ func doMain() error {
 					"tail_uuid":  userIDToUUID[groupMember],
 					"head_uuid":  groupUUID,
 				},
-			}, &link)
-			if err != nil {
+			}, &link); err != nil {
 				return fmt.Errorf("error adding manage user %q -> group %q permission: %s", groupMember, groupName, err)
 			}
 			membershipsAdded++
@@ -489,8 +459,7 @@ func doMain() error {
 				if *verbose {
 					log.Printf("Removing %q from group %q", evictedUser, gi.Group.Name)
 				}
-				err := arv.Delete("links", link.UUID, arvadosclient.Dict{}, &l)
-				if err != nil {
+				if err := arv.Delete("links", link.UUID, arvadosclient.Dict{}, &l); err != nil {
 					return fmt.Errorf("error removing user %q from group %q: %s", evictedUser, groupName, err)
 				}
 			}
@@ -503,24 +472,23 @@ func doMain() error {
 }
 
 // ListAll : Adds all objects of type 'resource' to the 'allItems' list
-func ListAll(arv *arvadosclient.ArvadosClient, resource string, parameters arvadosclient.Dict, rl resourceList) (allItems []interface{}, err error) {
+func ListAll(arv *arvadosclient.ArvadosClient, res string, params arvadosclient.Dict, rl resourceList) (allItems []interface{}, err error) {
 	// Use the maximum page size the server allows
 	limit := 1<<31 - 1
-	parameters["limit"] = limit
-	parameters["offset"] = 0
-	parameters["order"] = "uuid"
+	params["limit"] = limit
+	params["offset"] = 0
+	params["order"] = "uuid"
 	for {
-		err = arv.List(resource, parameters, &rl)
-		if err != nil {
+		if err = arv.List(res, params, &rl); err != nil {
 			return allItems, err
 		}
-		if len(rl.items()) == 0 {
+		if rl.Len() == 0 {
 			break
 		}
-		for _, i := range rl.items() {
+		for _, i := range rl.GetItems() {
 			allItems = append(allItems, i)
 		}
-		parameters["offset"] = rl.offset() + len(rl.items())
+		params["offset"] = params["offset"].(int) + rl.Len()
 	}
 	return allItems, nil
 }
