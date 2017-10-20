@@ -708,10 +708,10 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test "list readable groups with salted token" do
-    salted_token = salt_token(fixture: :active, remote_id: 'zbbbb')
+    salted_token = salt_token(fixture: :active, remote: 'zbbbb')
     ArvadosApiToken.new.call("rack.input" => "",
                              "HTTP_AUTHORIZATION" => "Bearer #{salted_token}")
-    get :index, {remote_id: 'zbbbb', limit: 10000}
+    get :index, {remote: 'zbbbb', limit: 10000}
     assert_response 200
     group_uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes(group_uuids, 'zzzzz-j7d0g-fffffffffffffff')

@@ -110,7 +110,7 @@ class ApiClientAuthorization < ArvadosModel
         # [re]validate it.
         arv = Arvados.new(api_host: remote_host(uuid: uuid),
                           api_token: token)
-        remote_user = arv.user.current(remote_id: Rails.configuration.uuid_prefix)
+        remote_user = arv.user.current(remote: Rails.configuration.uuid_prefix)
         if remote_user && remote_user[:uuid][0..4] == uuid[0..4]
           act_as_system_user do
             # Add/update user and token in our database so we can

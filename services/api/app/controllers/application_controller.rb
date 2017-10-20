@@ -346,12 +346,12 @@ class ApplicationController < ActionController::Base
     @read_auths.select! { |auth| auth.scopes_allow_request? request }
 
     # Use a salted token as a reader token for /groups/ and /users/current
-    if params[:remote_id] && (
+    if params[:remote] && (
          request.path.start_with?('/arvados/v1/groups') ||
          request.path.start_with?('/arvados/v1/users/current'))
       auth = ApiClientAuthorization.
              validate(token: Thread.current[:supplied_token],
-                      remote: params[:remote_id])
+                      remote: params[:remote])
       if auth && auth.user
         Thread.current[:user] = auth.user
         @read_auths << auth

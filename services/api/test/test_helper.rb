@@ -127,11 +127,11 @@ class ActiveSupport::TestCase
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
 
-  def salt_token(fixture:, remote_id:)
+  def salt_token(fixture:, remote:)
     auth = api_client_authorizations(fixture)
     uuid = auth.uuid
     token = auth.api_token
-    hmac = OpenSSL::HMAC.hexdigest('sha1', token, remote_id)
+    hmac = OpenSSL::HMAC.hexdigest('sha1', token, remote)
     return "v2/#{uuid}/#{hmac}"
   end
 
