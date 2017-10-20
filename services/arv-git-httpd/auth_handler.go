@@ -78,7 +78,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	// "foo/bar".
 	pathParts := strings.SplitN(r.URL.Path[1:], ".git/", 2)
 	if len(pathParts) != 2 {
-		statusCode, statusText = http.StatusBadRequest, "bad request"
+		statusCode, statusText = http.StatusNotFound, "not found"
 		return
 	}
 	repoName = pathParts[0]
