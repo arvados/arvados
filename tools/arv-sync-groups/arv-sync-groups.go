@@ -502,25 +502,25 @@ func doMain() error {
 	return nil
 }
 
-// ListAll : Adds all objects of type 'resource' to the 'output' list
+// ListAll : Adds all objects of type 'resource' to the 'allItems' list
 func ListAll(arv *arvadosclient.ArvadosClient, resource string, parameters arvadosclient.Dict, rl resourceList) (allItems []interface{}, err error) {
-	if _, ok := parameters["limit"]; !ok {
-		// Default limit value: use the maximum page size the server allows
-		parameters["limit"] = 1<<31 - 1
-	}
-	offset := 0
-	itemsAvailable := parameters["limit"].(int)
-	for len(allItems) < itemsAvailable {
-		parameters["offset"] = offset
+	// Use the maximum page size the server allows
+	limit := 1<<31 - 1
+	parameters["limit"] = limit
+	parameters["offset"] = 0
+	parameters["order"] = "uuid"
+	for {
 		err = arv.List(resource, parameters, &rl)
 		if err != nil {
 			return allItems, err
 		}
+		if len(rl.items()) == 0 {
+			break
+		}
 		for _, i := range rl.items() {
 			allItems = append(allItems, i)
 		}
-		offset = rl.offset() + len(rl.items())
-		itemsAvailable = rl.itemsAvailable()
+		parameters["offset"] = rl.offset() + len(rl.items())
 	}
 	return allItems, nil
 }
