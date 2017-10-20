@@ -1273,9 +1273,9 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
 
         c["b1"].writeto(0, b"1b", 0)
 
-        self.assertEquals(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
-        self.assertEquals(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
-        self.assertEquals(c["b2"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 2:2:b2\n")
+        self.assertEqual(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
+        self.assertEqual(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
+        self.assertEqual(c["b2"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 2:2:b2\n")
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
