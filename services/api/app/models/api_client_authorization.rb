@@ -110,27 +110,34 @@ class ApiClientAuthorization < ArvadosModel
         # [re]validate it.
         arv = Arvados.new(api_host: remote_host(uuid: uuid),
                           api_token: token)
-        remote_user = arv.user.current(remote: Rails.configuration.uuid_prefix)
-        if remote_user && remote_user[:uuid][0..4] == uuid[0..4]
-          act_as_system_user do
-            # Add/update user and token in our database so we can
-            # validate subsequent requests faster.
-            user = User.find_or_create_by(uuid: remote_user[:uuid])
-            user.update_attributes!(remote_user)
-            auth = ApiClientAuthorization.
-                   includes(:user).
-                   find_or_create_by(uuid: uuid,
-                                     api_token: token,
-                                     user: user,
-                                     api_client_id: 0)
-            # Accept this token (and don't reload the user record) for
-            # 5 minutes. TODO: Request the actual api_client_auth
-            # record from the remote server in case it wants the token
-            # to expire sooner.
-            auth.update_attributes!(expires_at: Time.now + 5.minutes)
-          end
-          return auth
+        begin
+          remote_user = arv.user.current(remote: Rails.configuration.uuid_prefix)
+        rescue => e
+          logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
+          return nil
         end
+        if !remote_user.is_a?(Hash) || !remote_user[:uuid].is_a?(String) || remote_user[:uuid][0..4] != uuid[0..4]
+          logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
+          return nil
+        end
+        act_as_system_user do
+          # Add/update user and token in our database so we can
+          # validate subsequent requests faster.
+          user = User.find_or_create_by(uuid: remote_user[:uuid])
+          user.update_attributes!(remote_user.merge(is_admin: false))
+          auth = ApiClientAuthorization.
+                 includes(:user).
+                 find_or_create_by(uuid: uuid,
+                                   api_token: token,
+                                   user: user,
+                                   api_client_id: 0)
+          # Accept this token (and don't reload the user record) for
+          # 5 minutes. TODO: Request the actual api_client_auth
+          # record from the remote server in case it wants the token
+          # to expire sooner.
+          auth.update_attributes!(expires_at: Time.now + 5.minutes)
+        end
+        return auth
       end
     else
       auth = ApiClientAuthorization.
