@@ -326,12 +326,16 @@ func doMain() error {
 			},
 		}, &linkList{})
 		if err != nil {
-			return fmt.Errorf("error getting member links: %s", err)
+			return fmt.Errorf("error getting member links for group %q: %s", group.Name, err)
 		}
 		// Build a list of user ids (email or username) belonging to this group
 		membersSet := make(map[string]bool)
 		for _, item := range results {
 			link := item.(link)
+			// We may receive an old link pointing to a removed user
+			if _, found := allUsers[link.HeadUUID]; !found {
+				continue
+			}
 			memberID, err := allUsers[link.HeadUUID].GetID(*userID)
 			if err != nil {
 				return err
@@ -429,7 +433,19 @@ func doMain() error {
 				},
 			}, &link)
 			if err != nil {
-				return fmt.Errorf("error adding user %q to group %q: %s", groupMember, groupName, err)
+				return fmt.Errorf("error adding read group %q -> user %q permission: %s", groupName, groupMember, err)
+			}
+			err = arv.Create("links", arvadosclient.Dict{
+				"link": arvadosclient.Dict{
+					"owner_uuid": sysUserUUID,
+					"link_class": "permission",
+					"name":       "manage",
+					"tail_uuid":  userIDToUUID[groupMember],
+					"head_uuid":  groupUUID,
+				},
+			}, &link)
+			if err != nil {
+				return fmt.Errorf("error adding manage user %q -> group %q permission: %s", groupMember, groupName, err)
 			}
 			membershipsAdded++
 		}
@@ -442,23 +458,30 @@ func doMain() error {
 		evictedMembers := subtract(gi.PreviousMembers, gi.CurrentMembers)
 		groupName := gi.Group.Name
 		if len(evictedMembers) > 0 {
-			log.Printf("Removing %d users from group %q: %v", len(evictedMembers), groupName, evictedMembers)
+			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
 		}
 		for evictedUser := range evictedMembers {
 			if *verbose {
-				log.Printf("Getting group membership link for user %q (%s) on group %q (%s)", evictedUser, userIDToUUID[evictedUser], groupName, groupUUID)
+				log.Printf("Getting group membership links for user %q (%s) on group %q (%s)", evictedUser, userIDToUUID[evictedUser], groupName, groupUUID)
 			}
-			links, err := ListAll(arv, "links", arvadosclient.Dict{
-				"filters": [][]string{
-					{"owner_uuid", "=", sysUserUUID},
-					{"link_class", "=", "permission"},
-					{"name", "=", "can_read"},
+			var links []interface{}
+			// Search for all group<->user links (both ways)
+			for _, filter := range [][][]string{
+				// Group -> User
+				{{"link_class", "=", "permission"},
 					{"tail_uuid", "=", groupUUID},
-					{"head_uuid", "=", userIDToUUID[evictedUser]},
-				},
-			}, &linkList{})
-			if err != nil {
-				return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", evictedUser, groupName, err)
+					{"head_uuid", "=", userIDToUUID[evictedUser]}},
+				// Group <- User
+				{{"link_class", "=", "permission"},
+					{"tail_uuid", "=", userIDToUUID[evictedUser]},
+					{"head_uuid", "=", groupUUID}}} {
+				l, err := ListAll(arv, "links", arvadosclient.Dict{"filters": filter}, &linkList{})
+				if err != nil {
+					return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", evictedUser, groupName, err)
+				}
+				for _, link := range l {
+					links = append(links, link)
+				}
 			}
 			for _, item := range links {
 				link := item.(link)
