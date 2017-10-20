@@ -26,6 +26,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
            value="<%= params[:search] %>" />
   </div>
 
+  <p>
+    <b>Note:</b> Projects which are a subproject of a trashed project are only shown when searching the trash.
+  </p>
+
   <div>
     <table id="trash-index" class="topalign table table-condensed table-fixedlayout">
       <colgroup>
