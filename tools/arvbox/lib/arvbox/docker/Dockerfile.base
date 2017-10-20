@@ -18,7 +18,7 @@ RUN apt-get update && \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
     apt-transport-https ca-certificates slurm-wlm \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
-    libgnutls28-dev python3-dev vim cython gnupg dirmngr && \
+    libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
