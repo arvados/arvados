@@ -386,6 +386,14 @@ class CollectionWriter(CollectionBase):
             ret += locators
         return ret
 
+    def save_new(self, name=None):
+        return self._api_client.collections().create(
+            ensure_unique_name=True,
+            body={
+                'name': name,
+                'manifest_text': self.manifest_text(),
+            }).execute(num_retries=self.num_retries)
+
 
 class ResumableCollectionWriter(CollectionWriter):
     STATE_PROPS = ['_current_stream_files', '_current_stream_length',
@@ -1325,64 +1333,24 @@ class Collection(RichCollectionBase):
         # it.  If instantiation fails, we'll fall back to the except
         # clause, just like any other Collection lookup
         # failure. Return an exception, or None if successful.
-        try:
-            self._remember_api_response(self._my_api().collections().get(
-                uuid=self._manifest_locator).execute(
-                    num_retries=self.num_retries))
-            self._manifest_text = self._api_response['manifest_text']
-            self._portable_data_hash = self._api_response['portable_data_hash']
-            # If not overriden via kwargs, we should try to load the
-            # replication_desired from the API server
-            if self.replication_desired is None:
-                self.replication_desired = self._api_response.get('replication_desired', None)
-            return None
-        except Exception as e:
-            return e
-
-    def _populate_from_keep(self):
-        # Retrieve a manifest directly from Keep. This has a chance of
-        # working if [a] the locator includes a permission signature
-        # or [b] the Keep services are operating in world-readable
-        # mode. Return an exception, or None if successful.
-        try:
-            self._manifest_text = self._my_keep().get(
-                self._manifest_locator, num_retries=self.num_retries).decode()
-        except Exception as e:
-            return e
+        self._remember_api_response(self._my_api().collections().get(
+            uuid=self._manifest_locator).execute(
+                num_retries=self.num_retries))
+        self._manifest_text = self._api_response['manifest_text']
+        self._portable_data_hash = self._api_response['portable_data_hash']
+        # If not overriden via kwargs, we should try to load the
+        # replication_desired from the API server
+        if self.replication_desired is None:
+            self.replication_desired = self._api_response.get('replication_desired', None)
 
     def _populate(self):
-        if self._manifest_locator is None and self._manifest_text is None:
-            return
-        error_via_api = None
-        error_via_keep = None
-        should_try_keep = ((self._manifest_text is None) and
-                           arvados.util.keep_locator_pattern.match(
-                               self._manifest_locator))
-        if ((self._manifest_text is None) and
-            arvados.util.signed_locator_pattern.match(self._manifest_locator)):
-            error_via_keep = self._populate_from_keep()
         if self._manifest_text is None:
-            error_via_api = self._populate_from_api_server()
-            if error_via_api is not None and not should_try_keep:
-                raise error_via_api
-        if ((self._manifest_text is None) and
-            not error_via_keep and
-            should_try_keep):
-            # Looks like a keep locator, and we didn't already try keep above
-            error_via_keep = self._populate_from_keep()
-        if self._manifest_text is None:
-            # Nothing worked!
-            raise errors.NotFoundError(
-                ("Failed to retrieve collection '{}' " +
-                 "from either API server ({}) or Keep ({})."
-                 ).format(
-                    self._manifest_locator,
-                    error_via_api,
-                    error_via_keep))
-        # populate
+            if self._manifest_locator is None:
+                return
+            else:
+                self._populate_from_api_server()
         self._baseline_manifest = self._manifest_text
         self._import_manifest(self._manifest_text)
-
 
     def _has_collection_uuid(self):
         return self._manifest_locator is not None and re.match(arvados.util.collection_uuid_pattern, self._manifest_locator)
