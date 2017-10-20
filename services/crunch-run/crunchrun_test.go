@@ -312,6 +312,9 @@ func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error
 	return fmt.Sprintf("%s+%d", hash, len(buf)), len(buf), nil
 }
 
+func (*KeepTestClient) ClearBlockCache() {
+}
+
 type FileWrapper struct {
 	io.ReadCloser
 	len int64
@@ -417,10 +420,16 @@ func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename stri
 	return nil, errors.New("KeepError")
 }
 
+func (KeepErrorTestClient) ClearBlockCache() {
+}
+
 type KeepReadErrorTestClient struct{}
 
 func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, nil
+}
+
+func (KeepReadErrorTestClient) ClearBlockCache() {
 }
 
 type ErrorReader struct{}

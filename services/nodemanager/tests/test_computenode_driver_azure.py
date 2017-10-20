@@ -109,7 +109,7 @@ echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
         self.driver_mock().list_nodes.return_value = nodelist
         n = driver.list_nodes()
         self.assertEqual(nodelist, n)
-        self.driver_mock().list_nodes.assert_called_with(ex_fetch_nic=False, ex_resource_group='TestResourceGroup')
+        self.driver_mock().list_nodes.assert_called_with(ex_fetch_nic=False, ex_fetch_power_state=False, ex_resource_group='TestResourceGroup')
 
     def test_create_can_find_node_after_timeout(self):
         super(AzureComputeNodeDriverTestCase,

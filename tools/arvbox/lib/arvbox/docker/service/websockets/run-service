@@ -8,6 +8,12 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+if test -s /var/lib/arvados/api_rails_env ; then
+  RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+else
+  RAILS_ENV=development
+fi
+
 mkdir -p /var/lib/gopath
 cd /var/lib/gopath
 
@@ -28,7 +34,7 @@ Client:
   APIHost: $localip:${services[api]}
   Insecure: true
 Postgres:
-  dbname: arvados_development
+  dbname: arvados_$RAILS_ENV
   user: arvados
   password: $database_pw
   host: localhost
