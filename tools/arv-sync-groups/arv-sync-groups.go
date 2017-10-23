@@ -274,7 +274,8 @@ func doMain() error {
 	}
 	for _, item := range results {
 		group := item.(Group)
-		params := arvados.ResourceListParams{
+		// Group -> User filter
+		g2uFilter := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
 				Attr:     "owner_uuid",
 				Operator: "=",
@@ -297,16 +298,55 @@ func doMain() error {
 				Operand:  "arvados#user",
 			}},
 		}
-		results, err := ListAll(ac, "links", params, &linkList{})
+		// User -> Group filter
+		u2gFilter := arvados.ResourceListParams{
+			Filters: []arvados.Filter{{
+				Attr:     "owner_uuid",
+				Operator: "=",
+				Operand:  sysUserUUID,
+			}, {
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "name",
+				Operator: "=",
+				Operand:  "manage",
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}, {
+				Attr:     "tail_kind",
+				Operator: "=",
+				Operand:  "arvados#user",
+			}},
+		}
+		g2uLinks, err := ListAll(ac, "links", g2uFilter, &linkList{})
 		if err != nil {
-			return fmt.Errorf("error getting member links for group %q: %s", group.Name, err)
+			return fmt.Errorf("error getting member (can_read) links for group %q: %s", group.Name, err)
+		}
+		u2gLinks, err := ListAll(ac, "links", u2gFilter, &linkList{})
+		if err != nil {
+			return fmt.Errorf("error getting member (manage) links for group %q: %s", group.Name, err)
 		}
 		// Build a list of user ids (email or username) belonging to this group
 		membersSet := make(map[string]bool)
-		for _, item := range results {
+		u2gLinkSet := make(map[string]bool)
+		for _, l := range u2gLinks {
+			linkedMemberUUID := l.(Link).TailUUID
+			u2gLinkSet[linkedMemberUUID] = true
+		}
+		for _, item := range g2uLinks {
 			link := item.(Link)
-			// We may receive an old link pointing to a removed user
+			// We may have received an old link pointing to a removed account.
 			if _, found := allUsers[link.HeadUUID]; !found {
+				continue
+			}
+			// The matching User -> Group link may not exist if the link
+			// creation failed on a previous run. If that's the case, don't
+			// include this account on the previous members list.
+			if _, found := u2gLinkSet[link.HeadUUID]; !found {
 				continue
 			}
 			memberID, err := allUsers[link.HeadUUID].GetID(*userID)
@@ -341,7 +381,7 @@ func doMain() error {
 		groupName := strings.TrimSpace(record[0])
 		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
 		if groupName == "" || groupMember == "" {
-			log.Printf("Warning: CSV record has at least one field empty (%s, %s). Skipping", groupName, groupMember)
+			log.Printf("Warning: CSV record has at least one empty field (%s, %s). Skipping", groupName, groupMember)
 			membershipsSkipped++
 			continue
 		}
@@ -380,7 +420,7 @@ func doMain() error {
 			if *verbose {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
-			// User wasn't a member, but should.
+			// User wasn't a member, but should be.
 			var newLink Link
 			linkData := map[string]string{
 				"owner_uuid": sysUserUUID,
