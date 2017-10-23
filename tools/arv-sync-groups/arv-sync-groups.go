@@ -25,7 +25,7 @@ type resourceList interface {
 }
 
 type groupInfo struct {
-	Group           group
+	Group           Group
 	PreviousMembers map[string]bool
 	CurrentMembers  map[string]bool
 }
@@ -63,29 +63,33 @@ func (l userList) GetItems() (out []interface{}) {
 	return
 }
 
-type group struct {
+// Group is an arvados#group record
+type Group struct {
 	UUID      string `json:"uuid,omitempty"`
 	Name      string `json:"name,omitempty"`
 	OwnerUUID string `json:"owner_uuid,omitempty"`
 }
 
-// groupList implements resourceList interface
-type groupList struct {
-	Items []group `json:"items"`
+// GroupList implements resourceList interface
+type GroupList struct {
+	Items []Group `json:"items"`
 }
 
-func (l groupList) Len() int {
+// Len returns the amount of items this list holds
+func (l GroupList) Len() int {
 	return len(l.Items)
 }
 
-func (l groupList) GetItems() (out []interface{}) {
+// GetItems returns the list of items
+func (l GroupList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
 	}
 	return
 }
 
-type link struct {
+// Link is an arvados#link record
+type Link struct {
 	UUID      string `json:"uuid,omiempty"`
 	OwnerUUID string `json:"owner_uuid,omitempty"`
 	Name      string `json:"name,omitempty"`
@@ -96,15 +100,17 @@ type link struct {
 	TailKind  string `json:"tail_kind,omitempty"`
 }
 
-// linkList implements resourceList interface
+// LinkList implements resourceList interface
 type linkList struct {
-	Items []link `json:"items"`
+	Items []Link `json:"items"`
 }
 
+// Len returns the amount of items this list holds
 func (l linkList) Len() int {
 	return len(l.Items)
 }
 
+// GetItems returns the list of items
 func (l linkList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
@@ -119,7 +125,6 @@ func main() {
 }
 
 func doMain() error {
-	const groupTag string = "remote_group"
 	const remoteGroupParentName string = "Externally synchronized groups"
 	// Acceptable attributes to identify a user on the CSV file
 	userIDOpts := map[string]bool{
@@ -182,10 +187,10 @@ func doMain() error {
 	sysUserUUID := u.UUID[:12] + "000000000000000"
 
 	// Find/create parent group
-	var parentGroup group
+	var parentGroup Group
 	if *parentGroupUUID == "" {
 		// UUID not provided, search for preexisting parent group
-		var gl groupList
+		var gl GroupList
 		params := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
 				Attr:     "name",
@@ -253,59 +258,22 @@ func doMain() error {
 		}
 	}
 
-	// Request all UUIDs for groups tagged as remote
-	remoteGroupUUIDs := make(map[string]bool)
-	params := arvados.ResourceListParams{
-		Filters: []arvados.Filter{{
-			Attr:     "owner_uuid",
-			Operator: "=",
-			Operand:  sysUserUUID,
-		}, {
-			Attr:     "link_class",
-			Operator: "=",
-			Operand:  "tag",
-		}, {
-			Attr:     "name",
-			Operator: "=",
-			Operand:  groupTag,
-		}, {
-			Attr:     "head_kind",
-			Operator: "=",
-			Operand:  "arvados#group",
-		}},
-	}
-	results, err = ListAll(ac, "links", params, &linkList{})
-	if err != nil {
-		return fmt.Errorf("error getting remote group UUIDs: %s", err)
-	}
-	for _, item := range results {
-		link := item.(link)
-		remoteGroupUUIDs[link.HeadUUID] = true
-	}
 	// Get remote groups and their members
-	var uuidList []string
-	for uuid := range remoteGroupUUIDs {
-		uuidList = append(uuidList, uuid)
-	}
 	remoteGroups := make(map[string]*groupInfo)
 	groupNameToUUID := make(map[string]string) // Index by group name
-	params = arvados.ResourceListParams{
+	params := arvados.ResourceListParams{
 		Filters: []arvados.Filter{{
-			Attr:     "uuid",
-			Operator: "in",
-			Operand:  uuidList,
-		}, {
 			Attr:     "owner_uuid",
 			Operator: "=",
 			Operand:  parentGroup.UUID,
 		}},
 	}
-	results, err = ListAll(ac, "groups", params, &groupList{})
+	results, err = ListAll(ac, "groups", params, &GroupList{})
 	if err != nil {
-		return fmt.Errorf("error getting remote groups by UUID: %s", err)
+		return fmt.Errorf("error getting remote groups: %s", err)
 	}
 	for _, item := range results {
-		group := item.(group)
+		group := item.(Group)
 		params := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
 				Attr:     "owner_uuid",
@@ -324,7 +292,7 @@ func doMain() error {
 				Operator: "=",
 				Operand:  group.UUID,
 			}, {
-				Attr:     "head_uuid",
+				Attr:     "head_kind",
 				Operator: "=",
 				Operand:  "arvados#user",
 			}},
@@ -336,7 +304,7 @@ func doMain() error {
 		// Build a list of user ids (email or username) belonging to this group
 		membersSet := make(map[string]bool)
 		for _, item := range results {
-			link := item.(link)
+			link := item.(Link)
 			// We may receive an old link pointing to a removed user
 			if _, found := allUsers[link.HeadUUID]; !found {
 				continue
@@ -384,27 +352,17 @@ func doMain() error {
 			continue
 		}
 		if _, found := groupNameToUUID[groupName]; !found {
-			// Group doesn't exist, create and tag it before continuing
+			// Group doesn't exist, create it before continuing
 			if *verbose {
 				log.Printf("Remote group %q not found, creating...", groupName)
 			}
-			var newGroup group
+			var newGroup Group
 			groupData := map[string]string{
 				"name":       groupName,
 				"owner_uuid": parentGroup.UUID,
 			}
 			if err := ac.RequestAndDecode(&newGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
 				return fmt.Errorf("error creating group named %q: %s", groupName, err)
-			}
-			var newLink link
-			linkData := map[string]string{
-				"owner_uuid": sysUserUUID,
-				"link_class": "tag",
-				"name":       groupTag,
-				"head_uuid":  newGroup.UUID,
-			}
-			if err = ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
-				return fmt.Errorf("error creating tag for newly created group %q (%s): %s", newGroup.Name, newGroup.UUID, err)
 			}
 			// Update cached group data
 			groupNameToUUID[groupName] = newGroup.UUID
@@ -423,7 +381,7 @@ func doMain() error {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
 			// User wasn't a member, but should.
-			var newLink link
+			var newLink Link
 			linkData := map[string]string{
 				"owner_uuid": sysUserUUID,
 				"link_class": "permission",
@@ -502,11 +460,11 @@ func doMain() error {
 				}
 			}
 			for _, item := range links {
-				link := item.(link)
+				link := item.(Link)
 				if *verbose {
-					log.Printf("Removing %q from group %q", evictedUser, gi.Group.Name)
+					log.Printf("Removing permission link for %q on group %q", evictedUser, gi.Group.Name)
 				}
-				if err := ac.RequestAndDecode(&link, "DELETE", "/arvados/v1/links"+link.UUID, nil, nil); err != nil {
+				if err := ac.RequestAndDecode(&link, "DELETE", "/arvados/v1/links/"+link.UUID, nil, nil); err != nil {
 					return fmt.Errorf("error removing user %q from group %q: %s", evictedUser, groupName, err)
 				}
 			}
