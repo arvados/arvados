@@ -3,15 +3,20 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <% @objects.each do |obj| %>
-    <tr data-object-uuid="<%= obj.uuid %>" data-kind="<%= obj.kind %>" >
+  <tr data-object-uuid="<%= obj.uuid %>" data-kind="<%= obj.kind %>" >
+    <td>
+      <% if obj.editable? and obj.is_trashed %>
+        <%= check_box_tag 'uuids[]', obj.uuid, false, :class => 'persistent-selection', style: 'cursor: pointer;' %>
+      <% end %>
+    </td>
+    <td>
+      <%= if !obj.name.blank? then obj.name else obj.uuid end %>
+    </td>
+    <% if obj.is_trashed %>
       <td>
-        <% if obj.editable? %>
-          <%= check_box_tag 'uuids[]', obj.uuid, false, :class => 'persistent-selection', style: 'cursor: pointer;' %>
-        <% end %>
+        <%= link_to_if_arvados_object @owners[obj.owner_uuid], friendly_name: true %>
       </td>
-      <td>
-        <%= if !obj.name.blank? then obj.name else obj.uuid end %>
-      </td>
+
       <td>
         <% if obj.trash_at %>
           <%= render_localized_date(obj.trash_at)  %>
@@ -21,24 +26,22 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <%= render_localized_date(obj.delete_at) %>
         <% end %>
       </td>
-      <td>
-        <%= link_to_if_arvados_object obj.owner_uuid, friendly_name: true %>
+    <% else %>
+      <td colspan="2" class="trash-project-msg">
+        <%= link_to_if_arvados_object @owners[obj.owner_uuid], friendly_name: true %>
+        <br>
+        This item is contained within a trashed project.
       </td>
-      <td>
-        <%= obj.uuid %><br /><%= obj.portable_data_hash %>
-      </td>
-      <td>
-        <% for i in (0..[2, obj.files.length-1].min) %>
-          <% file = obj.files[i] %>
-          <% file_path = "#{file[0]}/#{file[1]}" %>
-          <%= file_path %><br />
-        <% end %>
-        <% if obj.files.length > 3 %>
-          <%= "(#{obj.files.length-3} more files)" %>
-        <% end %>
-      </td>
-      <td>
-        <%= render partial: 'untrash_item', locals: {object:obj} %>
-      </td>
-    </tr>
+    <% end %>
+    <td>
+      <%= obj.uuid %>
+      <% if defined? obj.portable_data_hash %>
+        <br /><%= obj.portable_data_hash %>
+      <% end %>
+    </td>
+    <td>
+      <%= render partial: 'untrash_item', locals: {object:obj} %>
+    </td>
+  </tr>
+
 <% end %>

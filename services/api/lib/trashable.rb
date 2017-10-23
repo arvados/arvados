@@ -120,7 +120,7 @@ module TrashableController
         @object.save!
       end
     else
-      raise InvalidStateTransitionError
+      raise ArvadosModel::InvalidStateTransitionError.new("Item is not trashed, cannot untrash")
     end
     show
   end
