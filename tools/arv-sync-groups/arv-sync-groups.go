@@ -5,16 +5,18 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
 type resourceList interface {
@@ -84,7 +86,8 @@ func (l groupList) GetItems() (out []interface{}) {
 }
 
 type link struct {
-	UUID      string `json:"uuid, omiempty"`
+	UUID      string `json:"uuid,omiempty"`
+	OwnerUUID string `json:"owner_uuid,omitempty"`
 	Name      string `json:"name,omitempty"`
 	LinkClass string `json:"link_class,omitempty"`
 	HeadUUID  string `json:"head_uuid,omitempty"`
@@ -138,10 +141,6 @@ func doMain() error {
 		"verbose",
 		false,
 		"Log informational messages. Off by default.")
-	retries := flags.Int(
-		"retries",
-		3,
-		"Maximum number of times to retry server requests that encounter temporary failures (e.g., server down). Default 3.")
 	parentGroupUUID := flags.String(
 		"parent-group-uuid",
 		"",
@@ -151,9 +150,6 @@ func doMain() error {
 	flags.Parse(os.Args[1:])
 
 	// Validations
-	if *retries < 0 {
-		return fmt.Errorf("retry quantity must be >= 0")
-	}
 	if *srcPath == "" {
 		return fmt.Errorf("please provide a path to an input file")
 	}
@@ -174,11 +170,6 @@ func doMain() error {
 
 	// Arvados Client setup
 	ac := arvados.NewClientFromEnv()
-	arv, err := arvadosclient.New(ac)
-	if err != nil {
-		return fmt.Errorf("error setting up arvados client %s", err)
-	}
-	arv.Retries = *retries
 
 	// Check current user permissions & get System user's UUID
 	u, err := ac.CurrentUser()
@@ -195,11 +186,18 @@ func doMain() error {
 	if *parentGroupUUID == "" {
 		// UUID not provided, search for preexisting parent group
 		var gl groupList
-		if err := arv.List("groups", arvadosclient.Dict{
-			"filters": [][]string{
-				{"name", "=", remoteGroupParentName},
-				{"owner_uuid", "=", sysUserUUID}},
-		}, &gl); err != nil {
+		params := arvados.ResourceListParams{
+			Filters: []arvados.Filter{{
+				Attr:     "name",
+				Operator: "=",
+				Operand:  remoteGroupParentName,
+			}, {
+				Attr:     "owner_uuid",
+				Operator: "=",
+				Operand:  sysUserUUID,
+			}},
+		}
+		if err := ac.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params); err != nil {
 			return fmt.Errorf("error searching for parent group: %s", err)
 		}
 		if len(gl.Items) == 0 {
@@ -207,12 +205,12 @@ func doMain() error {
 			if *verbose {
 				log.Println("Default parent group not found, creating...")
 			}
-			if err := arv.Create("groups", arvadosclient.Dict{
-				"group": arvadosclient.Dict{
-					"name":       remoteGroupParentName,
-					"owner_uuid": sysUserUUID},
-			}, &parentGroup); err != nil {
-				return fmt.Errorf("error creating system user owned group named %q: %s", remoteGroupParentName, err)
+			groupData := map[string]string{
+				"name":       remoteGroupParentName,
+				"owner_uuid": sysUserUUID,
+			}
+			if err := ac.RequestAndDecode(&parentGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
+				return fmt.Errorf("error creating system user owned group named %q: %s", groupData["name"], err)
 			}
 		} else if len(gl.Items) == 1 {
 			// Default parent group found.
@@ -220,11 +218,11 @@ func doMain() error {
 		} else {
 			// This should never happen, as there's an unique index for
 			// (owner_uuid, name) on groups.
-			return fmt.Errorf("found %d groups owned by system user and named %q", len(gl.Items), remoteGroupParentName)
+			return fmt.Errorf("bug: found %d groups owned by system user and named %q", len(gl.Items), remoteGroupParentName)
 		}
 	} else {
 		// UUID provided. Check if exists and if it's owned by system user
-		if err := arv.Get("groups", *parentGroupUUID, arvadosclient.Dict{}, &parentGroup); err != nil {
+		if err := ac.RequestAndDecode(&parentGroup, "GET", "/arvados/v1/groups/"+*parentGroupUUID, nil, nil); err != nil {
 			return fmt.Errorf("error searching for parent group with UUID %q: %s", *parentGroupUUID, err)
 		}
 		if parentGroup.OwnerUUID != sysUserUUID {
@@ -237,7 +235,7 @@ func doMain() error {
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]user)
 	userIDToUUID := make(map[string]string) // Index by email or username
-	results, err := ListAll(arv, "users", arvadosclient.Dict{}, &userList{})
+	results, err := ListAll(ac, "users", arvados.ResourceListParams{}, &userList{})
 	if err != nil {
 		return fmt.Errorf("error getting user list: %s", err)
 	}
@@ -257,14 +255,26 @@ func doMain() error {
 
 	// Request all UUIDs for groups tagged as remote
 	remoteGroupUUIDs := make(map[string]bool)
-	results, err = ListAll(arv, "links", arvadosclient.Dict{
-		"filters": [][]string{
-			{"owner_uuid", "=", sysUserUUID},
-			{"link_class", "=", "tag"},
-			{"name", "=", groupTag},
-			{"head_kind", "=", "arvados#group"},
-		},
-	}, &linkList{})
+	params := arvados.ResourceListParams{
+		Filters: []arvados.Filter{{
+			Attr:     "owner_uuid",
+			Operator: "=",
+			Operand:  sysUserUUID,
+		}, {
+			Attr:     "link_class",
+			Operator: "=",
+			Operand:  "tag",
+		}, {
+			Attr:     "name",
+			Operator: "=",
+			Operand:  groupTag,
+		}, {
+			Attr:     "head_kind",
+			Operator: "=",
+			Operand:  "arvados#group",
+		}},
+	}
+	results, err = ListAll(ac, "links", params, &linkList{})
 	if err != nil {
 		return fmt.Errorf("error getting remote group UUIDs: %s", err)
 	}
@@ -279,26 +289,47 @@ func doMain() error {
 	}
 	remoteGroups := make(map[string]*groupInfo)
 	groupNameToUUID := make(map[string]string) // Index by group name
-	results, err = ListAll(arv, "groups", arvadosclient.Dict{
-		"filters": [][]interface{}{
-			{"uuid", "in", uuidList},
-			{"owner_uuid", "=", parentGroup.UUID},
-		},
-	}, &groupList{})
+	params = arvados.ResourceListParams{
+		Filters: []arvados.Filter{{
+			Attr:     "uuid",
+			Operator: "in",
+			Operand:  uuidList,
+		}, {
+			Attr:     "owner_uuid",
+			Operator: "=",
+			Operand:  parentGroup.UUID,
+		}},
+	}
+	results, err = ListAll(ac, "groups", params, &groupList{})
 	if err != nil {
 		return fmt.Errorf("error getting remote groups by UUID: %s", err)
 	}
 	for _, item := range results {
 		group := item.(group)
-		results, err := ListAll(arv, "links", arvadosclient.Dict{
-			"filters": [][]string{
-				{"owner_uuid", "=", sysUserUUID},
-				{"link_class", "=", "permission"},
-				{"name", "=", "can_read"},
-				{"tail_uuid", "=", group.UUID},
-				{"head_kind", "=", "arvados#user"},
-			},
-		}, &linkList{})
+		params := arvados.ResourceListParams{
+			Filters: []arvados.Filter{{
+				Attr:     "owner_uuid",
+				Operator: "=",
+				Operand:  sysUserUUID,
+			}, {
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "name",
+				Operator: "=",
+				Operand:  "can_read",
+			}, {
+				Attr:     "tail_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  "arvados#user",
+			}},
+		}
+		results, err := ListAll(ac, "links", params, &linkList{})
 		if err != nil {
 			return fmt.Errorf("error getting member links for group %q: %s", group.Name, err)
 		}
@@ -339,8 +370,8 @@ func doMain() error {
 		if err != nil {
 			return fmt.Errorf("error reading %q: %s", *srcPath, err)
 		}
-		groupName := record[0]
-		groupMember := record[1] // User ID (username or email)
+		groupName := strings.TrimSpace(record[0])
+		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
 		if groupName == "" || groupMember == "" {
 			log.Printf("Warning: CSV record has at least one field empty (%s, %s). Skipping", groupName, groupMember)
 			membershipsSkipped++
@@ -357,30 +388,28 @@ func doMain() error {
 			if *verbose {
 				log.Printf("Remote group %q not found, creating...", groupName)
 			}
-			var group group
-			if err := arv.Create("groups", arvadosclient.Dict{
-				"group": arvadosclient.Dict{
-					"name":       groupName,
-					"owner_uuid": parentGroup.UUID,
-				},
-			}, &group); err != nil {
+			var newGroup group
+			groupData := map[string]string{
+				"name":       groupName,
+				"owner_uuid": parentGroup.UUID,
+			}
+			if err := ac.RequestAndDecode(&newGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
 				return fmt.Errorf("error creating group named %q: %s", groupName, err)
 			}
-			link := make(map[string]interface{})
-			if err = arv.Create("links", arvadosclient.Dict{
-				"link": arvadosclient.Dict{
-					"owner_uuid": sysUserUUID,
-					"link_class": "tag",
-					"name":       groupTag,
-					"head_uuid":  group.UUID,
-				},
-			}, &link); err != nil {
-				return fmt.Errorf("error creating tag for newly created group %q (%s): %s", groupName, group.UUID, err)
+			var newLink link
+			linkData := map[string]string{
+				"owner_uuid": sysUserUUID,
+				"link_class": "tag",
+				"name":       groupTag,
+				"head_uuid":  newGroup.UUID,
+			}
+			if err = ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
+				return fmt.Errorf("error creating tag for newly created group %q (%s): %s", newGroup.Name, newGroup.UUID, err)
 			}
 			// Update cached group data
-			groupNameToUUID[groupName] = group.UUID
-			remoteGroups[group.UUID] = &groupInfo{
-				Group:           group,
+			groupNameToUUID[groupName] = newGroup.UUID
+			remoteGroups[newGroup.UUID] = &groupInfo{
+				Group:           newGroup,
 				PreviousMembers: make(map[string]bool), // Empty set
 				CurrentMembers:  make(map[string]bool), // Empty set
 			}
@@ -394,28 +423,26 @@ func doMain() error {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
 			// User wasn't a member, but should.
-			link := make(map[string]interface{})
-			if err := arv.Create("links", arvadosclient.Dict{
-				"link": arvadosclient.Dict{
-					"owner_uuid": sysUserUUID,
-					"link_class": "permission",
-					"name":       "can_read",
-					"tail_uuid":  groupUUID,
-					"head_uuid":  userIDToUUID[groupMember],
-				},
-			}, &link); err != nil {
-				return fmt.Errorf("error adding read group %q -> user %q permission: %s", groupName, groupMember, err)
+			var newLink link
+			linkData := map[string]string{
+				"owner_uuid": sysUserUUID,
+				"link_class": "permission",
+				"name":       "can_read",
+				"tail_uuid":  groupUUID,
+				"head_uuid":  userIDToUUID[groupMember],
 			}
-			if err = arv.Create("links", arvadosclient.Dict{
-				"link": arvadosclient.Dict{
-					"owner_uuid": sysUserUUID,
-					"link_class": "permission",
-					"name":       "manage",
-					"tail_uuid":  userIDToUUID[groupMember],
-					"head_uuid":  groupUUID,
-				},
-			}, &link); err != nil {
-				return fmt.Errorf("error adding manage user %q -> group %q permission: %s", groupMember, groupName, err)
+			if err := ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
+				return fmt.Errorf("error adding group %q -> user %q read permission: %s", groupName, groupMember, err)
+			}
+			linkData = map[string]string{
+				"owner_uuid": sysUserUUID,
+				"link_class": "permission",
+				"name":       "manage",
+				"tail_uuid":  userIDToUUID[groupMember],
+				"head_uuid":  groupUUID,
+			}
+			if err = ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
+				return fmt.Errorf("error adding user %q -> group %q manage permission: %s", groupMember, groupName, err)
 			}
 			membershipsAdded++
 		}
@@ -436,16 +463,37 @@ func doMain() error {
 			}
 			var links []interface{}
 			// Search for all group<->user links (both ways)
-			for _, filter := range [][][]string{
+			for _, filterset := range [][]arvados.Filter{
 				// Group -> User
-				{{"link_class", "=", "permission"},
-					{"tail_uuid", "=", groupUUID},
-					{"head_uuid", "=", userIDToUUID[evictedUser]}},
+				{{
+					Attr:     "link_class",
+					Operator: "=",
+					Operand:  "permission",
+				}, {
+					Attr:     "tail_uuid",
+					Operator: "=",
+					Operand:  groupUUID,
+				}, {
+					Attr:     "head_uuid",
+					Operator: "=",
+					Operand:  userIDToUUID[evictedUser],
+				}},
 				// Group <- User
-				{{"link_class", "=", "permission"},
-					{"tail_uuid", "=", userIDToUUID[evictedUser]},
-					{"head_uuid", "=", groupUUID}}} {
-				l, err := ListAll(arv, "links", arvadosclient.Dict{"filters": filter}, &linkList{})
+				{{
+					Attr:     "link_class",
+					Operator: "=",
+					Operand:  "permission",
+				}, {
+					Attr:     "tail_uuid",
+					Operator: "=",
+					Operand:  userIDToUUID[evictedUser],
+				}, {
+					Attr:     "head_uuid",
+					Operator: "=",
+					Operand:  groupUUID,
+				}},
+			} {
+				l, err := ListAll(ac, "links", arvados.ResourceListParams{Filters: filterset}, &linkList{})
 				if err != nil {
 					return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", evictedUser, groupName, err)
 				}
@@ -455,11 +503,10 @@ func doMain() error {
 			}
 			for _, item := range links {
 				link := item.(link)
-				var l map[string]interface{}
 				if *verbose {
 					log.Printf("Removing %q from group %q", evictedUser, gi.Group.Name)
 				}
-				if err := arv.Delete("links", link.UUID, arvadosclient.Dict{}, &l); err != nil {
+				if err := ac.RequestAndDecode(&link, "DELETE", "/arvados/v1/links"+link.UUID, nil, nil); err != nil {
 					return fmt.Errorf("error removing user %q from group %q: %s", evictedUser, groupName, err)
 				}
 			}
@@ -472,23 +519,24 @@ func doMain() error {
 }
 
 // ListAll : Adds all objects of type 'resource' to the 'allItems' list
-func ListAll(arv *arvadosclient.ArvadosClient, res string, params arvadosclient.Dict, rl resourceList) (allItems []interface{}, err error) {
+func ListAll(c *arvados.Client, res string, params arvados.ResourceListParams, page resourceList) (allItems []interface{}, err error) {
 	// Use the maximum page size the server allows
 	limit := 1<<31 - 1
-	params["limit"] = limit
-	params["offset"] = 0
-	params["order"] = "uuid"
+	params.Limit = &limit
+	params.Offset = 0
+	params.Order = "uuid"
 	for {
-		if err = arv.List(res, params, &rl); err != nil {
+		if err = c.RequestAndDecode(&page, "GET", "/arvados/v1/"+res, nil, params); err != nil {
 			return allItems, err
 		}
-		if rl.Len() == 0 {
+		// Have we finished paging?
+		if page.Len() == 0 {
 			break
 		}
-		for _, i := range rl.GetItems() {
+		for _, i := range page.GetItems() {
 			allItems = append(allItems, i)
 		}
-		params["offset"] = params["offset"].(int) + rl.Len()
+		params.Offset += page.Len()
 	}
 	return allItems, nil
 }
@@ -501,4 +549,14 @@ func subtract(setA map[string]bool, setB map[string]bool) map[string]bool {
 		}
 	}
 	return result
+}
+
+func jsonReader(rscName string, ob interface{}) io.Reader {
+	j, err := json.Marshal(ob)
+	if err != nil {
+		panic(err)
+	}
+	v := url.Values{}
+	v[rscName] = []string{string(j)}
+	return bytes.NewBufferString(v.Encode())
 }
