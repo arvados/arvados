@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
     <% if untrash_object != object %>
       You must untrash the owner project to access this <%= class_name_h %>.
     <% end %>
-      <% if untrash_object.editable? %>
+      <% if untrash_object.is_trashed and untrash_object.editable? %>
         <% msg = "Untrash '#{untrash_name}'?" %>
         <%= link_to({action: 'untrash_items', selection: [untrash_object.uuid], controller: :trash_items}, remote: true, method: :post,
         title: "Untrash", style: 'cursor: pointer;') do %>
