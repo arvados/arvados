@@ -33,7 +33,7 @@ except Exception as e:
         raise
 
 setup(name='arvados-cwl-runner',
-      version="1.1.2",
+      version="1.1.0",
       description='Arvados Common Workflow Language runner',
       long_description=open(README).read(),
       author='Arvados',

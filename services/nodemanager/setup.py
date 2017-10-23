@@ -19,7 +19,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 setup(name='arvados-node-manager',
-      version="1.1.2",
+      version="1.1.0",
       description='Arvados compute node manager',
       long_description=open(README).read(),
       author='Arvados',
