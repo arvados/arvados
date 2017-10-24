@@ -25,18 +25,13 @@ type resourceList interface {
 }
 
 type groupInfo struct {
-	Group           Group
+	Group           arvados.Group
 	PreviousMembers map[string]bool
 	CurrentMembers  map[string]bool
 }
 
-type user struct {
-	UUID     string `json:"uuid,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Username string `json:"username,omitempty"`
-}
-
-func (u user) GetID(idSelector string) (string, error) {
+// GetUserID returns the correct user id value depending on the selector
+func GetUserID(u arvados.User, idSelector string) (string, error) {
 	switch idSelector {
 	case "email":
 		return u.Email, nil
@@ -47,32 +42,27 @@ func (u user) GetID(idSelector string) (string, error) {
 	}
 }
 
-// userList implements resourceList interface
-type userList struct {
-	Items []user `json:"items"`
+// UserList implements resourceList interface
+type UserList struct {
+	arvados.UserList
 }
 
-func (l userList) Len() int {
+// Len returns the amount of items this list holds
+func (l UserList) Len() int {
 	return len(l.Items)
 }
 
-func (l userList) GetItems() (out []interface{}) {
+// GetItems returns the list of items
+func (l UserList) GetItems() (out []interface{}) {
 	for _, item := range l.Items {
 		out = append(out, item)
 	}
 	return
 }
 
-// Group is an arvados#group record
-type Group struct {
-	UUID      string `json:"uuid,omitempty"`
-	Name      string `json:"name,omitempty"`
-	OwnerUUID string `json:"owner_uuid,omitempty"`
-}
-
 // GroupList implements resourceList interface
 type GroupList struct {
-	Items []Group `json:"items"`
+	arvados.GroupList
 }
 
 // Len returns the amount of items this list holds
@@ -141,7 +131,7 @@ func doMain() error {
 	userID := flags.String(
 		"user-id",
 		"email",
-		"Attribute by which every user is identified. Valid values are: email (the default) and username.")
+		"Attribute by which every user is identified. Valid values are: email and username.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
@@ -187,7 +177,7 @@ func doMain() error {
 	sysUserUUID := u.UUID[:12] + "000000000000000"
 
 	// Find/create parent group
-	var parentGroup Group
+	var parentGroup arvados.Group
 	if *parentGroupUUID == "" {
 		// UUID not provided, search for preexisting parent group
 		var gl GroupList
@@ -238,17 +228,17 @@ func doMain() error {
 	log.Printf("Group sync starting. Using %q as users id and parent group UUID %q", *userID, parentGroup.UUID)
 
 	// Get the complete user list to minimize API Server requests
-	allUsers := make(map[string]user)
+	allUsers := make(map[string]arvados.User)
 	userIDToUUID := make(map[string]string) // Index by email or username
-	results, err := ListAll(ac, "users", arvados.ResourceListParams{}, &userList{})
+	results, err := ListAll(ac, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
 		return fmt.Errorf("error getting user list: %s", err)
 	}
 	log.Printf("Found %d users", len(results))
 	for _, item := range results {
-		u := item.(user)
+		u := item.(arvados.User)
 		allUsers[u.UUID] = u
-		uID, err := u.GetID(*userID)
+		uID, err := GetUserID(u, *userID)
 		if err != nil {
 			return err
 		}
@@ -273,7 +263,7 @@ func doMain() error {
 		return fmt.Errorf("error getting remote groups: %s", err)
 	}
 	for _, item := range results {
-		group := item.(Group)
+		group := item.(arvados.Group)
 		// Group -> User filter
 		g2uFilter := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
@@ -349,7 +339,7 @@ func doMain() error {
 			if _, found := u2gLinkSet[link.HeadUUID]; !found {
 				continue
 			}
-			memberID, err := allUsers[link.HeadUUID].GetID(*userID)
+			memberID, err := GetUserID(allUsers[link.HeadUUID], *userID)
 			if err != nil {
 				return err
 			}
@@ -396,7 +386,7 @@ func doMain() error {
 			if *verbose {
 				log.Printf("Remote group %q not found, creating...", groupName)
 			}
-			var newGroup Group
+			var newGroup arvados.Group
 			groupData := map[string]string{
 				"name":       groupName,
 				"owner_uuid": parentGroup.UUID,
