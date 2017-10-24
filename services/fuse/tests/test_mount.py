@@ -745,6 +745,34 @@ class FuseUpdateFromEventTest(MountTestBase):
             attempt(self.assertEqual, ["file1.txt"], llfuse.listdir(os.path.join(self.mounttmp)))
 
 
+class FuseDeleteProjectEventTest(MountTestBase):
+    def runTest(self):
+
+        aproject = self.api.groups().create(body={
+            "name": "aproject",
+            "group_class": "project"
+        }).execute()
+
+        bproject = self.api.groups().create(body={
+            "name": "bproject",
+            "group_class": "project",
+            "owner_uuid": aproject["uuid"]
+        }).execute()
+
+        self.make_mount(fuse.ProjectDirectory,
+                        project_object=self.api.users().current().execute())
+
+        self.operations.listen_for_events()
+
+        d1 = llfuse.listdir(os.path.join(self.mounttmp, "aproject"))
+        self.assertEqual(["bproject"], sorted(d1))
+
+        self.api.groups().delete(uuid=bproject["uuid"]).execute()
+
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertEqual, [], llfuse.listdir(os.path.join(self.mounttmp, "aproject")))
+
+
 def fuseFileConflictTestHelper(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
