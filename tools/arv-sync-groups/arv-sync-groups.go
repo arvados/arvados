@@ -19,6 +19,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
+// const remoteGroupParentName string = "Externally synchronized groups"
+
 type resourceList interface {
 	Len() int
 	GetItems() []interface{}
@@ -114,15 +116,24 @@ func main() {
 	}
 }
 
-func doMain() error {
-	const remoteGroupParentName string = "Externally synchronized groups"
+// ConfigParams holds configuration data for this tool
+type ConfigParams struct {
+	Path            string
+	UserID          string
+	Verbose         bool
+	ParentGroupUUID string
+	ParentGroupName string
+	SysUserUUID     string
+	Client          *arvados.Client
+}
+
+// ParseFlags parses and validates command line arguments
+func ParseFlags(config *ConfigParams) error {
 	// Acceptable attributes to identify a user on the CSV file
 	userIDOpts := map[string]bool{
 		"email":    true, // default
 		"username": true,
 	}
-
-	// Command arguments
 	flags := flag.NewFlagSet("arv-sync-groups", flag.ExitOnError)
 	srcPath := flags.String(
 		"path",
@@ -139,7 +150,7 @@ func doMain() error {
 	parentGroupUUID := flags.String(
 		"parent-group-uuid",
 		"",
-		"Use given group UUID as a parent for the remote groups. Should be owned by the system user. If not specified, a group named '"+remoteGroupParentName+"' will be used (and created if nonexistant).")
+		"Use given group UUID as a parent for the remote groups. Should be owned by the system user. If not specified, a group named '"+config.ParentGroupName+"' will be used (and created if nonexistant).")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
@@ -156,55 +167,44 @@ func doMain() error {
 		return fmt.Errorf("user ID must be one of: %s", strings.Join(options, ", "))
 	}
 
-	// Try opening the input file early, just in case there's problems.
-	f, err := os.Open(*srcPath)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	defer f.Close()
+	config.Path = *srcPath
+	config.ParentGroupUUID = *parentGroupUUID
+	config.UserID = *userID
+	config.Verbose = *verbose
 
-	// Arvados Client setup
-	ac := arvados.NewClientFromEnv()
+	return nil
+}
 
-	// Check current user permissions & get System user's UUID
-	u, err := ac.CurrentUser()
-	if err != nil {
-		return fmt.Errorf("error getting the current user: %s", err)
-	}
-	if !u.IsActive || !u.IsAdmin {
-		return fmt.Errorf("current user (%s) is not an active admin user", u.UUID)
-	}
-	sysUserUUID := u.UUID[:12] + "000000000000000"
-
-	// Find/create parent group
+// SetParentGroup finds/create parent group of all remote groups
+func SetParentGroup(cfg *ConfigParams) error {
 	var parentGroup arvados.Group
-	if *parentGroupUUID == "" {
+	if cfg.ParentGroupUUID == "" {
 		// UUID not provided, search for preexisting parent group
 		var gl GroupList
 		params := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
 				Attr:     "name",
 				Operator: "=",
-				Operand:  remoteGroupParentName,
+				Operand:  cfg.ParentGroupName,
 			}, {
 				Attr:     "owner_uuid",
 				Operator: "=",
-				Operand:  sysUserUUID,
+				Operand:  cfg.SysUserUUID,
 			}},
 		}
-		if err := ac.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params); err != nil {
+		if err := cfg.Client.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params); err != nil {
 			return fmt.Errorf("error searching for parent group: %s", err)
 		}
 		if len(gl.Items) == 0 {
 			// Default parent group not existant, create one.
-			if *verbose {
+			if cfg.Verbose {
 				log.Println("Default parent group not found, creating...")
 			}
 			groupData := map[string]string{
-				"name":       remoteGroupParentName,
-				"owner_uuid": sysUserUUID,
+				"name":       cfg.ParentGroupName,
+				"owner_uuid": cfg.SysUserUUID,
 			}
-			if err := ac.RequestAndDecode(&parentGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
+			if err := cfg.Client.RequestAndDecode(&parentGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
 				return fmt.Errorf("error creating system user owned group named %q: %s", groupData["name"], err)
 			}
 		} else if len(gl.Items) == 1 {
@@ -213,24 +213,72 @@ func doMain() error {
 		} else {
 			// This should never happen, as there's an unique index for
 			// (owner_uuid, name) on groups.
-			return fmt.Errorf("bug: found %d groups owned by system user and named %q", len(gl.Items), remoteGroupParentName)
+			return fmt.Errorf("bug: found %d groups owned by system user and named %q", len(gl.Items), cfg.ParentGroupName)
 		}
+		cfg.ParentGroupUUID = parentGroup.UUID
 	} else {
 		// UUID provided. Check if exists and if it's owned by system user
-		if err := ac.RequestAndDecode(&parentGroup, "GET", "/arvados/v1/groups/"+*parentGroupUUID, nil, nil); err != nil {
-			return fmt.Errorf("error searching for parent group with UUID %q: %s", *parentGroupUUID, err)
+		if err := cfg.Client.RequestAndDecode(&parentGroup, "GET", "/arvados/v1/groups/"+cfg.ParentGroupUUID, nil, nil); err != nil {
+			return fmt.Errorf("error searching for parent group with UUID %q: %s", cfg.ParentGroupUUID, err)
 		}
-		if parentGroup.OwnerUUID != sysUserUUID {
-			return fmt.Errorf("parent group %q (%s) must be owned by system user", parentGroup.Name, *parentGroupUUID)
+		if parentGroup.OwnerUUID != cfg.SysUserUUID {
+			return fmt.Errorf("parent group %q (%s) must be owned by system user", parentGroup.Name, cfg.ParentGroupUUID)
 		}
 	}
+	return nil
+}
 
-	log.Printf("Group sync starting. Using %q as users id and parent group UUID %q", *userID, parentGroup.UUID)
+// GetConfig sets up a ConfigParams struct
+func GetConfig() (config ConfigParams, err error) {
+	config.ParentGroupName = "Externally synchronized groups"
+
+	// Command arguments
+	err = ParseFlags(&config)
+	if err != nil {
+		return config, err
+	}
+
+	// Arvados Client setup
+	config.Client = arvados.NewClientFromEnv()
+
+	// Check current user permissions & get System user's UUID
+	u, err := config.Client.CurrentUser()
+	if err != nil {
+		return config, fmt.Errorf("error getting the current user: %s", err)
+	}
+	if !u.IsActive || !u.IsAdmin {
+		return config, fmt.Errorf("current user (%s) is not an active admin user", u.UUID)
+	}
+	config.SysUserUUID = u.UUID[:12] + "000000000000000"
+
+	// Set up remote groups' parent
+	if err = SetParentGroup(&config); err != nil {
+		return config, err
+	}
+
+	return config, nil
+}
+
+func doMain() error {
+	// Parse & validate arguments, set up arvados client.
+	cfg, err := GetConfig()
+	if err != nil {
+		return err
+	}
+
+	// Try opening the input file early, just in case there's a problem.
+	f, err := os.Open(cfg.Path)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	defer f.Close()
+
+	log.Printf("Group sync starting. Using %q as users id and parent group UUID %q", cfg.UserID, cfg.ParentGroupUUID)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]arvados.User)
 	userIDToUUID := make(map[string]string) // Index by email or username
-	results, err := ListAll(ac, "users", arvados.ResourceListParams{}, &UserList{})
+	results, err := ListAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
 		return fmt.Errorf("error getting user list: %s", err)
 	}
@@ -238,12 +286,12 @@ func doMain() error {
 	for _, item := range results {
 		u := item.(arvados.User)
 		allUsers[u.UUID] = u
-		uID, err := GetUserID(u, *userID)
+		uID, err := GetUserID(u, cfg.UserID)
 		if err != nil {
 			return err
 		}
 		userIDToUUID[uID] = u.UUID
-		if *verbose {
+		if cfg.Verbose {
 			log.Printf("Seen user %q (%s)", u.Username, u.Email)
 		}
 	}
@@ -255,10 +303,10 @@ func doMain() error {
 		Filters: []arvados.Filter{{
 			Attr:     "owner_uuid",
 			Operator: "=",
-			Operand:  parentGroup.UUID,
+			Operand:  cfg.ParentGroupUUID,
 		}},
 	}
-	results, err = ListAll(ac, "groups", params, &GroupList{})
+	results, err = ListAll(cfg.Client, "groups", params, &GroupList{})
 	if err != nil {
 		return fmt.Errorf("error getting remote groups: %s", err)
 	}
@@ -269,7 +317,7 @@ func doMain() error {
 			Filters: []arvados.Filter{{
 				Attr:     "owner_uuid",
 				Operator: "=",
-				Operand:  sysUserUUID,
+				Operand:  cfg.SysUserUUID,
 			}, {
 				Attr:     "link_class",
 				Operator: "=",
@@ -293,7 +341,7 @@ func doMain() error {
 			Filters: []arvados.Filter{{
 				Attr:     "owner_uuid",
 				Operator: "=",
-				Operand:  sysUserUUID,
+				Operand:  cfg.SysUserUUID,
 			}, {
 				Attr:     "link_class",
 				Operator: "=",
@@ -312,11 +360,11 @@ func doMain() error {
 				Operand:  "arvados#user",
 			}},
 		}
-		g2uLinks, err := ListAll(ac, "links", g2uFilter, &linkList{})
+		g2uLinks, err := ListAll(cfg.Client, "links", g2uFilter, &linkList{})
 		if err != nil {
 			return fmt.Errorf("error getting member (can_read) links for group %q: %s", group.Name, err)
 		}
-		u2gLinks, err := ListAll(ac, "links", u2gFilter, &linkList{})
+		u2gLinks, err := ListAll(cfg.Client, "links", u2gFilter, &linkList{})
 		if err != nil {
 			return fmt.Errorf("error getting member (manage) links for group %q: %s", group.Name, err)
 		}
@@ -339,7 +387,7 @@ func doMain() error {
 			if _, found := u2gLinkSet[link.HeadUUID]; !found {
 				continue
 			}
-			memberID, err := GetUserID(allUsers[link.HeadUUID], *userID)
+			memberID, err := GetUserID(allUsers[link.HeadUUID], cfg.UserID)
 			if err != nil {
 				return err
 			}
@@ -366,7 +414,7 @@ func doMain() error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("error reading %q: %s", *srcPath, err)
+			return fmt.Errorf("error reading %q: %s", cfg.Path, err)
 		}
 		groupName := strings.TrimSpace(record[0])
 		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
@@ -377,21 +425,21 @@ func doMain() error {
 		}
 		if _, found := userIDToUUID[groupMember]; !found {
 			// User not present on the system, skip.
-			log.Printf("Warning: there's no user with %s %q on the system, skipping.", *userID, groupMember)
+			log.Printf("Warning: there's no user with %s %q on the system, skipping.", cfg.UserID, groupMember)
 			membershipsSkipped++
 			continue
 		}
 		if _, found := groupNameToUUID[groupName]; !found {
 			// Group doesn't exist, create it before continuing
-			if *verbose {
+			if cfg.Verbose {
 				log.Printf("Remote group %q not found, creating...", groupName)
 			}
 			var newGroup arvados.Group
 			groupData := map[string]string{
 				"name":       groupName,
-				"owner_uuid": parentGroup.UUID,
+				"owner_uuid": cfg.ParentGroupUUID,
 			}
-			if err := ac.RequestAndDecode(&newGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
+			if err := cfg.Client.RequestAndDecode(&newGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
 				return fmt.Errorf("error creating group named %q: %s", groupName, err)
 			}
 			// Update cached group data
@@ -407,29 +455,29 @@ func doMain() error {
 		groupUUID := groupNameToUUID[groupName]
 		gi := remoteGroups[groupUUID]
 		if !gi.PreviousMembers[groupMember] && !gi.CurrentMembers[groupMember] {
-			if *verbose {
+			if cfg.Verbose {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
 			// User wasn't a member, but should be.
 			var newLink Link
 			linkData := map[string]string{
-				"owner_uuid": sysUserUUID,
+				"owner_uuid": cfg.SysUserUUID,
 				"link_class": "permission",
 				"name":       "can_read",
 				"tail_uuid":  groupUUID,
 				"head_uuid":  userIDToUUID[groupMember],
 			}
-			if err := ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
+			if err := cfg.Client.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
 				return fmt.Errorf("error adding group %q -> user %q read permission: %s", groupName, groupMember, err)
 			}
 			linkData = map[string]string{
-				"owner_uuid": sysUserUUID,
+				"owner_uuid": cfg.SysUserUUID,
 				"link_class": "permission",
 				"name":       "manage",
 				"tail_uuid":  userIDToUUID[groupMember],
 				"head_uuid":  groupUUID,
 			}
-			if err = ac.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
+			if err = cfg.Client.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
 				return fmt.Errorf("error adding user %q -> group %q manage permission: %s", groupMember, groupName, err)
 			}
 			membershipsAdded++
@@ -446,7 +494,7 @@ func doMain() error {
 			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
 		}
 		for evictedUser := range evictedMembers {
-			if *verbose {
+			if cfg.Verbose {
 				log.Printf("Getting group membership links for user %q (%s) on group %q (%s)", evictedUser, userIDToUUID[evictedUser], groupName, groupUUID)
 			}
 			var links []interface{}
@@ -481,7 +529,7 @@ func doMain() error {
 					Operand:  groupUUID,
 				}},
 			} {
-				l, err := ListAll(ac, "links", arvados.ResourceListParams{Filters: filterset}, &linkList{})
+				l, err := ListAll(cfg.Client, "links", arvados.ResourceListParams{Filters: filterset}, &linkList{})
 				if err != nil {
 					return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", evictedUser, groupName, err)
 				}
@@ -491,10 +539,10 @@ func doMain() error {
 			}
 			for _, item := range links {
 				link := item.(Link)
-				if *verbose {
+				if cfg.Verbose {
 					log.Printf("Removing permission link for %q on group %q", evictedUser, gi.Group.Name)
 				}
-				if err := ac.RequestAndDecode(&link, "DELETE", "/arvados/v1/links/"+link.UUID, nil, nil); err != nil {
+				if err := cfg.Client.RequestAndDecode(&link, "DELETE", "/arvados/v1/links/"+link.UUID, nil, nil); err != nil {
 					return fmt.Errorf("error removing user %q from group %q: %s", evictedUser, groupName, err)
 				}
 			}
