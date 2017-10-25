@@ -304,70 +304,12 @@ func doMain() error {
 	}
 	log.Printf("Found %d remote groups", len(remoteGroups))
 
-	groupsCreated := 0
-	membershipsAdded := 0
 	membershipsRemoved := 0
-	membershipsSkipped := 0
 
 	// Read the CSV file
-	csvReader := csv.NewReader(f)
-	for {
-		record, err := csvReader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("error reading %q: %s", cfg.Path, err)
-		}
-		groupName := strings.TrimSpace(record[0])
-		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
-		if groupName == "" || groupMember == "" {
-			log.Printf("Warning: CSV record has at least one empty field (%s, %s). Skipping", groupName, groupMember)
-			membershipsSkipped++
-			continue
-		}
-		if _, found := userIDToUUID[groupMember]; !found {
-			// User not present on the system, skip.
-			log.Printf("Warning: there's no user with %s %q on the system, skipping.", cfg.UserID, groupMember)
-			membershipsSkipped++
-			continue
-		}
-		if _, found := groupNameToUUID[groupName]; !found {
-			// Group doesn't exist, create it before continuing
-			if cfg.Verbose {
-				log.Printf("Remote group %q not found, creating...", groupName)
-			}
-			var newGroup arvados.Group
-			groupData := map[string]string{
-				"name":       groupName,
-				"owner_uuid": cfg.ParentGroupUUID,
-			}
-			if err := CreateGroup(&cfg, &newGroup, groupData); err != nil {
-				return fmt.Errorf("error creating group named %q: %s", groupName, err)
-			}
-			// Update cached group data
-			groupNameToUUID[groupName] = newGroup.UUID
-			remoteGroups[newGroup.UUID] = &GroupInfo{
-				Group:           newGroup,
-				PreviousMembers: make(map[string]bool), // Empty set
-				CurrentMembers:  make(map[string]bool), // Empty set
-			}
-			groupsCreated++
-		}
-		// Both group & user exist, check if user is a member
-		groupUUID := groupNameToUUID[groupName]
-		gi := remoteGroups[groupUUID]
-		if !gi.PreviousMembers[groupMember] && !gi.CurrentMembers[groupMember] {
-			if cfg.Verbose {
-				log.Printf("Adding %q to group %q", groupMember, groupName)
-			}
-			// User wasn't a member, but should be.
-			if err := AddMemberToGroup(&cfg, allUsers[userIDToUUID[groupMember]], gi.Group); err != nil {
-				return nil
-			}
-			membershipsAdded++
-		}
-		gi.CurrentMembers[groupMember] = true
+	groupsCreated, membershipsAdded, membershipsSkipped, err := ProcessFile(&cfg, f, userIDToUUID, groupNameToUUID, remoteGroups, allUsers)
+	if err != nil {
+		return err
 	}
 
 	// Remove previous members not listed on this run
@@ -388,6 +330,73 @@ func doMain() error {
 	log.Printf("Groups created: %d. Memberships added: %d, removed: %d, skipped: %d", groupsCreated, membershipsAdded, membershipsRemoved, membershipsSkipped)
 
 	return nil
+}
+
+// ProcessFile reads the CSV file and process every record
+func ProcessFile(cfg *ConfigParams, f *os.File, userIDToUUID map[string]string, groupNameToUUID map[string]string, remoteGroups map[string]*GroupInfo, allUsers map[string]arvados.User) (groupsCreated, membersAdded, membersSkipped int, err error) {
+	csvReader := csv.NewReader(f)
+	for {
+		record, e := csvReader.Read()
+		if e == io.EOF {
+			break
+		}
+		if e != nil {
+			err = fmt.Errorf("error reading %q: %s", cfg.Path, err)
+			return
+		}
+		groupName := strings.TrimSpace(record[0])
+		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
+		if groupName == "" || groupMember == "" {
+			log.Printf("Warning: CSV record has at least one empty field (%s, %s). Skipping", groupName, groupMember)
+			membersSkipped++
+			continue
+		}
+		if _, found := userIDToUUID[groupMember]; !found {
+			// User not present on the system, skip.
+			log.Printf("Warning: there's no user with %s %q on the system, skipping.", cfg.UserID, groupMember)
+			membersSkipped++
+			continue
+		}
+		if _, found := groupNameToUUID[groupName]; !found {
+			// Group doesn't exist, create it before continuing
+			if cfg.Verbose {
+				log.Printf("Remote group %q not found, creating...", groupName)
+			}
+			var newGroup arvados.Group
+			groupData := map[string]string{
+				"name":       groupName,
+				"owner_uuid": cfg.ParentGroupUUID,
+			}
+			if e := CreateGroup(cfg, &newGroup, groupData); e != nil {
+				err = fmt.Errorf("error creating group named %q: %s", groupName, err)
+				return
+			}
+			// Update cached group data
+			groupNameToUUID[groupName] = newGroup.UUID
+			remoteGroups[newGroup.UUID] = &GroupInfo{
+				Group:           newGroup,
+				PreviousMembers: make(map[string]bool), // Empty set
+				CurrentMembers:  make(map[string]bool), // Empty set
+			}
+			groupsCreated++
+		}
+		// Both group & user exist, check if user is a member
+		groupUUID := groupNameToUUID[groupName]
+		gi := remoteGroups[groupUUID]
+		if !gi.PreviousMembers[groupMember] && !gi.CurrentMembers[groupMember] {
+			if cfg.Verbose {
+				log.Printf("Adding %q to group %q", groupMember, groupName)
+			}
+			// User wasn't a member, but should be.
+			if e := AddMemberToGroup(cfg, allUsers[userIDToUUID[groupMember]], gi.Group); e != nil {
+				err = e
+				return
+			}
+			membersAdded++
+		}
+		gi.CurrentMembers[groupMember] = true
+	}
+	return
 }
 
 // GetAll : Adds all objects of type 'resource' to the 'allItems' list
@@ -488,7 +497,7 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 			}, {
 				Attr:     "name",
 				Operator: "=",
-				Operand:  "manage",
+				Operand:  "can_write",
 			}, {
 				Attr:     "head_uuid",
 				Operator: "=",
@@ -505,7 +514,7 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 		}
 		u2gLinks, err := GetAll(cfg.Client, "links", u2gFilter, &LinkList{})
 		if err != nil {
-			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting member (manage) links for group %q: %s", group.Name, err)
+			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting member (can_write) links for group %q: %s", group.Name, err)
 		}
 		// Build a list of user ids (email or username) belonging to this group
 		membersSet := make(map[string]bool)
@@ -618,13 +627,13 @@ func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group)
 	linkData = map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
 		"link_class": "permission",
-		"name":       "manage",
+		"name":       "can_write",
 		"tail_uuid":  user.UUID,
 		"head_uuid":  group.UUID,
 	}
 	if err := CreateLink(cfg, &newLink, linkData); err != nil {
 		userID, _ := GetUserID(user, cfg.UserID)
-		return fmt.Errorf("error adding user %q -> group %q manage permission: %s", userID, group.Name, err)
+		return fmt.Errorf("error adding user %q -> group %q write permission: %s", userID, group.Name, err)
 	}
 	return nil
 }
