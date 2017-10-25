@@ -205,7 +205,7 @@ func SetParentGroup(cfg *ConfigParams) error {
 				"name":       cfg.ParentGroupName,
 				"owner_uuid": cfg.SysUserUUID,
 			}
-			if err := cfg.Client.RequestAndDecode(&parentGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
+			if err := CreateGroup(cfg, &parentGroup, groupData); err != nil {
 				return fmt.Errorf("error creating system user owned group named %q: %s", groupData["name"], err)
 			}
 		} else if len(gl.Items) == 1 {
@@ -219,7 +219,7 @@ func SetParentGroup(cfg *ConfigParams) error {
 		cfg.ParentGroupUUID = parentGroup.UUID
 	} else {
 		// UUID provided. Check if exists and if it's owned by system user
-		if err := cfg.Client.RequestAndDecode(&parentGroup, "GET", "/arvados/v1/groups/"+cfg.ParentGroupUUID, nil, nil); err != nil {
+		if err := GetGroup(cfg, &parentGroup, cfg.ParentGroupUUID); err != nil {
 			return fmt.Errorf("error searching for parent group with UUID %q: %s", cfg.ParentGroupUUID, err)
 		}
 		if parentGroup.OwnerUUID != cfg.SysUserUUID {
@@ -342,7 +342,7 @@ func doMain() error {
 				"name":       groupName,
 				"owner_uuid": cfg.ParentGroupUUID,
 			}
-			if err := cfg.Client.RequestAndDecode(&newGroup, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil); err != nil {
+			if err := CreateGroup(&cfg, &newGroup, groupData); err != nil {
 				return fmt.Errorf("error creating group named %q: %s", groupName, err)
 			}
 			// Update cached group data
@@ -362,26 +362,8 @@ func doMain() error {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
 			// User wasn't a member, but should be.
-			var newLink Link
-			linkData := map[string]string{
-				"owner_uuid": cfg.SysUserUUID,
-				"link_class": "permission",
-				"name":       "can_read",
-				"tail_uuid":  groupUUID,
-				"head_uuid":  userIDToUUID[groupMember],
-			}
-			if err := cfg.Client.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
-				return fmt.Errorf("error adding group %q -> user %q read permission: %s", groupName, groupMember, err)
-			}
-			linkData = map[string]string{
-				"owner_uuid": cfg.SysUserUUID,
-				"link_class": "permission",
-				"name":       "manage",
-				"tail_uuid":  userIDToUUID[groupMember],
-				"head_uuid":  groupUUID,
-			}
-			if err = cfg.Client.RequestAndDecode(&newLink, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil); err != nil {
-				return fmt.Errorf("error adding user %q -> group %q manage permission: %s", groupMember, groupName, err)
+			if err := AddMemberToGroup(&cfg, allUsers[userIDToUUID[groupMember]], gi.Group); err != nil {
+				return nil
 			}
 			membershipsAdded++
 		}
@@ -416,7 +398,7 @@ func GetAll(c *arvados.Client, res string, params arvados.ResourceListParams, pa
 	params.Offset = 0
 	params.Order = "uuid"
 	for {
-		if err = c.RequestAndDecode(&page, "GET", "/arvados/v1/"+res, nil, params); err != nil {
+		if err = GetResourceList(c, &page, res, params); err != nil {
 			return allItems, err
 		}
 		// Have we finished paging?
@@ -599,7 +581,8 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 	} {
 		l, err := GetAll(cfg.Client, "links", arvados.ResourceListParams{Filters: filterset}, &LinkList{})
 		if err != nil {
-			return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", user.Email, group.Name, err)
+			userID, _ := GetUserID(user, cfg.UserID)
+			return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", userID, group.Name, err)
 		}
 		for _, link := range l {
 			links = append(links, link)
@@ -610,9 +593,63 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 		if cfg.Verbose {
 			log.Printf("Removing permission link for %q on group %q", user.Email, group.Name)
 		}
-		if err := cfg.Client.RequestAndDecode(&link, "DELETE", "/arvados/v1/links/"+link.UUID, nil, nil); err != nil {
-			return fmt.Errorf("error removing user %q from group %q: %s", user.Email, group.Name, err)
+		if err := DeleteLink(cfg, link.UUID); err != nil {
+			userID, _ := GetUserID(user, cfg.UserID)
+			return fmt.Errorf("error removing user %q from group %q: %s", userID, group.Name, err)
 		}
 	}
 	return nil
+}
+
+// AddMemberToGroup create membership links
+func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group) error {
+	var newLink Link
+	linkData := map[string]string{
+		"owner_uuid": cfg.SysUserUUID,
+		"link_class": "permission",
+		"name":       "can_read",
+		"tail_uuid":  group.UUID,
+		"head_uuid":  user.UUID,
+	}
+	if err := CreateLink(cfg, &newLink, linkData); err != nil {
+		userID, _ := GetUserID(user, cfg.UserID)
+		return fmt.Errorf("error adding group %q -> user %q read permission: %s", userID, user.Email, err)
+	}
+	linkData = map[string]string{
+		"owner_uuid": cfg.SysUserUUID,
+		"link_class": "permission",
+		"name":       "manage",
+		"tail_uuid":  user.UUID,
+		"head_uuid":  group.UUID,
+	}
+	if err := CreateLink(cfg, &newLink, linkData); err != nil {
+		userID, _ := GetUserID(user, cfg.UserID)
+		return fmt.Errorf("error adding user %q -> group %q manage permission: %s", userID, group.Name, err)
+	}
+	return nil
+}
+
+// CreateGroup creates a group with groupData parameters, assigns it to dst
+func CreateGroup(cfg *ConfigParams, dst *arvados.Group, groupData map[string]string) error {
+	return cfg.Client.RequestAndDecode(dst, "POST", "/arvados/v1/groups", jsonReader("group", groupData), nil)
+}
+
+// GetGroup fetches a group by its UUID
+func GetGroup(cfg *ConfigParams, dst *arvados.Group, groupUUID string) error {
+	return cfg.Client.RequestAndDecode(&dst, "GET", "/arvados/v1/groups/"+groupUUID, nil, nil)
+}
+
+// CreateLink creates a link with linkData parameters, assigns it to dst
+func CreateLink(cfg *ConfigParams, dst *Link, linkData map[string]string) error {
+	return cfg.Client.RequestAndDecode(dst, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil)
+}
+
+// DeleteLink deletes a link by its UUID
+func DeleteLink(cfg *ConfigParams, linkUUID string) error {
+	return cfg.Client.RequestAndDecode(&Link{}, "DELETE", "/arvados/v1/links/"+linkUUID, nil, nil)
+}
+
+// GetResourceList fetches res list using params
+func GetResourceList(c *arvados.Client, dst *resourceList, res string, params interface{}) error {
+	return c.RequestAndDecode(dst, "GET", "/arvados/v1/"+res, nil, params)
 }
