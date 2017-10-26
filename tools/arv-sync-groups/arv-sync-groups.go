@@ -321,7 +321,7 @@ func doMain() error {
 			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
 		}
 		for evictedUser := range evictedMembers {
-			if err := RemoveMemberFromGroup(&cfg, allUsers[evictedUser], gi.Group); err != nil {
+			if err := RemoveMemberFromGroup(&cfg, allUsers[userIDToUUID[evictedUser]], gi.Group); err != nil {
 				return err
 			}
 			membershipsRemoved++
@@ -600,7 +600,7 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 	for _, item := range links {
 		link := item.(Link)
 		if cfg.Verbose {
-			log.Printf("Removing permission link for %q on group %q", user.Email, group.Name)
+			log.Printf("Removing %q permission link for %q on group %q", link.Name, user.Email, group.Name)
 		}
 		if err := DeleteLink(cfg, link.UUID); err != nil {
 			userID, _ := GetUserID(user, cfg.UserID)
@@ -655,6 +655,9 @@ func CreateLink(cfg *ConfigParams, dst *Link, linkData map[string]string) error 
 
 // DeleteLink deletes a link by its UUID
 func DeleteLink(cfg *ConfigParams, linkUUID string) error {
+	if linkUUID == "" {
+		return fmt.Errorf("cannot delete link with invalid UUID: %q", linkUUID)
+	}
 	return cfg.Client.RequestAndDecode(&Link{}, "DELETE", "/arvados/v1/links/"+linkUUID, nil, nil)
 }
 
