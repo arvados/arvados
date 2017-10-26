@@ -364,8 +364,9 @@ func ProcessFile(cfg *ConfigParams, f *os.File, userIDToUUID map[string]string, 
 			}
 			var newGroup arvados.Group
 			groupData := map[string]string{
-				"name":       groupName,
-				"owner_uuid": cfg.ParentGroupUUID,
+				"name":        groupName,
+				"owner_uuid":  cfg.ParentGroupUUID,
+				"group_class": "role",
 			}
 			if e := CreateGroup(cfg, &newGroup, groupData); e != nil {
 				err = fmt.Errorf("error creating group named %q: %s", groupName, err)
