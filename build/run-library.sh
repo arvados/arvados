@@ -250,7 +250,7 @@ test_package_presence() {
     fi
 
     if [[ "$FORMAT" == "deb" ]]; then
-      local complete_pkgname=$pkgname"_"$version"_"$deb_architecture".deb"
+     local complete_pkgname=$pkgname"_"$version"-"$iteration"_"$deb_architecture".deb"
     else
       local complete_pkgname="$pkgname-$version.$rpm_architecture.rpm"
     fi
