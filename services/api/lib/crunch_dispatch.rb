@@ -156,13 +156,15 @@ class CrunchDispatch
     need_procs = NODE_CONSTRAINT_MAP.each_pair.map do |job_key, node_key|
       Proc.new do |node|
         if job_key == 'min_cores_per_node'
-          cores_needed = positive_int(job.runtime_constraints[job_key], 1)
-          # if cores_needed is not a power of 2, get the next largest power of 2.
-          # azure nodes come in 1,2,4,8,16 cores
-          cores_needed = 2**Math.log2(cores_needed).ceil
-          # there is no 32 core node, but there's a 20 core one
-          if cores_needed > 16
-            cores_needed = 20
+          cores_needed = positive_int(job.runtime_constraints[job_key], 0)
+          # if NODE_CORE_LIST is set to a comma-separated list of numbers
+          # (e.g 1,2,4,8,16,20) which represents the cores available in the
+          # node types on this cluster, interpret min_nodes_per_core as
+          # exact_nodes_per_core
+          if ENV['NODE_CORE_LIST']
+            node_core_list = ENV['NODE_CORE_LIST'].split(',').map(&:to_i)
+            tmp = node_core_list.select { |i| i >= cores_needed }.first
+            cores_needed = tmp unless tmp.nil?
           end
           positive_int(node.properties[node_key], 0) == cores_needed
         else
