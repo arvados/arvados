@@ -19,8 +19,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-// const remoteGroupParentName string = "Externally synchronized groups"
-
 type resourceList interface {
 	Len() int
 	GetItems() []interface{}
@@ -112,7 +110,13 @@ func (l LinkList) GetItems() (out []interface{}) {
 }
 
 func main() {
-	if err := doMain(); err != nil {
+	// Parse & validate arguments, set up arvados client.
+	cfg, err := GetConfig()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	if err := doMain(&cfg); err != nil {
 		log.Fatalf("%v", err)
 	}
 }
@@ -135,11 +139,20 @@ func ParseFlags(config *ConfigParams) error {
 		"email":    true, // default
 		"username": true,
 	}
+
 	flags := flag.NewFlagSet("arv-sync-groups", flag.ExitOnError)
-	srcPath := flags.String(
-		"path",
-		"",
-		"Local file path containing a CSV format: GroupName,UserID")
+
+	// Set up usage message
+	flags.Usage = func() {
+		usageStr := `Synchronize remote groups into Arvados from a CSV format file with 2 columns:
+  * 1st column: Group name
+  * 2nd column: User identifier`
+		fmt.Fprintf(os.Stderr, "%s\n\n", usageStr)
+		fmt.Fprintf(os.Stderr, "Usage:\n%s [OPTIONS] <input-file.csv>\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flags.PrintDefaults()
+	}
+
 	userID := flags.String(
 		"user-id",
 		"email",
@@ -155,6 +168,12 @@ func ParseFlags(config *ConfigParams) error {
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Input file as a required positional argument
+	if flags.NArg() == 0 {
+		return fmt.Errorf("please provide a path to an input file")
+	}
+	srcPath := &os.Args[1]
 
 	// Validations
 	if *srcPath == "" {
@@ -260,13 +279,7 @@ func GetConfig() (config ConfigParams, err error) {
 	return config, nil
 }
 
-func doMain() error {
-	// Parse & validate arguments, set up arvados client.
-	cfg, err := GetConfig()
-	if err != nil {
-		return err
-	}
-
+func doMain(cfg *ConfigParams) error {
 	// Try opening the input file early, just in case there's a problem.
 	f, err := os.Open(cfg.Path)
 	if err != nil {
@@ -298,7 +311,7 @@ func doMain() error {
 	}
 
 	// Get remote groups and their members
-	remoteGroups, groupNameToUUID, err := GetRemoteGroups(&cfg, allUsers)
+	remoteGroups, groupNameToUUID, err := GetRemoteGroups(cfg, allUsers)
 	if err != nil {
 		return err
 	}
@@ -307,7 +320,7 @@ func doMain() error {
 	membershipsRemoved := 0
 
 	// Read the CSV file
-	groupsCreated, membershipsAdded, membershipsSkipped, err := ProcessFile(&cfg, f, userIDToUUID, groupNameToUUID, remoteGroups, allUsers)
+	groupsCreated, membershipsAdded, membershipsSkipped, err := ProcessFile(cfg, f, userIDToUUID, groupNameToUUID, remoteGroups, allUsers)
 	if err != nil {
 		return err
 	}
@@ -321,7 +334,7 @@ func doMain() error {
 			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
 		}
 		for evictedUser := range evictedMembers {
-			if err := RemoveMemberFromGroup(&cfg, allUsers[userIDToUUID[evictedUser]], gi.Group); err != nil {
+			if err := RemoveMemberFromGroup(cfg, allUsers[userIDToUUID[evictedUser]], gi.Group); err != nil {
 				return err
 			}
 			membershipsRemoved++
