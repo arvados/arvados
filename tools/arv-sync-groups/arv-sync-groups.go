@@ -79,21 +79,9 @@ func (l GroupList) GetItems() (out []interface{}) {
 	return
 }
 
-// Link is an arvados#link record
-type Link struct {
-	UUID      string `json:"uuid,omiempty"`
-	OwnerUUID string `json:"owner_uuid,omitempty"`
-	Name      string `json:"name,omitempty"`
-	LinkClass string `json:"link_class,omitempty"`
-	HeadUUID  string `json:"head_uuid,omitempty"`
-	HeadKind  string `json:"head_kind,omitempty"`
-	TailUUID  string `json:"tail_uuid,omitempty"`
-	TailKind  string `json:"tail_kind,omitempty"`
-}
-
 // LinkList implements resourceList interface
 type LinkList struct {
-	Items []Link `json:"items"`
+	arvados.LinkList
 }
 
 // Len returns the amount of items this list holds
@@ -535,11 +523,11 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 		membersSet := make(map[string]bool)
 		u2gLinkSet := make(map[string]bool)
 		for _, l := range u2gLinks {
-			linkedMemberUUID := l.(Link).TailUUID
+			linkedMemberUUID := l.(arvados.Link).TailUUID
 			u2gLinkSet[linkedMemberUUID] = true
 		}
 		for _, item := range g2uLinks {
-			link := item.(Link)
+			link := item.(arvados.Link)
 			// We may have received an old link pointing to a removed account.
 			if _, found := allUsers[link.HeadUUID]; !found {
 				continue
@@ -613,7 +601,7 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 		}
 	}
 	for _, item := range links {
-		link := item.(Link)
+		link := item.(arvados.Link)
 		userID, _ := GetUserID(user, cfg.UserID)
 		if cfg.Verbose {
 			log.Printf("Removing %q permission link for %q on group %q", link.Name, userID, group.Name)
@@ -627,7 +615,7 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 
 // AddMemberToGroup create membership links
 func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group) error {
-	var newLink Link
+	var newLink arvados.Link
 	linkData := map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
 		"link_class": "permission",
@@ -664,7 +652,7 @@ func GetGroup(cfg *ConfigParams, dst *arvados.Group, groupUUID string) error {
 }
 
 // CreateLink creates a link with linkData parameters, assigns it to dst
-func CreateLink(cfg *ConfigParams, dst *Link, linkData map[string]string) error {
+func CreateLink(cfg *ConfigParams, dst *arvados.Link, linkData map[string]string) error {
 	return cfg.Client.RequestAndDecode(dst, "POST", "/arvados/v1/links", jsonReader("link", linkData), nil)
 }
 
@@ -673,7 +661,7 @@ func DeleteLink(cfg *ConfigParams, linkUUID string) error {
 	if linkUUID == "" {
 		return fmt.Errorf("cannot delete link with invalid UUID: %q", linkUUID)
 	}
-	return cfg.Client.RequestAndDecode(&Link{}, "DELETE", "/arvados/v1/links/"+linkUUID, nil, nil)
+	return cfg.Client.RequestAndDecode(&arvados.Link{}, "DELETE", "/arvados/v1/links/"+linkUUID, nil, nil)
 }
 
 // GetResourceList fetches res list using params
