@@ -153,6 +153,7 @@ func ParseFlags(config *ConfigParams) error {
 		flags.PrintDefaults()
 	}
 
+	// Set up option flags
 	userID := flags.String(
 		"user-id",
 		"email",
@@ -173,11 +174,11 @@ func ParseFlags(config *ConfigParams) error {
 	if flags.NArg() == 0 {
 		return fmt.Errorf("please provide a path to an input file")
 	}
-	srcPath := &os.Args[1]
+	srcPath := &os.Args[flags.NFlag()+1]
 
 	// Validations
 	if *srcPath == "" {
-		return fmt.Errorf("please provide a path to an input file")
+		return fmt.Errorf("input file path invalid")
 	}
 	if !userIDOpts[*userID] {
 		var options []string
@@ -613,11 +614,11 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 	}
 	for _, item := range links {
 		link := item.(Link)
+		userID, _ := GetUserID(user, cfg.UserID)
 		if cfg.Verbose {
-			log.Printf("Removing %q permission link for %q on group %q", link.Name, user.Email, group.Name)
+			log.Printf("Removing %q permission link for %q on group %q", link.Name, userID, group.Name)
 		}
 		if err := DeleteLink(cfg, link.UUID); err != nil {
-			userID, _ := GetUserID(user, cfg.UserID)
 			return fmt.Errorf("error removing user %q from group %q: %s", userID, group.Name, err)
 		}
 	}
@@ -636,7 +637,7 @@ func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group)
 	}
 	if err := CreateLink(cfg, &newLink, linkData); err != nil {
 		userID, _ := GetUserID(user, cfg.UserID)
-		return fmt.Errorf("error adding group %q -> user %q read permission: %s", userID, user.Email, err)
+		return fmt.Errorf("error adding group %q -> user %q read permission: %s", group.Name, userID, err)
 	}
 	linkData = map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
