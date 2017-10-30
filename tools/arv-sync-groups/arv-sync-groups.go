@@ -336,14 +336,16 @@ func doMain(cfg *ConfigParams) error {
 
 // ProcessFile reads the CSV file and process every record
 func ProcessFile(cfg *ConfigParams, f *os.File, userIDToUUID map[string]string, groupNameToUUID map[string]string, remoteGroups map[string]*GroupInfo, allUsers map[string]arvados.User) (groupsCreated, membersAdded, membersSkipped int, err error) {
+	lineNo := 0
 	csvReader := csv.NewReader(f)
 	for {
 		record, e := csvReader.Read()
 		if e == io.EOF {
 			break
 		}
+		lineNo++
 		if e != nil {
-			err = fmt.Errorf("error reading %q: %s", cfg.Path, err)
+			err = fmt.Errorf("error parsing %q, line %d", cfg.Path, lineNo)
 			return
 		}
 		groupName := strings.TrimSpace(record[0])

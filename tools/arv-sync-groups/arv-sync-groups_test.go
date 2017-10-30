@@ -75,6 +75,65 @@ func (s *TestSuite) SetUpSuite(c *C) {
 	c.Assert(len(s.users), Not(Equals), 0)
 }
 
+// Clean any membership link and remote group created by the test
+func (s *TestSuite) TearDownTest(c *C) {
+	gl := arvados.GroupList{}
+	params := arvados.ResourceListParams{
+		Filters: []arvados.Filter{{
+			Attr:     "group_class",
+			Operator: "=",
+			Operand:  "role",
+		}, {
+			Attr:     "owner_uuid",
+			Operator: "=",
+			Operand:  s.cfg.ParentGroupUUID,
+		}},
+	}
+	err := s.cfg.Client.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params)
+	c.Assert(err, IsNil)
+	for _, group := range gl.Items {
+		ll := arvados.LinkList{}
+		// Delete user->group links
+		params = arvados.ResourceListParams{
+			Filters: []arvados.Filter{{
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}},
+		}
+		err = s.cfg.Client.RequestAndDecode(&ll, "GET", "/arvados/v1/links", nil, params)
+		c.Assert(err, IsNil)
+		for _, link := range ll.Items {
+			err = DeleteLink(s.cfg, link.UUID)
+			c.Assert(err, IsNil)
+		}
+		// Delete group->user links
+		params = arvados.ResourceListParams{
+			Filters: []arvados.Filter{{
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "tail_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}},
+		}
+		s.cfg.Client.RequestAndDecode(&ll, "GET", "/arvados/v1/links", nil, params)
+		for _, link := range ll.Items {
+			err = DeleteLink(s.cfg, link.UUID)
+			c.Assert(err, IsNil)
+		}
+		// Delete group
+		err = s.cfg.Client.RequestAndDecode(&arvados.Group{}, "DELETE", "/arvados/v1/groups/"+group.UUID, nil, nil)
+		c.Assert(err, IsNil)
+	}
+}
+
 var _ = Suite(&TestSuite{})
 
 // MakeTempCVSFile creates a temp file with data as comma separated values
@@ -327,6 +386,33 @@ func (s *TestSuite) TestIgnoreNonexistantUsers(c *C) {
 	// Create file & run command
 	data := [][]string{
 		{"TestGroup4", "nonexistantuser@unknowndomain.com"}, // Processed first
+		{"TestGroup4", activeUserEmail},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	// Confirm that memberships exist
+	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup4")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Not(Equals), "")
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+}
+
+// Users listed on the file that don't exist on the system are ignored
+func (s *TestSuite) TestIgnoreEmptyFields(c *C) {
+	activeUserEmail := s.users[arvadostest.ActiveUserUUID].Email
+	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	// Confirm that group doesn't exist
+	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup4")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Equals, "")
+	// Create file & run command
+	data := [][]string{
+		{"", activeUserEmail}, // Empty field
+		{"TestGroup5", ""},    // Empty field
 		{"TestGroup4", activeUserEmail},
 	}
 	tmpfile, err := MakeTempCSVFile(data)
