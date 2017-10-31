@@ -32,6 +32,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  around_filter :set_current_request_id
   before_filter :disable_api_methods
   before_filter :set_cors_headers
   before_filter :respond_with_json_by_default
@@ -370,6 +371,23 @@ class ApplicationController < ActionController::Base
       end
       false
     end
+  end
+
+  def set_current_request_id
+    req_id = request.headers['X-Request-Id']
+    if !req_id || req_id.length < 1 || req_id.length > 1024
+      # Client-supplied ID is either missing or too long to be
+      # considered friendly.
+      req_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+    end
+    response.headers['X-Request-Id'] = Thread.current[:request_id] = req_id
+    yield
+    Thread.current[:request_id] = nil
+  end
+
+  def append_info_to_payload(payload)
+    super
+    payload[:request_id] = response.headers['X-Request-Id']
   end
 
   def disable_api_methods
