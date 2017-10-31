@@ -335,7 +335,14 @@ func doMain(cfg *ConfigParams) error {
 }
 
 // ProcessFile reads the CSV file and process every record
-func ProcessFile(cfg *ConfigParams, f *os.File, userIDToUUID map[string]string, groupNameToUUID map[string]string, remoteGroups map[string]*GroupInfo, allUsers map[string]arvados.User) (groupsCreated, membersAdded, membersSkipped int, err error) {
+func ProcessFile(
+	cfg *ConfigParams,
+	f *os.File,
+	userIDToUUID map[string]string,
+	groupNameToUUID map[string]string,
+	remoteGroups map[string]*GroupInfo,
+	allUsers map[string]arvados.User,
+) (groupsCreated, membersAdded, membersSkipped int, err error) {
 	lineNo := 0
 	csvReader := csv.NewReader(f)
 	for {

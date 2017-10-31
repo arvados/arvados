@@ -427,3 +427,30 @@ func (s *TestSuite) TestIgnoreEmptyFields(c *C) {
 	c.Assert(groupUUID, Not(Equals), "")
 	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
 }
+
+// Instead of emails, use username as identifier
+func (s *TestSuite) TestUseUsernames(c *C) {
+	activeUserName := s.users[arvadostest.ActiveUserUUID].Username
+	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	// Confirm that group doesn't exist
+	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup1")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Equals, "")
+	// Create file & run command
+	data := [][]string{
+		{"TestGroup1", activeUserName},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	err = doMain(s.cfg)
+	s.cfg.UserID = "email"
+	c.Assert(err, IsNil)
+	// Confirm that memberships exist
+	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup1")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Not(Equals), "")
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+}
