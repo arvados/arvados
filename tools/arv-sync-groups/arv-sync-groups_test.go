@@ -27,6 +27,14 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetUpSuite(c *C) {
+	arvadostest.StartAPI()
+}
+
+func (s *TestSuite) TearDownSuite(c *C) {
+	arvadostest.StopAPI()
+}
+
+func (s *TestSuite) SetUpTest(c *C) {
 	ac := arvados.NewClientFromEnv()
 	u, err := ac.CurrentUser()
 	c.Assert(err, IsNil)
@@ -77,61 +85,10 @@ func (s *TestSuite) SetUpSuite(c *C) {
 
 // Clean any membership link and remote group created by the test
 func (s *TestSuite) TearDownTest(c *C) {
-	gl := arvados.GroupList{}
-	params := arvados.ResourceListParams{
-		Filters: []arvados.Filter{{
-			Attr:     "group_class",
-			Operator: "=",
-			Operand:  "role",
-		}, {
-			Attr:     "owner_uuid",
-			Operator: "=",
-			Operand:  s.cfg.ParentGroupUUID,
-		}},
-	}
-	err := s.cfg.Client.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params)
+	var dst interface{}
+	// Reset database to fixture state after every test run.
+	err := s.cfg.Client.RequestAndDecode(&dst, "POST", "/database/reset", nil, nil)
 	c.Assert(err, IsNil)
-	for _, group := range gl.Items {
-		ll := arvados.LinkList{}
-		// Delete user->group links
-		params = arvados.ResourceListParams{
-			Filters: []arvados.Filter{{
-				Attr:     "link_class",
-				Operator: "=",
-				Operand:  "permission",
-			}, {
-				Attr:     "head_uuid",
-				Operator: "=",
-				Operand:  group.UUID,
-			}},
-		}
-		err = s.cfg.Client.RequestAndDecode(&ll, "GET", "/arvados/v1/links", nil, params)
-		c.Assert(err, IsNil)
-		for _, link := range ll.Items {
-			err = DeleteLink(s.cfg, link.UUID)
-			c.Assert(err, IsNil)
-		}
-		// Delete group->user links
-		params = arvados.ResourceListParams{
-			Filters: []arvados.Filter{{
-				Attr:     "link_class",
-				Operator: "=",
-				Operand:  "permission",
-			}, {
-				Attr:     "tail_uuid",
-				Operator: "=",
-				Operand:  group.UUID,
-			}},
-		}
-		s.cfg.Client.RequestAndDecode(&ll, "GET", "/arvados/v1/links", nil, params)
-		for _, link := range ll.Items {
-			err = DeleteLink(s.cfg, link.UUID)
-			c.Assert(err, IsNil)
-		}
-		// Delete group
-		err = s.cfg.Client.RequestAndDecode(&arvados.Group{}, "DELETE", "/arvados/v1/groups/"+group.UUID, nil, nil)
-		c.Assert(err, IsNil)
-	}
 }
 
 var _ = Suite(&TestSuite{})
