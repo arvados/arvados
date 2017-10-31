@@ -18,8 +18,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
   if active_cr_containers.any?
     active_cr_containers.each { |c| cr_children[c] = []}
     cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
-    reqs = ContainerRequest.select(cols).where(requesting_container_uuid: active_cr_containers).results
-    reqs.each {|cr| cr_children[cr.requesting_container_uuid] << cr} if reqs
   end
 
   wus = {}
@@ -145,24 +143,12 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 <% end %>
               </div>
 
-              <%
-                children = wu.children
-                running = children.select { |c| c.state_label == "Running" }
-                queued = children.select { |c| c.state_label == "Queued" }
-              %>
-
               <div class="clearfix">
                 Started at <%= render_localized_date(wu.started_at || wu.created_at, "noseconds") %>.
                 <% wu_time = Time.now - (wu.started_at || wu.created_at) %>
                 Active for <%= render_runtime(wu_time, false) %>.
 
                 <div class="pull-right">
-                  <% running.each do |r| %>
-                    <span class="label label-<%= r.state_bootstrap_class %>"> <%= r.label || r.state_label || 'Not ready' %> </span>
-                  <% end %>
-                  <% queued.each do |q| %>
-                    <span class="label label-<%= q.state_bootstrap_class %>"> <%= q.label || r.state_label || 'Not ready' %> </span>
-                  <% end %>
                 </div>
               </div>
             </div>
