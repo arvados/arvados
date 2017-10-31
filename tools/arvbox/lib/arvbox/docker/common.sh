@@ -21,6 +21,7 @@ services=(
   [workbench]=80
   [api]=8000
   [sso]=8900
+  [composer]=4200
   [arv-git-httpd]=9001
   [keep-web]=9002
   [keepproxy]=25100

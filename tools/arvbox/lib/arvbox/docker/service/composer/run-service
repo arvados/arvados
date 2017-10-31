@@ -1,0 +1,21 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+.  /usr/local/lib/arvbox/common.sh
+
+cd /usr/src/composer
+
+npm install yarn
+
+PATH=$PATH:/usr/src/composer/node_modules/.bin
+
+yarn install
+
+if test "$1" != "--only-deps" ; then
+    exec ng serve --host 0.0.0.0 --port 4200
+fi
