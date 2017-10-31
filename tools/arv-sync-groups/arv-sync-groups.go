@@ -345,6 +345,7 @@ func ProcessFile(
 ) (groupsCreated, membersAdded, membersSkipped int, err error) {
 	lineNo := 0
 	csvReader := csv.NewReader(f)
+	csvReader.FieldsPerRecord = 2
 	for {
 		record, e := csvReader.Read()
 		if e == io.EOF {
