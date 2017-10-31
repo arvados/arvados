@@ -10,15 +10,16 @@
 // Examples:
 //
 // "foo"     => "foo:*"
-// "foo/bar" => "foo:*&bar:*"
+// "foo_bar" => "foo:*&bar:*"
 // "foo.bar" => "foo.bar:*"    // "." is a word char in FT queries
+// "foo/b-r" => "foo/b-r:*"    // "/" and "-", too
 // "foo|bar" => "foo:*&bar:*"
 // " oo|ba " => "oo:*&ba:*"
-// "// "     => null
+// "__ "     => null
 // ""        => null
 // null      => null
 window.to_tsquery = function(q) {
-    q = (q || '').replace(/[^\w\.]+/g, ' ').trim().replace(/ /g, ':*&')
+    q = (q || '').replace(/[^-\w\.\/]+/g, ' ').trim().replace(/ /g, ':*&')
     if (q == '')
         return null
     return q + ':*'
