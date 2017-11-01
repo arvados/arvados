@@ -920,7 +920,7 @@ func (runner *ContainerRunner) WaitFinish() (err error) {
 	return nil
 }
 
-var NotInOutputDirError = fmt.Errorf("Must point to path within the output directory")
+var ErrNotInOutputDir = fmt.Errorf("Must point to path within the output directory")
 
 func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.FileInfo) (tgt string, readlinktgt string, info os.FileInfo, err error) {
 	// Follow symlinks if necessary
@@ -929,9 +929,9 @@ func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.File
 	readlinktgt = ""
 	nextlink := path
 	for followed := 0; info.Mode()&os.ModeSymlink != 0; followed++ {
-		if followed >= 16 {
+		if followed >= limitFollowSymlinks {
 			// Got stuck in a loop or just a pathological number of links, give up.
-			err = fmt.Errorf("Followed too many symlinks from path %q", path)
+			err = fmt.Errorf("Followed more than %v symlinks from path %q", limitFollowSymlinks, path)
 			return
 		}
 
@@ -953,7 +953,7 @@ func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.File
 			// After dereferencing, symlink target must either be
 			// within output directory, or must point to a
 			// collection mount.
-			err = NotInOutputDirError
+			err = ErrNotInOutputDir
 			return
 		}
 
@@ -971,11 +971,14 @@ func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.File
 	return
 }
 
+var limitFollowSymlinks = 10
+
 // UploadFile uploads files within the output directory, with special handling
 // for symlinks. If the symlink leads to a keep mount, copy the manifest text
 // from the keep mount into the output manifestText.  Ensure that whether
-// symlinks are relative or absolute, they must remain within the output
-// directory.
+// symlinks are relative or absolute, every symlink target (even targets that
+// are symlinks themselves) must either remain in the output directory or point
+// to a collection mount.
 //
 // Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
 func (runner *ContainerRunner) UploadOutputFile(
@@ -996,10 +999,10 @@ func (runner *ContainerRunner) UploadOutputFile(
 		return "", infoerr
 	}
 
-	if followed >= 8 {
+	if followed >= limitFollowSymlinks {
 		// Got stuck in a loop or just a pathological number of
 		// directory links, give up.
-		err = fmt.Errorf("Followed too many symlinks from path %q", path)
+		err = fmt.Errorf("Followed more than %v symlinks from path %q", limitFollowSymlinks, path)
 		return
 	}
 

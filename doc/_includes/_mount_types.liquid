@@ -122,3 +122,7 @@ table(table table-bordered table-condensed).
 "output_path": "/tmp"
 </code></pre>|Specified path refers to the file *hello.txt* in the *alice* subdirectory|./*foo* 030326... 0:13:*bar*\n
 *Note:* Here the subdirectory *alice* is replaced with *foo* and the filename *hello.txt* from this subdirectory is replaced with *bar*.|
+
+h2(#symlinks-in-output). Symlinks in output
+
+When a container's output_path is a tmp mount backed by local disk, this output directory can contain symlinks to other files in the the output directory, or to collection mount points.  If the symlink leads to a collection mount, efficiently copy the collection into the output collection.  Symlinks leading to files or directories are expanded and created as regular files in the output collection.  Further, whether symlinks are relative or absolute, every symlink target (even targets that are symlinks themselves) must either remain in the output directory or point to a collection mount.
