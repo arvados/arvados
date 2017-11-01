@@ -1193,8 +1193,9 @@ class Collection(RichCollectionBase):
         """Collection constructor.
 
         :manifest_locator_or_text:
-          One of Arvados collection UUID, block locator of
-          a manifest, raw manifest text, or None (to create an empty collection).
+          An Arvados collection UUID, portable data hash, raw manifest
+          text, or (if creating an empty collection) None.
+
         :parent:
           the parent Collection, may be None.
 
@@ -1652,9 +1653,8 @@ class Subcollection(RichCollectionBase):
 class CollectionReader(Collection):
     """A read-only collection object.
 
-    Initialize from an api collection record locator, a portable data hash of a
-    manifest, or raw manifest text.  See `Collection` constructor for detailed
-    options.
+    Initialize from a collection UUID or portable data hash, or raw
+    manifest text.  See `Collection` constructor for detailed options.
 
     """
     def __init__(self, manifest_locator_or_text, *args, **kwargs):
