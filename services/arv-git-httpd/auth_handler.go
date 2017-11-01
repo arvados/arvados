@@ -43,6 +43,29 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	w := httpserver.WrapResponseWriter(wOrig)
 
+	if r.Method == "OPTIONS" {
+		method := r.Header.Get("Access-Control-Request-Method")
+		if method != "GET" && method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Header.Get("Origin") != "" {
+		// Allow simple cross-origin requests without user
+		// credentials ("user credentials" as defined by CORS,
+		// i.e., cookies, HTTP authentication, and client-side
+		// SSL certificates. See
+		// http://www.w3.org/TR/cors/#user-credentials).
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
+
 	defer func() {
 		if w.WroteStatus() == 0 {
 			// Nobody has called WriteHeader yet: that
