@@ -128,7 +128,8 @@ class FuseMagicTest(MountTestBase):
 
         self.testcollection = cw.finish()
         self.test_manifest = cw.manifest_text()
-        self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
+        coll = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
+        self.test_manifest_pdh = coll['portable_data_hash']
 
     def runTest(self):
         self.make_mount(fuse.MagicDirectory)
@@ -1026,7 +1027,13 @@ class MagicDirApiError(FuseMagicTest):
     def setUp(self):
         api = mock.MagicMock()
         super(MagicDirApiError, self).setUp(api=api)
-        api.collections().get().execute.side_effect = iter([Exception('API fail'), {"manifest_text": self.test_manifest}])
+        api.collections().get().execute.side_effect = iter([
+            Exception('API fail'),
+            {
+                "manifest_text": self.test_manifest,
+                "portable_data_hash": self.test_manifest_pdh,
+            },
+        ])
         api.keep.get.side_effect = Exception('Keep fail')
 
     def runTest(self):
