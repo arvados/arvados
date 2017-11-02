@@ -182,6 +182,7 @@ type ContainerRunner struct {
 
 	enableNetwork string // one of "default" or "always"
 	networkMode   string // passed through to HostConfig.NetworkMode
+	arvMountKill  func()
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -298,6 +299,10 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	err = c.Start()
 	if err != nil {
 		return nil, err
+	}
+
+	runner.arvMountKill = func() {
+		c.Process.Kill()
 	}
 
 	statReadme := make(chan bool)
@@ -1237,15 +1242,26 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 
 func (runner *ContainerRunner) CleanupDirs() {
 	if runner.ArvMount != nil {
-		umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
+		//umount := exec.Command("fusermount", "-u", runner.ArvMountPoint)
+		umount := exec.Command("sleep", "1")
 		umnterr := umount.Run()
 		if umnterr != nil {
-			runner.CrunchLog.Printf("While running fusermount: %v", umnterr)
+			log.Printf("While running fusermount: %v", umnterr)
 		}
-
-		mnterr := <-runner.ArvMountExit
-		if mnterr != nil {
-			runner.CrunchLog.Printf("Arv-mount exit error: %v", mnterr)
+		timeout := time.NewTimer(10 * time.Second)
+		select {
+		case mnterr := <-runner.ArvMountExit:
+			if mnterr != nil {
+				log.Printf("Arv-mount exit error: %v", mnterr)
+			}
+		case <-timeout.C:
+			log.Printf("Timeout waiting for arv-mount to end.  Killing arv-mount.")
+			runner.arvMountKill()
+			umount = exec.Command("arv-mount", "--unmount-timeout=10", "--unmount", runner.ArvMountPoint)
+			umnterr = umount.Run()
+			if umnterr != nil {
+				log.Printf("While running arv-mount --unmount: %v", umnterr)
+			}
 		}
 	}
 
