@@ -605,7 +605,7 @@ class PipelineSummarizer(MultiSummarizer):
 
 
 class ContainerTreeSummarizer(MultiSummarizer):
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, skip_child_jobs=False, **kwargs):
         arv = arvados.api('v1', model=OrderedJsonModel())
 
         label = kwargs.pop('label', None) or root.get('name') or root['uuid']
@@ -626,15 +626,20 @@ class ContainerTreeSummarizer(MultiSummarizer):
 
             page_filters = []
             while True:
-                items = arv.container_requests().index(
+                child_crs = arv.container_requests().index(
                     order=['uuid asc'],
                     filters=page_filters+[
                         ['requesting_container_uuid', '=', current['uuid']]],
-                ).execute()['items']
-                if not items:
+                ).execute()
+                if not child_crs['items']:
                     break
-                page_filters = [['uuid', '>', items[-1]['uuid']]]
-                for cr in items:
+                elif skip_child_jobs:
+                    logger.warning('%s: omitting stats from %d child containers'
+                                   ' because --skip-child-jobs flag is on',
+                                   label, child_crs['items_available'])
+                    break
+                page_filters = [['uuid', '>', child_crs['items'][-1]['uuid']]]
+                for cr in child_crs['items']:
                     if cr['container_uuid']:
                         logger.debug('%s: container req %s', current['uuid'], cr['uuid'])
                         cr['name'] = cr.get('name') or cr['uuid']
