@@ -18,11 +18,11 @@ RUN apt-get update && \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
     apt-transport-https ca-certificates slurm-wlm \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
-    libgnutls28-dev python3-dev vim cython gnupg dirmngr && \
+    libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
-ENV RUBYVERSION 2.3.4
+ENV RUBYVERSION 2.3.5
 
 # Install Ruby from source
 RUN cd /tmp && \
@@ -94,6 +94,9 @@ ADD crunch-setup.sh gitolite.rc \
     logger runsu.sh waitforpostgres.sh \
     application_yml_override.py api-setup.sh \
     /usr/local/lib/arvbox/
+
+RUN mkdir /etc/docker
+ADD daemon.json /etc/docker/
 
 # Start the supervisor.
 CMD ["/usr/local/bin/runsvinit"]

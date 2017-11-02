@@ -232,7 +232,11 @@ module ProvenanceHelper
                   # Search for any collection with this PDH
                   cols = @opts[:input_collections][pdh]
                 end
-                names = cols.collect{|x| x[:name]}.uniq
+                if cols
+                  names = cols.collect{|x| x[:name]}.uniq
+                else
+                  names = ['(collection not found)']
+                end
                 input_name = names.first
                 if names.length > 1
                   input_name += " + #{names.length - 1} more"

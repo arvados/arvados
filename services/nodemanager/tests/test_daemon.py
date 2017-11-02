@@ -77,8 +77,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
         self.arv_factory = mock.MagicMock(name='arvados_mock')
         api_client = mock.MagicMock(name='api_client')
-        api_client.nodes().create().execute.side_effect = [testutil.arvados_node_mock(1),
-                                                           testutil.arvados_node_mock(2)]
+        api_client.nodes().create().execute.side_effect = \
+            [testutil.arvados_node_mock(1),
+             testutil.arvados_node_mock(2)]
         self.arv_factory.return_value = api_client
 
         self.cloud_factory = mock.MagicMock(name='cloud_mock')
@@ -191,6 +192,39 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1)],
                          want_sizes=[testutil.MockSize(1)])
         self.busywait(lambda: not self.node_setup.start.called)
+
+    def test_select_stale_node_records_with_slot_numbers_first(self):
+        """
+        Stale node records with slot_number assigned can exist when
+        clean_arvados_node() isn't executed after a node shutdown, for
+        various reasons.
+        NodeManagerDaemonActor should use these stale node records first, so
+        that they don't accumulate unused, reducing the slots available.
+        """
+        size = testutil.MockSize(1)
+        a_long_time_ago = '1970-01-01T01:02:03.04050607Z'
+        arvados_nodes = []
+        for n in range(9):
+            # Add several stale node records without slot_number assigned
+            arvados_nodes.append(
+                testutil.arvados_node_mock(
+                    n+1,
+                    slot_number=None,
+                    modified_at=a_long_time_ago))
+        # Add one record with stale_node assigned, it should be the
+        # first one selected
+        arv_node = testutil.arvados_node_mock(
+            123,
+            modified_at=a_long_time_ago)
+        arvados_nodes.append(arv_node)
+        cloud_node = testutil.cloud_node_mock(125, size=size)
+        self.make_daemon(cloud_nodes=[cloud_node],
+                         arvados_nodes=arvados_nodes)
+        arvados_nodes_tracker = self.daemon.arvados_nodes.get()
+        # Here, find_stale_node() should return the node record with
+        # the slot_number assigned.
+        self.assertEqual(arv_node,
+                         arvados_nodes_tracker.find_stale_node(3601))
 
     def test_dont_count_missing_as_busy(self):
         size = testutil.MockSize(1)
@@ -399,6 +433,27 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called,
                         "second node not started after booted node stopped")
+
+    def test_node_disappearing_during_shutdown(self):
+        cloud_node = testutil.cloud_node_mock(6)
+        setup = self.start_node_boot(cloud_node, id_num=6)
+        self.daemon.node_setup_finished(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.update_server_wishlist([])
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertShutdownCancellable(True)
+        shutdown = self.node_shutdown.start().proxy()
+        shutdown.cloud_node.get.return_value = cloud_node
+        # Simulate a successful but slow node destroy call: the cloud node
+        # list gets updated before the ShutdownActor finishes.
+        record = self.daemon.cloud_nodes.get().nodes.values()[0]
+        self.assertTrue(record.shutdown_actor is not None)
+        self.daemon.cloud_nodes.get().nodes.clear()
+        self.daemon.node_finished_shutdown(shutdown).get(self.TIMEOUT)
+        self.assertTrue(
+            record.shutdown_actor is not None,
+            "test was ineffective -- failed to simulate the race condition")
 
     def test_booted_node_shut_down_when_never_listed(self):
         setup = self.start_node_boot()

@@ -134,27 +134,8 @@ class ProjectsController < ApplicationController
     @removed_uuids = []
     links = []
     params[:item_uuids].collect { |uuid| ArvadosBase.find uuid }.each do |item|
-      if (item.class == Link and
-          item.link_class == 'name' and
-          item.tail_uuid == @object.uuid)
-        # Given uuid is a name link, linking an object to this
-        # project. First follow the link to find the item we're removing,
-        # then delete the link.
-        links << item
-        item = ArvadosBase.find item.head_uuid
-      else
-        # Given uuid is an object. Delete all names.
-        links += Link.where(tail_uuid: @object.uuid,
-                            head_uuid: item.uuid,
-                            link_class: 'name')
-      end
-      links.each do |link|
-        @removed_uuids << link.uuid
-        link.destroy
-      end
-
-      if item.class == Collection
-        # Use delete API on collections
+      if item.class == Collection or item.class == Group
+        # Use delete API on collections and projects/groups
         item.destroy
         @removed_uuids << item.uuid
       elsif item.owner_uuid == @object.uuid
@@ -337,7 +318,7 @@ class ProjectsController < ApplicationController
   def public  # Yes 'public' is the name of the action for public projects
     return render_not_found if not Rails.configuration.anonymous_user_token or not Rails.configuration.enable_public_projects_page
     @objects = using_specific_api_token Rails.configuration.anonymous_user_token do
-      Group.where(group_class: 'project').order("updated_at DESC")
+      Group.where(group_class: 'project').order("modified_at DESC")
     end
   end
 end

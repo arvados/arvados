@@ -54,6 +54,7 @@ type ArvTestClient struct {
 	Logs map[string]*bytes.Buffer
 	sync.Mutex
 	WasSetRunning bool
+	callraw       bool
 }
 
 type KeepTestClient struct {
@@ -98,7 +99,7 @@ func NewTestDockerClient(exitCode int) *TestDockerClient {
 	t := &TestDockerClient{}
 	t.logReader, t.logWriter = io.Pipe()
 	t.finish = exitCode
-	t.stop = make(chan bool)
+	t.stop = make(chan bool, 1)
 	t.cwd = "/"
 	return t
 }
@@ -220,17 +221,22 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 
 func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
 	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
-	j := []byte(`{
-		"command": ["sleep", "1"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": ".",
-		"environment": {},
-		"mounts": {"/tmp": {"kind": "tmp"} },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`)
-	return ioutil.NopCloser(bytes.NewReader(j)), nil
+	var j []byte
+	if method == "GET" && resourceType == "containers" && action == "" && !client.callraw {
+		j, err = json.Marshal(client.Container)
+	} else {
+		j = []byte(`{
+			"command": ["sleep", "1"],
+			"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+			"cwd": ".",
+			"environment": {},
+			"mounts": {"/tmp": {"kind": "tmp"}, "/json": {"kind": "json", "content": {"number": 123456789123456789}}},
+			"output_path": "/tmp",
+			"priority": 1,
+			"runtime_constraints": {}
+		}`)
+	}
+	return ioutil.NopCloser(bytes.NewReader(j)), err
 }
 
 func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -304,6 +310,9 @@ call:
 func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	client.Content = buf
 	return fmt.Sprintf("%s+%d", hash, len(buf)), len(buf), nil
+}
+
+func (*KeepTestClient) ClearBlockCache() {
 }
 
 type FileWrapper struct {
@@ -411,10 +420,16 @@ func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename stri
 	return nil, errors.New("KeepError")
 }
 
+func (KeepErrorTestClient) ClearBlockCache() {
+}
+
 type KeepReadErrorTestClient struct{}
 
 func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, nil
+}
+
+func (KeepReadErrorTestClient) ClearBlockCache() {
 }
 
 type ErrorReader struct{}
@@ -1101,7 +1116,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}{
 		{in: "foo", out: `"foo"`},
 		{in: nil, out: `null`},
-		{in: map[string]int{"foo": 123}, out: `{"foo":123}`},
+		{in: map[string]int64{"foo": 123456789123456789}, out: `{"foo":123456789123456789}`},
 	} {
 		i = 0
 		cr.ArvMountPoint = ""
@@ -1606,4 +1621,14 @@ func (s *TestSuite) TestStderrMount(c *C) {
 	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	c.Check(api.CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
+}
+
+func (s *TestSuite) TestNumberRoundTrip(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr.fetchContainerRecord()
+
+	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
+
+	c.Check(err, IsNil)
+	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
 }

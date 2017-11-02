@@ -95,7 +95,7 @@ func (s *GitSuite) TestShortToken(c *check.C) {
 func (s *GitSuite) TestShortTokenBadReq(c *check.C) {
 	for _, repo := range []string{"bogus"} {
 		err := s.RunGit(c, "s3cr3t", "fetch", repo)
-		c.Assert(err, check.ErrorMatches, `.* requested URL returned error.*`)
+		c.Assert(err, check.ErrorMatches, `.*not found.*`)
 	}
 }
 

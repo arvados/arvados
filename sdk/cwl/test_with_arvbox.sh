@@ -102,7 +102,7 @@ EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
 env
-exec ./run_test.sh EXTRA=--compute-checksum $@
+exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-containers EXTRA=--compute-checksum $@
 EOF
 
 CODE=$?

@@ -994,13 +994,12 @@ class ProjectDirectory(Directory):
             # Was moved to somewhere else, so don't try to add entry
             new_name = None
 
-        if ev.get("object_kind") == "arvados#collection":
-            if old_attrs.get("is_trashed"):
-                # Was previously deleted
-                old_name = None
-            if new_attrs.get("is_trashed"):
-                # Has been deleted
-                new_name = None
+        if old_attrs.get("is_trashed"):
+            # Was previously deleted
+            old_name = None
+        if new_attrs.get("is_trashed"):
+            # Has been deleted
+            new_name = None
 
         if new_name != old_name:
             ent = None

@@ -33,8 +33,11 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             arv_keepdocker.logger.removeHandler(log_handler)
 
     def test_unsupported_arg(self):
-        with self.assertRaises(SystemExit):
+        out = tutil.StringIO()
+        with tutil.redirected_streams(stdout=out, stderr=out), \
+             self.assertRaises(SystemExit):
             self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
+        self.assertRegex(out.getvalue(), 'unrecognized arguments')
 
     def test_version_argument(self):
         with tutil.redirected_streams(
@@ -114,3 +117,35 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             self.run_arv_keepdocker(
                 ['--force', '--force-image-format', 'testimage'], err)
         self.assertRegex(err.getvalue(), "forcing incompatible image")
+
+    def test_tag_given_twice(self):
+        with tutil.redirected_streams(stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
+            with self.assertRaises(SystemExit):
+                self.run_arv_keepdocker(['myrepo:mytag', 'extratag'], sys.stderr)
+            self.assertRegex(err.getvalue(), "cannot add tag argument 'extratag'")
+
+    def test_image_given_as_repo_colon_tag(self):
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['repo:tag'], sys.stderr)
+        find_image_mock.assert_called_with('repo', 'tag')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['myreg.example:8888/repo/img:tag'], sys.stderr)
+        find_image_mock.assert_called_with('myreg.example:8888/repo/img', 'tag')
+
+    def test_image_has_colons(self):
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['[::1]:8888/repo/img'], sys.stderr)
+        find_image_mock.assert_called_with('[::1]:8888/repo/img', 'latest')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['[::1]/repo/img'], sys.stderr)
+        find_image_mock.assert_called_with('[::1]/repo/img', 'latest')

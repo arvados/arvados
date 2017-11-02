@@ -97,6 +97,8 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(stream0.readfrom(2**26, 0),
                          b'',
                          'reading zero bytes should have returned empty string')
+        self.assertEqual(3, len(cr))
+        self.assertTrue(cr)
 
     def _test_subset(self, collection, expected):
         cr = arvados.CollectionReader(collection, self.api_client)
@@ -632,6 +634,8 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         reader = arvados.CollectionReader('d41d8cd98f00b204e9800998ecf8427e+0',
                                           api_client=client)
         self.assertEqual('', reader.manifest_text())
+        self.assertEqual(0, len(reader))
+        self.assertFalse(reader)
 
     def test_api_response(self):
         client = self.api_client_mock()

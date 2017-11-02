@@ -2,20 +2,11 @@
 --
 -- SPDX-License-Identifier: AGPL-3.0
 
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 9.6.4
--- Dumped by pg_dump version 9.6.4
-
 SET statement_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET row_security = off;
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
@@ -1837,6 +1828,13 @@ CREATE UNIQUE INDEX index_commits_on_repository_name_and_sha1 ON commits USING b
 
 
 --
+-- Name: index_container_requests_on_container_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_container_requests_on_container_uuid ON container_requests USING btree (container_uuid);
+
+
+--
 -- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1862,6 +1860,13 @@ CREATE INDEX index_container_requests_on_requesting_container_uuid ON container_
 --
 
 CREATE UNIQUE INDEX index_container_requests_on_uuid ON container_requests USING btree (uuid);
+
+
+--
+-- Name: index_containers_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_modified_at_uuid ON containers USING btree (modified_at DESC, uuid);
 
 
 --
@@ -3024,4 +3029,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170628185847');
 INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 
 INSERT INTO schema_migrations (version) VALUES ('20170906224040');
+
+INSERT INTO schema_migrations (version) VALUES ('20171027183824');
 

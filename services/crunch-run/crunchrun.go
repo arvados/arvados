@@ -19,6 +19,8 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -54,6 +56,7 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
+	ClearBlockCache()
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -181,9 +184,9 @@ type ContainerRunner struct {
 	networkMode   string // passed through to HostConfig.NetworkMode
 }
 
-// SetupSignals sets up signal handling to gracefully terminate the underlying
+// setupSignals sets up signal handling to gracefully terminate the underlying
 // Docker container and update state when receiving a TERM, INT or QUIT signal.
-func (runner *ContainerRunner) SetupSignals() {
+func (runner *ContainerRunner) setupSignals() {
 	runner.SigChan = make(chan os.Signal, 1)
 	signal.Notify(runner.SigChan, syscall.SIGTERM)
 	signal.Notify(runner.SigChan, syscall.SIGINT)
@@ -192,7 +195,6 @@ func (runner *ContainerRunner) SetupSignals() {
 	go func(sig chan os.Signal) {
 		<-sig
 		runner.stop()
-		signal.Stop(sig)
 	}(runner.SigChan)
 }
 
@@ -210,6 +212,13 @@ func (runner *ContainerRunner) stop() {
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
 		}
+	}
+}
+
+func (runner *ContainerRunner) teardown() {
+	if runner.SigChan != nil {
+		signal.Stop(runner.SigChan)
+		close(runner.SigChan)
 	}
 }
 
@@ -247,16 +256,24 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
 
-		response, err := runner.Docker.ImageLoad(context.TODO(), readCloser, false)
+		response, err := runner.Docker.ImageLoad(context.TODO(), readCloser, true)
 		if err != nil {
 			return fmt.Errorf("While loading container image into Docker: %v", err)
 		}
-		response.Body.Close()
+
+		defer response.Body.Close()
+		rbody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return fmt.Errorf("Reading response to image load: %v", err)
+		}
+		runner.CrunchLog.Printf("Docker response: %s", rbody)
 	} else {
 		runner.CrunchLog.Print("Docker image is available")
 	}
 
 	runner.ContainerConfig.Image = imageID
+
+	runner.Kc.ClearBlockCache()
 
 	return nil
 }
@@ -650,14 +667,11 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 		return fmt.Errorf("While retrieving container record from the API server: %v", err)
 	}
 	defer reader.Close()
-	// Read the API server response as []byte
-	json_bytes, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("While reading container record API server response: %v", err)
-	}
-	// Decode the JSON []byte
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
 	var cr map[string]interface{}
-	if err = json.Unmarshal(json_bytes, &cr); err != nil {
+	if err = dec.Decode(&cr); err != nil {
 		return fmt.Errorf("While decoding the container record JSON response: %v", err)
 	}
 	// Re-encode it using indentation to improve readability
@@ -860,7 +874,11 @@ func (runner *ContainerRunner) StartContainer() error {
 	err := runner.Docker.ContainerStart(context.TODO(), runner.ContainerID,
 		dockertypes.ContainerStartOptions{})
 	if err != nil {
-		return fmt.Errorf("could not start container: %v", err)
+		var advice string
+		if strings.Contains(err.Error(), "no such file or directory") {
+			advice = fmt.Sprintf("\nPossible causes: command %q is missing, the interpreter given in #! is missing, or script has Windows line endings.", runner.Container.Command[0])
+		}
+		return fmt.Errorf("could not start container: %v%s", err, advice)
 	}
 	runner.cStarted = true
 	return nil
@@ -1302,16 +1320,17 @@ func (runner *ContainerRunner) Run() (err error) {
 		// a new one in case we needed to log anything while
 		// finalizing.
 		runner.CrunchLog.Close()
+
+		runner.teardown()
 	}()
 
-	err = runner.ArvClient.Get("containers", runner.Container.UUID, nil, &runner.Container)
+	err = runner.fetchContainerRecord()
 	if err != nil {
-		err = fmt.Errorf("While getting container record: %v", err)
 		return
 	}
 
 	// setup signal handling
-	runner.SetupSignals()
+	runner.setupSignals()
 
 	// check for and/or load image
 	err = runner.LoadImage()
@@ -1369,6 +1388,24 @@ func (runner *ContainerRunner) Run() (err error) {
 	return
 }
 
+// Fetch the current container record (uuid = runner.Container.UUID)
+// into runner.Container.
+func (runner *ContainerRunner) fetchContainerRecord() error {
+	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
+	if err != nil {
+		return fmt.Errorf("error fetching container record: %v", err)
+	}
+	defer reader.Close()
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
+	err = dec.Decode(&runner.Container)
+	if err != nil {
+		return fmt.Errorf("error decoding container record: %v", err)
+	}
+	return nil
+}
+
 // NewContainerRunner creates a new container runner.
 func NewContainerRunner(api IArvadosClient,
 	kc IKeepClient,
@@ -1403,6 +1440,7 @@ func main() {
 	networkMode := flag.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
+	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1422,6 +1460,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s: %v", containerId, err)
 	}
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
 	var docker *dockerclient.Client
@@ -1446,9 +1485,24 @@ func main() {
 		cr.expectCgroupParent = p
 	}
 
-	err = cr.Run()
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
+	runerr := cr.Run()
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Printf("could not create memory profile: ", err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Printf("could not write memory profile: ", err)
+		}
+		closeerr := f.Close()
+		if closeerr != nil {
+			log.Printf("closing memprofile file: ", err)
+		}
 	}
 
+	if runerr != nil {
+		log.Fatalf("%s: %v", containerId, runerr)
+	}
 }

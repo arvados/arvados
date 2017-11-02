@@ -316,6 +316,7 @@ class RunnerContainer(Runner):
                 "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
             },
+            "use_existing": self.enable_reuse,
             "properties": {}
         }
 

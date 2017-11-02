@@ -146,7 +146,6 @@ class ProjectsControllerTest < ActionController::TestCase
   # An object which does not offer an expired_at field but has a xx_owner_uuid_name_unique constraint
   # will be renamed when removed and another object with the same name exists in user's home project.
   [
-    ['groups', 'subproject_in_asubproject_with_same_name_as_one_in_active_user_home'],
     ['pipeline_templates', 'template_in_asubproject_with_same_name_as_one_in_active_user_home'],
   ].each do |dm, fixture|
     test "removing #{dm} from a subproject results in renaming it when there is another such object with same name in home project" do

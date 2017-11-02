@@ -11,13 +11,14 @@
 //
 // "foo"     => "foo:*"
 // "foo/bar" => "foo:*&bar:*"
+// "foo.bar" => "foo.bar:*"    // "." is a word char in FT queries
 // "foo|bar" => "foo:*&bar:*"
 // " oo|ba " => "oo:*&ba:*"
 // "// "     => null
 // ""        => null
 // null      => null
 window.to_tsquery = function(q) {
-    q = (q || '').replace(/\W+/g, ' ').trim().replace(/ /g, ':*&')
+    q = (q || '').replace(/[^\w\.]+/g, ' ').trim().replace(/ /g, ':*&')
     if (q == '')
         return null
     return q + ':*'

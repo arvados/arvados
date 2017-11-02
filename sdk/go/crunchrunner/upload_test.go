@@ -8,9 +8,11 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"os"
+	"syscall"
+
+	. "gopkg.in/check.v1"
 )
 
 type UploadTestSuite struct{}
@@ -38,18 +40,24 @@ func (s *TestSuite) TestSimpleUpload(c *C) {
 	c.Check(str, Equals, ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:file1.txt\n")
 }
 
-func (s *TestSuite) TestSimpleUploadTwofiles(c *C) {
+func (s *TestSuite) TestSimpleUploadThreeFiles(c *C) {
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte("foo"), 0600)
-	ioutil.WriteFile(tmpdir+"/"+"file2.txt", []byte("bar"), 0600)
+	for _, err := range []error{
+		ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte("foo"), 0600),
+		ioutil.WriteFile(tmpdir+"/"+"file2.txt", []byte("bar"), 0600),
+		os.Symlink("./file2.txt", tmpdir+"/file3.txt"),
+		syscall.Mkfifo(tmpdir+"/ignore.fifo", 0600),
+	} {
+		c.Assert(err, IsNil)
+	}
 
 	str, err := WriteTree(KeepTestClient{}, tmpdir)
 	c.Check(err, IsNil)
-	c.Check(str, Equals, ". 3858f62230ac3c915f300c664312c63f+6 0:3:file1.txt 3:3:file2.txt\n")
+	c.Check(str, Equals, ". aa65a413921163458c52fea478d5d3ee+9 0:3:file1.txt 3:3:file2.txt 6:3:file3.txt\n")
 }
 
 func (s *TestSuite) TestSimpleUploadSubdir(c *C) {

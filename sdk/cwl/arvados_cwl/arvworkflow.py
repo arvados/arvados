@@ -83,7 +83,7 @@ class ArvadosWorkflow(Workflow):
         kwargs["work_api"] = self.work_api
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if req:
-            with SourceLine(self.tool, None, WorkflowException):
+            with SourceLine(self.tool, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
                 if "id" not in self.tool:
                     raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
@@ -114,10 +114,10 @@ class ArvadosWorkflow(Workflow):
 
                 def keepmount(obj):
                     remove_redundant_fields(obj)
-                    with SourceLine(obj, None, WorkflowException):
+                    with SourceLine(obj, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
                         if "location" not in obj:
                             raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
-                    with SourceLine(obj, "location", WorkflowException):
+                    with SourceLine(obj, "location", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
                         if obj["location"].startswith("keep:"):
                             obj["location"] = "/keep/" + obj["location"][5:]
                             if "listing" in obj:

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
@@ -145,15 +146,23 @@ func (e collectionDirent) Sys() interface{} {
 	return nil
 }
 
-// collectionFS implements http.FileSystem.
+// A CollectionFileSystem is an http.Filesystem with an added Stat() method.
+type CollectionFileSystem interface {
+	http.FileSystem
+	Stat(name string) (os.FileInfo, error)
+}
+
+// collectionFS implements CollectionFileSystem.
 type collectionFS struct {
 	collection *Collection
 	client     *Client
 	kc         keepClient
+	sizes      map[string]int64
+	sizesOnce  sync.Once
 }
 
-// FileSystem returns an http.FileSystem for the collection.
-func (c *Collection) FileSystem(client *Client, kc keepClient) http.FileSystem {
+// FileSystem returns a CollectionFileSystem for the collection.
+func (c *Collection) FileSystem(client *Client, kc keepClient) CollectionFileSystem {
 	return &collectionFS{
 		collection: c,
 		client:     client,
@@ -161,21 +170,44 @@ func (c *Collection) FileSystem(client *Client, kc keepClient) http.FileSystem {
 	}
 }
 
+func (c *collectionFS) Stat(name string) (os.FileInfo, error) {
+	name = canonicalName(name)
+	if name == "." {
+		return collectionDirent{
+			collection: c.collection,
+			name:       "/",
+			isDir:      true,
+		}, nil
+	}
+	if size, ok := c.fileSizes()[name]; ok {
+		return collectionDirent{
+			collection: c.collection,
+			name:       path.Base(name),
+			size:       size,
+			isDir:      false,
+		}, nil
+	}
+	for fnm := range c.fileSizes() {
+		if !strings.HasPrefix(fnm, name+"/") {
+			continue
+		}
+		return collectionDirent{
+			collection: c.collection,
+			name:       path.Base(name),
+			isDir:      true,
+		}, nil
+	}
+	return nil, os.ErrNotExist
+}
+
 func (c *collectionFS) Open(name string) (http.File, error) {
 	// Ensure name looks the way it does in a manifest.
-	name = path.Clean("/" + name)
-	if name == "/" || name == "./" {
-		name = "."
-	} else if strings.HasPrefix(name, "/") {
-		name = "." + name
-	}
+	name = canonicalName(name)
 
 	m := manifest.Manifest{Text: c.collection.ManifestText}
 
-	filesizes := c.fileSizes()
-
 	// Return a file if it exists.
-	if size, ok := filesizes[name]; ok {
+	if size, ok := c.fileSizes()[name]; ok {
 		reader, err := c.kc.ManifestFileReader(m, name)
 		if err != nil {
 			return nil, err
@@ -191,7 +223,7 @@ func (c *collectionFS) Open(name string) (http.File, error) {
 	// Return a directory if it's the root dir or there are file
 	// entries below it.
 	children := map[string]collectionDirent{}
-	for fnm, size := range filesizes {
+	for fnm, size := range c.fileSizes() {
 		if !strings.HasPrefix(fnm, name+"/") {
 			continue
 		}
@@ -225,15 +257,24 @@ func (c *collectionFS) Open(name string) (http.File, error) {
 // fileSizes returns a map of files that can be opened. Each key
 // starts with "./".
 func (c *collectionFS) fileSizes() map[string]int64 {
-	var sizes map[string]int64
-	m := manifest.Manifest{Text: c.collection.ManifestText}
-	for ms := range m.StreamIter() {
-		for _, fss := range ms.FileStreamSegments {
-			if sizes == nil {
-				sizes = map[string]int64{}
+	c.sizesOnce.Do(func() {
+		c.sizes = map[string]int64{}
+		m := manifest.Manifest{Text: c.collection.ManifestText}
+		for ms := range m.StreamIter() {
+			for _, fss := range ms.FileStreamSegments {
+				c.sizes[ms.StreamName+"/"+fss.Name] += int64(fss.SegLen)
 			}
-			sizes[ms.StreamName+"/"+fss.Name] += int64(fss.SegLen)
 		}
+	})
+	return c.sizes
+}
+
+func canonicalName(name string) string {
+	name = path.Clean("/" + name)
+	if name == "/" || name == "./" {
+		name = "."
+	} else if strings.HasPrefix(name, "/") {
+		name = "." + name
 	}
-	return sizes
+	return name
 }

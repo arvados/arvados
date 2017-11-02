@@ -245,7 +245,8 @@ def stubs(func):
                 'vcpus': 1,
                 'ram': 1024*1024*1024
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -320,6 +321,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
+        expect_pipeline["properties"] = {"run_options": {"enable_job_reuse": False}}
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
@@ -495,9 +497,41 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
-        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  '--disable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["command"] = [
+            'arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+            '--disable-reuse', '--on-error=continue',
+            '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["use_existing"] = False
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_container_reuse_disabled_by_workflow(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_wf_no_reuse.cwl", "tests/submit_test_job.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 0)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = [
+            'arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+            '--disable-reuse', '--on-error=continue',
+            '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["use_existing"] = False
+        expect_container["name"] = "submit_wf_no_reuse.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+            {
+                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "enableReuse": False,
+            },
+        ]
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -705,7 +739,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {}
+            'use_existing': True,
+            'properties': {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -820,7 +855,8 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1073741824
             },
-            "properties": {
+            'use_existing': True,
+            'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             }
         }
