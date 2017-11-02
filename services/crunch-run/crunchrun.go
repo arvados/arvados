@@ -977,8 +977,8 @@ var limitFollowSymlinks = 10
 // for symlinks. If the symlink leads to a keep mount, copy the manifest text
 // from the keep mount into the output manifestText.  Ensure that whether
 // symlinks are relative or absolute, every symlink target (even targets that
-// are symlinks themselves) must either remain in the output directory or point
-// to a collection mount.
+// are symlinks themselves) must point to a path in either the output directory
+// or a collection mount.
 //
 // Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
 func (runner *ContainerRunner) UploadOutputFile(
