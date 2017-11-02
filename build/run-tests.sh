@@ -104,6 +104,7 @@ sdk/go/streamer
 sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
+tools/arv-sync-groups
 tools/crunchstat-summary
 tools/keep-exercise
 tools/keep-rsync
@@ -817,6 +818,7 @@ gostuff=(
     tools/keep-block-check
     tools/keep-exercise
     tools/keep-rsync
+    tools/arv-sync-groups
 )
 for g in "${gostuff[@]}"
 do

@@ -1523,6 +1523,59 @@ func (s *TestSuite) TestOutputError(c *C) {
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
+func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		rf, _ := os.Create(t.realTemp + "/2/realfile")
+		rf.Write([]byte("foo"))
+		rf.Close()
+
+		os.Mkdir(t.realTemp+"/2/realdir", 0700)
+		rf, _ = os.Create(t.realTemp + "/2/realdir/subfile")
+		rf.Write([]byte("bar"))
+		rf.Close()
+
+		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
+		os.Symlink("realfile", t.realTemp+"/2/file2")
+		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
+		os.Symlink("file2", t.realTemp+"/2/file4")
+		os.Symlink("realdir", t.realTemp+"/2/dir1")
+		os.Symlink("/tmp/realdir", t.realTemp+"/2/dir2")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals,
+					`. 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile
+./dir1 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./dir2 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./realdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+`)
+			}
+		}
+	}
+}
+
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
@@ -1631,4 +1684,52 @@ func (s *TestSuite) TestNumberRoundTrip(c *C) {
 
 	c.Check(err, IsNil)
 	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
+}
+
+func (s *TestSuite) TestEvalSymlinks(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink("/etc/passwd", realTemp+"/p1")
+
+	// Relative outside output dir
+	os.Symlink("../zip", realTemp+"/p2")
+
+	// Circular references
+	os.Symlink("p4", realTemp+"/p3")
+	os.Symlink("p5", realTemp+"/p4")
+	os.Symlink("p3", realTemp+"/p5")
+
+	// Target doesn't exist
+	os.Symlink("p99", realTemp+"/p6")
+
+	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
+		info, err := os.Lstat(realTemp + "/" + v)
+		_, _, _, err = cr.derefOutputSymlink(realTemp+"/"+v, info)
+		c.Assert(err, NotNil)
+	}
+}
+
+func (s *TestSuite) TestEvalSymlinkDir(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink(".", realTemp+"/loop")
+
+	v := "loop"
+	info, err := os.Lstat(realTemp + "/" + v)
+	_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "", 0)
+	c.Assert(err, NotNil)
 }
