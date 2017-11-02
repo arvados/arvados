@@ -1012,7 +1012,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 	relocated := relocateTo + path[len(relocateFrom):]
 
 	tgt, readlinktgt, info, derefErr := runner.derefOutputSymlink(path, info)
-	if derefErr != nil && derefErr != NotInOutputDirError {
+	if derefErr != nil && derefErr != ErrNotInOutputDir {
 		return "", derefErr
 	}
 
@@ -1037,7 +1037,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 
 	// If target is not a collection mount, it must be located within the
 	// output directory, otherwise it is an error.
-	if derefErr == NotInOutputDirError {
+	if derefErr == ErrNotInOutputDir {
 		err = fmt.Errorf("Symlink in output %q points to invalid location %q, must point to path within the output directory.",
 			path[len(runner.HostOutputDir):], readlinktgt)
 		return
