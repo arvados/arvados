@@ -54,11 +54,6 @@ class ArvadosApiToken
     Thread.current[:api_client_uuid] = api_client.andand.uuid
     Thread.current[:api_client] = api_client
     Thread.current[:user] = user
-    if api_client_auth
-      api_client_auth.last_used_at = Time.now
-      api_client_auth.last_used_by_ip_address = remote_ip.to_s
-      api_client_auth.save validate: false
-    end
 
     @app.call env if @app
   end
