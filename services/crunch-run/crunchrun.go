@@ -1299,7 +1299,9 @@ func (runner *ContainerRunner) CleanupDirs() {
 func (runner *ContainerRunner) CommitLogs() error {
 	runner.CrunchLog.Print(runner.finalState)
 
-	runner.arvMountLog.Close()
+	if runner.arvMountLog != nil {
+		runner.arvMountLog.Close()
+	}
 	runner.CrunchLog.Close()
 
 	// Closing CrunchLog above allows them to be committed to Keep at this
