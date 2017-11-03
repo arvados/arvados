@@ -36,7 +36,8 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     @classmethod
     def setUpClass(cls):
         super(ArvadosCollectionsTest, cls).setUpClass()
-        run_test_server.authorize_with('active')
+        # need admin privileges to make collections with unsigned blocks
+        run_test_server.authorize_with('admin')
         cls.api_client = arvados.api('v1')
         cls.keep_client = arvados.KeepClient(api_client=cls.api_client,
                                              local_store=cls.local_store)
@@ -58,7 +59,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                          ". 3858f62230ac3c915f300c664312c63f+6 0:3:foo.txt 3:3:bar.txt\n" +
                          "./baz 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz.txt\n",
                          "wrong manifest: got {}".format(cw.manifest_text()))
-        cw.finish()
+        cw.save_new()
         return cw.portable_data_hash()
 
     def test_pdh_is_native_str(self):
@@ -505,15 +506,6 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertRaises(arvados.errors.AssertionError,
                           cwriter.write, "badtext")
 
-    def test_read_arbitrary_data_with_collection_reader(self):
-        # arv-get relies on this to do "arv-get {keep-locator} -".
-        self.write_foo_bar_baz()
-        self.assertEqual(
-            'foobar',
-            arvados.CollectionReader(
-                '3858f62230ac3c915f300c664312c63f+6'
-                ).manifest_text())
-
 
 class CollectionTestMixin(tutil.ApiClientMock):
     API_COLLECTIONS = run_test_server.fixture('collections')
@@ -569,34 +561,13 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
 
-    def test_locator_init_fallback_to_keep(self):
-        # crunch-job needs this to read manifests that have only ever
-        # been written to Keep.
-        client = self.api_client_mock(200)
-        self.mock_get_collection(client, 404, None)
-        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
-            reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
-                                              api_client=client)
-            self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
-
-    def test_uuid_init_no_fallback_to_keep(self):
-        # Do not look up a collection UUID in Keep.
-        client = self.api_client_mock(404)
-        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
-            with self.assertRaises(arvados.errors.ApiError):
-                reader = arvados.CollectionReader(self.DEFAULT_UUID,
-                                                  api_client=client)
-
-    def test_try_keep_first_if_permission_hint(self):
-        # To verify that CollectionReader tries Keep first here, we
-        # mock API server to return the wrong data.
-        client = self.api_client_mock(200)
-        with tutil.mock_keep_responses(self.ALT_MANIFEST, 200):
-            self.assertEqual(
-                self.ALT_MANIFEST,
-                arvados.CollectionReader(
-                    self.ALT_DATA_HASH + '+Affffffffffffffffffffffffffffffffffffffff@fedcba98',
-                    api_client=client).manifest_text())
+    def test_init_no_fallback_to_keep(self):
+        # Do not look up a collection UUID or PDH in Keep.
+        for key in [self.DEFAULT_UUID, self.DEFAULT_DATA_HASH]:
+            client = self.api_client_mock(404)
+            with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
+                with self.assertRaises(arvados.errors.ApiError):
+                    reader = arvados.CollectionReader(key, api_client=client)
 
     def test_init_num_retries_propagated(self):
         # More of an integration test...
@@ -641,15 +612,6 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         client = self.api_client_mock()
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
         self.assertEqual(self.DEFAULT_COLLECTION, reader.api_response())
-
-    def test_api_response_with_collection_from_keep(self):
-        client = self.api_client_mock()
-        self.mock_get_collection(client, 404, 'foo')
-        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
-            reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
-                                              api_client=client)
-            api_response = reader.api_response()
-        self.assertIsNone(api_response)
 
     def check_open_file(self, coll_file, stream_name, file_name, file_size):
         self.assertFalse(coll_file.closed, "returned file is not open")
@@ -1311,9 +1273,9 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
 
         c["b1"].writeto(0, b"1b", 0)
 
-        self.assertEquals(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
-        self.assertEquals(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
-        self.assertEquals(c["b2"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 2:2:b2\n")
+        self.assertEqual(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
+        self.assertEqual(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
+        self.assertEqual(c["b2"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 2:2:b2\n")
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
