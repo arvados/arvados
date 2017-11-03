@@ -10,6 +10,8 @@ Server::Application.configure do
   config.lograge.custom_options = lambda do |event|
     payload = {
       request_id: event.payload[:request_id],
+      client_ipaddr: event.payload[:client_ipaddr],
+      client_auth: event.payload[:client_auth],
     }
     exceptions = %w(controller action format id)
     params = event.payload[:params].except(*exceptions)

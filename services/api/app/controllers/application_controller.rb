@@ -388,6 +388,8 @@ class ApplicationController < ActionController::Base
   def append_info_to_payload(payload)
     super
     payload[:request_id] = response.headers['X-Request-Id']
+    payload[:client_ipaddr] = request.remote_ip
+    payload[:client_auth] = current_api_client_authorization.andand.uuid || nil
   end
 
   def disable_api_methods
