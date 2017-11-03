@@ -837,8 +837,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       close($_);
     }
     fcntl ("writer", F_SETFL, 0) or croak ($!); # no close-on-exec
-    open(STDOUT,">&writer");
-    open(STDERR,">&writer");
+    open(STDOUT,">&writer") or croak ($!);
+    open(STDERR,">&writer") or croak ($!);
 
     undef $dbh;
     undef $sth;
@@ -1996,8 +1996,8 @@ sub srun_sync
     close($stdout_r);
     fcntl($stderr_w, F_SETFL, 0) or croak($!); # no close-on-exec
     fcntl($stdout_w, F_SETFL, 0) or croak($!);
-    open(STDERR, ">&", $stderr_w);
-    open(STDOUT, ">&", $stdout_w);
+    open(STDERR, ">&", $stderr_w) or croak ($!);
+    open(STDOUT, ">&", $stdout_w) or croak ($!);
     srun ($srunargs, $execargs, $opts, $stdin);
     exit (1);
   }
@@ -2493,8 +2493,8 @@ if ((-d $python_dir) and can_run("python2.7")) {
 
 # Hide messages from the install script (unless it fails: shell_or_die
 # will show $destdir.log in that case).
-open(STDOUT, ">>", "$destdir.log");
-open(STDERR, ">&", STDOUT);
+open(STDOUT, ">>", "$destdir.log") or die ($!);
+open(STDERR, ">&", STDOUT) or die ($!);
 
 if (-e "$destdir/crunch_scripts/install") {
     shell_or_die (undef, "$destdir/crunch_scripts/install", $install_dir);
@@ -2515,7 +2515,7 @@ close L;
 
 sub can_run {
   my $command_name = shift;
-  open(my $which, "-|", "which", $command_name);
+  open(my $which, "-|", "which", $command_name) or die ($!);
   while (<$which>) { }
   close($which);
   return ($? == 0);
