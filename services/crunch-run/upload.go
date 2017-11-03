@@ -18,14 +18,15 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
 
 // Block is a data block in a manifest stream
