@@ -30,6 +30,19 @@ def mountinfo():
     return mi
 
 
+def paths_to_unmount(path, mnttype):
+    paths = []
+    for m in mountinfo():
+        if m.path == path or m.path.startswith(path+"/"):
+            paths.append(m.path)
+            if not (m.is_fuse and (mnttype is None or
+                                   mnttype == m.mnttype)):
+                raise Exception(
+                    "cannot unmount {}: mount type is {}".format(
+                        path, m.mnttype))
+    return paths
+
+
 def unmount(path, subtype=None, timeout=10, recursive=False):
     """Unmount the fuse mount at path.
 
@@ -45,8 +58,6 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
     fuse mount at all. Raises an exception if it cannot be unmounted.
     """
 
-    path = os.path.realpath(path)
-
     if subtype is None:
         mnttype = None
     elif subtype == '':
@@ -55,15 +66,13 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
         mnttype = 'fuse.' + subtype
 
     if recursive:
-        paths = []
-        for m in mountinfo():
-            if m.path == path or m.path.startswith(path+"/"):
-                paths.append(m.path)
-                if not (m.is_fuse and (mnttype is None or
-                                       mnttype == m.mnttype)):
-                    raise Exception(
-                        "cannot unmount {}: mount type is {}".format(
-                            path, m.mnttype))
+        paths = paths_to_unmount(path, mnttype)
+        if not paths:
+            # We might not have found any mounts merely because path
+            # contains symlinks, so we should resolve them and try
+            # again. We didn't do this from the outset because
+            # realpath() can hang (see explanation below).
+            paths = paths_to_unmount(os.path.realpath(path), mnttype)
         for path in sorted(paths, key=len, reverse=True):
             unmount(path, timeout=timeout, recursive=False)
         return len(paths) > 0
@@ -80,13 +89,32 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
         for m in mountinfo():
             if m.is_fuse and (mnttype is None or mnttype == m.mnttype):
                 try:
-                    if os.path.realpath(m.path) == path:
+                    if m.path == path:
                         was_mounted = True
                         mounted = True
                         break
                 except OSError:
                     continue
-        if not mounted:
+        if not was_mounted and path != os.path.realpath(path):
+            # If the specified path contains symlinks, it won't appear
+            # verbatim in mountinfo.
+            #
+            # It might seem like we should have called realpath() from
+            # the outset. But we can't: realpath() hangs (in lstat())
+            # if we call it on an unresponsive mount point, and this
+            # is an important and common scenario.
+            #
+            # By waiting until now to try realpath(), we avoid this
+            # problem in the most common cases, which are: (1) the
+            # specified path has no symlinks and is a mount point, in
+            # which case was_mounted==True and we can proceed without
+            # calling realpath(); and (2) the specified path is not a
+            # mount point (e.g., it was already unmounted by someone
+            # else, or it's a typo), and realpath() can determine that
+            # without hitting any other unresponsive mounts.
+            path = os.path.realpath(path)
+            continue
+        elif not mounted:
             return was_mounted
 
         if attempted:
