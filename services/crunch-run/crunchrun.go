@@ -183,7 +183,6 @@ type ContainerRunner struct {
 	enableNetwork string // one of "default" or "always"
 	networkMode   string // passed through to HostConfig.NetworkMode
 	arvMountLog   *ThrottledLogger
-	arvMountKill  func()
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -307,10 +306,6 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	err = c.Start()
 	if err != nil {
 		return nil, err
-	}
-
-	runner.arvMountKill = func() {
-		c.Process.Kill()
 	}
 
 	statReadme := make(chan bool)
@@ -1258,38 +1253,46 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 	return extracted.Text, nil
 }
 
+func (runner *ContainerRunner) tryUnmount(umount *exec.Cmd) error {
+	umnterr := umount.Start()
+	if umnterr != nil {
+		runner.CrunchLog.Printf("Error: %v", umnterr)
+	}
+	go func() {
+		mnterr := umount.Wait()
+		if mnterr != nil {
+			runner.CrunchLog.Printf("Error running %v: %v", umount.Args, mnterr)
+		}
+	}()
+
+	timeout := time.NewTimer(9 * time.Second)
+	select {
+	case <-runner.ArvMountExit:
+		return nil
+	case <-timeout.C:
+		return fmt.Errorf("Timed out")
+	}
+}
+
 func (runner *ContainerRunner) CleanupDirs() {
 	if runner.ArvMount != nil {
-		var umount *exec.Cmd
-		umount = exec.Command("fusermount", "-u", "-z", runner.ArvMountPoint)
-		done := false
-		try := 1
-		for !done {
-			umnterr := umount.Run()
-			if umnterr != nil {
-				runner.CrunchLog.Printf("Error: %v", umnterr)
+		if err := runner.tryUnmount(exec.Command("fusermount", "-u", runner.ArvMountPoint)); err != nil {
+			runner.CrunchLog.Printf("arv-mount not ended, will try force unmount: %v", err)
+			err = runner.tryUnmount(exec.Command("arv-mount", "--unmount-timeout=8", "--unmount", runner.ArvMountPoint))
+			if err != nil {
+				runner.CrunchLog.Printf("Error running arv-mount --unmount: %v", err)
 			}
-			timeout := time.NewTimer(10 * time.Second)
-			select {
-			case <-runner.ArvMountExit:
-				done = true
-			case <-timeout.C:
-				if try == 1 {
-					runner.CrunchLog.Printf("Timeout waiting for arv-mount to end.  Will force unmount.")
-					umount = exec.Command("arv-mount", "--unmount-timeout=10", "--unmount", runner.ArvMountPoint)
-					try = 2
-				} else {
-					runner.CrunchLog.Printf("Killing arv-mount")
-					runner.arvMountKill()
-					umount = exec.Command("fusermount", "-u", "-z", runner.ArvMountPoint)
-				}
-			}
+		}
+		if rmerr := os.Remove(runner.ArvMountPoint); rmerr != nil {
+			runner.CrunchLog.Printf("While cleaning up arv-mount directory %s: %v", runner.ArvMountPoint, rmerr)
 		}
 	}
 
 	for _, tmpdir := range runner.CleanupTempDir {
-		rmerr := os.RemoveAll(tmpdir)
-		if rmerr != nil {
+		if tmpdir == runner.ArvMountPoint {
+			continue
+		}
+		if rmerr := os.RemoveAll(tmpdir); rmerr != nil {
 			runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", tmpdir, rmerr)
 		}
 	}
