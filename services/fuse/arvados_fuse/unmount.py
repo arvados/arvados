@@ -58,6 +58,8 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
     fuse mount at all. Raises an exception if it cannot be unmounted.
     """
 
+    path = os.path.abspath(path)
+
     if subtype is None:
         mnttype = None
     elif subtype == '':
