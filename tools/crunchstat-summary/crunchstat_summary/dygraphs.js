@@ -13,16 +13,30 @@ window.onload = function() {
             return y.toFixed(2).replace(/\.0+$/, '')+s;
         },
         time: function(s) {
-            var u='s';
-            if (s < 60) return s;
-            var u = 'm'+(s%60)+'s';
-            var m = Math.floor(s/60);
-            if (m < 60) return ''+m+u;
-            u = 'h'+(m%60)+u;
-            var h = Math.floor(m/60);
-            if (h < 24) return ''+h+u;
-            u = 'd'+(h%24)+s;
-            return ''+Math.floor(h/24)+u;
+            var ret = ''
+            if (s >= 86400) ret += Math.floor(s/86400) + 'd'
+            if (s >= 3600) ret += Math.floor(s/3600)%24 + 'h'
+            if (s >= 60) ret += Math.floor(s/60)%60 + 'm'
+            ret += Math.floor(s)%60 + 's'
+            // finally, strip trailing zeroes: 1d0m0s -> 1d
+            return ret.replace(/(\D)(0\D)*$/, '$1')
+        },
+    }
+    var ticker = {
+        time: function(min, max, pixels, opts, dg) {
+            var max_ticks = Math.floor(pixels / opts('pixelsPerLabel'))
+            var natural = [1, 5, 10, 30, 60,
+                           120, 300, 600, 1800, 3600,
+                           7200, 14400, 43200, 86400]
+            var interval = natural.shift()
+            while (max>min && (max-min)/interval > max_ticks) {
+                interval = natural.shift() || (interval * 2)
+            }
+            var ticks = []
+            for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
+                ticks.push({v: i, label: fmt.time(i)})
+            }
+            return ticks
         },
     }
     chartdata.forEach(function(section, section_idx) {
@@ -47,6 +61,7 @@ window.onload = function() {
                 x: {
                     axisLabelFormatter: fmt.time,
                     valueFormatter: fmt.time,
+                    ticker: ticker.time,
                 },
                 y: {
                     axisLabelFormatter: fmt.iso,

@@ -40,4 +40,8 @@ class Group < ArvadosBase
   def self.creatable?
     false
   end
+
+  def untrash
+    arvados_api_client.api(self.class, "/#{self.uuid}/untrash", {"ensure_unique_name" => true})
+  end
 end

@@ -396,7 +396,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_shutdown_without_arvados_node(self):
         self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
-        self.assertEquals((True, "node state is ('unpaired', 'open', 'boot exceeded', 'idle exceeded')"),
+        self.assertEquals((True, "node state is ('down', 'open', 'boot exceeded', 'idle exceeded')"),
                           self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_shutdown_missing(self):

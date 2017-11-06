@@ -10,6 +10,15 @@ type User struct {
 	IsActive bool   `json:"is_active"`
 	IsAdmin  bool   `json:"is_admin"`
 	Username string `json:"username,omitempty"`
+	Email    string `json:"email,omitempty"`
+}
+
+// UserList is an arvados#userList resource.
+type UserList struct {
+	Items          []User `json:"items"`
+	ItemsAvailable int    `json:"items_available"`
+	Offset         int    `json:"offset"`
+	Limit          int    `json:"limit"`
 }
 
 // CurrentUser calls arvados.v1.users.current, and returns the User

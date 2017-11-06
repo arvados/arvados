@@ -101,7 +101,7 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
             with open('/sys/fs/fuse/connections/{}/abort'.format(m.minor),
                       'w') as f:
                 f.write("1")
-        except OSError as e:
+        except IOError as e:
             if e.errno != errno.ENOENT:
                 raise
 

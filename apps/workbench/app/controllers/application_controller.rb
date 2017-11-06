@@ -11,8 +11,8 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
-  prepend_before_filter :set_current_request_id, except: ERROR_ACTIONS
   around_filter :thread_clear
+  around_filter :set_current_request_id
   around_filter :set_thread_api_token
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
@@ -571,6 +571,19 @@ class ApplicationController < ActionController::Base
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
     yield
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
+  end
+
+  def set_current_request_id
+    response.headers['X-Request-Id'] =
+      Thread.current[:request_id] =
+      "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+    yield
+    Thread.current[:request_id] = nil
+  end
+
+  def append_info_to_payload(payload)
+    super
+    payload[:request_id] = response.headers['X-Request-Id']
   end
 
   # Set up the thread with the given API token and associated user object.
@@ -1306,11 +1319,5 @@ class ApplicationController < ActionController::Base
 
   def wiselinks_layout
     'body'
-  end
-
-  def set_current_request_id
-    # Request ID format: '<timestamp>-<9_digits_random_number>'
-    current_request_id = "#{Time.new.to_i}-#{sprintf('%09d', rand(0..10**9-1))}"
-    Thread.current[:current_request_id] = current_request_id
   end
 end

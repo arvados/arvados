@@ -2,8 +2,6 @@ package health
 
 import (
 	"encoding/json"
-	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -85,7 +83,7 @@ func (s *AggregatorSuite) TestUnhealthy(c *check.C) {
 	srv, listen := s.stubServer(&unhealthyHandler{})
 	defer srv.Close()
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
-		Keepstore: arvados.Keepstore{Listen: listen},
+		Keepstore: arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	s.checkUnhealthy(c)
@@ -104,38 +102,50 @@ func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
-	_, port, _ := net.SplitHostPort(listen)
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
-		Keepstore: arvados.Keepstore{Listen: listen},
+		Keepproxy:   arvados.SystemServiceInstance{Listen: listen},
+		Keepstore:   arvados.SystemServiceInstance{Listen: listen},
+		Keepweb:     arvados.SystemServiceInstance{Listen: listen},
+		Nodemanager: arvados.SystemServiceInstance{Listen: listen},
+		RailsAPI:    arvados.SystemServiceInstance{Listen: listen},
+		Websocket:   arvados.SystemServiceInstance{Listen: listen},
+		Workbench:   arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkOK(c)
-	ep := resp.Checks[fmt.Sprintf("keepstore+http://localhost:%d/_health/ping", port)]
+	svc := "keepstore+http://localhost" + listen + "/_health/ping"
+	c.Logf("%#v", resp)
+	ep := resp.Checks[svc]
 	c.Check(ep.Health, check.Equals, "OK")
-	c.Check(ep.Status, check.Equals, 200)
+	c.Check(ep.HTTPStatusCode, check.Equals, 200)
 }
 
 func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	srvH, listenH := s.stubServer(&healthyHandler{})
 	defer srvH.Close()
-	_, portH, _ := net.SplitHostPort(listenH)
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
-	_, portU, _ := net.SplitHostPort(listenU)
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
-		Keepstore: arvados.Keepstore{Listen: listenH},
+		Keepproxy:   arvados.SystemServiceInstance{Listen: listenH},
+		Keepstore:   arvados.SystemServiceInstance{Listen: listenH},
+		Keepweb:     arvados.SystemServiceInstance{Listen: listenH},
+		Nodemanager: arvados.SystemServiceInstance{Listen: listenH},
+		RailsAPI:    arvados.SystemServiceInstance{Listen: listenH},
+		Websocket:   arvados.SystemServiceInstance{Listen: listenH},
+		Workbench:   arvados.SystemServiceInstance{Listen: listenH},
 	}
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["127.0.0.1"] = arvados.SystemNode{
-		Keepstore: arvados.Keepstore{Listen: listenU},
+		Keepstore: arvados.SystemServiceInstance{Listen: listenU},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkUnhealthy(c)
-	ep := resp.Checks[fmt.Sprintf("keepstore+http://localhost:%d/_health/ping", portH)]
+	ep := resp.Checks["keepstore+http://localhost"+listenH+"/_health/ping"]
 	c.Check(ep.Health, check.Equals, "OK")
-	c.Check(ep.Status, check.Equals, 200)
-	ep = resp.Checks[fmt.Sprintf("keepstore+http://127.0.0.1:%d/_health/ping", portU)]
+	c.Check(ep.HTTPStatusCode, check.Equals, 200)
+	ep = resp.Checks["keepstore+http://127.0.0.1"+listenU+"/_health/ping"]
 	c.Check(ep.Health, check.Equals, "ERROR")
-	c.Check(ep.Status, check.Equals, 200)
+	c.Check(ep.HTTPStatusCode, check.Equals, 200)
+	c.Logf("%#v", ep)
 }
 
 func (s *AggregatorSuite) checkError(c *check.C) {
@@ -179,13 +189,13 @@ func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	srv, listen := s.stubServer(&slowHandler{})
 	defer srv.Close()
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
-		Keepstore: arvados.Keepstore{Listen: listen},
+		Keepstore: arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkUnhealthy(c)
-	ep := resp.Checks["localhost/keepstore/_health/ping"]
+	ep := resp.Checks["keepstore+http://localhost"+listen+"/_health/ping"]
 	c.Check(ep.Health, check.Equals, "ERROR")
-	c.Check(ep.Status, check.Equals, 0)
+	c.Check(ep.HTTPStatusCode, check.Equals, 0)
 	rt, err := ep.ResponseTime.Float64()
 	c.Check(err, check.IsNil)
 	c.Check(rt > 0.005, check.Equals, true)

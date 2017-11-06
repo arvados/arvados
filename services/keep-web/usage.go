@@ -73,7 +73,11 @@ TrustAllContent:
 
 Cache.TTL:
 
-    Maximum time to cache collection data and permission checks.
+    Maximum time to cache manifests and permission checks.
+
+Cache.UUIDTTL:
+
+    Maximum time to cache collection state.
 
 Cache.MaxCollectionEntries:
 

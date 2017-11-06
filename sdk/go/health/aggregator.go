@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -199,10 +200,14 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 	err = json.NewDecoder(resp.Body).Decode(&result.Response)
 	if err != nil {
 		err = fmt.Errorf("cannot decode response: %s", err)
-		return
 	} else if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP %d %s", resp.StatusCode, resp.Status)
-		return
+	} else if h, _ := result.Response["health"].(string); h != "OK" {
+		if e, ok := result.Response["error"].(string); ok && e != "" {
+			err = errors.New(e)
+		} else {
+			err = fmt.Errorf("health=%q in ping response", h)
+		}
 	}
 	return
 }

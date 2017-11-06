@@ -13,7 +13,7 @@ class TestArvKeepGet < Minitest::Test
     end
     @@foo_manifest_locator ||= `echo -n foo | ./bin/arv-put --filename foo --no-progress -`.strip
     @@baz_locator ||= `echo -n baz | ./bin/arv-put --as-raw --no-progress -`.strip
-    @@multilevel_manifest_locator ||= `echo ./foo/bar #{@@baz_locator} 0:3:baz | ./bin/arv-put --as-raw --no-progress -`.strip
+    @@multilevel_manifest_locator ||= `echo -n baz | ./bin/arv-put --filename foo/bar/baz --no-progress -`.strip
   end
 
   def test_no_args

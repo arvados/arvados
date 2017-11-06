@@ -338,11 +338,11 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "requesting to the API server includes client_session_id param" do
-    got_query = nil
+  test "requesting to the API server includes X-Request-Id header" do
+    got_header = nil
     stub_api_calls
-    stub_api_client.stubs(:post).with do |url, query, opts={}|
-      got_query = query
+    stub_api_client.stubs(:post).with do |url, query, header={}|
+      got_header = header
       true
     end.returns fake_api_response('{}', 200, {})
 
@@ -352,14 +352,21 @@ class ApplicationControllerTest < ActionController::TestCase
     test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
     get(:show, {id: test_uuid})
 
-    assert_includes got_query, 'current_request_id'
-    assert_match /\d{10}-\d{9}/, got_query['current_request_id']
+    assert_not_nil got_header
+    assert_includes got_header, 'X-Request-Id'
+    assert_match /^req-[0-9a-zA-Z]{20}$/, got_header["X-Request-Id"]
   end
 
-  test "current_request_id is nil after a request" do
+  test "current request_id is nil after a request" do
     @controller = NodesController.new
     get(:index, {}, session_for(:active))
-    assert_nil Thread.current[:current_request_id]
+    assert_nil Thread.current[:request_id]
+  end
+
+  test "X-Request-Id header" do
+    @controller = NodesController.new
+    get(:index, {}, session_for(:active))
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
   end
 
   [".navbar .login-menu a",

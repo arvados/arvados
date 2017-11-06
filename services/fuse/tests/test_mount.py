@@ -117,24 +117,6 @@ class FuseMountTest(MountTestBase):
                 self.assertEqual(v, f.read())
 
 
-class FuseNoAPITest(MountTestBase):
-    def setUp(self):
-        super(FuseNoAPITest, self).setUp()
-        keep = arvados.keep.KeepClient(local_store=self.keeptmp)
-        self.file_data = "API-free text\n"
-        self.file_loc = keep.put(self.file_data)
-        self.coll_loc = keep.put(". {} 0:{}:api-free.txt\n".format(
-                self.file_loc, len(self.file_data)))
-
-    def runTest(self):
-        self.make_mount(fuse.MagicDirectory)
-        self.assertDirContents(self.coll_loc, ['api-free.txt'])
-        with open(os.path.join(
-                self.mounttmp, self.coll_loc, 'api-free.txt')) as keep_file:
-            actual = keep_file.read(-1)
-        self.assertEqual(self.file_data, actual)
-
-
 class FuseMagicTest(MountTestBase):
     def setUp(self, api=None):
         super(FuseMagicTest, self).setUp(api=api)
@@ -146,7 +128,8 @@ class FuseMagicTest(MountTestBase):
 
         self.testcollection = cw.finish()
         self.test_manifest = cw.manifest_text()
-        self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
+        coll = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
+        self.test_manifest_pdh = coll['portable_data_hash']
 
     def runTest(self):
         self.make_mount(fuse.MagicDirectory)
@@ -745,6 +728,34 @@ class FuseUpdateFromEventTest(MountTestBase):
             attempt(self.assertEqual, ["file1.txt"], llfuse.listdir(os.path.join(self.mounttmp)))
 
 
+class FuseDeleteProjectEventTest(MountTestBase):
+    def runTest(self):
+
+        aproject = self.api.groups().create(body={
+            "name": "aproject",
+            "group_class": "project"
+        }).execute()
+
+        bproject = self.api.groups().create(body={
+            "name": "bproject",
+            "group_class": "project",
+            "owner_uuid": aproject["uuid"]
+        }).execute()
+
+        self.make_mount(fuse.ProjectDirectory,
+                        project_object=self.api.users().current().execute())
+
+        self.operations.listen_for_events()
+
+        d1 = llfuse.listdir(os.path.join(self.mounttmp, "aproject"))
+        self.assertEqual(["bproject"], sorted(d1))
+
+        self.api.groups().delete(uuid=bproject["uuid"]).execute()
+
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertEqual, [], llfuse.listdir(os.path.join(self.mounttmp, "aproject")))
+
+
 def fuseFileConflictTestHelper(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
@@ -1044,7 +1055,13 @@ class MagicDirApiError(FuseMagicTest):
     def setUp(self):
         api = mock.MagicMock()
         super(MagicDirApiError, self).setUp(api=api)
-        api.collections().get().execute.side_effect = iter([Exception('API fail'), {"manifest_text": self.test_manifest}])
+        api.collections().get().execute.side_effect = iter([
+            Exception('API fail'),
+            {
+                "manifest_text": self.test_manifest,
+                "portable_data_hash": self.test_manifest_pdh,
+            },
+        ])
         api.keep.get.side_effect = Exception('Keep fail')
 
     def runTest(self):
