@@ -1253,34 +1253,30 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 	return extracted.Text, nil
 }
 
-func (runner *ContainerRunner) tryUnmount(umount *exec.Cmd) error {
-	umnterr := umount.Start()
-	if umnterr != nil {
-		runner.CrunchLog.Printf("Error: %v", umnterr)
-	}
-	go func() {
-		mnterr := umount.Wait()
-		if mnterr != nil {
-			runner.CrunchLog.Printf("Error running %v: %v", umount.Args, mnterr)
-		}
-	}()
-
-	timeout := time.NewTimer(9 * time.Second)
-	select {
-	case <-runner.ArvMountExit:
-		return nil
-	case <-timeout.C:
-		return fmt.Errorf("Timed out")
-	}
-}
-
 func (runner *ContainerRunner) CleanupDirs() {
 	if runner.ArvMount != nil {
-		if err := runner.tryUnmount(exec.Command("fusermount", "-u", runner.ArvMountPoint)); err != nil {
-			runner.CrunchLog.Printf("arv-mount not ended, will try force unmount: %v", err)
-			err = runner.tryUnmount(exec.Command("arv-mount", "--unmount-timeout=8", "--unmount", runner.ArvMountPoint))
-			if err != nil {
-				runner.CrunchLog.Printf("Error running arv-mount --unmount: %v", err)
+		delay := 8
+		umount := exec.Command("arv-mount", fmt.Sprintf("--unmount-timeout=%d", delay), "--unmount", runner.ArvMountPoint)
+		umnterr := umount.Start()
+		if umnterr != nil {
+			runner.CrunchLog.Printf("Error running %v: %v", umount.Args, umnterr)
+		} else {
+			// If arv-mount --unmount gets stuck for any reason, we
+			// don't want to wait for it.  Spin off the wait for
+			// child process so it doesn't block crunch-run.
+			go func() {
+				mnterr := umount.Wait()
+				if mnterr != nil {
+					runner.CrunchLog.Printf("Error running %v: %v", umount.Args, mnterr)
+				}
+			}()
+
+			timeout := time.NewTimer((delay + 1) * time.Second)
+			select {
+			case <-runner.ArvMountExit:
+				break
+			case <-timeout.C:
+				runner.CrunchLog.Printf("Timed out waiting for %v", umount.Args)
 			}
 		}
 		if rmerr := os.Remove(runner.ArvMountPoint); rmerr != nil {
