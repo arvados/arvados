@@ -221,7 +221,7 @@ func (runner *ContainerRunner) stop() {
 	}
 }
 
-func (runner *ContainerRunner) teardown() {
+func (runner *ContainerRunner) stopSignals() {
 	if runner.SigChan != nil {
 		signal.Stop(runner.SigChan)
 		close(runner.SigChan)
@@ -357,8 +357,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	if err != nil {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
-
-	runner.CleanupTempDir = append(runner.CleanupTempDir, runner.ArvMountPoint)
 
 	pdhOnly := true
 	tmpcount := 0
@@ -1255,15 +1253,15 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 
 func (runner *ContainerRunner) CleanupDirs() {
 	if runner.ArvMount != nil {
-		delay := 8
+		var delay int64 = 8
 		umount := exec.Command("arv-mount", fmt.Sprintf("--unmount-timeout=%d", delay), "--unmount", runner.ArvMountPoint)
 		umnterr := umount.Start()
 		if umnterr != nil {
 			runner.CrunchLog.Printf("Error running %v: %v", umount.Args, umnterr)
 		} else {
 			// If arv-mount --unmount gets stuck for any reason, we
-			// don't want to wait for it.  Spin off the wait for
-			// child process so it doesn't block crunch-run.
+			// don't want to wait for it forever.  Do Wait() in a goroutine
+			// so it doesn't block crunch-run.
 			go func() {
 				mnterr := umount.Wait()
 				if mnterr != nil {
@@ -1271,23 +1269,23 @@ func (runner *ContainerRunner) CleanupDirs() {
 				}
 			}()
 
-			timeout := time.NewTimer((delay + 1) * time.Second)
 			select {
 			case <-runner.ArvMountExit:
 				break
-			case <-timeout.C:
+			case <-time.After(time.Duration((delay + 1) * int64(time.Second))):
 				runner.CrunchLog.Printf("Timed out waiting for %v", umount.Args)
+				umount.Process.Kill()
 			}
 		}
+	}
+
+	if runner.ArvMountPoint != "" {
 		if rmerr := os.Remove(runner.ArvMountPoint); rmerr != nil {
 			runner.CrunchLog.Printf("While cleaning up arv-mount directory %s: %v", runner.ArvMountPoint, rmerr)
 		}
 	}
 
 	for _, tmpdir := range runner.CleanupTempDir {
-		if tmpdir == runner.ArvMountPoint {
-			continue
-		}
 		if rmerr := os.RemoveAll(tmpdir); rmerr != nil {
 			runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", tmpdir, rmerr)
 		}
@@ -1414,13 +1412,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Printf("Executing on host '%s'", hostname)
 	}
 
-	// Clean up temporary directories _after_ finalizing
-	// everything (if we've made any by then)
-	defer func() {
-		runner.CrunchLog.Printf("crunch-run finished")
-	}()
-	defer runner.CleanupDirs()
-
 	runner.finalState = "Queued"
 
 	defer func() {
@@ -1446,28 +1437,21 @@ func (runner *ContainerRunner) Run() (err error) {
 		// Log the error encountered in Run(), if any
 		checkErr(err)
 
-		if runner.finalState == "Queued" {
-			runner.CrunchLog.Close()
-			runner.UpdateContainerFinal()
-			return
+		if runner.finalState != "Queued" {
+			if runner.IsCancelled() {
+				runner.finalState = "Cancelled"
+			}
+			checkErr(runner.CaptureOutput())
 		}
 
-		if runner.IsCancelled() {
-			runner.finalState = "Cancelled"
-			// but don't return yet -- we still want to
-			// capture partial output and write logs
-		}
-
-		checkErr(runner.CaptureOutput())
 		checkErr(runner.CommitLogs())
 		checkErr(runner.UpdateContainerFinal())
 
-		// The real log is already closed, but then we opened
-		// a new one in case we needed to log anything while
-		// finalizing.
-		runner.CrunchLog.Close()
+		runner.stopSignals()
+		runner.CleanupDirs()
 
-		runner.teardown()
+		runner.CrunchLog.Printf("crunch-run finished")
+		runner.CrunchLog.Close()
 	}()
 
 	err = runner.fetchContainerRecord()

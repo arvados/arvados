@@ -670,7 +670,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	}
 	c.Check(api.WasSetRunning, Equals, true)
 
-	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -1010,6 +1010,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1028,6 +1029,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1048,6 +1050,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 
@@ -1070,6 +1073,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1094,6 +1098,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
 			realTemp + "/keep1/tmp0:/keepout"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1119,6 +1124,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
 			realTemp + "/keep1/tmp0:/keepout"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1143,6 +1149,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1166,6 +1173,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"--read-write", "--crunchstat-interval=5",
 			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1184,6 +1192,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1202,6 +1211,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Only mount points of kind 'collection' are supported underneath the output_path.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1218,6 +1228,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
