@@ -26,8 +26,20 @@ class ArvadosApiToken
       env["HTTP_AUTHORIZATION"].andand.
         match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2]
 
+    if params[:remote] && (
+         request.path.start_with?('/arvados/v1/groups') ||
+         request.path.start_with?('/arvados/v1/users/current'))
+      # Request from a remote API server, asking to validate a salted
+      # token.
+      remote = params[:remote]
+    else
+      # Normal request.
+      remote = false
+    end
     auth = ApiClientAuthorization.
-           validate(token: Thread.current[:supplied_token], remote: false)
+           validate(token: Thread.current[:supplied_token],
+                    remote: remote)
+
     Thread.current[:api_client_ip_address] = remote_ip
     Thread.current[:api_client_authorization] = auth
     Thread.current[:api_client_uuid] = auth.andand.api_client.andand.uuid

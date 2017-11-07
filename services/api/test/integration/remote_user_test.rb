@@ -5,13 +5,13 @@
 require 'webrick'
 require 'webrick/https'
 require 'test_helper'
+require 'helpers/users_test_helper'
 
-class RemoteUserAccountTest < ActionController::TestCase
+class RemoteUsersTest < ActionDispatch::IntegrationTest
   def auth(remote:)
     token = salt_token(fixture: :active, remote: remote)
     token.sub!('/zzzzz-', '/'+remote+'-')
-    ArvadosApiToken.new.call("rack.input" => "",
-                             "HTTP_AUTHORIZATION" => "Bearer #{token}")
+    {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
   end
 
   setup do
@@ -28,9 +28,9 @@ class RemoteUserAccountTest < ActionController::TestCase
       SSLEnable: true,
       SSLVerifyClient: OpenSSL::SSL::VERIFY_NONE,
       SSLPrivateKey: OpenSSL::PKey::RSA.new(
-        File.open("self-signed.key").read),
+        File.open(Rails.root.join("tmp", "self-signed.key")).read),
       SSLCertificate: OpenSSL::X509::Certificate.new(
-        File.open("self-signed.pem").read),
+        File.open(Rails.root.join("tmp", "self-signed.pem")).read),
       SSLCertName: [["CN", WEBrick::Utils::getservername]],
       StartCallback: lambda { ready.push(true) })
     srv.mount_proc '/discovery/v1/apis/arvados/v1/rest' do |req, res|
@@ -59,12 +59,11 @@ class RemoteUserAccountTest < ActionController::TestCase
   end
 
   teardown do
-    @remote_server.stop
+    @remote_server.andand.stop
   end
 
   test 'authenticate with remote token' do
-    auth(remote: 'zbbbb')
-    get :current
+    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
@@ -72,8 +71,7 @@ class RemoteUserAccountTest < ActionController::TestCase
 
   test 'authenticate with remote token from wrong site' do
     @stub_content[:uuid] = 'zcccc-tpzed-000000000000000'
-    auth(remote: 'zbbbb')
-    get :current
+    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
     assert_response 401
   end
 
@@ -82,16 +80,29 @@ class RemoteUserAccountTest < ActionController::TestCase
     @stub_content = {
       error: 'not authorized',
     }
-    auth(remote: 'zbbbb')
-    get :current
+    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
     assert_response 401
   end
 
   test 'remote api server is not an api server' do
-    @stub_status = 401
+    @stub_status = 200
     @stub_content = '<html>bad</html>'
-    auth(remote: 'zbbbb')
-    get :current
+    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
     assert_response 401
+  end
+
+  ['zbbbb', 'z0000'].each do |token_valid_for|
+    test "validate #{token_valid_for}-salted token for remote cluster zbbbb" do
+      salted_token = salt_token(fixture: :active, remote: token_valid_for)
+      get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
+            "HTTP_AUTHORIZATION" => "Bearer #{salted_token}"
+          }
+      if token_valid_for == 'zbbbb'
+        assert_response 200
+        assert_equal(users(:active).uuid, json_response['uuid'])
+      else
+        assert_response 401
+      end
+    end
   end
 end

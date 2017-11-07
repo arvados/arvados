@@ -780,6 +780,12 @@ install_apiserver() {
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
+    cert="$WORKSPACE/services/api/tmp/self-signed"
+    if ! [[ -e "$cert.key" ]]; then
+        dir="$WORKSPACE/services/api/tmp"
+        openssl req -new -x509 -nodes -out "$cert.pem" -keyout "$cert.key" -days 3650 -subj /CN=0.0.0.0 -extfile <(printf 'subjectAltName=DNS:127.0.0.1,DNS:localhost,DNS:::1')
+    fi
+
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \

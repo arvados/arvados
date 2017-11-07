@@ -870,19 +870,4 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
     return return_obj
   end
-
-  ['zbbbb', 'z0000'].each do |token_valid_for|
-    test "validate #{token_valid_for}-salted token for remote cluster zbbbb" do
-      salted_token = salt_token(fixture: :active, remote: token_valid_for)
-      ArvadosApiToken.new.call("rack.input" => "",
-                               "HTTP_AUTHORIZATION" => "Bearer #{salted_token}")
-      get :current, {remote: 'zbbbb'}
-      if token_valid_for == 'zbbbb'
-        assert_equal(users(:active).uuid, json_response['uuid'])
-        assert_response 200
-      else
-        assert_response 401
-      end
-    end
-  end
 end
