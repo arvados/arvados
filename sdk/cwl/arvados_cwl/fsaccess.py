@@ -27,14 +27,16 @@ from schema_salad.ref_resolver import DefaultFetcher
 logger = logging.getLogger('arvados.cwl-runner')
 
 class CollectionCache(object):
-    def __init__(self, api_client, keep_client, num_retries):
+    def __init__(self, api_client, keep_client, num_retries,
+                 cap=256*1024*1024,
+                 min_entries=4):
         self.api_client = api_client
         self.keep_client = keep_client
         self.collections = OrderedDict()
         self.lock = threading.Lock()
         self.total = 0
-        self.cap = 256*1024*1024
-        self.min_entries = 4
+        self.cap = cap
+        self.min_entries = min_entries
 
     def cap_cache(self):
         if self.total > self.cap:
