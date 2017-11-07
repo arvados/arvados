@@ -9,6 +9,7 @@ import urlparse
 import re
 import logging
 import threading
+from collections import OrderedDict
 
 import ruamel.yaml as yaml
 
@@ -29,16 +30,39 @@ class CollectionCache(object):
     def __init__(self, api_client, keep_client, num_retries):
         self.api_client = api_client
         self.keep_client = keep_client
-        self.collections = {}
+        self.collections = OrderedDict()
         self.lock = threading.Lock()
+        self.total = 0
+        self.cap = 256*1024*1024
+        self.min_entries = 4
+
+    def cap_cache(self):
+        if self.total > self.cap:
+            # ordered list iterates from oldest to newest
+            for pdh, v in self.collections.items():
+                if self.total < self.cap or len(self.collections) < self.min_entries:
+                    break
+                # cut it loose
+                logger.debug("Evicting collection reader %s from cache", pdh)
+                del self.collections[pdh]
+                self.total -= v[1]
 
     def get(self, pdh):
         with self.lock:
             if pdh not in self.collections:
                 logger.debug("Creating collection reader for %s", pdh)
-                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
-                                                                            keep_client=self.keep_client)
-            return self.collections[pdh]
+                cr = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
+                                                         keep_client=self.keep_client)
+                sz = len(cr.manifest_text()) * 128
+                self.collections[pdh] = (cr, sz)
+                self.total += sz
+                self.cap_cache()
+            else:
+                cr, sz = self.collections[pdh]
+                # bump it to the back
+                del self.collections[pdh]
+                self.collections[pdh] = (cr, sz)
+            return cr
 
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
