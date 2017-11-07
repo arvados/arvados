@@ -29,7 +29,7 @@ logger = logging.getLogger('arvados.cwl-runner')
 class CollectionCache(object):
     def __init__(self, api_client, keep_client, num_retries,
                  cap=256*1024*1024,
-                 min_entries=4):
+                 min_entries=2):
         self.api_client = api_client
         self.keep_client = keep_client
         self.collections = OrderedDict()
