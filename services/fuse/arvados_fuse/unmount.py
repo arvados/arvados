@@ -43,6 +43,41 @@ def paths_to_unmount(path, mnttype):
     return paths
 
 
+def safer_realpath(path, loop=True):
+    """Similar to os.path.realpath(), but avoids calling lstat().
+
+    Leaves some symlinks unresolved."""
+    if path == '/':
+        return path, True
+    elif not path.startswith('/'):
+        path = os.path.abspath(path)
+    while True:
+        path = path.rstrip('/')
+        dirname, basename = os.path.split(path)
+        try:
+            path, resolved = safer_realpath(os.path.join(dirname, os.readlink(path)), loop=False)
+        except OSError as e:
+            # Path is not a symlink (EINVAL), or is unreadable, or
+            # doesn't exist. If the error was EINVAL and dirname can
+            # be resolved, we will have eliminated all symlinks and it
+            # will be safe to call normpath().
+            dirname, resolved = safer_realpath(dirname, loop=loop)
+            path = os.path.join(dirname, basename)
+            if resolved and e.errno == errno.EINVAL:
+                return os.path.normpath(path), True
+            else:
+                return path, False
+        except RuntimeError:
+            if not loop:
+                # Unwind to the point where we first started following
+                # symlinks.
+                raise
+            # Resolving the whole path landed in a symlink cycle, but
+            # we might still be able to resolve dirname.
+            dirname, _ = safer_realpath(dirname, loop=loop)
+            return os.path.join(dirname, basename), False
+
+
 def unmount(path, subtype=None, timeout=10, recursive=False):
     """Unmount the fuse mount at path.
 
@@ -58,7 +93,7 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
     fuse mount at all. Raises an exception if it cannot be unmounted.
     """
 
-    path = os.path.abspath(path)
+    path, _ = safer_realpath(path)
 
     if subtype is None:
         mnttype = None
