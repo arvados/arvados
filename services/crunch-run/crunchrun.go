@@ -1255,26 +1255,41 @@ func (runner *ContainerRunner) CleanupDirs() {
 	if runner.ArvMount != nil {
 		var delay int64 = 8
 		umount := exec.Command("arv-mount", fmt.Sprintf("--unmount-timeout=%d", delay), "--unmount", runner.ArvMountPoint)
+		umount.Stdout = runner.CrunchLog
+		umount.Stderr = runner.CrunchLog
+		runner.CrunchLog.Printf("Running %v", umount.Args)
 		umnterr := umount.Start()
+
 		if umnterr != nil {
-			runner.CrunchLog.Printf("Error running %v: %v", umount.Args, umnterr)
+			runner.CrunchLog.Printf("Error unmounting: %v", umnterr)
 		} else {
 			// If arv-mount --unmount gets stuck for any reason, we
 			// don't want to wait for it forever.  Do Wait() in a goroutine
 			// so it doesn't block crunch-run.
+			umountExit := make(chan error)
 			go func() {
 				mnterr := umount.Wait()
 				if mnterr != nil {
-					runner.CrunchLog.Printf("Error running %v: %v", umount.Args, mnterr)
+					runner.CrunchLog.Printf("Error unmounting: %v", mnterr)
 				}
+				umountExit <- mnterr
 			}()
 
-			select {
-			case <-runner.ArvMountExit:
-				break
-			case <-time.After(time.Duration((delay + 1) * int64(time.Second))):
-				runner.CrunchLog.Printf("Timed out waiting for %v", umount.Args)
-				umount.Process.Kill()
+			for again := true; again; {
+				again = false
+				select {
+				case <-umountExit:
+					umount = nil
+					again = true
+				case <-runner.ArvMountExit:
+					break
+				case <-time.After(time.Duration((delay + 1) * int64(time.Second))):
+					runner.CrunchLog.Printf("Timed out waiting for unmount")
+					if umount != nil {
+						umount.Process.Kill()
+					}
+					runner.ArvMount.Process.Kill()
+				}
 			}
 		}
 	}
@@ -1415,6 +1430,14 @@ func (runner *ContainerRunner) Run() (err error) {
 	runner.finalState = "Queued"
 
 	defer func() {
+		runner.stopSignals()
+		runner.CleanupDirs()
+
+		runner.CrunchLog.Printf("crunch-run finished")
+		runner.CrunchLog.Close()
+	}()
+
+	defer func() {
 		// checkErr prints e (unless it's nil) and sets err to
 		// e (unless err is already non-nil). Thus, if err
 		// hasn't already been assigned when Run() returns,
@@ -1437,21 +1460,20 @@ func (runner *ContainerRunner) Run() (err error) {
 		// Log the error encountered in Run(), if any
 		checkErr(err)
 
-		if runner.finalState != "Queued" {
-			if runner.IsCancelled() {
-				runner.finalState = "Cancelled"
-			}
-			checkErr(runner.CaptureOutput())
+		if runner.finalState == "Queued" {
+			runner.UpdateContainerFinal()
+			return
 		}
 
+		if runner.IsCancelled() {
+			runner.finalState = "Cancelled"
+			// but don't return yet -- we still want to
+			// capture partial output and write logs
+		}
+
+		checkErr(runner.CaptureOutput())
 		checkErr(runner.CommitLogs())
 		checkErr(runner.UpdateContainerFinal())
-
-		runner.stopSignals()
-		runner.CleanupDirs()
-
-		runner.CrunchLog.Printf("crunch-run finished")
-		runner.CrunchLog.Close()
 	}()
 
 	err = runner.fetchContainerRecord()
