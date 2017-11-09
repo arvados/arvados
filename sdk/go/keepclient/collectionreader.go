@@ -43,14 +43,7 @@ func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, fi
 }
 
 func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
-	f := &file{
-		kc: kc,
-	}
-	err := f.load(m, filename)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
+	return (&arvados.Collection{ManifestText: m.Text}).FileSystem(nil, kc).OpenFile(filename, os.O_RDONLY, 0)
 }
 
 type file struct {

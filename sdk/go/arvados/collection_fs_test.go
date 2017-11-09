@@ -16,17 +16,39 @@ import (
 
 var _ = check.Suite(&CollectionFSSuite{})
 
+type keepClientStub struct {
+	blocks map[string][]byte
+}
+
+func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int64) (int, error) {
+	buf := kcs.blocks[locator[:32]]
+	if buf == nil {
+		return 0, os.ErrNotExist
+	}
+	return copy(p, buf[int(off):]), nil
+}
+
 type CollectionFSSuite struct {
 	client *Client
 	coll   Collection
-	fs     http.FileSystem
+	fs     CollectionFileSystem
+	kc     keepClient
 }
 
 func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	s.client = NewClientFromEnv()
 	err := s.client.RequestAndDecode(&s.coll, "GET", "arvados/v1/collections/"+arvadostest.FooAndBarFilesInDirUUID, nil, nil)
 	c.Assert(err, check.IsNil)
-	s.fs = s.coll.FileSystem(s.client, nil)
+	s.kc = &keepClientStub{
+		blocks: map[string][]byte{
+			"3858f62230ac3c915f300c664312c63f": []byte("foobar"),
+		}}
+	s.fs = s.coll.FileSystem(s.client, s.kc)
+}
+
+func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
+	_, ok := s.fs.(http.FileSystem)
+	c.Check(ok, check.Equals, true)
 }
 
 func (s *CollectionFSSuite) TestReaddirFull(c *check.C) {
@@ -58,7 +80,7 @@ func (s *CollectionFSSuite) TestReaddirLimited(c *check.C) {
 	}
 
 	fis, err = f.Readdir(1)
-	c.Check(err, check.Equals, io.EOF)
+	c.Check(err, check.IsNil)
 	c.Check(len(fis), check.Equals, 1)
 	if len(fis) > 0 {
 		c.Check(fis[0].Size(), check.Equals, int64(3))
@@ -76,7 +98,7 @@ func (s *CollectionFSSuite) TestReaddirLimited(c *check.C) {
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(2)
 	c.Check(len(fis), check.Equals, 1)
-	c.Assert(err, check.Equals, io.EOF)
+	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(2)
 	c.Check(len(fis), check.Equals, 0)
 	c.Assert(err, check.Equals, io.EOF)
