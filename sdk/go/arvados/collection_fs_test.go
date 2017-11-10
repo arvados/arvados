@@ -135,14 +135,80 @@ func (s *CollectionFSSuite) TestNotExist(c *check.C) {
 	}
 }
 
-func (s *CollectionFSSuite) TestOpenFile(c *check.C) {
-	c.Skip("cannot test files with nil keepclient")
-
-	f, err := s.fs.Open("/foo.txt")
+func (s *CollectionFSSuite) TestReadOnlyFile(c *check.C) {
+	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDONLY, 0)
 	c.Assert(err, check.IsNil)
 	st, err := f.Stat()
 	c.Assert(err, check.IsNil)
 	c.Check(st.Size(), check.Equals, int64(3))
+	n, err := f.Write([]byte("bar"))
+	c.Check(n, check.Equals, 0)
+	c.Check(err, check.Equals, ErrReadOnlyFile)
+}
+
+func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
+	f, err := s.fs.OpenFile("/newfile", os.O_RDWR|os.O_CREATE, 0)
+	c.Assert(err, check.IsNil)
+	st, err := f.Stat()
+	c.Assert(err, check.IsNil)
+	c.Check(st.Size(), check.Equals, int64(0))
+
+	n, err := f.Write([]byte("bar"))
+	c.Check(n, check.Equals, 3)
+	c.Check(err, check.IsNil)
+
+	c.Check(f.Close(), check.IsNil)
+
+	f, err = s.fs.OpenFile("/newfile", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
+	c.Check(f, check.IsNil)
+	c.Assert(err, check.NotNil)
+
+	f, err = s.fs.OpenFile("/newfile", os.O_RDWR, 0)
+	c.Assert(err, check.IsNil)
+	st, err = f.Stat()
+	c.Assert(err, check.IsNil)
+	c.Check(st.Size(), check.Equals, int64(3))
+
+	c.Check(f.Close(), check.IsNil)
+
+	// TODO: serialize to Collection, confirm manifest contents,
+	// make new FileSystem, confirm file contents.
+}
+
+func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
+	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
+	c.Assert(err, check.IsNil)
+	st, err := f.Stat()
+	c.Assert(err, check.IsNil)
+	c.Check(st.Size(), check.Equals, int64(3))
+
+	buf := make([]byte, 4)
+	n, err := f.Read(buf)
+	c.Check(n, check.Equals, 3)
+	c.Check(err, check.Equals, io.EOF)
+	c.Check(string(buf[:3]), check.DeepEquals, "foo")
+
+	pos, err := f.Seek(-2, os.SEEK_CUR)
+	c.Check(pos, check.Equals, int64(1))
+	c.Check(err, check.IsNil)
+
+	n, err = f.Write([]byte("*"))
+	c.Check(n, check.Equals, 1)
+	c.Check(err, check.IsNil)
+
+	pos, err = f.Seek(0, os.SEEK_CUR)
+	c.Check(pos, check.Equals, int64(2))
+	c.Check(err, check.IsNil)
+
+	pos, err = f.Seek(0, os.SEEK_SET)
+	c.Check(pos, check.Equals, int64(0))
+	c.Check(err, check.IsNil)
+
+	buf = make([]byte, 4)
+	n, err = f.Read(buf)
+	c.Check(n, check.Equals, 3)
+	c.Check(err, check.Equals, io.EOF)
+	c.Check(string(buf[:3]), check.Equals, "f*o")
 }
 
 // Gocheck boilerplate
