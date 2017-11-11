@@ -263,7 +263,7 @@ func (fn *filenode) Truncate(size int64) error {
 	fn.Lock()
 	defer fn.Unlock()
 	if size < fn.fileinfo.size {
-		ptr := fn.seek(filenodePtr{off: size})
+		ptr := fn.seek(filenodePtr{off: size, repacked: fn.repacked - 1})
 		if ptr.extentOff == 0 {
 			fn.extents = fn.extents[:ptr.extentIdx]
 		} else {

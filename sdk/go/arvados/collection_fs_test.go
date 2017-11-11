@@ -5,10 +5,13 @@
 package arvados
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"testing"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -296,6 +299,96 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "123")
 	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 1)
+}
+
+func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
+	maxBlockSize = 8
+	defer func() { maxBlockSize = 2 << 26 }()
+
+	var wg sync.WaitGroup
+	for n := 0; n < 128; n++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
+			c.Assert(err, check.IsNil)
+			defer f.Close()
+			for i := 0; i < 6502; i++ {
+				switch rand.Int() & 3 {
+				case 0:
+					f.Truncate(int64(rand.Intn(64)))
+				case 1:
+					f.Seek(int64(rand.Intn(64)), os.SEEK_SET)
+				case 2:
+					_, err := f.Write([]byte("beep boop"))
+					c.Check(err, check.IsNil)
+				case 3:
+					_, err := ioutil.ReadAll(f)
+					c.Check(err, check.IsNil)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+	buf, err := ioutil.ReadAll(f)
+	c.Check(err, check.IsNil)
+	c.Logf("after lots of random r/w/seek/trunc, buf is %q", buf)
+}
+
+func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
+	maxBlockSize = 8
+	defer func() { maxBlockSize = 2 << 26 }()
+
+	var wg sync.WaitGroup
+	for n := 0; n < 128; n++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			expect := make([]byte, 0, 64)
+			wbytes := []byte("there's no simple explanation for anything important that any of us do")
+			f, err := s.fs.OpenFile(fmt.Sprintf("random-%d", n), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
+			c.Assert(err, check.IsNil)
+			defer f.Close()
+			for i := 0; i < 6502; i++ {
+				trunc := rand.Intn(65)
+				woff := rand.Intn(trunc + 1)
+				wbytes = wbytes[:rand.Intn(64-woff+1)]
+				for buf, i := expect[:cap(expect)], len(expect); i < trunc; i++ {
+					buf[i] = 0
+				}
+				expect = expect[:trunc]
+				if trunc < woff+len(wbytes) {
+					expect = expect[:woff+len(wbytes)]
+				}
+				copy(expect[woff:], wbytes)
+				f.Truncate(int64(trunc))
+				pos, err := f.Seek(int64(woff), os.SEEK_SET)
+				c.Check(pos, check.Equals, int64(woff))
+				c.Check(err, check.IsNil)
+				n, err := f.Write(wbytes)
+				c.Check(n, check.Equals, len(wbytes))
+				c.Check(err, check.IsNil)
+				pos, err = f.Seek(0, os.SEEK_SET)
+				c.Check(pos, check.Equals, int64(0))
+				c.Check(err, check.IsNil)
+				buf, err := ioutil.ReadAll(f)
+				c.Check(string(buf), check.Equals, string(expect))
+				c.Check(err, check.IsNil)
+			}
+		}(n)
+	}
+	wg.Wait()
+
+	root, err := s.fs.Open("/")
+	c.Assert(err, check.IsNil)
+	defer root.Close()
+	fi, err := root.Readdir(-1)
+	c.Check(err, check.IsNil)
+	c.Logf("Readdir(): %#v", fi)
 }
 
 // Gocheck boilerplate
