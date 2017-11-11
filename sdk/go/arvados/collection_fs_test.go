@@ -236,6 +236,66 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err := ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "f0123456789abcdefg")
+
+	// truncate to current size
+	err = f.Truncate(18)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "f0123456789abcdefg")
+
+	// shrink to zero some data
+	f.Truncate(15)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "f0123456789abcd")
+
+	// grow to partial block/extent
+	f.Truncate(20)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "f0123456789abcd\x00\x00\x00\x00\x00")
+
+	f.Truncate(0)
+	f2.Write([]byte("12345678abcdefghijkl"))
+
+	// grow to block/extent boundary
+	f.Truncate(64)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(len(buf2), check.Equals, 64)
+	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 8)
+
+	// shrink to block/extent boundary
+	err = f.Truncate(32)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(len(buf2), check.Equals, 32)
+	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 4)
+
+	// shrink to partial block/extent
+	err = f.Truncate(15)
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "12345678abcdefg")
+	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 2)
+
+	// Truncate to size=3 while f2's ptr is at 15
+	err = f.Truncate(3)
+	c.Check(err, check.IsNil)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "")
+	f2.Seek(0, os.SEEK_SET)
+	buf2, err = ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "123")
+	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 1)
 }
 
 // Gocheck boilerplate

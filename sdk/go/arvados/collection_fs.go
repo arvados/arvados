@@ -35,6 +35,7 @@ type File interface {
 	Size() int64
 	Readdir(int) ([]os.FileInfo, error)
 	Stat() (os.FileInfo, error)
+	Truncate(int64) error
 }
 
 type keepClient interface {
@@ -122,6 +123,7 @@ type inode interface {
 	Parent() inode
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
 	Write([]byte, filenodePtr) (int, filenodePtr, error)
+	Truncate(int64) error
 	Readdir() []os.FileInfo
 	Stat() os.FileInfo
 	sync.Locker
@@ -255,6 +257,48 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 		}
 	}
 	return
+}
+
+func (fn *filenode) Truncate(size int64) error {
+	fn.Lock()
+	defer fn.Unlock()
+	if size < fn.fileinfo.size {
+		ptr := fn.seek(filenodePtr{off: size})
+		if ptr.extentOff == 0 {
+			fn.extents = fn.extents[:ptr.extentIdx]
+		} else {
+			fn.extents = fn.extents[:ptr.extentIdx+1]
+			e := fn.extents[ptr.extentIdx]
+			if e, ok := e.(writableExtent); ok {
+				e.Truncate(ptr.extentOff)
+			} else {
+				fn.extents[ptr.extentIdx] = e.Slice(0, ptr.extentOff)
+			}
+		}
+		fn.fileinfo.size = size
+		fn.repacked++
+		return nil
+	}
+	for size > fn.fileinfo.size {
+		grow := size - fn.fileinfo.size
+		var e writableExtent
+		var ok bool
+		if len(fn.extents) == 0 {
+			e = &memExtent{}
+			fn.extents = append(fn.extents, e)
+		} else if e, ok = fn.extents[len(fn.extents)-1].(writableExtent); !ok || e.Len() >= maxBlockSize {
+			e = &memExtent{}
+			fn.extents = append(fn.extents, e)
+		} else {
+			fn.repacked++
+		}
+		if maxgrow := int64(maxBlockSize - e.Len()); maxgrow < grow {
+			grow = maxgrow
+		}
+		e.Truncate(e.Len() + int(grow))
+		fn.fileinfo.size += grow
+	}
+	return nil
 }
 
 func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
@@ -433,6 +477,10 @@ func (f *file) Seek(off int64, whence int) (pos int64, err error) {
 		f.ptr.repacked = -1
 	}
 	return f.ptr.off, nil
+}
+
+func (f *file) Truncate(size int64) error {
+	return f.inode.Truncate(size)
 }
 
 func (f *file) Write(p []byte) (n int, err error) {
@@ -628,6 +676,10 @@ func (dn *dirnode) Write(p []byte, ptr filenodePtr) (int, filenodePtr, error) {
 	return 0, ptr, ErrInvalidOperation
 }
 
+func (dn *dirnode) Truncate(int64) error {
+	return ErrInvalidOperation
+}
+
 func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
 	name = strings.TrimSuffix(name, "/")
 	if name == "." || name == "" {
@@ -720,6 +772,12 @@ func (me *memExtent) Truncate(n int) {
 		newbuf := make([]byte, n, newsize)
 		copy(newbuf, me.buf)
 		me.buf = newbuf
+	} else {
+		// Zero unused part when shrinking, in case we grow
+		// and start using it again later.
+		for i := n; i < len(me.buf); i++ {
+			me.buf[i] = 0
+		}
 	}
 	me.buf = me.buf[:n]
 }
