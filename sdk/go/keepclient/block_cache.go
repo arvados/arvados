@@ -51,15 +51,15 @@ func (c *BlockCache) Sweep() {
 
 // ReadAt returns data from the cache, first retrieving it from Keep if
 // necessary.
-func (c *BlockCache) ReadAt(kc *KeepClient, locator string, p []byte, off int64) (int, error) {
+func (c *BlockCache) ReadAt(kc *KeepClient, locator string, p []byte, off int) (int, error) {
 	buf, err := c.Get(kc, locator)
 	if err != nil {
 		return 0, err
 	}
-	if off > int64(len(buf)) {
+	if off > len(buf) {
 		return 0, io.ErrUnexpectedEOF
 	}
-	return copy(p, buf[int(off):]), nil
+	return copy(p, buf[off:]), nil
 }
 
 // Get returns data from the cache, first retrieving it from Keep if

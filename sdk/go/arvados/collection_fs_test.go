@@ -21,12 +21,12 @@ type keepClientStub struct {
 	blocks map[string][]byte
 }
 
-func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int64) (int, error) {
+func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error) {
 	buf := kcs.blocks[locator[:32]]
 	if buf == nil {
 		return 0, os.ErrNotExist
 	}
-	return copy(p, buf[int(off):]), nil
+	return copy(p, buf[off:]), nil
 }
 
 type CollectionFSSuite struct {
@@ -177,13 +177,21 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
+	maxBlockSize = 8
+	defer func() { maxBlockSize = 2 << 26 }()
+
 	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
 	c.Assert(err, check.IsNil)
+	defer f.Close()
 	st, err := f.Stat()
 	c.Assert(err, check.IsNil)
 	c.Check(st.Size(), check.Equals, int64(3))
 
-	buf := make([]byte, 4)
+	f2, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
+	c.Assert(err, check.IsNil)
+	defer f2.Close()
+
+	buf := make([]byte, 64)
 	n, err := f.Read(buf)
 	c.Check(n, check.Equals, 3)
 	c.Check(err, check.Equals, io.EOF)
@@ -193,6 +201,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(pos, check.Equals, int64(1))
 	c.Check(err, check.IsNil)
 
+	// Split a storedExtent in two, and insert a memExtent
 	n, err = f.Write([]byte("*"))
 	c.Check(n, check.Equals, 1)
 	c.Check(err, check.IsNil)
@@ -205,11 +214,28 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(pos, check.Equals, int64(0))
 	c.Check(err, check.IsNil)
 
-	buf = make([]byte, 4)
-	buf, err = ioutil.ReadAll(f)
-	c.Check(len(buf), check.Equals, 3)
+	rbuf, err := ioutil.ReadAll(f)
+	c.Check(len(rbuf), check.Equals, 3)
 	c.Check(err, check.IsNil)
-	c.Check(string(buf), check.Equals, "f*o")
+	c.Check(string(rbuf), check.Equals, "f*o")
+
+	// Write multiple blocks in one call
+	f.Seek(1, os.SEEK_SET)
+	n, err = f.Write([]byte("0123456789abcdefg"))
+	c.Check(n, check.Equals, 17)
+	c.Check(err, check.IsNil)
+	pos, err = f.Seek(0, os.SEEK_CUR)
+	c.Check(pos, check.Equals, int64(18))
+	pos, err = f.Seek(-18, os.SEEK_CUR)
+	c.Check(err, check.IsNil)
+	n, err = io.ReadFull(f, buf)
+	c.Check(n, check.Equals, 18)
+	c.Check(err, check.Equals, io.ErrUnexpectedEOF)
+	c.Check(string(buf[:n]), check.Equals, "f0123456789abcdefg")
+
+	buf2, err := ioutil.ReadAll(f2)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf2), check.Equals, "f0123456789abcdefg")
 }
 
 // Gocheck boilerplate

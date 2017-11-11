@@ -23,9 +23,9 @@ var (
 	ErrFileExists       = errors.New("file exists")
 	ErrInvalidOperation = errors.New("invalid operation")
 	ErrPermission       = os.ErrPermission
-)
 
-const maxBlockSize = 1 << 26
+	maxBlockSize = 1 << 26
+)
 
 type File interface {
 	io.Reader
@@ -38,7 +38,7 @@ type File interface {
 }
 
 type keepClient interface {
-	ReadAt(locator string, p []byte, off int64) (int, error)
+	ReadAt(locator string, p []byte, off int) (int, error)
 }
 
 type fileinfo struct {
@@ -177,7 +177,7 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 	} else if ptr.repacked == fn.repacked {
 		// extentIdx and extentOff accurately reflect ptr.off,
 		// but might have fallen off the end of an extent
-		if int64(ptr.extentOff) >= fn.extents[ptr.extentIdx].Len() {
+		if ptr.extentOff >= fn.extents[ptr.extentIdx].Len() {
 			ptr.extentIdx++
 			ptr.extentOff = 0
 		}
@@ -200,7 +200,7 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 		// sum(fn.extents[i].Len()) -- but that can't happen
 		// because we have ensured fn.fileinfo.size is always
 		// accurate.
-		extLen := fn.extents[ptr.extentIdx].Len()
+		extLen := int64(fn.extents[ptr.extentIdx].Len())
 		if off+extLen > ptr.off {
 			ptr.extentOff = int(ptr.off - off)
 			break
@@ -214,7 +214,7 @@ func (fn *filenode) appendExtent(e extent) {
 	fn.Lock()
 	defer fn.Unlock()
 	fn.extents = append(fn.extents, e)
-	fn.fileinfo.size += e.Len()
+	fn.fileinfo.size += int64(e.Len())
 	fn.repacked++
 }
 
@@ -246,7 +246,7 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 	if n > 0 {
 		ptr.off += int64(n)
 		ptr.extentOff += n
-		if int64(ptr.extentOff) == fn.extents[ptr.extentIdx].Len() {
+		if ptr.extentOff == fn.extents[ptr.extentIdx].Len() {
 			ptr.extentIdx++
 			ptr.extentOff = 0
 			if ptr.extentIdx < len(fn.extents) && err == io.EOF {
@@ -280,76 +280,90 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 			_, curWritable = fn.extents[cur].(writableExtent)
 		}
 		var prevAppendable bool
-		if prev >= 0 && fn.extents[prev].Len() < int64(maxBlockSize) {
+		if prev >= 0 && fn.extents[prev].Len() < maxBlockSize {
 			_, prevAppendable = fn.extents[prev].(writableExtent)
 		}
-		if ptr.extentOff > 0 {
-			if !curWritable {
-				// Split a non-writable block.
-				if max := int(fn.extents[cur].Len()) - ptr.extentOff; max <= len(cando) {
-					cando = cando[:max]
-					fn.extents = append(fn.extents, nil)
-					copy(fn.extents[cur+1:], fn.extents[cur:])
-				} else {
-					fn.extents = append(fn.extents, nil, nil)
-					copy(fn.extents[cur+2:], fn.extents[cur:])
-					fn.extents[cur+2] = fn.extents[cur+2].Slice(ptr.extentOff+len(cando), -1)
-				}
-				cur++
-				prev++
-				e := &memExtent{}
-				e.Truncate(len(cando))
-				fn.extents[cur] = e
-				fn.extents[prev] = fn.extents[prev].Slice(0, ptr.extentOff)
-				ptr.extentIdx++
-				ptr.extentOff = 0
-				fn.repacked++
-				ptr.repacked++
+		if ptr.extentOff > 0 && !curWritable {
+			// Split a non-writable block.
+			if max := fn.extents[cur].Len() - ptr.extentOff; max <= len(cando) {
+				// Truncate cur, and insert a new
+				// extent after it.
+				cando = cando[:max]
+				fn.extents = append(fn.extents, nil)
+				copy(fn.extents[cur+1:], fn.extents[cur:])
+			} else {
+				// Split cur into two copies, truncate
+				// the one on the left, shift the one
+				// on the right, and insert a new
+				// extent between them.
+				fn.extents = append(fn.extents, nil, nil)
+				copy(fn.extents[cur+2:], fn.extents[cur:])
+				fn.extents[cur+2] = fn.extents[cur+2].Slice(ptr.extentOff+len(cando), -1)
 			}
-		} else if len(fn.extents) == 0 {
-			// File has no extents yet.
+			cur++
+			prev++
 			e := &memExtent{}
 			e.Truncate(len(cando))
-			fn.fileinfo.size += e.Len()
-			fn.extents = append(fn.extents, e)
+			fn.extents[cur] = e
+			fn.extents[prev] = fn.extents[prev].Slice(0, ptr.extentOff)
+			ptr.extentIdx++
+			ptr.extentOff = 0
+			fn.repacked++
+			ptr.repacked++
 		} else if curWritable {
 			if fit := int(fn.extents[cur].Len()) - ptr.extentOff; fit < len(cando) {
 				cando = cando[:fit]
 			}
 		} else {
 			if prevAppendable {
-				// Grow prev.
-				if cangrow := int(maxBlockSize - fn.extents[prev].Len()); cangrow < len(cando) {
+				// Shrink cando if needed to fit in prev extent.
+				if cangrow := maxBlockSize - fn.extents[prev].Len(); cangrow < len(cando) {
 					cando = cando[:cangrow]
 				}
-				ptr.extentIdx--
-				ptr.extentOff = int(fn.extents[prev].Len())
-				fn.extents[prev].(*memExtent).Truncate(ptr.extentOff + len(cando))
+			}
+
+			if cur == len(fn.extents) {
+				// ptr is at EOF, filesize is changing.
+				fn.fileinfo.size += int64(len(cando))
+			} else if el := fn.extents[cur].Len(); el <= len(cando) {
+				// cando is long enough that we won't
+				// need cur any more. shrink cando to
+				// be exactly as long as cur
+				// (otherwise we'd accidentally shift
+				// the effective position of all
+				// extents after cur).
+				cando = cando[:el]
+				copy(fn.extents[cur:], fn.extents[cur+1:])
+				fn.extents = fn.extents[:len(fn.extents)-1]
 			} else {
-				// Insert an extent between prev and cur. It will be the new prev.
+				// shrink cur by the same #bytes we're growing prev
+				fn.extents[cur] = fn.extents[cur].Slice(len(cando), -1)
+			}
+
+			if prevAppendable {
+				// Grow prev.
+				ptr.extentIdx--
+				ptr.extentOff = fn.extents[prev].Len()
+				fn.extents[prev].(writableExtent).Truncate(ptr.extentOff + len(cando))
+				ptr.repacked++
+				fn.repacked++
+			} else {
+				// Insert an extent between prev and cur, and advance prev/cur.
 				fn.extents = append(fn.extents, nil)
-				copy(fn.extents[cur+1:], fn.extents[cur:])
+				if cur < len(fn.extents) {
+					copy(fn.extents[cur+1:], fn.extents[cur:])
+					ptr.repacked++
+					fn.repacked++
+				} else {
+					// appending a new extent does
+					// not invalidate any ptrs
+				}
 				e := &memExtent{}
 				e.Truncate(len(cando))
 				fn.extents[cur] = e
 				cur++
 				prev++
 			}
-
-			if cur == len(fn.extents) {
-				// There is no cur.
-			} else if el := int(fn.extents[cur].Len()); el <= len(cando) {
-				// Drop cur.
-				cando = cando[:el]
-				copy(fn.extents[cur:], fn.extents[cur+1:])
-				fn.extents = fn.extents[:len(fn.extents)-1]
-			} else {
-				// Shrink cur.
-				fn.extents[cur] = fn.extents[cur].Slice(len(cando), -1)
-			}
-
-			ptr.repacked++
-			fn.repacked++
 		}
 
 		// Finally we can copy bytes from cando to the current extent.
@@ -359,7 +373,7 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 
 		ptr.off += int64(len(cando))
 		ptr.extentOff += len(cando)
-		if fn.extents[ptr.extentIdx].Len() == int64(ptr.extentOff) {
+		if fn.extents[ptr.extentIdx].Len() == ptr.extentOff {
 			ptr.extentOff = 0
 			ptr.extentIdx++
 		}
@@ -528,10 +542,14 @@ func (dn *dirnode) loadManifest(txt string) {
 				// FIXME: broken manifest
 				continue
 			}
+			// Map the stream offset/range coordinates to
+			// block/offset/range coordinates and add
+			// corresponding storedExtents to the filenode
 			var pos int64
 			for _, e := range extents {
-				if pos+e.Len() < offset {
-					pos += e.Len()
+				next := pos + int64(e.Len())
+				if next < offset {
+					pos = next
 					continue
 				}
 				if pos > offset+length {
@@ -541,7 +559,7 @@ func (dn *dirnode) loadManifest(txt string) {
 				if pos < offset {
 					blkOff = int(offset - pos)
 				}
-				blkLen := int(e.Len()) - blkOff
+				blkLen := e.Len() - blkOff
 				if pos+int64(blkOff+blkLen) > offset+length {
 					blkLen = int(offset + length - pos - int64(blkOff))
 				}
@@ -551,7 +569,7 @@ func (dn *dirnode) loadManifest(txt string) {
 					offset:  blkOff,
 					length:  blkLen,
 				})
-				pos += e.Len()
+				pos = next
 			}
 			f.Close()
 		}
@@ -664,8 +682,10 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 
 type extent interface {
 	io.ReaderAt
-	Len() int64
-	Slice(int, int) extent
+	Len() int
+	// Return a new extent with a subsection of the data from this
+	// one. length<0 means length=Len()-off.
+	Slice(off int, length int) extent
 }
 
 type writableExtent interface {
@@ -678,15 +698,17 @@ type memExtent struct {
 	buf []byte
 }
 
-func (me *memExtent) Len() int64 {
-	return int64(len(me.buf))
+func (me *memExtent) Len() int {
+	return len(me.buf)
 }
 
-func (me *memExtent) Slice(n, size int) extent {
-	if size < 0 {
-		size = len(me.buf) - n
+func (me *memExtent) Slice(off, length int) extent {
+	if length < 0 {
+		length = len(me.buf) - off
 	}
-	return &memExtent{buf: me.buf[n : n+size]}
+	buf := make([]byte, length)
+	copy(buf, me.buf[off:])
+	return &memExtent{buf: buf}
 }
 
 func (me *memExtent) Truncate(n int) {
@@ -710,7 +732,7 @@ func (me *memExtent) WriteAt(p []byte, off int) {
 }
 
 func (me *memExtent) ReadAt(p []byte, off int64) (n int, err error) {
-	if off > me.Len() {
+	if off > int64(me.Len()) {
 		err = io.EOF
 		return
 	}
@@ -728,8 +750,8 @@ type storedExtent struct {
 	length  int
 }
 
-func (se storedExtent) Len() int64 {
-	return int64(se.length)
+func (se storedExtent) Len() int {
+	return se.length
 }
 
 func (se storedExtent) Slice(n, size int) extent {
@@ -742,20 +764,23 @@ func (se storedExtent) Slice(n, size int) extent {
 }
 
 func (se storedExtent) ReadAt(p []byte, off int64) (n int, err error) {
-	maxlen := int(int64(se.length) - off)
+	if off > int64(se.length) {
+		return 0, io.EOF
+	}
+	maxlen := se.length - int(off)
 	if len(p) > maxlen {
 		p = p[:maxlen]
-		n, err = se.cache.ReadAt(se.locator, p, off+int64(se.offset))
+		n, err = se.cache.ReadAt(se.locator, p, int(off)+se.offset)
 		if err == nil {
 			err = io.EOF
 		}
 		return
 	}
-	return se.cache.ReadAt(se.locator, p, off+int64(se.offset))
+	return se.cache.ReadAt(se.locator, p, int(off)+se.offset)
 }
 
 type blockCache interface {
-	ReadAt(locator string, p []byte, off int64) (n int, err error)
+	ReadAt(locator string, p []byte, off int) (n int, err error)
 }
 
 type keepBlockCache struct {
@@ -764,7 +789,7 @@ type keepBlockCache struct {
 
 var scratch = make([]byte, 2<<26)
 
-func (kbc *keepBlockCache) ReadAt(locator string, p []byte, off int64) (int, error) {
+func (kbc *keepBlockCache) ReadAt(locator string, p []byte, off int) (int, error) {
 	return kbc.kc.ReadAt(locator, p, off)
 }
 

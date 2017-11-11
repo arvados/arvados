@@ -294,7 +294,7 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 
 // ReadAt() retrieves a portion of block from the cache if it's
 // present, otherwise from the network.
-func (kc *KeepClient) ReadAt(locator string, p []byte, off int64) (int, error) {
+func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
 	return kc.cache().ReadAt(kc, locator, p, off)
 }
 
