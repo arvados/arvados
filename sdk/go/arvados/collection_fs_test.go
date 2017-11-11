@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -205,10 +206,10 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 
 	buf = make([]byte, 4)
-	n, err = f.Read(buf)
-	c.Check(n, check.Equals, 3)
-	c.Check(err, check.Equals, io.EOF)
-	c.Check(string(buf[:3]), check.Equals, "f*o")
+	buf, err = ioutil.ReadAll(f)
+	c.Check(len(buf), check.Equals, 3)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf), check.Equals, "f*o")
 }
 
 // Gocheck boilerplate

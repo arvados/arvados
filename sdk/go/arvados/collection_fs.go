@@ -25,6 +25,8 @@ var (
 	ErrPermission       = os.ErrPermission
 )
 
+const maxBlockSize = 1 << 26
+
 type File interface {
 	io.Reader
 	io.Writer
@@ -263,7 +265,105 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 		err = ErrNegativeOffset
 		return
 	}
-	err = ErrReadOnlyFile
+	for len(p) > 0 && err == nil {
+		cando := p
+		if len(cando) > maxBlockSize {
+			cando = cando[:maxBlockSize]
+		}
+		// Rearrange/grow fn.extents (and shrink cando if
+		// needed) such that cando can be copied to
+		// fn.extents[ptr.extentIdx] at offset ptr.extentOff.
+		cur := ptr.extentIdx
+		prev := ptr.extentIdx - 1
+		var curWritable bool
+		if cur < len(fn.extents) {
+			_, curWritable = fn.extents[cur].(writableExtent)
+		}
+		var prevAppendable bool
+		if prev >= 0 && fn.extents[prev].Len() < int64(maxBlockSize) {
+			_, prevAppendable = fn.extents[prev].(writableExtent)
+		}
+		if ptr.extentOff > 0 {
+			if !curWritable {
+				// Split a non-writable block.
+				if max := int(fn.extents[cur].Len()) - ptr.extentOff; max <= len(cando) {
+					cando = cando[:max]
+					fn.extents = append(fn.extents, nil)
+					copy(fn.extents[cur+1:], fn.extents[cur:])
+				} else {
+					fn.extents = append(fn.extents, nil, nil)
+					copy(fn.extents[cur+2:], fn.extents[cur:])
+					fn.extents[cur+2] = fn.extents[cur+2].Slice(ptr.extentOff+len(cando), -1)
+				}
+				cur++
+				prev++
+				e := &memExtent{}
+				e.Truncate(len(cando))
+				fn.extents[cur] = e
+				fn.extents[prev] = fn.extents[prev].Slice(0, ptr.extentOff)
+				ptr.extentIdx++
+				ptr.extentOff = 0
+				fn.repacked++
+				ptr.repacked++
+			}
+		} else if len(fn.extents) == 0 {
+			// File has no extents yet.
+			e := &memExtent{}
+			e.Truncate(len(cando))
+			fn.fileinfo.size += e.Len()
+			fn.extents = append(fn.extents, e)
+		} else if curWritable {
+			if fit := int(fn.extents[cur].Len()) - ptr.extentOff; fit < len(cando) {
+				cando = cando[:fit]
+			}
+		} else {
+			if prevAppendable {
+				// Grow prev.
+				if cangrow := int(maxBlockSize - fn.extents[prev].Len()); cangrow < len(cando) {
+					cando = cando[:cangrow]
+				}
+				ptr.extentIdx--
+				ptr.extentOff = int(fn.extents[prev].Len())
+				fn.extents[prev].(*memExtent).Truncate(ptr.extentOff + len(cando))
+			} else {
+				// Insert an extent between prev and cur. It will be the new prev.
+				fn.extents = append(fn.extents, nil)
+				copy(fn.extents[cur+1:], fn.extents[cur:])
+				e := &memExtent{}
+				e.Truncate(len(cando))
+				fn.extents[cur] = e
+				cur++
+				prev++
+			}
+
+			if cur == len(fn.extents) {
+				// There is no cur.
+			} else if el := int(fn.extents[cur].Len()); el <= len(cando) {
+				// Drop cur.
+				cando = cando[:el]
+				copy(fn.extents[cur:], fn.extents[cur+1:])
+				fn.extents = fn.extents[:len(fn.extents)-1]
+			} else {
+				// Shrink cur.
+				fn.extents[cur] = fn.extents[cur].Slice(len(cando), -1)
+			}
+
+			ptr.repacked++
+			fn.repacked++
+		}
+
+		// Finally we can copy bytes from cando to the current extent.
+		fn.extents[ptr.extentIdx].(writableExtent).WriteAt(cando, ptr.extentOff)
+		n += len(cando)
+		p = p[len(cando):]
+
+		ptr.off += int64(len(cando))
+		ptr.extentOff += len(cando)
+		if fn.extents[ptr.extentIdx].Len() == int64(ptr.extentOff) {
+			ptr.extentOff = 0
+			ptr.extentIdx++
+		}
+	}
 	return
 }
 
@@ -322,6 +422,9 @@ func (f *file) Seek(off int64, whence int) (pos int64, err error) {
 }
 
 func (f *file) Write(p []byte) (n int, err error) {
+	if !f.writable {
+		return 0, ErrReadOnlyFile
+	}
 	n, f.ptr, err = f.inode.Write(p, f.ptr)
 	return
 }
@@ -562,6 +665,7 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 type extent interface {
 	io.ReaderAt
 	Len() int64
+	Slice(int, int) extent
 }
 
 type writableExtent interface {
@@ -576,6 +680,13 @@ type memExtent struct {
 
 func (me *memExtent) Len() int64 {
 	return int64(len(me.buf))
+}
+
+func (me *memExtent) Slice(n, size int) extent {
+	if size < 0 {
+		size = len(me.buf) - n
+	}
+	return &memExtent{buf: me.buf[n : n+size]}
 }
 
 func (me *memExtent) Truncate(n int) {
@@ -621,8 +732,17 @@ func (se storedExtent) Len() int64 {
 	return int64(se.length)
 }
 
+func (se storedExtent) Slice(n, size int) extent {
+	se.offset += n
+	se.length -= n
+	if size >= 0 && se.length > size {
+		se.length = size
+	}
+	return se
+}
+
 func (se storedExtent) ReadAt(p []byte, off int64) (n int, err error) {
-	maxlen := int(int64(se.length) - int64(se.offset) - off)
+	maxlen := int(int64(se.length) - off)
 	if len(p) > maxlen {
 		p = p[:maxlen]
 		n, err = se.cache.ReadAt(se.locator, p, off+int64(se.offset))
