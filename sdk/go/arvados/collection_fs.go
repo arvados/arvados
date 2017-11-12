@@ -217,7 +217,6 @@ func (fn *filenode) appendExtent(e extent) {
 	defer fn.Unlock()
 	fn.extents = append(fn.extents, e)
 	fn.fileinfo.size += int64(e.Len())
-	fn.repacked++
 }
 
 func (fn *filenode) OpenFile(string, int, os.FileMode) (*file, error) {
