@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -299,6 +300,29 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "123")
 	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 1)
+
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
+	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 202cb962ac59075b964b07152d234b70+3 3:3:bar 6:3:foo\n")
+}
+
+func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
+	maxBlockSize = 8
+	defer func() { maxBlockSize = 2 << 26 }()
+
+	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
+	for _, name := range []string{"foo", "bar", "baz"} {
+		f, err := s.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0)
+		c.Assert(err, check.IsNil)
+		f.Write([]byte(name))
+		f.Close()
+	}
+
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
+	c.Check(m, check.Equals, ". c3c23db5285662ef7172373df0003206+6 acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar 3:3:baz 6:3:foo\n")
 }
 
 func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
@@ -389,6 +413,10 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	fi, err := root.Readdir(-1)
 	c.Check(err, check.IsNil)
 	c.Logf("Readdir(): %#v", fi)
+
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Logf("%s", m)
 }
 
 // Gocheck boilerplate
