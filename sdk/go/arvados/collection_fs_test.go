@@ -5,6 +5,8 @@
 package arvados
 
 import (
+	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,14 +25,29 @@ var _ = check.Suite(&CollectionFSSuite{})
 
 type keepClientStub struct {
 	blocks map[string][]byte
+	sync.RWMutex
 }
 
+var errStub404 = errors.New("404 block not found")
+
 func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error) {
+	kcs.RLock()
+	defer kcs.RUnlock()
 	buf := kcs.blocks[locator[:32]]
 	if buf == nil {
-		return 0, os.ErrNotExist
+		return 0, errStub404
 	}
 	return copy(p, buf[off:]), nil
+}
+
+func (kcs *keepClientStub) PutB(p []byte) (string, int, error) {
+	locator := fmt.Sprintf("%x+%d+A12345@abcde", md5.Sum(p), len(p))
+	buf := make([]byte, len(p))
+	copy(buf, p)
+	kcs.Lock()
+	defer kcs.Unlock()
+	kcs.blocks[locator[:32]] = buf
+	return locator, 1, nil
 }
 
 type CollectionFSSuite struct {
@@ -371,7 +388,7 @@ func (s *CollectionFSSuite) TestMkdir(c *check.C) {
 	// creating foo/bar as a directory should fail
 	f, err = s.fs.OpenFile("foo/bar", os.O_CREATE|os.O_EXCL, os.ModeDir)
 	c.Check(err, check.NotNil)
-	err = s.fs.Mkdir("foo/bar")
+	err = s.fs.Mkdir("foo/bar", 0755)
 	c.Check(err, check.NotNil)
 
 	m, err := s.fs.MarshalManifest(".")
@@ -422,6 +439,8 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
 
+	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
+
 	var wg sync.WaitGroup
 	for n := 0; n < 128; n++ {
 		wg.Add(1)
@@ -467,11 +486,75 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	defer root.Close()
 	fi, err := root.Readdir(-1)
 	c.Check(err, check.IsNil)
-	c.Logf("Readdir(): %#v", fi)
+	c.Check(len(fi), check.Equals, 128)
+
+	_, err = s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	// TODO: check manifest content
+}
+
+func (s *CollectionFSSuite) TestPersist(c *check.C) {
+	maxBlockSize = 1024
+	defer func() { maxBlockSize = 2 << 26 }()
+
+	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
+	err := s.fs.Mkdir("d:r", 0755)
+	c.Assert(err, check.IsNil)
+
+	expect := map[string][]byte{}
+
+	var wg sync.WaitGroup
+	for _, name := range []string{"random 1", "random:2", "random\\3", "d:r/random4"} {
+		buf := make([]byte, 500)
+		rand.Read(buf)
+		expect[name] = buf
+
+		f, err := s.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0)
+		c.Assert(err, check.IsNil)
+		// Note: we don't close the file until after the test
+		// is done. Writes to unclosed files should persist.
+		defer f.Close()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < len(buf); i += 5 {
+				_, err := f.Write(buf[i : i+5])
+				c.Assert(err, check.IsNil)
+			}
+		}()
+	}
+	wg.Wait()
 
 	m, err := s.fs.MarshalManifest(".")
 	c.Check(err, check.IsNil)
-	c.Logf("%s", m)
+	c.Logf("%q", m)
+
+	root, err := s.fs.Open("/")
+	c.Assert(err, check.IsNil)
+	defer root.Close()
+	fi, err := root.Readdir(-1)
+	c.Check(err, check.IsNil)
+	c.Check(len(fi), check.Equals, 4)
+
+	persisted := (&Collection{ManifestText: m}).FileSystem(s.client, s.kc)
+
+	root, err = persisted.Open("/")
+	c.Assert(err, check.IsNil)
+	defer root.Close()
+	fi, err = root.Readdir(-1)
+	c.Check(err, check.IsNil)
+	c.Check(len(fi), check.Equals, 4)
+
+	for name, content := range expect {
+		c.Logf("read %q", name)
+		f, err := persisted.Open(name)
+		c.Assert(err, check.IsNil)
+		defer f.Close()
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(buf, check.DeepEquals, content)
+	}
 }
 
 // Gocheck boilerplate
