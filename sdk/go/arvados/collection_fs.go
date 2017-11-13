@@ -126,7 +126,6 @@ func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
 
 type inode interface {
 	os.FileInfo
-	OpenFile(string, int, os.FileMode) (*file, error)
 	Parent() inode
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
 	Write([]byte, filenodePtr) (int, filenodePtr, error)
@@ -224,10 +223,6 @@ func (fn *filenode) appendExtent(e extent) {
 	defer fn.Unlock()
 	fn.extents = append(fn.extents, e)
 	fn.fileinfo.size += int64(e.Len())
-}
-
-func (fn *filenode) OpenFile(string, int, os.FileMode) (*file, error) {
-	return nil, os.ErrNotExist
 }
 
 func (fn *filenode) Parent() inode {
@@ -525,10 +520,6 @@ func (f *file) Stat() (os.FileInfo, error) {
 func (f *file) Close() error {
 	// FIXME: flush
 	return nil
-}
-
-func (f *file) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
-	return f.inode.OpenFile(name, flag, perm)
 }
 
 type dirnode struct {
