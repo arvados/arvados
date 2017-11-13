@@ -21,11 +21,12 @@ import (
 )
 
 var (
-	ErrReadOnlyFile     = errors.New("read-only file")
-	ErrNegativeOffset   = errors.New("cannot seek to negative offset")
-	ErrFileExists       = errors.New("file exists")
-	ErrInvalidOperation = errors.New("invalid operation")
-	ErrPermission       = os.ErrPermission
+	ErrReadOnlyFile      = errors.New("read-only file")
+	ErrNegativeOffset    = errors.New("cannot seek to negative offset")
+	ErrFileExists        = errors.New("file exists")
+	ErrInvalidOperation  = errors.New("invalid operation")
+	ErrDirectoryNotEmpty = errors.New("directory not empty")
+	ErrPermission        = os.ErrPermission
 
 	maxBlockSize = 1 << 26
 )
@@ -93,6 +94,8 @@ type CollectionFileSystem interface {
 	Stat(name string) (os.FileInfo, error)
 	Create(name string) (File, error)
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
+	Mkdir(name string, perm os.FileMode) error
+	Remove(name string) error
 	MarshalManifest(string) (string, error)
 }
 
@@ -781,37 +784,63 @@ func (dn *dirnode) loadManifest(txt string) {
 	}
 }
 
-func (dn *dirnode) makeParentDirs(name string) {
+func (dn *dirnode) makeParentDirs(name string) (err error) {
 	names := strings.Split(name, "/")
 	for _, name := range names[:len(names)-1] {
-		dn.Lock()
-		defer dn.Unlock()
-		if n, ok := dn.inodes[name]; !ok {
-			n := &dirnode{
-				parent: dn,
-				client: dn.client,
-				kc:     dn.kc,
-				fileinfo: fileinfo{
-					name: name,
-					mode: os.ModeDir | 0755,
-				},
-			}
-			if dn.inodes == nil {
-				dn.inodes = make(map[string]inode)
-			}
-			dn.inodes[name] = n
-			dn.fileinfo.size++
-			dn = n
-		} else if n, ok := n.(*dirnode); ok {
-			dn = n
-		} else {
-			// fail
-			return
+		f, err := dn.mkdir(name)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		var ok bool
+		dn, ok = f.inode.(*dirnode)
+		if !ok {
+			return ErrFileExists
 		}
 	}
+	return nil
+}
+
+func (dn *dirnode) mkdir(name string) (*file, error) {
+	return dn.OpenFile(name, os.O_CREATE|os.O_EXCL, os.ModeDir|0755)
+}
+
+func (dn *dirnode) Mkdir(name string, perm os.FileMode) error {
+	f, err := dn.mkdir(name)
+	if err != nil {
+		f.Close()
+	}
+	return err
+}
+
+func (dn *dirnode) Remove(name string) error {
+	dirname, name := path.Split(name)
+	if name == "" || name == "." || name == ".." {
+		return ErrInvalidOperation
+	}
+	dn, ok := dn.lookupPath(dirname).(*dirnode)
+	if !ok {
+		return os.ErrNotExist
+	}
+	dn.Lock()
+	defer dn.Unlock()
+	switch node := dn.inodes[name].(type) {
+	case nil:
+		return os.ErrNotExist
+	case *dirnode:
+		node.RLock()
+		defer node.RUnlock()
+		if len(node.inodes) > 0 {
+			return ErrDirectoryNotEmpty
+		}
+	}
+	delete(dn.inodes, name)
+	return nil
 }
 
 func (dn *dirnode) Parent() inode {
+	dn.RLock()
+	defer dn.RUnlock()
 	return dn.parent
 }
 
@@ -837,42 +866,78 @@ func (dn *dirnode) Truncate(int64) error {
 	return ErrInvalidOperation
 }
 
+// lookupPath returns the inode for the file/directory with the given
+// name (which may contain "/" separators), along with its parent
+// node. If no such file/directory exists, the returned node is nil.
+func (dn *dirnode) lookupPath(path string) (node inode) {
+	node = dn
+	for _, name := range strings.Split(path, "/") {
+		dn, ok := node.(*dirnode)
+		if !ok {
+			return nil
+		}
+		if name == "." || name == "" {
+			continue
+		}
+		if name == ".." {
+			node = node.Parent()
+			continue
+		}
+		dn.RLock()
+		node = dn.inodes[name]
+		dn.RUnlock()
+	}
+	return
+}
+
 func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
-	name = strings.TrimSuffix(name, "/")
-	if name == "." || name == "" {
-		return &file{inode: dn}, nil
+	dirname, name := path.Split(name)
+	dn, ok := dn.lookupPath(dirname).(*dirnode)
+	if !ok {
+		return nil, os.ErrNotExist
 	}
-	if dirname, name := path.Split(name); dirname != "" {
-		// OpenFile("foo/bar/baz") =>
-		// OpenFile("foo/bar").OpenFile("baz") (or
-		// ErrNotExist, if foo/bar is a file)
-		f, err := dn.OpenFile(dirname, os.O_RDONLY, 0)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		if dn, ok := f.inode.(*dirnode); ok {
-			return dn.OpenFile(name, flag, perm)
-		} else {
-			return nil, os.ErrNotExist
+	writeMode := flag&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0
+	if !writeMode {
+		// A directory can be opened via "foo/", "foo/.", or
+		// "foo/..".
+		switch name {
+		case ".", "":
+			return &file{inode: dn}, nil
+		case "..":
+			return &file{inode: dn.Parent()}, nil
 		}
 	}
-	dn.Lock()
-	defer dn.Unlock()
-	if name == ".." {
-		return &file{inode: dn.parent}, nil
+	createMode := flag&os.O_CREATE != 0
+	if createMode {
+		dn.Lock()
+		defer dn.Unlock()
+	} else {
+		dn.RLock()
+		defer dn.RUnlock()
 	}
 	n, ok := dn.inodes[name]
 	if !ok {
-		if flag&os.O_CREATE == 0 {
+		if !createMode {
 			return nil, os.ErrNotExist
 		}
-		n = &filenode{
-			parent: dn,
-			fileinfo: fileinfo{
-				name: name,
-				mode: 0755,
-			},
+		if perm.IsDir() {
+			n = &dirnode{
+				parent: dn,
+				client: dn.client,
+				kc:     dn.kc,
+				fileinfo: fileinfo{
+					name: name,
+					mode: os.ModeDir | 0755,
+				},
+			}
+		} else {
+			n = &filenode{
+				parent: dn,
+				fileinfo: fileinfo{
+					name: name,
+					mode: 0755,
+				},
+			}
 		}
 		if dn.inodes == nil {
 			dn.inodes = make(map[string]inode)

@@ -325,6 +325,61 @@ func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
 	c.Check(m, check.Equals, ". c3c23db5285662ef7172373df0003206+6 acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar 3:3:baz 6:3:foo\n")
 }
 
+func (s *CollectionFSSuite) TestMkdir(c *check.C) {
+	err := s.fs.Mkdir("foo/bar", 0755)
+	c.Check(err, check.Equals, os.ErrNotExist)
+
+	f, err := s.fs.OpenFile("foo/bar", os.O_CREATE, 0)
+	c.Check(err, check.Equals, os.ErrNotExist)
+
+	err = s.fs.Mkdir("foo", 0755)
+	c.Check(err, check.IsNil)
+
+	f, err = s.fs.OpenFile("foo/bar", os.O_CREATE|os.O_WRONLY, 0)
+	c.Check(err, check.IsNil)
+	if err == nil {
+		defer f.Close()
+		f.Write([]byte("foo"))
+	}
+
+	// mkdir fails if a file already exists with that name
+	err = s.fs.Mkdir("foo/bar", 0755)
+	c.Check(err, check.NotNil)
+
+	err = s.fs.Remove("foo/bar")
+	c.Check(err, check.IsNil)
+
+	// mkdir succeds after the file is deleted
+	err = s.fs.Mkdir("foo/bar", 0755)
+	c.Check(err, check.IsNil)
+
+	// creating a file in a nonexistent subdir should still fail
+	f, err = s.fs.OpenFile("foo/bar/baz/foo.txt", os.O_CREATE|os.O_WRONLY, 0)
+	c.Check(err, check.Equals, os.ErrNotExist)
+
+	f, err = s.fs.OpenFile("foo/bar/foo.txt", os.O_CREATE|os.O_WRONLY, 0)
+	c.Check(err, check.IsNil)
+	if err == nil {
+		defer f.Close()
+		f.Write([]byte("foo"))
+	}
+
+	// creating foo/bar as a regular file should fail
+	f, err = s.fs.OpenFile("foo/bar", os.O_CREATE|os.O_EXCL, 0)
+	c.Check(err, check.NotNil)
+
+	// creating foo/bar as a directory should fail
+	f, err = s.fs.OpenFile("foo/bar", os.O_CREATE|os.O_EXCL, os.ModeDir)
+	c.Check(err, check.NotNil)
+	err = s.fs.Mkdir("foo/bar")
+	c.Check(err, check.NotNil)
+
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
+	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n./foo/bar acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n")
+}
+
 func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
