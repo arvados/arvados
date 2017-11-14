@@ -607,10 +607,11 @@ func (dn *dirnode) sync() error {
 func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 	dn.Lock()
 	defer dn.Unlock()
-	if err := dn.sync(); err != nil {
-		return "", err
-	}
+	return dn.marshalManifest(prefix)
+}
 
+// caller must have read lock.
+func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	var streamLen int64
 	type m1segment struct {
 		name   string
@@ -621,9 +622,15 @@ func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 	var subdirs string
 	var blocks []string
 
+	if err := dn.sync(); err != nil {
+		return "", err
+	}
+
 	names := make([]string, 0, len(dn.inodes))
-	for name := range dn.inodes {
+	for name, node := range dn.inodes {
 		names = append(names, name)
+		node.Lock()
+		defer node.Unlock()
 	}
 	sort.Strings(names)
 
@@ -631,7 +638,7 @@ func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 		node := dn.inodes[name]
 		switch node := node.(type) {
 		case *dirnode:
-			subdir, err := node.MarshalManifest(prefix + "/" + node.Name())
+			subdir, err := node.marshalManifest(prefix + "/" + node.Name())
 			if err != nil {
 				return "", err
 			}
@@ -639,14 +646,6 @@ func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 		case *filenode:
 			for _, e := range node.extents {
 				switch e := e.(type) {
-				case *memExtent:
-					blocks = append(blocks, fmt.Sprintf("FIXME+%d", e.Len()))
-					segments = append(segments, m1segment{
-						name:   node.Name(),
-						offset: streamLen,
-						length: int64(e.Len()),
-					})
-					streamLen += int64(e.Len())
 				case storedExtent:
 					if len(blocks) > 0 && blocks[len(blocks)-1] == e.locator {
 						streamLen -= int64(e.size)
@@ -660,6 +659,9 @@ func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 					})
 					streamLen += int64(e.size)
 				default:
+					// This can't happen: we
+					// haven't unlocked since
+					// calling sync().
 					panic(fmt.Sprintf("can't marshal extent type %T", e))
 				}
 			}
