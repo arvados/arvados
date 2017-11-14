@@ -65,7 +65,8 @@ func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 		blocks: map[string][]byte{
 			"3858f62230ac3c915f300c664312c63f": []byte("foobar"),
 		}}
-	s.fs = s.coll.FileSystem(s.client, s.kc)
+	s.fs, err = s.coll.FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
 }
 
 func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
@@ -328,7 +329,9 @@ func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
 
-	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
+	var err error
+	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
 	for _, name := range []string{"foo", "bar", "baz"} {
 		f, err := s.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0)
 		c.Assert(err, check.IsNil)
@@ -439,7 +442,9 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
 
-	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
+	var err error
+	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
 
 	var wg sync.WaitGroup
 	for n := 0; n < 128; n++ {
@@ -497,8 +502,10 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	maxBlockSize = 1024
 	defer func() { maxBlockSize = 2 << 26 }()
 
-	s.fs = (&Collection{}).FileSystem(s.client, s.kc)
-	err := s.fs.Mkdir("d:r", 0755)
+	var err error
+	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = s.fs.Mkdir("d:r", 0755)
 	c.Assert(err, check.IsNil)
 
 	expect := map[string][]byte{}
@@ -537,7 +544,8 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(len(fi), check.Equals, 4)
 
-	persisted := (&Collection{ManifestText: m}).FileSystem(s.client, s.kc)
+	persisted, err := (&Collection{ManifestText: m}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
 
 	root, err = persisted.Open("/")
 	c.Assert(err, check.IsNil)
@@ -554,6 +562,47 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 		buf, err := ioutil.ReadAll(f)
 		c.Check(err, check.IsNil)
 		c.Check(buf, check.DeepEquals, content)
+	}
+}
+
+func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
+	for _, txt := range []string{
+		"\n",
+		".\n",
+		". \n",
+		". d41d8cd98f00b204e9800998ecf8427e+0\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 \n",
+		". 0:0:foo\n",
+		".  0:0:foo\n",
+		". 0:0:foo 0:0:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e 0:0:foo\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 foo:0:foo\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:foo:foo\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:foo 1:1:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:0:foo\n./foo d41d8cd98f00b204e9800998ecf8427e+1 0:0:bar\n",
+		"./foo d41d8cd98f00b204e9800998ecf8427e+1 0:0:bar\n. d41d8cd98f00b204e9800998ecf8427e+1 0:0:foo\n",
+	} {
+		c.Logf("<-%q", txt)
+		fs, err := (&Collection{ManifestText: txt}).FileSystem(s.client, s.kc)
+		c.Check(fs, check.IsNil)
+		c.Logf("-> %s", err)
+		c.Check(err, check.NotNil)
+	}
+}
+
+func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
+	for _, txt := range []string{
+		"",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:foo 0:0:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:foo 0:0:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/bar\n./foo d41d8cd98f00b204e9800998ecf8427e+0 0:0:bar\n",
+	} {
+		c.Logf("<-%q", txt)
+		fs, err := (&Collection{ManifestText: txt}).FileSystem(s.client, s.kc)
+		c.Check(err, check.IsNil)
+		c.Check(fs, check.NotNil)
 	}
 }
 

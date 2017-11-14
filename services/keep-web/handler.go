@@ -352,11 +352,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	fs := collection.FileSystem(&arvados.Client{
+	fs, err := collection.FileSystem(&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
 	}, kc)
+	if err != nil {
+		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		return
+	}
 	if webdavMethod[r.Method] {
 		h := webdav.Handler{
 			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),

@@ -427,7 +427,7 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 }
 
 // FileSystem returns a CollectionFileSystem for the collection.
-func (c *Collection) FileSystem(client *Client, kc keepClient) CollectionFileSystem {
+func (c *Collection) FileSystem(client *Client, kc keepClient) (CollectionFileSystem, error) {
 	fs := &fileSystem{dirnode: dirnode{
 		client:   client,
 		kc:       kc,
@@ -436,8 +436,10 @@ func (c *Collection) FileSystem(client *Client, kc keepClient) CollectionFileSys
 		inodes:   make(map[string]inode),
 	}}
 	fs.dirnode.parent = &fs.dirnode
-	fs.dirnode.loadManifest(c.ManifestText)
-	return fs
+	if err := fs.dirnode.loadManifest(c.ManifestText); err != nil {
+		return nil, err
+	}
+	return fs, nil
 }
 
 type file struct {
@@ -681,26 +683,33 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	return manifestEscape(prefix) + " " + strings.Join(blocks, " ") + " " + strings.Join(filetokens, " ") + "\n" + subdirs, nil
 }
 
-func (dn *dirnode) loadManifest(txt string) {
+func (dn *dirnode) loadManifest(txt string) error {
 	// FIXME: faster
 	var dirname string
-	for _, stream := range strings.Split(txt, "\n") {
+	streams := strings.Split(txt, "\n")
+	if streams[len(streams)-1] != "" {
+		return fmt.Errorf("line %d: no trailing newline", len(streams))
+	}
+	for i, stream := range streams[:len(streams)-1] {
+		lineno := i + 1
 		var extents []storedExtent
+		var anyFileTokens bool
 		for i, token := range strings.Split(stream, " ") {
 			if i == 0 {
 				dirname = manifestUnescape(token)
 				continue
 			}
 			if !strings.Contains(token, ":") {
+				if anyFileTokens {
+					return fmt.Errorf("line %d: bad file segment %q", lineno, token)
+				}
 				toks := strings.SplitN(token, "+", 3)
 				if len(toks) < 2 {
-					// FIXME: broken
-					continue
+					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
 				length, err := strconv.ParseInt(toks[1], 10, 32)
 				if err != nil || length < 0 {
-					// FIXME: broken
-					continue
+					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
 				extents = append(extents, storedExtent{
 					locator: token,
@@ -709,33 +718,33 @@ func (dn *dirnode) loadManifest(txt string) {
 					length:  int(length),
 				})
 				continue
+			} else if len(extents) == 0 {
+				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
+
 			toks := strings.Split(token, ":")
 			if len(toks) != 3 {
-				// FIXME: broken manifest
-				continue
+				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
+			anyFileTokens = true
+
 			offset, err := strconv.ParseInt(toks[0], 10, 64)
 			if err != nil || offset < 0 {
-				// FIXME: broken manifest
-				continue
+				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			length, err := strconv.ParseInt(toks[1], 10, 64)
 			if err != nil || length < 0 {
-				// FIXME: broken manifest
-				continue
+				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			name := path.Clean(dirname + "/" + manifestUnescape(toks[2]))
 			dn.makeParentDirs(name)
 			f, err := dn.OpenFile(name, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 			if err != nil {
-				// FIXME: don't panic
-				panic(fmt.Errorf("cannot append to %q: %s", name, err))
+				return fmt.Errorf("line %d: cannot append to %q: %s", lineno, name, err)
 			}
 			if f.inode.Stat().IsDir() {
 				f.Close()
-				// FIXME: don't panic
-				panic(fmt.Errorf("cannot append to %q: is a directory", name))
+				return fmt.Errorf("line %d: cannot append to %q: is a directory", lineno, name)
 			}
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
@@ -768,8 +777,19 @@ func (dn *dirnode) loadManifest(txt string) {
 				pos = next
 			}
 			f.Close()
+			if pos < offset+length {
+				return fmt.Errorf("line %d: invalid segment in %d-byte stream: %q", lineno, pos, token)
+			}
+		}
+		if !anyFileTokens {
+			return fmt.Errorf("line %d: no file segments", lineno)
+		} else if len(extents) == 0 {
+			return fmt.Errorf("line %d: no locators", lineno)
+		} else if dirname == "" {
+			return fmt.Errorf("line %d: no stream name", lineno)
 		}
 	}
+	return nil
 }
 
 func (dn *dirnode) makeParentDirs(name string) (err error) {
