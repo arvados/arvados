@@ -307,6 +307,11 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(string(buf2), check.Equals, "12345678abcdefg")
 	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 2)
 
+	// Force flush to ensure the block "12345678" gets stored, so
+	// we know what to expect in the final manifest below.
+	_, err = s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+
 	// Truncate to size=3 while f2's ptr is at 15
 	err = f.Truncate(3)
 	c.Check(err, check.IsNil)
@@ -322,7 +327,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	m, err := s.fs.MarshalManifest(".")
 	c.Check(err, check.IsNil)
 	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
-	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 202cb962ac59075b964b07152d234b70+3 3:3:bar 6:3:foo\n")
+	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 25d55ad283aa400af464c76d713c07ad+8 3:3:bar 6:3:foo\n")
 }
 
 func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
@@ -439,15 +444,18 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
-	maxBlockSize = 8
+	maxBlockSize = 40
 	defer func() { maxBlockSize = 2 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 
+	const nfiles = 256
+	const ngoroutines = 256
+
 	var wg sync.WaitGroup
-	for n := 0; n < 128; n++ {
+	for n := 0; n < nfiles; n++ {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -456,7 +464,7 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 			f, err := s.fs.OpenFile(fmt.Sprintf("random-%d", n), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
 			c.Assert(err, check.IsNil)
 			defer f.Close()
-			for i := 0; i < 6502; i++ {
+			for i := 0; i < ngoroutines; i++ {
 				trunc := rand.Intn(65)
 				woff := rand.Intn(trunc + 1)
 				wbytes = wbytes[:rand.Intn(64-woff+1)]
@@ -482,6 +490,7 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 				c.Check(string(buf), check.Equals, string(expect))
 				c.Check(err, check.IsNil)
 			}
+			s.checkMemSize(c, f)
 		}(n)
 	}
 	wg.Wait()
@@ -491,7 +500,7 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	defer root.Close()
 	fi, err := root.Readdir(-1)
 	c.Check(err, check.IsNil)
-	c.Check(len(fi), check.Equals, 128)
+	c.Check(len(fi), check.Equals, nfiles)
 
 	_, err = s.fs.MarshalManifest(".")
 	c.Check(err, check.IsNil)
@@ -565,6 +574,42 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	}
 }
 
+func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
+	maxBlockSize = 1024
+	defer func() { maxBlockSize = 2 << 26 }()
+
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("50K", os.O_WRONLY|os.O_CREATE, 0)
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+
+	data := make([]byte, 500)
+	rand.Read(data)
+
+	for i := 0; i < 100; i++ {
+		n, err := f.Write(data)
+		c.Assert(n, check.Equals, len(data))
+		c.Assert(err, check.IsNil)
+	}
+
+	currentMemExtents := func() (memExtents []int) {
+		for idx, e := range f.(*file).inode.(*filenode).extents {
+			switch e.(type) {
+			case *memExtent:
+				memExtents = append(memExtents, idx)
+			}
+		}
+		return
+	}
+	c.Check(currentMemExtents(), check.HasLen, 1)
+
+	m, err := fs.MarshalManifest(".")
+	c.Check(m, check.Not(check.Equals), "")
+	c.Check(err, check.IsNil)
+	c.Check(currentMemExtents(), check.HasLen, 0)
+}
+
 func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
 	for _, txt := range []string{
 		"\n",
@@ -604,6 +649,17 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 		c.Check(err, check.IsNil)
 		c.Check(fs, check.NotNil)
 	}
+}
+
+func (s *CollectionFSSuite) checkMemSize(c *check.C, f File) {
+	fn := f.(*file).inode.(*filenode)
+	var memsize int64
+	for _, ext := range fn.extents {
+		if e, ok := ext.(*memExtent); ok {
+			memsize += int64(len(e.buf))
+		}
+	}
+	c.Check(fn.memsize, check.Equals, memsize)
 }
 
 // Gocheck boilerplate
