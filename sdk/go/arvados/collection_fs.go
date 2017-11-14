@@ -83,10 +83,6 @@ func (fi fileinfo) Sys() interface{} {
 	return nil
 }
 
-func (fi fileinfo) Stat() os.FileInfo {
-	return fi
-}
-
 // A CollectionFileSystem is an http.Filesystem plus Stat() and
 // support for opening writable files.
 type CollectionFileSystem interface {
@@ -125,12 +121,12 @@ func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
 }
 
 type inode interface {
-	os.FileInfo
 	Parent() inode
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
 	Write([]byte, filenodePtr) (int, filenodePtr, error)
 	Truncate(int64) error
 	Readdir() []os.FileInfo
+	Size() int64
 	Stat() os.FileInfo
 	sync.Locker
 	RLock()
@@ -139,7 +135,7 @@ type inode interface {
 
 // filenode implements inode.
 type filenode struct {
-	fileinfo
+	fileinfo fileinfo
 	parent   *dirnode
 	extents  []extent
 	repacked int64 // number of times anything in []extents has changed len
@@ -258,6 +254,18 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 		}
 	}
 	return
+}
+
+func (fn *filenode) Size() int64 {
+	fn.RLock()
+	defer fn.RUnlock()
+	return fn.fileinfo.Size()
+}
+
+func (fn *filenode) Stat() os.FileInfo {
+	fn.RLock()
+	defer fn.RUnlock()
+	return fn.fileinfo
 }
 
 func (fn *filenode) Truncate(size int64) error {
@@ -494,7 +502,7 @@ func (f *file) Write(p []byte) (n int, err error) {
 }
 
 func (f *file) Readdir(count int) ([]os.FileInfo, error) {
-	if !f.inode.IsDir() {
+	if !f.inode.Stat().IsDir() {
 		return nil, ErrInvalidOperation
 	}
 	if count <= 0 {
@@ -515,7 +523,7 @@ func (f *file) Readdir(count int) ([]os.FileInfo, error) {
 }
 
 func (f *file) Stat() (os.FileInfo, error) {
-	return f.inode, nil
+	return f.inode.Stat(), nil
 }
 
 func (f *file) Close() error {
@@ -524,11 +532,11 @@ func (f *file) Close() error {
 }
 
 type dirnode struct {
-	fileinfo
-	parent *dirnode
-	client *Client
-	kc     keepClient
-	inodes map[string]inode
+	fileinfo fileinfo
+	parent   *dirnode
+	client   *Client
+	kc       keepClient
+	inodes   map[string]inode
 	sync.RWMutex
 }
 
@@ -640,7 +648,7 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 		node := dn.inodes[name]
 		switch node := node.(type) {
 		case *dirnode:
-			subdir, err := node.marshalManifest(prefix + "/" + node.Name())
+			subdir, err := node.marshalManifest(prefix + "/" + name)
 			if err != nil {
 				return "", err
 			}
@@ -655,7 +663,7 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 						blocks = append(blocks, e.locator)
 					}
 					segments = append(segments, m1segment{
-						name:   node.Name(),
+						name:   name,
 						offset: streamLen + int64(e.offset),
 						length: int64(e.length),
 					})
@@ -868,6 +876,18 @@ func (dn *dirnode) Read(p []byte, ptr filenodePtr) (int, filenodePtr, error) {
 
 func (dn *dirnode) Write(p []byte, ptr filenodePtr) (int, filenodePtr, error) {
 	return 0, ptr, ErrInvalidOperation
+}
+
+func (dn *dirnode) Size() int64 {
+	dn.RLock()
+	defer dn.RUnlock()
+	return dn.fileinfo.Size()
+}
+
+func (dn *dirnode) Stat() os.FileInfo {
+	dn.RLock()
+	defer dn.RUnlock()
+	return dn.fileinfo
 }
 
 func (dn *dirnode) Truncate(int64) error {
