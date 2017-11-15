@@ -578,19 +578,20 @@ func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
-	for _, name := range []string{"dir", "zero", "zero/zero"} {
+	for _, name := range []string{"dir", "dir/zerodir", "zero", "zero/zero"} {
 		err = s.fs.Mkdir(name, 0755)
 		c.Assert(err, check.IsNil)
 	}
 
 	expect := map[string][]byte{
-		"0":              nil,
-		"00":             []byte{},
-		"one":            []byte{1},
-		"dir/0":          nil,
-		"dir/two":        []byte{1, 2},
-		"dir/zero":       nil,
-		"zero/zero/zero": nil,
+		"0":                nil,
+		"00":               []byte{},
+		"one":              []byte{1},
+		"dir/0":            nil,
+		"dir/two":          []byte{1, 2},
+		"dir/zero":         nil,
+		"dir/zerodir/zero": nil,
+		"zero/zero/zero":   nil,
 	}
 	for name, data := range expect {
 		f, err := s.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0)

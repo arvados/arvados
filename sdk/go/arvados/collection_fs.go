@@ -794,7 +794,10 @@ func (dn *dirnode) loadManifest(txt string) error {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			name := path.Clean(dirname + "/" + manifestUnescape(toks[2]))
-			dn.makeParentDirs(name)
+			err = dn.makeParentDirs(name)
+			if err != nil {
+				return fmt.Errorf("line %d: cannot use path %q: %s", lineno, name, err)
+			}
 			f, err := dn.OpenFile(name, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 			if err != nil {
 				return fmt.Errorf("line %d: cannot append to %q: %s", lineno, name, err)
@@ -852,7 +855,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 func (dn *dirnode) makeParentDirs(name string) (err error) {
 	names := strings.Split(name, "/")
 	for _, name := range names[:len(names)-1] {
-		f, err := dn.mkdir(name)
+		f, err := dn.OpenFile(name, os.O_CREATE, os.ModeDir|0755)
 		if err != nil {
 			return err
 		}
@@ -872,8 +875,8 @@ func (dn *dirnode) mkdir(name string) (*file, error) {
 
 func (dn *dirnode) Mkdir(name string, perm os.FileMode) error {
 	f, err := dn.mkdir(name)
-	if err != nil {
-		f.Close()
+	if err == nil {
+		err = f.Close()
 	}
 	return err
 }
