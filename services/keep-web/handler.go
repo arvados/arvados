@@ -100,6 +100,7 @@ var (
 	webdavMethod = map[string]bool{
 		"OPTIONS":  true,
 		"PROPFIND": true,
+		"PUT":      true,
 	}
 	browserMethod = map[string]bool{
 		"GET":  true,
@@ -147,7 +148,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND, PUT")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
@@ -352,19 +353,29 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	fs, err := collection.FileSystem(&arvados.Client{
+	client := &arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}, kc)
+	}
+	fs, err := collection.FileSystem(client, kc)
 	if err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
 	if webdavMethod[r.Method] {
+		var update func() error
+		if !arvadosclient.PDHMatch(targetID) {
+			update = func() error {
+				return h.Config.Cache.Update(client, *collection, fs)
+			}
+		}
 		h := webdav.Handler{
-			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),
-			FileSystem: &webdavFS{collfs: fs},
+			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
+			FileSystem: &webdavFS{
+				collfs: fs,
+				update: update,
+			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
 				if os.IsNotExist(err) {

@@ -9,9 +9,7 @@ import (
 	"errors"
 	"fmt"
 	prand "math/rand"
-	"net/http"
 	"os"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,24 +25,27 @@ var (
 	errReadOnly           = errors.New("read-only filesystem")
 )
 
-// webdavFS implements a read-only webdav.FileSystem by wrapping an
+// webdavFS implements a webdav.FileSystem by wrapping an
 // arvados.CollectionFilesystem.
 type webdavFS struct {
 	collfs arvados.CollectionFileSystem
+	update func() error
 }
-
-var _ webdav.FileSystem = &webdavFS{}
 
 func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	return errReadOnly
+	return fs.collfs.Mkdir(name, 0755)
 }
 
-func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
-	fi, err := fs.collfs.Stat(name)
-	if err != nil {
-		return nil, err
+func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
+	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
+	if writing && fs.update == nil {
+		return nil, errReadOnly
 	}
-	return &webdavFile{collfs: fs.collfs, fileInfo: fi, name: name}, nil
+	f, err = fs.collfs.OpenFile(name, flag, perm)
+	if writing && err == nil {
+		f = writingFile{File: f, update: fs.update}
+	}
+	return
 }
 
 func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
@@ -59,71 +60,16 @@ func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) 
 	return fs.collfs.Stat(name)
 }
 
-// webdavFile implements a read-only webdav.File by wrapping
-// http.File.
-//
-// The http.File is opened from an arvados.CollectionFileSystem, but
-// not until Seek, Read, or Readdir is called. This deferred-open
-// strategy makes webdav's OpenFile-Stat-Close cycle fast even though
-// the collfs's Open method is slow. This is relevant because webdav
-// does OpenFile-Stat-Close on each file when preparing directory
-// listings.
-//
-// Writes to a webdavFile always fail.
-type webdavFile struct {
-	// fields populated by (*webdavFS).OpenFile()
-	collfs   http.FileSystem
-	fileInfo os.FileInfo
-	name     string
-
-	// internal fields
-	file     http.File
-	loadOnce sync.Once
-	err      error
+type writingFile struct {
+	webdav.File
+	update func() error
 }
 
-func (f *webdavFile) load() {
-	f.file, f.err = f.collfs.Open(f.name)
-}
-
-func (f *webdavFile) Write([]byte) (int, error) {
-	return 0, errReadOnly
-}
-
-func (f *webdavFile) Seek(offset int64, whence int) (int64, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return 0, f.err
+func (f writingFile) Close() error {
+	if err := f.File.Close(); err != nil || f.update == nil {
+		return err
 	}
-	return f.file.Seek(offset, whence)
-}
-
-func (f *webdavFile) Read(buf []byte) (int, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return 0, f.err
-	}
-	return f.file.Read(buf)
-}
-
-func (f *webdavFile) Close() error {
-	if f.file == nil {
-		// We never called load(), or load() failed
-		return f.err
-	}
-	return f.file.Close()
-}
-
-func (f *webdavFile) Readdir(n int) ([]os.FileInfo, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.file.Readdir(n)
-}
-
-func (f *webdavFile) Stat() (os.FileInfo, error) {
-	return f.fileInfo, nil
+	return f.update()
 }
 
 // noLockSystem implements webdav.LockSystem by returning success for
