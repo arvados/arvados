@@ -574,6 +574,57 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	}
 }
 
+func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
+	var err error
+	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	for _, name := range []string{"dir", "zero", "zero/zero"} {
+		err = s.fs.Mkdir(name, 0755)
+		c.Assert(err, check.IsNil)
+	}
+
+	expect := map[string][]byte{
+		"0":              nil,
+		"00":             []byte{},
+		"one":            []byte{1},
+		"dir/0":          nil,
+		"dir/two":        []byte{1, 2},
+		"dir/zero":       nil,
+		"zero/zero/zero": nil,
+	}
+	for name, data := range expect {
+		f, err := s.fs.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0)
+		c.Assert(err, check.IsNil)
+		if data != nil {
+			_, err := f.Write(data)
+			c.Assert(err, check.IsNil)
+		}
+		f.Close()
+	}
+
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Logf("%q", m)
+
+	persisted, err := (&Collection{ManifestText: m}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	for name, data := range expect {
+		f, err := persisted.Open("bogus-" + name)
+		c.Check(err, check.NotNil)
+
+		f, err = persisted.Open(name)
+		c.Assert(err, check.IsNil)
+
+		if data == nil {
+			data = []byte{}
+		}
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(buf, check.DeepEquals, data)
+	}
+}
+
 func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 	maxBlockSize = 1024
 	defer func() { maxBlockSize = 2 << 26 }()

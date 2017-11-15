@@ -699,6 +699,10 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 			}
 			subdirs = subdirs + subdir
 		case *filenode:
+			if len(node.extents) == 0 {
+				segments = append(segments, m1segment{name: name})
+				break
+			}
 			for _, e := range node.extents {
 				switch e := e.(type) {
 				case storedExtent:
