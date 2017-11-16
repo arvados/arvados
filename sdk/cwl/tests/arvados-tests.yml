@@ -117,3 +117,9 @@
     out: null
   tool: 12418-glob-empty-collection.cwl
   doc: "Test glob output on empty collection"
+
+- job: null
+  output:
+    out: out
+  tool: wf/runin-wf.cwl
+  doc: "RunInSingleContainer cwl.input.json needs to be consistent with pathmapper manipulations"
