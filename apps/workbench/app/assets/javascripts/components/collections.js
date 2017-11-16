@@ -50,8 +50,9 @@ window.CollectionsTable = {
                         m('td', [
                             item.workbenchBaseURL() &&
                                 m('a.btn.btn-xs.btn-default', {
-                                    href: item.workbenchBaseURL()+'collections/'+item.uuid,
-                                }, 'Show'),
+                                    title: 'Show '+item.objectType.description,
+                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
+                                }, item.objectType.label),
                         ]),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
@@ -92,38 +93,72 @@ window.CollectionsSearch = {
         vnode.state.searchActive.map(function(q) {
             var sessions = vnode.state.sessionDB.loadActive()
             vnode.state.loader = new MergingLoader({
-                children: Object.keys(sessions).map(function(key) {
+                // For every session, search for every object type, and finally
+                // flatten the list of lists of MultipageLoaders
+                children: [].concat.apply([], Object.keys(sessions).map(function(key) {
                     var session = sessions[key]
                     var workbenchBaseURL = function() {
                         return vnode.state.sessionDB.workbenchBaseURL(session)
                     }
-                    return new MultipageLoader({
-                        sessionKey: key,
-                        loadFunc: function(filters) {
-                            var tsquery = to_tsquery(q)
-                            if (tsquery) {
-                                filters = filters.slice(0)
-                                filters.push(['any', '@@', tsquery])
-                            }
-                            return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
-                                data: {
-                                    filters: JSON.stringify(filters),
-                                    count: 'none',
-                                },
-                            }).then(function(resp) {
-                                resp.items.map(function(item) {
-                                    item.workbenchBaseURL = workbenchBaseURL
-                                })
-                                return resp
-                            })
+                    var searchable_objects = [
+                        {
+                            wb_path: 'groups',
+                            api_path: 'arvados/v1/groups',
+                            filters: [['group_class', '=', 'project']],
+                            label: 'P',
+                            description: 'Project',
                         },
+                        {
+                            wb_path: 'collections',
+                            api_path: 'arvados/v1/collections',
+                            filters: [],
+                            label: 'C',
+                            description: 'Collection',
+                        },
+                    ]
+                    return searchable_objects.map(function(obj_type){
+                        return new MultipageLoader({
+                            sessionKey: key,
+                            objectKind: obj_type.label,
+                            loadFunc: function(filters) {
+                                var tsquery = to_tsquery(q)
+                                if (tsquery) {
+                                    filters = filters.slice(0)
+                                    filters.push(['any', '@@', tsquery])
+                                }
+                                // Apply additional type dependant filters, if any.
+                                for (var f of obj_type.filters) {
+                                    filters.push(f)
+                                }
+                                return vnode.state.sessionDB.request(session, obj_type.api_path, {
+                                    data: {
+                                        filters: JSON.stringify(filters),
+                                        count: 'none',
+                                    },
+                                }).then(function(resp) {
+                                    resp.items.map(function(item) {
+                                        item.workbenchBaseURL = workbenchBaseURL
+                                        item.objectType = obj_type
+                                    })
+                                    return resp
+                                })
+                            },
+                        })
                     })
-                })
+                }))
             })
         })
     },
     view: function(vnode) {
         var sessions = vnode.state.sessionDB.loadAll()
+        var group_sessions = function(sessionList) {
+            var grouped = {}
+            for (session of sessionList) {
+                grouped[session.sessionKey] = grouped[session.sessionKey] || []
+                grouped[session.sessionKey].push(session)
+            }
+            return grouped
+        }
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchActive(vnode.state.searchEntered())
@@ -154,10 +189,17 @@ window.CollectionsSearch = {
                         'Searching sites: ',
                         vnode.state.loader.children.length == 0
                             ? m('span.label.label-xs.label-danger', 'none')
-                            : vnode.state.loader.children.map(function(child) {
-                                return [m('span.label.label-xs', {
-                                    className: child.state == child.LOADING ? 'label-warning' : 'label-success',
-                                }, child.sessionKey), ' ']
+                            : Object.entries(group_sessions(vnode.state.loader.children)).map(function(e) {
+                                var key = e[0] // sessionKey (cluster id)
+                                var childs = e[1] // Array of loader children
+                                var labels = childs.map(function(child) {
+                                    return m('span.label.label-xs', {
+                                        className: child.state == child.LOADING ? 'label-warning' : 'label-success',
+                                        }, child.objectKind)
+                                })
+                                return [m('span.label.label-xs',
+                                          {className:'label-info'},
+                                          key)].concat(labels).concat('  ')
                             }),
                         ' ',
                         m('a[href="/sessions"]', 'Add/remove sites'),
