@@ -25,6 +25,8 @@ var (
 	ErrFileExists        = errors.New("file exists")
 	ErrInvalidOperation  = errors.New("invalid operation")
 	ErrDirectoryNotEmpty = errors.New("directory not empty")
+	ErrWriteOnlyMode     = errors.New("file is O_WRONLY")
+	ErrSyncNotSupported  = errors.New("O_SYNC flag is not supported")
 	ErrPermission        = os.ErrPermission
 
 	maxBlockSize = 1 << 26
@@ -231,8 +233,6 @@ func (fn *filenode) Readdir() []os.FileInfo {
 }
 
 func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
-	fn.RLock()
-	defer fn.RUnlock()
 	ptr = fn.seek(startPtr)
 	if ptr.off < 0 {
 		err = ErrNegativeOffset
@@ -319,8 +319,6 @@ func (fn *filenode) Truncate(size int64) error {
 }
 
 func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
-	fn.Lock()
-	defer fn.Unlock()
 	ptr = fn.seek(startPtr)
 	if ptr.off < 0 {
 		err = ErrNegativeOffset
@@ -497,11 +495,17 @@ type file struct {
 	inode
 	ptr        filenodePtr
 	append     bool
+	readable   bool
 	writable   bool
 	unreaddirs []os.FileInfo
 }
 
 func (f *file) Read(p []byte) (n int, err error) {
+	if !f.readable {
+		return 0, ErrWriteOnlyMode
+	}
+	f.inode.RLock()
+	defer f.inode.RUnlock()
 	n, f.ptr, err = f.inode.Read(p, f.ptr)
 	return
 }
@@ -539,6 +543,16 @@ func (f *file) Truncate(size int64) error {
 func (f *file) Write(p []byte) (n int, err error) {
 	if !f.writable {
 		return 0, ErrReadOnlyFile
+	}
+	f.inode.Lock()
+	defer f.inode.Unlock()
+	if fn, ok := f.inode.(*filenode); ok && f.append {
+		f.ptr = filenodePtr{
+			off:       fn.fileinfo.size,
+			extentIdx: len(fn.extents),
+			extentOff: 0,
+			repacked:  fn.repacked,
+		}
 	}
 	n, f.ptr, err = f.inode.Write(p, f.ptr)
 	return
@@ -971,13 +985,27 @@ func (dn *dirnode) lookupPath(path string) (node inode) {
 }
 
 func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
+	if flag&os.O_SYNC != 0 {
+		return nil, ErrSyncNotSupported
+	}
 	dirname, name := path.Split(name)
 	dn, ok := dn.lookupPath(dirname).(*dirnode)
 	if !ok {
 		return nil, os.ErrNotExist
 	}
-	writeMode := flag&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0
-	if !writeMode {
+	var readable, writable bool
+	switch flag & (os.O_RDWR | os.O_RDONLY | os.O_WRONLY) {
+	case os.O_RDWR:
+		readable = true
+		writable = true
+	case os.O_RDONLY:
+		readable = true
+	case os.O_WRONLY:
+		writable = true
+	default:
+		return nil, fmt.Errorf("invalid flags 0x%x", flag)
+	}
+	if !writable {
 		// A directory can be opened via "foo/", "foo/.", or
 		// "foo/..".
 		switch name {
@@ -1030,7 +1058,8 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 	return &file{
 		inode:    n,
 		append:   flag&os.O_APPEND != 0,
-		writable: flag&(os.O_WRONLY|os.O_RDWR) != 0,
+		readable: readable,
+		writable: writable,
 	}, nil
 }
 
