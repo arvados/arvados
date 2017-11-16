@@ -1061,6 +1061,14 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 		dn.fileinfo.size++
 	} else if flag&os.O_EXCL != 0 {
 		return nil, ErrFileExists
+	} else if flag&os.O_TRUNC != 0 {
+		if !writable {
+			return nil, fmt.Errorf("invalid flag O_TRUNC in read-only mode")
+		} else if fn, ok := n.(*filenode); !ok {
+			return nil, fmt.Errorf("invalid flag O_TRUNC when opening directory")
+		} else {
+			fn.Truncate(0)
+		}
 	}
 	return &file{
 		inode:    n,
