@@ -725,11 +725,18 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 					} else {
 						blocks = append(blocks, e.locator)
 					}
-					segments = append(segments, m1segment{
+					next := m1segment{
 						name:   name,
 						offset: streamLen + int64(e.offset),
 						length: int64(e.length),
-					})
+					}
+					if prev := len(segments) - 1; prev >= 0 &&
+						segments[prev].name == name &&
+						segments[prev].offset+segments[prev].length == next.offset {
+						segments[prev].length += next.length
+					} else {
+						segments = append(segments, next)
+					}
 					streamLen += int64(e.size)
 				default:
 					// This can't happen: we

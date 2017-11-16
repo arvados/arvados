@@ -738,7 +738,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 	c.Check(currentMemExtents(), check.HasLen, 1)
 
 	m, err := fs.MarshalManifest(".")
-	c.Check(m, check.Not(check.Equals), "")
+	c.Check(m, check.Matches, `[^:]* 0:50000:50K\n`)
 	c.Check(err, check.IsNil)
 	c.Check(currentMemExtents(), check.HasLen, 0)
 }
