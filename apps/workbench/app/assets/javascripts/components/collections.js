@@ -170,7 +170,7 @@ window.CollectionsSearch = {
                 m('.row', [
                     m('.col-md-6', [
                         m('.input-group', [
-                            m('input#search.form-control[placeholder=Search]', {
+                            m('input#search.form-control[placeholder=Search collections and projects]', {
                                 oninput: m.withAttr('value', vnode.state.searchEntered),
                                 value: vnode.state.searchEntered(),
                             }),
