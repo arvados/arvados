@@ -24,9 +24,11 @@ var (
 	ErrNegativeOffset    = errors.New("cannot seek to negative offset")
 	ErrFileExists        = errors.New("file exists")
 	ErrInvalidOperation  = errors.New("invalid operation")
+	ErrInvalidArgument   = errors.New("invalid argument")
 	ErrDirectoryNotEmpty = errors.New("directory not empty")
 	ErrWriteOnlyMode     = errors.New("file is O_WRONLY")
 	ErrSyncNotSupported  = errors.New("O_SYNC flag is not supported")
+	ErrIsDirectory       = errors.New("cannot rename file to overwrite existing directory")
 	ErrPermission        = os.ErrPermission
 
 	maxBlockSize = 1 << 26
@@ -114,6 +116,7 @@ type CollectionFileSystem interface {
 
 	Mkdir(name string, perm os.FileMode) error
 	Remove(name string) error
+	Rename(oldname, newname string) error
 	MarshalManifest(prefix string) (string, error)
 }
 
@@ -944,6 +947,79 @@ func (dn *dirnode) Remove(name string) error {
 		}
 	}
 	delete(dn.inodes, name)
+	return nil
+}
+
+func (dn *dirnode) Rename(oldname, newname string) error {
+	olddir, oldname := path.Split(oldname)
+	if oldname == "" || oldname == "." || oldname == ".." {
+		return ErrInvalidArgument
+	}
+	olddirf, err := dn.OpenFile(olddir+".", os.O_RDONLY, 0)
+	if err != nil {
+		return fmt.Errorf("%q: %s", olddir, err)
+	}
+	defer olddirf.Close()
+	newdir, newname := path.Split(newname)
+	if newname == "." || newname == ".." {
+		return ErrInvalidArgument
+	} else if newname == "" {
+		// Rename("a/b", "c/") means Rename("a/b", "c/b")
+		newname = oldname
+	}
+	newdirf, err := dn.OpenFile(newdir+".", os.O_RDONLY, 0)
+	if err != nil {
+		return fmt.Errorf("%q: %s", newdir, err)
+	}
+	defer newdirf.Close()
+
+	// When acquiring locks on multiple nodes, all common
+	// ancestors must be locked first in order to avoid
+	// deadlock. This is assured by locking the path from root to
+	// newdir, then locking the path from root to olddir, skipping
+	// any already-locked nodes.
+	needLock := []sync.Locker{}
+	for _, f := range []*file{olddirf, newdirf} {
+		node := f.inode
+		needLock = append(needLock, node)
+		for node.Parent() != node {
+			node = node.Parent()
+			needLock = append(needLock, node)
+		}
+	}
+	locked := map[sync.Locker]bool{}
+	for i := len(needLock) - 1; i >= 0; i-- {
+		if n := needLock[i]; !locked[n] {
+			n.Lock()
+			defer n.Unlock()
+			locked[n] = true
+		}
+	}
+
+	olddn := olddirf.inode.(*dirnode)
+	newdn := newdirf.inode.(*dirnode)
+	oldinode, ok := olddn.inodes[oldname]
+	if !ok {
+		return os.ErrNotExist
+	}
+	if existing, ok := newdn.inodes[newname]; ok {
+		// overwriting an existing file or dir
+		if dn, ok := existing.(*dirnode); ok {
+			if !oldinode.Stat().IsDir() {
+				return ErrIsDirectory
+			}
+			dn.RLock()
+			defer dn.RUnlock()
+			if len(dn.inodes) > 0 {
+				return ErrDirectoryNotEmpty
+			}
+		}
+	} else {
+		newdn.fileinfo.size++
+	}
+	newdn.inodes[newname] = oldinode
+	delete(olddn.inodes, oldname)
+	olddn.fileinfo.size--
 	return nil
 }
 

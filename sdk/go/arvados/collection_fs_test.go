@@ -507,6 +507,89 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	// TODO: check manifest content
 }
 
+func (s *CollectionFSSuite) TestRename(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	const (
+		outer = 16
+		inner = 16
+	)
+	for i := 0; i < outer; i++ {
+		err = fs.Mkdir(fmt.Sprintf("dir%d", i), 0755)
+		c.Assert(err, check.IsNil)
+		for j := 0; j < inner; j++ {
+			err = fs.Mkdir(fmt.Sprintf("dir%d/dir%d", i, j), 0755)
+			c.Assert(err, check.IsNil)
+			for _, fnm := range []string{
+				fmt.Sprintf("dir%d/file%d", i, j),
+				fmt.Sprintf("dir%d/dir%d/file%d", i, j, j),
+			} {
+				f, err := fs.OpenFile(fnm, os.O_CREATE|os.O_WRONLY, 0755)
+				c.Assert(err, check.IsNil)
+				_, err = f.Write([]byte("beep"))
+				c.Assert(err, check.IsNil)
+				f.Close()
+			}
+		}
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < outer; i++ {
+		for j := 0; j < inner; j++ {
+			wg.Add(1)
+			go func(i, j int) {
+				defer wg.Done()
+				oldname := fmt.Sprintf("dir%d/dir%d/file%d", i, j, j)
+				newname := fmt.Sprintf("dir%d/newfile%d", i, inner-j-1)
+				_, err := fs.Open(newname)
+				c.Check(err, check.Equals, os.ErrNotExist)
+				err = fs.Rename(oldname, newname)
+				c.Check(err, check.IsNil)
+				f, err := fs.Open(newname)
+				c.Check(err, check.IsNil)
+				f.Close()
+			}(i, j)
+
+			wg.Add(1)
+			go func(i, j int) {
+				defer wg.Done()
+				// oldname does not exist
+				err := fs.Rename(
+					fmt.Sprintf("dir%d/dir%d/missing", i, j),
+					fmt.Sprintf("dir%d/irelevant", outer-i-1))
+				c.Check(err, check.ErrorMatches, `.*does not exist`)
+
+				// newname parent dir does not exist
+				err = fs.Rename(
+					fmt.Sprintf("dir%d/dir%d", i, j),
+					fmt.Sprintf("dir%d/missing/irrelevant", outer-i-1))
+				c.Check(err, check.ErrorMatches, `.*does not exist`)
+
+				// oldname parent dir is a file
+				err = fs.Rename(
+					fmt.Sprintf("dir%d/file%d/patherror", i, j),
+					fmt.Sprintf("dir%d/irrelevant", i))
+				c.Check(err, check.ErrorMatches, `.*does not exist`)
+
+				// newname parent dir is a file
+				err = fs.Rename(
+					fmt.Sprintf("dir%d/dir%d/file%d", i, j, j),
+					fmt.Sprintf("dir%d/file%d/patherror", i, inner-j-1))
+				c.Check(err, check.ErrorMatches, `.*does not exist`)
+			}(i, j)
+		}
+	}
+	wg.Wait()
+
+	f, err := fs.OpenFile("dir1/newfile3", 0, 0)
+	c.Assert(err, check.IsNil)
+	c.Check(f.Size(), check.Equals, int64(4))
+	buf, err := ioutil.ReadAll(f)
+	c.Check(buf, check.DeepEquals, []byte("beep"))
+	c.Check(err, check.IsNil)
+	_, err = fs.Open("dir1/dir1/file1")
+	c.Check(err, check.Equals, os.ErrNotExist)
+}
+
 func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	maxBlockSize = 1024
 	defer func() { maxBlockSize = 2 << 26 }()
@@ -626,7 +709,7 @@ func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
 	}
 }
 
-func (s *CollectionFSSuite) TestFileModes(c *check.C) {
+func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 
