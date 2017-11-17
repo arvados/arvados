@@ -53,7 +53,10 @@ func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
 }
 
 func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
-	return errReadOnly
+	if fs.update == nil {
+		return errReadOnly
+	}
+	return fs.Rename(oldName, newName)
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {

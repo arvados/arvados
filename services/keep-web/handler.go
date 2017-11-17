@@ -98,6 +98,7 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 
 var (
 	webdavMethod = map[string]bool{
+		"MOVE":     true,
 		"OPTIONS":  true,
 		"PROPFIND": true,
 		"PUT":      true,
@@ -148,7 +149,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND, PUT")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, MOVE, OPTIONS, POST, PROPFIND, PUT")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
