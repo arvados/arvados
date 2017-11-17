@@ -48,13 +48,9 @@ window.CollectionsTable = {
                 loader.items().map(function(item) {
                     return m('tr', [
                         m('td', [
-                            // Guess workbench.{apihostport} is a
-                            // Workbench... unless the host part of
-                            // apihostport is an IPv4 or [IPv6]
-                            // address.
-                            item.session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])') ? null :
+                            item.workbenchBaseURL() &&
                                 m('a.btn.btn-xs.btn-default', {
-                                    href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid,
+                                    href: item.workbenchBaseURL()+'collections/'+item.uuid,
                                 }, 'Show'),
                         ]),
                         m('td.arvados-uuid', item.uuid),
@@ -98,6 +94,9 @@ window.CollectionsSearch = {
             vnode.state.loader = new MergingLoader({
                 children: Object.keys(sessions).map(function(key) {
                     var session = sessions[key]
+                    var workbenchBaseURL = function() {
+                        return vnode.state.sessionDB.workbenchBaseURL(session)
+                    }
                     return new MultipageLoader({
                         sessionKey: key,
                         loadFunc: function(filters) {
@@ -113,7 +112,7 @@ window.CollectionsSearch = {
                                 },
                             }).then(function(resp) {
                                 resp.items.map(function(item) {
-                                    item.session = session
+                                    item.workbenchBaseURL = workbenchBaseURL
                                 })
                                 return resp
                             })
