@@ -86,15 +86,35 @@ func (fi fileinfo) Sys() interface{} {
 }
 
 // A CollectionFileSystem is an http.Filesystem plus Stat() and
-// support for opening writable files.
+// support for opening writable files. All methods are safe to call
+// from multiple goroutines.
 type CollectionFileSystem interface {
 	http.FileSystem
+
+	// analogous to os.Stat()
 	Stat(name string) (os.FileInfo, error)
+
+	// analogous to os.Create(): create/truncate a file and open it O_RDWR.
 	Create(name string) (File, error)
+
+	// Like os.OpenFile(): create or open a file or directory.
+	//
+	// If flag&os.O_EXCL==0, it opens an existing file or
+	// directory if one exists. If flag&os.O_CREATE!=0, it creates
+	// a new empty file or directory if one does not already
+	// exist.
+	//
+	// When creating a new item, perm&os.ModeDir determines
+	// whether it is a file or a directory.
+	//
+	// A file can be opened multiple times and used concurrently
+	// from multiple goroutines. However, each File object should
+	// be used by only one goroutine at a time.
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
+
 	Mkdir(name string, perm os.FileMode) error
 	Remove(name string) error
-	MarshalManifest(string) (string, error)
+	MarshalManifest(prefix string) (string, error)
 }
 
 type fileSystem struct {
@@ -991,6 +1011,7 @@ func (dn *dirnode) lookupPath(path string) (node inode) {
 	return
 }
 
+// OpenFile is analogous to os.OpenFile().
 func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
 	if flag&os.O_SYNC != 0 {
 		return nil, ErrSyncNotSupported
