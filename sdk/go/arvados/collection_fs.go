@@ -200,7 +200,6 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 		// meaningless anyway
 		return
 	} else if ptr.off >= fn.fileinfo.size {
-		ptr.off = fn.fileinfo.size
 		ptr.extentIdx = len(fn.extents)
 		ptr.extentOff = 0
 		ptr.repacked = fn.repacked
@@ -296,8 +295,16 @@ func (fn *filenode) Stat() os.FileInfo {
 func (fn *filenode) Truncate(size int64) error {
 	fn.Lock()
 	defer fn.Unlock()
+	return fn.truncate(size)
+}
+
+func (fn *filenode) truncate(size int64) error {
+	if size == fn.fileinfo.size {
+		return nil
+	}
+	fn.repacked++
 	if size < fn.fileinfo.size {
-		ptr := fn.seek(filenodePtr{off: size, repacked: fn.repacked - 1})
+		ptr := fn.seek(filenodePtr{off: size})
 		for i := ptr.extentIdx; i < len(fn.extents); i++ {
 			if ext, ok := fn.extents[i].(*memExtent); ok {
 				fn.memsize -= int64(ext.Len())
@@ -316,7 +323,6 @@ func (fn *filenode) Truncate(size int64) error {
 			}
 		}
 		fn.fileinfo.size = size
-		fn.repacked++
 		return nil
 	}
 	for size > fn.fileinfo.size {
@@ -329,8 +335,6 @@ func (fn *filenode) Truncate(size int64) error {
 		} else if e, ok = fn.extents[len(fn.extents)-1].(writableExtent); !ok || e.Len() >= maxBlockSize {
 			e = &memExtent{}
 			fn.extents = append(fn.extents, e)
-		} else {
-			fn.repacked++
 		}
 		if maxgrow := int64(maxBlockSize - e.Len()); maxgrow < grow {
 			grow = maxgrow
@@ -342,7 +346,13 @@ func (fn *filenode) Truncate(size int64) error {
 	return nil
 }
 
+// Caller must hold lock.
 func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
+	if startPtr.off > fn.fileinfo.size {
+		if err = fn.truncate(startPtr.off); err != nil {
+			return 0, startPtr, err
+		}
+	}
 	ptr = fn.seek(startPtr)
 	if ptr.off < 0 {
 		err = ErrNegativeOffset
@@ -547,9 +557,6 @@ func (f *file) Seek(off int64, whence int) (pos int64, err error) {
 	}
 	if ptr.off < 0 {
 		return f.ptr.off, ErrNegativeOffset
-	}
-	if ptr.off > size {
-		ptr.off = size
 	}
 	if ptr.off != f.ptr.off {
 		f.ptr = ptr

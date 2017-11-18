@@ -281,6 +281,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(string(buf2), check.Equals, "f0123456789abcd\x00\x00\x00\x00\x00")
 
 	f.Truncate(0)
+	f2.Seek(0, os.SEEK_SET)
 	f2.Write([]byte("12345678abcdefghijkl"))
 
 	// grow to block/extent boundary
@@ -328,6 +329,46 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
 	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 25d55ad283aa400af464c76d713c07ad+8 3:3:bar 6:3:foo\n")
+}
+
+func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("test", os.O_CREATE|os.O_RDWR, 0755)
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+
+	checkSize := func(size int64) {
+		fi, err := f.Stat()
+		c.Check(fi.Size(), check.Equals, size)
+
+		f, err := fs.OpenFile("test", os.O_CREATE|os.O_RDWR, 0755)
+		c.Assert(err, check.IsNil)
+		defer f.Close()
+		fi, err = f.Stat()
+		c.Check(fi.Size(), check.Equals, size)
+		pos, err := f.Seek(0, os.SEEK_END)
+		c.Check(pos, check.Equals, size)
+	}
+
+	f.Seek(2, os.SEEK_END)
+	checkSize(0)
+	f.Write([]byte{1})
+	checkSize(3)
+
+	f.Seek(2, os.SEEK_CUR)
+	checkSize(3)
+	f.Write([]byte{})
+	checkSize(5)
+
+	f.Seek(8, os.SEEK_SET)
+	checkSize(5)
+	n, err := f.Read(make([]byte, 1))
+	c.Check(n, check.Equals, 0)
+	c.Check(err, check.Equals, io.EOF)
+	checkSize(5)
+	f.Write([]byte{1, 2, 3})
+	checkSize(11)
 }
 
 func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
