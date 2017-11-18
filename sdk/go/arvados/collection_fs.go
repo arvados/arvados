@@ -116,6 +116,7 @@ type CollectionFileSystem interface {
 
 	Mkdir(name string, perm os.FileMode) error
 	Remove(name string) error
+	RemoveAll(name string) error
 	Rename(oldname, newname string) error
 	MarshalManifest(prefix string) (string, error)
 }
@@ -926,9 +927,17 @@ func (dn *dirnode) Mkdir(name string, perm os.FileMode) error {
 }
 
 func (dn *dirnode) Remove(name string) error {
+	return dn.remove(name, false)
+}
+
+func (dn *dirnode) RemoveAll(name string) error {
+	return dn.remove(name, true)
+}
+
+func (dn *dirnode) remove(name string, recursive bool) error {
 	dirname, name := path.Split(name)
 	if name == "" || name == "." || name == ".." {
-		return ErrInvalidOperation
+		return ErrInvalidArgument
 	}
 	dn, ok := dn.lookupPath(dirname).(*dirnode)
 	if !ok {
@@ -942,7 +951,7 @@ func (dn *dirnode) Remove(name string) error {
 	case *dirnode:
 		node.RLock()
 		defer node.RUnlock()
-		if len(node.inodes) > 0 {
+		if !recursive && len(node.inodes) > 0 {
 			return ErrDirectoryNotEmpty
 		}
 	}

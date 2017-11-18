@@ -507,6 +507,37 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	// TODO: check manifest content
 }
 
+func (s *CollectionFSSuite) TestRemove(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("dir0", 0755)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("dir1", 0755)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("dir1/dir2", 0755)
+	c.Assert(err, check.IsNil)
+
+	err = fs.Remove("dir0")
+	c.Check(err, check.IsNil)
+	err = fs.Remove("dir0")
+	c.Check(err, check.Equals, os.ErrNotExist)
+
+	err = fs.Remove("dir1/dir2/")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Remove("dir1/dir2/.")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Remove("dir1/dir2/..")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Remove("dir1")
+	c.Check(err, check.Equals, ErrDirectoryNotEmpty)
+	err = fs.Remove("dir1/dir2/../../../dir1")
+	c.Check(err, check.Equals, ErrDirectoryNotEmpty)
+	err = fs.RemoveAll("dir1")
+	c.Check(err, check.IsNil)
+	err = fs.RemoveAll("dir1")
+	c.Check(err, check.Equals, os.ErrNotExist)
+}
+
 func (s *CollectionFSSuite) TestRename(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
