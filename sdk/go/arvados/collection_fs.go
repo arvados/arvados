@@ -857,7 +857,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 			var pos int64
 			for _, e := range extents {
 				next := pos + int64(e.Len())
-				if next < offset {
+				if next <= offset || e.Len() == 0 {
 					pos = next
 					continue
 				}
