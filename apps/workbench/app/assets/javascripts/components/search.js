@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.CollectionsTable = {
+window.SearchResultsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
         if (loader.state != loader.READY)
@@ -80,7 +80,7 @@ window.CollectionsTable = {
     },
 }
 
-window.CollectionsSearch = {
+window.Search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         vnode.state.searchEntered = m.stream()
@@ -192,7 +192,7 @@ window.CollectionsSearch = {
                         m('a[href="/sessions"]', 'Add/remove sites'),
                     ]),
                 ]),
-                m(CollectionsTable, {
+                m(SearchResultsTable, {
                     loader: vnode.state.loader,
                 }),
             ],

@@ -324,6 +324,11 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def multisite
+    # Legacy URL, redirect to new one.
+    redirect_to multisite_path
+  end
+
   protected
 
   def find_usable_token(token_list)
