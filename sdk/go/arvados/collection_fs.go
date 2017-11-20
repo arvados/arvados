@@ -126,24 +126,25 @@ type fileSystem struct {
 }
 
 func (fs *fileSystem) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	return fs.dirnode.OpenFile(path.Clean(name), flag, perm)
+	return fs.dirnode.OpenFile(name, flag, perm)
 }
 
 func (fs *fileSystem) Open(name string) (http.File, error) {
-	return fs.dirnode.OpenFile(path.Clean(name), os.O_RDONLY, 0)
+	return fs.dirnode.OpenFile(name, os.O_RDONLY, 0)
 }
 
 func (fs *fileSystem) Create(name string) (File, error) {
-	return fs.dirnode.OpenFile(path.Clean(name), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0)
+	return fs.dirnode.OpenFile(name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0)
 }
 
-func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
-	f, err := fs.OpenFile(name, os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
+func (fs *fileSystem) Stat(name string) (fi os.FileInfo, err error) {
+	node := fs.dirnode.lookupPath(name)
+	if node == nil {
+		err = os.ErrNotExist
+	} else {
+		fi = node.Stat()
 	}
-	defer f.Close()
-	return f.Stat()
+	return
 }
 
 type inode interface {
@@ -240,9 +241,8 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 	return
 }
 
+// caller must have lock
 func (fn *filenode) appendExtent(e extent) {
-	fn.Lock()
-	defer fn.Unlock()
 	fn.extents = append(fn.extents, e)
 	fn.fileinfo.size += int64(e.Len())
 }
@@ -799,12 +799,13 @@ func (dn *dirnode) loadManifest(txt string) error {
 	if streams[len(streams)-1] != "" {
 		return fmt.Errorf("line %d: no trailing newline", len(streams))
 	}
+	var extents []storedExtent
 	for i, stream := range streams[:len(streams)-1] {
 		lineno := i + 1
-		var extents []storedExtent
 		var anyFileTokens bool
 		var pos int64
 		var extIdx int
+		extents = extents[:0]
 		for i, token := range strings.Split(stream, " ") {
 			if i == 0 {
 				dirname = manifestUnescape(token)
@@ -847,7 +848,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 			if err != nil || length < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			name := path.Clean(dirname + "/" + manifestUnescape(toks[2]))
+			name := dirname + "/" + manifestUnescape(toks[2])
 			fnode, err := dn.createFileAndParents(name)
 			if err != nil {
 				return fmt.Errorf("line %d: cannot use path %q: %s", lineno, name, err)
