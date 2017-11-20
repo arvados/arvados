@@ -735,8 +735,7 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	sort.Strings(names)
 
 	for _, name := range names {
-		node := dn.inodes[name]
-		switch node := node.(type) {
+		switch node := dn.inodes[name].(type) {
 		case *dirnode:
 			subdir, err := node.marshalManifest(prefix + "/" + name)
 			if err != nil {
@@ -793,14 +792,14 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 }
 
 func (dn *dirnode) loadManifest(txt string) error {
-	// FIXME: faster
 	var dirname string
 	streams := strings.Split(txt, "\n")
 	if streams[len(streams)-1] != "" {
 		return fmt.Errorf("line %d: no trailing newline", len(streams))
 	}
-	var extents []storedExtent
-	for i, stream := range streams[:len(streams)-1] {
+	streams = streams[:len(streams)-1]
+	extents := []storedExtent{}
+	for i, stream := range streams {
 		lineno := i + 1
 		var anyFileTokens bool
 		var pos int64
@@ -863,7 +862,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				// situation might be rare anyway)
 				extIdx, pos = 0, 0
 			}
-			for next := int64(0); extIdx < len(extents); extIdx, pos = extIdx+1, next {
+			for next := int64(0); extIdx < len(extents); extIdx++ {
 				e := extents[extIdx]
 				next = pos + int64(e.Len())
 				if next <= offset || e.Len() == 0 {
@@ -890,6 +889,8 @@ func (dn *dirnode) loadManifest(txt string) error {
 				})
 				if next > offset+length {
 					break
+				} else {
+					pos = next
 				}
 			}
 			if extIdx == len(extents) && pos < offset+length {
@@ -910,36 +911,35 @@ func (dn *dirnode) loadManifest(txt string) error {
 // only safe to call from loadManifest -- no locking
 func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	names := strings.Split(path, "/")
-	if basename := names[len(names)-1]; basename == "" || basename == "." || basename == ".." {
+	basename := names[len(names)-1]
+	if basename == "" || basename == "." || basename == ".." {
 		err = fmt.Errorf("invalid filename")
 		return
 	}
-	var node inode = dn
-	for i, name := range names {
-		dn, ok := node.(*dirnode)
-		if !ok {
-			err = ErrFileExists
-			return
-		}
-		if name == "" || name == "." {
-			continue
-		}
-		if name == ".." {
-			node = dn.parent
-			continue
-		}
-		node, ok = dn.inodes[name]
-		if !ok {
-			if i == len(names)-1 {
-				fn = dn.newFilenode(name, 0755)
+	for _, name := range names[:len(names)-1] {
+		switch name {
+		case "", ".":
+		case "..":
+			dn = dn.parent
+		default:
+			switch node := dn.inodes[name].(type) {
+			case nil:
+				dn = dn.newDirnode(name, 0755)
+			case *dirnode:
+				dn = node
+			case *filenode:
+				err = ErrFileExists
 				return
 			}
-			node = dn.newDirnode(name, 0755)
 		}
 	}
-	var ok bool
-	if fn, ok = node.(*filenode); !ok {
-		err = ErrInvalidArgument
+	switch node := dn.inodes[basename].(type) {
+	case nil:
+		fn = dn.newFilenode(basename, 0755)
+	case *filenode:
+		fn = node
+	case *dirnode:
+		err = ErrIsDirectory
 	}
 	return
 }
@@ -957,11 +957,17 @@ func (dn *dirnode) Mkdir(name string, perm os.FileMode) error {
 }
 
 func (dn *dirnode) Remove(name string) error {
-	return dn.remove(name, false)
+	return dn.remove(strings.TrimRight(name, "/"), false)
 }
 
 func (dn *dirnode) RemoveAll(name string) error {
-	return dn.remove(name, true)
+	err := dn.remove(strings.TrimRight(name, "/"), true)
+	if os.IsNotExist(err) {
+		// "If the path does not exist, RemoveAll returns
+		// nil." (see "os" pkg)
+		err = nil
+	}
+	return err
 }
 
 func (dn *dirnode) remove(name string, recursive bool) error {
@@ -1054,9 +1060,20 @@ func (dn *dirnode) Rename(oldname, newname string) error {
 			}
 		}
 	} else {
+		if newdn.inodes == nil {
+			newdn.inodes = make(map[string]inode)
+		}
 		newdn.fileinfo.size++
 	}
 	newdn.inodes[newname] = oldinode
+	switch n := oldinode.(type) {
+	case *dirnode:
+		n.parent = newdn
+	case *filenode:
+		n.parent = newdn
+	default:
+		panic(fmt.Sprintf("bad inode type %T", n))
+	}
 	delete(olddn.inodes, oldname)
 	olddn.fileinfo.size--
 	return nil

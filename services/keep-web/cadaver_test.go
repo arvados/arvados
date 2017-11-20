@@ -95,6 +95,71 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 			match: `(?ms).*succeeded.*`,
 			data:  testdata,
 		},
+		{
+			path:  writePath,
+			cmd:   "move testfile newdir0\n",
+			match: `(?ms).*Moving .* succeeded.*`,
+		},
+		{
+			// Strangely, webdav deletes dst if you do
+			// "move nonexistent dst" -- otherwise we
+			// would repeat the above "move testfile
+			// newdir0" here.
+			path:  writePath,
+			cmd:   "move testfile nonexistentdir\n",
+			match: `(?ms).*Moving .* failed.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "ls\n",
+			match: `(?ms).*newdir0.* 0 .*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "move newdir0/testfile emptyfile/bogus/\n",
+			match: `(?ms).*Moving .* failed.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "mkcol newdir1\n",
+			match: `(?ms).*Creating .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "move newdir0/testfile newdir1\n",
+			match: `(?ms).*Moving .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "put '" + localfile.Name() + "' newdir1/testfile1\n",
+			match: `(?ms).*Uploading .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "mkcol newdir2\n",
+			match: `(?ms).*Creating .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "put '" + localfile.Name() + "' newdir2/testfile2\n",
+			match: `(?ms).*Uploading .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "get newdir2/testfile2 '" + checkfile.Name() + "'\n",
+			match: `(?ms).*succeeded.*`,
+			data:  testdata,
+		},
+		{
+			path:  writePath,
+			cmd:   "rmcol newdir2\n",
+			match: `(?ms).*Deleting collection .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "get newdir2/testfile2 '" + checkfile.Name() + "'\n",
+			match: `(?ms).*Downloading .* failed.*`,
+		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)
 

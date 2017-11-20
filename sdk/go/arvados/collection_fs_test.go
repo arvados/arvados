@@ -560,14 +560,14 @@ func (s *CollectionFSSuite) TestRemove(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = fs.Mkdir("dir1/dir2", 0755)
 	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("dir1/dir3", 0755)
+	c.Assert(err, check.IsNil)
 
 	err = fs.Remove("dir0")
 	c.Check(err, check.IsNil)
 	err = fs.Remove("dir0")
 	c.Check(err, check.Equals, os.ErrNotExist)
 
-	err = fs.Remove("dir1/dir2/")
-	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = fs.Remove("dir1/dir2/.")
 	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = fs.Remove("dir1/dir2/..")
@@ -576,10 +576,12 @@ func (s *CollectionFSSuite) TestRemove(c *check.C) {
 	c.Check(err, check.Equals, ErrDirectoryNotEmpty)
 	err = fs.Remove("dir1/dir2/../../../dir1")
 	c.Check(err, check.Equals, ErrDirectoryNotEmpty)
+	err = fs.Remove("dir1/dir3/")
+	c.Check(err, check.IsNil)
 	err = fs.RemoveAll("dir1")
 	c.Check(err, check.IsNil)
 	err = fs.RemoveAll("dir1")
-	c.Check(err, check.Equals, os.ErrNotExist)
+	c.Check(err, check.IsNil)
 }
 
 func (s *CollectionFSSuite) TestRename(c *check.C) {
@@ -630,7 +632,7 @@ func (s *CollectionFSSuite) TestRename(c *check.C) {
 				// oldname does not exist
 				err := fs.Rename(
 					fmt.Sprintf("dir%d/dir%d/missing", i, j),
-					fmt.Sprintf("dir%d/irelevant", outer-i-1))
+					fmt.Sprintf("dir%d/dir%d/file%d", outer-i-1, j, j))
 				c.Check(err, check.ErrorMatches, `.*does not exist`)
 
 				// newname parent dir does not exist

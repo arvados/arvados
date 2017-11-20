@@ -10,6 +10,8 @@ import (
 	"fmt"
 	prand "math/rand"
 	"os"
+	"path"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -27,19 +29,45 @@ var (
 
 // webdavFS implements a webdav.FileSystem by wrapping an
 // arvados.CollectionFilesystem.
+//
+// Collections don't preserve empty directories, so Mkdir is
+// effectively a no-op, and we need to make parent dirs spring into
+// existence automatically so sequences like "mkcol foo; put foo/bar"
+// work as expected.
 type webdavFS struct {
 	collfs arvados.CollectionFileSystem
 	update func() error
 }
 
+func (fs *webdavFS) makeparents(name string) {
+	dir, name := path.Split(name)
+	if dir == "" || dir == "/" {
+		return
+	}
+	dir = dir[:len(dir)-1]
+	fs.makeparents(dir)
+	fs.collfs.Mkdir(dir, 0755)
+}
+
 func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	return fs.collfs.Mkdir(name, 0755)
+	if fs.update == nil {
+		return errReadOnly
+	}
+	name = strings.TrimRight(name, "/")
+	fs.makeparents(name)
+	if err := fs.collfs.Mkdir(name, 0755); err != nil {
+		return err
+	}
+	return fs.update()
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
 	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
-	if writing && fs.update == nil {
-		return nil, errReadOnly
+	if writing {
+		if fs.update == nil {
+			return nil, errReadOnly
+		}
+		fs.makeparents(name)
 	}
 	f, err = fs.collfs.OpenFile(name, flag, perm)
 	if writing && err == nil {
@@ -49,17 +77,27 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 }
 
 func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
-	return fs.collfs.RemoveAll(name)
+	if err := fs.collfs.RemoveAll(name); err != nil {
+		return err
+	}
+	return fs.update()
 }
 
 func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
 	if fs.update == nil {
 		return errReadOnly
 	}
-	return fs.collfs.Rename(oldName, newName)
+	fs.makeparents(newName)
+	if err := fs.collfs.Rename(oldName, newName); err != nil {
+		return err
+	}
+	return fs.update()
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+	if fs.update != nil {
+		fs.makeparents(name)
+	}
 	return fs.collfs.Stat(name)
 }
 
