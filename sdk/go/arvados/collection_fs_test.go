@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"bytes"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -14,8 +15,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -962,6 +965,50 @@ func (s *CollectionFSSuite) checkMemSize(c *check.C, f File) {
 		}
 	}
 	c.Check(fn.memsize, check.Equals, memsize)
+}
+
+type CollectionFSUnitSuite struct{}
+
+var _ = check.Suite(&CollectionFSUnitSuite{})
+
+// expect ~2 seconds to load a manifest with 256K files
+func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
+	const (
+		dirCount  = 512
+		fileCount = 512
+	)
+
+	mb := bytes.NewBuffer(make([]byte, 0, 40000000))
+	for i := 0; i < dirCount; i++ {
+		fmt.Fprintf(mb, "./dir%d", i)
+		for j := 0; j <= fileCount; j++ {
+			fmt.Fprintf(mb, " %032x+42+A%040x@%08x", j, j, j)
+		}
+		for j := 0; j < fileCount; j++ {
+			fmt.Fprintf(mb, " %d:%d:dir%d/file%d", j*42+21, 42, j, j)
+		}
+		mb.Write([]byte{'\n'})
+	}
+	coll := Collection{ManifestText: mb.String()}
+	c.Logf("%s built", time.Now())
+
+	var memstats runtime.MemStats
+	runtime.ReadMemStats(&memstats)
+	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
+
+	f, err := coll.FileSystem(nil, nil)
+	c.Check(err, check.IsNil)
+	c.Logf("%s loaded", time.Now())
+
+	for i := 0; i < dirCount; i++ {
+		for j := 0; j < fileCount; j++ {
+			f.Stat(fmt.Sprintf("./dir%d/dir%d/file%d", i, j, j))
+		}
+	}
+	c.Logf("%s Stat() x %d", time.Now(), dirCount*fileCount)
+
+	runtime.ReadMemStats(&memstats)
+	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
 }
 
 // Gocheck boilerplate
