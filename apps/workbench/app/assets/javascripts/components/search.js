@@ -29,10 +29,6 @@ window.SearchResultsTable = {
     },
     onupdate: function(vnode) {
         vnode.state.loader = vnode.attrs.loader
-        // This activates bootstrap tooltip feature
-        $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
-        })
     },
     onremove: function(vnode) {
         window.clearInterval(vnode.state.timer)
@@ -42,8 +38,8 @@ window.SearchResultsTable = {
     view: function(vnode) {
         var loader = vnode.attrs.loader
         var iconsMap = {
-            C: m('i.fa.fa-fw.fa-archive'),
-            P: m('i.fa.fa-fw.fa-folder'),
+            collections: m('i.fa.fa-fw.fa-archive'),
+            projects: m('i.fa.fa-fw.fa-folder'),
         }
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
@@ -62,7 +58,9 @@ window.SearchResultsTable = {
                                     'data-placement': 'top',
                                     'data-toggle': 'tooltip',
                                     href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
-                                }, iconsMap[item.objectType.label]),
+                                    // Bootstrap's tooltip feature
+                                    oncreate: function(vnode) { $(vnode.dom).tooltip() },
+                                }, iconsMap[item.objectType.wb_path]),
                         ]),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
@@ -110,17 +108,15 @@ window.Search = {
                     }
                     var searchable_objects = [
                         {
-                            wb_path: 'groups',
+                            wb_path: 'projects',
                             api_path: 'arvados/v1/groups',
                             filters: [['group_class', '=', 'project']],
-                            label: 'P',
                             description: 'project',
                         },
                         {
                             wb_path: 'collections',
                             api_path: 'arvados/v1/collections',
                             filters: [],
-                            label: 'C',
                             description: 'collection',
                         },
                     ]
@@ -130,7 +126,6 @@ window.Search = {
                         children: searchable_objects.map(function(obj_type) {
                             return new MultipageLoader({
                                 sessionKey: key,
-                                objectKind: obj_type.label,
                                 loadFunc: function(filters) {
                                     var tsquery = to_tsquery(q)
                                     if (tsquery) {
