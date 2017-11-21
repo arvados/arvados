@@ -127,7 +127,7 @@ window.Search = {
                     return new MergingLoader({
                         sessionKey: key,
                         // For every session, search for every object type
-                        children: searchable_objects.map(function(obj_type){
+                        children: searchable_objects.map(function(obj_type) {
                             return new MultipageLoader({
                                 sessionKey: key,
                                 objectKind: obj_type.label,
@@ -138,8 +138,8 @@ window.Search = {
                                         filters.push(['any', '@@', tsquery])
                                     }
                                     // Apply additional type dependant filters, if any.
-                                    for (var f of obj_type.filters) {
-                                        filters.push(f)
+                                    for (i = 0; i < obj_type.filters.length; i++) {
+                                        filters.push(obj_type.filters[i])
                                     }
                                     return vnode.state.sessionDB.request(session, obj_type.api_path, {
                                         data: {
@@ -155,9 +155,9 @@ window.Search = {
                                     })
                                 },
                             })
-                        })
+                        }),
                     })
-                })
+                }),
             })
         })
     },
