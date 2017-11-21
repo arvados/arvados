@@ -116,7 +116,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
             <% else %>
             <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
               <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>
                 </div>
                 <div class="col-md-2">
