@@ -28,26 +28,26 @@ func WrapResponseWriter(orig http.ResponseWriter) ResponseWriter {
 	return &responseWriter{ResponseWriter: orig}
 }
 
-func (w responseWriter) WriteHeader(s int) {
+func (w *responseWriter) WriteHeader(s int) {
 	w.wroteStatus = s
 	w.ResponseWriter.WriteHeader(s)
 }
 
-func (w responseWriter) Write(data []byte) (n int, err error) {
+func (w *responseWriter) Write(data []byte) (n int, err error) {
 	n, err = w.ResponseWriter.Write(data)
 	w.wroteBodyBytes += n
 	w.err = err
 	return
 }
 
-func (w responseWriter) WroteStatus() int {
+func (w *responseWriter) WroteStatus() int {
 	return w.wroteStatus
 }
 
-func (w responseWriter) WroteBodyBytes() int {
+func (w *responseWriter) WroteBodyBytes() int {
 	return w.wroteBodyBytes
 }
 
-func (w responseWriter) Err() error {
+func (w *responseWriter) Err() error {
 	return w.err
 }
