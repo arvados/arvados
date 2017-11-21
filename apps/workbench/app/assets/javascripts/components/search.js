@@ -29,6 +29,10 @@ window.SearchResultsTable = {
     },
     onupdate: function(vnode) {
         vnode.state.loader = vnode.attrs.loader
+        // This activates bootstrap tooltip feature
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
     },
     onremove: function(vnode) {
         window.clearInterval(vnode.state.timer)
@@ -37,6 +41,10 @@ window.SearchResultsTable = {
     },
     view: function(vnode) {
         var loader = vnode.attrs.loader
+        var iconsMap = {
+            C: m('i.fa.fa-fw.fa-archive'),
+            P: m('i.fa.fa-fw.fa-folder'),
+        }
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
                 m('th'),
@@ -50,9 +58,11 @@ window.SearchResultsTable = {
                         m('td', [
                             item.workbenchBaseURL() &&
                                 m('a.btn.btn-xs.btn-default', {
-                                    title: 'Show '+item.objectType.description,
+                                    'data-original-title': 'show '+item.objectType.description,
+                                    'data-placement': 'top',
+                                    'data-toggle': 'tooltip',
                                     href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
-                                }, item.objectType.label),
+                                }, iconsMap[item.objectType.label]),
                         ]),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
@@ -104,14 +114,14 @@ window.Search = {
                             api_path: 'arvados/v1/groups',
                             filters: [['group_class', '=', 'project']],
                             label: 'P',
-                            description: 'Project',
+                            description: 'project',
                         },
                         {
                             wb_path: 'collections',
                             api_path: 'arvados/v1/collections',
                             filters: [],
                             label: 'C',
-                            description: 'Collection',
+                            description: 'collection',
                         },
                     ]
                     return new MergingLoader({
