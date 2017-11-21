@@ -95,7 +95,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'remove_selected_files', on: :member
     get 'tags', on: :member
     post 'save_tags', on: :member
-    get 'multisite', on: :collection
+    get 'multisite', on: :collection, to: redirect('/search')
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
@@ -132,8 +132,6 @@ ArvadosWorkbench::Application.routes.draw do
 
   get '/tests/mithril', to: 'tests#mithril'
   
-  get '/multisite', to: 'multisite#search'
-
   get '/status', to: 'status#status'
   
   # Send unroutable requests to an arbitrary controller

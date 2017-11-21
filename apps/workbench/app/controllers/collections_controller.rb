@@ -16,7 +16,7 @@ class CollectionsController < ApplicationController
   skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
-                     only: [:provenance, :show_file, :show_file_links, :multisite])
+                     only: [:provenance, :show_file, :show_file_links])
   # We depend on show_file to display the user agreement:
   skip_before_filter :check_user_agreements, only: :show_file
   skip_before_filter :check_user_profile, only: :show_file
@@ -322,11 +322,6 @@ class CollectionsController < ApplicationController
         self.render_error status: 422
       end
     end
-  end
-
-  def multisite
-    # Legacy URL, redirect to new one.
-    redirect_to multisite_path
   end
 
   protected

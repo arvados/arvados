@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     <%=
                        target = Rails.configuration.multi_site_search
                        if target == true
-                         target = {controller: 'multisite', action: 'search'}
+                         target = {controller: 'search', action: 'index'}
                        end
                        link_to("Multi-site search", target, {class: 'btn btn-default'}) %>
                   </form>
