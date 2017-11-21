@@ -262,7 +262,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       within('.recent-processes') do
 
         within('.row-zzzzz-xvhdp-cr4runningcntnr') do
-          assert_text 'Running'
+          assert_text 'running'
         end
 
         assert_text 'zzzzz-d1hrv-twodonepipeline'
