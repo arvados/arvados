@@ -51,6 +51,28 @@ class ApplicationControllerTest < ActionController::TestCase
     check_error_token
   end
 
+  test "X-Request-Id header" do
+    authorize_with :spectator
+    get(:index)
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
+  end
+
+  # The response header is the one that gets logged, so this test also
+  # ensures we log the ID supplied in the request, if any.
+  test "X-Request-Id given by client" do
+    authorize_with :spectator
+    @request.headers['X-Request-Id'] = 'abcdefG'
+    get(:index)
+    assert_equal 'abcdefG', response.headers['X-Request-Id']
+  end
+
+  test "X-Request-Id given by client is ignored if too long" do
+    authorize_with :spectator
+    @request.headers['X-Request-Id'] = 'abcdefG' * 1000
+    get(:index)
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
+  end
+
   ['foo', '', 'FALSE', 'TRUE', nil, [true], {a:true}, '"true"'].each do |bogus|
     test "bogus boolean parameter #{bogus.inspect} returns error" do
       @controller = Arvados::V1::GroupsController.new

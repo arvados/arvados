@@ -94,8 +94,24 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       @offset = 0
       super
       wanted_scopes.compact.each do |scope_list|
-        sorted_scopes = scope_list.sort
-        @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
+        if @objects.respond_to?(:where) && scope_list.length < 2
+          @objects = @objects.
+                     where('scopes in (?)',
+                           [scope_list.to_yaml, SafeJSON.dump(scope_list)])
+        else
+          if @objects.respond_to?(:where)
+            # Eliminate rows with scopes=['all'] before doing the
+            # expensive filter. They are typically the majority of
+            # rows, and they obviously won't match given
+            # scope_list.length>=2, so loading them all into
+            # ActiveRecord objects is a huge waste of time.
+            @objects = @objects.
+                       where('scopes not in (?)',
+                             [['all'].to_yaml, SafeJSON.dump(['all'])])
+          end
+          sorted_scopes = scope_list.sort
+          @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
+        end
       end
       @limit = @request_limit
       @offset = @request_offset
