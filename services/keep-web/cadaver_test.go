@@ -101,12 +101,8 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
-			// Strangely, webdav deletes dst if you do
-			// "move nonexistent dst" -- otherwise we
-			// would repeat the above "move testfile
-			// newdir0" here.
 			path:  writePath,
-			cmd:   "move testfile nonexistentdir\n",
+			cmd:   "move testfile newdir0\n",
 			match: `(?ms).*Moving .* failed.*`,
 		},
 		{

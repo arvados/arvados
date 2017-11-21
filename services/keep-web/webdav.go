@@ -35,8 +35,8 @@ var (
 // existence automatically so sequences like "mkcol foo; put foo/bar"
 // work as expected.
 type webdavFS struct {
-	collfs arvados.CollectionFileSystem
-	update func() error
+	collfs  arvados.CollectionFileSystem
+	writing bool
 }
 
 func (fs *webdavFS) makeparents(name string) {
@@ -50,67 +50,43 @@ func (fs *webdavFS) makeparents(name string) {
 }
 
 func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	if fs.update == nil {
+	if !fs.writing {
 		return errReadOnly
 	}
 	name = strings.TrimRight(name, "/")
 	fs.makeparents(name)
-	if err := fs.collfs.Mkdir(name, 0755); err != nil {
-		return err
-	}
-	return fs.update()
+	return fs.collfs.Mkdir(name, 0755)
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
 	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
 	if writing {
-		if fs.update == nil {
+		if !fs.writing {
 			return nil, errReadOnly
 		}
 		fs.makeparents(name)
 	}
 	f, err = fs.collfs.OpenFile(name, flag, perm)
-	if writing && err == nil {
-		f = writingFile{File: f, update: fs.update}
-	}
 	return
 }
 
 func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
-	if err := fs.collfs.RemoveAll(name); err != nil {
-		return err
-	}
-	return fs.update()
+	return fs.collfs.RemoveAll(name)
 }
 
 func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
-	if fs.update == nil {
+	if !fs.writing {
 		return errReadOnly
 	}
 	fs.makeparents(newName)
-	if err := fs.collfs.Rename(oldName, newName); err != nil {
-		return err
-	}
-	return fs.update()
+	return fs.collfs.Rename(oldName, newName)
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	if fs.update != nil {
+	if fs.writing {
 		fs.makeparents(name)
 	}
 	return fs.collfs.Stat(name)
-}
-
-type writingFile struct {
-	webdav.File
-	update func() error
-}
-
-func (f writingFile) Close() error {
-	if err := f.File.Close(); err != nil || f.update == nil {
-		return err
-	}
-	return f.update()
 }
 
 // noLockSystem implements webdav.LockSystem by returning success for

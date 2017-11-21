@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"html/template"
@@ -94,6 +95,44 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 		cacheStats: h.Config.Cache.Stats(),
 	}
 	json.NewEncoder(w).Encode(status)
+}
+
+// updateOnSuccess wraps httpserver.ResponseWriter. If the handler
+// sends an HTTP header indicating success, updateOnSuccess first
+// calls the provided update func. If the update func fails, a 500
+// response is sent, and the status code and body sent by the handler
+// are ignored (all response writes return errors).
+type updateOnSuccess struct {
+	httpserver.ResponseWriter
+	update     func() error
+	sentHeader bool
+	dropBody   bool
+}
+
+var errUpdateFailed = errors.New("update failed")
+
+func (uos *updateOnSuccess) Write(p []byte) (int, error) {
+	if uos.dropBody {
+		return 0, errUpdateFailed
+	}
+	if !uos.sentHeader {
+		uos.WriteHeader(http.StatusOK)
+	}
+	return uos.ResponseWriter.Write(p)
+}
+
+func (uos *updateOnSuccess) WriteHeader(code int) {
+	if !uos.sentHeader {
+		if code >= 200 && code < 400 {
+			if err := uos.update(); err != nil {
+				http.Error(uos.ResponseWriter, err.Error(), http.StatusInternalServerError)
+				uos.dropBody = true
+				return
+			}
+		}
+		uos.sentHeader = true
+	}
+	uos.ResponseWriter.WriteHeader(code)
 }
 
 var (
@@ -368,17 +407,23 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if webdavMethod[r.Method] {
-		var update func() error
-		if !arvadosclient.PDHMatch(targetID) {
-			update = func() error {
-				return h.Config.Cache.Update(client, *collection, fs)
-			}
+		writing := !arvadosclient.PDHMatch(targetID)
+		if writing {
+			// Save the collection only if/when all
+			// webdav->filesystem operations succeed --
+			// and send a 500 error the modified
+			// collection can't be saved.
+			w = &updateOnSuccess{
+				ResponseWriter: w,
+				update: func() error {
+					return h.Config.Cache.Update(client, *collection, fs)
+				}}
 		}
 		h := webdav.Handler{
 			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
 			FileSystem: &webdavFS{
-				collfs: fs,
-				update: update,
+				collfs:  fs,
+				writing: writing,
 			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
