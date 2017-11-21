@@ -233,6 +233,8 @@ sanity_checks() {
     phantomjs --version || fatal "No phantomjs. Try: apt-get install phantomjs"
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
+    echo -n 'graphviz: '
+    dot -V || fatal "No graphviz. Try: apt-get install graphviz"
 }
 
 rotate_logfile() {
