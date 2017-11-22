@@ -135,7 +135,9 @@ window.SessionDB = function() {
             // the host part of apihostport is an IPv4 or [IPv6]
             // address.
             if (!session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])'))
-                return session.baseURL.replace('://', '://workbench.')
+                var wbUrl = session.baseURL.replace('://', '://workbench.')
+                // Remove the trailing slash, if it's there.
+                return wbUrl.slice(-1) == '/' ? wbUrl.slice(0, -1) : wbUrl
             return null
         },
         // Return a m.stream that will get fulfilled with the
