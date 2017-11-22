@@ -97,12 +97,12 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		},
 		{
 			path:  writePath,
-			cmd:   "move testfile newdir0\n",
+			cmd:   "move testfile newdir0/\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
 			path:  writePath,
-			cmd:   "move testfile newdir0\n",
+			cmd:   "move testfile newdir0/\n",
 			match: `(?ms).*Moving .* failed.*`,
 		},
 		{
@@ -122,7 +122,7 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir0/testfile newdir1\n",
+			cmd:   "move newdir0/testfile newdir1/\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
