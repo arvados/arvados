@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html"
 	"html/template"
@@ -101,19 +100,17 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 // sends an HTTP header indicating success, updateOnSuccess first
 // calls the provided update func. If the update func fails, a 500
 // response is sent, and the status code and body sent by the handler
-// are ignored (all response writes return errors).
+// are ignored (all response writes return the update error).
 type updateOnSuccess struct {
 	httpserver.ResponseWriter
 	update     func() error
 	sentHeader bool
-	dropBody   bool
+	err        error
 }
 
-var errUpdateFailed = errors.New("update failed")
-
 func (uos *updateOnSuccess) Write(p []byte) (int, error) {
-	if uos.dropBody {
-		return 0, errUpdateFailed
+	if uos.err != nil {
+		return 0, uos.err
 	}
 	if !uos.sentHeader {
 		uos.WriteHeader(http.StatusOK)
@@ -123,19 +120,25 @@ func (uos *updateOnSuccess) Write(p []byte) (int, error) {
 
 func (uos *updateOnSuccess) WriteHeader(code int) {
 	if !uos.sentHeader {
+		uos.sentHeader = true
 		if code >= 200 && code < 400 {
-			if err := uos.update(); err != nil {
-				http.Error(uos.ResponseWriter, err.Error(), http.StatusInternalServerError)
-				uos.dropBody = true
+			if uos.err = uos.update(); uos.err != nil {
+				http.Error(uos.ResponseWriter, uos.err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
-		uos.sentHeader = true
 	}
 	uos.ResponseWriter.WriteHeader(code)
 }
 
 var (
+	writeMethod = map[string]bool{
+		"DELETE": true,
+		"MKCOL":  true,
+		"MOVE":   true,
+		"PUT":    true,
+		"RMCOL":  true,
+	}
 	webdavMethod = map[string]bool{
 		"DELETE":   true,
 		"MKCOL":    true,
@@ -407,7 +410,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if webdavMethod[r.Method] {
-		writing := !arvadosclient.PDHMatch(targetID)
+		writing := !arvadosclient.PDHMatch(targetID) && writeMethod[r.Method]
 		if writing {
 			// Save the collection only if/when all
 			// webdav->filesystem operations succeed --
