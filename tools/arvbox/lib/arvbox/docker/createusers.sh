@@ -19,6 +19,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
             --uid $HOSTUID --gid $HOSTGID \
             --non-unique \
             --groups docker \
+            --shell /bin/bash \
             arvbox
     useradd --home-dir /var/lib/arvados/git --uid $HOSTUID --gid $HOSTGID --non-unique git
     useradd --groups docker crunch
