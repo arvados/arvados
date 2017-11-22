@@ -164,53 +164,57 @@ type inode interface {
 type filenode struct {
 	fileinfo fileinfo
 	parent   *dirnode
-	extents  []extent
-	repacked int64 // number of times anything in []extents has changed len
-	memsize  int64 // bytes in memExtents
+	segments []segment
+	// number of times `segments` has changed in a
+	// way that might invalidate a filenodePtr
+	repacked int64
+	memsize  int64 // bytes in memSegments
 	sync.RWMutex
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
 // seek to. Specifically, if filenode.repacked==filenodePtr.repacked
-// then filenode.extents[filenodePtr.extentIdx][filenodePtr.extentOff]
+// then
+// filenode.segments[filenodePtr.segmentIdx][filenodePtr.segmentOff]
 // corresponds to file offset filenodePtr.off. Otherwise, it is
-// necessary to reexamine len(filenode.extents[0]) etc. to find the
-// correct extent and offset.
+// necessary to reexamine len(filenode.segments[0]) etc. to find the
+// correct segment and offset.
 type filenodePtr struct {
-	off       int64
-	extentIdx int
-	extentOff int
-	repacked  int64
+	off        int64
+	segmentIdx int
+	segmentOff int
+	repacked   int64
 }
 
 // seek returns a ptr that is consistent with both startPtr.off and
 // the current state of fn. The caller must already hold fn.RLock() or
 // fn.Lock().
 //
-// If startPtr points beyond the end of the file, ptr will point to
-// exactly the end of the file.
+// If startPtr is beyond EOF, ptr.segment* will indicate precisely
+// EOF.
 //
 // After seeking:
 //
-//     ptr.extentIdx == len(filenode.extents) // i.e., at EOF
+//     ptr.segmentIdx == len(filenode.segments) // i.e., at EOF
 //     ||
-//     filenode.extents[ptr.extentIdx].Len() >= ptr.extentOff
+//     filenode.segments[ptr.segmentIdx].Len() > ptr.segmentOff
 func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 	ptr = startPtr
 	if ptr.off < 0 {
 		// meaningless anyway
 		return
 	} else if ptr.off >= fn.fileinfo.size {
-		ptr.extentIdx = len(fn.extents)
-		ptr.extentOff = 0
+		ptr.segmentIdx = len(fn.segments)
+		ptr.segmentOff = 0
 		ptr.repacked = fn.repacked
 		return
 	} else if ptr.repacked == fn.repacked {
-		// extentIdx and extentOff accurately reflect ptr.off,
-		// but might have fallen off the end of an extent
-		if ptr.extentOff >= fn.extents[ptr.extentIdx].Len() {
-			ptr.extentIdx++
-			ptr.extentOff = 0
+		// segmentIdx and segmentOff accurately reflect
+		// ptr.off, but might have fallen off the end of a
+		// segment
+		if ptr.segmentOff >= fn.segments[ptr.segmentIdx].Len() {
+			ptr.segmentIdx++
+			ptr.segmentOff = 0
 		}
 		return
 	}
@@ -218,32 +222,32 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 		ptr.repacked = fn.repacked
 	}()
 	if ptr.off >= fn.fileinfo.size {
-		ptr.extentIdx, ptr.extentOff = len(fn.extents), 0
+		ptr.segmentIdx, ptr.segmentOff = len(fn.segments), 0
 		return
 	}
-	// Recompute extentIdx and extentOff.  We have already
+	// Recompute segmentIdx and segmentOff.  We have already
 	// established fn.fileinfo.size > ptr.off >= 0, so we don't
 	// have to deal with edge cases here.
 	var off int64
-	for ptr.extentIdx, ptr.extentOff = 0, 0; off < ptr.off; ptr.extentIdx++ {
+	for ptr.segmentIdx, ptr.segmentOff = 0, 0; off < ptr.off; ptr.segmentIdx++ {
 		// This would panic (index out of range) if
 		// fn.fileinfo.size were larger than
-		// sum(fn.extents[i].Len()) -- but that can't happen
+		// sum(fn.segments[i].Len()) -- but that can't happen
 		// because we have ensured fn.fileinfo.size is always
 		// accurate.
-		extLen := int64(fn.extents[ptr.extentIdx].Len())
-		if off+extLen > ptr.off {
-			ptr.extentOff = int(ptr.off - off)
+		segLen := int64(fn.segments[ptr.segmentIdx].Len())
+		if off+segLen > ptr.off {
+			ptr.segmentOff = int(ptr.off - off)
 			break
 		}
-		off += extLen
+		off += segLen
 	}
 	return
 }
 
 // caller must have lock
-func (fn *filenode) appendExtent(e extent) {
-	fn.extents = append(fn.extents, e)
+func (fn *filenode) appendSegment(e segment) {
+	fn.segments = append(fn.segments, e)
 	fn.fileinfo.size += int64(e.Len())
 }
 
@@ -261,18 +265,18 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 		err = ErrNegativeOffset
 		return
 	}
-	if ptr.extentIdx >= len(fn.extents) {
+	if ptr.segmentIdx >= len(fn.segments) {
 		err = io.EOF
 		return
 	}
-	n, err = fn.extents[ptr.extentIdx].ReadAt(p, int64(ptr.extentOff))
+	n, err = fn.segments[ptr.segmentIdx].ReadAt(p, int64(ptr.segmentOff))
 	if n > 0 {
 		ptr.off += int64(n)
-		ptr.extentOff += n
-		if ptr.extentOff == fn.extents[ptr.extentIdx].Len() {
-			ptr.extentIdx++
-			ptr.extentOff = 0
-			if ptr.extentIdx < len(fn.extents) && err == io.EOF {
+		ptr.segmentOff += n
+		if ptr.segmentOff == fn.segments[ptr.segmentIdx].Len() {
+			ptr.segmentIdx++
+			ptr.segmentOff = 0
+			if ptr.segmentIdx < len(fn.segments) && err == io.EOF {
 				err = nil
 			}
 		}
@@ -305,21 +309,21 @@ func (fn *filenode) truncate(size int64) error {
 	fn.repacked++
 	if size < fn.fileinfo.size {
 		ptr := fn.seek(filenodePtr{off: size})
-		for i := ptr.extentIdx; i < len(fn.extents); i++ {
-			if ext, ok := fn.extents[i].(*memExtent); ok {
-				fn.memsize -= int64(ext.Len())
+		for i := ptr.segmentIdx; i < len(fn.segments); i++ {
+			if seg, ok := fn.segments[i].(*memSegment); ok {
+				fn.memsize -= int64(seg.Len())
 			}
 		}
-		if ptr.extentOff == 0 {
-			fn.extents = fn.extents[:ptr.extentIdx]
+		if ptr.segmentOff == 0 {
+			fn.segments = fn.segments[:ptr.segmentIdx]
 		} else {
-			fn.extents = fn.extents[:ptr.extentIdx+1]
-			switch ext := fn.extents[ptr.extentIdx].(type) {
-			case *memExtent:
-				ext.Truncate(ptr.extentOff)
-				fn.memsize += int64(ext.Len())
+			fn.segments = fn.segments[:ptr.segmentIdx+1]
+			switch seg := fn.segments[ptr.segmentIdx].(type) {
+			case *memSegment:
+				seg.Truncate(ptr.segmentOff)
+				fn.memsize += int64(seg.Len())
 			default:
-				fn.extents[ptr.extentIdx] = ext.Slice(0, ptr.extentOff)
+				fn.segments[ptr.segmentIdx] = seg.Slice(0, ptr.segmentOff)
 			}
 		}
 		fn.fileinfo.size = size
@@ -327,19 +331,19 @@ func (fn *filenode) truncate(size int64) error {
 	}
 	for size > fn.fileinfo.size {
 		grow := size - fn.fileinfo.size
-		var e writableExtent
+		var seg writableSegment
 		var ok bool
-		if len(fn.extents) == 0 {
-			e = &memExtent{}
-			fn.extents = append(fn.extents, e)
-		} else if e, ok = fn.extents[len(fn.extents)-1].(writableExtent); !ok || e.Len() >= maxBlockSize {
-			e = &memExtent{}
-			fn.extents = append(fn.extents, e)
+		if len(fn.segments) == 0 {
+			seg = &memSegment{}
+			fn.segments = append(fn.segments, seg)
+		} else if seg, ok = fn.segments[len(fn.segments)-1].(writableSegment); !ok || seg.Len() >= maxBlockSize {
+			seg = &memSegment{}
+			fn.segments = append(fn.segments, seg)
 		}
-		if maxgrow := int64(maxBlockSize - e.Len()); maxgrow < grow {
+		if maxgrow := int64(maxBlockSize - seg.Len()); maxgrow < grow {
 			grow = maxgrow
 		}
-		e.Truncate(e.Len() + int(grow))
+		seg.Truncate(seg.Len() + int(grow))
 		fn.fileinfo.size += grow
 		fn.memsize += grow
 	}
@@ -363,118 +367,121 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 		if len(cando) > maxBlockSize {
 			cando = cando[:maxBlockSize]
 		}
-		// Rearrange/grow fn.extents (and shrink cando if
+		// Rearrange/grow fn.segments (and shrink cando if
 		// needed) such that cando can be copied to
-		// fn.extents[ptr.extentIdx] at offset ptr.extentOff.
-		cur := ptr.extentIdx
-		prev := ptr.extentIdx - 1
+		// fn.segments[ptr.segmentIdx] at offset
+		// ptr.segmentOff.
+		cur := ptr.segmentIdx
+		prev := ptr.segmentIdx - 1
 		var curWritable bool
-		if cur < len(fn.extents) {
-			_, curWritable = fn.extents[cur].(writableExtent)
+		if cur < len(fn.segments) {
+			_, curWritable = fn.segments[cur].(writableSegment)
 		}
 		var prevAppendable bool
-		if prev >= 0 && fn.extents[prev].Len() < maxBlockSize {
-			_, prevAppendable = fn.extents[prev].(writableExtent)
+		if prev >= 0 && fn.segments[prev].Len() < maxBlockSize {
+			_, prevAppendable = fn.segments[prev].(writableSegment)
 		}
-		if ptr.extentOff > 0 && !curWritable {
+		if ptr.segmentOff > 0 && !curWritable {
 			// Split a non-writable block.
-			if max := fn.extents[cur].Len() - ptr.extentOff; max <= len(cando) {
+			if max := fn.segments[cur].Len() - ptr.segmentOff; max <= len(cando) {
 				// Truncate cur, and insert a new
-				// extent after it.
+				// segment after it.
 				cando = cando[:max]
-				fn.extents = append(fn.extents, nil)
-				copy(fn.extents[cur+1:], fn.extents[cur:])
+				fn.segments = append(fn.segments, nil)
+				copy(fn.segments[cur+1:], fn.segments[cur:])
 			} else {
 				// Split cur into two copies, truncate
 				// the one on the left, shift the one
 				// on the right, and insert a new
-				// extent between them.
-				fn.extents = append(fn.extents, nil, nil)
-				copy(fn.extents[cur+2:], fn.extents[cur:])
-				fn.extents[cur+2] = fn.extents[cur+2].Slice(ptr.extentOff+len(cando), -1)
+				// segment between them.
+				fn.segments = append(fn.segments, nil, nil)
+				copy(fn.segments[cur+2:], fn.segments[cur:])
+				fn.segments[cur+2] = fn.segments[cur+2].Slice(ptr.segmentOff+len(cando), -1)
 			}
 			cur++
 			prev++
-			e := &memExtent{}
-			e.Truncate(len(cando))
+			seg := &memSegment{}
+			seg.Truncate(len(cando))
 			fn.memsize += int64(len(cando))
-			fn.extents[cur] = e
-			fn.extents[prev] = fn.extents[prev].Slice(0, ptr.extentOff)
-			ptr.extentIdx++
-			ptr.extentOff = 0
+			fn.segments[cur] = seg
+			fn.segments[prev] = fn.segments[prev].Slice(0, ptr.segmentOff)
+			ptr.segmentIdx++
+			ptr.segmentOff = 0
 			fn.repacked++
 			ptr.repacked++
 		} else if curWritable {
-			if fit := int(fn.extents[cur].Len()) - ptr.extentOff; fit < len(cando) {
+			if fit := int(fn.segments[cur].Len()) - ptr.segmentOff; fit < len(cando) {
 				cando = cando[:fit]
 			}
 		} else {
 			if prevAppendable {
-				// Shrink cando if needed to fit in prev extent.
-				if cangrow := maxBlockSize - fn.extents[prev].Len(); cangrow < len(cando) {
+				// Shrink cando if needed to fit in
+				// prev segment.
+				if cangrow := maxBlockSize - fn.segments[prev].Len(); cangrow < len(cando) {
 					cando = cando[:cangrow]
 				}
 			}
 
-			if cur == len(fn.extents) {
+			if cur == len(fn.segments) {
 				// ptr is at EOF, filesize is changing.
 				fn.fileinfo.size += int64(len(cando))
-			} else if el := fn.extents[cur].Len(); el <= len(cando) {
+			} else if el := fn.segments[cur].Len(); el <= len(cando) {
 				// cando is long enough that we won't
 				// need cur any more. shrink cando to
 				// be exactly as long as cur
 				// (otherwise we'd accidentally shift
 				// the effective position of all
-				// extents after cur).
+				// segments after cur).
 				cando = cando[:el]
-				copy(fn.extents[cur:], fn.extents[cur+1:])
-				fn.extents = fn.extents[:len(fn.extents)-1]
+				copy(fn.segments[cur:], fn.segments[cur+1:])
+				fn.segments = fn.segments[:len(fn.segments)-1]
 			} else {
 				// shrink cur by the same #bytes we're growing prev
-				fn.extents[cur] = fn.extents[cur].Slice(len(cando), -1)
+				fn.segments[cur] = fn.segments[cur].Slice(len(cando), -1)
 			}
 
 			if prevAppendable {
 				// Grow prev.
-				ptr.extentIdx--
-				ptr.extentOff = fn.extents[prev].Len()
-				fn.extents[prev].(writableExtent).Truncate(ptr.extentOff + len(cando))
+				ptr.segmentIdx--
+				ptr.segmentOff = fn.segments[prev].Len()
+				fn.segments[prev].(writableSegment).Truncate(ptr.segmentOff + len(cando))
 				fn.memsize += int64(len(cando))
 				ptr.repacked++
 				fn.repacked++
 			} else {
-				// Insert an extent between prev and cur, and advance prev/cur.
-				fn.extents = append(fn.extents, nil)
-				if cur < len(fn.extents) {
-					copy(fn.extents[cur+1:], fn.extents[cur:])
+				// Insert a segment between prev and
+				// cur, and advance prev/cur.
+				fn.segments = append(fn.segments, nil)
+				if cur < len(fn.segments) {
+					copy(fn.segments[cur+1:], fn.segments[cur:])
 					ptr.repacked++
 					fn.repacked++
 				} else {
-					// appending a new extent does
+					// appending a new segment does
 					// not invalidate any ptrs
 				}
-				e := &memExtent{}
-				e.Truncate(len(cando))
+				seg := &memSegment{}
+				seg.Truncate(len(cando))
 				fn.memsize += int64(len(cando))
-				fn.extents[cur] = e
+				fn.segments[cur] = seg
 				cur++
 				prev++
 			}
 		}
 
-		// Finally we can copy bytes from cando to the current extent.
-		fn.extents[ptr.extentIdx].(writableExtent).WriteAt(cando, ptr.extentOff)
+		// Finally we can copy bytes from cando to the current segment.
+		fn.segments[ptr.segmentIdx].(writableSegment).WriteAt(cando, ptr.segmentOff)
 		n += len(cando)
 		p = p[len(cando):]
 
 		ptr.off += int64(len(cando))
-		ptr.extentOff += len(cando)
-		if ptr.extentOff >= maxBlockSize {
-			fn.pruneMemExtents()
+		ptr.segmentOff += len(cando)
+		if ptr.segmentOff >= maxBlockSize {
+			fn.pruneMemSegments()
 		}
-		if fn.extents[ptr.extentIdx].Len() == ptr.extentOff {
-			ptr.extentOff = 0
-			ptr.extentIdx++
+		if fn.segments[ptr.segmentIdx].Len() == ptr.segmentOff {
+			ptr.segmentOff = 0
+			ptr.segmentIdx++
 		}
 	}
 	return
@@ -482,29 +489,29 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 
 // Write some data out to disk to reduce memory use. Caller must have
 // write lock.
-func (fn *filenode) pruneMemExtents() {
+func (fn *filenode) pruneMemSegments() {
 	// TODO: async (don't hold Lock() while waiting for Keep)
 	// TODO: share code with (*dirnode)sync()
 	// TODO: pack/flush small blocks too, when fragmented
-	for idx, ext := range fn.extents {
-		ext, ok := ext.(*memExtent)
-		if !ok || ext.Len() < maxBlockSize {
+	for idx, seg := range fn.segments {
+		seg, ok := seg.(*memSegment)
+		if !ok || seg.Len() < maxBlockSize {
 			continue
 		}
-		locator, _, err := fn.parent.kc.PutB(ext.buf)
+		locator, _, err := fn.parent.kc.PutB(seg.buf)
 		if err != nil {
 			// TODO: stall (or return errors from)
 			// subsequent writes until flushing
 			// starts to succeed
 			continue
 		}
-		fn.memsize -= int64(ext.Len())
-		fn.extents[idx] = storedExtent{
+		fn.memsize -= int64(seg.Len())
+		fn.segments[idx] = storedSegment{
 			kc:      fn.parent.kc,
 			locator: locator,
-			size:    ext.Len(),
+			size:    seg.Len(),
 			offset:  0,
-			length:  ext.Len(),
+			length:  seg.Len(),
 		}
 	}
 }
@@ -525,7 +532,7 @@ func (c *Collection) FileSystem(client *Client, kc keepClient) (CollectionFileSy
 	return fs, nil
 }
 
-type file struct {
+type filehandle struct {
 	inode
 	ptr        filenodePtr
 	append     bool
@@ -534,7 +541,7 @@ type file struct {
 	unreaddirs []os.FileInfo
 }
 
-func (f *file) Read(p []byte) (n int, err error) {
+func (f *filehandle) Read(p []byte) (n int, err error) {
 	if !f.readable {
 		return 0, ErrWriteOnlyMode
 	}
@@ -544,7 +551,7 @@ func (f *file) Read(p []byte) (n int, err error) {
 	return
 }
 
-func (f *file) Seek(off int64, whence int) (pos int64, err error) {
+func (f *filehandle) Seek(off int64, whence int) (pos int64, err error) {
 	size := f.inode.Size()
 	ptr := f.ptr
 	switch whence {
@@ -567,11 +574,11 @@ func (f *file) Seek(off int64, whence int) (pos int64, err error) {
 	return f.ptr.off, nil
 }
 
-func (f *file) Truncate(size int64) error {
+func (f *filehandle) Truncate(size int64) error {
 	return f.inode.Truncate(size)
 }
 
-func (f *file) Write(p []byte) (n int, err error) {
+func (f *filehandle) Write(p []byte) (n int, err error) {
 	if !f.writable {
 		return 0, ErrReadOnlyFile
 	}
@@ -579,17 +586,17 @@ func (f *file) Write(p []byte) (n int, err error) {
 	defer f.inode.Unlock()
 	if fn, ok := f.inode.(*filenode); ok && f.append {
 		f.ptr = filenodePtr{
-			off:       fn.fileinfo.size,
-			extentIdx: len(fn.extents),
-			extentOff: 0,
-			repacked:  fn.repacked,
+			off:        fn.fileinfo.size,
+			segmentIdx: len(fn.segments),
+			segmentOff: 0,
+			repacked:   fn.repacked,
 		}
 	}
 	n, f.ptr, err = f.inode.Write(p, f.ptr)
 	return
 }
 
-func (f *file) Readdir(count int) ([]os.FileInfo, error) {
+func (f *filehandle) Readdir(count int) ([]os.FileInfo, error) {
 	if !f.inode.Stat().IsDir() {
 		return nil, ErrInvalidOperation
 	}
@@ -610,11 +617,11 @@ func (f *file) Readdir(count int) ([]os.FileInfo, error) {
 	return ret, nil
 }
 
-func (f *file) Stat() (os.FileInfo, error) {
+func (f *filehandle) Stat() (os.FileInfo, error) {
 	return f.inode.Stat(), nil
 }
 
-func (f *file) Close() error {
+func (f *filehandle) Close() error {
 	// FIXME: flush
 	return nil
 }
@@ -644,7 +651,7 @@ func (dn *dirnode) sync() error {
 		}
 		block := make([]byte, 0, maxBlockSize)
 		for _, sb := range sbs {
-			block = append(block, sb.fn.extents[sb.idx].(*memExtent).buf...)
+			block = append(block, sb.fn.segments[sb.idx].(*memSegment).buf...)
 		}
 		locator, _, err := dn.kc.PutB(block)
 		if err != nil {
@@ -652,8 +659,8 @@ func (dn *dirnode) sync() error {
 		}
 		off := 0
 		for _, sb := range sbs {
-			data := sb.fn.extents[sb.idx].(*memExtent).buf
-			sb.fn.extents[sb.idx] = storedExtent{
+			data := sb.fn.segments[sb.idx].(*memSegment).buf
+			sb.fn.segments[sb.idx] = storedSegment{
 				kc:      dn.kc,
 				locator: locator,
 				size:    len(block),
@@ -679,18 +686,18 @@ func (dn *dirnode) sync() error {
 		}
 		fn.Lock()
 		defer fn.Unlock()
-		for idx, ext := range fn.extents {
-			ext, ok := ext.(*memExtent)
+		for idx, seg := range fn.segments {
+			seg, ok := seg.(*memSegment)
 			if !ok {
 				continue
 			}
-			if ext.Len() > maxBlockSize/2 {
+			if seg.Len() > maxBlockSize/2 {
 				if err := flush([]shortBlock{{fn, idx}}); err != nil {
 					return err
 				}
 				continue
 			}
-			if pendingLen+ext.Len() > maxBlockSize {
+			if pendingLen+seg.Len() > maxBlockSize {
 				if err := flush(pending); err != nil {
 					return err
 				}
@@ -698,7 +705,7 @@ func (dn *dirnode) sync() error {
 				pendingLen = 0
 			}
 			pending = append(pending, shortBlock{fn, idx})
-			pendingLen += ext.Len()
+			pendingLen += seg.Len()
 		}
 	}
 	return flush(pending)
@@ -713,12 +720,12 @@ func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
 // caller must have read lock.
 func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	var streamLen int64
-	type m1segment struct {
+	type filepart struct {
 		name   string
 		offset int64
 		length int64
 	}
-	var segments []m1segment
+	var fileparts []filepart
 	var subdirs string
 	var blocks []string
 
@@ -743,36 +750,36 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 			}
 			subdirs = subdirs + subdir
 		case *filenode:
-			if len(node.extents) == 0 {
-				segments = append(segments, m1segment{name: name})
+			if len(node.segments) == 0 {
+				fileparts = append(fileparts, filepart{name: name})
 				break
 			}
-			for _, e := range node.extents {
-				switch e := e.(type) {
-				case storedExtent:
-					if len(blocks) > 0 && blocks[len(blocks)-1] == e.locator {
-						streamLen -= int64(e.size)
+			for _, seg := range node.segments {
+				switch seg := seg.(type) {
+				case storedSegment:
+					if len(blocks) > 0 && blocks[len(blocks)-1] == seg.locator {
+						streamLen -= int64(seg.size)
 					} else {
-						blocks = append(blocks, e.locator)
+						blocks = append(blocks, seg.locator)
 					}
-					next := m1segment{
+					next := filepart{
 						name:   name,
-						offset: streamLen + int64(e.offset),
-						length: int64(e.length),
+						offset: streamLen + int64(seg.offset),
+						length: int64(seg.length),
 					}
-					if prev := len(segments) - 1; prev >= 0 &&
-						segments[prev].name == name &&
-						segments[prev].offset+segments[prev].length == next.offset {
-						segments[prev].length += next.length
+					if prev := len(fileparts) - 1; prev >= 0 &&
+						fileparts[prev].name == name &&
+						fileparts[prev].offset+fileparts[prev].length == next.offset {
+						fileparts[prev].length += next.length
 					} else {
-						segments = append(segments, next)
+						fileparts = append(fileparts, next)
 					}
-					streamLen += int64(e.size)
+					streamLen += int64(seg.size)
 				default:
 					// This can't happen: we
 					// haven't unlocked since
 					// calling sync().
-					panic(fmt.Sprintf("can't marshal extent type %T", e))
+					panic(fmt.Sprintf("can't marshal segment type %T", seg))
 				}
 			}
 		default:
@@ -780,7 +787,7 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 		}
 	}
 	var filetokens []string
-	for _, s := range segments {
+	for _, s := range fileparts {
 		filetokens = append(filetokens, fmt.Sprintf("%d:%d:%s", s.offset, s.length, manifestEscape(s.name)))
 	}
 	if len(filetokens) == 0 {
@@ -798,13 +805,13 @@ func (dn *dirnode) loadManifest(txt string) error {
 		return fmt.Errorf("line %d: no trailing newline", len(streams))
 	}
 	streams = streams[:len(streams)-1]
-	extents := []storedExtent{}
+	segments := []storedSegment{}
 	for i, stream := range streams {
 		lineno := i + 1
 		var anyFileTokens bool
 		var pos int64
-		var extIdx int
-		extents = extents[:0]
+		var segIdx int
+		segments = segments[:0]
 		for i, token := range strings.Split(stream, " ") {
 			if i == 0 {
 				dirname = manifestUnescape(token)
@@ -822,14 +829,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 				if err != nil || length < 0 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
-				extents = append(extents, storedExtent{
+				segments = append(segments, storedSegment{
 					locator: token,
 					size:    int(length),
 					offset:  0,
 					length:  int(length),
 				})
 				continue
-			} else if len(extents) == 0 {
+			} else if len(segments) == 0 {
 				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
 
@@ -854,18 +861,18 @@ func (dn *dirnode) loadManifest(txt string) error {
 			}
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
-			// corresponding storedExtents to the filenode
+			// corresponding storedSegments to the filenode
 			if pos > offset {
 				// Can't continue where we left off.
 				// TODO: binary search instead of
 				// rewinding all the way (but this
 				// situation might be rare anyway)
-				extIdx, pos = 0, 0
+				segIdx, pos = 0, 0
 			}
-			for next := int64(0); extIdx < len(extents); extIdx++ {
-				e := extents[extIdx]
-				next = pos + int64(e.Len())
-				if next <= offset || e.Len() == 0 {
+			for next := int64(0); segIdx < len(segments); segIdx++ {
+				seg := segments[segIdx]
+				next = pos + int64(seg.Len())
+				if next <= offset || seg.Len() == 0 {
 					pos = next
 					continue
 				}
@@ -876,14 +883,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 				if pos < offset {
 					blkOff = int(offset - pos)
 				}
-				blkLen := e.Len() - blkOff
+				blkLen := seg.Len() - blkOff
 				if pos+int64(blkOff+blkLen) > offset+length {
 					blkLen = int(offset + length - pos - int64(blkOff))
 				}
-				fnode.appendExtent(storedExtent{
+				fnode.appendSegment(storedSegment{
 					kc:      dn.kc,
-					locator: e.locator,
-					size:    e.size,
+					locator: seg.locator,
+					size:    seg.size,
 					offset:  blkOff,
 					length:  blkLen,
 				})
@@ -893,13 +900,13 @@ func (dn *dirnode) loadManifest(txt string) error {
 					pos = next
 				}
 			}
-			if extIdx == len(extents) && pos < offset+length {
+			if segIdx == len(segments) && pos < offset+length {
 				return fmt.Errorf("line %d: invalid segment in %d-byte stream: %q", lineno, pos, token)
 			}
 		}
 		if !anyFileTokens {
 			return fmt.Errorf("line %d: no file segments", lineno)
-		} else if len(extents) == 0 {
+		} else if len(segments) == 0 {
 			return fmt.Errorf("line %d: no locators", lineno)
 		} else if dirname == "" {
 			return fmt.Errorf("line %d: no stream name", lineno)
@@ -944,7 +951,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	return
 }
 
-func (dn *dirnode) mkdir(name string) (*file, error) {
+func (dn *dirnode) mkdir(name string) (*filehandle, error) {
 	return dn.OpenFile(name, os.O_CREATE|os.O_EXCL, os.ModeDir|0755)
 }
 
@@ -1024,7 +1031,7 @@ func (dn *dirnode) Rename(oldname, newname string) error {
 	// newdir, then locking the path from root to olddir, skipping
 	// any already-locked nodes.
 	needLock := []sync.Locker{}
-	for _, f := range []*file{olddirf, newdirf} {
+	for _, f := range []*filehandle{olddirf, newdirf} {
 		node := f.inode
 		needLock = append(needLock, node)
 		for node.Parent() != node {
@@ -1178,7 +1185,7 @@ func (dn *dirnode) newFilenode(name string, perm os.FileMode) *filenode {
 }
 
 // OpenFile is analogous to os.OpenFile().
-func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, error) {
+func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*filehandle, error) {
 	if flag&os.O_SYNC != 0 {
 		return nil, ErrSyncNotSupported
 	}
@@ -1204,9 +1211,9 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 		// "foo/..".
 		switch name {
 		case ".", "":
-			return &file{inode: dn}, nil
+			return &filehandle{inode: dn}, nil
 		case "..":
-			return &file{inode: dn.Parent()}, nil
+			return &filehandle{inode: dn.Parent()}, nil
 		}
 	}
 	createMode := flag&os.O_CREATE != 0
@@ -1238,7 +1245,7 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 			fn.Truncate(0)
 		}
 	}
-	return &file{
+	return &filehandle{
 		inode:    n,
 		append:   flag&os.O_APPEND != 0,
 		readable: readable,
@@ -1246,38 +1253,38 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*file, err
 	}, nil
 }
 
-type extent interface {
+type segment interface {
 	io.ReaderAt
 	Len() int
-	// Return a new extent with a subsection of the data from this
+	// Return a new segment with a subsection of the data from this
 	// one. length<0 means length=Len()-off.
-	Slice(off int, length int) extent
+	Slice(off int, length int) segment
 }
 
-type writableExtent interface {
-	extent
+type writableSegment interface {
+	segment
 	WriteAt(p []byte, off int)
 	Truncate(n int)
 }
 
-type memExtent struct {
+type memSegment struct {
 	buf []byte
 }
 
-func (me *memExtent) Len() int {
+func (me *memSegment) Len() int {
 	return len(me.buf)
 }
 
-func (me *memExtent) Slice(off, length int) extent {
+func (me *memSegment) Slice(off, length int) segment {
 	if length < 0 {
 		length = len(me.buf) - off
 	}
 	buf := make([]byte, length)
 	copy(buf, me.buf[off:])
-	return &memExtent{buf: buf}
+	return &memSegment{buf: buf}
 }
 
-func (me *memExtent) Truncate(n int) {
+func (me *memSegment) Truncate(n int) {
 	if n > cap(me.buf) {
 		newsize := 1024
 		for newsize < n {
@@ -1296,14 +1303,14 @@ func (me *memExtent) Truncate(n int) {
 	me.buf = me.buf[:n]
 }
 
-func (me *memExtent) WriteAt(p []byte, off int) {
+func (me *memSegment) WriteAt(p []byte, off int) {
 	if off+len(p) > len(me.buf) {
-		panic("overflowed extent")
+		panic("overflowed segment")
 	}
 	copy(me.buf[off:], p)
 }
 
-func (me *memExtent) ReadAt(p []byte, off int64) (n int, err error) {
+func (me *memSegment) ReadAt(p []byte, off int64) (n int, err error) {
 	if off > int64(me.Len()) {
 		err = io.EOF
 		return
@@ -1315,7 +1322,7 @@ func (me *memExtent) ReadAt(p []byte, off int64) (n int, err error) {
 	return
 }
 
-type storedExtent struct {
+type storedSegment struct {
 	kc      keepClient
 	locator string
 	size    int
@@ -1323,11 +1330,11 @@ type storedExtent struct {
 	length  int
 }
 
-func (se storedExtent) Len() int {
+func (se storedSegment) Len() int {
 	return se.length
 }
 
-func (se storedExtent) Slice(n, size int) extent {
+func (se storedSegment) Slice(n, size int) segment {
 	se.offset += n
 	se.length -= n
 	if size >= 0 && se.length > size {
@@ -1336,7 +1343,7 @@ func (se storedExtent) Slice(n, size int) extent {
 	return se
 }
 
-func (se storedExtent) ReadAt(p []byte, off int64) (n int, err error) {
+func (se storedSegment) ReadAt(p []byte, off int64) (n int, err error) {
 	if off > int64(se.length) {
 		return 0, io.EOF
 	}

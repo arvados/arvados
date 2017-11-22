@@ -293,7 +293,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(len(buf2), check.Equals, 64)
-	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 8)
+	c.Check(len(f.(*filehandle).inode.(*filenode).segments), check.Equals, 8)
 
 	// shrink to block/extent boundary
 	err = f.Truncate(32)
@@ -301,7 +301,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(len(buf2), check.Equals, 32)
-	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 4)
+	c.Check(len(f.(*filehandle).inode.(*filenode).segments), check.Equals, 4)
 
 	// shrink to partial block/extent
 	err = f.Truncate(15)
@@ -309,7 +309,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "12345678abcdefg")
-	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 2)
+	c.Check(len(f.(*filehandle).inode.(*filenode).segments), check.Equals, 2)
 
 	// Force flush to ensure the block "12345678" gets stored, so
 	// we know what to expect in the final manifest below.
@@ -326,7 +326,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "123")
-	c.Check(len(f.(*file).inode.(*filenode).extents), check.Equals, 1)
+	c.Check(len(f.(*filehandle).inode.(*filenode).segments), check.Equals, 1)
 
 	m, err := s.fs.MarshalManifest(".")
 	c.Check(err, check.IsNil)
@@ -901,9 +901,9 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 	}
 
 	currentMemExtents := func() (memExtents []int) {
-		for idx, e := range f.(*file).inode.(*filenode).extents {
+		for idx, e := range f.(*filehandle).inode.(*filenode).segments {
 			switch e.(type) {
-			case *memExtent:
+			case *memSegment:
 				memExtents = append(memExtents, idx)
 			}
 		}
@@ -959,10 +959,10 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 }
 
 func (s *CollectionFSSuite) checkMemSize(c *check.C, f File) {
-	fn := f.(*file).inode.(*filenode)
+	fn := f.(*filehandle).inode.(*filenode)
 	var memsize int64
-	for _, ext := range fn.extents {
-		if e, ok := ext.(*memExtent); ok {
+	for _, seg := range fn.segments {
+		if e, ok := seg.(*memSegment); ok {
 			memsize += int64(len(e.buf))
 		}
 	}
