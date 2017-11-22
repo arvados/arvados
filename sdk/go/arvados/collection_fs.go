@@ -34,6 +34,8 @@ var (
 	maxBlockSize = 1 << 26
 )
 
+// A File is an *os.File-like interface for reading and writing files
+// in a CollectionFileSystem.
 type File interface {
 	io.Reader
 	io.Writer
@@ -118,6 +120,11 @@ type CollectionFileSystem interface {
 	Remove(name string) error
 	RemoveAll(name string) error
 	Rename(oldname, newname string) error
+
+	// Flush all file data to Keep and return a snapshot of the
+	// filesystem suitable for saving as (Collection)ManifestText.
+	// Prefix (normally ".") is a top level directory, effectively
+	// prepended to all paths in the returned manifest.
 	MarshalManifest(prefix string) (string, error)
 }
 
@@ -252,6 +259,8 @@ func (fn *filenode) appendSegment(e segment) {
 }
 
 func (fn *filenode) Parent() inode {
+	fn.RLock()
+	defer fn.RUnlock()
 	return fn.parent
 }
 
@@ -259,6 +268,9 @@ func (fn *filenode) Readdir() []os.FileInfo {
 	return nil
 }
 
+// Read reads file data from a single segment, starting at startPtr,
+// into p. startPtr is assumed not to be up-to-date. Caller must have
+// RLock or Lock.
 func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
 	ptr = fn.seek(startPtr)
 	if ptr.off < 0 {
@@ -350,7 +362,8 @@ func (fn *filenode) truncate(size int64) error {
 	return nil
 }
 
-// Caller must hold lock.
+// Write writes data from p to the file, starting at startPtr,
+// extending the file size if necessary. Caller must have Lock.
 func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
 	if startPtr.off > fn.fileinfo.size {
 		if err = fn.truncate(startPtr.off); err != nil {
@@ -622,7 +635,6 @@ func (f *filehandle) Stat() (os.FileInfo, error) {
 }
 
 func (f *filehandle) Close() error {
-	// FIXME: flush
 	return nil
 }
 
