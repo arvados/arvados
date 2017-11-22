@@ -331,12 +331,12 @@ func (fn *filenode) truncate(size int64) error {
 	}
 	for size > fn.fileinfo.size {
 		grow := size - fn.fileinfo.size
-		var seg writableSegment
+		var seg *memSegment
 		var ok bool
 		if len(fn.segments) == 0 {
 			seg = &memSegment{}
 			fn.segments = append(fn.segments, seg)
-		} else if seg, ok = fn.segments[len(fn.segments)-1].(writableSegment); !ok || seg.Len() >= maxBlockSize {
+		} else if seg, ok = fn.segments[len(fn.segments)-1].(*memSegment); !ok || seg.Len() >= maxBlockSize {
 			seg = &memSegment{}
 			fn.segments = append(fn.segments, seg)
 		}
@@ -375,11 +375,11 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 		prev := ptr.segmentIdx - 1
 		var curWritable bool
 		if cur < len(fn.segments) {
-			_, curWritable = fn.segments[cur].(writableSegment)
+			_, curWritable = fn.segments[cur].(*memSegment)
 		}
 		var prevAppendable bool
 		if prev >= 0 && fn.segments[prev].Len() < maxBlockSize {
-			_, prevAppendable = fn.segments[prev].(writableSegment)
+			_, prevAppendable = fn.segments[prev].(*memSegment)
 		}
 		if ptr.segmentOff > 0 && !curWritable {
 			// Split a non-writable block.
@@ -444,7 +444,7 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 				// Grow prev.
 				ptr.segmentIdx--
 				ptr.segmentOff = fn.segments[prev].Len()
-				fn.segments[prev].(writableSegment).Truncate(ptr.segmentOff + len(cando))
+				fn.segments[prev].(*memSegment).Truncate(ptr.segmentOff + len(cando))
 				fn.memsize += int64(len(cando))
 				ptr.repacked++
 				fn.repacked++
@@ -470,7 +470,7 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 		}
 
 		// Finally we can copy bytes from cando to the current segment.
-		fn.segments[ptr.segmentIdx].(writableSegment).WriteAt(cando, ptr.segmentOff)
+		fn.segments[ptr.segmentIdx].(*memSegment).WriteAt(cando, ptr.segmentOff)
 		n += len(cando)
 		p = p[len(cando):]
 
@@ -1259,12 +1259,6 @@ type segment interface {
 	// Return a new segment with a subsection of the data from this
 	// one. length<0 means length=Len()-off.
 	Slice(off int, length int) segment
-}
-
-type writableSegment interface {
-	segment
-	WriteAt(p []byte, off int)
-	Truncate(n int)
 }
 
 type memSegment struct {
