@@ -29,7 +29,7 @@ class ArgumentParser(argparse.ArgumentParser):
             help='Read log data from a regular file')
         self.add_argument(
             '--skip-child-jobs', action='store_true',
-            help='Do not include stats from child jobs')
+            help='Do not include stats from child jobs/containers')
         self.add_argument(
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')

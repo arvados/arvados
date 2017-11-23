@@ -1828,6 +1828,13 @@ CREATE UNIQUE INDEX index_commits_on_repository_name_and_sha1 ON commits USING b
 
 
 --
+-- Name: index_container_requests_on_container_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_container_requests_on_container_uuid ON container_requests USING btree (container_uuid);
+
+
+--
 -- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1853,6 +1860,13 @@ CREATE INDEX index_container_requests_on_requesting_container_uuid ON container_
 --
 
 CREATE UNIQUE INDEX index_container_requests_on_uuid ON container_requests USING btree (uuid);
+
+
+--
+-- Name: index_containers_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_modified_at_uuid ON containers USING btree (modified_at DESC, uuid);
 
 
 --
@@ -3015,4 +3029,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170628185847');
 INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 
 INSERT INTO schema_migrations (version) VALUES ('20170906224040');
+
+INSERT INTO schema_migrations (version) VALUES ('20171027183824');
 

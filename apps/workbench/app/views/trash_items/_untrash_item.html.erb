@@ -3,9 +3,7 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <% if object.editable? %>
-  <% msg = "Untrash '" + if !object.name.blank? then object.name else object.uuid end + "'?" %>
-  <%= link_to({action: 'untrash_items', selection: [object.uuid]}, remote: true, method: :post,
-      title: "Untrash", style: 'cursor: pointer;') do %>
-    <i class="fa fa-fw fa-recycle"></i>
-  <% end %>
+    <%= link_to(url_for(object), {title: "Untrash", style: 'cursor: pointer;'}) do %>
+      <i class="fa fa-fw fa-recycle"></i>
+    <% end %>
 <% end %>

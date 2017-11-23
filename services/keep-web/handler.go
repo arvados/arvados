@@ -24,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"golang.org/x/net/webdav"
 )
 
 type handler struct {
@@ -31,6 +32,7 @@ type handler struct {
 	clientPool    *arvadosclient.ClientPool
 	setupOnce     sync.Once
 	healthHandler http.Handler
+	webdavLS      webdav.LockSystem
 }
 
 // parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
@@ -79,6 +81,10 @@ func (h *handler) setup() {
 		Token:  h.Config.ManagementToken,
 		Prefix: "/_health/",
 	}
+
+	// Even though we don't accept LOCK requests, every webdav
+	// handler must have a non-nil LockSystem.
+	h.webdavLS = &noLockSystem{}
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +95,18 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(status)
 }
+
+var (
+	webdavMethod = map[string]bool{
+		"OPTIONS":  true,
+		"PROPFIND": true,
+	}
+	browserMethod = map[string]bool{
+		"GET":  true,
+		"HEAD": true,
+		"POST": true,
+	}
+)
 
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
@@ -123,21 +141,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "OPTIONS" {
-		method := r.Header.Get("Access-Control-Request-Method")
-		if method != "GET" && method != "POST" {
+	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
+		if !browserMethod[method] && !webdavMethod[method] {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
 		return
 	}
 
-	if r.Method != "GET" && r.Method != "POST" {
+	if !browserMethod[r.Method] && !webdavMethod[r.Method] {
 		statusCode, statusText = http.StatusMethodNotAllowed, r.Method
 		return
 	}
@@ -222,7 +239,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// * The token isn't embedded in the URL, so we don't
 		//   need to worry about bookmarks and copy/paste.
 		tokens = append(tokens, formToken)
-	} else if formToken != "" {
+	} else if formToken != "" && browserMethod[r.Method] {
 		// The client provided an explicit token in the query
 		// string, or a form in POST body. We must put the
 		// token in an HttpOnly cookie, and redirect to the
@@ -329,7 +346,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basename := targetPath[len(targetPath)-1]
+	var basename string
+	if len(targetPath) > 0 {
+		basename = targetPath[len(targetPath)-1]
+	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
 	fs := collection.FileSystem(&arvados.Client{
@@ -337,6 +357,23 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
 	}, kc)
+	if webdavMethod[r.Method] {
+		h := webdav.Handler{
+			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),
+			FileSystem: &webdavFS{collfs: fs},
+			LockSystem: h.webdavLS,
+			Logger: func(_ *http.Request, err error) {
+				if os.IsNotExist(err) {
+					statusCode, statusText = http.StatusNotFound, err.Error()
+				} else if err != nil {
+					statusCode, statusText = http.StatusInternalServerError, err.Error()
+				}
+			},
+		}
+		h.ServeHTTP(w, r)
+		return
+	}
+
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
 		// Requested non-existent path
@@ -352,7 +389,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// ".../dirname/". This way, relative links in the
 		// listing for "dirname" can always be "fnm", never
 		// "dirname/fnm".
-		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
+		h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 	} else if stat.IsDir() {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, stripParts)
 	} else {
@@ -513,16 +550,16 @@ func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename
 }
 
 func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, location string, credentialsOK bool) {
-	if !credentialsOK {
-		// It is not safe to copy the provided token
-		// into a cookie unless the current vhost
-		// (origin) serves only a single collection or
-		// we are in TrustAllContent mode.
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	if formToken := r.FormValue("api_token"); formToken != "" {
+		if !credentialsOK {
+			// It is not safe to copy the provided token
+			// into a cookie unless the current vhost
+			// (origin) serves only a single collection or
+			// we are in TrustAllContent mode.
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		// The HttpOnly flag is necessary to prevent
 		// JavaScript code (included in, or loaded by, a page
 		// in the collection being served) from employing the
@@ -534,7 +571,6 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		// bar, and in the case of a POST request to avoid
 		// raising warnings when the user refreshes the
 		// resulting page.
-
 		http.SetCookie(w, &http.Cookie{
 			Name:     "arvados_api_token",
 			Value:    auth.EncodeTokenCookie([]byte(formToken)),

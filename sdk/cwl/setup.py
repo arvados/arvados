@@ -51,7 +51,7 @@ setup(name='arvados-cwl-runner',
       # file to determine what version of cwltool and schema-salad to build.
       install_requires=[
           'cwltool==1.0.20170928192020',
-          'schema-salad==2.6.20170927145003',
+          'schema-salad==2.6.20171116190026',
           'typing==3.5.3.0',
           'ruamel.yaml==0.13.7',
           'arvados-python-client>=1.1.0',

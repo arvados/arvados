@@ -307,6 +307,7 @@ trashed_project:
   trash_at: 2001-01-01T00:00:00Z
   delete_at: 2038-03-01T00:00:00Z
   is_trashed: true
+  modified_at: 2001-01-01T00:00:00Z
 
 trashed_subproject:
   uuid: zzzzz-j7d0g-trashedproject2
@@ -314,6 +315,7 @@ trashed_subproject:
   name: trashed subproject
   group_class: project
   is_trashed: false
+  modified_at: 2001-01-01T00:00:00Z
 
 trashed_subproject3:
   uuid: zzzzz-j7d0g-trashedproject3
@@ -323,3 +325,4 @@ trashed_subproject3:
   trash_at: 2001-01-01T00:00:00Z
   delete_at: 2038-03-01T00:00:00Z
   is_trashed: true
+  modified_at: 2001-01-01T00:00:00Z

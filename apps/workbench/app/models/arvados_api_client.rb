@@ -114,14 +114,10 @@ class ArvadosApiClient
     url.sub! '/arvados/v1/../../', '/'
 
     query = {
-      'api_token' => (tokens[:arvados_api_token] ||
-                      Thread.current[:arvados_api_token] ||
-                      ''),
       'reader_tokens' => ((tokens[:reader_tokens] ||
                            Thread.current[:reader_tokens] ||
                            []) +
                           [Rails.configuration.anonymous_user_token]).to_json,
-      'current_request_id' => (Thread.current[:current_request_id] || ''),
     }
     if !data.nil?
       data.each do |k,v|
@@ -143,12 +139,19 @@ class ArvadosApiClient
       query["_profile"] = "true"
     end
 
-    header = {"Accept" => "application/json"}
+    headers = {
+      "Accept" => "application/json",
+      "Authorization" => "OAuth2 " +
+                         (tokens[:arvados_api_token] ||
+                          Thread.current[:arvados_api_token] ||
+                          ''),
+      "X-Request-Id" => Thread.current[:request_id] || '',
+    }
 
     profile_checkpoint { "Prepare request #{query["_method"] or "POST"} #{url} #{query[:uuid]} #{query.inspect[0,256]}" }
     msg = @client_mtx.synchronize do
       begin
-        @api_client.post(url, query, header: header)
+        @api_client.post(url, query, headers)
       rescue => exception
         raise NoApiResponseException.new(url, exception)
       end

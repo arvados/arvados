@@ -22,19 +22,22 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <div class="col-md-4 pull-right">
     <input type="text" class="form-control filterable-control recent-trash-items"
            placeholder="Search trash"
-           data-filterable-target="#recent-trash-items"
+           data-filterable-target="#recent-collection-trash-items"
            value="<%= params[:search] %>" />
   </div>
+
+  <p>
+    <b>Note:</b> Collections which are located within a trashed project are only shown when searching the trash.
+  </p>
 
   <div>
     <table id="trash-index" class="topalign table table-condensed table-fixedlayout">
       <colgroup>
-        <col width="2%" />
-        <col width="20%" />
-        <col width="13%" />
-        <col width="15%" />
-        <col width="20%" />
+        <col width="5%" />
+        <col width="16%" />
         <col width="25%" />
+        <col width="20%" />
+        <col width="29%" />
         <col width="5%" />
       </colgroup>
 
@@ -42,16 +45,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <tr class="contain-align-left">
           <th></th>
           <th>Name</th>
+          <th>Parent project</th>
           <th>Date&nbsp;trashed&nbsp;/<br />to&nbsp;be&nbsp;deleted</th>
-          <th>Owner</th>
           <th>UUID&nbsp;/<br />Content&nbsp;address&nbsp;(PDH)</th>
-          <th>Contents</th>
           <th></th>
         </tr>
       </thead>
 
-      <tbody data-infinite-scroller="#recent-trash-items" id="recent-trash-items"
-        data-infinite-content-href="<%= url_for partial: :trash_rows %>" >
+      <tbody data-infinite-scroller="#recent-collection-trash-items" id="recent-collection-trash-items"
+        data-infinite-content-href="<%= url_for partial: :trashed_collection_rows %>" >
       </tbody>
     </table>
   </div>

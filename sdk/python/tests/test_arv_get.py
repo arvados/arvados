@@ -73,6 +73,13 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         self.assertEqual(0, r)
         self.assertEqual(b'baz', self.stdout.getvalue())
 
+    def test_get_block(self):
+        # Get raw data using a block locator
+        blk = re.search(' (acbd18\S+\+A\S+) ', self.col_manifest).group(1)
+        r = self.run_get([blk, '-'])
+        self.assertEqual(0, r)
+        self.assertEqual(b'foo', self.stdout.getvalue())
+
     def test_get_multiple_files(self):
         # Download the entire collection to the temp directory
         r = self.run_get(["{}/".format(self.col_loc), self.tempdir])

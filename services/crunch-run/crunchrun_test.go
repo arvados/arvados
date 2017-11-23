@@ -131,7 +131,7 @@ func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockerco
 
 func (t *TestDockerClient) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
 	if container == "abcde" {
-		go t.fn(t)
+		// t.fn gets executed in ContainerWait
 		return nil
 	} else {
 		return errors.New("Invalid container id")
@@ -147,6 +147,7 @@ func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, 
 	body := make(chan dockercontainer.ContainerWaitOKBody)
 	err := make(chan error)
 	go func() {
+		t.fn(t)
 		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.finish)}
 		close(body)
 		close(err)
@@ -669,7 +670,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	}
 	c.Check(api.WasSetRunning, Equals, true)
 
-	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -1002,11 +1003,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
-
+		cr.statInterval = 5 * time.Second
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1021,8 +1025,11 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1039,8 +1046,11 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 
@@ -1059,8 +1069,11 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1079,10 +1092,13 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
 			realTemp + "/keep1/tmp0:/keepout"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1102,10 +1118,13 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
 			realTemp + "/keep1/tmp0:/keepout"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1130,6 +1149,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1149,8 +1169,11 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
+			"--read-write", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1169,6 +1192,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1187,6 +1211,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Only mount points of kind 'collection' are supported underneath the output_path.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1203,6 +1228,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
+		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1523,6 +1549,59 @@ func (s *TestSuite) TestOutputError(c *C) {
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
+func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		rf, _ := os.Create(t.realTemp + "/2/realfile")
+		rf.Write([]byte("foo"))
+		rf.Close()
+
+		os.Mkdir(t.realTemp+"/2/realdir", 0700)
+		rf, _ = os.Create(t.realTemp + "/2/realdir/subfile")
+		rf.Write([]byte("bar"))
+		rf.Close()
+
+		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
+		os.Symlink("realfile", t.realTemp+"/2/file2")
+		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
+		os.Symlink("file2", t.realTemp+"/2/file4")
+		os.Symlink("realdir", t.realTemp+"/2/dir1")
+		os.Symlink("/tmp/realdir", t.realTemp+"/2/dir2")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals,
+					`. 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile
+./dir1 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./dir2 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+./realdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
+`)
+			}
+		}
+	}
+}
+
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
@@ -1631,4 +1710,52 @@ func (s *TestSuite) TestNumberRoundTrip(c *C) {
 
 	c.Check(err, IsNil)
 	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
+}
+
+func (s *TestSuite) TestEvalSymlinks(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink("/etc/passwd", realTemp+"/p1")
+
+	// Relative outside output dir
+	os.Symlink("../zip", realTemp+"/p2")
+
+	// Circular references
+	os.Symlink("p4", realTemp+"/p3")
+	os.Symlink("p5", realTemp+"/p4")
+	os.Symlink("p3", realTemp+"/p5")
+
+	// Target doesn't exist
+	os.Symlink("p99", realTemp+"/p6")
+
+	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
+		info, err := os.Lstat(realTemp + "/" + v)
+		_, _, _, err = cr.derefOutputSymlink(realTemp+"/"+v, info)
+		c.Assert(err, NotNil)
+	}
+}
+
+func (s *TestSuite) TestEvalSymlinkDir(c *C) {
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	cr.HostOutputDir = realTemp
+
+	// Absolute path outside output dir
+	os.Symlink(".", realTemp+"/loop")
+
+	v := "loop"
+	info, err := os.Lstat(realTemp + "/" + v)
+	_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "", 0)
+	c.Assert(err, NotNil)
 }
