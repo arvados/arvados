@@ -127,14 +127,11 @@ window.Search = {
                             return new MultipageLoader({
                                 sessionKey: key,
                                 loadFunc: function(filters) {
+                                    // Apply additional type dependant filters
+                                    filters = filters.concat(obj_type.filters)
                                     var tsquery = to_tsquery(q)
                                     if (tsquery) {
-                                        filters = filters.slice(0)
                                         filters.push(['any', '@@', tsquery])
-                                    }
-                                    // Apply additional type dependant filters, if any.
-                                    for (i = 0; i < obj_type.filters.length; i++) {
-                                        filters.push(obj_type.filters[i])
                                     }
                                     return vnode.state.sessionDB.request(session, obj_type.api_path, {
                                         data: {
