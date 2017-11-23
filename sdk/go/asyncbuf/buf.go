@@ -86,14 +86,16 @@ type reader struct {
 
 func (r *reader) Read(p []byte) (int, error) {
 	r.b.cond.L.Lock()
-	defer r.b.cond.L.Unlock()
 	for {
 		if r.b.data.Len() > r.read || len(p) == 0 {
-			n := copy(p, r.b.data.Bytes()[r.read:])
+			buf := r.b.data.Bytes()
+			r.b.cond.L.Unlock()
+			n := copy(p, buf[r.read:])
 			r.read += n
 			return n, nil
 		}
 		if r.b.err != nil {
+			r.b.cond.L.Unlock()
 			return 0, r.b.err
 		}
 		r.b.cond.Wait()
