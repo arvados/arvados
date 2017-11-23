@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -261,7 +262,7 @@ handle_python_package
 (
     cd "$WORKSPACE"
     COMMIT_HASH=$(format_last_commit_here "%H")
-    arvados_src_version="$(version_from_git)"
+    arvados_src_version="$(version_from_latest_tag)"
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence arvados-src $arvados_src_version src ""
@@ -279,7 +280,7 @@ handle_python_package
       echo "$COMMIT_HASH" >git-commit.version
 
       cd "$SRC_BUILD_DIR"
-      PKG_VERSION=$(version_from_git)
+      PKG_VERSION=$(version_from_latest_tag)
       cd $WORKSPACE/packages/$TARGET
       fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
@@ -438,7 +439,7 @@ fi
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
-# not omit the python- prefix first.
+# not omit the python- prefix first.dokc
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/fuse/build"
 arvados_fuse_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)

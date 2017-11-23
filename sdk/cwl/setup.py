@@ -22,8 +22,7 @@ except ImportError:
 versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
 try:
     gitinfo = subprocess.check_output(
-        ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%H', gittaggers.choose_version_from()]).strip()
+            ['git', 'describe', '--abbrev=0']).strip()
     with open(versionfile, "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
@@ -34,7 +33,7 @@ except Exception as e:
         raise
 
 setup(name='arvados-cwl-runner',
-      version='1.0',
+      version="1.1.0",
       description='Arvados Common Workflow Language runner',
       long_description=open(README).read(),
       author='Arvados',
@@ -55,7 +54,7 @@ setup(name='arvados-cwl-runner',
           'schema-salad==2.6.20171116190026',
           'typing==3.5.3.0',
           'ruamel.yaml==0.13.7',
-          'arvados-python-client>=0.1.20170526013812',
+          'arvados-python-client>=1.1.0',
           'setuptools',
           'ciso8601 >=1.0.0, <=1.0.4',
       ],
@@ -65,5 +64,4 @@ setup(name='arvados-cwl-runner',
       test_suite='tests',
       tests_require=['mock>=1.0'],
       zip_safe=True,
-      cmdclass={'egg_info': tagger},
       )

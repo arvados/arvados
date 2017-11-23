@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -132,7 +132,6 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
-        arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager
         arvados-src
