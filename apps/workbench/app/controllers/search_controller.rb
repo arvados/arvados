@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class SearchController < ApplicationController
+  skip_before_filter :ensure_arvados_api_exists
+
   def find_objects_for_index
     search_what = Group
     if params[:project_uuid]

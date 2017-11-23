@@ -21,8 +21,8 @@ window.SessionsTable = {
         return m('.container', [
             m('p', [
                 'You can log in to multiple Arvados sites here, then use the ',
-                m('a[href="/collections/multisite"]', 'multi-site search'),
-                ' page to search collections on all sites at once.',
+                m('a[href="/search"]', 'multi-site search'),
+                ' page to search collections and projects on all sites at once.',
             ]),
             m('table.table.table-condensed.table-hover', [
                 m('thead', m('tr', [
