@@ -365,7 +365,7 @@ class ApplicationController < ActionController::Base
   end
 
   def require_auth_scope
-    if @read_auths.empty?
+    if @read_auths.empty? || @read_auths[0] != current_api_client_authorization
       if require_login != false
         send_error("Forbidden", status: 403)
       end

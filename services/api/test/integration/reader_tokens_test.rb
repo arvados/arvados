@@ -50,22 +50,15 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
 
   [nil, :active_noscope].each do |main_auth|
     [:spectator, :spectator_specimens].each do |read_auth|
-      test "#{main_auth} auth with reader token #{read_auth} can read" do
-        assert_includes(get_specimen_uuids(main_auth, read_auth),
-                        spectator_specimen, "did not find spectator specimen")
-      end
+      [:to_a, :to_json].each do |formatter|
+        test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can't read" do
+          get_specimens(main_auth, read_auth)
+          assert_response(if main_auth then 403 else 302 end)
+        end
 
-      test "#{main_auth} auth with JSON read token #{read_auth} can read" do
-        assert_includes(get_specimen_uuids(main_auth, read_auth, :to_json),
-                        spectator_specimen, "did not find spectator specimen")
-      end
-
-      test "#{main_auth} auth with reader token #{read_auth} can't write" do
-        assert_post_denied(main_auth, read_auth)
-      end
-
-      test "#{main_auth} auth with JSON read token #{read_auth} can't write" do
-        assert_post_denied(main_auth, read_auth, :to_json)
+        test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can't write" do
+          assert_post_denied(main_auth, read_auth, formatter)
+        end
       end
     end
   end
