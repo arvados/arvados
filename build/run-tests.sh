@@ -100,7 +100,7 @@ sdk/go/health
 sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
-sdk/go/streamer
+sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
@@ -829,7 +829,7 @@ gostuff=(
     sdk/go/health
     sdk/go/httpserver
     sdk/go/manifest
-    sdk/go/streamer
+    sdk/go/asyncbuf
     sdk/go/crunchrunner
     sdk/go/stats
     lib/crunchstat

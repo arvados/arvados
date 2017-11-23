@@ -72,19 +72,16 @@ func (this HashCheckingReader) Close() (err error) {
 	_, err = io.Copy(this.Hash, this.Reader)
 
 	if closer, ok := this.Reader.(io.Closer); ok {
-		err2 := closer.Close()
-		if err2 != nil && err == nil {
-			return err2
+		closeErr := closer.Close()
+		if err == nil {
+			err = closeErr
 		}
 	}
 	if err != nil {
 		return err
 	}
-
-	sum := this.Hash.Sum(nil)
-	if fmt.Sprintf("%x", sum) != this.Check {
-		err = BadChecksum
+	if fmt.Sprintf("%x", this.Hash.Sum(nil)) != this.Check {
+		return BadChecksum
 	}
-
-	return err
+	return nil
 }
