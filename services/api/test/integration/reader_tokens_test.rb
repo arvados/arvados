@@ -51,9 +51,9 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
   [nil, :active_noscope].each do |main_auth|
     [:spectator, :spectator_specimens].each do |read_auth|
       [:to_a, :to_json].each do |formatter|
-        test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can't read" do
+        test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can#{"'t" if main_auth} read" do
           get_specimens(main_auth, read_auth)
-          assert_response(if main_auth then 403 else 302 end)
+          assert_response(if main_auth then 403 else 200 end)
         end
 
         test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can't write" do
