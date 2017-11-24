@@ -142,8 +142,24 @@ class ApiClientAuthorization < ArvadosModel
       act_as_system_user do
         # Add/update user and token in our database so we can
         # validate subsequent requests faster.
+
         user = User.find_or_create_by(uuid: remote_user[:uuid])
-        user.update_attributes!(remote_user.merge(is_admin: false))
+
+        updates = {}
+        [:first_name, :last_name, :email, :prefs].each do |attr|
+          updates[attr] = remote_user[attr]
+        end
+
+        if Rails.configuration.new_users_are_active
+          # Update is_active to whatever it is at the remote end
+          updates[:is_active] = remote_user[:is_active]
+        elsif !updates[:is_active]
+          # Remote user is inactive; our mirror should be, too.
+          updates[:is_active] = false
+        end
+
+        user.update_attributes!(updates)
+
         auth = ApiClientAuthorization.
                includes(:user).
                find_or_create_by(uuid: uuid,
