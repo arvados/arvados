@@ -386,14 +386,23 @@ common:
   ### Federation support.
   ###
 
-  # Map known prefixes to hosts. Example:
+  # You can enable use of this cluster by users who are authenticated
+  # by a remote Arvados site. Control which remote hosts are trusted
+  # to authenticate which user IDs by configuring remote_hosts,
+  # remote_hosts_via_dns, or both. The default configuration disables
+  # remote authentication.
+
+  # Map known prefixes to hosts. For example, if user IDs beginning
+  # with "zzzzz-" should be authenticated by the Arvados server at
+  # "zzzzz.example.com", use:
+  #
   # remote_hosts:
   #   zzzzz: zzzzz.example.com
   remote_hosts: {}
 
   # Use {prefix}.arvadosapi.com for any prefix not given in
   # remote_hosts above.
-  remote_hosts_via_dns: true
+  remote_hosts_via_dns: false
 
   ###
   ### Remaining assorted configuration options.
