@@ -26,7 +26,7 @@ class ArvadosApiToken
       env["HTTP_AUTHORIZATION"].andand.
         match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2]
 
-    if params[:remote] && (
+    if params[:remote] && request.get? && (
          request.path.start_with?('/arvados/v1/groups') ||
          request.path.start_with?('/arvados/v1/users/current'))
       # Request from a remote API server, asking to validate a salted
