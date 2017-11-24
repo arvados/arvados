@@ -124,9 +124,6 @@ class ApiClientAuthorization < ArvadosModel
       # Token was issued by a different cluster. If it's expired or
       # missing in our database, ask the originating cluster to
       # [re]validate it.
-      arv = Arvados.new(api_host: host,
-                        api_token: token,
-                        suppress_ssl_warnings: Rails.env == 'test')
       begin
         clnt = HTTPClient.new
         remote_user = SafeJSON.load(
