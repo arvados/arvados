@@ -5,6 +5,7 @@
 package httpserver
 
 import (
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -32,4 +33,16 @@ func (g *IDGenerator) Next() string {
 	g.lastID = id
 	g.mtx.Unlock()
 	return g.Prefix + strconv.FormatInt(id, 36)
+}
+
+// AddRequestIDs wraps an http.Handler, adding an X-Request-Id header
+// to each request that doesn't already have one.
+func AddRequestIDs(h http.Handler) http.Handler {
+	gen := &IDGenerator{Prefix: "req-"}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Header.Get("X-Request-Id") == "" {
+			req.Header.Set("X-Request-Id", gen.Next())
+		}
+		h.ServeHTTP(w, req)
+	})
 }
