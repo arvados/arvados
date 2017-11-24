@@ -32,7 +32,7 @@ class ArvadosApiToken
     user = nil
     api_client = nil
     api_client_auth = nil
-    if request.get?
+    if request.get? || params["_method"] == 'GET'
       reader_tokens = params["reader_tokens"]
       if reader_tokens.is_a? String
         reader_tokens = SafeJSON.load(reader_tokens)
