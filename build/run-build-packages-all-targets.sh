@@ -91,11 +91,16 @@ for dockerfile_path in $(find -name Dockerfile | grep package-build-dockerfiles)
         true
     else
         FINAL_EXITCODE=$?
+        echo
+        echo "Build packages failed for $(basename $(dirname "$dockerfile_path"))"
+        echo
     fi
 done
 
 if test $FINAL_EXITCODE != 0 ; then
+    echo
     echo "Build packages failed with code $FINAL_EXITCODE" >&2
+    echo
 fi
 
 exit $FINAL_EXITCODE
