@@ -5,6 +5,7 @@
 package keepclient
 
 import (
+	"bytes"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -20,7 +21,6 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	. "gopkg.in/check.v1"
 )
 
@@ -172,18 +172,8 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan uploadStatus) {
-
-			tr := streamer.AsyncStreamFromReader(512, reader)
-			defer tr.Close()
-
-			br1 := tr.MakeStreamReader()
-
-			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, 0)
-
-			writer.Write([]byte("foo"))
-			writer.Close()
+		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, upload_status chan uploadStatus) {
+			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), upload_status, 3, 0)
 
 			<-st.handled
 
