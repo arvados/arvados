@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.CollectionsTable = {
+window.SearchResultsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
         if (loader.state != loader.READY)
@@ -37,6 +37,10 @@ window.CollectionsTable = {
     },
     view: function(vnode) {
         var loader = vnode.attrs.loader
+        var iconsMap = {
+            collections: m('i.fa.fa-fw.fa-archive'),
+            projects: m('i.fa.fa-fw.fa-folder'),
+        }
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
                 m('th'),
@@ -50,8 +54,13 @@ window.CollectionsTable = {
                         m('td', [
                             item.workbenchBaseURL() &&
                                 m('a.btn.btn-xs.btn-default', {
-                                    href: item.workbenchBaseURL()+'collections/'+item.uuid,
-                                }, 'Show'),
+                                    'data-original-title': 'show '+item.objectType.description,
+                                    'data-placement': 'top',
+                                    'data-toggle': 'tooltip',
+                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
+                                    // Bootstrap's tooltip feature
+                                    oncreate: function(vnode) { $(vnode.dom).tooltip() },
+                                }, iconsMap[item.objectType.wb_path]),
                         ]),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
@@ -79,7 +88,7 @@ window.CollectionsTable = {
     },
 }
 
-window.CollectionsSearch = {
+window.Search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         vnode.state.searchEntered = m.stream()
@@ -97,28 +106,50 @@ window.CollectionsSearch = {
                     var workbenchBaseURL = function() {
                         return vnode.state.sessionDB.workbenchBaseURL(session)
                     }
-                    return new MultipageLoader({
-                        sessionKey: key,
-                        loadFunc: function(filters) {
-                            var tsquery = to_tsquery(q)
-                            if (tsquery) {
-                                filters = filters.slice(0)
-                                filters.push(['any', '@@', tsquery])
-                            }
-                            return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
-                                data: {
-                                    filters: JSON.stringify(filters),
-                                    count: 'none',
-                                },
-                            }).then(function(resp) {
-                                resp.items.map(function(item) {
-                                    item.workbenchBaseURL = workbenchBaseURL
-                                })
-                                return resp
-                            })
+                    var searchable_objects = [
+                        {
+                            wb_path: 'projects',
+                            api_path: 'arvados/v1/groups',
+                            filters: [['group_class', '=', 'project']],
+                            description: 'project',
                         },
+                        {
+                            wb_path: 'collections',
+                            api_path: 'arvados/v1/collections',
+                            filters: [],
+                            description: 'collection',
+                        },
+                    ]
+                    return new MergingLoader({
+                        sessionKey: key,
+                        // For every session, search for every object type
+                        children: searchable_objects.map(function(obj_type) {
+                            return new MultipageLoader({
+                                sessionKey: key,
+                                loadFunc: function(filters) {
+                                    // Apply additional type dependant filters
+                                    filters = filters.concat(obj_type.filters)
+                                    var tsquery = to_tsquery(q)
+                                    if (tsquery) {
+                                        filters.push(['any', '@@', tsquery])
+                                    }
+                                    return vnode.state.sessionDB.request(session, obj_type.api_path, {
+                                        data: {
+                                            filters: JSON.stringify(filters),
+                                            count: 'none',
+                                        },
+                                    }).then(function(resp) {
+                                        resp.items.map(function(item) {
+                                            item.workbenchBaseURL = workbenchBaseURL
+                                            item.objectType = obj_type
+                                        })
+                                        return resp
+                                    })
+                                },
+                            })
+                        }),
                     })
-                })
+                }),
             })
         })
     },
@@ -141,7 +172,7 @@ window.CollectionsSearch = {
                 m('.row', [
                     m('.col-md-6', [
                         m('.input-group', [
-                            m('input#search.form-control[placeholder=Search]', {
+                            m('input#search.form-control[placeholder=Search collections and projects]', {
                                 oninput: m.withAttr('value', vnode.state.searchEntered),
                                 value: vnode.state.searchEntered(),
                             }),
@@ -163,7 +194,7 @@ window.CollectionsSearch = {
                         m('a[href="/sessions"]', 'Add/remove sites'),
                     ]),
                 ]),
-                m(CollectionsTable, {
+                m(SearchResultsTable, {
                     loader: vnode.state.loader,
                 }),
             ],
