@@ -87,17 +87,22 @@ type reader struct {
 func (r *reader) Read(p []byte) (int, error) {
 	r.b.cond.L.Lock()
 	for {
-		if r.b.data.Len() > r.read || len(p) == 0 {
+		switch {
+		case r.read < r.b.data.Len():
 			buf := r.b.data.Bytes()
 			r.b.cond.L.Unlock()
 			n := copy(p, buf[r.read:])
 			r.read += n
 			return n, nil
-		}
-		if r.b.err != nil {
+		case r.b.err != nil || len(p) == 0:
+			// r.b.err != nil means we reached EOF.  And
+			// even if we're not at EOF, there's no need
+			// to block if len(p)==0.
+			err := r.b.err
 			r.b.cond.L.Unlock()
-			return 0, r.b.err
+			return 0, err
+		default:
+			r.b.cond.Wait()
 		}
-		r.b.cond.Wait()
 	}
 }

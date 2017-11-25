@@ -90,6 +90,53 @@ func (s *Suite) TestWriteReadCloseRead(c *check.C) {
 	<-done
 }
 
+func (s *Suite) TestReadAtEOF(c *check.C) {
+	buf := make([]byte, 8)
+
+	b := NewBuffer([]byte{1, 2, 3})
+
+	r := b.NewReader()
+	n, err := r.Read(buf)
+	c.Check(n, check.Equals, 3)
+	c.Check(err, check.IsNil)
+
+	// Reading zero bytes at EOF, but before Close(), doesn't
+	// block or error
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		n, err = r.Read(buf[:0])
+		c.Check(n, check.Equals, 0)
+		c.Check(err, check.IsNil)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		c.Error("timeout")
+	}
+
+	b.Close()
+
+	// Reading zero bytes after Close() returns EOF
+	n, err = r.Read(buf[:0])
+	c.Check(n, check.Equals, 0)
+	c.Check(err, check.Equals, io.EOF)
+
+	// Reading from start after Close() returns 3 bytes, then EOF
+	r = b.NewReader()
+	n, err = r.Read(buf)
+	c.Check(n, check.Equals, 3)
+	if err != nil {
+		c.Check(err, check.Equals, io.EOF)
+	}
+	n, err = r.Read(buf[:0])
+	c.Check(n, check.Equals, 0)
+	c.Check(err, check.Equals, io.EOF)
+	n, err = r.Read(buf)
+	c.Check(n, check.Equals, 0)
+	c.Check(err, check.Equals, io.EOF)
+}
+
 func (s *Suite) TestCloseWithError(c *check.C) {
 	errFake := errors.New("it's not even a real error")
 
