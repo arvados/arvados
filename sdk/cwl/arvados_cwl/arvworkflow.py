@@ -18,7 +18,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 import ruamel.yaml as yaml
 
 from .runner import upload_dependencies, packed_workflow, upload_workflow_collection, trim_anonymous_location, remove_redundant_fields
-from .pathmapper import trim_listing
+from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool
 from .perf import Perf
 
@@ -110,7 +110,16 @@ class ArvadosWorkflow(Workflow):
                                         False)
 
             with Perf(metrics, "subworkflow adjust"):
+                joborder_resolved = copy.deepcopy(joborder)
                 joborder_keepmount = copy.deepcopy(joborder)
+
+                reffiles = []
+                visit_class(joborder_keepmount, ("File", "Directory"), lambda x: reffiles.append(x))
+
+                mapper = ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+                                 "/keep/%s",
+                                 "/keep/%s/%s",
+                                 **kwargs)
 
                 def keepmount(obj):
                     remove_redundant_fields(obj)
@@ -119,7 +128,7 @@ class ArvadosWorkflow(Workflow):
                             raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
                     with SourceLine(obj, "location", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
                         if obj["location"].startswith("keep:"):
-                            obj["location"] = "/keep/" + obj["location"][5:]
+                            obj["location"] = mapper.mapper(obj["location"]).target
                             if "listing" in obj:
                                 del obj["listing"]
                         elif obj["location"].startswith("_:"):
@@ -128,6 +137,12 @@ class ArvadosWorkflow(Workflow):
                             raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
 
                 visit_class(joborder_keepmount, ("File", "Directory"), keepmount)
+
+                def resolved(obj):
+                    if obj["location"].startswith("keep:"):
+                        obj["location"] = mapper.mapper(obj["location"]).resolved
+
+                visit_class(joborder_resolved, ("File", "Directory"), resolved)
 
                 if self.wf_pdh is None:
                     adjustFileObjs(packed, keepmount)
@@ -159,6 +174,6 @@ class ArvadosWorkflow(Workflow):
             })
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
-            return ArvadosCommandTool(self.arvrunner, wf_runner, **kwargs).job(joborder, output_callback, **kwargs)
+            return ArvadosCommandTool(self.arvrunner, wf_runner, **kwargs).job(joborder_resolved, output_callback, **kwargs)
         else:
             return super(ArvadosWorkflow, self).job(joborder, output_callback, **kwargs)

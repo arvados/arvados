@@ -301,7 +301,7 @@ def files_in_collection(c):
 def write_block_or_manifest(dest, src, api_client, args):
     if '+A' in src:
         # block locator
-        kc = KeepClient(api_client=api_client)
+        kc = arvados.keep.KeepClient(api_client=api_client)
         dest.write(kc.get(src, num_retries=args.retries))
     else:
         # collection UUID or portable data hash

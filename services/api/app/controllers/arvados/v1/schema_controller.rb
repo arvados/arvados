@@ -58,6 +58,7 @@ class Arvados::V1::SchemaController < ApplicationController
         remoteHosts: Rails.configuration.remote_hosts,
         remoteHostsViaDNS: Rails.configuration.remote_hosts_via_dns,
         websocketUrl: Rails.application.config.websocket_address,
+        workbenchUrl: Rails.application.config.workbench_address,
         parameters: {
           alt: {
             type: "string",

@@ -11,10 +11,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -213,6 +215,33 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 		resp := httptest.NewRecorder()
 		rtr.ServeHTTP(resp, req)
 		c.Check(resp.Code, Equals, t.expectStatus)
+	}
+}
+
+func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+	router.(*proxyHandler).timeout = time.Nanosecond
+
+	buf := make([]byte, 1<<20)
+	rand.Read(buf)
+	var wg sync.WaitGroup
+	for i := 0; i < 128; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			kc.PutB(buf)
+		}()
+	}
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		c.Error("timeout")
 	}
 }
 

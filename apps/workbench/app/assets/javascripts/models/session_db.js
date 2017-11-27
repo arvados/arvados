@@ -5,6 +5,7 @@
 window.SessionDB = function() {
     var db = this
     Object.assign(db, {
+        discoveryCache: {},
         loadFromLocalStorage: function() {
             try {
                 return JSON.parse(window.localStorage.getItem('sessions')) || {}
@@ -119,6 +120,35 @@ window.SessionDB = function() {
                     db.trash(key)
                 })
             })
+        },
+        // Return the Workbench base URL advertised by the session's
+        // API server, or a reasonable guess, or (if neither strategy
+        // works out) null.
+        workbenchBaseURL: function(session) {
+            var dd = db.discoveryDoc(session)()
+            if (!dd)
+                // Don't fall back to guessing until we receive the discovery doc
+                return null
+            if (dd.workbenchUrl)
+                return dd.workbenchUrl
+            // Guess workbench.{apihostport} is a Workbench... unless
+            // the host part of apihostport is an IPv4 or [IPv6]
+            // address.
+            if (!session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])'))
+                var wbUrl = session.baseURL.replace('://', '://workbench.')
+                // Remove the trailing slash, if it's there.
+                return wbUrl.slice(-1) == '/' ? wbUrl.slice(0, -1) : wbUrl
+            return null
+        },
+        // Return a m.stream that will get fulfilled with the
+        // discovery doc from a session's API server.
+        discoveryDoc: function(session) {
+            var cache = db.discoveryCache[session.baseURL]
+            if (!cache) {
+                db.discoveryCache[session.baseURL] = cache = m.stream()
+                m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(cache)
+            }
+            return cache
         },
         request: function(session, path, opts) {
             opts = opts || {}

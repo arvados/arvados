@@ -20,25 +20,40 @@ class ArvadosApiToken
     remote_ip = env["action_dispatch.remote_ip"]
 
     Thread.current[:request_starttime] = Time.now
-    Thread.current[:supplied_token] =
-      params["api_token"] ||
-      params["oauth_token"] ||
-      env["HTTP_AUTHORIZATION"].andand.
-        match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2]
 
+    remote = false
+    reader_tokens = nil
     if params[:remote] && request.get? && (
          request.path.start_with?('/arvados/v1/groups') ||
          request.path.start_with?('/arvados/v1/users/current'))
       # Request from a remote API server, asking to validate a salted
       # token.
       remote = params[:remote]
-    else
-      # Normal request.
-      remote = false
+    elsif request.get? || params["_method"] == 'GET'
+      reader_tokens = params["reader_tokens"]
+      if reader_tokens.is_a? String
+        reader_tokens = SafeJSON.load(reader_tokens)
+      end
     end
-    auth = ApiClientAuthorization.
-           validate(token: Thread.current[:supplied_token],
-                    remote: remote)
+
+    # Set current_user etc. based on the primary session token if a
+    # valid one is present. Otherwise, use the first valid token in
+    # reader_tokens.
+    auth = nil
+    [params["api_token"],
+     params["oauth_token"],
+     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([a-zA-Z0-9]+)/).andand[2],
+     *reader_tokens,
+    ].each do |supplied|
+      next if !supplied
+      try_auth = ApiClientAuthorization.
+                 validate(token: Thread.current[:supplied_token],
+                          remote: remote)
+      if try_auth.andand.user
+        auth = try_auth
+        break
+      end
+    end
 
     Thread.current[:api_client_ip_address] = remote_ip
     Thread.current[:api_client_authorization] = auth

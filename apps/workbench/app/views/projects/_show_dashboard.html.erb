@@ -12,24 +12,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
   # fetch children of all the active crs in one call, if there are any
   active_crs = recent_crs.each {|cr| cr if (cr.priority.andand > 0 and cr.state != 'Final' and cr.container_uuid)}
-  active_cr_uuids = active_crs.map(&:uuid)
-  active_cr_containers = active_crs.map {|cr| cr.container_uuid}.compact.uniq
-  cr_children = {}
-  if active_cr_containers.any?
-    active_cr_containers.each { |c| cr_children[c] = []}
-    cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
-    reqs = ContainerRequest.select(cols).where(requesting_container_uuid: active_cr_containers).results
-    reqs.each {|cr| cr_children[cr.requesting_container_uuid] << cr} if reqs
-  end
 
   wus = {}
   outputs = []
   recent_procs.each do |p|
-    if p.uuid.in?(active_cr_uuids)
-      wu = p.work_unit(nil, child_objects=cr_children[p.container_uuid])
-    else
-      wu = p.work_unit
-    end
+    wu = p.work_unit
 
     wus[p] = wu
     outputs << wu.outputs
@@ -129,27 +116,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
             <% else %>
             <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
               <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>
                 </div>
-                <% if wu.is_running? %>
-                <div class="col-md-6">
-                  <div class="progress" style="margin-bottom: 0px">
-                    <% wu.progress %>
-                  </div>
-                </div>
-                <% else %>
                 <div class="col-md-2">
                   <span class="label label-<%=wu.state_bootstrap_class%>"><%=wu.state_label%></span>
                 </div>
-                <% end %>
               </div>
-
-              <%
-                children = wu.children
-                running = children.select { |c| c.state_label == "Running" }
-                queued = children.select { |c| c.state_label == "Queued" }
-              %>
 
               <div class="clearfix">
                 Started at <%= render_localized_date(wu.started_at || wu.created_at, "noseconds") %>.
@@ -157,12 +130,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 Active for <%= render_runtime(wu_time, false) %>.
 
                 <div class="pull-right">
-                  <% running.each do |r| %>
-                    <span class="label label-<%= r.state_bootstrap_class %>"> <%= r.label || r.state_label || 'Not ready' %> </span>
-                  <% end %>
-                  <% queued.each do |q| %>
-                    <span class="label label-<%= q.state_bootstrap_class %>"> <%= q.label || r.state_label || 'Not ready' %> </span>
-                  <% end %>
                 </div>
               </div>
             </div>
