@@ -77,7 +77,7 @@ RUN set -e && \
 
 RUN pip install -U setuptools
 
-ENV NODEVERSION v6.11.2
+ENV NODEVERSION v6.11.4
 
 # Install nodejs binary
 RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \

@@ -5,12 +5,15 @@
 FROM arvados/arvbox-base
 ARG arvados_version
 ARG sso_version=master
+ARG composer_version=master
 
 RUN cd /usr/src && \
     git clone --no-checkout https://github.com/curoverse/arvados.git && \
     git -C arvados checkout ${arvados_version} && \
     git clone --no-checkout https://github.com/curoverse/sso-devise-omniauth-provider.git sso && \
-    git -C sso checkout ${sso_version}
+    git -C sso checkout ${sso_version} && \
+    git clone --no-checkout https://github.com/curoverse/composer.git && \
+    git -C composer checkout ${composer_version}
 
 ADD service/ /var/lib/arvbox/service
 RUN ln -sf /var/lib/arvbox/service /etc
