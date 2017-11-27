@@ -160,12 +160,12 @@ class ApiClientAuthorization < ArvadosModel
 
         user.update_attributes!(updates)
 
-        auth = ApiClientAuthorization.
-               includes(:user).
-               find_or_create_by(uuid: uuid,
-                                 api_token: token,
-                                 user: user,
-                                 api_client_id: 0)
+        auth = ApiClientAuthorization.find_or_create_by(uuid: uuid)
+        auth.user = user
+        auth.api_token = token
+        auth.api_client_id = 0
+        auth.save!
+
         # Accept this token (and don't reload the user record) for
         # 5 minutes. TODO: Request the actual api_client_auth
         # record from the remote server in case it wants the token
