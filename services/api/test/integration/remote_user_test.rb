@@ -22,6 +22,10 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   # Test cases can override the stub's default response to
   # .../users/current by changing @stub_status and @stub_content.
   setup do
+    clnt = HTTPClient.new
+    clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    HTTPClient.stubs(:new).returns clnt
+
     @controller = Arvados::V1::UsersController.new
     ready = Thread::Queue.new
     srv = WEBrick::HTTPServer.new(
@@ -70,14 +74,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'authenticate with remote token' do
-    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
   end
 
   test 'authenticate with remote token from misbhehaving remote cluster' do
-    get '/arvados/v1/users/current', {}, auth(remote: 'zbork')
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbork')
     assert_response 401
   end
 
@@ -86,14 +90,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content = {
       error: 'not authorized',
     }
-    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response 401
   end
 
   test 'remote api server is not an api server' do
     @stub_status = 200
     @stub_content = '<html>bad</html>'
-    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response 401
   end
 
@@ -110,5 +114,20 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         assert_response 401
       end
     end
+  end
+
+  test "list readable groups with salted token" do
+    salted_token = salt_token(fixture: :active, remote: 'zbbbb')
+    get '/arvados/v1/groups', {
+          format: 'json',
+          remote: 'zbbbb',
+          limit: 10000,
+        }, {
+          "HTTP_AUTHORIZATION" => "Bearer #{salted_token}"
+        }
+    assert_response 200
+    group_uuids = json_response['items'].collect { |i| i['uuid'] }
+    assert_includes(group_uuids, 'zzzzz-j7d0g-fffffffffffffff')
+    refute_includes(group_uuids, 'zzzzz-j7d0g-000000000000000')
   end
 end

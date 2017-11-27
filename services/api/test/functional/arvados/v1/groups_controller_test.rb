@@ -704,17 +704,5 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_response :success
       assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
     end
-
-  end
-
-  test "list readable groups with salted token" do
-    salted_token = salt_token(fixture: :active, remote: 'zbbbb')
-    ArvadosApiToken.new.call("rack.input" => "",
-                             "HTTP_AUTHORIZATION" => "Bearer #{salted_token}")
-    get :index, {remote: 'zbbbb', limit: 10000}
-    assert_response 200
-    group_uuids = json_response['items'].collect { |i| i['uuid'] }
-    assert_includes(group_uuids, 'zzzzz-j7d0g-fffffffffffffff')
-    refute_includes(group_uuids, 'zzzzz-j7d0g-000000000000000')
   end
 end

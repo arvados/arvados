@@ -131,28 +131,29 @@ class ApiClientAuthorization < ArvadosModel
                            {'remote' => Rails.configuration.uuid_prefix},
                            {'Authorization' => 'Bearer ' + token}))
       rescue => e
-        logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
-        STDERR.puts e.backtrace
+        Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
         return nil
       end
-      if !remote_user.is_a?(Hash) || !remote_user[:uuid].is_a?(String) || remote_user[:uuid][0..4] != uuid[0..4]
-        logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
+      if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String) || remote_user['uuid'][0..4] != uuid[0..4]
+        Rails.logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
         return nil
       end
       act_as_system_user do
         # Add/update user and token in our database so we can
         # validate subsequent requests faster.
 
-        user = User.find_or_create_by(uuid: remote_user[:uuid])
+        user = User.find_or_create_by(uuid: remote_user['uuid']) do |user|
+          user.is_admin = false
+        end
 
         updates = {}
         [:first_name, :last_name, :email, :prefs].each do |attr|
-          updates[attr] = remote_user[attr]
+          updates[attr] = remote_user[attr.to_s]
         end
 
         if Rails.configuration.new_users_are_active
           # Update is_active to whatever it is at the remote end
-          updates[:is_active] = remote_user[:is_active]
+          updates[:is_active] = remote_user['is_active']
         elsif !updates[:is_active]
           # Remote user is inactive; our mirror should be, too.
           updates[:is_active] = false
@@ -160,11 +161,11 @@ class ApiClientAuthorization < ArvadosModel
 
         user.update_attributes!(updates)
 
-        auth = ApiClientAuthorization.find_or_create_by(uuid: uuid)
-        auth.user = user
-        auth.api_token = token
-        auth.api_client_id = 0
-        auth.save!
+        auth = ApiClientAuthorization.find_or_create_by(uuid: uuid) do |auth|
+          auth.user = user
+          auth.api_token = token
+          auth.api_client_id = 0
+        end
 
         # Accept this token (and don't reload the user record) for
         # 5 minutes. TODO: Request the actual api_client_auth

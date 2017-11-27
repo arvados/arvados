@@ -23,12 +23,12 @@ class ArvadosApiToken
 
     remote = false
     reader_tokens = nil
-    if params[:remote] && request.get? && (
+    if params["remote"] && request.get? && (
          request.path.start_with?('/arvados/v1/groups') ||
          request.path.start_with?('/arvados/v1/users/current'))
       # Request from a remote API server, asking to validate a salted
       # token.
-      remote = params[:remote]
+      remote = params["remote"]
     elsif request.get? || params["_method"] == 'GET'
       reader_tokens = params["reader_tokens"]
       if reader_tokens.is_a? String
@@ -42,13 +42,12 @@ class ArvadosApiToken
     auth = nil
     [params["api_token"],
      params["oauth_token"],
-     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([a-zA-Z0-9]+)/).andand[2],
+     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2],
      *reader_tokens,
     ].each do |supplied|
       next if !supplied
       try_auth = ApiClientAuthorization.
-                 validate(token: Thread.current[:supplied_token],
-                          remote: remote)
+                 validate(token: supplied, remote: remote)
       if try_auth.andand.user
         auth = try_auth
         break
