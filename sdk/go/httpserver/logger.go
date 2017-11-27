@@ -23,7 +23,7 @@ var requestTimeContextKey = contextKey{"requestTime"}
 // response via logrus.
 func LogRequests(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(wrapped http.ResponseWriter, req *http.Request) {
-		w := WrapResponseWriter(wrapped)
+		w := &responseTimer{ResponseWriter: WrapResponseWriter(wrapped)}
 		req = req.WithContext(context.WithValue(req.Context(), &requestTimeContextKey, time.Now()))
 		lgr := log.WithFields(log.Fields{
 			"RequestID":       req.Header.Get("X-Request-Id"),
@@ -39,18 +39,17 @@ func LogRequests(h http.Handler) http.Handler {
 	})
 }
 
-func logRequest(w ResponseWriter, req *http.Request, lgr *log.Entry) {
+func logRequest(w *responseTimer, req *http.Request, lgr *log.Entry) {
 	lgr.Info("request")
 }
 
-func logResponse(w ResponseWriter, req *http.Request, lgr *log.Entry) {
+func logResponse(w *responseTimer, req *http.Request, lgr *log.Entry) {
 	if tStart, ok := req.Context().Value(&requestTimeContextKey).(time.Time); ok {
 		tDone := time.Now()
 		lgr = lgr.WithFields(log.Fields{
-			"timeTotal": stats.Duration(tDone.Sub(tStart)),
-			// TODO: track WriteHeader timing
-			// "timeToStatus":  stats.Duration(w.sentHdr.Sub(tStart)),
-			// "timeWriteBody": stats.Duration(tDone.Sub(w.sentHdr)),
+			"timeTotal":     stats.Duration(tDone.Sub(tStart)),
+			"timeToStatus":  stats.Duration(w.writeTime.Sub(tStart)),
+			"timeWriteBody": stats.Duration(tDone.Sub(w.writeTime)),
 		})
 	}
 	lgr.WithFields(log.Fields{
@@ -58,4 +57,26 @@ func logResponse(w ResponseWriter, req *http.Request, lgr *log.Entry) {
 		"respStatus":     http.StatusText(w.WroteStatus()),
 		"respBytes":      w.WroteBodyBytes(),
 	}).Info("response")
+}
+
+type responseTimer struct {
+	ResponseWriter
+	wrote     bool
+	writeTime time.Time
+}
+
+func (rt *responseTimer) WriteHeader(code int) {
+	if !rt.wrote {
+		rt.wrote = true
+		rt.writeTime = time.Now()
+	}
+	rt.ResponseWriter.WriteHeader(code)
+}
+
+func (rt *responseTimer) Write(p []byte) (int, error) {
+	if !rt.wrote {
+		rt.wrote = true
+		rt.writeTime = time.Now()
+	}
+	return rt.ResponseWriter.Write(p)
 }
