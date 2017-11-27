@@ -14,6 +14,13 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
   end
 
+  # For remote authentication tests, we bring up a simple stub server
+  # (on a port chosen by webrick) and configure the SUT so the stub is
+  # responsible for clusters "zbbbb" (a well-behaved cluster) and
+  # "zbork" (a misbehaving cluster).
+  #
+  # Test cases can override the stub's default response to
+  # .../users/current by changing @stub_status and @stub_content.
   setup do
     @controller = Arvados::V1::UsersController.new
     ready = Thread::Queue.new
@@ -48,7 +55,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @remote_server = srv
     @remote_host = "127.0.0.1:#{srv.config[:Port]}"
     Rails.configuration.remote_hosts['zbbbb'] = @remote_host
-    Rails.configuration.remote_hosts['zcccc'] = @remote_host
+    Rails.configuration.remote_hosts['zbork'] = @remote_host
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host}"
     @stub_status = 200
     @stub_content = {
@@ -69,9 +76,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal false, json_response['is_admin']
   end
 
-  test 'authenticate with remote token from wrong site' do
-    @stub_content[:uuid] = 'zcccc-tpzed-000000000000000'
-    get '/arvados/v1/users/current', {}, auth(remote: 'zbbbb')
+  test 'authenticate with remote token from misbhehaving remote cluster' do
+    get '/arvados/v1/users/current', {}, auth(remote: 'zbork')
     assert_response 401
   end
 
