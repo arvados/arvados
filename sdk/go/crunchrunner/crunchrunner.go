@@ -348,13 +348,13 @@ func runner(api IArvadosClient,
 		}
 	}
 
+	log.Printf("Completed: %s", cmd.ProcessState)
+
 	var success bool
-
-	exitCode := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
-
-	log.Printf("Completed with exit code %v", exitCode)
-
-	if inCodes(exitCode, taskp.PermanentFailCodes) {
+	if !cmd.ProcessState.Exited() {
+		// e.g., killed by signal
+		success = false
+	} else if exitCode := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus(); inCodes(exitCode, taskp.PermanentFailCodes) {
 		success = false
 	} else if inCodes(exitCode, taskp.TemporaryFailCodes) {
 		return TempFail{fmt.Errorf("Process tempfail with exit code %v", exitCode)}

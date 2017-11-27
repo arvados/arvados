@@ -429,6 +429,23 @@ func (s *TestSuite) TestSignal(c *C) {
 
 }
 
+func (s *TestSuite) TestChildSignal(c *C) {
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer os.RemoveAll(tmpdir)
+
+	err := runner(ArvTestClient{c,
+		"", false},
+		KeepTestClient{},
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{ScriptParameters: Tasks{[]TaskDef{{
+			Command: []string{"sh", "-c", "kill -9 $$"}}}}},
+		Task{Sequence: 0})
+	c.Check(err, FitsTypeOf, PermFail{})
+}
+
 func (s *TestSuite) TestQuoting(c *C) {
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
