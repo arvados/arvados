@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -155,6 +156,16 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 			path:  writePath,
 			cmd:   "get newdir2/testfile2 '" + checkfile.Name() + "'\n",
 			match: `(?ms).*Downloading .* failed.*`,
+		},
+		{
+			path:  "/c=" + arvadostest.UserAgreementCollection + "/t=" + arv.AuthToken + "/",
+			cmd:   "put '" + localfile.Name() + "' foo\n",
+			match: `(?ms).*Uploading .* failed:.*403 Forbidden.*`,
+		},
+		{
+			path:  "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arv.AuthToken + "/",
+			cmd:   "put '" + localfile.Name() + "' foo\n",
+			match: `(?ms).*Uploading .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)

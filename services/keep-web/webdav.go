@@ -61,12 +61,16 @@ func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) er
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
 	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
 	if writing {
-		if !fs.writing {
-			return nil, errReadOnly
-		}
 		fs.makeparents(name)
 	}
 	f, err = fs.collfs.OpenFile(name, flag, perm)
+	if !fs.writing {
+		// webdav module returns 404 on all OpenFile errors,
+		// but returns 405 Method Not Allowed if OpenFile()
+		// succeeds but Write() or Close() fails. We'd rather
+		// have 405.
+		f = writeFailer{File: f, err: errReadOnly}
+	}
 	return
 }
 
@@ -87,6 +91,19 @@ func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) 
 		fs.makeparents(name)
 	}
 	return fs.collfs.Stat(name)
+}
+
+type writeFailer struct {
+	webdav.File
+	err error
+}
+
+func (wf writeFailer) Write([]byte) (int, error) {
+	return 0, wf.err
+}
+
+func (wf writeFailer) Close() error {
+	return wf.err
 }
 
 // noLockSystem implements webdav.LockSystem by returning success for

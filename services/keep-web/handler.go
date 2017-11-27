@@ -10,6 +10,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -123,7 +124,12 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 		uos.sentHeader = true
 		if code >= 200 && code < 400 {
 			if uos.err = uos.update(); uos.err != nil {
-				http.Error(uos.ResponseWriter, uos.err.Error(), http.StatusInternalServerError)
+				code := http.StatusInternalServerError
+				if err, ok := uos.err.(*arvados.TransactionError); ok {
+					code = err.StatusCode
+				}
+				log.Printf("update() changes response to HTTP %d: %T %q", code, uos.err, uos.err)
+				http.Error(uos.ResponseWriter, uos.err.Error(), code)
 				return
 			}
 		}
@@ -414,7 +420,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		if writing {
 			// Save the collection only if/when all
 			// webdav->filesystem operations succeed --
-			// and send a 500 error the modified
+			// and send a 500 error if the modified
 			// collection can't be saved.
 			w = &updateOnSuccess{
 				ResponseWriter: w,
@@ -430,10 +436,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
-				if os.IsNotExist(err) {
-					statusCode, statusText = http.StatusNotFound, err.Error()
-				} else if err != nil {
-					statusCode, statusText = http.StatusInternalServerError, err.Error()
+				if err != nil {
+					log.Printf("error from webdav handler: %q", err)
 				}
 			},
 		}
