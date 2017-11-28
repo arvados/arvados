@@ -417,9 +417,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
+
+	targetIsPDH := arvadosclient.PDHMatch(targetID)
+	if targetIsPDH && writeMethod[r.Method] {
+		statusCode, statusText = http.StatusMethodNotAllowed, errReadOnly.Error()
+		return
+	}
+
 	if webdavMethod[r.Method] {
-		writing := !arvadosclient.PDHMatch(targetID) && writeMethod[r.Method]
-		if writing {
+		if writeMethod[r.Method] {
 			// Save the collection only if/when all
 			// webdav->filesystem operations succeed --
 			// and send a 500 error if the modified
@@ -434,7 +440,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
 			FileSystem: &webdavFS{
 				collfs:  fs,
-				writing: writing,
+				writing: writeMethod[r.Method],
 			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {

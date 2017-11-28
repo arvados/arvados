@@ -42,6 +42,8 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 	c.Assert(err, check.IsNil)
 	writePath := "/c=" + newCollection.UUID + "/t=" + arv.AuthToken + "/"
 
+	pdhPath := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arv.AuthToken + "/"
+
 	matchToday := time.Now().Format("Jan +2")
 
 	readPath := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/"
@@ -177,9 +179,24 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 			match: `(?ms).*Uploading .* failed:.*403 Forbidden.*`,
 		},
 		{
-			path:  "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arv.AuthToken + "/",
+			path:  pdhPath,
 			cmd:   "put '" + localfile.Name() + "' foo\n",
 			match: `(?ms).*Uploading .* failed:.*405 Method Not Allowed.*`,
+		},
+		{
+			path:  pdhPath,
+			cmd:   "move foo bar\n",
+			match: `(?ms).*Moving .* failed:.*405 Method Not Allowed.*`,
+		},
+		{
+			path:  pdhPath,
+			cmd:   "copy foo bar\n",
+			match: `(?ms).*Copying .* failed:.*405 Method Not Allowed.*`,
+		},
+		{
+			path:  pdhPath,
+			cmd:   "delete foo\n",
+			match: `(?ms).*Deleting .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)
