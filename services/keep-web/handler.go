@@ -139,6 +139,7 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 
 var (
 	writeMethod = map[string]bool{
+		"COPY":   true,
 		"DELETE": true,
 		"MKCOL":  true,
 		"MOVE":   true,
@@ -146,6 +147,7 @@ var (
 		"RMCOL":  true,
 	}
 	webdavMethod = map[string]bool{
+		"COPY":     true,
 		"DELETE":   true,
 		"MKCOL":    true,
 		"MOVE":     true,
@@ -200,7 +202,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
-		w.Header().Set("Access-Control-Allow-Methods", "DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
+		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK

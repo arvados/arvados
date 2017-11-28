@@ -143,6 +143,17 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		},
 		{
 			path:  writePath,
+			cmd:   "copy newdir2/testfile2 testfile3\n",
+			match: `(?ms).*succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "get testfile3 '" + checkfile.Name() + "'\n",
+			match: `(?ms).*succeeded.*`,
+			data:  testdata,
+		},
+		{
+			path:  writePath,
 			cmd:   "get newdir2/testfile2 '" + checkfile.Name() + "'\n",
 			match: `(?ms).*succeeded.*`,
 			data:  testdata,
