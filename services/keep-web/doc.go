@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Keep-web provides read-only HTTP access to files stored in Keep. It
-// serves public data to anonymous and unauthenticated clients, and
-// serves private data to clients that supply Arvados API tokens. It
-// can be installed anywhere with access to Keep services, typically
-// behind a web proxy that supports TLS.
+// Keep-web provides read/write HTTP (WebDAV) access to files stored
+// in Keep. It serves public data to anonymous and unauthenticated
+// clients, and serves private data to clients that supply Arvados API
+// tokens. It can be installed anywhere with access to Keep services,
+// typically behind a web proxy that supports TLS.
 //
 // See http://doc.arvados.org/install/install-keep-web.html.
 //
@@ -40,7 +40,7 @@
 //
 // Proxy configuration
 //
-// Keep-web does not support SSL natively. Typically, it is installed
+// Keep-web does not support TLS natively. Typically, it is installed
 // behind a proxy like nginx.
 //
 // Here is an example nginx configuration.
