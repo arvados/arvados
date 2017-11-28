@@ -228,15 +228,15 @@ func (runner *ContainerRunner) stopSignals() {
 	}
 }
 
-var dockerErrorBlacklist = []string{"Cannot connect to the Docker daemon"}
+var errorBlacklist = []string{"Cannot connect to the Docker daemon"}
 var brokenNodeHook *string
 
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
-	for _, d := range dockerErrorBlacklist {
+	for _, d := range errorBlacklist {
 		if strings.Index(goterr.Error(), d) != -1 {
-			runner.CrunchLog.Printf("Error suggests node is unable to run containers.")
-			if *brokenNodeHook == "" {
-				runner.CrunchLog.Printf("No broken node hook provided")
+			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
+			if brokenNodeHook == nil || *brokenNodeHook == "" {
+				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
 			} else {
 				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
 				// run killme script
@@ -1474,11 +1474,6 @@ func (runner *ContainerRunner) Run() (err error) {
 				return
 			}
 			runner.CrunchLog.Print(e)
-			if runner.checkBrokenNode(e) {
-				// A container failing due to "broken node"
-				// error should back into queue to run again.
-				runner.finalState = "Queued"
-			}
 			if err == nil {
 				err = e
 			}
@@ -1518,7 +1513,11 @@ func (runner *ContainerRunner) Run() (err error) {
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
-		runner.finalState = "Cancelled"
+		if !runner.checkBrokenNode(err) {
+			// Failed to load image but not due to a "broken node"
+			// condition, probably user error.
+			runner.finalState = "Cancelled"
+		}
 		err = fmt.Errorf("While loading container image: %v", err)
 		return
 	}
@@ -1547,19 +1546,25 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	runner.StartCrunchstat()
-
 	if runner.IsCancelled() {
 		return
 	}
 
-	err = runner.UpdateContainerRunning()
-	if err != nil {
-		return
-	}
-	runner.finalState = "Cancelled"
+	runner.StartCrunchstat()
 
 	err = runner.StartContainer()
+	if err != nil {
+		if !runner.checkBrokenNode(err) {
+			// Failed to start container but not a "broken node"
+			// condition, assume user error.
+			runner.finalState = "Cancelled"
+		}
+		return
+	}
+
+	runner.finalState = "Cancelled"
+
+	err = runner.UpdateContainerRunning()
 	if err != nil {
 		return
 	}
