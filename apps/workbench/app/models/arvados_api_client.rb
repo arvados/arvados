@@ -82,7 +82,7 @@ class ArvadosApiClient
     @client_mtx = Mutex.new
   end
 
-  def api(resources_kind, action, data=nil, tokens={})
+  def api(resources_kind, action, data=nil, tokens={}, include_anon_token=true)
 
     profile_checkpoint
 
@@ -117,7 +117,7 @@ class ArvadosApiClient
       'reader_tokens' => ((tokens[:reader_tokens] ||
                            Thread.current[:reader_tokens] ||
                            []) +
-                          [Rails.configuration.anonymous_user_token]).to_json,
+                          (include_anon_token ? [Rails.configuration.anonymous_user_token] : [])).to_json,
     }
     if !data.nil?
       data.each do |k,v|
