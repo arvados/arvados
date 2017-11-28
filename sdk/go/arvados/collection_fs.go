@@ -1345,9 +1345,9 @@ func (me *memSegment) ReadAt(p []byte, off int64) (n int, err error) {
 type storedSegment struct {
 	kc      keepClient
 	locator string
-	size    int
-	offset  int
-	length  int
+	size    int // size of stored block (also encoded in locator)
+	offset  int // position of segment within the stored block
+	length  int // bytes in this segment (offset + length <= size)
 }
 
 func (se storedSegment) Len() int {
