@@ -1389,7 +1389,7 @@ func canonicalName(name string) string {
 	return name
 }
 
-var manifestEscapeSeq = regexp.MustCompile(`\\([0-9]{3}|\\)`)
+var manifestEscapeSeq = regexp.MustCompile(`\\([0-7]{3}|\\)`)
 
 func manifestUnescapeFunc(seq string) string {
 	if seq == `\\` {
@@ -1407,7 +1407,7 @@ func manifestUnescape(s string) string {
 	return manifestEscapeSeq.ReplaceAllStringFunc(s, manifestUnescapeFunc)
 }
 
-var manifestEscapedChar = regexp.MustCompile(`[^\.\w/]`)
+var manifestEscapedChar = regexp.MustCompile(`[\000-\040:\s\\]`)
 
 func manifestEscapeFunc(seq string) string {
 	return fmt.Sprintf("\\%03o", byte(seq[0]))

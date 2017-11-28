@@ -173,7 +173,7 @@ func (s *CollectionFSSuite) TestReadOnlyFile(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
-	f, err := s.fs.OpenFile("/newfile", os.O_RDWR|os.O_CREATE, 0)
+	f, err := s.fs.OpenFile("/new-file 1", os.O_RDWR|os.O_CREATE, 0)
 	c.Assert(err, check.IsNil)
 	st, err := f.Stat()
 	c.Assert(err, check.IsNil)
@@ -185,11 +185,11 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 
 	c.Check(f.Close(), check.IsNil)
 
-	f, err = s.fs.OpenFile("/newfile", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
+	f, err = s.fs.OpenFile("/new-file 1", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
 	c.Check(f, check.IsNil)
 	c.Assert(err, check.NotNil)
 
-	f, err = s.fs.OpenFile("/newfile", os.O_RDWR, 0)
+	f, err = s.fs.OpenFile("/new-file 1", os.O_RDWR, 0)
 	c.Assert(err, check.IsNil)
 	st, err = f.Stat()
 	c.Assert(err, check.IsNil)
@@ -197,8 +197,8 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 
 	c.Check(f.Close(), check.IsNil)
 
-	// TODO: serialize to Collection, confirm manifest contents,
-	// make new FileSystem, confirm file contents.
+	m, err := s.fs.MarshalManifest(".")
+	c.Check(m, check.Matches, `. 37b51d194a7513e45b56f6524f2d51f2\+3\+\S+ 0:3:new-file\\0401\n./dir1 .* 3:3:bar 0:3:foo\n`)
 }
 
 func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
