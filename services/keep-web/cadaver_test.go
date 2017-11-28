@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -41,6 +42,8 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 	c.Assert(err, check.IsNil)
 	writePath := "/c=" + newCollection.UUID + "/t=" + arv.AuthToken + "/"
 
+	matchToday := time.Now().Format("Jan +2")
+
 	readPath := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/"
 	type testcase struct {
 		path  string
@@ -67,7 +70,7 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		{
 			path:  readPath + "dir1/",
 			cmd:   "ls\n",
-			match: `(?ms).*bar *3.*foo *3 .*`,
+			match: `(?ms).*bar *3.*foo +3 +Feb +\d+ +2014.*`,
 		},
 		{
 			path:  writePath,
@@ -109,7 +112,7 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		{
 			path:  writePath,
 			cmd:   "ls\n",
-			match: `(?ms).*newdir0.* 0 .*`,
+			match: `(?ms).*newdir0.* 0 +` + matchToday + ` \d+:\d+\n.*`,
 		},
 		{
 			path:  writePath,

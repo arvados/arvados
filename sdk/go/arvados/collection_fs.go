@@ -496,6 +496,8 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 			ptr.segmentOff = 0
 			ptr.segmentIdx++
 		}
+
+		fn.fileinfo.modTime = time.Now()
 	}
 	return
 }
@@ -531,12 +533,22 @@ func (fn *filenode) pruneMemSegments() {
 
 // FileSystem returns a CollectionFileSystem for the collection.
 func (c *Collection) FileSystem(client *Client, kc keepClient) (CollectionFileSystem, error) {
+	var modTime time.Time
+	if c.ModifiedAt == nil {
+		modTime = time.Now()
+	} else {
+		modTime = *c.ModifiedAt
+	}
 	fs := &fileSystem{dirnode: dirnode{
-		client:   client,
-		kc:       kc,
-		fileinfo: fileinfo{name: ".", mode: os.ModeDir | 0755},
-		parent:   nil,
-		inodes:   make(map[string]inode),
+		client: client,
+		kc:     kc,
+		fileinfo: fileinfo{
+			name:    ".",
+			mode:    os.ModeDir | 0755,
+			modTime: modTime,
+		},
+		parent: nil,
+		inodes: make(map[string]inode),
 	}}
 	fs.dirnode.parent = &fs.dirnode
 	if err := fs.dirnode.loadManifest(c.ManifestText); err != nil {
@@ -943,7 +955,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		default:
 			switch node := dn.inodes[name].(type) {
 			case nil:
-				dn = dn.newDirnode(name, 0755)
+				dn = dn.newDirnode(name, 0755, dn.fileinfo.modTime)
 			case *dirnode:
 				dn = node
 			case *filenode:
@@ -954,7 +966,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	}
 	switch node := dn.inodes[basename].(type) {
 	case nil:
-		fn = dn.newFilenode(basename, 0755)
+		fn = dn.newFilenode(basename, 0755, dn.fileinfo.modTime)
 	case *filenode:
 		fn = node
 	case *dirnode:
@@ -1162,14 +1174,15 @@ func (dn *dirnode) lookupPath(path string) (node inode) {
 	return
 }
 
-func (dn *dirnode) newDirnode(name string, perm os.FileMode) *dirnode {
+func (dn *dirnode) newDirnode(name string, perm os.FileMode, modTime time.Time) *dirnode {
 	child := &dirnode{
 		parent: dn,
 		client: dn.client,
 		kc:     dn.kc,
 		fileinfo: fileinfo{
-			name: name,
-			mode: os.ModeDir | perm,
+			name:    name,
+			mode:    os.ModeDir | perm,
+			modTime: modTime,
 		},
 	}
 	if dn.inodes == nil {
@@ -1180,12 +1193,13 @@ func (dn *dirnode) newDirnode(name string, perm os.FileMode) *dirnode {
 	return child
 }
 
-func (dn *dirnode) newFilenode(name string, perm os.FileMode) *filenode {
+func (dn *dirnode) newFilenode(name string, perm os.FileMode, modTime time.Time) *filenode {
 	child := &filenode{
 		parent: dn,
 		fileinfo: fileinfo{
-			name: name,
-			mode: perm,
+			name:    name,
+			mode:    perm,
+			modTime: modTime,
 		},
 	}
 	if dn.inodes == nil {
@@ -1242,9 +1256,9 @@ func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*filehandl
 			return nil, os.ErrNotExist
 		}
 		if perm.IsDir() {
-			n = dn.newDirnode(name, 0755)
+			n = dn.newDirnode(name, 0755, time.Now())
 		} else {
-			n = dn.newFilenode(name, 0755)
+			n = dn.newFilenode(name, 0755, time.Now())
 		}
 	} else if flag&os.O_EXCL != 0 {
 		return nil, ErrFileExists
