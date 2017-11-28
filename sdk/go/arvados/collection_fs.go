@@ -568,11 +568,11 @@ func (f *filehandle) Seek(off int64, whence int) (pos int64, err error) {
 	size := f.inode.Size()
 	ptr := f.ptr
 	switch whence {
-	case os.SEEK_SET:
+	case io.SeekStart:
 		ptr.off = off
-	case os.SEEK_CUR:
+	case io.SeekCurrent:
 		ptr.off += off
-	case os.SEEK_END:
+	case io.SeekEnd:
 		ptr.off = size + off
 	}
 	if ptr.off < 0 {

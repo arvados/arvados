@@ -222,7 +222,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.Equals, io.EOF)
 	c.Check(string(buf[:3]), check.DeepEquals, "foo")
 
-	pos, err := f.Seek(-2, os.SEEK_CUR)
+	pos, err := f.Seek(-2, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(1))
 	c.Check(err, check.IsNil)
 
@@ -231,11 +231,11 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(n, check.Equals, 1)
 	c.Check(err, check.IsNil)
 
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(2))
 	c.Check(err, check.IsNil)
 
-	pos, err = f.Seek(0, os.SEEK_SET)
+	pos, err = f.Seek(0, io.SeekStart)
 	c.Check(pos, check.Equals, int64(0))
 	c.Check(err, check.IsNil)
 
@@ -245,13 +245,13 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(string(rbuf), check.Equals, "f*o")
 
 	// Write multiple blocks in one call
-	f.Seek(1, os.SEEK_SET)
+	f.Seek(1, io.SeekStart)
 	n, err = f.Write([]byte("0123456789abcdefg"))
 	c.Check(n, check.Equals, 17)
 	c.Check(err, check.IsNil)
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(18))
-	pos, err = f.Seek(-18, os.SEEK_CUR)
+	pos, err = f.Seek(-18, io.SeekCurrent)
 	c.Check(err, check.IsNil)
 	n, err = io.ReadFull(f, buf)
 	c.Check(n, check.Equals, 18)
@@ -264,32 +264,32 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// truncate to current size
 	err = f.Truncate(18)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "f0123456789abcdefg")
 
 	// shrink to zero some data
 	f.Truncate(15)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "f0123456789abcd")
 
 	// grow to partial block/extent
 	f.Truncate(20)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "f0123456789abcd\x00\x00\x00\x00\x00")
 
 	f.Truncate(0)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	f2.Write([]byte("12345678abcdefghijkl"))
 
 	// grow to block/extent boundary
 	f.Truncate(64)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(len(buf2), check.Equals, 64)
@@ -297,7 +297,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// shrink to block/extent boundary
 	err = f.Truncate(32)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(len(buf2), check.Equals, 32)
@@ -305,7 +305,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// shrink to partial block/extent
 	err = f.Truncate(15)
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "12345678abcdefg")
@@ -322,7 +322,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "")
-	f2.Seek(0, os.SEEK_SET)
+	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
 	c.Check(string(buf2), check.Equals, "123")
@@ -350,21 +350,21 @@ func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
 		defer f.Close()
 		fi, err = f.Stat()
 		c.Check(fi.Size(), check.Equals, size)
-		pos, err := f.Seek(0, os.SEEK_END)
+		pos, err := f.Seek(0, io.SeekEnd)
 		c.Check(pos, check.Equals, size)
 	}
 
-	f.Seek(2, os.SEEK_END)
+	f.Seek(2, io.SeekEnd)
 	checkSize(0)
 	f.Write([]byte{1})
 	checkSize(3)
 
-	f.Seek(2, os.SEEK_CUR)
+	f.Seek(2, io.SeekCurrent)
 	checkSize(3)
 	f.Write([]byte{})
 	checkSize(5)
 
-	f.Seek(8, os.SEEK_SET)
+	f.Seek(8, io.SeekStart)
 	checkSize(5)
 	n, err := f.Read(make([]byte, 1))
 	c.Check(n, check.Equals, 0)
@@ -466,7 +466,7 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 				case 0:
 					f.Truncate(int64(rand.Intn(64)))
 				case 1:
-					f.Seek(int64(rand.Intn(64)), os.SEEK_SET)
+					f.Seek(int64(rand.Intn(64)), io.SeekStart)
 				case 2:
 					_, err := f.Write([]byte("beep boop"))
 					c.Check(err, check.IsNil)
@@ -521,13 +521,13 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 				}
 				copy(expect[woff:], wbytes)
 				f.Truncate(int64(trunc))
-				pos, err := f.Seek(int64(woff), os.SEEK_SET)
+				pos, err := f.Seek(int64(woff), io.SeekStart)
 				c.Check(pos, check.Equals, int64(woff))
 				c.Check(err, check.IsNil)
 				n, err := f.Write(wbytes)
 				c.Check(n, check.Equals, len(wbytes))
 				c.Check(err, check.IsNil)
-				pos, err = f.Seek(0, os.SEEK_SET)
+				pos, err = f.Seek(0, io.SeekStart)
 				c.Check(pos, check.Equals, int64(0))
 				c.Check(err, check.IsNil)
 				buf, err := ioutil.ReadAll(f)
@@ -815,7 +815,7 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	f, err = fs.OpenFile("new", os.O_TRUNC|os.O_RDWR, 0)
 	c.Assert(err, check.IsNil)
 	defer f.Close()
-	pos, err := f.Seek(0, os.SEEK_END)
+	pos, err := f.Seek(0, io.SeekEnd)
 	c.Check(pos, check.Equals, int64(0))
 	c.Check(err, check.IsNil)
 	fi, err = f.Stat()
@@ -827,16 +827,16 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	f, err = fs.OpenFile("append", os.O_EXCL|os.O_CREATE|os.O_RDWR|os.O_APPEND, 0)
 	c.Assert(err, check.IsNil)
 	f.Write([]byte{1, 2, 3})
-	f.Seek(0, os.SEEK_SET)
+	f.Seek(0, io.SeekStart)
 	n, _ = f.Read(buf[:1])
 	c.Check(n, check.Equals, 1)
 	c.Check(buf[:1], check.DeepEquals, []byte{1})
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(1))
 	f.Write([]byte{4, 5, 6})
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(6))
-	f.Seek(0, os.SEEK_SET)
+	f.Seek(0, io.SeekStart)
 	n, err = f.Read(buf)
 	c.Check(buf[:n], check.DeepEquals, []byte{1, 2, 3, 4, 5, 6})
 	c.Check(err, check.Equals, io.EOF)
@@ -844,14 +844,14 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 
 	f, err = fs.OpenFile("append", os.O_RDWR|os.O_APPEND, 0)
 	c.Assert(err, check.IsNil)
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(0))
 	c.Check(err, check.IsNil)
 	f.Read(buf[:3])
-	pos, _ = f.Seek(0, os.SEEK_CUR)
+	pos, _ = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(3))
 	f.Write([]byte{7, 8, 9})
-	pos, err = f.Seek(0, os.SEEK_CUR)
+	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(9))
 	f.Close()
 
@@ -860,9 +860,9 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	n, err = f.Write([]byte{3, 2, 1})
 	c.Check(n, check.Equals, 3)
 	c.Check(err, check.IsNil)
-	pos, _ = f.Seek(0, os.SEEK_CUR)
+	pos, _ = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(3))
-	pos, _ = f.Seek(0, os.SEEK_SET)
+	pos, _ = f.Seek(0, io.SeekStart)
 	c.Check(pos, check.Equals, int64(0))
 	n, err = f.Read(buf)
 	c.Check(n, check.Equals, 0)
