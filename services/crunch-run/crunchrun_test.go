@@ -1769,6 +1769,9 @@ func (s *TestSuite) TestEvalSymlinkDir(c *C) {
 }
 
 func (s *TestSuite) TestFullBrokenDocker1(c *C) {
+	ech := "/bin/echo"
+	brokenNodeHook = &ech
+
 	api, _, _ := FullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -1783,16 +1786,16 @@ func (s *TestSuite) TestFullBrokenDocker1(c *C) {
 		t.logWriter.Close()
 	})
 
-	ech := "/bin/echo"
-	brokenNodeHook = &ech
-
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
 	c.Check(strings.Index(api.Logs["crunch-run"].String(), "unable to run containers"), Not(Equals), -1)
-	c.Check(strings.Index(api.Logs["crunch-run"].String(), "Running broken node hook '/bin/echo'"), Not(Equals), -1)
+	c.Check(strings.Index(api.Logs["crunch-run"].String(), "Running broken node hook \"/bin/echo\""), Not(Equals), -1)
 
 }
 
 func (s *TestSuite) TestFullBrokenDocker2(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
 	api, _, _ := FullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -1806,9 +1809,6 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
 	})
-
-	ech := ""
-	brokenNodeHook = &ech
 
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
 	c.Check(strings.Index(api.Logs["crunch-run"].String(), "unable to run containers"), Not(Equals), -1)
