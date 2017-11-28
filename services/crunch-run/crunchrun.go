@@ -228,6 +228,32 @@ func (runner *ContainerRunner) stopSignals() {
 	}
 }
 
+var dockerErrorBlacklist = []string{"Cannot connect to the Docker daemon"}
+var brokenNodeHook *string
+
+func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
+	for _, d := range dockerErrorBlacklist {
+		if strings.Index(goterr.Error(), d) != -1 {
+			runner.CrunchLog.Printf("Error suggests node is unable to run containers.")
+			if *brokenNodeHook == "" {
+				runner.CrunchLog.Printf("No broken node hook provided")
+			} else {
+				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+				// run killme script
+				c := exec.Command(*brokenNodeHook)
+				c.Stdout = runner.CrunchLog
+				c.Stderr = runner.CrunchLog
+				err := c.Run()
+				if err != nil {
+					runner.CrunchLog.Printf("Error running broken node hook: %v", err)
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
+
 // LoadImage determines the docker image id from the container record and
 // checks if it is available in the local Docker image store.  If not, it loads
 // the image from Keep.
@@ -1448,6 +1474,11 @@ func (runner *ContainerRunner) Run() (err error) {
 				return
 			}
 			runner.CrunchLog.Print(e)
+			if runner.checkBrokenNode(e) {
+				// A container failing due to "broken node"
+				// error should back into queue to run again.
+				runner.finalState = "Queued"
+			}
 			if err == nil {
 				err = e
 			}
@@ -1593,6 +1624,7 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
+	brokenNodeHook = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1607,25 +1639,29 @@ func main() {
 	}
 	api.Retries = 8
 
-	var kc *keepclient.KeepClient
-	kc, err = keepclient.MakeKeepClient(api)
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
-	}
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
-	kc.Retries = 4
+	kc, kcerr := keepclient.MakeKeepClient(api)
 
-	var docker *dockerclient.Client
 	// API version 1.21 corresponds to Docker 1.9, which is currently the
 	// minimum version we want to support.
-	docker, err = dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
-	}
-
+	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 	dockerClientProxy := ThinDockerClientProxy{Docker: docker}
 
 	cr := NewContainerRunner(api, kc, dockerClientProxy, containerId)
+
+	if kcerr != nil {
+		cr.CrunchLog.Printf("%s: %v", containerId, kcerr)
+		cr.CrunchLog.Close()
+		os.Exit(1)
+	}
+	if dockererr != nil {
+		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
+		cr.checkBrokenNode(dockererr)
+		cr.CrunchLog.Close()
+		os.Exit(1)
+	}
+
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
+	kc.Retries = 4
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent
