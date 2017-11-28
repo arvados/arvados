@@ -169,14 +169,14 @@ default_iteration() {
     local package_name="$1"; shift
     local package_version="$1"; shift
     local package_type="$1"; shift
-    local iteration=1
-    if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
-           [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
-        iteration=2
-    fi
+    local iteration=$RAILS_PACKAGE_ITERATION
+#    if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
+#           [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
+#        iteration=2
+#    fi
     if [[ $package_type =~ ^python ]]; then
       # Fix --iteration for #9242.
-      iteration=2
+      iteration=$RAILS_PACKAGE_ITERATION
     fi
     echo $iteration
 }
