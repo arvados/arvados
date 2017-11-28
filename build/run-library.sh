@@ -10,7 +10,7 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-RAILS_PACKAGE_ITERATION=8
+RAILS_PACKAGE_ITERATION=$(curl --silent https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber)
 
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
