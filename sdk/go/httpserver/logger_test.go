@@ -46,7 +46,7 @@ func (s *Suite) TestLogRequests(c *check.C) {
 	gotReq := make(map[string]interface{})
 	err = dec.Decode(&gotReq)
 	c.Logf("%#v", gotReq)
-	c.Check(gotReq["RequestID"], check.Matches, "req-[a-z0-9]+")
+	c.Check(gotReq["RequestID"], check.Matches, "req-[a-z0-9]{20}")
 	c.Check(gotReq["reqForwardedFor"], check.Equals, "1.2.3.4:12345")
 	c.Check(gotReq["msg"], check.Equals, "request")
 
