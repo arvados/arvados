@@ -5,6 +5,7 @@
 package httpserver
 
 import (
+	"math/rand"
 	"net/http"
 	"strconv"
 	"sync"
@@ -18,21 +19,24 @@ type IDGenerator struct {
 	// Prefix is prepended to each returned ID.
 	Prefix string
 
-	lastID int64
-	mtx    sync.Mutex
+	mtx sync.Mutex
+	src rand.Source
 }
 
 // Next returns a new ID string. It is safe to call Next from multiple
 // goroutines.
 func (g *IDGenerator) Next() string {
-	id := time.Now().UnixNano()
 	g.mtx.Lock()
-	if id <= g.lastID {
-		id = g.lastID + 1
+	defer g.mtx.Unlock()
+	if g.src == nil {
+		g.src = rand.NewSource(time.Now().UnixNano())
 	}
-	g.lastID = id
-	g.mtx.Unlock()
-	return g.Prefix + strconv.FormatInt(id, 36)
+	a, b := g.src.Int63(), g.src.Int63()
+	id := strconv.FormatInt(a, 36) + strconv.FormatInt(b, 36)
+	for len(id) > 20 {
+		id = id[:20]
+	}
+	return g.Prefix + id
 }
 
 // AddRequestIDs wraps an http.Handler, adding an X-Request-Id header
