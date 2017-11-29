@@ -26,6 +26,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
@@ -74,7 +75,14 @@ func main() {
 	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
 	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
 	dumpConfig := flagset.Bool("dump-config", false, "write current configuration to stdout and exit")
+	getVersion := flagset.Bool("version", false, "Print version information and exit.")
 	flagset.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
 
 	err := config.LoadFile(cfg, cfgPath)
 	if err != nil {
@@ -98,6 +106,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	log.Printf("keepproxy %q started", arvadosVersion.GetVersion())
 
 	arv, err := arvadosclient.New(&cfg.Client)
 	if err != nil {

@@ -9,6 +9,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -20,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 func main() {
@@ -49,8 +51,21 @@ func doMain() error {
 		"/usr/bin/crunch-run",
 		"Crunch command to run container")
 
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
+
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
+
+	log.Printf("crunch-dispatch-local %q started", arvadosVersion.GetVersion())
 
 	runningCmds = make(map[string]*exec.Cmd)
 

@@ -7,9 +7,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 var logger = ctxlog.FromContext
@@ -19,8 +21,15 @@ func main() {
 
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	cfg := defaultConfig()
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
 
 	err := config.LoadFile(&cfg, *configPath)
 	if err != nil {
@@ -38,6 +47,8 @@ func main() {
 		fmt.Print(string(txt))
 		return
 	}
+
+	log.Printf("arvados-ws %q started", arvadosVersion.GetVersion())
 
 	log.Info("started")
 	srv := &server{wsConfig: &cfg}

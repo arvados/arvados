@@ -7,6 +7,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/crunchstat"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
@@ -36,8 +38,17 @@ func main() {
 	flag.IntVar(&signalOnDeadPPID, "signal-on-dead-ppid", signalOnDeadPPID, "Signal to send child if crunchstat's parent process disappears (0 to disable)")
 	flag.DurationVar(&ppidCheckInterval, "ppid-check-interval", ppidCheckInterval, "Time between checks for parent process disappearance")
 	pollMsec := flag.Int64("poll", 1000, "Reporting interval, in milliseconds")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
+
+	reporter.Logger.Printf("crunchstat %q started", arvadosVersion.GetVersion())
 
 	if reporter.CgroupRoot == "" {
 		reporter.Logger.Fatal("error: must provide -cgroup-root")

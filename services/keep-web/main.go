@@ -6,12 +6,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 )
 
@@ -85,8 +87,16 @@ func main() {
 
 	dumpConfig := flag.Bool("dump-config", false,
 		"write current configuration to stdout and exit")
+	getVersion := flag.Bool("version", false,
+		"print version information and exit.")
 	flag.Usage = usage
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
 
 	if err := config.LoadFile(cfg, configPath); err != nil {
 		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
@@ -104,6 +114,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	log.Printf("keep-web %q started", arvadosVersion.GetVersion())
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
 	srv := &server{Config: cfg}

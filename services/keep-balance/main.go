@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -15,6 +16,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
@@ -85,8 +87,15 @@ func main() {
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit")
 	dumpFlag := flag.Bool("dump", false, "dump details for each block to stdout")
 	debugFlag := flag.Bool("debug", false, "enable debug messages")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Usage = usage
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
 
 	mustReadConfig(&cfg, *configPath)
 	if *serviceListPath != "" {
@@ -96,6 +105,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	log.Printf("keep-balance %q started", arvadosVersion.GetVersion())
 
 	if *debugFlag {
 		debugf = log.Printf

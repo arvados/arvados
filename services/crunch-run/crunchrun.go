@@ -32,6 +32,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
@@ -1593,7 +1594,16 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
+
+	log.Printf("crunch-run %q started", arvadosVersion.GetVersion())
 
 	containerId := flag.Arg(0)
 

@@ -23,6 +23,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 )
 
@@ -69,9 +70,20 @@ func doMain() error {
 		"dump-config",
 		false,
 		"write current configuration to stdout and exit")
-
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
+
+	log.Printf("crunch-dispatch-slurm %q started", arvadosVersion.GetVersion())
 
 	err := readConfig(&theConfig, *configPath)
 	if err != nil {

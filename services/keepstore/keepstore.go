@@ -18,6 +18,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 )
@@ -89,6 +90,7 @@ func main() {
 	deprecated.beforeFlagParse(theConfig)
 
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 
 	defaultConfigPath := "/etc/arvados/keepstore/keepstore.yml"
 	var configPath string
@@ -100,6 +102,12 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		os.Exit(0)
+	}
+
 	deprecated.afterFlagParse(theConfig)
 
 	err := config.LoadFile(theConfig, configPath)
@@ -110,6 +118,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(theConfig))
 	}
+
+	log.Printf("keepstore %q started", arvadosVersion.GetVersion())
 
 	err = theConfig.Start()
 	if err != nil {
