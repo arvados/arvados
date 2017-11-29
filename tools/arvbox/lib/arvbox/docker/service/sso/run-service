@@ -83,6 +83,7 @@ fi
 rm -rf tmp
 mkdir -p tmp/cache
 
+bundle exec rake assets:precompile
 bundle exec rake db:migrate
 
 set +u
