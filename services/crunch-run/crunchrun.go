@@ -1639,6 +1639,11 @@ func main() {
 	api.Retries = 8
 
 	kc, kcerr := keepclient.MakeKeepClient(api)
+	if kcerr != nil {
+		log.Fatalf("%s: %v", containerId, kcerr)
+	}
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
+	kc.Retries = 4
 
 	// API version 1.21 corresponds to Docker 1.9, which is currently the
 	// minimum version we want to support.
@@ -1647,11 +1652,6 @@ func main() {
 
 	cr := NewContainerRunner(api, kc, dockerClientProxy, containerId)
 
-	if kcerr != nil {
-		cr.CrunchLog.Printf("%s: %v", containerId, kcerr)
-		cr.CrunchLog.Close()
-		os.Exit(1)
-	}
 	if dockererr != nil {
 		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
 		cr.checkBrokenNode(dockererr)
@@ -1659,8 +1659,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
-	kc.Retries = 4
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent
