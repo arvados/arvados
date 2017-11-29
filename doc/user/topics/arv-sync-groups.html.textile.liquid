@@ -21,24 +21,33 @@ Users can be identified by their email address or username: the tool will check 
 
 This tool is designed to be run periodically reading a file created by a remote auth system (ie: LDAP) dump script, applying what's included on the file as the source of truth.
 
-h2. Requirement
 
-@arv-sync-groups@ needs to perform several administrative tasks on Arvados, and for that, it needs a system user token.
+bq. NOTE: @arv-sync-groups@ needs to perform several administrative tasks on Arvados, so must be run using a superuser token
+
+h2. Options
+
+The following command line options are supported:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |
+|==--help==|             This list of options|
+|==--parent-group-uuid==|   UUID of group to own all the externally synchronized groups|
+|==--user-id== |            Identifier to use in looking up user. One of 'email' or 'username' (Default: 'email')|
+|==--verbose==|             Log informational messages (Default: False)|
+|==--version==|             Print version and exit|
 
 h2. Examples
 
 To sync groups using the username to identify every account, reading from some @external_groups.csv@ file, the command should be called as follows:
 
 <notextile>
-<pre><code>
-~$ <span class="userinput">arv-sync-groups --user-id username /path/to/external_groups.csv </span>
+<pre><code>~$ <span class="userinput">arv-sync-groups --user-id username /path/to/external_groups.csv </span>
 </code></pre>
 </notextile>
 
 If you want to use a specific preexisting group as the parent of all the remote groups, you can do it this way:
 
 <notextile>
-<pre><code>
-~$ <span class="userinput">arv-sync-groups --parent-group-uuid &lt;preexisting group UUID&gt; --user-id username /path/to/external_groups.csv </span>
+<pre><code>~$ <span class="userinput">arv-sync-groups --parent-group-uuid &lt;preexisting group UUID&gt; --user-id username /path/to/external_groups.csv </span>
 </code></pre>
 </notextile>
