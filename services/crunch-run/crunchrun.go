@@ -229,13 +229,13 @@ func (runner *ContainerRunner) stopSignals() {
 }
 
 var errorBlacklist = []string{"Cannot connect to the Docker daemon"}
-var brokenNodeHook *string
+var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
 	for _, d := range errorBlacklist {
 		if strings.Index(goterr.Error(), d) != -1 {
 			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
-			if brokenNodeHook == nil || *brokenNodeHook == "" {
+			if *brokenNodeHook == "" {
 				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
 			} else {
 				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
@@ -1550,22 +1550,17 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
+	err = runner.UpdateContainerRunning()
+	if err != nil {
+		return
+	}
+	runner.finalState = "Cancelled"
+
 	runner.StartCrunchstat()
 
 	err = runner.StartContainer()
 	if err != nil {
-		if !runner.checkBrokenNode(err) {
-			// Failed to start container but not a "broken node"
-			// condition, assume user error.
-			runner.finalState = "Cancelled"
-		}
-		return
-	}
-
-	runner.finalState = "Cancelled"
-
-	err = runner.UpdateContainerRunning()
-	if err != nil {
+		runner.checkBrokenNode(err)
 		return
 	}
 
@@ -1629,7 +1624,6 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
-	brokenNodeHook = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flag.Parse()
 
 	containerId := flag.Arg(0)

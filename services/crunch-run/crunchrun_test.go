@@ -1769,7 +1769,17 @@ func (s *TestSuite) TestEvalSymlinkDir(c *C) {
 }
 
 func (s *TestSuite) TestFullBrokenDocker1(c *C) {
-	ech := "/bin/echo"
+	tf, err := ioutil.TempFile("", "brokenNodeHook-")
+	c.Assert(err, IsNil)
+	defer os.Remove(tf.Name())
+
+	tf.Write([]byte(`#!/bin/sh
+exec echo killme
+`))
+	tf.Close()
+	os.Chmod(tf.Name(), 0700)
+
+	ech := tf.Name()
 	brokenNodeHook = &ech
 
 	api, _, _ := FullRunHelper(c, `{
@@ -1787,8 +1797,9 @@ func (s *TestSuite) TestFullBrokenDocker1(c *C) {
 	})
 
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
-	c.Check(strings.Index(api.Logs["crunch-run"].String(), "unable to run containers"), Not(Equals), -1)
-	c.Check(strings.Index(api.Logs["crunch-run"].String(), "Running broken node hook \"/bin/echo\""), Not(Equals), -1)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
 
 }
 
@@ -1811,6 +1822,6 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
 	})
 
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
-	c.Check(strings.Index(api.Logs["crunch-run"].String(), "unable to run containers"), Not(Equals), -1)
-	c.Check(strings.Index(api.Logs["crunch-run"].String(), "No broken node hook"), Not(Equals), -1)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*No broken node hook.*")
 }
