@@ -1594,7 +1594,7 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
-	getVersion := flags.Bool("version", false, "Print version information and exit.")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Parse()
 
 	// Print version information if requested
