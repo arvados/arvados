@@ -975,7 +975,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 	ok := make(chan struct{})
 	go func() {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
-		(&LoggingRESTRouter{router: MakeRESTRouter()}).ServeHTTP(resp, req)
+		MakeRESTRouter().ServeHTTP(resp, req)
 		ok <- struct{}{}
 	}()
 
