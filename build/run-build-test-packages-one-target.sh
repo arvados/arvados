@@ -11,11 +11,10 @@ Syntax:
 
 --target <target>
     Distribution to build packages for (default: debian8)
+--version <version>    
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
---version <version>
-
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -38,7 +37,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,target,version: \
+    help,upload,version,target: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -58,12 +57,12 @@ while [ $# -gt 0 ]; do
         --target)
             TARGET="$2"; shift
             ;;
+        --version)
+            VERSION="$3"; shift
+            ;;      
         --upload)
             UPLOAD=1
             ;;
-        --version)
-            VERSION="$3"; shift
-            ;;  
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
