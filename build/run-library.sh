@@ -40,7 +40,8 @@ format_last_commit_here() {
 
 version_from_latest_tag() {
   if [[ $VERSION != "" ]] ; then
-      return $VERSION
+      new_version_tag=$VERSION
+      echo "${new_version_tag}" 
   else
       # Generates a version number from the git log latest tag
       # for the current directory, and writes it to stdout.
