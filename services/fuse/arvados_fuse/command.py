@@ -202,6 +202,7 @@ class Mount(object):
             logging.getLogger('arvados.collection').setLevel(logging.DEBUG)
             self.logger.debug("arv-mount debugging enabled")
 
+        self.logger.info("%s %s started", sys.argv[0], __version__)
         self.logger.info("enable write is %s", self.args.enable_write)
 
     def _setup_api(self):
