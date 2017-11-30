@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os/exec"
 	"strings"
@@ -17,14 +18,14 @@ import (
 // command 'squeue'.
 type SqueueChecker struct {
 	Period    time.Duration
-	uuids     map[string]bool
+	uuids     map[string]int
 	startOnce sync.Once
 	done      chan struct{}
 	sync.Cond
 }
 
 func squeueFunc() *exec.Cmd {
-	return exec.Command("squeue", "--all", "--format=%j")
+	return exec.Command("squeue", "--all", "--format=%j %y")
 }
 
 var squeueCmd = squeueFunc
@@ -40,7 +41,23 @@ func (sqc *SqueueChecker) HasUUID(uuid string) bool {
 
 	// block until next squeue broadcast signaling an update.
 	sqc.Wait()
-	return sqc.uuids[uuid]
+	_, exists := sqc.uuids[uuid]
+	return exists
+}
+
+// GetNiceness returns the niceness of a given uuid, or -1 if it doesn't exist.
+func (sqc *SqueueChecker) GetNiceness(uuid string) int {
+	sqc.startOnce.Do(sqc.start)
+
+	sqc.L.Lock()
+	defer sqc.L.Unlock()
+
+	n, exists := sqc.uuids[uuid]
+	if exists {
+		return n
+	} else {
+		return -1
+	}
 }
 
 // Stop stops the squeue monitoring goroutine. Do not call HasUUID
@@ -70,10 +87,15 @@ func (sqc *SqueueChecker) check() {
 		return
 	}
 
-	uuids := strings.Split(stdout.String(), "\n")
-	sqc.uuids = make(map[string]bool, len(uuids))
-	for _, uuid := range uuids {
-		sqc.uuids[uuid] = true
+	lines := strings.Split(stdout.String(), "\n")
+	sqc.uuids = make(map[string]int, len(lines))
+	for _, line := range lines {
+		var uuid string
+		var nice int
+		fmt.Sscan(line, &uuid, &nice)
+		if uuid != "" {
+			sqc.uuids[uuid] = nice
+		}
 	}
 	sqc.Broadcast()
 }

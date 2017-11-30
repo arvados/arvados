@@ -71,7 +71,7 @@ func (s *TestSuite) TestIntegrationNormal(c *C) {
 			if done {
 				return exec.Command("true")
 			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 999000")
 			}
 		},
 		nil,
@@ -96,7 +96,7 @@ func (s *TestSuite) TestIntegrationCancel(c *C) {
 			if cmd != nil && cmd.ProcessState != nil {
 				return exec.Command("true")
 			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 999000")
 			}
 		},
 		func(container arvados.Container) *exec.Cmd {
@@ -131,7 +131,8 @@ func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 			fmt.Sprintf("--mem=%d", 11445),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
-			fmt.Sprintf("--tmp=%d", 45777)},
+			fmt.Sprintf("--tmp=%d", 45777),
+			fmt.Sprintf("--nice=%d", 999000)},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -203,6 +204,14 @@ func (s *TestSuite) integrationTest(c *C,
 		scancelCmd = orig
 	}(scancelCmd)
 	scancelCmd = newScancelCmd
+
+	// Override scontrol
+	defer func(orig func(arvados.Container) *exec.Cmd) {
+		scontrolCmd = orig
+	}(scontrolCmd)
+	scontrolCmd = func(container arvados.Container) *exec.Cmd {
+		return exec.Command("true")
+	}
 
 	// There should be one queued container
 	params := arvadosclient.Dict{
@@ -377,25 +386,32 @@ func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
 func testSbatchFuncWithArgs(c *C, args []string) {
 	theConfig.SbatchArguments = append(theConfig.SbatchArguments, args...)
 
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2}}
+	container := arvados.Container{
+		UUID:               "123",
+		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2},
+		Priority:           1}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch")
 	expected = append(expected, theConfig.SbatchArguments...)
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=999000")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 	theConfig.SbatchArguments = nil
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1}, SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}}}
+	container := arvados.Container{
+		UUID:                 "123",
+		RuntimeConstraints:   arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1},
+		SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}},
+		Priority:             1}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch")
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--partition=blurb,b2")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=999000", "--partition=blurb,b2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
