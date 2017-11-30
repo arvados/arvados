@@ -87,28 +87,67 @@ HttpRequest <- setRefClass(
 
         generateQuery = function() 
         {
-            finalQuery <- ""
+            #Todo(Fudo): This function is a mess, refactor it
+            finalQuery <- "?alt=json"
 
             if(!is.null(query_filters))
             {
                 filters <- sapply(query_filters, function(filter)
                 {
-                    filter <- sapply(filter, function(component) 
-                    {
+                    if(length(filter) != 3)
+                        stop("Filter list must have exacthey 3 elements.")
+
+                    attributeAndOperator = filter[c(1, 2)]
+                    filterList = filter[[3]]
+                    filterListIsPrimitive = TRUE
+                    if(length(filterList) > 1)
+                        filterListIsPrimitive = FALSE
+
+                    attributeAndOperator <- sapply(attributeAndOperator, function(component) {
                         component <- paste0("\"", component, "\"")
                     })
-                    
+
+                    filterList <- sapply(unlist(filterList), function(filter) {
+                        filter <- paste0("\"", filter, "\"")
+                    })
+
+                    filterList <- paste(filterList, collapse = ",+")
+
+                    if(!filterListIsPrimitive)
+                        filterList <- paste0("[", filterList, "]")
+
+                    filter <- c(attributeAndOperator, filterList)
+
                     queryParameter <- paste(filter, collapse = ",+")
-                    queryParameter <- paste0("[[", queryParameter, "]]")
+                    queryParameter <- paste0("[", queryParameter, "]")
+        
                 })
+
+                filters <- paste(filters, collapse = ",+")
+                filters <- paste0("[", filters, "]")
 
                 encodedQuery <- URLencode(filters, reserved = T, repeated = T)
 
-                #Todo(Fudo): Hardcoded for now. Look for a better solution.
-                finalQuery <- paste0("?alt=json&filters=", encodedQuery)
+                finalQuery <- paste0(finalQuery, "&filters=", encodedQuery)
 
                 #Todo(Fudo): This is a hack for now. Find a proper solution.
-                finalQuery <- str_replace_all(finalQuery, "%2B", "+")
+                finalQuery <- stringr::str_replace_all(finalQuery, "%2B", "+")
+            }
+
+            if(!is.null(response_limit))
+            {
+                if(!is.numeric(response_limit))
+                    stop("Limit must be a numeric type.")
+                
+                finalQuery <- paste0(finalQuery, "&limit=", response_limit)
+            }
+
+            if(!is.null(query_offset))
+            {
+                if(!is.numeric(query_offset))
+                    stop("Offset must be a numeric type.")
+                
+                finalQuery <- paste0(finalQuery, "&offset=", query_offset)
             }
 
             finalQuery

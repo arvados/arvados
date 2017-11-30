@@ -44,6 +44,10 @@ Arvados$methods(
 
         httpParser <- HttpParser()
         collection <- httpParser$parseCollectionGet(server_response)
+
+        if(!is.null(collection$errors))
+            stop(collection$errors)       
+
         class(collection) <- "ArvadosCollection"
 
         return(collection)
@@ -62,11 +66,15 @@ Arvados$methods(
     {
         #Todo(Fudo): Implement limit and offset
         collection_relative_url <- "collections"
-        http_request <- HttpRequest("GET", token, host, collection_relative_url, filters) 
+        http_request <- HttpRequest("GET", token, host, collection_relative_url, filters, limit, offset) 
         server_response <- http_request$execute()
 
         httpParser <- HttpParser()
         collection <- httpParser$parseCollectionGet(server_response)
+
+        if(!is.null(collection$errors))
+            stop(collection$errors)       
+
         class(collection) <- "ArvadosCollectionList"
 
         return(collection)
