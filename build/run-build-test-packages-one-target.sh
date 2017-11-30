@@ -14,6 +14,8 @@ Syntax:
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
+--version <version>
+
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -59,6 +61,8 @@ while [ $# -gt 0 ]; do
         --upload)
             UPLOAD=1
             ;;
+        --version)
+            VERSION="$3"; shift  
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
