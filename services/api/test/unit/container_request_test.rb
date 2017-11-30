@@ -293,6 +293,35 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 0, c2.priority
   end
 
+
+  test "Container makes container request, then changes priority" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 1)
+
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal 5, c.priority
+
+    cr2 = create_minimal_req!
+    cr2.update_attributes!(priority: 5, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
+    cr2.reload
+
+    c2 = Container.find_by_uuid cr2.container_uuid
+    assert_equal 5, c2.priority
+
+    act_as_system_user do
+      c.priority = 10
+      c.save!
+    end
+
+    cr.reload
+
+    cr2.reload
+    assert_equal 10, cr2.priority
+
+    c2.reload
+    assert_equal 10, c2.priority
+  end
+
   [
     ['running_container_auth', 'zzzzz-dz642-runningcontainr'],
     ['active_no_prefs', nil],
