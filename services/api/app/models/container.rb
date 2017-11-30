@@ -90,6 +90,14 @@ class Container < ArvadosModel
               state: ContainerRequest::Committed).
         maximum('priority')
       self.save!
+
+      # Update the priority of child container requests to match new priority
+      # of the parent container.
+      ContainerRequest.where(requesting_container_uuid: self.uuid,
+                             state: ContainerRequest::Committed).each do |cr|
+        cr.priority = self.priority
+        cr.save
+      end
     end
   end
 
