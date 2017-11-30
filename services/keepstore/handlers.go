@@ -31,6 +31,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -311,6 +312,7 @@ type NodeStatus struct {
 	TrashQueue      WorkQueueStatus
 	RequestsCurrent int
 	RequestsMax     int
+	Version         string
 }
 
 var st NodeStatus
@@ -346,6 +348,7 @@ func (rtr *router) StatusHandler(resp http.ResponseWriter, req *http.Request) {
 
 // populate the given NodeStatus struct with current values.
 func (rtr *router) readNodeStatus(st *NodeStatus) {
+	st.Version = arvadosVersion.GetVersion()
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*volumeStatusEnt, len(vols))

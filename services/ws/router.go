@@ -15,6 +15,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/health"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -123,6 +124,7 @@ func (rtr *router) DebugStatus() interface{} {
 func (rtr *router) Status() interface{} {
 	return map[string]interface{}{
 		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
+		"Version": arvadosVersion.GetVersion(),
 	}
 }
 

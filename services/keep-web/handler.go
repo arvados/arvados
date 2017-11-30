@@ -24,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"golang.org/x/net/webdav"
 )
 
@@ -90,8 +91,10 @@ func (h *handler) setup() {
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	status := struct {
 		cacheStats
+		Version string
 	}{
 		cacheStats: h.Config.Cache.Stats(),
+		Version:    arvadosVersion.GetVersion(),
 	}
 	json.NewEncoder(w).Encode(status)
 }
