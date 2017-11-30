@@ -439,7 +439,7 @@ class ProjectsControllerTest < ActionController::TestCase
         {
           fixture: 'container_requests',
           state: 'running',
-          selectors: [['div.progress', true]]
+          selectors: [['.label-info', true, 'Running']]
         },
         {
           fixture: 'pipeline_instances',
@@ -450,7 +450,7 @@ class ProjectsControllerTest < ActionController::TestCase
         {
           fixture: 'pipeline_instances',
           state: 'pipeline_in_running_state',
-          selectors: [['div.progress', true]]
+          selectors: [['.label-info', true, 'Running']]
         },
       ].each do |c|
         uuid = api_fixture(c[:fixture])[c[:state]]['uuid']

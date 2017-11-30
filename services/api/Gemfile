@@ -58,7 +58,6 @@ gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
 gem 'arvados', '>= 0.1.20150615153458'
 gem 'arvados-cli', '>= 0.1.20161017193526'
 
-gem 'puma', '~> 2.0'
 gem 'sshkey'
 gem 'safe_yaml'
 gem 'lograge'

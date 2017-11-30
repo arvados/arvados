@@ -13,6 +13,12 @@ rm -rf tmp
 mkdir tmp
 chown arvbox:arvbox tmp
 
+if test -s /var/lib/arvados/workbench_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvados/workbench_rails_env)
+else
+  export RAILS_ENV=development
+fi
+
 if test "$1" != "--only-deps" ; then
     exec bundle exec passenger start --port 80 \
          --user arvbox --runtime-dir=/var/lib/passenger

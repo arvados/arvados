@@ -750,7 +750,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     arvargs.conformance_test = None
     arvargs.use_container = True
     arvargs.relax_path_checks = True
-    arvargs.validate = None
     arvargs.print_supported_versions = False
 
     make_fs_access = partial(CollectionFsAccess,

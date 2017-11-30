@@ -156,6 +156,10 @@ func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, 
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
+	if t.finish == 2 {
+		return dockertypes.ImageInspect{}, nil, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
+	}
+
 	if t.imageLoaded == image {
 		return dockertypes.ImageInspect{}, nil, nil
 	} else {
@@ -164,6 +168,9 @@ func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string
 }
 
 func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
+	if t.finish == 2 {
+		return dockertypes.ImageLoadResponse{}, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
+	}
 	_, err := io.Copy(ioutil.Discard, input)
 	if err != nil {
 		return dockertypes.ImageLoadResponse{}, err
@@ -668,9 +675,10 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	if api.CalledWith("container.state", "Complete") != nil {
 		c.Check(err, IsNil)
 	}
-	c.Check(api.WasSetRunning, Equals, true)
-
-	c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
+	if exitCode != 2 {
+		c.Check(api.WasSetRunning, Equals, true)
+		c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
+	}
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -1758,4 +1766,62 @@ func (s *TestSuite) TestEvalSymlinkDir(c *C) {
 	info, err := os.Lstat(realTemp + "/" + v)
 	_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "", 0)
 	c.Assert(err, NotNil)
+}
+
+func (s *TestSuite) TestFullBrokenDocker1(c *C) {
+	tf, err := ioutil.TempFile("", "brokenNodeHook-")
+	c.Assert(err, IsNil)
+	defer os.Remove(tf.Name())
+
+	tf.Write([]byte(`#!/bin/sh
+exec echo killme
+`))
+	tf.Close()
+	os.Chmod(tf.Name(), 0700)
+
+	ech := tf.Name()
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 2, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
+
+}
+
+func (s *TestSuite) TestFullBrokenDocker2(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 2, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*No broken node hook.*")
 }

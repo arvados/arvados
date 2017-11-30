@@ -100,7 +100,7 @@ sdk/go/health
 sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
-sdk/go/streamer
+sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
@@ -212,6 +212,29 @@ sanity_checks() {
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
+    echo -n 'libattr1 xattr.h: '
+    find /usr/include -path '*/attr/xattr.h' | egrep --max-count=1 . \
+        || fatal "No libattr1 xattr.h. Try: apt-get install libattr1-dev"
+    echo -n 'libcurl curl.h: '
+    find /usr/include -path '*/curl/curl.h' | egrep --max-count=1 . \
+        || fatal "No libcurl curl.h. Try: apt-get install libcurl4-gnutls-dev"
+    echo -n 'libpq libpq-fe.h: '
+    find /usr/include -path '*/postgresql/libpq-fe.h' | egrep --max-count=1 . \
+        || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
+    echo -n 'services/api/config/database.yml: '
+    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
+	    fatal "Please provide a database.yml file for the test suite"
+    else
+	    echo "OK"
+    fi
+    echo -n 'postgresql: '
+    psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
+    echo -n 'phantomjs: '
+    phantomjs --version || fatal "No phantomjs. Try: apt-get install phantomjs"
+    echo -n 'xvfb: '
+    which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
+    echo -n 'graphviz: '
+    dot -V || fatal "No graphviz. Try: apt-get install graphviz"
 }
 
 rotate_logfile() {
@@ -283,6 +306,13 @@ done
 
 start_api() {
     echo 'Starting API server...'
+    if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
+	mkdir -p "$WORKSPACE/services/api/log"
+    fi
+    # Remove empty api.pid file if it exists
+    if [[ -f "$WORKSPACE/tmp/api.pid" && ! -s "$WORKSPACE/tmp/api.pid" ]]; then
+	rm -f "$WORKSPACE/tmp/api.pid"
+    fi
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
@@ -800,7 +830,7 @@ gostuff=(
     sdk/go/health
     sdk/go/httpserver
     sdk/go/manifest
-    sdk/go/streamer
+    sdk/go/asyncbuf
     sdk/go/crunchrunner
     sdk/go/stats
     lib/crunchstat

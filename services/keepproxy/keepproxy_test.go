@@ -10,11 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -55,7 +56,7 @@ func waitForListener() {
 		time.Sleep(ms * time.Millisecond)
 	}
 	if listener == nil {
-		log.Fatalf("Timed out waiting for listener to start")
+		panic("Timed out waiting for listener to start")
 	}
 }
 
@@ -216,6 +217,33 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	}
 }
 
+func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+	router.(*proxyHandler).timeout = time.Nanosecond
+
+	buf := make([]byte, 1<<20)
+	rand.Read(buf)
+	var wg sync.WaitGroup
+	for i := 0; i < 128; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			kc.PutB(buf)
+		}()
+	}
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		c.Error("timeout")
+	}
+}
+
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
@@ -226,14 +254,14 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	{
 		_, _, err := kc.Ask(hash)
 		c.Check(err, Equals, keepclient.BlockNotFound)
-		log.Print("Finished Ask (expected BlockNotFound)")
+		c.Log("Finished Ask (expected BlockNotFound)")
 	}
 
 	{
 		reader, _, _, err := kc.Get(hash)
 		c.Check(reader, Equals, nil)
 		c.Check(err, Equals, keepclient.BlockNotFound)
-		log.Print("Finished Get (expected BlockNotFound)")
+		c.Log("Finished Get (expected BlockNotFound)")
 	}
 
 	// Note in bug #5309 among other errors keepproxy would set
@@ -252,14 +280,14 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
-		log.Print("Finished PutB (expected success)")
+		c.Log("Finished PutB (expected success)")
 	}
 
 	{
 		blocklen, _, err := kc.Ask(hash2)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
-		log.Print("Finished Ask (expected success)")
+		c.Log("Finished Ask (expected success)")
 	}
 
 	{
@@ -268,7 +296,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
-		log.Print("Finished Get (expected success)")
+		c.Log("Finished Get (expected success)")
 	}
 
 	{
@@ -278,7 +306,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(hash2, Matches, `^d41d8cd98f00b204e9800998ecf8427e\+0(\+.+)?$`)
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
-		log.Print("Finished PutB zero block")
+		c.Log("Finished PutB zero block")
 	}
 
 	{
@@ -287,7 +315,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte(""))
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Finished Get zero block")
+		c.Log("Finished Get zero block")
 	}
 }
 
@@ -302,7 +330,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		errNotFound, _ := err.(keepclient.ErrNotFound)
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
-		log.Print("Ask 1")
+		c.Log("Ask 1")
 	}
 
 	{
@@ -310,7 +338,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		c.Check(hash2, Equals, "")
 		c.Check(rep, Equals, 0)
 		c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
-		log.Print("PutB")
+		c.Log("PutB")
 	}
 
 	{
@@ -319,7 +347,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Ask 2")
+		c.Log("Ask 2")
 	}
 
 	{
@@ -328,7 +356,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Get")
+		c.Log("Get")
 	}
 }
 
@@ -343,7 +371,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		errNotFound, _ := err.(keepclient.ErrNotFound)
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
-		log.Print("Ask 1")
+		c.Log("Ask 1")
 	}
 
 	{
@@ -351,7 +379,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
-		log.Print("PutB")
+		c.Log("PutB")
 	}
 
 	{
@@ -360,7 +388,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Ask 2")
+		c.Log("Ask 2")
 	}
 
 	{
@@ -369,7 +397,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		c.Check(errNotFound, NotNil)
 		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Get")
+		c.Log("Get")
 	}
 }
 

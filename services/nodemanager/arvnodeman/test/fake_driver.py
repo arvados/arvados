@@ -130,7 +130,7 @@ class RetryDriver(FakeDriver):
         create_calls += 1
         if create_calls < 2:
             raise RateLimitReachedError(429, "Rate limit exceeded",
-                                        retry_after=12)
+                                        headers={'retry-after': '12'})
         elif create_calls < 3:
             raise BaseHTTPError(429, "Rate limit exceeded",
                                 {'retry-after': '2'})

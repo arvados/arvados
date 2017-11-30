@@ -27,6 +27,20 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
+  test "narrow + wide scoped tokens for different users" do
+    get_args = [{
+                  reader_tokens: [api_client_authorizations(:anonymous).api_token]
+                }, auth(:active_userlist)]
+    get(v1_url('users'), *get_args)
+    assert_response :success
+    get(v1_url('users', ''), *get_args)  # Add trailing slash.
+    assert_response :success
+    get(v1_url('users', 'current'), *get_args)
+    assert_response 403
+    get(v1_url('virtual_machines'), *get_args)
+    assert_response 403
+   end
+
   test "specimens token can see exactly owned specimens" do
     get_args = [{}, auth(:active_specimens)]
     get(v1_url('specimens'), *get_args)
