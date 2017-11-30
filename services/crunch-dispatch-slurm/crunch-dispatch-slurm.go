@@ -294,7 +294,7 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 			} else if updated.Priority == 0 {
 				log.Printf("Container %s has state %q, priority %d: cancel slurm job", ctr.UUID, updated.State, updated.Priority)
 				scancel(ctr)
-			} else if niceness(updated.Priority) != sqCheck.GetNiceness(ctr.UUID) {
+			} else if niceness(updated.Priority) != sqCheck.GetNiceness(ctr.UUID) && sqCheck.GetNiceness(ctr.UUID) != -1 {
 				// dynamically adjust priority
 				scontrolUpdate(updated)
 			}
