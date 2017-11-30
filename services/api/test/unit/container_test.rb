@@ -95,6 +95,42 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container request valid priority" do
+    act_as_system_user do
+      cr, _ = minimal_new(environment: {},
+                      mounts: {"BAR" => "FOO"},
+                      output_path: "/tmp",
+                      priority: 1,
+                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
+
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr.priority = -1
+        cr.save!
+      end
+
+      cr.priority = 0
+      cr.save!
+
+      cr.priority = 1
+      cr.save!
+
+      cr.priority = 500
+      cr.save!
+
+      cr.priority = 999
+      cr.save!
+
+      cr.priority = 1000
+      cr.save!
+
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr.priority = 1001
+        cr.save!
+      end
+    end
+  end
+
+
   test "Container serialized hash attributes sorted before save" do
     env = {"C" => 3, "B" => 2, "A" => 1}
     m = {"F" => {"kind" => 3}, "E" => {"kind" => 2}, "D" => {"kind" => 1}}
