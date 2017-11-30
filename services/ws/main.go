@@ -11,10 +11,10 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 var logger = ctxlog.FromContext
+var version = "dev"
 
 func main() {
 	log := logger(nil)
@@ -27,7 +27,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -48,7 +48,7 @@ func main() {
 		return
 	}
 
-	log.Printf("arvados-ws %q started", arvadosVersion.GetVersion())
+	log.Printf("arvados-ws %q started", version)
 
 	log.Info("started")
 	srv := &server{wsConfig: &cfg}

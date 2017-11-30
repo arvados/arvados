@@ -32,13 +32,14 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	dockerclient "github.com/docker/docker/client"
 )
+
+var version = "dev"
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
@@ -1419,7 +1420,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
-	runner.CrunchLog.Printf("crunch-run %q started", arvadosVersion.GetVersion())
+	runner.CrunchLog.Printf("crunch-run %q started", version)
 	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
@@ -1600,11 +1601,11 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	log.Printf("crunch-run %q started", arvadosVersion.GetVersion())
+	log.Printf("crunch-run %q started", version)
 
 	containerId := flag.Arg(0)
 

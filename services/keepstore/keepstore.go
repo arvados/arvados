@@ -18,10 +18,11 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+var version = "dev"
 
 // A Keep "block" is 64MB.
 const BlockSize = 64 * 1024 * 1024
@@ -104,7 +105,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -119,7 +120,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(theConfig))
 	}
 
-	log.Printf("keepstore %q started", arvadosVersion.GetVersion())
+	log.Printf("keepstore %q started", version)
 
 	err = theConfig.Start()
 	if err != nil {

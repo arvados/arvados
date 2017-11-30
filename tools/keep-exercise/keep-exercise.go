@@ -32,8 +32,9 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
+
+var version = "dev"
 
 // Command line config knobs
 var (
@@ -54,11 +55,11 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	log.Printf("keep-exercise %q started", arvadosVersion.GetVersion())
+	log.Printf("keep-exercise %q started", version)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {

@@ -21,8 +21,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
+
+var version = "dev"
 
 func main() {
 	err := doMain()
@@ -61,11 +62,11 @@ func doMain() error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	log.Printf("crunch-dispatch-local %q started", arvadosVersion.GetVersion())
+	log.Printf("crunch-dispatch-local %q started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
 

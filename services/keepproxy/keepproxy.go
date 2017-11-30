@@ -26,11 +26,12 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
 )
+
+var version = "dev"
 
 type Config struct {
 	Client          arvados.Client
@@ -80,7 +81,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -107,7 +108,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keepproxy %q started", arvadosVersion.GetVersion())
+	log.Printf("keepproxy %q started", version)
 
 	arv, err := arvadosclient.New(&cfg.Client)
 	if err != nil {

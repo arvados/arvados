@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/crunchstat"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
 
 const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
@@ -25,6 +24,7 @@ const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
 var (
 	signalOnDeadPPID  int = 15
 	ppidCheckInterval     = time.Second
+	version               = "dev"
 )
 
 func main() {
@@ -44,11 +44,11 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	reporter.Logger.Printf("crunchstat %q started", arvadosVersion.GetVersion())
+	reporter.Logger.Printf("crunchstat %q started", version)
 
 	if reporter.CgroupRoot == "" {
 		reporter.Logger.Fatal("error: must provide -cgroup-root")

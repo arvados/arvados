@@ -14,9 +14,10 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+var version = "dev"
 
 // Server configuration
 type Config struct {
@@ -62,7 +63,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -93,7 +94,7 @@ func main() {
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Printf("arv-git-httpd %q started", arvadosVersion.GetVersion())
+	log.Printf("arv-git-httpd %q started", version)
 	log.Println("Listening at", srv.Addr)
 	log.Println("Repository root", theConfig.RepoRoot)
 	if err := srv.Wait(); err != nil {

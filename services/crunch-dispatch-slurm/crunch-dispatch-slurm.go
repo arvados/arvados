@@ -23,9 +23,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+var version = "dev"
 
 // Config used by crunch-dispatch-slurm
 type Config struct {
@@ -79,11 +80,11 @@ func doMain() error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	log.Printf("crunch-dispatch-slurm %q started", arvadosVersion.GetVersion())
+	log.Printf("crunch-dispatch-slurm %q started", version)
 
 	err := readConfig(&theConfig, *configPath)
 	if err != nil {

@@ -16,8 +16,9 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 )
+
+var version = "dev"
 
 const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
 
@@ -93,7 +94,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -106,7 +107,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keep-balance %q started", arvadosVersion.GetVersion())
+	log.Printf("keep-balance %q started", version)
 
 	if *debugFlag {
 		debugf = log.Printf

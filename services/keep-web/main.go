@@ -13,12 +13,12 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	arvadosVersion "git.curoverse.com/arvados.git/sdk/go/version"
 	"github.com/coreos/go-systemd/daemon"
 )
 
 var (
 	defaultConfigPath = "/etc/arvados/keep-web/keep-web.yml"
+	version           = "dev"
 )
 
 // Config specifies server configuration.
@@ -94,7 +94,7 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", arvadosVersion.GetVersion())
+		fmt.Printf("Version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -115,7 +115,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keep-web %q started", arvadosVersion.GetVersion())
+	log.Printf("keep-web %q started", version)
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
 	srv := &server{Config: cfg}
