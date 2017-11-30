@@ -10,7 +10,8 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-RAILS_PACKAGE_ITERATION=$(curl --silent https://ci.curoverse.com/job/new-versioning-build-packages-centos7/lastBuild/buildNumber)
+RAILS_PACKAGE_ITERATION=1
+
 
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
@@ -38,19 +39,23 @@ format_last_commit_here() {
 }
 
 version_from_latest_tag() {
-  # Generates a version number from the git log latest tag
-  # for the current directory, and writes it to stdout.
-  latest_tag=`git describe --abbrev=0`
-  #replace . with space so can split into an array
-  version_bits=(${latest_tag//./ })
-  #get number parts and increase last one by 1
-  vnum1=${version_bits[0]}
-  vnum2=${version_bits[1]}
-  vnum3=${version_bits[2]}
-  vnum3=$((vnum3+1))
-  new_version_tag="$vnum1.$vnum2.$vnum3"
-  git rev-parse HEAD >Changelog
-  echo "${new_version_tag}"   
+  if [[ $VERSION != "" ]] ; then
+      return $VERSION
+  else
+      # Generates a version number from the git log latest tag
+      # for the current directory, and writes it to stdout.
+      latest_tag=`git describe --abbrev=0`
+      #replace . with space so can split into an array
+      version_bits=(${latest_tag//./ })
+      #get number parts and increase last one by 1
+      vnum1=${version_bits[0]}
+      vnum2=${version_bits[1]}
+      vnum3=${version_bits[2]}
+      vnum3=$((vnum3+1))
+      new_version_tag="$vnum1.$vnum2.$vnum3"
+      git rev-parse HEAD >Changelog
+     echo "${new_version_tag}"   
+  fi
 }
 
 version_from_git() {
