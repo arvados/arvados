@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -180,6 +181,10 @@ func anythingToValues(params interface{}) (url.Values, error) {
 //
 // path must not contain a query string.
 func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error {
+	if body, ok := body.(io.Closer); ok {
+		// Ensure body is closed even if we error out early
+		defer body.Close()
+	}
 	urlString := c.apiURL(path)
 	urlValues, err := anythingToValues(params)
 	if err != nil {
@@ -200,6 +205,24 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 	}
 	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	return c.DoAndDecode(dst, req)
+}
+
+type resource interface {
+	resourceName() string
+}
+
+// UpdateBody returns an io.Reader suitable for use as an http.Request
+// Body for a create or update API call.
+func (c *Client) UpdateBody(rsc resource) io.Reader {
+	j, err := json.Marshal(rsc)
+	if err != nil {
+		// Return a reader that returns errors.
+		r, w := io.Pipe()
+		w.CloseWithError(err)
+		return r
+	}
+	v := url.Values{rsc.resourceName(): {string(j)}}
+	return bytes.NewBufferString(v.Encode())
 }
 
 func (c *Client) httpClient() *http.Client {

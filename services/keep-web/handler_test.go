@@ -45,12 +45,12 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
-	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Equals, "GET, POST, OPTIONS, PROPFIND")
+	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Equals, "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
 	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Equals, "Authorization, Content-Type, Range")
 
 	// Check preflight for a disallowed request
 	resp = httptest.NewRecorder()
-	req.Header.Set("Access-Control-Request-Method", "DELETE")
+	req.Header.Set("Access-Control-Request-Method", "MAKE-COFFEE")
 	h.ServeHTTP(resp, req)
 	c.Check(resp.Body.String(), check.Equals, "")
 	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
