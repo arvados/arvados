@@ -102,6 +102,7 @@ sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
 sdk/go/stats
+sdk/go/version
 sdk/go/crunchrunner
 sdk/cwl
 tools/arv-sync-groups
@@ -830,6 +831,7 @@ gostuff=(
     sdk/go/streamer
     sdk/go/crunchrunner
     sdk/go/stats
+    sdk/go/version
     lib/crunchstat
     services/arv-git-httpd
     services/crunchstat

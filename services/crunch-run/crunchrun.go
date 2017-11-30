@@ -617,7 +617,7 @@ type infoCommand struct {
 	cmd   []string
 }
 
-// Gather node information and store it on the log for debugging
+// LogNodeInfo gathers node information and store it on the log for debugging
 // purposes.
 func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	w := runner.NewLogWriter("node-info")
@@ -667,7 +667,7 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	return nil
 }
 
-// Get and save the raw JSON container record from the API server
+// LogContainerRecord gets and saves the raw JSON container record from the API server
 func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	w := &ArvLogWriter{
 		ArvClient:     runner.ArvClient,
@@ -1419,6 +1419,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
+	runner.CrunchLog.Printf("crunch-run %q started", arvadosVersion.GetVersion())
 	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
