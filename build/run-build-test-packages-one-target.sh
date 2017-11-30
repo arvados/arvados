@@ -38,7 +38,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,target: \
+    help,upload,target,version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -62,7 +62,8 @@ while [ $# -gt 0 ]; do
             UPLOAD=1
             ;;
         --version)
-            VERSION="$3"; shift  
+            VERSION="$3"; shift
+            ;;  
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
