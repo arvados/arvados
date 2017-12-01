@@ -59,7 +59,7 @@ while [ $# -gt 0 ]; do
             ;;
         --verno)
             VERNO="$2"; shift
-            EXPORT $VERNO 
+            EXPORT VERNO 
             ;;      
         --upload)
             UPLOAD=1
