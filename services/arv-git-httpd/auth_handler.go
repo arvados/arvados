@@ -188,5 +188,5 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	r.URL.Path = rewrittenPath
 
-	h.handler.ServeHTTP(&w, r)
+	h.handler.ServeHTTP(w, r)
 }

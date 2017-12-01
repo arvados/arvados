@@ -45,6 +45,8 @@ var (
 	s3RaceWindow    time.Duration
 
 	s3ACL = s3.Private
+
+	zeroTime time.Time
 )
 
 const (

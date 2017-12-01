@@ -10,6 +10,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -96,10 +97,64 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(status)
 }
 
+// updateOnSuccess wraps httpserver.ResponseWriter. If the handler
+// sends an HTTP header indicating success, updateOnSuccess first
+// calls the provided update func. If the update func fails, a 500
+// response is sent, and the status code and body sent by the handler
+// are ignored (all response writes return the update error).
+type updateOnSuccess struct {
+	httpserver.ResponseWriter
+	update     func() error
+	sentHeader bool
+	err        error
+}
+
+func (uos *updateOnSuccess) Write(p []byte) (int, error) {
+	if uos.err != nil {
+		return 0, uos.err
+	}
+	if !uos.sentHeader {
+		uos.WriteHeader(http.StatusOK)
+	}
+	return uos.ResponseWriter.Write(p)
+}
+
+func (uos *updateOnSuccess) WriteHeader(code int) {
+	if !uos.sentHeader {
+		uos.sentHeader = true
+		if code >= 200 && code < 400 {
+			if uos.err = uos.update(); uos.err != nil {
+				code := http.StatusInternalServerError
+				if err, ok := uos.err.(*arvados.TransactionError); ok {
+					code = err.StatusCode
+				}
+				log.Printf("update() changes response to HTTP %d: %T %q", code, uos.err, uos.err)
+				http.Error(uos.ResponseWriter, uos.err.Error(), code)
+				return
+			}
+		}
+	}
+	uos.ResponseWriter.WriteHeader(code)
+}
+
 var (
+	writeMethod = map[string]bool{
+		"COPY":   true,
+		"DELETE": true,
+		"MKCOL":  true,
+		"MOVE":   true,
+		"PUT":    true,
+		"RMCOL":  true,
+	}
 	webdavMethod = map[string]bool{
+		"COPY":     true,
+		"DELETE":   true,
+		"MKCOL":    true,
+		"MOVE":     true,
 		"OPTIONS":  true,
 		"PROPFIND": true,
+		"PUT":      true,
+		"RMCOL":    true,
 	}
 	browserMethod = map[string]bool{
 		"GET":  true,
@@ -147,7 +202,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND")
+		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
@@ -352,21 +407,45 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	fs := collection.FileSystem(&arvados.Client{
+	client := &arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}, kc)
+	}
+	fs, err := collection.FileSystem(client, kc)
+	if err != nil {
+		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		return
+	}
+
+	targetIsPDH := arvadosclient.PDHMatch(targetID)
+	if targetIsPDH && writeMethod[r.Method] {
+		statusCode, statusText = http.StatusMethodNotAllowed, errReadOnly.Error()
+		return
+	}
+
 	if webdavMethod[r.Method] {
+		if writeMethod[r.Method] {
+			// Save the collection only if/when all
+			// webdav->filesystem operations succeed --
+			// and send a 500 error if the modified
+			// collection can't be saved.
+			w = &updateOnSuccess{
+				ResponseWriter: w,
+				update: func() error {
+					return h.Config.Cache.Update(client, *collection, fs)
+				}}
+		}
 		h := webdav.Handler{
-			Prefix:     "/" + strings.Join(pathParts[:stripParts], "/"),
-			FileSystem: &webdavFS{collfs: fs},
+			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
+			FileSystem: &webdavFS{
+				collfs:  fs,
+				writing: writeMethod[r.Method],
+			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
-				if os.IsNotExist(err) {
-					statusCode, statusText = http.StatusNotFound, err.Error()
-				} else if err != nil {
-					statusCode, statusText = http.StatusInternalServerError, err.Error()
+				if err != nil {
+					log.Printf("error from webdav handler: %q", err)
 				}
 			},
 		}

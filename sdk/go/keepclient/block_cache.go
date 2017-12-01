@@ -7,6 +7,8 @@ package keepclient
 import (
 	"io"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -49,10 +51,30 @@ func (c *BlockCache) Sweep() {
 	}
 }
 
+// ReadAt returns data from the cache, first retrieving it from Keep if
+// necessary.
+func (c *BlockCache) ReadAt(kc *KeepClient, locator string, p []byte, off int) (int, error) {
+	buf, err := c.Get(kc, locator)
+	if err != nil {
+		return 0, err
+	}
+	if off > len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return copy(p, buf[off:]), nil
+}
+
 // Get returns data from the cache, first retrieving it from Keep if
 // necessary.
 func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 	cacheKey := locator[:32]
+	bufsize := BLOCKSIZE
+	if parts := strings.SplitN(locator, "+", 3); len(parts) >= 2 {
+		datasize, err := strconv.ParseInt(parts[1], 10, 32)
+		if err == nil && datasize >= 0 {
+			bufsize = int(datasize)
+		}
+	}
 	c.mtx.Lock()
 	if c.cache == nil {
 		c.cache = make(map[string]*cacheBlock)
@@ -68,7 +90,7 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 			rdr, size, _, err := kc.Get(locator)
 			var data []byte
 			if err == nil {
-				data = make([]byte, size, BLOCKSIZE)
+				data = make([]byte, size, bufsize)
 				_, err = io.ReadFull(rdr, data)
 				err2 := rdr.Close()
 				if err == nil {

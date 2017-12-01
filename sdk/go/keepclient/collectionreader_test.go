@@ -166,11 +166,11 @@ func (s *CollectionReaderUnit) TestCollectionReaderContent(c *check.C) {
 
 func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 	h := md5.New()
-	var testdata []byte
 	buf := make([]byte, 4096)
 	locs := make([]string, len(buf))
+	testdata := make([]byte, 0, len(buf)*len(buf))
 	filesize := 0
-	for i := 0; i < len(locs); i++ {
+	for i := range locs {
 		_, err := rand.Read(buf[:i])
 		h.Write(buf[:i])
 		locs[i], _, err = s.kc.PutB(buf[:i])
@@ -219,11 +219,12 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 	c.Check(md5.Sum(buf), check.DeepEquals, md5.Sum(testdata))
 	c.Check(buf[:1000], check.DeepEquals, testdata[:1000])
 
+	expectPos := curPos + size + 12345
 	curPos, err = rdr.Seek(size+12345, io.SeekCurrent)
 	c.Check(err, check.IsNil)
-	c.Check(curPos, check.Equals, size)
+	c.Check(curPos, check.Equals, expectPos)
 
-	curPos, err = rdr.Seek(8-size, io.SeekCurrent)
+	curPos, err = rdr.Seek(8-curPos, io.SeekCurrent)
 	c.Check(err, check.IsNil)
 	c.Check(curPos, check.Equals, int64(8))
 

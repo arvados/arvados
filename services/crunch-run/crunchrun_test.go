@@ -328,11 +328,27 @@ type FileWrapper struct {
 	len int64
 }
 
+func (fw FileWrapper) Readdir(n int) ([]os.FileInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (fw FileWrapper) Seek(int64, int) (int64, error) {
+	return 0, errors.New("not implemented")
+}
+
 func (fw FileWrapper) Size() int64 {
 	return fw.len
 }
 
-func (fw FileWrapper) Seek(int64, int) (int64, error) {
+func (fw FileWrapper) Stat() (os.FileInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (fw FileWrapper) Truncate(int64) error {
+	return errors.New("not implemented")
+}
+
+func (fw FileWrapper) Write([]byte) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
@@ -440,18 +456,12 @@ func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, erro
 func (KeepReadErrorTestClient) ClearBlockCache() {
 }
 
-type ErrorReader struct{}
+type ErrorReader struct {
+	FileWrapper
+}
 
 func (ErrorReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("ErrorReader")
-}
-
-func (ErrorReader) Close() error {
-	return nil
-}
-
-func (ErrorReader) Size() int64 {
-	return 0
 }
 
 func (ErrorReader) Seek(int64, int) (int64, error) {
