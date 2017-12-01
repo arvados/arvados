@@ -39,8 +39,8 @@ format_last_commit_here() {
 }
 
 version_from_latest_tag() {
-  if [[ $VERNO != "" ]] ; then
-      new_version_tag=$VERSION
+  if [ -n "$VERNO" ]; then
+      new_version_tag=$VERNO
       echo "${new_version_tag}" 
   else
       # Generates a version number from the git log latest tag
