@@ -274,7 +274,10 @@ class ContainerRequest < ArvadosModel
 
     token_uuid = current_api_client_authorization.andand.uuid
     container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
-    self.requesting_container_uuid = container.uuid if container
+    if container
+      self.requesting_container_uuid = container.uuid
+      self.priority = container.priority
+    end
     true
   end
 end

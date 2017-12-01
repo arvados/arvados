@@ -324,14 +324,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr'],
-    ['active_no_prefs', nil],
-  ].each do |token, expected|
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', containers(:running).priority],
+    ['active_no_prefs', nil, 500],
+  ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token
       cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
       assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
       assert_equal expected, cr.requesting_container_uuid
+      assert_equal expected_priority, cr.priority
     end
   end
 
