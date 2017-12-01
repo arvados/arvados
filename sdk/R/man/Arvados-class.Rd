@@ -11,9 +11,12 @@ All Arvados logic is inside this class
 \section{Fields}{
 
 \describe{
-\item{\code{token}}{represents user authentification token.}
+\item{\code{token}}{Token represents user authentification token.}
 
-\item{\code{host}}{represents server name we wish to connect to.}
+\item{\code{host}}{Host represents server name we wish to connect to.}
 }}
 
 
+\examples{
+arv = Arvados("token", "host_name")
+}

@@ -12,3 +12,7 @@ Get Arvados collection
 \item{\code{uuid}}{UUID of the given collection}
 }}
 
+\examples{
+arv = Arvados("token", "host_name")
+arv$collection_get("uuid")
+}

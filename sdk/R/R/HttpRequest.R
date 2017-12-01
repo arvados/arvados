@@ -10,6 +10,7 @@ HttpRequest <- setRefClass(
         server_relative_url = "character",
         auth_token          = "character",
         allowed_methods     = "list",
+        request_body        = "ANY",
         query_filters       = "ANY",
         response_limit      = "ANY",
         query_offset        = "ANY"
@@ -20,6 +21,7 @@ HttpRequest <- setRefClass(
                               token,
                               base_url,
                               relative_url,
+                              body = NULL,
                               filters = NULL,
                               limit = 100,
                               offset = 0) 
@@ -28,6 +30,7 @@ HttpRequest <- setRefClass(
             auth_token          <<- token
             server_base_url     <<- base_url
             server_relative_url <<- relative_url
+            request_body        <<- body
             query_filters       <<- filters
             response_limit      <<- limit
             query_offset        <<- offset
@@ -35,6 +38,7 @@ HttpRequest <- setRefClass(
 
         execute = function() 
         {
+            #Todo(Fudo): Get rid of the switch and make this module more general.
             http_method <- switch(send_method,
                                   "GET"    = .self$getRequest,
                                   "POST"   = .self$postRequest,
@@ -57,20 +61,27 @@ HttpRequest <- setRefClass(
         #Todo(Fudo): Try to make this more generic
         postRequest = function() 
         {
-            #Todo(Fudo): Implement this later on.
-            print("POST method")
+            url <- paste0(server_base_url, server_relative_url)
+            requestHeaders <- httr::add_headers("Authorization" = .self$getAuthHeader(),
+                                                "Content-Type"  = "application/json")
+            response <- POST(url, body = request_body, config = requestHeaders)
         },
 
         putRequest = function() 
         {
-            #Todo(Fudo): Implement this later on.
-            print("PUT method")
+            url <- paste0(server_base_url, server_relative_url)
+            requestHeaders <- httr::add_headers("Authorization" = .self$getAuthHeader(),
+                                                "Content-Type"  = "application/json")
+
+            response <- PUT(url, body = request_body, config = requestHeaders)
         },
 
         deleteRequest = function() 
         {
-            #Todo(Fudo): Implement this later on.
-            print("DELETE method")
+            url <- paste0(server_base_url, server_relative_url)
+            requestHeaders <- httr::add_headers("Authorization" = .self$getAuthHeader(),
+                                                "Content-Type"  = "application/json")
+            response <- DELETE(url, config = requestHeaders)
         },
 
         pathcRequest = function() 
