@@ -55,10 +55,10 @@ while [ $# -gt 0 ]; do
             exit 1
             ;;
         --target)
-            TARGET="$2"; shift
+            TARGET="$2"; shift 2
             ;;
         --version)
-            VERSION="$2"; shift
+            VERSION="$2"; shift 2
             ;;      
         --upload)
             UPLOAD=1
