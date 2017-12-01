@@ -194,7 +194,7 @@ func scancelFunc(container arvados.Container) *exec.Cmd {
 
 // scontrolCmd
 func scontrolFunc(container arvados.Container) *exec.Cmd {
-	return exec.Command("scontrol", "update", "JobName="+container.UUID, fmt.Sprintf("--nice=%d", niceness(container.Priority)))
+	return exec.Command("scontrol", "update", "JobName="+container.UUID, fmt.Sprintf("Nice=%d", niceness(container.Priority)))
 }
 
 // Wrap these so that they can be overridden by tests
