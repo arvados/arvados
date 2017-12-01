@@ -21,6 +21,7 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--verno <verno>    
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -45,7 +46,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,only-build: \
+    help,debug,test-packages,target:,command:,only-test:,only-build:,verno: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -73,6 +74,9 @@ while [ $# -gt 0 ]; do
         --only-build)
             ONLY_BUILD="$2"; shift
             ;;
+        --verno)
+            VERNO="$2"; shift 
+            ;;    
         --debug)
             DEBUG=" --debug"
             ARVADOS_DEBUG="1"
