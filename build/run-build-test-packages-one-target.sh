@@ -58,7 +58,7 @@ while [ $# -gt 0 ]; do
             TARGET="$2"; shift 
             ;;
         --verno)
-            VERSION="$2"; shift 
+            VERNO="$2"; shift 
             ;;      
         --upload)
             UPLOAD=1

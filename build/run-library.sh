@@ -39,7 +39,7 @@ format_last_commit_here() {
 }
 
 version_from_latest_tag() {
-  if [[ $VERSION != "" ]] ; then
+  if [[ $VERNO != "" ]] ; then
       new_version_tag=$VERSION
       echo "${new_version_tag}" 
   else
