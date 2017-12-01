@@ -39,8 +39,8 @@ format_last_commit_here() {
 }
 
 version_from_latest_tag() {
-  if [ $VERSION != "" ] ; then
-      echo $VERSION
+  if [[ $VERSION != "" ]] ; then
+      echo "$VERSION"
       new_version_tag=$VERSION
       echo "${new_version_tag}" 
   else
