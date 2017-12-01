@@ -37,7 +37,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,verno:,target:,upload \
+    help,target:,verno:,upload \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -55,10 +55,10 @@ while [ $# -gt 0 ]; do
             exit 1
             ;;
         --target)
-            TARGET="$2"; shift 2
+            TARGET="$2"; shift 
             ;;
         --verno)
-            VERSION="$2"; shift 2
+            VERSION="$2"; shift 
             ;;      
         --upload)
             UPLOAD=1
