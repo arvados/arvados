@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"runtime/pprof"
 	"sort"
@@ -228,12 +229,15 @@ func (runner *ContainerRunner) stopSignals() {
 	}
 }
 
-var errorBlacklist = []string{"Cannot connect to the Docker daemon"}
+var errorBlacklist = []string{
+	"(?ms).*[Cc]annot connect to the Docker daemon.*",
+	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
+}
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
 	for _, d := range errorBlacklist {
-		if strings.Index(goterr.Error(), d) != -1 {
+		if m, e := regexp.MatchString(d, goterr.Error()); m && e == nil {
 			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
 			if *brokenNodeHook == "" {
 				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
@@ -915,7 +919,7 @@ func (runner *ContainerRunner) StartContainer() error {
 		dockertypes.ContainerStartOptions{})
 	if err != nil {
 		var advice string
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if m, e := regexp.MatchString("(?ms).*(exec|System error).*(no such file or directory|file not found).*", err.Error()); m && e == nil {
 			advice = fmt.Sprintf("\nPossible causes: command %q is missing, the interpreter given in #! is missing, or script has Windows line endings.", runner.Container.Command[0])
 		}
 		return fmt.Errorf("could not start container: %v%s", err, advice)

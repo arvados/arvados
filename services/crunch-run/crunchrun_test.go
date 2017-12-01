@@ -130,6 +130,19 @@ func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockerco
 }
 
 func (t *TestDockerClient) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
+	if t.finish == 3 {
+		return errors.New(`Error response from daemon: oci runtime error: container_linux.go:247: starting container process caused "process_linux.go:359: container init caused \"rootfs_linux.go:54: mounting \\\"/tmp/keep453790790/by_id/99999999999999999999999999999999+99999/myGenome\\\" to rootfs \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged\\\" at \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged/keep/99999999999999999999999999999999+99999/myGenome\\\" caused \\\"no such file or directory\\\"\""`)
+	}
+	if t.finish == 4 {
+		return errors.New(`panic: standard_init_linux.go:175: exec user process caused "no such file or directory"`)
+	}
+	if t.finish == 5 {
+		return errors.New(`Error response from daemon: Cannot start container 41f26cbc43bcc1280f4323efb1830a394ba8660c9d1c2b564ba42bf7f7694845: [8] System error: no such file or directory`)
+	}
+	if t.finish == 6 {
+		return errors.New(`Error response from daemon: Cannot start container 58099cd76c834f3dc2a4fb76c8028f049ae6d4fdf0ec373e1f2cfea030670c2d: [8] System error: exec: "foobar": executable file not found in $PATH`)
+	}
+
 	if container == "abcde" {
 		// t.fn gets executed in ContainerWait
 		return nil
@@ -1834,4 +1847,92 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*No broken node hook.*")
+}
+
+func (s *TestSuite) TestFullBrokenDocker3(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 3, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+}
+
+func (s *TestSuite) TestBadCommand1(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 4, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+}
+
+func (s *TestSuite) TestBadCommand2(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 5, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+}
+
+func (s *TestSuite) TestBadCommand3(c *C) {
+	ech := ""
+	brokenNodeHook = &ech
+
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["echo", "hello world"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 6, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
 }
