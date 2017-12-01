@@ -58,7 +58,8 @@ while [ $# -gt 0 ]; do
             TARGET="$2"; shift 
             ;;
         --verno)
-            VERNO="$2"; shift 
+            VERNO="$2"; shift
+            EXPORT $VERNO 
             ;;      
         --upload)
             UPLOAD=1
