@@ -159,7 +159,7 @@ class ContainerRequest < ArvadosModel
     self.container_count_max ||= Rails.configuration.container_count_max
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
-    self.priority ||= 500
+    self.priority ||= 0
   end
 
   def set_container

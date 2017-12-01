@@ -41,7 +41,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!
 
     assert_nil cr.container_uuid
-    assert_equal 500, cr.priority
+    assert_equal 0, cr.priority
 
     check_bogus_states cr
 
@@ -324,8 +324,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr', containers(:running).priority],
-    ['active_no_prefs', nil, 500],
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 12],
+    ['active_no_prefs', nil, 0],
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token

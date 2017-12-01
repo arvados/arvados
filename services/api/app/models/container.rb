@@ -334,7 +334,7 @@ class Container < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
-    self.priority ||= 1
+    self.priority ||= 0
     self.scheduling_parameters ||= {}
   end
 
