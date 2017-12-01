@@ -37,7 +37,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,verno,target: \
+    help,verno:,target:,upload \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
