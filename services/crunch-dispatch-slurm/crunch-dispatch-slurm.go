@@ -80,11 +80,11 @@ func doMain() error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("crunch-dispatch-slurm %s\n", version)
+		return nil
 	}
 
-	log.Printf("crunch-dispatch-slurm %q started", version)
+	log.Printf("crunch-dispatch-slurm %s started", version)
 
 	err := readConfig(&theConfig, *configPath)
 	if err != nil {

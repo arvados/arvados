@@ -62,11 +62,11 @@ func doMain() error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("crunch-dispatch-local %s\n", version)
+		return nil
 	}
 
-	log.Printf("crunch-dispatch-local %q started", version)
+	log.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
 

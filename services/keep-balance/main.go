@@ -94,8 +94,8 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("keep-balance %s\n", version)
+		return
 	}
 
 	mustReadConfig(&cfg, *configPath)
@@ -107,7 +107,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keep-balance %q started", version)
+	log.Printf("keep-balance %s started", version)
 
 	if *debugFlag {
 		debugf = log.Printf

@@ -44,11 +44,11 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("crunchstat %s\n", version)
+		return
 	}
 
-	reporter.Logger.Printf("crunchstat %q started", version)
+	reporter.Logger.Printf("crunchstat %s started", version)
 
 	if reporter.CgroupRoot == "" {
 		reporter.Logger.Fatal("error: must provide -cgroup-root")

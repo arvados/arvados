@@ -63,8 +63,8 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("arv-git-httpd %s\n", version)
+		return
 	}
 
 	err := config.LoadFile(theConfig, *cfgPath)
@@ -94,7 +94,7 @@ func main() {
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Printf("arv-git-httpd %q started", version)
+	log.Printf("arv-git-httpd %s started", version)
 	log.Println("Listening at", srv.Addr)
 	log.Println("Repository root", theConfig.RepoRoot)
 	if err := srv.Wait(); err != nil {

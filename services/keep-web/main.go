@@ -94,8 +94,8 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("keep-web %s\n", version)
+		return
 	}
 
 	if err := config.LoadFile(cfg, configPath); err != nil {
@@ -115,7 +115,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keep-web %q started", version)
+	log.Printf("keep-web %s started", version)
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
 	srv := &server{Config: cfg}

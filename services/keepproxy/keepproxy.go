@@ -81,8 +81,8 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("keepproxy %s\n", version)
+		return
 	}
 
 	err := config.LoadFile(cfg, cfgPath)
@@ -108,7 +108,7 @@ func main() {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
 
-	log.Printf("keepproxy %q started", version)
+	log.Printf("keepproxy %s started", version)
 
 	arv, err := arvadosclient.New(&cfg.Client)
 	if err != nil {

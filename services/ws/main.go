@@ -7,7 +7,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
@@ -27,8 +26,8 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("arvados-ws %s\n", version)
+		return
 	}
 
 	err := config.LoadFile(&cfg, *configPath)
@@ -48,9 +47,7 @@ func main() {
 		return
 	}
 
-	log.Printf("arvados-ws %q started", version)
-
-	log.Info("started")
+	log.Printf("arvados-ws %s started", version)
 	srv := &server{wsConfig: &cfg}
 	log.Fatal(srv.Run())
 }

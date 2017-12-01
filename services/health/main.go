@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
@@ -21,14 +20,14 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
-		os.Exit(0)
+		fmt.Printf("arvados-health %s\n", version)
+		return
 	}
 
 	log.SetFormatter(&log.JSONFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	})
-	log.Printf("arvados health %q started", version)
+	log.Printf("arvados-health %s started", version)
 
 	cfg, err := arvados.GetConfig(*configFile)
 	if err != nil {
