@@ -158,7 +158,7 @@ exec GOGC=10 keepstore \
 </code></pre>
 </notextile>
 
-The @-max-buffers@ argument limits keepstore's memory usage. It should be set such that @max-buffers * 64MiB + 10%@ fits comfortably in memory. On a host dedicated to running keepstore, divide total memory by 88MiB to suggest a suitable value. For example, if @grep MemTotal /proc/meminfo@ reports @MemTotal: 7125440 kB@, compute 7125440&divide;(88&times;1024)=79 and configure @-max-buffers=79@.
+p(#max-buffers). The @-max-buffers@ argument limits keepstore's memory usage. It should be set such that @max-buffers * 64MiB + 10%@ fits comfortably in memory. On a host dedicated to running keepstore, divide total memory by 88MiB to suggest a suitable value. For example, if @grep MemTotal /proc/meminfo@ reports @MemTotal: 7125440 kB@, compute 7125440&divide;(88&times;1024)=79 and configure @-max-buffers=79@.
 
 If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server's":install-api-server.html configuration file, @/etc/arvados/api/application.yml@.
 
