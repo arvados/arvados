@@ -74,7 +74,7 @@ func doMain(args []string) error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("keep-block-check %s\n", version)
 		os.Exit(0)
 	}
 

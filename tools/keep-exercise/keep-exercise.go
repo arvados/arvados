@@ -55,11 +55,11 @@ func main() {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("keep-exercise %s\n", version)
 		os.Exit(0)
 	}
 
-	log.Printf("keep-exercise %q started", version)
+	log.Printf("keep-exercise %s started", version)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {

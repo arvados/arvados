@@ -166,7 +166,7 @@ func ParseFlags(config *ConfigParams) error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("arv-sync-groups %s\n", version)
 		os.Exit(0)
 	}
 
@@ -288,7 +288,7 @@ func doMain(cfg *ConfigParams) error {
 	}
 	defer f.Close()
 
-	log.Printf("arv-sync-groups %q started. Using %q as users id and parent group UUID %q", version, cfg.UserID, cfg.ParentGroupUUID)
+	log.Printf("arv-sync-groups %s started. Using %q as users id and parent group UUID %q", version, cfg.UserID, cfg.ParentGroupUUID)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]arvados.User)

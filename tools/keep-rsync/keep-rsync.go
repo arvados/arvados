@@ -81,7 +81,7 @@ func doMain() error {
 
 	// Print version information if requested
 	if *getVersion {
-		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("keep-rsync %s\n", version)
 		os.Exit(0)
 	}
 
