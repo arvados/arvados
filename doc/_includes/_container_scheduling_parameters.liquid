@@ -11,17 +11,3 @@ Parameters to be passed to the container scheduler (e.g., SLURM) when running a 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Notes|
 |partitions|array of strings|The names of one or more compute partitions that may run this container. If not provided, the system will choose where to run the container.|Optional.|
-
-h2(#priority). Priority
-
-The @priority@ field has a range of 0-1000.
-
-Priority 0 means no container should run on behalf of this request, and containers already running will be terminated (setting container priority to 0 is the cancel operation.)
-
-Priority 1 is the lowest priority.
-
-Priority 1000 is the highest priority.
-
-The actual order that containers execute is determined by the underlying scheduling software (e.g. SLURM) based on a combination of container priority, submission time and available resources.
-
-The magnitude of difference in priority between two containers affects the weight of priority vs age in determining scheduling order.  If two containers have only a small difference in priority (for example, 500 and 501) and the lower priority container has a longer queue time, the lower priority container may be scheduled before the higher priority container.  Use a greater magnitude difference (for example, 500 and 600) to give higher weight to priority over queue time.
