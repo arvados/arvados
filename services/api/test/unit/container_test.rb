@@ -95,37 +95,37 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
-  test "Container request valid priority" do
+  test "Container valid priority" do
     act_as_system_user do
-      cr, _ = minimal_new(environment: {},
+      c, _ = minimal_new(environment: {},
                       mounts: {"BAR" => "FOO"},
                       output_path: "/tmp",
                       priority: 1,
                       runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       assert_raises(ActiveRecord::RecordInvalid) do
-        cr.priority = -1
-        cr.save!
+        c.priority = -1
+        c.save!
       end
 
-      cr.priority = 0
-      cr.save!
+      c.priority = 0
+      c.save!
 
-      cr.priority = 1
-      cr.save!
+      c.priority = 1
+      c.save!
 
-      cr.priority = 500
-      cr.save!
+      c.priority = 500
+      c.save!
 
-      cr.priority = 999
-      cr.save!
+      c.priority = 999
+      c.save!
 
-      cr.priority = 1000
-      cr.save!
+      c.priority = 1000
+      c.save!
 
       assert_raises(ActiveRecord::RecordInvalid) do
-        cr.priority = 1001
-        cr.save!
+        c.priority = 1001
+        c.save!
       end
     end
   end

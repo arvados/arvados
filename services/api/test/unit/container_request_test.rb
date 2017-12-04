@@ -108,7 +108,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request priority must be non-nil" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: nil)
+    cr = create_minimal_req!
     cr.priority = nil
     cr.state = "Committed"
     assert_raises(ActiveRecord::RecordInvalid) do
