@@ -16,7 +16,8 @@ else
 fi
 
 run_bundler --without=development
-bundle exec passenger start --runtime-check-only --runtime-dir=/var/lib/passenger
+bundle exec passenger-config build-native-support
+bundle exec passenger-config install-standalone-runtime
 
 if test "$1" = "--only-deps" ; then
     exit
@@ -82,6 +83,7 @@ fi
 rm -rf tmp
 mkdir -p tmp/cache
 
+bundle exec rake assets:precompile
 bundle exec rake db:migrate
 
 set +u
@@ -90,6 +92,5 @@ if test "$1" = "--only-setup" ; then
 fi
 
 exec bundle exec passenger start --port=${services[sso]} \
-     --runtime-dir=/var/lib/passenger \
      --ssl --ssl-certificate=/var/lib/arvados/self-signed.pem \
      --ssl-certificate-key=/var/lib/arvados/self-signed.key

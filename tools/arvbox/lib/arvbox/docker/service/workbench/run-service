@@ -45,6 +45,9 @@ $RAILS_ENV:
   keep_web_download_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
   keep_web_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
   arvados_docsite: http://$localip:${services[doc]}/
+  force_ssl: false
 EOF
+
+bundle exec rake assets:precompile
 
 (cd config && /usr/local/lib/arvbox/application_yml_override.py)

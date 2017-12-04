@@ -100,7 +100,7 @@ sdk/go/health
 sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
-sdk/go/streamer
+sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
@@ -233,6 +233,8 @@ sanity_checks() {
     phantomjs --version || fatal "No phantomjs. Try: apt-get install phantomjs"
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
+    echo -n 'graphviz: '
+    dot -V || fatal "No graphviz. Try: apt-get install graphviz"
 }
 
 rotate_logfile() {
@@ -485,6 +487,7 @@ export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
+rmdir --parents "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
 ln -sfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 go get -v github.com/kardianos/govendor \
@@ -827,7 +830,7 @@ gostuff=(
     sdk/go/health
     sdk/go/httpserver
     sdk/go/manifest
-    sdk/go/streamer
+    sdk/go/asyncbuf
     sdk/go/crunchrunner
     sdk/go/stats
     lib/crunchstat

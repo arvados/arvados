@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/asyncbuf"
 )
 
 // A Keep "block" is 64MB.
@@ -156,10 +156,12 @@ func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, 
 		bufsize = BLOCKSIZE
 	}
 
-	t := streamer.AsyncStreamFromReader(bufsize, HashCheckingReader{r, md5.New(), hash})
-	defer t.Close()
-
-	return kc.putReplicas(hash, t, dataBytes)
+	buf := asyncbuf.NewBuffer(make([]byte, 0, bufsize))
+	go func() {
+		_, err := io.Copy(buf, HashCheckingReader{r, md5.New(), hash})
+		buf.CloseWithError(err)
+	}()
+	return kc.putReplicas(hash, buf.NewReader, dataBytes)
 }
 
 // PutHB writes a block to Keep. The hash of the bytes is given in
@@ -167,9 +169,8 @@ func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, 
 //
 // Return values are the same as for PutHR.
 func (kc *KeepClient) PutHB(hash string, buf []byte) (string, int, error) {
-	t := streamer.AsyncStreamFromSlice(buf)
-	defer t.Close()
-	return kc.putReplicas(hash, t, int64(len(buf)))
+	newReader := func() io.Reader { return bytes.NewBuffer(buf) }
+	return kc.putReplicas(hash, newReader, int64(len(buf)))
 }
 
 // PutB writes a block to Keep. It computes the hash itself.
@@ -290,6 +291,12 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 // instead of EOF.
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
 	return kc.getOrHead("GET", locator)
+}
+
+// ReadAt() retrieves a portion of block from the cache if it's
+// present, otherwise from the network.
+func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
+	return kc.cache().ReadAt(kc, locator, p, off)
 }
 
 // Ask() verifies that a block with the given hash is available and

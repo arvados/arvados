@@ -9,9 +9,9 @@ import (
 	"errors"
 	"fmt"
 	prand "math/rand"
-	"net/http"
 	"os"
-	"sync"
+	"path"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -27,103 +27,83 @@ var (
 	errReadOnly           = errors.New("read-only filesystem")
 )
 
-// webdavFS implements a read-only webdav.FileSystem by wrapping an
+// webdavFS implements a webdav.FileSystem by wrapping an
 // arvados.CollectionFilesystem.
+//
+// Collections don't preserve empty directories, so Mkdir is
+// effectively a no-op, and we need to make parent dirs spring into
+// existence automatically so sequences like "mkcol foo; put foo/bar"
+// work as expected.
 type webdavFS struct {
-	collfs arvados.CollectionFileSystem
+	collfs  arvados.CollectionFileSystem
+	writing bool
 }
 
-var _ webdav.FileSystem = &webdavFS{}
+func (fs *webdavFS) makeparents(name string) {
+	dir, name := path.Split(name)
+	if dir == "" || dir == "/" {
+		return
+	}
+	dir = dir[:len(dir)-1]
+	fs.makeparents(dir)
+	fs.collfs.Mkdir(dir, 0755)
+}
 
 func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	return errReadOnly
+	if !fs.writing {
+		return errReadOnly
+	}
+	name = strings.TrimRight(name, "/")
+	fs.makeparents(name)
+	return fs.collfs.Mkdir(name, 0755)
 }
 
-func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
-	fi, err := fs.collfs.Stat(name)
-	if err != nil {
-		return nil, err
+func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
+	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
+	if writing {
+		fs.makeparents(name)
 	}
-	return &webdavFile{collfs: fs.collfs, fileInfo: fi, name: name}, nil
+	f, err = fs.collfs.OpenFile(name, flag, perm)
+	if !fs.writing {
+		// webdav module returns 404 on all OpenFile errors,
+		// but returns 405 Method Not Allowed if OpenFile()
+		// succeeds but Write() or Close() fails. We'd rather
+		// have 405.
+		f = writeFailer{File: f, err: errReadOnly}
+	}
+	return
 }
 
 func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
-	return errReadOnly
+	return fs.collfs.RemoveAll(name)
 }
 
 func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
-	return errReadOnly
+	if !fs.writing {
+		return errReadOnly
+	}
+	fs.makeparents(newName)
+	return fs.collfs.Rename(oldName, newName)
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+	if fs.writing {
+		fs.makeparents(name)
+	}
 	return fs.collfs.Stat(name)
 }
 
-// webdavFile implements a read-only webdav.File by wrapping
-// http.File.
-//
-// The http.File is opened from an arvados.CollectionFileSystem, but
-// not until Seek, Read, or Readdir is called. This deferred-open
-// strategy makes webdav's OpenFile-Stat-Close cycle fast even though
-// the collfs's Open method is slow. This is relevant because webdav
-// does OpenFile-Stat-Close on each file when preparing directory
-// listings.
-//
-// Writes to a webdavFile always fail.
-type webdavFile struct {
-	// fields populated by (*webdavFS).OpenFile()
-	collfs   http.FileSystem
-	fileInfo os.FileInfo
-	name     string
-
-	// internal fields
-	file     http.File
-	loadOnce sync.Once
-	err      error
+type writeFailer struct {
+	webdav.File
+	err error
 }
 
-func (f *webdavFile) load() {
-	f.file, f.err = f.collfs.Open(f.name)
+func (wf writeFailer) Write([]byte) (int, error) {
+	return 0, wf.err
 }
 
-func (f *webdavFile) Write([]byte) (int, error) {
-	return 0, errReadOnly
-}
-
-func (f *webdavFile) Seek(offset int64, whence int) (int64, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return 0, f.err
-	}
-	return f.file.Seek(offset, whence)
-}
-
-func (f *webdavFile) Read(buf []byte) (int, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return 0, f.err
-	}
-	return f.file.Read(buf)
-}
-
-func (f *webdavFile) Close() error {
-	if f.file == nil {
-		// We never called load(), or load() failed
-		return f.err
-	}
-	return f.file.Close()
-}
-
-func (f *webdavFile) Readdir(n int) ([]os.FileInfo, error) {
-	f.loadOnce.Do(f.load)
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.file.Readdir(n)
-}
-
-func (f *webdavFile) Stat() (os.FileInfo, error) {
-	return f.fileInfo, nil
+func (wf writeFailer) Close() error {
+	return wf.err
 }
 
 // noLockSystem implements webdav.LockSystem by returning success for

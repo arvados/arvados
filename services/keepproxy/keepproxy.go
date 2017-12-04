@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -25,7 +24,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/health"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
@@ -57,7 +58,13 @@ var (
 	router   http.Handler
 )
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 func main() {
+	log.SetFormatter(&log.JSONFormatter{
+		TimestampFormat: rfc3339NanoFixed,
+	})
+
 	cfg := DefaultConfig()
 
 	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
@@ -175,7 +182,7 @@ func main() {
 
 	// Start serving requests.
 	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout), cfg.ManagementToken)
-	http.Serve(listener, router)
+	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 
 	log.Println("shutting down")
 }
@@ -607,7 +614,8 @@ func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient 
 			Timeout:   h.timeout,
 			Transport: h.transport,
 		},
-		proto: req.Proto,
+		proto:     req.Proto,
+		requestID: req.Header.Get("X-Request-Id"),
 	}
 	return &kc
 }

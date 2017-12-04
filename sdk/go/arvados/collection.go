@@ -30,6 +30,10 @@ type Collection struct {
 	IsTrashed              bool       `json:"is_trashed,omitempty"`
 }
 
+func (c Collection) resourceName() string {
+	return "collection"
+}
+
 // SizedDigests returns the hash+size part of each data block
 // referenced by the collection.
 func (c *Collection) SizedDigests() ([]SizedDigest, error) {

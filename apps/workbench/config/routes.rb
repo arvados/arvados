@@ -95,7 +95,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'remove_selected_files', on: :member
     get 'tags', on: :member
     post 'save_tags', on: :member
-    get 'multisite', on: :collection
+    get 'multisite', on: :collection, to: redirect('/search')
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
@@ -109,7 +109,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'tab_counts', on: :member
     get 'public', on: :collection
   end
-
+  
   resources :search do
     get 'choose', :on => :collection
   end
@@ -131,9 +131,9 @@ ArvadosWorkbench::Application.routes.draw do
   match '/_health/ping', to: 'healthcheck#ping', via: [:get]
 
   get '/tests/mithril', to: 'tests#mithril'
-
+  
   get '/status', to: 'status#status'
-
+  
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
   match '*a', to: 'links#render_not_found', via: [:get, :post]

@@ -32,21 +32,33 @@ class ArvadosApiToken
     user = nil
     api_client = nil
     api_client_auth = nil
-    supplied_token =
-      params["api_token"] ||
-      params["oauth_token"] ||
-      env["HTTP_AUTHORIZATION"].andand.match(/OAuth2 ([a-zA-Z0-9]+)/).andand[1]
-    if supplied_token
-      api_client_auth = ApiClientAuthorization.
+    if request.get? || params["_method"] == 'GET'
+      reader_tokens = params["reader_tokens"]
+      if reader_tokens.is_a? String
+        reader_tokens = SafeJSON.load(reader_tokens)
+      end
+    else
+      reader_tokens = nil
+    end
+
+    # Set current_user etc. based on the primary session token if a
+    # valid one is present. Otherwise, use the first valid token in
+    # reader_tokens.
+    [params["api_token"],
+     params["oauth_token"],
+     env["HTTP_AUTHORIZATION"].andand.match(/OAuth2 ([a-zA-Z0-9]+)/).andand[1],
+     *reader_tokens,
+    ].each do |supplied|
+      next if !supplied
+      try_auth = ApiClientAuthorization.
         includes(:api_client, :user).
-        where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
+        where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied).
         first
-      if api_client_auth.andand.user
+      if try_auth.andand.user
+        api_client_auth = try_auth
         user = api_client_auth.user
         api_client = api_client_auth.api_client
-      else
-        # Token seems valid, but points to a non-existent (deleted?) user.
-        api_client_auth = nil
+        break
       end
     end
     Thread.current[:api_client_ip_address] = remote_ip
