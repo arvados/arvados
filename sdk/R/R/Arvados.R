@@ -1,5 +1,6 @@
 source("./R/HttpRequest.R")
 source("./R/HttpParser.R")
+source("./R/custom_classes.R")
 
 #' Arvados SDK Object
 #'
@@ -14,16 +15,16 @@ Arvados <- setRefClass(
     "Arvados",
 
     fields = list(
-        token = "character",
-        host  = "character"
+        token = "ANY",
+        host  = "ANY"
     ),
 
     methods = list(
 
-        initialize = function(auth_token, host_name) 
+        initialize = function(auth_token = NULL, host_name = NULL) 
         {
             version <- "v1"
-            #Todo(Fudo): Validate token
+            #Todo(Fudo): Set environment variables
             token <<- auth_token
             host  <<- paste0("https://", host_name, "/arvados/", version, "/")
         }
