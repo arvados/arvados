@@ -14,18 +14,23 @@ import (
 	"time"
 )
 
+type jobPriority struct {
+	niceness        int
+	currentPriority int
+}
+
 // Squeue implements asynchronous polling monitor of the SLURM queue using the
 // command 'squeue'.
 type SqueueChecker struct {
 	Period    time.Duration
-	uuids     map[string]int
+	uuids     map[string]jobPriority
 	startOnce sync.Once
 	done      chan struct{}
 	sync.Cond
 }
 
 func squeueFunc() *exec.Cmd {
-	return exec.Command("squeue", "--all", "--format=%j %y")
+	return exec.Command("squeue", "--all", "--format=%j %y %Q")
 }
 
 var squeueCmd = squeueFunc
@@ -54,7 +59,7 @@ func (sqc *SqueueChecker) GetNiceness(uuid string) int {
 
 	n, exists := sqc.uuids[uuid]
 	if exists {
-		return n
+		return n.niceness
 	} else {
 		return -1
 	}
@@ -88,13 +93,14 @@ func (sqc *SqueueChecker) check() {
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
-	sqc.uuids = make(map[string]int, len(lines))
+	sqc.uuids = make(map[string]jobPriority, len(lines))
 	for _, line := range lines {
 		var uuid string
 		var nice int
-		fmt.Sscan(line, &uuid, &nice)
+		var prio int
+		fmt.Sscan(line, &uuid, &nice, &prio)
 		if uuid != "" {
-			sqc.uuids[uuid] = nice
+			sqc.uuids[uuid] = jobPriority{nice, prio}
 		}
 	}
 	sqc.Broadcast()
