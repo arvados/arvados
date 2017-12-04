@@ -22,6 +22,8 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 )
 
+var version = "dev"
+
 // A Keep "block" is 64MB.
 const BlockSize = 64 * 1024 * 1024
 
@@ -89,6 +91,7 @@ func main() {
 	deprecated.beforeFlagParse(theConfig)
 
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 
 	defaultConfigPath := "/etc/arvados/keepstore/keepstore.yml"
 	var configPath string
@@ -100,6 +103,12 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keepstore %s\n", version)
+		return
+	}
+
 	deprecated.afterFlagParse(theConfig)
 
 	err := config.LoadFile(theConfig, configPath)
@@ -110,6 +119,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(theConfig))
 	}
+
+	log.Printf("keepstore %s started", version)
 
 	err = theConfig.Start()
 	if err != nil {

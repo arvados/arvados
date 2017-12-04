@@ -20,6 +20,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
+var version = "dev"
+
 func main() {
 	err := doMain(os.Args[1:])
 	if err != nil {
@@ -62,8 +64,19 @@ func doMain(args []string) error {
 		false,
 		"Log progress of each block verification")
 
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
+
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(args)
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keep-block-check %s\n", version)
+		os.Exit(0)
+	}
 
 	config, blobSigningKey, err := loadConfig(*configFile)
 	if err != nil {

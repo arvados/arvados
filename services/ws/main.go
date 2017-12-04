@@ -13,14 +13,22 @@ import (
 )
 
 var logger = ctxlog.FromContext
+var version = "dev"
 
 func main() {
 	log := logger(nil)
 
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	cfg := defaultConfig()
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("arvados-ws %s\n", version)
+		return
+	}
 
 	err := config.LoadFile(&cfg, *configPath)
 	if err != nil {
@@ -39,7 +47,7 @@ func main() {
 		return
 	}
 
-	log.Info("started")
+	log.Printf("arvados-ws %s started", version)
 	srv := &server{wsConfig: &cfg}
 	log.Fatal(srv.Run())
 }

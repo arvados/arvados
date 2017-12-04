@@ -125,7 +125,7 @@ def main(args=None):
 
     try:
         root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())
-        root_logger.info("%s %s, libcloud %s", sys.argv[0], __version__, libcloud.__version__)
+        root_logger.info("%s %s started, libcloud %s", sys.argv[0], __version__, libcloud.__version__)
         node_setup, node_shutdown, node_update, node_monitor = \
             config.dispatch_classes()
         server_calculator = build_server_calculator(config)

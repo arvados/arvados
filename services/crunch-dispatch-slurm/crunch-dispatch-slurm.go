@@ -26,6 +26,8 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 )
 
+var version = "dev"
+
 // Config used by crunch-dispatch-slurm
 type Config struct {
 	Client arvados.Client
@@ -69,9 +71,20 @@ func doMain() error {
 		"dump-config",
 		false,
 		"write current configuration to stdout and exit")
-
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("crunch-dispatch-slurm %s\n", version)
+		return nil
+	}
+
+	log.Printf("crunch-dispatch-slurm %s started", version)
 
 	err := readConfig(&theConfig, *configPath)
 	if err != nil {

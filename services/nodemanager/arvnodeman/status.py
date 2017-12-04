@@ -11,6 +11,8 @@ import logging
 import socketserver
 import threading
 
+from ._version import __version__
+
 _logger = logging.getLogger('status.Handler')
 
 
@@ -74,10 +76,11 @@ class Tracker(object):
     def __init__(self):
         self._mtx = threading.Lock()
         self._latest = {}
+        self._version = {'Version' : __version__}
 
     def get_json(self):
         with self._mtx:
-            return json.dumps(self._latest)
+            return json.dumps(dict(self._latest, **self._version))
 
     def keys(self):
         with self._mtx:

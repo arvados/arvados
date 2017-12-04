@@ -271,6 +271,7 @@ func (s *PullWorkerTestSuite) performTest(testData PullWorkerTestData, c *C) {
 
 	c.Check(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
 	c.Check(getStatusItem("PullQueue", "Queued"), Equals, float64(0))
+	c.Check(getStatusItem("Version"), Not(Equals), "")
 
 	response := IssueRequest(&testData.req)
 	c.Assert(response.Code, Equals, testData.responseCode)

@@ -40,6 +40,8 @@ import (
 	dockerclient "github.com/docker/docker/client"
 )
 
+var version = "dev"
+
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
 	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
@@ -646,7 +648,7 @@ type infoCommand struct {
 	cmd   []string
 }
 
-// Gather node information and store it on the log for debugging
+// LogNodeInfo gathers node information and store it on the log for debugging
 // purposes.
 func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	w := runner.NewLogWriter("node-info")
@@ -696,7 +698,7 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	return nil
 }
 
-// Get and save the raw JSON container record from the API server
+// LogContainerRecord gets and saves the raw JSON container record from the API server
 func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	w := &ArvLogWriter{
 		ArvClient:     runner.ArvClient,
@@ -1448,6 +1450,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
+	runner.CrunchLog.Printf("crunch-run %s started", version)
 	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
@@ -1628,7 +1631,16 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("crunch-run %s\n", version)
+		return
+	}
+
+	log.Printf("crunch-run %s started", version)
 
 	containerId := flag.Arg(0)
 

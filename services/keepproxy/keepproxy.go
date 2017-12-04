@@ -32,6 +32,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var version = "dev"
+
 type Config struct {
 	Client          arvados.Client
 	Listen          string
@@ -81,7 +83,14 @@ func main() {
 	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
 	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
 	dumpConfig := flagset.Bool("dump-config", false, "write current configuration to stdout and exit")
+	getVersion := flagset.Bool("version", false, "Print version information and exit.")
 	flagset.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keepproxy %s\n", version)
+		return
+	}
 
 	err := config.LoadFile(cfg, cfgPath)
 	if err != nil {
@@ -105,6 +114,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	log.Printf("keepproxy %s started", version)
 
 	arv, err := arvadosclient.New(&cfg.Client)
 	if err != nil {
