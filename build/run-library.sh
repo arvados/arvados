@@ -132,7 +132,7 @@ package_go_binary() {
       return 1
     fi
 
-    go get "git.curoverse.com/arvados.git/$src_path"
+    go get -ldflags "-X main.version=${version}" "git.curoverse.com/arvados.git/$src_path"
 
     declare -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
