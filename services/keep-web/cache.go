@@ -86,6 +86,29 @@ func (c *cache) Stats() cacheStats {
 	}
 }
 
+// Update saves a modified version (fs) to an existing collection
+// (coll) and, if successful, updates the relevant cache entries so
+// subsequent calls to Get() reflect the modifications.
+func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvados.CollectionFileSystem) error {
+	c.setupOnce.Do(c.setup)
+
+	if m, err := fs.MarshalManifest("."); err != nil || m == coll.ManifestText {
+		return err
+	} else {
+		coll.ManifestText = m
+	}
+	var updated arvados.Collection
+	defer c.pdhs.Remove(coll.UUID)
+	err := client.RequestAndDecode(&updated, "PATCH", "/arvados/v1/collections/"+coll.UUID, client.UpdateBody(coll), nil)
+	if err == nil {
+		c.collections.Add(client.AuthToken+"\000"+coll.PortableDataHash, &cachedCollection{
+			expire:     time.Now().Add(time.Duration(c.TTL)),
+			collection: &updated,
+		})
+	}
+	return err
+}
+
 func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceReload bool) (*arvados.Collection, error) {
 	c.setupOnce.Do(c.setup)
 

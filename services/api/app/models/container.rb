@@ -31,6 +31,7 @@ class Container < ArvadosModel
   after_validation :assign_auth
   before_save :sort_serialized_attrs
   after_save :handle_completed
+  after_save :propagate_priority
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -90,6 +91,20 @@ class Container < ArvadosModel
               state: ContainerRequest::Committed).
         maximum('priority')
       self.save!
+    end
+  end
+
+  def propagate_priority
+    if self.priority_changed?
+      act_as_system_user do
+         # Update the priority of child container requests to match new priority
+         # of the parent container.
+         ContainerRequest.where(requesting_container_uuid: self.uuid,
+                                state: ContainerRequest::Committed).each do |cr|
+           cr.priority = self.priority
+           cr.save
+         end
+       end
     end
   end
 

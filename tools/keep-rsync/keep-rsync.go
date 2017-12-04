@@ -21,6 +21,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
+var version = "dev"
+
 func main() {
 	err := doMain()
 	if err != nil {
@@ -69,8 +71,19 @@ func doMain() error {
 		0,
 		"Lifetime of blob permission signatures on source keepservers. If not provided, this will be retrieved from the API server's discovery document.")
 
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
+
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keep-rsync %s\n", version)
+		os.Exit(0)
+	}
 
 	srcConfig, srcBlobSigningKey, err := loadConfig(*srcConfigFile)
 	if err != nil {

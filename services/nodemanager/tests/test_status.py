@@ -56,6 +56,7 @@ class StatusServerUpdates(unittest.TestCase):
                 resp = r.json()
                 self.assertEqual(n, resp['nodes_'+str(n)])
             self.assertEqual(1, resp['nodes_1'])
+            self.assertIn('Version', resp)
 
 
 class StatusServerDisabled(unittest.TestCase):

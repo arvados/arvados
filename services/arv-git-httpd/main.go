@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -15,6 +16,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+var version = "dev"
 
 // Server configuration
 type Config struct {
@@ -50,12 +53,19 @@ func main() {
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
+	getVersion := flag.Bool("version", false, "print version information and exit.")
 
 	flag.StringVar(&theConfig.ManagementToken, "management-token", theConfig.ManagementToken,
 		"Authorization token to be included in all health check requests.")
 
 	flag.Usage = usage
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("arv-git-httpd %s\n", version)
+		return
+	}
 
 	err := config.LoadFile(theConfig, *cfgPath)
 	if err != nil {
@@ -84,6 +94,7 @@ func main() {
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
+	log.Printf("arv-git-httpd %s started", version)
 	log.Println("Listening at", srv.Addr)
 	log.Println("Repository root", theConfig.RepoRoot)
 	if err := srv.Wait(); err != nil {

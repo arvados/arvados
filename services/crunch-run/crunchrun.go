@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"runtime/pprof"
 	"sort"
@@ -38,6 +39,8 @@ import (
 	dockernetwork "github.com/docker/docker/api/types/network"
 	dockerclient "github.com/docker/docker/client"
 )
+
+var version = "dev"
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
@@ -226,6 +229,35 @@ func (runner *ContainerRunner) stopSignals() {
 		signal.Stop(runner.SigChan)
 		close(runner.SigChan)
 	}
+}
+
+var errorBlacklist = []string{
+	"(?ms).*[Cc]annot connect to the Docker daemon.*",
+	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
+}
+var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
+
+func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
+	for _, d := range errorBlacklist {
+		if m, e := regexp.MatchString(d, goterr.Error()); m && e == nil {
+			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
+			if *brokenNodeHook == "" {
+				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
+			} else {
+				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+				// run killme script
+				c := exec.Command(*brokenNodeHook)
+				c.Stdout = runner.CrunchLog
+				c.Stderr = runner.CrunchLog
+				err := c.Run()
+				if err != nil {
+					runner.CrunchLog.Printf("Error running broken node hook: %v", err)
+				}
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // LoadImage determines the docker image id from the container record and
@@ -616,7 +648,7 @@ type infoCommand struct {
 	cmd   []string
 }
 
-// Gather node information and store it on the log for debugging
+// LogNodeInfo gathers node information and store it on the log for debugging
 // purposes.
 func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	w := runner.NewLogWriter("node-info")
@@ -666,7 +698,7 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	return nil
 }
 
-// Get and save the raw JSON container record from the API server
+// LogContainerRecord gets and saves the raw JSON container record from the API server
 func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	w := &ArvLogWriter{
 		ArvClient:     runner.ArvClient,
@@ -889,7 +921,7 @@ func (runner *ContainerRunner) StartContainer() error {
 		dockertypes.ContainerStartOptions{})
 	if err != nil {
 		var advice string
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if m, e := regexp.MatchString("(?ms).*(exec|System error).*(no such file or directory|file not found).*", err.Error()); m && e == nil {
 			advice = fmt.Sprintf("\nPossible causes: command %q is missing, the interpreter given in #! is missing, or script has Windows line endings.", runner.Container.Command[0])
 		}
 		return fmt.Errorf("could not start container: %v%s", err, advice)
@@ -1418,6 +1450,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
+	runner.CrunchLog.Printf("crunch-run %s started", version)
 	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
@@ -1487,7 +1520,11 @@ func (runner *ContainerRunner) Run() (err error) {
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
-		runner.finalState = "Cancelled"
+		if !runner.checkBrokenNode(err) {
+			// Failed to load image but not due to a "broken node"
+			// condition, probably user error.
+			runner.finalState = "Cancelled"
+		}
 		err = fmt.Errorf("While loading container image: %v", err)
 		return
 	}
@@ -1516,8 +1553,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	runner.StartCrunchstat()
-
 	if runner.IsCancelled() {
 		return
 	}
@@ -1528,8 +1563,11 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 	runner.finalState = "Cancelled"
 
+	runner.StartCrunchstat()
+
 	err = runner.StartContainer()
 	if err != nil {
+		runner.checkBrokenNode(err)
 		return
 	}
 
@@ -1593,7 +1631,16 @@ func main() {
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("crunch-run %s\n", version)
+		return
+	}
+
+	log.Printf("crunch-run %s started", version)
 
 	containerId := flag.Arg(0)
 
@@ -1607,25 +1654,27 @@ func main() {
 	}
 	api.Retries = 8
 
-	var kc *keepclient.KeepClient
-	kc, err = keepclient.MakeKeepClient(api)
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
+	kc, kcerr := keepclient.MakeKeepClient(api)
+	if kcerr != nil {
+		log.Fatalf("%s: %v", containerId, kcerr)
 	}
 	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
-	var docker *dockerclient.Client
 	// API version 1.21 corresponds to Docker 1.9, which is currently the
 	// minimum version we want to support.
-	docker, err = dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
-	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
-	}
-
+	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 	dockerClientProxy := ThinDockerClientProxy{Docker: docker}
 
 	cr := NewContainerRunner(api, kc, dockerClientProxy, containerId)
+
+	if dockererr != nil {
+		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
+		cr.checkBrokenNode(dockererr)
+		cr.CrunchLog.Close()
+		os.Exit(1)
+	}
+
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent

@@ -293,6 +293,12 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 	return kc.getOrHead("GET", locator)
 }
 
+// ReadAt() retrieves a portion of block from the cache if it's
+// present, otherwise from the network.
+func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
+	return kc.cache().ReadAt(kc, locator, p, off)
+}
+
 // Ask() verifies that a block with the given hash is available and
 // readable, according to at least one Keep service. Unlike Get, it
 // does not retrieve the data or verify that the data content matches

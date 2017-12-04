@@ -10,7 +10,7 @@ import pkg_resources
 class WebChart(object):
     """Base class for a web chart.
 
-    Subclasses must assign JSLIB and JSASSET, and override the
+    Subclasses must assign JSLIB and JSASSETS, and override the
     chartdata() method.
     """
     JSLIB = None
@@ -33,7 +33,7 @@ class WebChart(object):
     def js(self):
         return 'var chartdata = {};\n{}'.format(
             json.dumps(self.sections()),
-            pkg_resources.resource_string('crunchstat_summary', self.JSASSET))
+            '\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa) for jsa in self.JSASSETS]))
 
     def sections(self):
         return [

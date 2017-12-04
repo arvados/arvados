@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -10,13 +11,24 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+var version = "dev"
+
 func main() {
 	configFile := flag.String("config", arvados.DefaultConfigFile, "`path` to arvados configuration file")
+	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("arvados-health %s\n", version)
+		return
+	}
 
 	log.SetFormatter(&log.JSONFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	})
+	log.Printf("arvados-health %s started", version)
+
 	cfg, err := arvados.GetConfig(*configFile)
 	if err != nil {
 		log.Fatal(err)

@@ -19,6 +19,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
+var version = "dev"
+
 type resourceList interface {
 	Len() int
 	GetItems() []interface{}
@@ -150,6 +152,10 @@ func ParseFlags(config *ConfigParams) error {
 		"verbose",
 		false,
 		"Log informational messages. Off by default.")
+	getVersion := flags.Bool(
+		"version",
+		false,
+		"Print version information and exit.")
 	parentGroupUUID := flags.String(
 		"parent-group-uuid",
 		"",
@@ -157,6 +163,12 @@ func ParseFlags(config *ConfigParams) error {
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("arv-sync-groups %s\n", version)
+		os.Exit(0)
+	}
 
 	// Input file as a required positional argument
 	if flags.NArg() == 0 {
@@ -276,7 +288,7 @@ func doMain(cfg *ConfigParams) error {
 	}
 	defer f.Close()
 
-	log.Printf("Group sync starting. Using %q as users id and parent group UUID %q", cfg.UserID, cfg.ParentGroupUUID)
+	log.Printf("arv-sync-groups %s started. Using %q as users id and parent group UUID %q", version, cfg.UserID, cfg.ParentGroupUUID)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]arvados.User)
