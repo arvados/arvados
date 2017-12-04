@@ -391,10 +391,16 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
 arvados_cwl_runner_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)
-arvados_cwl_runner_iteration=3
+declare -a iterargs=()
+if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
+    arvados_cwl_runner_iteration=3
+    iterargs+=(--iteration $arvados_cwl_runner_iteration)
+else
+    arvados_cwl_runner_iteration=
+fi
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration $arvados_cwl_runner_iteration
+  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" "${iterargs[@]}"
 fi
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
@@ -460,10 +466,16 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 dockercleaner_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)
-dockercleaner_iteration=3
+declare -a iterargs=()
+if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
+    dockercleaner_iteration=3
+    iterargs+=(--iteration "$dockercleaner_iteration")
+else
+    dockercleaner_iteration=
+fi
 test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$dockercleaner_iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration "$dockercleaner_iteration"
+  fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" "${iterargs[@]}"
 fi
 
 # The Arvados crunchstat-summary tool

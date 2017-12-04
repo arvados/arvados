@@ -21,6 +21,8 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--version <string>
+    Version to build (default: \$ARVADOS_BUILDING_VERSION or 0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -45,7 +47,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,only-build: \
+    help,debug,test-packages,target:,command:,only-test:,only-build:,version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -82,6 +84,9 @@ while [ $# -gt 0 ]; do
             ;;
         --test-packages)
             test_packages=1
+            ;;
+        --version)
+            ARVADOS_BUILDING_VERSION="$2"; shift
             ;;
         --)
             if [ $# -gt 1 ]; then
@@ -207,6 +212,7 @@ else
     # Build packages
     if docker run --rm \
         "${docker_volume_args[@]}" \
+        --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND

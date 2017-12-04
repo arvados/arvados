@@ -17,6 +17,8 @@ Options:
     Run package install tests
 --debug
     Output debug information (default: false)
+--version <string>
+    Version to build (default: \$ARVADOS_BUILDING_VERSION or 0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -41,7 +43,7 @@ fi
 set -e
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,test-packages,debug,command:,only-test: \
+    help,test-packages,debug,command:,only-test:,version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -72,6 +74,9 @@ while [ $# -gt 0 ]; do
         --only-test)
             ONLY_TEST="$1 $2"; shift
             ;;
+        --version)
+            ARVADOS_BUILDING_VERSION="$2"; shift
+            ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -87,7 +92,7 @@ cd $(dirname $0)
 FINAL_EXITCODE=0
 
 for dockerfile_path in $(find -name Dockerfile | grep package-build-dockerfiles); do
-    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
+    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" --version "$ARVADOS_BUILDING_VERSION" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
         true
     else
         FINAL_EXITCODE=$?

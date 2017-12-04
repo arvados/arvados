@@ -9,14 +9,18 @@ import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
 
-try:
-    import gittaggers
-    tagger = gittaggers.EggInfoFromGit
-except ImportError:
-    tagger = egg_info_cmd.egg_info
+tagger = egg_info_cmd.egg_info
+version = os.environ.get("ARVADOS_BUILDING_VERSION")
+if not version:
+    version = "0.1"
+    try:
+        import gittaggers
+        tagger = gittaggers.EggInfoFromGit
+    except ImportError:
+        pass
 
 setup(name="arvados-docker-cleaner",
-      version="0.1",
+      version=version,
       description="Arvados Docker cleaner",
       author="Arvados",
       author_email="info@arvados.org",

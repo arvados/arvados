@@ -10,7 +10,11 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-RAILS_PACKAGE_ITERATION=8
+if [[ -z $ARVADOS_BUILDING_VERSION ]]; then
+    RAILS_PACKAGE_ITERATION=8
+else
+    RAILS_PACKAGE_ITERATION=
+fi
 
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
@@ -38,20 +42,30 @@ format_last_commit_here() {
 }
 
 version_from_git() {
-  # Generates a version number from the git log for the current working
-  # directory, and writes it to stdout.
-  local git_ts git_hash prefix
-  if [[ -n "$1" ]] ; then
-      prefix="$1"
-  else
-      prefix="0.1"
-  fi
+    # Output the version being built, or if we're building a
+    # dev/prerelease, output a version number based on the git log for
+    # the current working directory.
+    if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        echo "$ARVADOS_BUILDING_VERSION"
+        return
+    fi
 
-  declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-  echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+    local git_ts git_hash prefix
+    if [[ -n "$1" ]] ; then
+        prefix="$1"
+    else
+        prefix="0.1"
+    fi
+
+    declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
+    echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
 }
 
 nohash_version_from_git() {
+    if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        echo "$ARVADOS_BUILDING_VERSION"
+        return
+    fi
     version_from_git $1 | cut -d. -f1-3
 }
 
@@ -148,6 +162,9 @@ package_go_binary() {
 }
 
 default_iteration() {
+    if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        return
+    fi
     local package_name="$1"; shift
     local package_version="$1"; shift
     local package_type="$1"; shift
@@ -189,7 +206,7 @@ test_rails_package_presence() {
 
   cd $tmppwd
 
-  test_package_presence $pkgname $version rails $RAILS_PACKAGE_ITERATION
+  test_package_presence $pkgname $version rails "$RAILS_PACKAGE_ITERATION"
 }
 
 test_package_presence() {
@@ -232,9 +249,11 @@ test_package_presence() {
     fi
 
     if [[ "$FORMAT" == "deb" ]]; then
-      local complete_pkgname=$pkgname"_"$version"-"$iteration"_"$deb_architecture".deb"
+        local complete_pkgname="${pkgname}_$version${iteration:+-$iteration}_$deb_architecture.deb"
     else
-      local complete_pkgname="$pkgname-$version-$iteration.$rpm_architecture.rpm"
+        # rpm packages get iteration 1 if we don't supply one
+        iteration=${iteration:-1}
+        local complete_pkgname="$pkgname-$version-${iteration}.$rpm_architecture.rpm"
     fi
 
     # See if we can skip building the package, only if it already exists in the
@@ -258,30 +277,31 @@ handle_rails_package() {
     fi
     local srcdir="$1"; shift
     local license_path="$1"; shift
+    local version="$(version_from_git)"
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
-    local version_file="$(mktemp --tmpdir "$pkgname-XXXXXXXX.version")" && (
+    (
         set -e
         _build_rails_package_scripts "$pkgname" "$scripts_dir"
         cd "$srcdir"
         mkdir -p tmp
-        version_from_git >"$version_file"
         git rev-parse HEAD >git-commit.version
         bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
-        rm -rf "$scripts_dir" "$version_file"
+        rm -rf "$scripts_dir"
         EXITCODE=1
         return 1
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
-    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir
-                       "$(cat "$version_file")")
+    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir "$version")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
-    local -a switches=(--iteration=$RAILS_PACKAGE_ITERATION
-                       --after-install "$scripts_dir/postinst"
+    local -a switches=(--after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")
+    if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
+        switches+=(--iteration=$RAILS_PACKAGE_ITERATION)
+    fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
     # .git and packages are for the SSO server, which is built from its
@@ -297,7 +317,7 @@ handle_rails_package() {
     done
     fpm_build "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
-    rm -rf "$scripts_dir" "$version_file"
+    rm -rf "$scripts_dir"
 }
 
 # Build packages for everything
@@ -389,9 +409,11 @@ fpm_build () {
   if [[ "$VERSION" != "" ]]; then
     COMMAND_ARR+=('-v' "$VERSION")
   fi
-  # We can always add an --iteration here.  If another one is specified in $@,
-  # that will take precedence, as desired.
-  COMMAND_ARR+=(--iteration "$default_iteration_value")
+  if [[ -n "$default_iteration_value" ]]; then
+      # We can always add an --iteration here.  If another one is specified in $@,
+      # that will take precedence, as desired.
+      COMMAND_ARR+=(--iteration "$default_iteration_value")
+  fi
 
   if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
   then
