@@ -72,7 +72,7 @@ window.onload = function() {
         });
     });
 
-    var sync = Dygraph.synchronize(Object.values(charts));
+    var sync = Dygraph.synchronize(Object.values(charts), {range: false});
 
     if (typeof window.debug === 'undefined')
         window.debug = {};
