@@ -11,20 +11,22 @@ from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
+package_version = os.path.join(SETUP_DIR, "version")
 
 try:
     import gittaggers
     tagger = gittaggers.EggInfoFromGit
 except ImportError:
     tagger = egg_info_cmd.egg_info
-
+try:
+    gitinfo = package_version.read()
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
     short_tests_only = True
     sys.argv.remove('--short-tests-only')
 
 setup(name='arvados-python-client',
-      version='0.1',
+      version=gitinfo,
       description='Arvados client library',
       long_description=open(README).read(),
       author='Arvados',

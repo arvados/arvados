@@ -11,15 +11,18 @@ from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__) or "."
 README = os.path.join(SETUP_DIR, 'README.rst')
+package_version = os.path.join(SETUP_DIR, "version")
 
 try:
     import gittaggers
     tagger = gittaggers.EggInfoFromGit
 except ImportError:
     tagger = egg_info_cmd.egg_info
-
+try:
+    gitinfo = package_version.read()
+    
 setup(name='arvados-node-manager',
-      version='0.1',
+      version=gitinfo,
       description='Arvados compute node manager',
       long_description=open(README).read(),
       author='Arvados',

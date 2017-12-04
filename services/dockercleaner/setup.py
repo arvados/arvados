@@ -8,15 +8,18 @@ import sys
 import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
+package_version = os.path.join(SETUP_DIR, "version")
 
 try:
     import gittaggers
     tagger = gittaggers.EggInfoFromGit
 except ImportError:
     tagger = egg_info_cmd.egg_info
+try:
+    gitinfo = package_version.read()
 
 setup(name="arvados-docker-cleaner",
-      version="0.1",
+      version=gitinfo,
       description="Arvados Docker cleaner",
       author="Arvados",
       author_email="info@arvados.org",

@@ -59,7 +59,9 @@ while [ $# -gt 0 ]; do
             ;;
         --verno)
             VERNO="$2"; shift
-            printf $VERNO > $WORKSPACE/version
+            if [ -n $VERNO ]; then
+                printf $VERNO > $WORKSPACE/version
+            fi    
             ;;              
         --upload)
             UPLOAD=1
