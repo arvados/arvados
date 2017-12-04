@@ -11,6 +11,7 @@ Syntax:
 
 --target <target>
     Distribution to build packages for (default: debian8)
+--verno <version>      
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
@@ -36,7 +37,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,target: \
+    help,target:,verno:,upload \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -56,9 +57,13 @@ while [ $# -gt 0 ]; do
         --target)
             TARGET="$2"; shift
             ;;
+        --verno)
+            VERNO="$2"; shift
+            $VERNO >>$WORKSPACE/version
+            ;;              
         --upload)
             UPLOAD=1
-            ;;
+            ;;          
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"

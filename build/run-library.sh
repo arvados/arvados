@@ -40,15 +40,20 @@ format_last_commit_here() {
 version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
-  local git_ts git_hash prefix
-  if [[ -n "$1" ]] ; then
-      prefix="$1"
-  else
-      prefix="0.1"
-  fi
-
-  declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-  echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+  cat $WORKSPACE/version >> $VERNO
+  if [ -n "${VERNO}" ]; then
+      new_version="${VERNO}"
+      echo "${new_version}"
+  else    
+      local git_ts git_hash prefix
+      if [[ -n "$1" ]] ; then
+        prefix="$1"
+      else
+        prefix="0.1"
+      fi
+      declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
+      echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+  fi    
 }
 
 nohash_version_from_git() {
