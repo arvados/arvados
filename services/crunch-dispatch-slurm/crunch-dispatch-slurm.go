@@ -158,7 +158,8 @@ func niceness(priority int) int {
 	if priority < 0 {
 		priority = 0
 	}
-	return (1000 - priority) * 1000
+	// Niceness range 1-10000
+	return (1000 - priority) * 10
 }
 
 // sbatchCmd
@@ -296,6 +297,7 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 				scancel(ctr)
 			} else if niceness(updated.Priority) != sqCheck.GetNiceness(ctr.UUID) && sqCheck.GetNiceness(ctr.UUID) != -1 {
 				// dynamically adjust priority
+				log.Printf("Container priority %v != %v", niceness(updated.Priority), sqCheck.GetNiceness(ctr.UUID))
 				scontrolUpdate(updated)
 			}
 		}

@@ -166,7 +166,7 @@ func (s *TestSuite) TestIntegrationNormal(c *C) {
 			if done {
 				return exec.Command("true")
 			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 999000")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
 			}
 		},
 		nil,
@@ -192,7 +192,7 @@ func (s *TestSuite) TestIntegrationCancel(c *C) {
 			if cmd != nil && cmd.ProcessState != nil {
 				return exec.Command("true")
 			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 999000")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
 			}
 		},
 		func(container arvados.Container) *exec.Cmd {
@@ -230,7 +230,7 @@ func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
 			fmt.Sprintf("--mem=%d", 11445),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
 			fmt.Sprintf("--tmp=%d", 45777),
-			fmt.Sprintf("--nice=%d", 999000)},
+			fmt.Sprintf("--nice=%d", 9990)},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -398,7 +398,7 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 	var expected []string
 	expected = append(expected, "sbatch")
 	expected = append(expected, theConfig.SbatchArguments...)
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=999000")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
@@ -414,7 +414,7 @@ func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 
 	var expected []string
 	expected = append(expected, "sbatch")
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=999000", "--partition=blurb,b2")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990", "--partition=blurb,b2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
@@ -426,9 +426,9 @@ func (s *TestSuite) TestIntegrationChangePriority(c *C) {
 	container := s.integrationTest(c,
 		func() *exec.Cmd {
 			if step == 0 {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 999000")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
 			} else if step == 1 {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 400000")
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 4000 100")
 			} else {
 				return exec.Command("echo")
 			}
@@ -453,5 +453,5 @@ func (s *TestSuite) TestIntegrationChangePriority(c *C) {
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-	c.Check(scontrolCmdLine, DeepEquals, []string{"scontrol", "update", "JobName=zzzzz-dz642-queuedcontainer", "Nice=400000"})
+	c.Check(scontrolCmdLine, DeepEquals, []string{"scontrol", "update", "JobName=zzzzz-dz642-queuedcontainer", "Nice=4000"})
 }
