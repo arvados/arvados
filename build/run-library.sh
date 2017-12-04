@@ -40,8 +40,8 @@ format_last_commit_here() {
 version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
-  cat $WORKSPACE/version >> $VERNO
-  if [ -n "${VERNO}" ]; then
+  VERNO=$(<version)
+  if [ -n $VERNO ]; then
       new_version="${VERNO}"
       echo "${new_version}"
   else    
