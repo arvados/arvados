@@ -8,7 +8,7 @@ import crunchstat_summary.webchart
 class DygraphsChart(crunchstat_summary.webchart.WebChart):
     CSS = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css'
     JSLIB = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js'
-    JSASSET = 'dygraphs.js'
+    JSASSETS = ['synchronizer.js','dygraphs.js']
 
     def headHTML(self):
         return '<link rel="stylesheet" href="{}">\n'.format(self.CSS)
