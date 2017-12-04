@@ -23,6 +23,7 @@ class ContainerRequest < ArvadosModel
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_state_change
   validate :check_update_whitelist
   after_save :update_priority
@@ -158,6 +159,7 @@ class ContainerRequest < ArvadosModel
     self.container_count_max ||= Rails.configuration.container_count_max
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
+    self.priority ||= 0
   end
 
   def set_container
@@ -272,7 +274,10 @@ class ContainerRequest < ArvadosModel
 
     token_uuid = current_api_client_authorization.andand.uuid
     container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
-    self.requesting_container_uuid = container.uuid if container
+    if container
+      self.requesting_container_uuid = container.uuid
+      self.priority = container.priority
+    end
     true
   end
 end
