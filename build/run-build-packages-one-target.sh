@@ -86,7 +86,8 @@ while [ $# -gt 0 ]; do
             test_packages=1
             ;;
         --version)
-            ARVADOS_BUILDING_VERSION="$2"; shift
+            ARVADOS_BUILDING_VERSION="$2"
+            shift
             ;;
         --)
             if [ $# -gt 1 ]; then
@@ -99,6 +100,10 @@ while [ $# -gt 0 ]; do
 done
 
 set -e
+
+IFS=- read ARVADOS_BUILDING_VERSION ARVADOS_BUILDING_ITERATION <<EOF
+$ARVADOS_BUILDING_VERSION
+EOF
 
 if [[ -n "$test_packages" ]]; then
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
@@ -213,6 +218,7 @@ else
     if docker run --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
+        --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND

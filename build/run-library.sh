@@ -10,10 +10,10 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-if [[ -z $ARVADOS_BUILDING_VERSION ]]; then
+if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
     RAILS_PACKAGE_ITERATION=8
 else
-    RAILS_PACKAGE_ITERATION=
+    RAILS_PACKAGE_ITERATION="$ARVADOS_BUILDING_ITERATION"
 fi
 
 debug_echo () {
@@ -163,6 +163,7 @@ package_go_binary() {
 
 default_iteration() {
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        echo "$ARVADOS_BUILDING_ITERATION"
         return
     fi
     local package_name="$1"; shift
@@ -220,11 +221,7 @@ test_package_presence() {
         return 1
     fi
 
-    if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
-        iteration=""
-    elif [[ "$iteration" == "" ]]; then
-        iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
-    fi
+    iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
 
     if [[ "$arch" == "" ]]; then
       rpm_architecture="x86_64"
