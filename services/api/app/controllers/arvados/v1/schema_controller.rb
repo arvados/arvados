@@ -51,6 +51,7 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
         websocketUrl: Rails.application.config.websocket_address,
         workbenchUrl: Rails.application.config.workbench_address,
+        keepWebServiceUrl: Rails.application.config.keep_web_service_url,
         parameters: {
           alt: {
             type: "string",
