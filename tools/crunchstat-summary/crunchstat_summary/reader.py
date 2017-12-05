@@ -5,6 +5,7 @@
 from __future__ import print_function
 
 import arvados
+import itertools
 import Queue
 import threading
 import _strptime
@@ -16,7 +17,7 @@ class CollectionReader(object):
     def __init__(self, collection_id):
         self._collection_id = collection_id
         self._label = collection_id
-        self._reader = None
+        self._readers = []
 
     def __str__(self):
         return self._label
@@ -25,21 +26,22 @@ class CollectionReader(object):
         logger.debug('load collection %s', self._collection_id)
         collection = arvados.collection.CollectionReader(self._collection_id)
         filenames = [filename for filename in collection]
-        if len(filenames) == 1:
-            filename = filenames[0]
-        else:
-            filename = 'crunchstat.txt'
-        self._label = "{}/{}".format(self._collection_id, filename)
-        self._reader = collection.open(filename)
-        return iter(self._reader)
+        # Crunch2 has multiple stats files
+        if len(filenames) > 1:
+            filenames = ['crunchstat.txt', 'arv-mount.txt']
+        for filename in filenames:
+            self._readers.append(collection.open(filename))
+        self._label = "{}/{}".format(self._collection_id, filenames[0])
+        return itertools.chain(*[iter(reader) for reader in self._readers])
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._reader:
-            self._reader.close()
-            self._reader = None
+        if self._readers:
+            for reader in self._readers:
+                reader.close()
+            self._readers = []
 
 
 class LiveLogReader(object):
