@@ -15,169 +15,138 @@ Arvados <- setRefClass(
     "Arvados",
 
     fields = list(
-        token = "ANY",
-        host  = "ANY"
+
+        getToken          = "function",
+        getHostName       = "function",
+
+        #Todo(Fudo): These are hardcoded and for debug only. Remove them later on.
+        getWebDavToken    = "function",
+        getWebDavHostName = "function",
+
+        collection_get    = "function",
+        collection_list   = "function",
+        collection_create = "function",
+        collection_update = "function",
+        collection_delete = "function"
     ),
 
     methods = list(
 
         initialize = function(auth_token = NULL, host_name = NULL) 
         {
+            # Private state
+            if(!is.null(host_name))
+               Sys.setenv(ARVADOS_API_HOST  = host_name)
+
+            if(!is.null(auth_token))
+                Sys.setenv(ARVADOS_API_TOKEN = auth_token)
+
+            host  <- Sys.getenv("ARVADOS_API_HOST");
+            token <- Sys.getenv("ARVADOS_API_TOKEN");
+
+            if(host == "" | token == "")
+                stop("Please provide host name and authentification token or set ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
+
             version <- "v1"
-            #Todo(Fudo): Set environment variables
-            token <<- auth_token
-            host  <<- paste0("https://", host_name, "/arvados/", version, "/")
+            host  <- paste0("https://", host, "/arvados/", version, "/")
+
+            # Public methods
+            getToken <<- function() { token }
+            getHostName <<- function() { host }
+
+            #Todo(Fudo): Hardcoded credentials to WebDAV server. Remove them later
+            getWebDavToken    <<- function() { "4invqy35tf70t7hmvdc83ges8ug9cklhgqq1l8gj2cjn18teuq" }
+            getWebDavHostName <<- function() { "https://collections.4xphq.arvadosapi.com/c=4xphq-4zz18-9d5b0qm4fgijeyi/_/" }
+
+            collection_get <<- function(uuid) 
+            {
+                collection_url <- paste0(host, "collections/", uuid)
+                headers <- list(Authorization = paste("OAuth2", token))
+
+                http <- HttpRequest() 
+                serverResponse <- http$GET(collection_url, headers)
+
+                httpParser <- HttpParser()
+                collection <- httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(collection$errors))
+                    stop(collection$errors)       
+
+                collection
+            }
+
+            collection_list <<- function(filters = NULL, limit = 100, offset = 0) 
+            {
+                collection_url <- paste0(host, "collections")
+                headers <- list(Authorization = paste("OAuth2", token))
+
+                http <- HttpRequest() 
+                serverResponse <- http$GET(collection_url, headers, NULL, filters, limit, offset)
+
+                httpParser <- HttpParser()
+                collection <- httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(collection$errors))
+                    stop(collection$errors)       
+
+                collection
+            }
+
+            collection_delete <<- function(uuid) 
+            {
+                collection_url <- paste0(host, "collections/", uuid)
+                headers <- list("Authorization" = paste("OAuth2", token),
+                                "Content-Type"  = "application/json")
+
+                http <- HttpRequest() 
+                serverResponse <- http$DELETE(collection_url, headers)
+
+                httpParser <- HttpParser()
+                collection <- httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(collection$errors))
+                    stop(collection$errors)       
+
+                collection
+            }
+
+            collection_update <<- function(uuid, body) 
+            {
+                collection_url <- paste0(host, "collections/", uuid)
+                headers <- list("Authorization" = paste("OAuth2", token),
+                                "Content-Type"  = "application/json")
+                body <- jsonlite::toJSON(body, auto_unbox = T)
+
+                http <- HttpRequest() 
+                serverResponse <- http$PUT(collection_url, headers, body)
+
+                httpParser <- HttpParser()
+                collection <- httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(collection$errors))
+                    stop(collection$errors)       
+
+                collection
+            }
+
+            collection_create <<- function(body) 
+            {
+                collection_url <- paste0(host, "collections")
+                headers <- list("Authorization" = paste("OAuth2", token),
+                                "Content-Type"  = "application/json")
+                body <- jsonlite::toJSON(body, auto_unbox = T)
+
+                http <- HttpRequest() 
+                serverResponse <- http$POST(collection_url, headers, body)
+
+                httpParser <- HttpParser()
+                collection <- httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(collection$errors))
+                    stop(collection$errors)       
+
+                collection
+            }
         }
     )
-)
-
-#' collection_get
-#'
-#' Get Arvados collection
-#'
-#' @name collection_get
-#' @field uuid UUID of the given collection
-#' @examples arv = Arvados("token", "hostName")
-#' @examples arv$collection_get("uuid")
-Arvados$methods(
-
-    collection_get = function(uuid) 
-    {
-        collection_relative_url <- paste0("collections/", uuid)
-        http_request <- HttpRequest("GET", token, host, collection_relative_url) 
-        server_response <- http_request$execute()
-
-        httpParser <- HttpParser()
-        collection <- httpParser$parseCollectionGet(server_response)
-
-        if(!is.null(collection$errors))
-            stop(collection$errors)       
-
-        class(collection) <- "ArvadosCollection"
-
-        return(collection)
-    }
-)
-
-#' collection_list
-#'
-#' Retreive list of collections based on provided filter.
-#'
-#' @name collection_list
-#' @field filters List of filters we want to use to retreive list of collections.
-#' @field limit Limits the number of result returned by server.
-#' @field offset Offset from beginning of the result set.
-#' @examples arv = Arvados("token", "hostName")
-#' @examples arv$collection_list(list("uuid", "=" "aaaaa-bbbbb-ccccccccccccccc"))
-Arvados$methods(
-
-    collection_list = function(filters = NULL, limit = NULL, offset = NULL) 
-    {
-        #Todo(Fudo): Implement limit and offset
-        collection_relative_url <- "collections"
-        http_request <- HttpRequest("GET", token, host, collection_relative_url,
-                                    body = NULL,  filters, limit, offset) 
-
-        server_response <- http_request$execute()
-
-        httpParser <- HttpParser()
-        collection <- httpParser$parseCollectionGet(server_response)
-
-        if(!is.null(collection$errors))
-            stop(collection$errors)       
-
-        class(collection) <- "ArvadosCollectionList"
-
-        return(collection)
-    }
-)
-
-#' collection_create
-#'
-#' Create Arvados collection
-#'
-#' @name collection_create
-#' @field body Structure of the collection we want to create.
-#' @examples arv = Arvados("token", "hostName")
-#' @examples arv$collection_create(list(collection = list(name = "myCollection")))
-Arvados$methods(
-
-    collection_create = function(body) 
-    {
-        collection_relative_url <- paste0("collections/", "/?alt=json")
-        body = jsonlite::toJSON(body, auto_unbox = T)
-
-        http_request    <- HttpRequest("POST", token, host, collection_relative_url, body) 
-        server_response <- http_request$execute()
-
-        httpParser <- HttpParser()
-        collection <- httpParser$parseCollectionGet(server_response)
-
-        if(!is.null(collection$errors))
-            stop(collection$errors)       
-
-        class(collection) <- "ArvadosCollection"
-
-        return(collection)
-    }
-)
-
-#' collection_delete
-#'
-#' Delete Arvados collection
-#'
-#' @name collection_delete
-#' @field uuid UUID of the collection we want to delete.
-#' @examples arv = Arvados("token", "hostName")
-#' @examples arv$collection_delete(uuid = "aaaaa-bbbbb-ccccccccccccccc")
-Arvados$methods(
-
-    collection_delete = function(uuid) 
-    {
-        collection_relative_url <- paste0("collections/", uuid, "/?alt=json")
-
-        http_request    <- HttpRequest("DELETE", token, host, collection_relative_url) 
-        server_response <- http_request$execute()
-
-        httpParser <- HttpParser()
-        collection <- httpParser$parseCollectionGet(server_response)
-
-        if(!is.null(collection$errors))
-            stop(collection$errors)       
-
-        class(collection) <- "ArvadosCollection"
-
-        return(collection)
-    }
-)
-
-#' collection_update
-#'
-#' Update Arvados collection
-#'
-#' @name collection_update
-#' @field uuid UUID of the collection we want to update.
-#' @field body New structure of the collection.
-#' @examples arv = Arvados("token", "hostName")
-#' @examples arv$collection_update(uuid = "aaaaa-bbbbb-ccccccccccccccc", list(collection = list(name = "newName")))
-Arvados$methods(
-
-    collection_update = function(uuid, body) 
-    {
-        collection_relative_url <- paste0("collections/", uuid, "/?alt=json")
-        body = jsonlite::toJSON(body, auto_unbox = T)
-
-        http_request    <- HttpRequest("PUT", token, host, collection_relative_url, body) 
-        server_response <- http_request$execute()
-
-        httpParser <- HttpParser()
-        collection <- httpParser$parseCollectionGet(server_response)
-
-        if(!is.null(collection$errors))
-            stop(collection$errors)       
-
-        class(collection) <- "ArvadosCollection"
-
-        return(collection)
-    }
 )

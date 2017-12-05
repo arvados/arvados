@@ -33,7 +33,6 @@ Collection <- setRefClass(
 
     "Collection",
 
-    #NOTE(Fudo): Fix types!
     fields = list(uuid                     = "ANY",
                   items                    = "ANY",
                   etag                     = "ANY",
@@ -55,16 +54,18 @@ Collection <- setRefClass(
                   file_names               = "ANY",
                   trash_at                 = "ANY",
                   is_trashed               = "ANY",
-                  arvados_api              = "Arvados"
+
+                  getCollectionContent = "function"
     ),
 
     methods = list(
 
         initialize = function(api, uuid) 
         {
-            arvados_api <<- api
-            result <- arvados_api$collection_get(uuid)
+
+            result <- api$collection_get(uuid)
             
+            # Private members
             uuid                     <<- result$uuid                               
             etag                     <<- result$etag                               
             owner_uuid               <<- result$owner_uuid                         
@@ -86,23 +87,27 @@ Collection <- setRefClass(
             trash_at                 <<- result$trash_at                           
             is_trashed               <<- result$is_trashed                         
 
+
+            #Public methods
+
+            # Private methods
+            getCollectionContent <<- function()
+            {
+                #TODO(Fudo): Use proper URL here.
+                uri <- URLencode(api$getWebDavHostName())
+
+                # fetch directory listing via curl and parse XML response
+                h <- curl::new_handle()
+                curl::handle_setopt(h, customrequest = "PROPFIND")
+
+                #TODO(Fudo): Use proper token here.
+                curl::handle_setheaders(h, "Authorization" = paste("OAuth2", api$getWebDavToken()))
+                response <- curl::curl_fetch_memory(uri, h)
+
+                HttpParser()$parseWebDAVResponse(response, uri)
+            }
+
             items  <<- getCollectionContent()
-        },
-
-        getCollectionContent = function()
-        {
-            #IMPORTANT(Fudo): This url is hardcoded for now. Fix it later.
-            uri <- URLencode("https://collections.4xphq.arvadosapi.com/c=4xphq-4zz18-9d5b0qm4fgijeyi/_/")
-
-            # fetch directory listing via curl and parse XML response
-            h <- curl::new_handle()
-            curl::handle_setopt(h, customrequest = "PROPFIND")
-
-            #IMPORTANT(Fudo): Token is hardcoded as well. Write it properly.
-            curl::handle_setheaders(h, "Authorization" = paste("OAuth2 4invqy35tf70t7hmvdc83ges8ug9cklhgqq1l8gj2cjn18teuq"))
-            response <- curl::curl_fetch_memory(uri, h)
-
-            HttpParser()$parseWebDAVResponse(response, uri)
         }
     )
 )

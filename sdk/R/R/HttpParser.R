@@ -19,6 +19,13 @@ HttpParser <- setRefClass(
             #Todo(Fudo): Create new Collection object and populate it
         },
 
+        parseJSONResponse = function(server_response) 
+        {
+            parsed_response <- httr::content(server_response, as = "parsed", type = "application/json")
+
+            #Todo(Fudo): Create new Collection object and populate it
+        },
+
         parseWebDAVResponse = function(response, uri)
         {
             #Todo(Fudo): Move this to HttpParser.
@@ -29,7 +36,7 @@ HttpParser <- setRefClass(
             base <- paste(paste("/", strsplit(uri, "/")[[1]][-1:-3], sep="", collapse=""), "/", sep="")
             result <- unlist(
                 XML::xpathApply(doc, "//D:response/D:href", function(node) {
-                    sub(base, "", URLdecode(xmlValue(node)), fixed=TRUE)
+                    sub(base, "", URLdecode(XML::xmlValue(node)), fixed=TRUE)
                 })
             )
             result[result != ""]
