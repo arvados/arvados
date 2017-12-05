@@ -365,7 +365,7 @@ package_go_binary services/keep-web keep-web \
     "Static web hosting service for user data stored in Arvados Keep"
 package_go_binary services/ws arvados-ws \
     "Arvados Websocket server"
-package_go_binary tools/arv-sync-groups arv-sync-groups \
+package_go_binary tools/sync-groups arvados-sync-groups \
     "Synchronize remote groups into Arvados from an external source"
 package_go_binary tools/keep-block-check keep-block-check \
     "Verify that all data from one set of Keep servers to another was copied"
