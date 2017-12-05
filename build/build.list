@@ -35,7 +35,7 @@ debian8,debian9,ubuntu1204,ubuntu1404,ubuntu1604,centos7|websocket-client|0.37.0
 ubuntu1204,ubuntu1404|requests|2.4.3|2|python|all
 ubuntu1204,centos7|contextlib2|0.5.4|2|python|all
 ubuntu1204,centos7|isodate|0.5.4|2|python|all
-centos7|daemon|2.1.1|2|python|all
+centos7|python-daemon|2.1.2|1|python|all
 centos7|pbr|0.11.1|2|python|all
 centos7|pyparsing|2.1.10|2|python|all
 centos7|keepalive|0.5|2|python|all
