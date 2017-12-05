@@ -311,6 +311,7 @@ type NodeStatus struct {
 	TrashQueue      WorkQueueStatus
 	RequestsCurrent int
 	RequestsMax     int
+	Version         string
 }
 
 var st NodeStatus
@@ -346,6 +347,7 @@ func (rtr *router) StatusHandler(resp http.ResponseWriter, req *http.Request) {
 
 // populate the given NodeStatus struct with current values.
 func (rtr *router) readNodeStatus(st *NodeStatus) {
+	st.Version = version
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*volumeStatusEnt, len(vols))

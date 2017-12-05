@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -88,6 +89,21 @@ func (s *serverSuite) TestHealth(c *check.C) {
 			c.Check(resp.StatusCode, check.Not(check.Equals), http.StatusOK)
 		}
 	}
+}
+
+func (s *serverSuite) TestStatus(c *check.C) {
+	go s.srv.Run()
+	defer s.srv.Close()
+	s.srv.WaitReady()
+	req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/status.json", nil)
+	c.Assert(err, check.IsNil)
+	resp, err := http.DefaultClient.Do(req)
+	c.Check(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var status map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&status)
+	c.Check(err, check.IsNil)
+	c.Check(status["Version"], check.Not(check.Equals), "")
 }
 
 func (s *serverSuite) TestHealthDisabled(c *check.C) {

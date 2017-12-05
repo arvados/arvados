@@ -123,6 +123,7 @@ func (rtr *router) DebugStatus() interface{} {
 func (rtr *router) Status() interface{} {
 	return map[string]interface{}{
 		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
+		"Version": version,
 	}
 }
 

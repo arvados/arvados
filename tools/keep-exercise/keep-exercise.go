@@ -22,15 +22,19 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
+
+var version = "dev"
 
 // Command line config knobs
 var (
@@ -43,10 +47,19 @@ var (
 	StatsInterval = flag.Duration("stats-interval", time.Second, "time interval between IO stats reports, or 0 to disable")
 	ServiceURL    = flag.String("url", "", "specify scheme://host of a single keep service to exercise (instead of using all advertised services like normal clients)")
 	ServiceUUID   = flag.String("uuid", "", "specify UUID of a single advertised keep service to exercise")
+	getVersion    = flag.Bool("version", false, "Print version information and exit.")
 )
 
 func main() {
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keep-exercise %s\n", version)
+		os.Exit(0)
+	}
+
+	log.Printf("keep-exercise %s started", version)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {

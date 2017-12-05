@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ import (
 
 var (
 	defaultConfigPath = "/etc/arvados/keep-web/keep-web.yml"
+	version           = "dev"
 )
 
 // Config specifies server configuration.
@@ -85,8 +87,16 @@ func main() {
 
 	dumpConfig := flag.Bool("dump-config", false,
 		"write current configuration to stdout and exit")
+	getVersion := flag.Bool("version", false,
+		"print version information and exit.")
 	flag.Usage = usage
 	flag.Parse()
+
+	// Print version information if requested
+	if *getVersion {
+		fmt.Printf("keep-web %s\n", version)
+		return
+	}
 
 	if err := config.LoadFile(cfg, configPath); err != nil {
 		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
@@ -104,6 +114,8 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	log.Printf("keep-web %s started", version)
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
 	srv := &server{Config: cfg}

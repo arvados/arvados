@@ -24,6 +24,7 @@ class Container < ArvadosModel
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
   validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
+  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
@@ -333,7 +334,7 @@ class Container < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
-    self.priority ||= 1
+    self.priority ||= 0
     self.scheduling_parameters ||= {}
   end
 

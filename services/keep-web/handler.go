@@ -91,8 +91,10 @@ func (h *handler) setup() {
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	status := struct {
 		cacheStats
+		Version string
 	}{
 		cacheStats: h.Config.Cache.Stats(),
+		Version:    version,
 	}
 	json.NewEncoder(w).Encode(status)
 }
