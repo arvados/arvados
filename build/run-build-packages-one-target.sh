@@ -21,7 +21,7 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
---version <string>
+--build-version <string>
     Version to build (default: \$ARVADOS_BUILDING_VERSION or 0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
@@ -47,7 +47,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,only-build:,version: \
+    help,debug,test-packages,target:,command:,only-test:,only-build:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -85,7 +85,7 @@ while [ $# -gt 0 ]; do
         --test-packages)
             test_packages=1
             ;;
-        --version)
+        --build-version)
             ARVADOS_BUILDING_VERSION="$2"
             shift
             ;;
@@ -101,9 +101,16 @@ done
 
 set -e
 
-IFS=- read ARVADOS_BUILDING_VERSION ARVADOS_BUILDING_ITERATION <<EOF
+if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+    IFS=- read ARVADOS_BUILDING_VERSION ARVADOS_BUILDING_ITERATION <<EOF
 $ARVADOS_BUILDING_VERSION
 EOF
+    if [[ -z "$ARVADOS_BUILDING_ITERATION" ]]; then
+        echo >&2 "FATAL: version does not include an iteration. Try --build-version ${ARVADOS_BUILDING_VERSION}-1"
+        exit 1
+    fi
+fi
+
 
 if [[ -n "$test_packages" ]]; then
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
