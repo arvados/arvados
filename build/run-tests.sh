@@ -816,8 +816,8 @@ install_apiserver() {
         (
             dir="$WORKSPACE/services/api/tmp"
             set -ex
-            openssl req -newkey rsa:2048 -nodes -subj '/C=US/ST=State/L=City/CN=0.0.0.0' -out "$cert.csr" -keyout "$cert.key" </dev/null
-            openssl x509 -req -in "$cert.csr" -signkey "$cert.key" -out "$cert.pem" -days 3650 -extfile <(printf 'subjectAltName=DNS:127.0.0.1,DNS:localhost,DNS:::1')
+            openssl req -newkey rsa:2048 -nodes -subj '/C=US/ST=State/L=City/CN=127.0.0.1' -out "$cert.csr" -keyout "$cert.key" </dev/null
+            openssl x509 -req -in "$cert.csr" -signkey "$cert.key" -out "$cert.pem" -days 3650 -extfile <(printf 'subjectAltName=DNS:localhost,DNS:::1,DNS:0.0.0.0')
         ) || return 1
     fi
 
