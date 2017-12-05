@@ -170,6 +170,12 @@ class Summarizer(object):
                 self.starttime = timestamp
             self.finishtime = timestamp
 
+            if not self.detected_crunch1:
+                elapsed = (timestamp - task.starttime).seconds
+                self.task_stats[task_id]['time'] = {'elapsed': elapsed}
+                if elapsed > self.stats_max['time']['elapsed']:
+                    self.stats_max['time']['elapsed'] = elapsed
+
             this_interval_s = None
             for group in ['current', 'interval']:
                 if not m.group(group):
