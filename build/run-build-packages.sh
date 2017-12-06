@@ -484,8 +484,9 @@ if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
 fi
 
-if [[ -z "$ONLY_BUILD" ]] || [[ "${PYTHON2_PKG_PREFIX}-apache-libcloud" == "$ONLY_BUILD" ]] ; then
-  # Forked libcloud
+# Forked libcloud
+if test_package_presence "$PYTHON2_PKG_PREFIX"-apache-libcloud "$LIBCLOUD_PIN" python 2
+then
   LIBCLOUD_DIR=$(mktemp -d)
   (
       cd $LIBCLOUD_DIR
@@ -497,7 +498,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "${PYTHON2_PKG_PREFIX}-apache-libcloud" == "$ONL
       handle_python_package
       DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
   )
-  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
+  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud "" python "" --iteration 2
   rm -rf $LIBCLOUD_DIR
 fi
 
