@@ -151,5 +151,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     group_uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes(group_uuids, 'zzzzz-j7d0g-fffffffffffffff')
     refute_includes(group_uuids, 'zzzzz-j7d0g-000000000000000')
+    assert_includes(group_uuids, groups(:aproject).uuid)
+    refute_includes(group_uuids, groups(:trashed_project).uuid)
+    refute_includes(group_uuids, groups(:testusergroup_admins).uuid)
   end
 end
