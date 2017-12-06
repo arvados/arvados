@@ -41,7 +41,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!
 
     assert_nil cr.container_uuid
-    assert_nil cr.priority
+    assert_equal 0, cr.priority
 
     check_bogus_states cr
 
@@ -108,7 +108,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request priority must be non-nil" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: nil)
+    cr = create_minimal_req!
+    cr.priority = nil
     cr.state = "Committed"
     assert_raises(ActiveRecord::RecordInvalid) do
       cr.save!
@@ -323,14 +324,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr'],
-    ['active_no_prefs', nil],
-  ].each do |token, expected|
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 12],
+    ['active_no_prefs', nil, 0],
+  ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token
       cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
       assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
       assert_equal expected, cr.requesting_container_uuid
+      assert_equal expected_priority, cr.priority
     end
   end
 
@@ -803,4 +805,35 @@ class ContainerRequestTest < ActiveSupport::TestCase
       assert_nothing_raised {cr.destroy}
     end
   end
+
+  test "Container request valid priority" do
+    set_user_from_auth :active
+    cr = create_minimal_req!
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.priority = -1
+      cr.save!
+    end
+
+    cr.priority = 0
+    cr.save!
+
+    cr.priority = 1
+    cr.save!
+
+    cr.priority = 500
+    cr.save!
+
+    cr.priority = 999
+    cr.save!
+
+    cr.priority = 1000
+    cr.save!
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.priority = 1001
+      cr.save!
+    end
+  end
+
 end

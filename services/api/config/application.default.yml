@@ -446,6 +446,13 @@ common:
   # Server expects request header of the format "Authorization: Bearer xxx"
   ManagementToken: false
 
+  # URL of keep-web service.  Provides read/write access to collections via
+  # HTTP and WebDAV protocols.
+  #
+  # Example:
+  # keep_web_service_url: https://download.uuid_prefix.arvadosapi.com/
+  keep_web_service_url: false
+
 development:
   force_ssl: false
   cache_classes: false
