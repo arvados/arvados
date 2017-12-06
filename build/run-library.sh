@@ -221,7 +221,7 @@ test_package_presence() {
         return 1
     fi
 
-    if [[ "$iteration" == "" || -n "$ARVADOS_BUILDING_VERSION" ]]; then
+    if [[ "$iteration" == "" ]]; then
         iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
     fi
 

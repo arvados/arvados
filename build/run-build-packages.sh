@@ -421,16 +421,16 @@ fi
 #
 # Ward, 2016-03-17
 saladversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep schema-salad== | sed "s/.*==\(.*\)'.*/\1/")
-test_package_presence python-schema-salad "$saladversion" python
+test_package_presence python-schema-salad "$saladversion" python 2
 if [[ "$?" == "0" ]]; then
-  fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2" --depends "${PYTHON2_PKG_PREFIX}-avro = 1.8.1-2"
+  fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2" --depends "${PYTHON2_PKG_PREFIX}-avro = 1.8.1-2" --iteration 2
 fi
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(.*\)'.*/\1/")
-test_package_presence python-cwltool "$cwltoolversion" python
+test_package_presence python-cwltool "$cwltoolversion" python 2
 if [[ "$?" == "0" ]]; then
-  fpm_build cwltool "" "" python $cwltoolversion
+  fpm_build cwltool "" "" python $cwltoolversion --iteration 2
 fi
 
 # The PAM module
@@ -468,25 +468,20 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 dockercleaner_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)
-declare -a iterargs=()
-if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    dockercleaner_iteration=3
-    iterargs+=(--iteration "$dockercleaner_iteration")
-else
-    dockercleaner_iteration=
-fi
-test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$dockercleaner_iteration"
+iteration="${ARVADOS_BUILDING_ITERATION:-3}"
+test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" "${iterargs[@]}"
+  fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration "$iteration"
 fi
 
 # The Arvados crunchstat-summary tool
 cd $WORKSPACE/packages/$TARGET
 crunchstat_summary_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/tools/crunchstat-summary/crunchstat_summary.egg-info/PKG-INFO)
-test_package_presence "$PYTHON2_PKG_PREFIX"-crunchstat-summary "$crunchstat_summary_version" python
+iteration="${ARVADOS_BUILDING_ITERATION:-2}"
+test_package_presence "$PYTHON2_PKG_PREFIX"-crunchstat-summary "$crunchstat_summary_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
   rm -rf "$WORKSPACE/tools/crunchstat-summary/build"
-  fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage"
+  fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
 fi
 
 if [[ -z "$ONLY_BUILD" ]] || [[ "${PYTHON2_PKG_PREFIX}-apache-libcloud" == "$ONLY_BUILD" ]] ; then
