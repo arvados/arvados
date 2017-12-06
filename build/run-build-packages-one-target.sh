@@ -86,12 +86,15 @@ while [ $# -gt 0 ]; do
             test_packages=1
             ;;
         --build-version)
-            if ! [[ "$2" =~ (.*)-(.*) ]]; then
+            if [[ -z "$2" ]]; then
+                :
+            elif ! [[ "$2" =~ (.*)-(.*) ]]; then
                 echo >&2 "FATAL: --build-version '$2' does not include an iteration. Try '${2}-1'?"
                 exit 1
+            else
+                ARVADOS_BUILDING_VERSION="${BASH_REMATCH[1]}"
+                ARVADOS_BUILDING_ITERATION="${BASH_REMATCH[2]}"
             fi
-            ARVADOS_BUILDING_VERSION="${BASH_REMATCH[1]}"
-            ARVADOS_BUILDING_ITERATION="${BASH_REMATCH[2]}"
             shift
             ;;
         --)
@@ -106,7 +109,9 @@ done
 
 set -e
 
-echo "build version='$ARVADOS_BUILDING_VERSION', package iteration='$ARVADOS_BUILDING_ITERATION'"
+if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+    echo "build version='$ARVADOS_BUILDING_VERSION', package iteration='$ARVADOS_BUILDING_ITERATION'"
+fi
 
 if [[ -n "$test_packages" ]]; then
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
