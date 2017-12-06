@@ -1,7 +1,9 @@
 source("./R/Arvados.R")
 source("./R/HttpParser.R")
+source("./R/Subcollection.R")
+source("./R/ArvadosFile.R")
 
-#' Collection Object
+#' Collection Class
 #' 
 #' @details 
 #' Todo: Update description
@@ -28,7 +30,9 @@ source("./R/HttpParser.R")
 #' @param trash_at No description
 #' @param is_trashed No description
 #' 
-#' @export
+#' @export Collection
+
+#' @exportClass Collection
 Collection <- setRefClass(
 
     "Collection",
@@ -62,7 +66,6 @@ Collection <- setRefClass(
 
         initialize = function(api, uuid) 
         {
-
             result <- api$collection_get(uuid)
             
             # Private members
@@ -87,9 +90,6 @@ Collection <- setRefClass(
             trash_at                 <<- result$trash_at                           
             is_trashed               <<- result$is_trashed                         
 
-
-            #Public methods
-
             # Private methods
             getCollectionContent <<- function()
             {
@@ -107,7 +107,87 @@ Collection <- setRefClass(
                 HttpParser()$parseWebDAVResponse(response, uri)
             }
 
-            items  <<- getCollectionContent()
+            createCollectionContentTree <- function(fileStructure)
+            {
+                #Todo(Fudo): Refactor this.
+                treeBranches <- sapply(fileStructure, function(filePath) 
+                {
+                    fileWithPath <- unlist(stringr::str_split(filePath, "/"))
+
+                    file <- fileWithPath[length(fileWithPath), drop = T]
+                    file <- ArvadosFile(file)
+
+                    folders <- fileWithPath[-length(fileWithPath)]
+
+                    subcollections <- sapply(folders, function(folder)
+                    {
+                        folder <- Subcollection(folder)
+                    })
+
+                    if(length(subcollections) > 0)
+                    {
+                        bottomFolder <- subcollections[[length(subcollections)]]
+                        bottomFolder$add(file)
+
+                        if(length(subcollections) == 1)
+                        {
+                            return(bottomFolder)
+                        }
+                        else
+                        {
+                            # Link folders in hierarchy. At the bottom will always be a file.
+                            for(subcollectionIndex in 1:(length(subcollections) - 1))
+                            {
+                                subcollections[[subcollectionIndex]]$add(subcollections[[subcollectionIndex + 1]])
+                            }
+
+                            subcollections[[1]]
+                        }
+                    }
+                    else
+                    {
+                        file
+                    }
+                })
+
+                root <- Subcollection(".")
+
+                addIfExists <- function(firstNode, secondNode)
+                {
+                    firstNodeContent <- sapply(firstNode$content, function(node) {node$name})
+                    if(length(firstNodeContent) == 0)
+                    {
+                        firstNode$add(secondNode)
+                        return()
+                    }
+
+                    matchPosition <- match(secondNode$name, firstNodeContent, -1)
+                    if(matchPosition != -1)
+                    {
+                        addIfExists(firstNode$content[[matchPosition]], secondNode$content[[1]])
+                    }
+                    else
+                    {
+                        firstNode$add(secondNode)
+                    }
+                }
+
+                sapply(treeBranches, function(branch)
+                {
+                    addIfExists(root, branch)
+                })
+
+                root
+            }
+
+            #Todo(Fudo): This is dummy data. Real content will come from WebDAV server.
+            testFileStructure <- c("math.h", "main.cpp",
+                                   "java/render.java", "java/test/observer.java",
+                                   "java/test/observable.java",
+                                   "csharp/this.cs", "csharp/is.cs",
+                                   "csharp/dummy.cs", "csharp/file.cs")
+            #items  <<- getCollectionContent()
+            items  <<- createCollectionContentTree(testFileStructure)
         }
     )
 )

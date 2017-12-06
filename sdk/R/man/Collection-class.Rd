@@ -4,7 +4,7 @@
 \name{Collection-class}
 \alias{Collection-class}
 \alias{Collection}
-\title{Collection Object}
+\title{Collection Class}
 \arguments{
 \item{uuid}{Object ID}
 
@@ -47,7 +47,7 @@
 \item{is_trashed}{No description}
 }
 \description{
-Collection Object
+Collection Class
 }
 \details{
 Todo: Update description
