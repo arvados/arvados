@@ -17,6 +17,9 @@ class ApiClientAuthorization < ArvadosModel
     t.add :owner_uuid
     t.add :user_id
     t.add :api_client_id
+    # NB the "api_token" db column is a misnomer in that it's only the
+    # "secret" part of a token: a v1 token is just the secret, but a
+    # v2 token is "v2/uuid/secret".
     t.add :api_token
     t.add :created_by_ip_address
     t.add :default_owner_uuid
@@ -163,7 +166,7 @@ class ApiClientAuthorization < ArvadosModel
 
         auth = ApiClientAuthorization.find_or_create_by(uuid: uuid) do |auth|
           auth.user = user
-          auth.api_token = token
+          auth.api_token = secret
           auth.api_client_id = 0
         end
 

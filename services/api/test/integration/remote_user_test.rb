@@ -8,9 +8,14 @@ require 'test_helper'
 require 'helpers/users_test_helper'
 
 class RemoteUsersTest < ActionDispatch::IntegrationTest
+  include DbCurrentTime
+
+  def salted_active_token(remote:)
+    salt_token(fixture: :active, remote: remote).sub('/zzzzz-', '/'+remote+'-')
+  end
+
   def auth(remote:)
-    token = salt_token(fixture: :active, remote: remote)
-    token.sub!('/zzzzz-', '/'+remote+'-')
+    token = salted_active_token(remote: remote)
     {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
   end
 
@@ -78,6 +83,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
+
+    # revoke original token
+    @stub_status = 401
+    @stub_content = {error: 'not authorized'}
+
+    # re-authorize before cache expires
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
+
+    # simulate cache expiry
+    ApiClientAuthorization.where(
+      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
+      update_all(expires_at: db_current_time - 1.minute)
+
+    # re-authorize after cache expires
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response 401
   end
 
   test 'authenticate with remote token from misbhehaving remote cluster' do
