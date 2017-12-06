@@ -99,6 +99,10 @@ class ApiClientAuthorization < ArvadosModel
     case token[0..2]
     when 'v2/'
       _, uuid, secret = token.split('/')
+      unless uuid.andand.length == 27 && secret.andand.length.andand > 0
+        return nil
+      end
+
       auth = ApiClientAuthorization.
              includes(:user, :api_client).
              where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', uuid).

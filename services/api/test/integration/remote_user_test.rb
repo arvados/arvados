@@ -86,7 +86,6 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
     # revoke original token
     @stub_status = 401
-    @stub_content = {error: 'not authorized'}
 
     # re-authorize before cache expires
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
@@ -100,6 +99,11 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     # re-authorize after cache expires
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response 401
+
+    # revive original token and re-authorize
+    @stub_status = 200
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
   end
 
   test 'authenticate with remote token from misbhehaving remote cluster' do
@@ -114,6 +118,36 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     }
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response 401
+  end
+
+  ['v2',
+   'v2/',
+   'v2//',
+   'v2///',
+   "v2/'; delete from users where 1=1; commit; select '/lol",
+   'v2/foo/bar',
+   'v2/zzzzz-gj3su-077z32aux8dg2s1',
+   'v2/zzzzz-gj3su-077z32aux8dg2s1/',
+   'v2/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi',
+   'v2/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi/zzzzz-gj3su-077z32aux8dg2s1',
+   'v2//3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi',
+   'v8/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi',
+   '/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi',
+   '"v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"',
+   '/',
+   '//',
+   '///',
+  ].each do |token|
+    test "authenticate with malformed remote token #{token}" do
+      get '/arvados/v1/users/current', {format: 'json'}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
+      assert_response 401
+    end
+  end
+
+  test "ignore extra fields in remote token" do
+    token = salted_active_token(remote: 'zbbbb') + '/foo/bar/baz/*'
+    get '/arvados/v1/users/current', {format: 'json'}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
+    assert_response :success
   end
 
   test 'remote api server is not an api server' do
