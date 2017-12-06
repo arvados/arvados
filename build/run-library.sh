@@ -148,7 +148,7 @@ package_go_binary() {
 
     go get -ldflags "-X main.version=${version}" "git.curoverse.com/arvados.git/$src_path"
 
-    declare -a switches=()
+    local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
@@ -221,7 +221,9 @@ test_package_presence() {
         return 1
     fi
 
-    iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
+    if [[ "$iteration" == "" || -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
+    fi
 
     if [[ "$arch" == "" ]]; then
       rpm_architecture="x86_64"
@@ -275,6 +277,7 @@ handle_rails_package() {
         return 0
     fi
     local srcdir="$1"; shift
+    cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
@@ -299,7 +302,7 @@ handle_rails_package() {
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")
     if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-        switches+=(--iteration=$RAILS_PACKAGE_ITERATION)
+        switches+=(--iteration $RAILS_PACKAGE_ITERATION)
     fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
