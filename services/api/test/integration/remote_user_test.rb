@@ -107,9 +107,11 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     # revive original token and re-authorize
     @stub_status = 200
     @stub_content[:username] = 'blarney'
+    @stub_content[:email] = 'blarney@example.com'
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'barney', json_response['username'], 'local username should not change once assigned'
+    assert_equal 'blarney@example.com', json_response['email']
   end
 
   test 'authenticate with remote token, remote username conflicts with local' do

@@ -153,10 +153,9 @@ class ApiClientAuthorization < ArvadosModel
         # validate subsequent requests faster.
 
         user = User.find_or_create_by(uuid: remote_user['uuid']) do |user|
+          # (this block runs for the "create" case, not for "find")
           user.is_admin = false
-          %w[first_name last_name email prefs].each do |attr|
-            user.send(attr+'=', remote_user[attr])
-          end
+          user.email = remote_user['email']
           if remote_user['username'].andand.length.andand > 0
             user.set_initial_username(requested: remote_user['username'])
           end
@@ -168,6 +167,10 @@ class ApiClientAuthorization < ArvadosModel
         elsif !remote_user['is_active']
           # Remote user is inactive; our mirror should be, too.
           user.is_active = false
+        end
+
+        %w[first_name last_name email prefs].each do |attr|
+          user.send(attr+'=', remote_user[attr])
         end
 
         user.save!
