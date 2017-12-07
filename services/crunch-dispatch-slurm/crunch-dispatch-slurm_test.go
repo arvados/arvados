@@ -64,111 +64,11 @@ func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
 }
 
-func (s *TestSuite) TestIntegrationNormal(c *C) {
-	done := false
-	container := s.integrationTest(c,
-		func() *exec.Cmd {
-			if done {
-				return exec.Command("true")
-			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
-			}
-		},
-		nil,
-		nil,
-		[]string(nil),
-		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
-			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(3 * time.Second)
-			dispatcher.UpdateState(container.UUID, dispatch.Complete)
-			done = true
-		})
-	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-}
-
-func (s *TestSuite) TestIntegrationCancel(c *C) {
-	var cmd *exec.Cmd
-	var scancelCmdLine []string
-	attempt := 0
-
-	container := s.integrationTest(c,
-		func() *exec.Cmd {
-			if cmd != nil && cmd.ProcessState != nil {
-				return exec.Command("true")
-			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
-			}
-		},
-		func(container arvados.Container) *exec.Cmd {
-			if attempt++; attempt == 1 {
-				return exec.Command("false")
-			} else {
-				scancelCmdLine = scancelFunc(container).Args
-				cmd = exec.Command("echo")
-				return cmd
-			}
-		},
-		nil,
-		[]string(nil),
-		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
-			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(1 * time.Second)
-			dispatcher.Arv.Update("containers", container.UUID,
-				arvadosclient.Dict{
-					"container": arvadosclient.Dict{"priority": 0}},
-				nil)
-		})
-	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
-	c.Check(scancelCmdLine, DeepEquals, []string{"scancel", "--name=zzzzz-dz642-queuedcontainer"})
-}
-
-func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
-	container := s.integrationTest(c,
-		func() *exec.Cmd { return exec.Command("echo") },
-		nil,
-		nil,
-		[]string{"sbatch",
-			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
-			fmt.Sprintf("--mem=%d", 11445),
-			fmt.Sprintf("--cpus-per-task=%d", 4),
-			fmt.Sprintf("--tmp=%d", 45777)},
-		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
-			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(3 * time.Second)
-			dispatcher.UpdateState(container.UUID, dispatch.Complete)
-		})
-	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
-}
-
-func (s *TestSuite) TestSbatchFail(c *C) {
-	container := s.integrationTest(c,
-		func() *exec.Cmd { return exec.Command("echo") },
-		nil,
-		func(container arvados.Container) *exec.Cmd {
-			return exec.Command("false")
-		},
-		[]string(nil),
-		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
-			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			dispatcher.UpdateState(container.UUID, dispatch.Complete)
-		})
-	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, IsNil)
-
-	var ll arvados.LogList
-	err = arv.List("logs", arvadosclient.Dict{"filters": [][]string{
-		{"object_uuid", "=", container.UUID},
-		{"event_type", "=", "dispatch"},
-	}}, &ll)
-	c.Assert(len(ll.Items), Equals, 1)
-}
-
 func (s *TestSuite) integrationTest(c *C,
 	newSqueueCmd func() *exec.Cmd,
 	newScancelCmd func(arvados.Container) *exec.Cmd,
 	newSbatchCmd func(arvados.Container) *exec.Cmd,
+	newScontrolCmd func(arvados.Container) *exec.Cmd,
 	sbatchCmdComps []string,
 	runContainer func(*dispatch.Dispatcher, arvados.Container)) arvados.Container {
 	arvadostest.ResetEnv()
@@ -203,6 +103,12 @@ func (s *TestSuite) integrationTest(c *C,
 		scancelCmd = orig
 	}(scancelCmd)
 	scancelCmd = newScancelCmd
+
+	// Override scontrol
+	defer func(orig func(arvados.Container) *exec.Cmd) {
+		scontrolCmd = orig
+	}(scontrolCmd)
+	scontrolCmd = newScontrolCmd
 
 	// There should be one queued container
 	params := arvadosclient.Dict{
@@ -251,6 +157,112 @@ func (s *TestSuite) integrationTest(c *C,
 	err = arv.Get("containers", "zzzzz-dz642-queuedcontainer", nil, &container)
 	c.Check(err, IsNil)
 	return container
+}
+
+func (s *TestSuite) TestIntegrationNormal(c *C) {
+	done := false
+	container := s.integrationTest(c,
+		func() *exec.Cmd {
+			if done {
+				return exec.Command("true")
+			} else {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
+			}
+		},
+		nil,
+		nil,
+		nil,
+		[]string(nil),
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			time.Sleep(3 * time.Second)
+			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+			done = true
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateComplete)
+}
+
+func (s *TestSuite) TestIntegrationCancel(c *C) {
+	var cmd *exec.Cmd
+	var scancelCmdLine []string
+	attempt := 0
+
+	container := s.integrationTest(c,
+		func() *exec.Cmd {
+			if cmd != nil && cmd.ProcessState != nil {
+				return exec.Command("true")
+			} else {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
+			}
+		},
+		func(container arvados.Container) *exec.Cmd {
+			if attempt++; attempt == 1 {
+				return exec.Command("false")
+			} else {
+				scancelCmdLine = scancelFunc(container).Args
+				cmd = exec.Command("echo")
+				return cmd
+			}
+		},
+		nil,
+		nil,
+		[]string(nil),
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			time.Sleep(1 * time.Second)
+			dispatcher.Arv.Update("containers", container.UUID,
+				arvadosclient.Dict{
+					"container": arvadosclient.Dict{"priority": 0}},
+				nil)
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
+	c.Check(scancelCmdLine, DeepEquals, []string{"scancel", "--name=zzzzz-dz642-queuedcontainer"})
+}
+
+func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
+	container := s.integrationTest(c,
+		func() *exec.Cmd { return exec.Command("echo") },
+		nil,
+		nil,
+		nil,
+		[]string{"sbatch",
+			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
+			fmt.Sprintf("--mem=%d", 11445),
+			fmt.Sprintf("--cpus-per-task=%d", 4),
+			fmt.Sprintf("--tmp=%d", 45777),
+			fmt.Sprintf("--nice=%d", 9990)},
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			time.Sleep(3 * time.Second)
+			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
+}
+
+func (s *TestSuite) TestSbatchFail(c *C) {
+	container := s.integrationTest(c,
+		func() *exec.Cmd { return exec.Command("echo") },
+		nil,
+		func(container arvados.Container) *exec.Cmd {
+			return exec.Command("false")
+		},
+		nil,
+		[]string(nil),
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateComplete)
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, IsNil)
+
+	var ll arvados.LogList
+	err = arv.List("logs", arvadosclient.Dict{"filters": [][]string{
+		{"object_uuid", "=", container.UUID},
+		{"event_type", "=", "dispatch"},
+	}}, &ll)
+	c.Assert(len(ll.Items), Equals, 1)
 }
 
 func (s *MockArvadosServerSuite) TestAPIErrorGettingContainers(c *C) {
@@ -377,25 +389,69 @@ func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
 func testSbatchFuncWithArgs(c *C, args []string) {
 	theConfig.SbatchArguments = append(theConfig.SbatchArguments, args...)
 
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2}}
+	container := arvados.Container{
+		UUID:               "123",
+		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2},
+		Priority:           1}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch")
 	expected = append(expected, theConfig.SbatchArguments...)
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 	theConfig.SbatchArguments = nil
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1}, SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}}}
+	container := arvados.Container{
+		UUID:                 "123",
+		RuntimeConstraints:   arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1},
+		SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}},
+		Priority:             1}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch")
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--partition=blurb,b2")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990", "--partition=blurb,b2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
+}
+
+func (s *TestSuite) TestIntegrationChangePriority(c *C) {
+	var scontrolCmdLine []string
+	step := 0
+
+	container := s.integrationTest(c,
+		func() *exec.Cmd {
+			if step == 0 {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
+			} else if step == 1 {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 4000 100")
+			} else {
+				return exec.Command("echo")
+			}
+		},
+		func(arvados.Container) *exec.Cmd { return exec.Command("true") },
+		nil,
+		func(container arvados.Container) *exec.Cmd {
+			scontrolCmdLine = scontrolFunc(container).Args
+			step = 1
+			return exec.Command("true")
+		},
+		[]string(nil),
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			time.Sleep(1 * time.Second)
+			dispatcher.Arv.Update("containers", container.UUID,
+				arvadosclient.Dict{
+					"container": arvadosclient.Dict{"priority": 600}},
+				nil)
+			time.Sleep(1 * time.Second)
+			step = 2
+			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateComplete)
+	c.Check(scontrolCmdLine, DeepEquals, []string{"scontrol", "update", "JobName=zzzzz-dz642-queuedcontainer", "Nice=4000"})
 }

@@ -65,6 +65,7 @@ $RAILS_ENV:
   auto_setup_new_users_with_repository: true
   default_collection_replication: 1
   docker_image_formats: ["v2"]
+  keep_web_service_url: http://$localip:${services[keep-web]}/
 EOF
 
 (cd config && /usr/local/lib/arvbox/application_yml_override.py)

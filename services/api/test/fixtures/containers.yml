@@ -28,7 +28,7 @@ running:
   uuid: zzzzz-dz642-runningcontainr
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
-  priority: 1
+  priority: 12
   created_at: <%= 1.minute.ago.to_s(:db) %>
   updated_at: <%= 1.minute.ago.to_s(:db) %>
   started_at: <%= 1.minute.ago.to_s(:db) %>
