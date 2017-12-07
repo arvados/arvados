@@ -9,8 +9,9 @@
 Subcollection <- setRefClass(
     "Subcollection",
     fields = list(
-        name = "character",
-        content = "list"
+        name         = "character",
+        relativePath = "character",
+        content      = "list"
     ),
     methods = list(
         initialize = function(subcollectionName)

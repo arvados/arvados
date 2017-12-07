@@ -9,7 +9,8 @@
 ArvadosFile <- setRefClass(
     "ArvadosFile",
     fields = list(
-        name = "character"
+        name         = "character",
+        relativePath = "character"
     ),
     methods = list(
         initialize = function(subcollectionName)

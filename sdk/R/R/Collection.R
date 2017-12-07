@@ -59,7 +59,8 @@ Collection <- setRefClass(
                   trash_at                 = "ANY",
                   is_trashed               = "ANY",
 
-                  getCollectionContent = "function"
+                  getCollectionContent = "function",
+                  get                  = "function"
     ),
 
     methods = list(
@@ -90,7 +91,8 @@ Collection <- setRefClass(
             trash_at                 <<- result$trash_at                           
             is_trashed               <<- result$is_trashed                         
 
-            # Private methods
+            # Public methods
+
             getCollectionContent <<- function()
             {
                 #TODO(Fudo): Use proper URL here.
@@ -107,47 +109,75 @@ Collection <- setRefClass(
                 HttpParser()$parseWebDAVResponse(response, uri)
             }
 
-            createCollectionContentTree <- function(fileStructure)
+            get <<- function(pathToTheFile)
             {
-                #Todo(Fudo): Refactor this.
-                treeBranches <- sapply(fileStructure, function(filePath) 
-                {
-                    fileWithPath <- unlist(stringr::str_split(filePath, "/"))
+                fileWithPath <- unlist(stringr::str_split(pathToTheFile, "/"))
+                fileWithPath <- fileWithPath[fileWithPath != ""]
 
+                findFileIfExists <- function(name, node)
+                {
+                    matchPosition <- match(name, sapply(node$content, function(nodeInSubcollection) {nodeInSubcollection$name}), -1)
+                    if(matchPosition != -1)
+                    {
+                        return(node$content[[matchPosition]])
+                    }
+                    else
+                    {
+                        return(NULL)
+                    }
+                }
+                
+                nodeToCheck = .self$items
+                for(fileNameIndex in 1:length(fileWithPath))
+                {
+                    nodeToCheck <- findFileIfExists(fileWithPath[fileNameIndex], nodeToCheck)
+                    if(is.null(nodeToCheck))
+                        stop("File or folder you asked for is not part of the collection.")
+                }
+
+                nodeToCheck
+            }
+
+
+            # Private methods
+            .createCollectionContentTree <- function(fileStructure)
+            {
+                #TODO(Fudo): Refactot this.
+                treeBranches <- sapply(fileStructure, function(filePath)
+                {
+                    fileWithPath <- unlist(str_split(filePath, "/"))
                     file <- fileWithPath[length(fileWithPath), drop = T]
-                    file <- ArvadosFile(file)
+
+                    if(file != "")
+                    {
+                        file <- ArvadosFile(file)
+                        file$relativePath <- filePath
+                    }
+                    else
+                    {
+                        file <- NULL
+                    }
 
                     folders <- fileWithPath[-length(fileWithPath)]
 
                     subcollections <- sapply(folders, function(folder)
                     {
                         folder <- Subcollection(folder)
+                        unname(folder)
                     })
 
-                    if(length(subcollections) > 0)
+                    if(!is.null(file))
+                        subcollections <- c(subcollections, file)
+
+                    if(length(subcollections) > 1)
                     {
-                        bottomFolder <- subcollections[[length(subcollections)]]
-                        bottomFolder$add(file)
-
-                        if(length(subcollections) == 1)
+                        for(subcollectionIndex in 1:(length(subcollections) - 1))
                         {
-                            return(bottomFolder)
-                        }
-                        else
-                        {
-                            # Link folders in hierarchy. At the bottom will always be a file.
-                            for(subcollectionIndex in 1:(length(subcollections) - 1))
-                            {
-                                subcollections[[subcollectionIndex]]$add(subcollections[[subcollectionIndex + 1]])
-                            }
-
-                            subcollections[[1]]
+                            subcollections[[subcollectionIndex]]$relativePath <- paste(folders[1:(subcollectionIndex)], collapse = "/")
+                            subcollections[[subcollectionIndex]]$add(subcollections[[subcollectionIndex + 1]])
                         }
                     }
-                    else
-                    {
-                        file
-                    }
+                    subcollections[[1]]
                 })
 
                 root <- Subcollection(".")
@@ -181,13 +211,13 @@ Collection <- setRefClass(
             }
 
             #Todo(Fudo): This is dummy data. Real content will come from WebDAV server.
-            testFileStructure <- c("math.h", "main.cpp",
+            testFileStructure <- c("math.h", "main.cpp", "emptyFolder/",
                                    "java/render.java", "java/test/observer.java",
                                    "java/test/observable.java",
                                    "csharp/this.cs", "csharp/is.cs",
                                    "csharp/dummy.cs", "csharp/file.cs")
             #items  <<- getCollectionContent()
-            items  <<- createCollectionContentTree(testFileStructure)
+            items  <<- .createCollectionContentTree(testFileStructure)
         }
     )
 )
