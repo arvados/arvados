@@ -19,9 +19,11 @@ Arvados <- setRefClass(
         getToken          = "function",
         getHostName       = "function",
 
-        #Todo(Fudo): These are hardcoded and for debug only. Remove them later on.
+        #Todo(Fudo): This is for debug only. Remove it.
         getWebDavToken    = "function",
         getWebDavHostName = "function",
+        setWebDavToken    = "function",
+        setWebDavHostName = "function",
 
         collection_get    = "function",
         collection_list   = "function",
@@ -32,7 +34,7 @@ Arvados <- setRefClass(
 
     methods = list(
 
-        initialize = function(auth_token = NULL, host_name = NULL, webDavToken = NULL, webDavHostName = NULL) 
+        initialize = function(auth_token = NULL, host_name = NULL) 
         {
             # Private state
             if(!is.null(host_name))
@@ -57,6 +59,8 @@ Arvados <- setRefClass(
             #Todo(Fudo): Hardcoded credentials to WebDAV server. Remove them later
             getWebDavToken    <<- function() { webDavToken }
             getWebDavHostName <<- function() { webDavHostName }
+            setWebDavToken    <<- function(token) { webDavToken <<- token }
+            setWebDavHostName <<- function(hostName) { webDavHostName <<- hostName }
 
             collection_get <<- function(uuid) 
             {

@@ -1,1 +1,65 @@
 R SDK for Arvados
+
+Examples of usage:
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Get collection:
+
+arv <- Arvados("insert_token", "insert_host_name")
+arv$collection_get("uuid")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+List collections:
+
+collectionList <- arv$collection_list(list("uuid", "=" "aaaaa-bbbbb-ccccccccccccccc"), limit = 10, offset = 2)
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Delete collection:
+
+deletedCollection <- arv$collection_delete("uuid")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Update collection:
+
+updatedCollection <- arv$collection_update("uuid", list(collection = list(name = "new_name", description = "new_desciption")))
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Create collection:
+
+updatedCollection <- arv$collection_update("uuid", list(collection = list(name = "new_name", description = "new_desciption")))
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Things I'm currently working on and are not finished.
+
+Collection manipulation:
+
+arv <- Arvados("insert_token", "insert_host_name")
+
+//This will be removed
+arv$setWebDavToken("webdav_token")
+arv$setWebDavHostName("full_path_to_the_collection_on_webdav_server")
+
+collection <- Collection(arv, "uuid")
+--------------------------------------------------------------------------------------------------------------------------------
+This will return all files in collection as character vector.
+
+listOfFilesInCollection <- collection$items
+--------------------------------------------------------------------------------------------------------------------------------
+
+This will return ArvadosFile or Subcollection from internal tree-like structure.
+
+collection <- Collection(arv, "uuid")
+
+arvadosFile <- collection.get("location/to/my/file.exe")
+arvadosSubcollection <- collection.get("location/to/my/directory/")
+
+
+--------------------------------------------------------------------------------------------------------------------------------

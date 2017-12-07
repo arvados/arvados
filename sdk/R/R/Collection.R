@@ -39,6 +39,7 @@ Collection <- setRefClass(
 
     fields = list(uuid                     = "ANY",
                   items                    = "ANY",
+                  fileContent              = "ANY",
                   etag                     = "ANY",
                   owner_uuid               = "ANY",
                   created_at               = "ANY",
@@ -216,8 +217,8 @@ Collection <- setRefClass(
                                    "java/test/observable.java",
                                    "csharp/this.cs", "csharp/is.cs",
                                    "csharp/dummy.cs", "csharp/file.cs")
-            #items  <<- getCollectionContent()
-            items  <<- .createCollectionContentTree(testFileStructure)
+            items  <<- getCollectionContent()
+            fileContent  <<- .createCollectionContentTree(testFileStructure)
         }
     )
 )
