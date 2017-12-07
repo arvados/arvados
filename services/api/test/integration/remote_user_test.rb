@@ -69,6 +69,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_status = 200
     @stub_content = {
       uuid: 'zbbbb-tpzed-000000000000000',
+      email: 'foo@example.com',
+      username: 'barney',
       is_admin: true,
       is_active: true,
     }
@@ -83,6 +85,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
 
     # revoke original token
     @stub_status = 401
@@ -104,6 +108,20 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_status = 200
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response :success
+  end
+
+  test 'authenticate with remote token, remote username conflicts with local' do
+    @stub_content[:username] = 'active'
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'active2', json_response['username']
+  end
+
+  test 'authenticate with remote token, remote username is nil' do
+    @stub_content.delete :username
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'foo', json_response['username']
   end
 
   test 'authenticate with remote token from misbhehaving remote cluster' do

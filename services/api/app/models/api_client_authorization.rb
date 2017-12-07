@@ -154,22 +154,23 @@ class ApiClientAuthorization < ArvadosModel
 
         user = User.find_or_create_by(uuid: remote_user['uuid']) do |user|
           user.is_admin = false
-        end
-
-        updates = {}
-        [:first_name, :last_name, :email, :prefs].each do |attr|
-          updates[attr] = remote_user[attr.to_s]
+          %w[first_name last_name email prefs].each do |attr|
+            user.send(attr+'=', remote_user[attr])
+          end
+          if remote_user['username'].andand.length.andand > 0
+            user.set_initial_username(requested: remote_user['username'])
+          end
         end
 
         if Rails.configuration.new_users_are_active
           # Update is_active to whatever it is at the remote end
-          updates[:is_active] = remote_user['is_active']
-        elsif !updates[:is_active]
+          user.is_active = remote_user['is_active']
+        elsif !remote_user['is_active']
           # Remote user is inactive; our mirror should be, too.
-          updates[:is_active] = false
+          user.is_active = false
         end
 
-        user.update_attributes!(updates)
+        user.save!
 
         auth = ApiClientAuthorization.find_or_create_by(uuid: uuid) do |auth|
           auth.user = user
