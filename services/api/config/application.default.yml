@@ -410,9 +410,10 @@ common:
 
   arvados_theme: default
 
-  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the Single Sign
-  # On (sso) server.  Should only be enabled during development when the SSO
-  # server is using a self-signed cert.
+  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the
+  # Single Sign On (sso) server and remote Arvados sites.  Should only
+  # be enabled during development when the SSO server is using a
+  # self-signed cert.
   sso_insecure: false
 
   ## Set Time.zone default to the specified zone and make Active

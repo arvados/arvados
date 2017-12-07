@@ -133,6 +133,9 @@ class ApiClientAuthorization < ArvadosModel
       # [re]validate it.
       begin
         clnt = HTTPClient.new
+        if Rails.configuration.sso_insecure
+          clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
         remote_user = SafeJSON.load(
           clnt.get_content('https://' + host + '/arvados/v1/users/current',
                            {'remote' => Rails.configuration.uuid_prefix},
