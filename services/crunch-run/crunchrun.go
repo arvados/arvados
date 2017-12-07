@@ -330,6 +330,37 @@ func (runner *ContainerRunner) SetupArvMountPoint(prefix string) (err error) {
 	return
 }
 
+func copyfile(src string, dst string) (err error) {
+	srcfile, err := os.Open(src)
+	if err != nil {
+		return
+	}
+
+	os.MkdirAll(path.Dir(dst), 0770)
+
+	dstfile, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	_, err = io.Copy(srcfile, dstfile)
+	if err != nil {
+		return
+	}
+
+	err = srcfile.Close()
+	err2 := dstfile.Close()
+
+	if err != nil {
+		return
+	}
+
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
+}
+
 func (runner *ContainerRunner) SetupMounts() (err error) {
 	err = runner.SetupArvMountPoint("keep")
 	if err != nil {
@@ -357,6 +388,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.Binds = nil
 	runner.Volumes = make(map[string]struct{})
 	needCertMount := true
+	type copyFile struct {
+		src  string
+		bind string
+	}
+	var copyFiles []copyFile
 
 	var binds []string
 	for bind := range runner.Container.Mounts {
@@ -412,7 +448,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				pdhOnly = false
 				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.UUID)
 			} else if mnt.PortableDataHash != "" {
-				if mnt.Writable {
+				if mnt.Writable && !strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
 					return fmt.Errorf("Can never write to a collection specified by portable data hash")
 				}
 				idx := strings.Index(mnt.PortableDataHash, "/")
@@ -439,10 +475,12 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if mnt.Writable {
 				if bind == runner.Container.OutputPath {
 					runner.HostOutputDir = src
+					runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 				} else if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
-					return fmt.Errorf("Writable mount points are not permitted underneath the output_path: %v", bind)
+					copyFiles = append(copyFiles, copyFile{src, runner.HostOutputDir + bind[len(runner.Container.OutputPath):]})
+				} else {
+					runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 				}
-				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 			} else {
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
@@ -534,6 +572,22 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		_, err = os.Stat(p)
 		if err != nil {
 			return fmt.Errorf("While checking that input files exist: %v", err)
+		}
+	}
+
+	for _, cp := range copyFiles {
+		dir, err := os.Stat(cp.src)
+		if err == nil {
+			if dir.IsDir() {
+				err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
+					return copyfile(walkpath, path.Join(cp.bind, walkpath))
+				})
+			} else {
+				err = copyfile(cp.src, cp.bind)
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("While staging writable files: %v", err)
 		}
 	}
 
