@@ -620,7 +620,7 @@ if [[ "$?" == "0" ]] ; then
 
       # We need to bundle to be ready even when we build a package without vendor directory
       # because asset compilation requires it.
-      bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
+      bundle install --system >"$STDOUT_IF_DEBUG"
 
       # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
       # and we want that in the package, so it's easier to not exclude the tmp directory
