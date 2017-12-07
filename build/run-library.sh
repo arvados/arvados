@@ -318,6 +318,7 @@ handle_rails_package() {
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${pos_args[@]}" "${switches[@]}" \
+              -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
 }
