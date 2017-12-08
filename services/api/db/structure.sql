@@ -778,7 +778,8 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
             links.head_uuid,
             pv.val,
             ((pv.val = 3) OR (groups.uuid IS NOT NULL)) AS follow,
-            (0)::smallint AS trashed
+            (0)::smallint AS trashed,
+            (0)::smallint AS followtrash
            FROM ((links
              LEFT JOIN perm_value pv ON ((pv.name = (links.name)::text)))
              LEFT JOIN groups ON (((pv.val < 3) AND ((groups.uuid)::text = (links.head_uuid)::text))))
@@ -791,7 +792,8 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
                 CASE
                     WHEN ((groups.trash_at IS NOT NULL) AND (groups.trash_at < clock_timestamp())) THEN 1
                     ELSE 0
-                END AS "case"
+                END AS "case",
+            1
            FROM groups
         ), perm(val, follow, user_uuid, target_uuid, trashed) AS (
          SELECT (3)::smallint AS val,
@@ -805,7 +807,7 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
             edges.follow,
             perm_1.user_uuid,
             (edges.head_uuid)::character varying(32) AS target_uuid,
-            (GREATEST((perm_1.trashed)::integer, edges.trashed))::smallint AS trashed
+            ((GREATEST((perm_1.trashed)::integer, edges.trashed) * edges.followtrash))::smallint AS trashed
            FROM (perm perm_1
              JOIN perm_edges edges ON ((perm_1.follow AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
         )
@@ -3035,3 +3037,5 @@ INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 INSERT INTO schema_migrations (version) VALUES ('20170906224040');
 
 INSERT INTO schema_migrations (version) VALUES ('20171027183824');
+
+INSERT INTO schema_migrations (version) VALUES ('20171208203841');
