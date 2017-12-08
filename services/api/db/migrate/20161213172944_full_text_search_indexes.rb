@@ -15,17 +15,18 @@ class FullTextSearchIndexes < ActiveRecord::Migration
     }
   end
 
+  def replace_index(t)
+    i = fts_indexes[t]
+    t.classify.constantize.reset_column_information
+    execute "DROP INDEX IF EXISTS #{i}"
+    execute "CREATE INDEX #{i} ON #{t} USING gin(#{t.classify.constantize.full_text_tsvector})"
+  end
+
   def up
-    # remove existing fts indexes and create up to date ones with no leading space
-    fts_indexes.each do |t, i|
-      t.classify.constantize.reset_column_information
-      ActiveRecord::Base.connection.indexes(t).each do |idx|
-        if idx.name == i
-          remove_index t.to_sym, :name => i
-          break
-        end
-      end
-      execute "CREATE INDEX #{i} ON #{t} USING gin(#{t.classify.constantize.full_text_tsvector});"
+    # remove existing fts indexes and create up to date ones with no
+    # leading space
+    fts_indexes.keys.each do |t|
+      replace_index(t)
     end
   end
 

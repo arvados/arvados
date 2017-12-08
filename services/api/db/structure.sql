@@ -166,7 +166,7 @@ CREATE TABLE collections (
     manifest_text text,
     name character varying(255),
     description character varying(524288),
-    properties text,
+    properties jsonb,
     delete_at timestamp without time zone,
     file_names character varying(8192),
     trash_at timestamp without time zone,
@@ -1607,7 +1607,7 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
+CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
 
 
 --
@@ -3026,9 +3026,12 @@ INSERT INTO schema_migrations (version) VALUES ('20170419175801');
 
 INSERT INTO schema_migrations (version) VALUES ('20170628185847');
 
+INSERT INTO schema_migrations (version) VALUES ('20170704160233');
+
+INSERT INTO schema_migrations (version) VALUES ('20170706141334');
+
 INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 
 INSERT INTO schema_migrations (version) VALUES ('20170906224040');
 
 INSERT INTO schema_migrations (version) VALUES ('20171027183824');
-
