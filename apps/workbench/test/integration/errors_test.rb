@@ -112,4 +112,17 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     # out of the popup now and should be back in the error page
     assert_text 'fiddlesticks'
   end
+
+  test "showing a trashed collection UUID gives untrash button" do
+    visit(page_with_token("active", "/collections/zzzzz-4zz18-trashedproj2col"))
+    assert(page.has_text?(/You must untrash the owner project to access this/i),
+           "missing untrash instructions")
+  end
+
+  test "showing a trashed container request gives untrash button" do
+    visit(page_with_token("active", "/container_requests/zzzzz-xvhdp-cr5trashedcontr"))
+    assert(page.has_text?(/You must untrash the owner project to access this/i),
+           "missing untrash instructions")
+  end
+
 end
