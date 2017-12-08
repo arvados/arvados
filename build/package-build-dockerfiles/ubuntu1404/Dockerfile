@@ -29,5 +29,7 @@ RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
 # Old versions of setuptools cannot build a schema-salad package.
 RUN pip install --upgrade setuptools
 
+RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle && rm -rf /tmp/arvados
+
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "ubuntu1404"]

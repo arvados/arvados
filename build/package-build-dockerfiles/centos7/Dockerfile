@@ -32,5 +32,7 @@ RUN scl enable python33 "easy_install-3.3 pip" && easy_install-2.7 pip
 # Old versions of setuptools cannot build a schema-salad package.
 RUN pip install --upgrade setuptools
 
+RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle && rm -rf /tmp/arvados
+
 ENV WORKSPACE /arvados
 CMD ["scl", "enable", "python33", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
