@@ -64,11 +64,11 @@ Arvados <- setRefClass(
 
             collection_get <<- function(uuid) 
             {
-                collection_url <- paste0(host, "collections/", uuid)
+                collectionURL <- paste0(host, "collections/", uuid)
                 headers <- list(Authorization = paste("OAuth2", token))
 
                 http <- HttpRequest() 
-                serverResponse <- http$GET(collection_url, headers)
+                serverResponse <- http$GET(collectionURL, headers)
 
                 httpParser <- HttpParser()
                 collection <- httpParser$parseJSONResponse(serverResponse)
@@ -81,11 +81,11 @@ Arvados <- setRefClass(
 
             collection_list <<- function(filters = NULL, limit = 100, offset = 0) 
             {
-                collection_url <- paste0(host, "collections")
+                collectionURL <- paste0(host, "collections")
                 headers <- list(Authorization = paste("OAuth2", token))
 
                 http <- HttpRequest() 
-                serverResponse <- http$GET(collection_url, headers, NULL, filters, limit, offset)
+                serverResponse <- http$GET(collectionURL, headers, NULL, filters, limit, offset)
 
                 httpParser <- HttpParser()
                 collection <- httpParser$parseJSONResponse(serverResponse)
@@ -98,12 +98,12 @@ Arvados <- setRefClass(
 
             collection_delete <<- function(uuid) 
             {
-                collection_url <- paste0(host, "collections/", uuid)
+                collectionURL <- paste0(host, "collections/", uuid)
                 headers <- list("Authorization" = paste("OAuth2", token),
                                 "Content-Type"  = "application/json")
 
                 http <- HttpRequest() 
-                serverResponse <- http$DELETE(collection_url, headers)
+                serverResponse <- http$DELETE(collectionURL, headers)
 
                 httpParser <- HttpParser()
                 collection <- httpParser$parseJSONResponse(serverResponse)
@@ -116,13 +116,13 @@ Arvados <- setRefClass(
 
             collection_update <<- function(uuid, body) 
             {
-                collection_url <- paste0(host, "collections/", uuid)
+                collectionURL <- paste0(host, "collections/", uuid)
                 headers <- list("Authorization" = paste("OAuth2", token),
                                 "Content-Type"  = "application/json")
                 body <- jsonlite::toJSON(body, auto_unbox = T)
 
                 http <- HttpRequest() 
-                serverResponse <- http$PUT(collection_url, headers, body)
+                serverResponse <- http$PUT(collectionURL, headers, body)
 
                 httpParser <- HttpParser()
                 collection <- httpParser$parseJSONResponse(serverResponse)
@@ -135,13 +135,13 @@ Arvados <- setRefClass(
 
             collection_create <<- function(body) 
             {
-                collection_url <- paste0(host, "collections")
+                collectionURL <- paste0(host, "collections")
                 headers <- list("Authorization" = paste("OAuth2", token),
                                 "Content-Type"  = "application/json")
                 body <- jsonlite::toJSON(body, auto_unbox = T)
 
                 http <- HttpRequest() 
-                serverResponse <- http$POST(collection_url, headers, body)
+                serverResponse <- http$POST(collectionURL, headers, body)
 
                 httpParser <- HttpParser()
                 collection <- httpParser$parseJSONResponse(serverResponse)

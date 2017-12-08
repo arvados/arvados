@@ -12,16 +12,16 @@ HttpParser <- setRefClass(
         {
         },
 
-        parseCollectionGet = function(server_response) 
+        parseCollectionGet = function(serverResponse) 
         {
-            parsed_response <- httr::content(server_response, as = "parsed", type = "application/json")
+            parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
 
             #Todo(Fudo): Create new Collection object and populate it
         },
 
-        parseJSONResponse = function(server_response) 
+        parseJSONResponse = function(serverResponse) 
         {
-            parsed_response <- httr::content(server_response, as = "parsed", type = "application/json")
+            parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
 
             #Todo(Fudo): Create new Collection object and populate it
         },
@@ -39,7 +39,9 @@ HttpParser <- setRefClass(
                     sub(base, "", URLdecode(XML::xmlValue(node)), fixed=TRUE)
                 })
             )
-            result[result != ""]
+            result <- result[result != ""]
+            #Todo(Fudo): Test this.
+            result[-1]
         }
 
     )

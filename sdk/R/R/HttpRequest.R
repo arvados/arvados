@@ -17,9 +17,8 @@ HttpRequest <- setRefClass(
         {
             # Public methods
             GET <<- function(url, headers = NULL, body = NULL,
-                             queryFilters = NULL, limit = 100, offset = 0)
+                             queryFilters = NULL, limit = NULL, offset = NULL)
             {
-                print(limit)
                 headers <- httr::add_headers(unlist(headers))
                 query <- .createQuery(queryFilters, limit, offset)
                 url <- paste0(url, query)
@@ -49,7 +48,7 @@ HttpRequest <- setRefClass(
             }
 
             DELETE <<- function(url, headers = NULL, body = NULL,
-                             queryFilters = NULL, limit = 100, offset = 0)
+                             queryFilters = NULL, limit = NULL, offset = NULL)
             {
                 headers <- httr::add_headers(unlist(headers))
                 query <- .createQuery(queryFilters, limit, offset)

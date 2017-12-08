@@ -128,7 +128,7 @@ Collection <- setRefClass(
                     }
                 }
                 
-                nodeToCheck = .self$items
+                nodeToCheck = .self$fileContent
                 for(fileNameIndex in 1:length(fileWithPath))
                 {
                     nodeToCheck <- findFileIfExists(fileWithPath[fileNameIndex], nodeToCheck)
@@ -143,15 +143,16 @@ Collection <- setRefClass(
             # Private methods
             .createCollectionContentTree <- function(fileStructure)
             {
-                #TODO(Fudo): Refactot this.
+                #TODO(Fudo): Refactor this.
+                #TODO(Fudo): Find a way to link children to parents. (R has no pointers or references).
                 treeBranches <- sapply(fileStructure, function(filePath)
                 {
-                    fileWithPath <- unlist(str_split(filePath, "/"))
+                    fileWithPath <- unlist(stringr::str_split(filePath, "/"))
                     file <- fileWithPath[length(fileWithPath), drop = T]
 
                     if(file != "")
                     {
-                        file <- ArvadosFile(file)
+                        file <- ArvadosFile(file, api)
                         file$relativePath <- filePath
                     }
                     else
@@ -212,13 +213,13 @@ Collection <- setRefClass(
             }
 
             #Todo(Fudo): This is dummy data. Real content will come from WebDAV server.
-            testFileStructure <- c("math.h", "main.cpp", "emptyFolder/",
-                                   "java/render.java", "java/test/observer.java",
-                                   "java/test/observable.java",
-                                   "csharp/this.cs", "csharp/is.cs",
-                                   "csharp/dummy.cs", "csharp/file.cs")
+            # testFileStructure <- c("math.h", "main.cpp", "emptyFolder/",
+                                   # "java/render.java", "java/test/observer.java",
+                                   # "java/test/observable.java",
+                                   # "csharp/this.cs", "csharp/is.cs",
+                                   # "csharp/dummy.cs", "csharp/file.cs")
             items  <<- getCollectionContent()
-            fileContent  <<- .createCollectionContentTree(testFileStructure)
+            fileContent  <<- .createCollectionContentTree(items)
         }
     )
 )
