@@ -288,21 +288,6 @@ def run(leave_running_atexit=False):
     if not os.path.exists('tmp/logs'):
         os.makedirs('tmp/logs')
 
-    if not os.path.exists('tmp/self-signed.pem'):
-        # We assume here that either passenger reports its listening
-        # address as https:/0.0.0.0:port/. If it reports "127.0.0.1"
-        # then the certificate won't match the host and reset() will
-        # fail certificate verification. If it reports "localhost",
-        # clients (notably Python SDK's websocket client) might
-        # resolve localhost as ::1 and then fail to connect.
-        subprocess.check_call([
-            'openssl', 'req', '-new', '-x509', '-nodes',
-            '-out', 'tmp/self-signed.pem',
-            '-keyout', 'tmp/self-signed.key',
-            '-days', '3650',
-            '-subj', '/CN=0.0.0.0'],
-        stdout=sys.stderr)
-
     # Install the git repository fixtures.
     gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
     gittarball = os.path.join(SERVICES_SRC_DIR, 'api', 'test', 'test.git.tar')

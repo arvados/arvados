@@ -127,6 +127,7 @@ GEM
     hashie (3.5.5)
     highline (1.7.8)
     hike (1.2.3)
+    httpclient (2.8.3)
     i18n (0.9.0)
       concurrent-ruby (~> 1.0)
     jquery-rails (4.2.2)
@@ -295,6 +296,7 @@ DEPENDENCIES
   database_cleaner
   factory_girl_rails
   faye-websocket
+  httpclient
   jquery-rails
   lograge
   logstash-event
