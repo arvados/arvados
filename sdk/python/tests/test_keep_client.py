@@ -23,6 +23,7 @@ import urllib.parse
 
 import arvados
 import arvados.retry
+import arvados.util
 from . import arvados_testutil as tutil
 from . import keepstub
 from . import run_test_server
@@ -515,6 +516,77 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             actual = keep_client.put(body, copies=2)
         self.assertEqual(pdh, actual)
         self.assertEqual(1, req_mock.call_count)
+
+
+@tutil.skip_sleep
+class KeepXRequestId(unittest.TestCase, tutil.ApiClientMock):
+    def setUp(self):
+        self.api_client = self.mock_keep_services(count=2)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+        self.data = b'xyzzy'
+        self.locator = '1271ed5ef305aadabc605b1609e24c52'
+        self.test_id = arvados.util.new_request_id()
+        self.assertRegex(self.test_id, r'^req-[a-z0-9]{20}$')
+        # If we don't set request_id to None explicitly here, it will
+        # return <MagicMock name='api_client_mock.request_id'
+        # id='123456789'>:
+        self.api_client.request_id = None
+
+    def test_default_to_api_client_request_id(self):
+        self.api_client.request_id = self.test_id
+        with tutil.mock_keep_responses(self.locator, 200, 200) as mock:
+            self.keep_client.put(self.data)
+        self.assertEqual(2, len(mock.responses))
+        for resp in mock.responses:
+            self.assertProvidedRequestId(resp)
+
+        with tutil.mock_keep_responses(self.data, 200) as mock:
+            self.keep_client.get(self.locator)
+        self.assertProvidedRequestId(mock.responses[0])
+
+        with tutil.mock_keep_responses(b'', 200) as mock:
+            self.keep_client.head(self.locator)
+        self.assertProvidedRequestId(mock.responses[0])
+
+    def test_explicit_request_id(self):
+        with tutil.mock_keep_responses(self.locator, 200, 200) as mock:
+            self.keep_client.put(self.data, request_id=self.test_id)
+        self.assertEqual(2, len(mock.responses))
+        for resp in mock.responses:
+            self.assertProvidedRequestId(resp)
+
+        with tutil.mock_keep_responses(self.data, 200) as mock:
+            self.keep_client.get(self.locator, request_id=self.test_id)
+        self.assertProvidedRequestId(mock.responses[0])
+
+        with tutil.mock_keep_responses(b'', 200) as mock:
+            self.keep_client.head(self.locator, request_id=self.test_id)
+        self.assertProvidedRequestId(mock.responses[0])
+
+    def test_automatic_request_id(self):
+        with tutil.mock_keep_responses(self.locator, 200, 200) as mock:
+            self.keep_client.put(self.data)
+        self.assertEqual(2, len(mock.responses))
+        for resp in mock.responses:
+            self.assertAutomaticRequestId(resp)
+
+        with tutil.mock_keep_responses(self.data, 200) as mock:
+            self.keep_client.get(self.locator)
+        self.assertAutomaticRequestId(mock.responses[0])
+
+        with tutil.mock_keep_responses(b'', 200) as mock:
+            self.keep_client.head(self.locator)
+        self.assertAutomaticRequestId(mock.responses[0])
+
+    def assertAutomaticRequestId(self, resp):
+        hdr = [x for x in resp.getopt(pycurl.HTTPHEADER)
+               if x.startswith('X-Request-Id: ')][0]
+        self.assertNotEqual(hdr, 'X-Request-Id: '+self.test_id)
+        self.assertRegex(hdr, r'^X-Request-Id: req-[a-z0-9]{20}$')
+
+    def assertProvidedRequestId(self, resp):
+        self.assertIn('X-Request-Id: '+self.test_id,
+                      resp.getopt(pycurl.HTTPHEADER))
 
 
 @tutil.skip_sleep
