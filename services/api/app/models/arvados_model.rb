@@ -132,7 +132,7 @@ class ArvadosModel < ActiveRecord::Base
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.select do |col|
       case col.type
-      when :string, :text
+      when :string, :text, :jsonb
         true
       when :datetime, :integer, :boolean
         !textonly_operator

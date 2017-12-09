@@ -151,4 +151,124 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_equal all_objects['arvados#pipelineInstance'], second_page['arvados#pipelineInstance']+5
     assert_equal true, second_page['arvados#pipelineTemplate']>0
   end
+
+  test "jsonb '=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal(found, [collections(:collection_with_prop1_value1).uuid])
+  end
+
+  test "jsonb '!=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '!=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_operator found.length, :>, 1
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+  end
+
+  test "jsonb '?'" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '?', nil] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.length, 2
+    assert_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+  end
+
+  test "jsonb '?' and '!=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '?', nil], ['properties.prop1', '!=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal(found, [collections(:collection_with_prop1_value2).uuid])
+  end
+
+  test "jsonb 'in' filter (match all)" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'in', ['value1', 'value2']] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.length, 2
+    assert_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+  end
+
+  test "jsonb 'in' filter (match some)" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'in', ['value1', 'value3']] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal(found, [collections(:collection_with_prop1_value1).uuid])
+  end
+
+  test "jsonb 'not in' filter (match all)" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'not in', ['value1', 'value2']] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_not_includes(found, collections(:collection_with_prop1_value2).uuid)
+  end
+
+  test "jsonb 'not in' filter (match some)" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'not in', ['value1', 'value3']] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+  end
+
+  # test "jsonb '>' filter (>3)" do
+  #   @controller = Arvados::V1::CollectionsController.new
+  #   authorize_with :admin
+  #   get :index, {
+  #     filters: [ ['properties.prop2', '>', 3] ]
+  #   }
+  #   assert_response :success
+  #   found = assigns(:objects).collect(&:uuid)
+  #   assert_not_includes(found, collections(:collection_with_prop2_1).uuid)
+  #   assert_includes(found, collections(:collection_with_prop2_5).uuid)
+  # end
+
+  # test "jsonb '>' filter (>'value1')" do
+  #   @controller = Arvados::V1::CollectionsController.new
+  #   authorize_with :admin
+  #   get :index, {
+  #     filters: [ ['properties.prop1', '>', "value1"] ]
+  #   }
+  #   assert_response :success
+  #   found = assigns(:objects).collect(&:uuid)
+  #   assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+  #   assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+  # end
+
 end
