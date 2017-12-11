@@ -991,7 +991,7 @@ EOS
       id: uuid,
     }
     assert_response 200
-    c = Collection.unscoped.find_by_uuid(uuid)
+    c = Collection.find_by_uuid(uuid)
     assert_operator c.trash_at, :<, db_current_time
     assert_equal c.delete_at, c.trash_at + Rails.configuration.blob_signature_ttl
   end
@@ -1003,7 +1003,7 @@ EOS
       id: uuid,
     }
     assert_response 200
-    c = Collection.unscoped.find_by_uuid(uuid)
+    c = Collection.find_by_uuid(uuid)
     assert_operator c.trash_at, :<, db_current_time
     assert_operator c.delete_at, :<, db_current_time
   end
@@ -1023,7 +1023,7 @@ EOS
         id: uuid,
       }
       assert_response 200
-      c = Collection.unscoped.find_by_uuid(uuid)
+      c = Collection.find_by_uuid(uuid)
       assert_operator c.trash_at, :<, db_current_time
       assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.default_trash_lifetime
     end
