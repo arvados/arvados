@@ -84,27 +84,33 @@ module RecordFilters
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
             end
-          # when '<', '<=', '>', '>='
-          #   cond_out << "#{ar_table_name}.#{subproperty[0]}->? #{operator} ?::jsonb"
-          #   param_out << subproperty[1]
-          #   param_out << SafeJSON.dump(operand)
+          when '<', '<=', '>', '>='
+            cond_out << "#{ar_table_name}.#{subproperty[0]}->? #{operator} ?::jsonb"
+            param_out << subproperty[1]
+            param_out << SafeJSON.dump(operand)
           when 'like', 'ilike'
             cond_out << "#{ar_table_name}.#{subproperty[0]}->>? #{operator} ?"
+            param_out << subproperty[1]
             param_out << operand
           when 'not in'
             if operand.is_a? Array
-              cond_out << "#{ar_table_name}.#{subproperty[0]}->>? NOT IN (?)"
+              cond_out << "#{ar_table_name}.#{subproperty[0]}->>? NOT IN (?) OR #{ar_table_name}.#{subproperty[0]}->>? IS NULL"
               param_out << subproperty[1]
               param_out << operand
+              param_out << subproperty[1]
             else
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
             end
-          when '?'
+          when 'exists', 'not exists'
           if operand
             raise ArgumentError.new("Invalid operand for subproperty existence filter, should be empty or null")
           end
-          cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+          if operator.downcase[0..2] == "not" then
+            cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
+          else
+            cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+          end
           param_out << subproperty[1]
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
@@ -148,6 +154,9 @@ module RecordFilters
               cond_out << "#{ar_table_name}.#{attr} is not null"
             elsif (attr_type == :boolean) and ['=', '<>'].include?(operator) and
                  [true, false].include?(operand)
+              cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+              param_out << operand
+            elsif (attr_type == :integer)
               cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
               param_out << operand
             else
