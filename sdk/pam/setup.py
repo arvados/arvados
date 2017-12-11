@@ -15,14 +15,17 @@ SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
 tagger = egg_info_cmd.egg_info
-try:
-    import gittaggers
-    tagger = gittaggers.EggInfoFromGit
-except (ImportError, OSError):
-    pass
+version = os.environ.get("ARVADOS_BUILDING_VERSION")
+if not version:
+    version = "0.1"
+    try:
+        import gittaggers
+        tagger = gittaggers.EggInfoFromGit
+    except ImportError:
+        pass
 
 setup(name='arvados-pam',
-      version='0.1',
+      version=version,
       description='Arvados PAM module',
       long_description=open(README).read(),
       author='Arvados',
