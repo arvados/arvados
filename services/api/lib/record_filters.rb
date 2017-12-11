@@ -102,14 +102,11 @@ module RecordFilters
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
             end
-          when 'exists', 'not exists'
+          when 'exists'
           if operand
-            raise ArgumentError.new("Invalid operand for subproperty existence filter, should be empty or null")
-          end
-          if operator.downcase[0..2] == "not" then
-            cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
-          else
             cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+          else
+            cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
           end
           param_out << subproperty[1]
           else
@@ -188,6 +185,9 @@ module RecordFilters
               end
             end
             cond_out << cond.join(' OR ')
+          when 'exists'
+            cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+            param_out << operand
           else
             raise ArgumentError.new("Invalid operator '#{operator}'")
           end

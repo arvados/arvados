@@ -154,8 +154,8 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
 
   [['prop1', '=', 'value1', [:collection_with_prop1_value1], [:collection_with_prop1_value2, :collection_with_prop2_1]],
    ['prop1', '!=', 'value1', [:collection_with_prop1_value2, :collection_with_prop2_1], [:collection_with_prop1_value1]],
-   ['prop1', 'exists', nil, [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1], [:collection_with_prop2_1]],
-   ['prop1', 'not exists', nil, [:collection_with_prop2_1], [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1]],
+   ['prop1', 'exists', true, [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1], [:collection_with_prop2_1]],
+   ['prop1', 'exists', false, [:collection_with_prop2_1], [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1]],
    ['prop1', 'in', ['value1', 'value2'], [:collection_with_prop1_value1, :collection_with_prop1_value2], [:collection_with_prop1_value3, :collection_with_prop2_1]],
    ['prop1', 'in', ['value1', 'valueX'], [:collection_with_prop1_value1], [:collection_with_prop1_value3, :collection_with_prop2_1]],
    ['prop1', 'not in', ['value1', 'value2'], [:collection_with_prop1_value3, :collection_with_prop1_other1, :collection_with_prop2_1], [:collection_with_prop1_value1, :collection_with_prop1_value2]],
@@ -196,7 +196,22 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
     get :index, {
-      filters: [ ['properties.prop1', 'exists', nil], ['properties.prop1', '!=', 'value1'] ]
+      filters: [ ['properties.prop1', 'exists', true], ['properties.prop1', '!=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.length, 3
+    assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value3).uuid)
+    assert_includes(found, collections(:collection_with_prop1_other1).uuid)
+  end
+
+  test "jsonb alternate form 'exists' and '!=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties', 'exists', 'prop1'], ['properties.prop1', '!=', 'value1'] ]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)

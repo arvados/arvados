@@ -90,12 +90,27 @@ table(table table-bordered table-condensed).
 The following operators are available.
 
 table(table table-bordered table-condensed).
-|_. Operator|_. Operand type|_. Example|
-|@<@, @<=@, @>=@, @>@, @like@, @ilike@|string|@["script_version","like","d00220fb%"]@|
-|@=@, @!=@|string or null|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@
-@["tail_uuid","!=",null]@|
-|@in@, @not in@|array of strings|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
-|@is_a@|string|@["head_uuid","is_a","arvados#pipelineInstance"]@|
+|_. Operator|_. Operand type|_. Description|_. Example|
+|@=@, @!=@|string, number, timestamp, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@ @["tail_uuid","!=",null]@|
+|@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
+|@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
+|@in@, @not in@|array of strings|Set membership|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
+|@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
+|@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
+
+h4. Filtering on subproperties
+
+Some record type have an additional @properties@ attribute that allows recording and filtering on additional key-value pairs.  To filter on a subproperty, the value in the @attribute@ position has the form @properties.<user_property>@.
+
+table(table table-bordered table-condensed).
+|_. Operator|_. Operand type|_. Description|_. Example|
+|@=@, @!=@|string, number or boolean|Equality comparison|@["properties.my_subproperty", "=", "fizzy whizy sparkle pop"]@|
+|@<@, @<=@, @>=@, @>@|string or number|Ordering comparison|@["properties.my_subproperty", "<", 3]@|
+|@like@, @ilike@|string|SQL pattern match, single character match is @_@ and wildcard is @%@, ilike is case-insensitive|@["properties.my_subproperty", "like", "d00220fb%"]@|
+|@in@, @not in@|array of strings|Set membership|@["properties.my_subproperty", "in", ["fizz", "buzz"]]@|
+|@exists@|boolean|Test if a subproperty is present or not (determined by operand).|@["properties.my_subproperty", "exists", true]@|
+
+Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
 
 h3. Results of list method
 
