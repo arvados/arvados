@@ -193,9 +193,10 @@ Display machine-readable progress on stderr (bytes and, if known,
 total data size).
 """)
 
-_group.add_argument('--silent', action='store_true',
-                    help="""
-Do not print any debug messages to console. (Any error messages will still be displayed.)
+run_opts.add_argument('--silent', action='store_true',
+                      help="""
+Do not print any debug messages to console. (Any error messages will
+still be displayed.)
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
