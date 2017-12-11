@@ -1,27 +1,35 @@
-#' Subcollection Class
-#' 
-#' @details 
-#' Todo: Update description
-#' Subcollection
-#' 
+#' Arvados SubCollection Object
+#'
+#' Update description
+#'
 #' @export Subcollection
-#' @exportClass Subcollection
-Subcollection <- setRefClass(
+Subcollection <- R6::R6Class(
+
     "Subcollection",
-    fields = list(
-        name         = "character",
-        relativePath = "character",
-        content      = "list"
-    ),
-    methods = list(
-        initialize = function(subcollectionName)
+
+    public = list(
+
+        initialize = function(name, relativePath, children)
         {
-            name <<- subcollectionName
-            content <<- list()
+            private$name <- name
+            private$relativePath <- relativePath
+            private$children <- children
         },
-        add = function(subcollectionContent)
-        {
-            content <<- c(content, subcollectionContent)
-        }
-    )
+
+        getName = function() private$name,
+
+        getRelativePath = function() private$relativePath,
+
+        setParent = function(parent) private$parent <- parent
+    ),
+
+    private = list(
+
+        name = NULL,
+        relativePath = NULL,
+        children = NULL,
+        parent = NULL
+    ),
+    
+    cloneable = FALSE
 )

@@ -1,225 +1,336 @@
-source("./R/Arvados.R")
-source("./R/HttpParser.R")
 source("./R/Subcollection.R")
 source("./R/ArvadosFile.R")
 
-#' Collection Class
-#' 
-#' @details 
-#' Todo: Update description
-#' Collection
-#' 
-#' @param uuid Object ID
-#' @param etag Object version
-#' @param owner_uuid No description
-#' @param created_at No description
-#' @param modified_by_client_uuid No description
-#' @param modified_by_user_uuid No description
-#' @param modified_at No description
-#' @param portable_data_hash No description
-#' @param replication_desired No description
-#' @param replication_confirmed_at No description
-#' @param replication_confirmed No description
-#' @param updated_at No description
-#' @param manifest_text No description
-#' @param name No description
-#' @param description No description
-#' @param properties No description
-#' @param delete_at No description
-#' @param file_names No description
-#' @param trash_at No description
-#' @param is_trashed No description
-#' 
+#' Arvados Collection Object
+#'
+#' Update description
+#'
+#' @examples arv = Collection$new(api, uuid)
 #' @export Collection
-
-#' @exportClass Collection
-Collection <- setRefClass(
+Collection <- R6::R6Class(
 
     "Collection",
 
-    fields = list(uuid                     = "ANY",
-                  items                    = "ANY",
-                  fileContent              = "ANY",
-                  etag                     = "ANY",
-                  owner_uuid               = "ANY",
-                  created_at               = "ANY",
-                  modified_by_client_uuid  = "ANY",
-                  modified_by_user_uuid    = "ANY",
-                  modified_at              = "ANY",
-                  portable_data_hash       = "ANY",
-                  replication_desired      = "ANY",
-                  replication_confirmed_at = "ANY",
-                  replication_confirmed    = "ANY",
-                  updated_at               = "ANY",
-                  manifest_text            = "ANY",
-                  name                     = "ANY",
-                  description              = "ANY",
-                  properties               = "ANY",
-                  delete_at                = "ANY",
-                  file_names               = "ANY",
-                  trash_at                 = "ANY",
-                  is_trashed               = "ANY",
+    public = list(
 
-                  getCollectionContent = "function",
-                  get                  = "function"
+        #Todo(Fudo): Encapsulate this?
+        uuid                     = NULL,
+        etag                     = NULL,
+        owner_uuid               = NULL,
+        created_at               = NULL,
+        modified_by_client_uuid  = NULL,
+        modified_by_user_uuid    = NULL,
+        modified_at              = NULL,
+        portable_data_hash       = NULL,
+        replication_desired      = NULL,
+        replication_confirmed_at = NULL,
+        replication_confirmed    = NULL,
+        updated_at               = NULL,
+        manifest_text            = NULL,
+        name                     = NULL,
+        description              = NULL,
+        properties               = NULL,
+        delete_at                = NULL,
+        file_names               = NULL,
+        trash_at                 = NULL,
+        is_trashed               = NULL,
+
+        initialize = function(api, uuid)
+        {
+            private$api <- api
+            result <- private$api$getCollection(uuid)
+
+            self$uuid                     <- result$uuid                               
+            self$etag                     <- result$etag                               
+            self$owner_uuid               <- result$owner_uuid                         
+            self$created_at               <- result$created_at                         
+            self$modified_by_client_uuid  <- result$modified_by_client_uuid            
+            self$modified_by_user_uuid    <- result$modified_by_user_uuid              
+            self$modified_at              <- result$modified_at                        
+            self$portable_data_hash       <- result$portable_data_hash                 
+            self$replication_desired      <- result$replication_desired                
+            self$replication_confirmed_at <- result$replication_confirmed_at           
+            self$replication_confirmed    <- result$replication_confirmed              
+            self$updated_at               <- result$updated_at                         
+            self$manifest_text            <- result$manifest_text                      
+            self$name                     <- result$name                               
+            self$description              <- result$description                        
+            self$properties               <- result$properties                         
+            self$delete_at                <- result$delete_at                          
+            self$file_names               <- result$file_names                         
+            self$trash_at                 <- result$trash_at                           
+            self$is_trashed               <- result$is_trashed                         
+
+            #Todo(Fudo): Replace this when you get access to webDAV server.
+            private$fileItems <- private$getCollectionContent()
+
+            private$fileTree <- private$generateTree(private$fileItems)
+        },
+
+        printFileContent = function(pretty = TRUE)
+        {
+            if(pretty)
+                private$fileTree$printContent(0)
+            else
+                print(private$fileItems)
+
+        },
+
+        get = function(relativePath)
+        {
+            treeNode <- private$traverseInOrder(private$fileTree, function(node)
+            {
+                if(node$relativePath == relativePath)
+                    return(node)
+                else
+                    return(NULL)
+            })
+
+            if(!is.null(treeNode))
+            {
+                return(private$createSubcollectionTree(treeNode))
+            }
+            else
+            {
+                return(NULL)
+            }
+        }
     ),
 
-    methods = list(
-
-        initialize = function(api, uuid) 
+    active = list(
+        items = function(value)
         {
-            result <- api$collection_get(uuid)
-            
-            # Private members
-            uuid                     <<- result$uuid                               
-            etag                     <<- result$etag                               
-            owner_uuid               <<- result$owner_uuid                         
-            created_at               <<- result$created_at                         
-            modified_by_client_uuid  <<- result$modified_by_client_uuid            
-            modified_by_user_uuid    <<- result$modified_by_user_uuid              
-            modified_at              <<- result$modified_at                        
-            portable_data_hash       <<- result$portable_data_hash                 
-            replication_desired      <<- result$replication_desired                
-            replication_confirmed_at <<- result$replication_confirmed_at           
-            replication_confirmed    <<- result$replication_confirmed              
-            updated_at               <<- result$updated_at                         
-            manifest_text            <<- result$manifest_text                      
-            name                     <<- result$name                               
-            description              <<- result$description                        
-            properties               <<- result$properties                         
-            delete_at                <<- result$delete_at                          
-            file_names               <<- result$file_names                         
-            trash_at                 <<- result$trash_at                           
-            is_trashed               <<- result$is_trashed                         
+            if(missing(value))
+                return(private$fileItems)
+            else
+                print("Value is read-only.")
 
-            # Public methods
-
-            getCollectionContent <<- function()
-            {
-                #TODO(Fudo): Use proper URL here.
-                uri <- URLencode(api$getWebDavHostName())
-
-                # fetch directory listing via curl and parse XML response
-                h <- curl::new_handle()
-                curl::handle_setopt(h, customrequest = "PROPFIND")
-
-                #TODO(Fudo): Use proper token here.
-                curl::handle_setheaders(h, "Authorization" = paste("OAuth2", api$getWebDavToken()))
-                response <- curl::curl_fetch_memory(uri, h)
-
-                HttpParser()$parseWebDAVResponse(response, uri)
-            }
-
-            get <<- function(pathToTheFile)
-            {
-                fileWithPath <- unlist(stringr::str_split(pathToTheFile, "/"))
-                fileWithPath <- fileWithPath[fileWithPath != ""]
-
-                findFileIfExists <- function(name, node)
-                {
-                    matchPosition <- match(name, sapply(node$content, function(nodeInSubcollection) {nodeInSubcollection$name}), -1)
-                    if(matchPosition != -1)
-                    {
-                        return(node$content[[matchPosition]])
-                    }
-                    else
-                    {
-                        return(NULL)
-                    }
-                }
-                
-                nodeToCheck = .self$fileContent
-                for(fileNameIndex in 1:length(fileWithPath))
-                {
-                    nodeToCheck <- findFileIfExists(fileWithPath[fileNameIndex], nodeToCheck)
-                    if(is.null(nodeToCheck))
-                        stop("File or folder you asked for is not part of the collection.")
-                }
-
-                nodeToCheck
-            }
-
-
-            # Private methods
-            .createCollectionContentTree <- function(fileStructure)
-            {
-                #TODO(Fudo): Refactor this.
-                #TODO(Fudo): Find a way to link children to parents. (R has no pointers or references).
-                treeBranches <- sapply(fileStructure, function(filePath)
-                {
-                    fileWithPath <- unlist(stringr::str_split(filePath, "/"))
-                    file <- fileWithPath[length(fileWithPath), drop = T]
-
-                    if(file != "")
-                    {
-                        file <- ArvadosFile(file, api)
-                        file$relativePath <- filePath
-                    }
-                    else
-                    {
-                        file <- NULL
-                    }
-
-                    folders <- fileWithPath[-length(fileWithPath)]
-
-                    subcollections <- sapply(folders, function(folder)
-                    {
-                        folder <- Subcollection(folder)
-                        unname(folder)
-                    })
-
-                    if(!is.null(file))
-                        subcollections <- c(subcollections, file)
-
-                    if(length(subcollections) > 1)
-                    {
-                        for(subcollectionIndex in 1:(length(subcollections) - 1))
-                        {
-                            subcollections[[subcollectionIndex]]$relativePath <- paste(folders[1:(subcollectionIndex)], collapse = "/")
-                            subcollections[[subcollectionIndex]]$add(subcollections[[subcollectionIndex + 1]])
-                        }
-                    }
-                    subcollections[[1]]
-                })
-
-                root <- Subcollection(".")
-
-                addIfExists <- function(firstNode, secondNode)
-                {
-                    firstNodeContent <- sapply(firstNode$content, function(node) {node$name})
-                    if(length(firstNodeContent) == 0)
-                    {
-                        firstNode$add(secondNode)
-                        return()
-                    }
-
-                    matchPosition <- match(secondNode$name, firstNodeContent, -1)
-                    if(matchPosition != -1)
-                    {
-                        addIfExists(firstNode$content[[matchPosition]], secondNode$content[[1]])
-                    }
-                    else
-                    {
-                        firstNode$add(secondNode)
-                    }
-                }
-
-                sapply(treeBranches, function(branch)
-                {
-                    addIfExists(root, branch)
-                })
-
-                root
-            }
-
-            #Todo(Fudo): This is dummy data. Real content will come from WebDAV server.
-            # testFileStructure <- c("math.h", "main.cpp", "emptyFolder/",
-                                   # "java/render.java", "java/test/observer.java",
-                                   # "java/test/observable.java",
-                                   # "csharp/this.cs", "csharp/is.cs",
-                                   # "csharp/dummy.cs", "csharp/file.cs")
-            items  <<- getCollectionContent()
-            fileContent  <<- .createCollectionContentTree(items)
+            return(NULL)
         }
-    )
+    ),
+    
+    private = list(
+
+        api       = NULL,
+        fileItems = NULL,
+        fileTree  = NULL,
+
+        createSubcollectionTree = function(treeNode)
+        {
+            if(treeNode$hasChildren())
+            {
+                children = NULL
+
+                for(child in treeNode$children)
+                {
+                    child <- private$createSubcollectionTree(child)
+                    children <- c(children, child)                   
+                }
+
+                return(Subcollection$new(treeNode$name, treeNode$relativePath, children))
+            }
+            else
+            {
+                if(treeNode$type == "file")
+                    return(ArvadosFile$new(treeNode$name, treeNode$relativePath, private$api, self))
+                else if(treeNode$type == "folder" || treeNode$type == "root")
+                    return(Subcollection$new(treeNode$name, treeNode$relativePath, NULL))
+            }
+        },
+
+        createSubcollectionFromNode = function(treeNode, children)
+        {
+            subcollection = NULL
+            if(treeNode$type == "file")
+                subcollection = ArvadosFile$new(treeNode$name, treeNode$relativePath)
+            else if(treeNode$type == "folder" || treeNode$type == "root")
+                subcollection = Subcollection$new(treeNode$name, treeNode$relativePath, children)
+            
+            subcollection
+        },
+
+        getCollectionContent = function()
+        {
+            #TODO(Fudo): Use proper URL here.
+            uri <- URLencode(paste0(private$api$getWebDavHostName(), "c=", self$uuid))
+
+            # fetch directory listing via curl and parse XML response
+            h <- curl::new_handle()
+            curl::handle_setopt(h, customrequest = "PROPFIND")
+
+            #TODO(Fudo): Use proper token here.
+            curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
+            response <- curl::curl_fetch_memory(uri, h)
+            print(response)
+
+            HttpParser$new()$parseWebDAVResponse(response, uri)
+        },
+
+        #Todo(Fudo): Move tree creation to another file.
+        generateTree = function(collectionContent)
+        {
+            treeBranches <- sapply(collectionContent, function(filePath)
+            {
+                splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
+
+                pathEndsWithSlash <- substr(filePath, nchar(filePath), nchar(filePath)) == "/"
+                
+                branch = private$createBranch(splitPath, pathEndsWithSlash)      
+            })
+
+            root <- TreeNode$new("./", "root")
+            root$relativePath = ""
+
+            sapply(treeBranches, function(branch)
+            {
+                private$addNode(root, branch)
+            })
+
+            root
+        },
+
+        createBranch = function(splitPath, pathEndsWithSlash)
+        {
+            branch <- NULL
+            lastElementIndex <- length(splitPath)
+            
+            lastElementInPathType = "file"
+            if(pathEndsWithSlash)
+                lastElementInPathType = "folder"
+
+            for(elementIndex in lastElementIndex:1)
+            {
+                if(elementIndex == lastElementIndex)
+                {
+                    branch = TreeNode$new(splitPath[[elementIndex]], lastElementInPathType)
+                }
+                else
+                {
+                    newFolder = TreeNode$new(splitPath[[elementIndex]], "folder")
+                    newFolder$addChild(branch)
+                    branch = newFolder
+                }
+
+                branch$relativePath <- paste(unlist(splitPath[1:elementIndex]), collapse = "/")
+            }
+
+            branch
+        },
+
+        addNode = function(container, node)
+        {
+            child = container$getChild(node$name)
+
+            if(is.null(child))
+            {
+                container$addChild(node)
+            }
+            else
+            {
+                private$addNode(child, node$getFirstChild())
+            }
+        },
+
+        traverseInOrder = function(node, predicate)
+        {
+            if(node$hasChildren())
+            {
+                result <- predicate(node)
+
+                if(!is.null(result))
+                    return(result)               
+
+                for(child in node$children)
+                {
+                    result <- private$traverseInOrder(child, predicate)
+
+                    if(!is.null(result))
+                        return(result)
+                }
+
+                return(NULL)
+            }
+            else
+            {
+                return(predicate(node))
+            }
+        }
+
+    ),
+
+    cloneable = FALSE
+)
+
+TreeNode <- R6::R6Class(
+
+    "TreeNode",
+
+    public = list(
+
+        name = NULL,
+        relativePath = NULL,
+        children = NULL,
+        parent = NULL,
+        type = NULL,
+
+        initialize = function(name, type)
+        {
+            if(type == "folder")
+                name <- paste0(name, "/")
+
+            self$name <- name
+            self$type <- type
+            self$children <- list()
+        },
+
+        addChild = function(node)
+        {
+            self$children <- c(self$children, node)
+            node$setParent(self)
+            self
+        },
+
+        setParent = function(parent)
+        {
+            self$parent = parent
+        },
+
+        getChild = function(childName)
+        {
+            for(child in self$children)
+            {
+                if(childName == child$name)
+                    return(child)
+            }
+
+            return(NULL)
+        },
+
+        hasChildren = function()
+        {
+            if(length(self$children) != 0)
+                return(TRUE)
+            else
+                return(FALSE)
+        },
+
+        getFirstChild = function()
+        {
+            if(!self$hasChildren())
+                return(NULL)
+            else
+                return(self$children[[1]])
+        },
+
+        printContent = function(depth)
+        {
+            indentation <- paste(rep("....", depth), collapse = "")
+            print(paste0(indentation, self$name))
+            
+            for(child in self$children)
+                child$printContent(depth + 1)
+        }
+    ),
+
+    cloneable = FALSE
 )

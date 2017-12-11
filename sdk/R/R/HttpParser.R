@@ -1,35 +1,24 @@
 #' HttpParser
 #'
-HttpParser <- setRefClass(
+HttpParser <- R6::R6Class(
 
     "HttrParser",
 
-    fields = list(
-    ),
-
-    methods = list(
+    public = list(
         initialize = function() 
         {
-        },
-
-        parseCollectionGet = function(serverResponse) 
-        {
-            parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
-
-            #Todo(Fudo): Create new Collection object and populate it
         },
 
         parseJSONResponse = function(serverResponse) 
         {
             parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
-
-            #Todo(Fudo): Create new Collection object and populate it
         },
 
+        #Todo(Fudo): Test this.
         parseWebDAVResponse = function(response, uri)
         {
-            #Todo(Fudo): Move this to HttpParser.
             text <- rawToChar(response$content)
+            print(text)
             doc <- XML::xmlParse(text, asText=TRUE)
 
             # calculate relative paths
@@ -40,9 +29,8 @@ HttpParser <- setRefClass(
                 })
             )
             result <- result[result != ""]
-            #Todo(Fudo): Test this.
+
             result[-1]
         }
-
     )
 )

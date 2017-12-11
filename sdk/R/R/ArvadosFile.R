@@ -1,48 +1,61 @@
-source("./R/HttpRequest.R")
-#' ArvadosFile Class
-#' 
-#' @details 
-#' Todo: Update description
-#' Subcollection
-#' 
+#' ArvadosFile Object
+#'
+#' Update description
+#'
 #' @export ArvadosFile
-#' @exportClass ArvadosFile
-ArvadosFile <- setRefClass(
+ArvadosFile <- R6::R6Class(
+
     "ArvadosFile",
-    fields = list(
-        name         = "character",
-        relativePath = "character",
 
-        read = "function"
+    public = list(
 
-
-    ),
-    methods = list(
-        initialize = function(subcollectionName, api)
+        initialize = function(name, relativePath, api, collection)
         {
-            name <<- subcollectionName
+            private$name         <- name
+            private$relativePath <- relativePath
+            private$api          <- api
+            private$collection   <- collection
+            private$http         <- HttpRequest$new()
+            private$httpParser   <- HttpParser$new()
+        },
 
-            read <<- function(offset = 0, length = 0)
-            {
-                if(offset < 0 || length < 0)
-                stop("Offset and length must be positive values.")
+        getName = function() private$name,
 
-                range = paste0("bytes=", offset, "-")
+        getRelativePath = function() private$relativePath,
 
-                if(length > 0)
-                    range = paste0(range, offset + length - 1)
-                
-                fileURL = paste0(api$getWebDavHostName(), relativePath);
-                headers <- list(Authorization = paste("OAuth2", api$getWebDavToken()), 
-                                Range = range)
+        read = function(offset = 0, length = 0)
+        {
+            if(offset < 0 || length < 0)
+            stop("Offset and length must be positive values.")
 
-                #TODO(Fudo): Move this to HttpRequest.R
-                # serverResponse <- httr::GET(url = fileURL,
-                                            # config = httr::add_headers(unlist(headers)))
-                http <- HttpRequest()
-                serverResponse <- http$GET(fileURL, headers)
-                parsed_response <- httr::content(serverResponse, "raw")
-            }
+            range = paste0("bytes=", offset, "-")
+
+            if(length > 0)
+                range = paste0(range, offset + length - 1)
+            
+            fileURL = paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid, "/", private$relativePath);
+            headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
+                            Range = range)
+
+            #TODO(Fudo): Move this to HttpRequest.R
+            # serverResponse <- httr::GET(url = fileURL,
+                                        # config = httr::add_headers(unlist(headers)))
+            serverResponse <- private$http$GET(fileURL, headers)
+            parsed_response <- httr::content(serverResponse, "raw")
+
         }
-    )
+    ),
+
+    private = list(
+
+        name         = NULL,
+        relativePath = NULL,
+        parent       = NULL,
+        api          = NULL,
+        collection   = NULL,
+        http         = NULL,
+        httpParser   = NULL
+    ),
+    
+    cloneable = FALSE
 )

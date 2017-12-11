@@ -1,6 +1,5 @@
 source("./R/HttpRequest.R")
 source("./R/HttpParser.R")
-source("./R/custom_classes.R")
 
 #' Arvados SDK Object
 #'
@@ -8,35 +7,16 @@ source("./R/custom_classes.R")
 #'
 #' @field token Token represents user authentification token.
 #' @field host Host represents server name we wish to connect to.
-#' @examples arv = Arvados("token", "host_name")
+#' @examples arv = Arvados$new("token", "host_name")
 #' @export Arvados
-Arvados <- setRefClass(
+Arvados <- R6::R6Class(
 
     "Arvados",
 
-    fields = list(
-
-        getToken          = "function",
-        getHostName       = "function",
-
-        #Todo(Fudo): This is for debug only. Remove it.
-        getWebDavToken    = "function",
-        getWebDavHostName = "function",
-        setWebDavToken    = "function",
-        setWebDavHostName = "function",
-
-        collection_get    = "function",
-        collection_list   = "function",
-        collection_create = "function",
-        collection_update = "function",
-        collection_delete = "function"
-    ),
-
-    methods = list(
+    public = list(
 
         initialize = function(auth_token = NULL, host_name = NULL) 
         {
-            # Private state
             if(!is.null(host_name))
                Sys.setenv(ARVADOS_API_HOST  = host_name)
 
@@ -49,108 +29,122 @@ Arvados <- setRefClass(
             if(host == "" | token == "")
                 stop("Please provide host name and authentification token or set ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
 
+            discoveryDocumentURL <- paste0("https://", host, "/discovery/v1/apis/arvados/v1/rest")
+
             version <- "v1"
             host  <- paste0("https://", host, "/arvados/", version, "/")
 
-            # Public methods
-            getToken <<- function() { token }
-            getHostName <<- function() { host }
+            private$http <- HttpRequest$new()
+            private$httpParser <- HttpParser$new()
+            private$token <- token
+            private$host <- host
+            
+            headers <- list(Authorization = paste("OAuth2", private$token))
 
-            #Todo(Fudo): Hardcoded credentials to WebDAV server. Remove them later
-            getWebDavToken    <<- function() { webDavToken }
-            getWebDavHostName <<- function() { webDavHostName }
-            setWebDavToken    <<- function(token) { webDavToken <<- token }
-            setWebDavHostName <<- function(hostName) { webDavHostName <<- hostName }
+            serverResponse <- private$http$GET(discoveryDocumentURL, headers)
 
-            collection_get <<- function(uuid) 
-            {
-                collectionURL <- paste0(host, "collections/", uuid)
-                headers <- list(Authorization = paste("OAuth2", token))
+            discoveryDocument <- private$httpParser$parseJSONResponse(serverResponse)
+            private$webDavHostName <- discoveryDocument$keepWebServiceUrl
+            print(private$webDavHostName)
+        },
 
-                http <- HttpRequest() 
-                serverResponse <- http$GET(collectionURL, headers)
+        getToken    = function() private$token,
+        getHostName = function() private$host,
 
-                httpParser <- HttpParser()
-                collection <- httpParser$parseJSONResponse(serverResponse)
+        #Todo(Fudo): Hardcoded credentials to WebDAV server. Remove them later
+        getWebDavHostName = function() private$webDavHostName,
 
-                if(!is.null(collection$errors))
-                    stop(collection$errors)       
+        getCollection = function(uuid) 
+        {
+            collectionURL <- paste0(private$host, "collections/", uuid)
+            headers <- list(Authorization = paste("OAuth2", private$token))
 
-                collection
-            }
+            serverResponse <- private$http$GET(collectionURL, headers)
 
-            collection_list <<- function(filters = NULL, limit = 100, offset = 0) 
-            {
-                collectionURL <- paste0(host, "collections")
-                headers <- list(Authorization = paste("OAuth2", token))
+            collection <- private$httpParser$parseJSONResponse(serverResponse)
 
-                http <- HttpRequest() 
-                serverResponse <- http$GET(collectionURL, headers, NULL, filters, limit, offset)
+            if(!is.null(collection$errors))
+                stop(collection$errors)       
 
-                httpParser <- HttpParser()
-                collection <- httpParser$parseJSONResponse(serverResponse)
+            collection
+        },
 
-                if(!is.null(collection$errors))
-                    stop(collection$errors)       
+        listCollections = function(filters = NULL, limit = 100, offset = 0) 
+        {
+            collectionURL <- paste0(private$host, "collections")
+            headers <- list(Authorization = paste("OAuth2", private$token))
 
-                collection
-            }
+            serverResponse <- private$http$GET(collectionURL, headers, NULL, filters, limit, offset)
 
-            collection_delete <<- function(uuid) 
-            {
-                collectionURL <- paste0(host, "collections/", uuid)
-                headers <- list("Authorization" = paste("OAuth2", token),
-                                "Content-Type"  = "application/json")
+            collection <- private$httpParser$parseJSONResponse(serverResponse)
 
-                http <- HttpRequest() 
-                serverResponse <- http$DELETE(collectionURL, headers)
+            if(!is.null(collection$errors))
+                stop(collection$errors)       
 
-                httpParser <- HttpParser()
-                collection <- httpParser$parseJSONResponse(serverResponse)
+            collection
+        },
 
-                if(!is.null(collection$errors))
-                    stop(collection$errors)       
+        deleteCollection = function(uuid) 
+        {
+            collectionURL <- paste0(private$host, "collections/", uuid)
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
 
-                collection
-            }
+            serverResponse <- private$http$DELETE(collectionURL, headers)
 
-            collection_update <<- function(uuid, body) 
-            {
-                collectionURL <- paste0(host, "collections/", uuid)
-                headers <- list("Authorization" = paste("OAuth2", token),
-                                "Content-Type"  = "application/json")
-                body <- jsonlite::toJSON(body, auto_unbox = T)
+            collection <- private$httpParser$parseJSONResponse(serverResponse)
 
-                http <- HttpRequest() 
-                serverResponse <- http$PUT(collectionURL, headers, body)
+            if(!is.null(collection$errors))
+                stop(collection$errors)       
 
-                httpParser <- HttpParser()
-                collection <- httpParser$parseJSONResponse(serverResponse)
+            collection
+        },
 
-                if(!is.null(collection$errors))
-                    stop(collection$errors)       
+        updateCollection = function(uuid, body) 
+        {
+            collectionURL <- paste0(private$host, "collections/", uuid)
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
 
-                collection
-            }
+            body <- jsonlite::toJSON(body, auto_unbox = T)
 
-            collection_create <<- function(body) 
-            {
-                collectionURL <- paste0(host, "collections")
-                headers <- list("Authorization" = paste("OAuth2", token),
-                                "Content-Type"  = "application/json")
-                body <- jsonlite::toJSON(body, auto_unbox = T)
+            serverResponse <- private$http$PUT(collectionURL, headers, body)
 
-                http <- HttpRequest() 
-                serverResponse <- http$POST(collectionURL, headers, body)
+            collection <- private$httpParser$parseJSONResponse(serverResponse)
 
-                httpParser <- HttpParser()
-                collection <- httpParser$parseJSONResponse(serverResponse)
+            if(!is.null(collection$errors))
+                stop(collection$errors)       
 
-                if(!is.null(collection$errors))
-                    stop(collection$errors)       
+            collection
+        },
 
-                collection
-            }
+        createCollection = function(body) 
+        {
+            collectionURL <- paste0(private$host, "collections")
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
+            body <- jsonlite::toJSON(body, auto_unbox = T)
+
+            serverResponse <- private$http$POST(collectionURL, headers, body)
+
+            collection <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(collection$errors))
+                stop(collection$errors)       
+
+            collection
         }
-    )
+
+    ),
+    
+    private = list(
+
+        token          = NULL,
+        host           = NULL,
+        webDavHostName = NULL,
+        http           = NULL,
+        httpParser     = NULL
+    ),
+    
+    cloneable = FALSE
 )
