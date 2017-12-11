@@ -120,9 +120,7 @@ class ContainerRequest < ArvadosModel
           trash_at = db_current_time + self.output_ttl
         end
       end
-      manifest = Collection.unscoped do
-        Collection.where(portable_data_hash: pdh).first.manifest_text
-      end
+      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
       coll = Collection.new(owner_uuid: owner_uuid,
                             manifest_text: manifest,
