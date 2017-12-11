@@ -161,7 +161,6 @@ Collection <- R6::R6Class(
             #TODO(Fudo): Use proper token here.
             curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
             response <- curl::curl_fetch_memory(uri, h)
-            print(response)
 
             HttpParser$new()$parseWebDAVResponse(response, uri)
         },

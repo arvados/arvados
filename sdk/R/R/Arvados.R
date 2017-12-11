@@ -45,7 +45,6 @@ Arvados <- R6::R6Class(
 
             discoveryDocument <- private$httpParser$parseJSONResponse(serverResponse)
             private$webDavHostName <- discoveryDocument$keepWebServiceUrl
-            print(private$webDavHostName)
         },
 
         getToken    = function() private$token,
