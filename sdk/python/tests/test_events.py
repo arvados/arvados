@@ -163,7 +163,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         """Convert minutes-east-of-UTC to RFC3339- and ISO-compatible time zone designator"""
         return '{:+03d}:{:02d}'.format(offset//60, offset%60)
 
-    # Test websocket reconnection on (un)execpted close
+    # Test websocket reconnection on (un)expected close
     def _test_websocket_reconnect(self, close_unexpected):
         run_test_server.authorize_with('active')
         events = queue.Queue(100)

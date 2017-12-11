@@ -519,7 +519,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
 
 
 @tutil.skip_sleep
-class KeepXRequestId(unittest.TestCase, tutil.ApiClientMock):
+class KeepXRequestIdTestCase(unittest.TestCase, tutil.ApiClientMock):
     def setUp(self):
         self.api_client = self.mock_keep_services(count=2)
         self.keep_client = arvados.KeepClient(api_client=self.api_client)
