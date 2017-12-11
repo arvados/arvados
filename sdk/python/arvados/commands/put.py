@@ -193,9 +193,10 @@ Display machine-readable progress on stderr (bytes and, if known,
 total data size).
 """)
 
-_group.add_argument('--silent', action='store_true',
-                    help="""
-Do not print any debug messages to console. (Any error messages will still be displayed.)
+run_opts.add_argument('--silent', action='store_true',
+                      help="""
+Do not print any debug messages to console. (Any error messages will
+still be displayed.)
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
@@ -398,7 +399,7 @@ class ArvPutUploadJob(object):
     }
 
     def __init__(self, paths, resume=True, use_cache=True, reporter=None,
-                 name=None, owner_uuid=None,
+                 name=None, owner_uuid=None, api_client=None,
                  ensure_unique_name=False, num_retries=None,
                  put_threads=None, replication_desired=None,
                  filename=None, update_time=60.0, update_collection=None,
@@ -421,6 +422,7 @@ class ArvPutUploadJob(object):
         self.replication_desired = replication_desired
         self.put_threads = put_threads
         self.filename = filename
+        self._api_client = api_client
         self._state_lock = threading.Lock()
         self._state = None # Previous run state (file list & manifest)
         self._current_files = [] # Current run file list
@@ -775,7 +777,8 @@ class ArvPutUploadJob(object):
         if update_collection and re.match(arvados.util.collection_uuid_pattern,
                                           update_collection):
             try:
-                self._remote_collection = arvados.collection.Collection(update_collection)
+                self._remote_collection = arvados.collection.Collection(
+                    update_collection, api_client=self._api_client)
             except arvados.errors.ApiError as error:
                 raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
             else:
@@ -822,7 +825,11 @@ class ArvPutUploadJob(object):
                 # No cache file, set empty state
                 self._state = copy.deepcopy(self.EMPTY_STATE)
             # Load the previous manifest so we can check if files were modified remotely.
-            self._local_collection = arvados.collection.Collection(self._state['manifest'], replication_desired=self.replication_desired, put_threads=self.put_threads)
+            self._local_collection = arvados.collection.Collection(
+                self._state['manifest'],
+                replication_desired=self.replication_desired,
+                put_threads=self.put_threads,
+                api_client=self._api_client)
 
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
@@ -977,8 +984,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     else:
         logger.setLevel(logging.INFO)
     status = 0
+
+    request_id = arvados.util.new_request_id()
+    logger.info('X-Request-Id: '+request_id)
+
     if api_client is None:
-        api_client = arvados.api('v1')
+        api_client = arvados.api('v1', request_id=request_id)
 
     # Determine the name to use
     if args.name:
@@ -1063,6 +1074,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  use_cache = args.use_cache,
                                  filename = args.filename,
                                  reporter = reporter,
+                                 api_client = api_client,
                                  num_retries = args.retries,
                                  replication_desired = args.replication,
                                  put_threads = args.threads,

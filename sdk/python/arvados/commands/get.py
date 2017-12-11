@@ -81,6 +81,10 @@ Overwrite existing files while writing. The default behavior is to
 refuse to write *anything* if any of the output files already
 exist. As a special case, -f is not needed to write to stdout.
 """)
+group.add_argument('-v', action='count', default=0,
+                    help="""
+Once for verbose mode, twice for debug mode.
+""")
 group.add_argument('--skip-existing', action='store_true',
                    help="""
 Skip files that already exist. The default behavior is to refuse to
@@ -140,8 +144,13 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         stdout = stdout.buffer
 
     args = parse_arguments(arguments, stdout, stderr)
+    logger.setLevel(logging.WARNING - 10 * args.v)
+
+    request_id = arvados.util.new_request_id()
+    logger.info('X-Request-Id: '+request_id)
+
     if api_client is None:
-        api_client = arvados.api('v1')
+        api_client = arvados.api('v1', request_id=request_id)
 
     r = re.search(r'^(.*?)(/.*)?$', args.locator)
     col_loc = r.group(1)
@@ -157,14 +166,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 open_flags |= os.O_EXCL
             try:
                 if args.destination == "-":
-                    write_block_or_manifest(dest=stdout, src=col_loc,
-                                            api_client=api_client, args=args)
+                    write_block_or_manifest(
+                        dest=stdout, src=col_loc,
+                        api_client=api_client, args=args)
                 else:
                     out_fd = os.open(args.destination, open_flags)
                     with os.fdopen(out_fd, 'wb') as out_file:
-                        write_block_or_manifest(dest=out_file,
-                                                src=col_loc, api_client=api_client,
-                                                args=args)
+                        write_block_or_manifest(
+                            dest=out_file, src=col_loc,
+                            api_client=api_client, args=args)
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
                 return 1
@@ -180,7 +190,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         return 0
 
     try:
-        reader = arvados.CollectionReader(col_loc, num_retries=args.retries)
+        reader = arvados.CollectionReader(
+            col_loc, api_client=api_client, num_retries=args.retries)
     except Exception as error:
         logger.error("failed to read collection: {}".format(error))
         return 1
@@ -305,5 +316,6 @@ def write_block_or_manifest(dest, src, api_client, args):
         dest.write(kc.get(src, num_retries=args.retries))
     else:
         # collection UUID or portable data hash
-        reader = arvados.CollectionReader(src, num_retries=args.retries)
+        reader = arvados.CollectionReader(
+            src, api_client=api_client, num_retries=args.retries)
         dest.write(reader.manifest_text(strip=args.strip_manifest).encode())
