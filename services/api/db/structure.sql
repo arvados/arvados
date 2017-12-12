@@ -1606,6 +1606,13 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 
 
 --
+-- Name: collection_index_on_properties; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX collection_index_on_properties ON collections USING gin (properties);
+
+
+--
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3039,4 +3046,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170906224040');
 INSERT INTO schema_migrations (version) VALUES ('20171027183824');
 
 INSERT INTO schema_migrations (version) VALUES ('20171208203841');
+
+INSERT INTO schema_migrations (version) VALUES ('20171212153352');
 
