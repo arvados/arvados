@@ -538,6 +538,22 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				return fmt.Errorf("writing temp file: %v", err)
 			}
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
+
+		case mnt.Kind == "git_tree":
+			tmpdir, err := runner.MkTempDir("", "")
+			if err != nil {
+				return fmt.Errorf("creating temp dir: %v", err)
+			}
+			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
+			err = gitMount(mnt).extractTree(runner.ArvClient, tmpdir)
+			if err != nil {
+				return err
+			}
+			bind := tmpdir + ":" + bind
+			if !mnt.Writable {
+				bind = bind + ":ro"
+			}
+			runner.Binds = append(runner.Binds, bind)
 		}
 	}
 

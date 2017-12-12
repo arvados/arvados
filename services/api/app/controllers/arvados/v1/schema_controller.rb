@@ -60,6 +60,7 @@ class Arvados::V1::SchemaController < ApplicationController
         websocketUrl: Rails.application.config.websocket_address,
         workbenchUrl: Rails.application.config.workbench_address,
         keepWebServiceUrl: Rails.application.config.keep_web_service_url,
+        gitUrl: Rails.application.config.git_repo_https_base,
         parameters: {
           alt: {
             type: "string",

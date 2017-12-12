@@ -323,6 +323,9 @@ start_api() {
 }
 
 start_nginx_proxy_services() {
+    if [[ -n "$ARVADOS_TEST_PROXY_SERVICES" ]]; then
+        return
+    fi
     echo 'Starting keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
     cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
@@ -822,6 +825,13 @@ install_apiserver() {
     fi
 
     cd "$WORKSPACE/services/api" \
+        && rm -rf tmp/git \
+        && mkdir -p tmp/git \
+        && cd tmp/git \
+        && tar xf ../../test/test.git.tar \
+            || return 1
+
+    cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \
         && RAILS_ENV=test bundle exec rake db:fixtures:load
@@ -904,7 +914,7 @@ if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
   exit_cleanly
 fi
 
-start_api || { stop_services; fatal "start_api"; }
+start_api && start_nginx_proxy_services || { stop_services; fatal "start_api"; }
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \

@@ -32,6 +32,7 @@ type Mount struct {
 	Content           interface{} `json:"content"`
 	ExcludeFromOutput bool        `json:"exclude_from_output"`
 	Capacity          int64       `json:"capacity"`
+	Commit            string      `json:"commit"` // only if kind=="git_tree"
 }
 
 // RuntimeConstraints specify a container's compute resources (RAM,
