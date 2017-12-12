@@ -483,7 +483,7 @@ class NodeManagerDaemonActor(actor_class):
                 # grace period without a ping, so shut it down so we can boot a new
                 # node in its place.
                 self._begin_node_shutdown(node_actor, cancellable=False)
-            elif node_actor.in_state('down').get():
+            elif node_actor.in_state('down', 'fail').get():
                 # Node is down and unlikely to come back.
                 self._begin_node_shutdown(node_actor, cancellable=False)
         except pykka.ActorDeadError as e:
