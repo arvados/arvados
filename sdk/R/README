@@ -55,13 +55,15 @@ collection <- Collection$new(arv, "uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Print content of the collection
+#Print content of the collection (directory/folder tree structure)
 
 collection$printFileContent()
 
-#of if you just want a list of relative paths:
+--------------------------------------------------------------------------------------------------------------------------------
 
-collection$printFileContent(pretty = FALSE)
+#Get file/folder content as character vector
+
+collection$getFileContent()
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -77,6 +79,13 @@ arvadosSubcollection <- collection.get("location/to/my/directory/")
 
 #Read whole file or just a portion of it.
 
-arvadosFile$read(offset = 1024, length = 512)
+fileContent <- arvadosFile$read(offset = 1024, length = 512)
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Get ArvadosFile or Subcollection size
+
+size <- arvadosFile$getSizeInBytes()
+size <- arvadosSubcollection$getSizeInBytes()
 
 --------------------------------------------------------------------------------------------------------------------------------

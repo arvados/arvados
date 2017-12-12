@@ -9,9 +9,10 @@ ArvadosFile <- R6::R6Class(
 
     public = list(
 
-        initialize = function(name, relativePath, api, collection)
+        initialize = function(name, relativePath, size, api, collection)
         {
             private$name         <- name
+            private$size         <- size
             private$relativePath <- relativePath
             private$api          <- api
             private$collection   <- collection
@@ -22,6 +23,8 @@ ArvadosFile <- R6::R6Class(
         getName = function() private$name,
 
         getRelativePath = function() private$relativePath,
+
+        getSizeInBytes = function() private$size,
 
         read = function(offset = 0, length = 0)
         {
@@ -50,6 +53,7 @@ ArvadosFile <- R6::R6Class(
 
         name         = NULL,
         relativePath = NULL,
+        size         = NULL,
         parent       = NULL,
         api          = NULL,
         collection   = NULL,

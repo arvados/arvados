@@ -67,13 +67,17 @@ Collection <- R6::R6Class(
             private$fileTree <- private$generateTree(private$fileItems)
         },
 
-        printFileContent = function(pretty = TRUE)
+        printFileContent = function()
         {
-            if(pretty)
-                private$fileTree$printContent(0)
-            else
-                print(private$fileItems)
+            private$fileTree$printContent(0)
+        },
 
+        getFileContent = function()
+        {
+            sapply(private$fileItems, function(file)
+            {
+                file$name
+            })
         },
 
         get = function(relativePath)
@@ -111,8 +115,8 @@ Collection <- R6::R6Class(
     
     private = list(
 
-        api       = NULL,
         fileItems = NULL,
+        api       = NULL,
         fileTree  = NULL,
 
         createSubcollectionTree = function(treeNode)
@@ -132,21 +136,10 @@ Collection <- R6::R6Class(
             else
             {
                 if(treeNode$type == "file")
-                    return(ArvadosFile$new(treeNode$name, treeNode$relativePath, private$api, self))
-                else if(treeNode$type == "folder" || treeNode$type == "root")
+                    return(ArvadosFile$new(treeNode$name, treeNode$relativePath, treeNode$size, private$api, self))
+                else 
                     return(Subcollection$new(treeNode$name, treeNode$relativePath, NULL))
             }
-        },
-
-        createSubcollectionFromNode = function(treeNode, children)
-        {
-            subcollection = NULL
-            if(treeNode$type == "file")
-                subcollection = ArvadosFile$new(treeNode$name, treeNode$relativePath)
-            else if(treeNode$type == "folder" || treeNode$type == "root")
-                subcollection = Subcollection$new(treeNode$name, treeNode$relativePath, children)
-            
-            subcollection
         },
 
         getCollectionContent = function()
@@ -170,14 +163,12 @@ Collection <- R6::R6Class(
         {
             treeBranches <- sapply(collectionContent, function(filePath)
             {
-                splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
+                splitPath <- unlist(strsplit(filePath$name, "/", fixed = TRUE))
 
-                pathEndsWithSlash <- substr(filePath, nchar(filePath), nchar(filePath)) == "/"
-                
-                branch = private$createBranch(splitPath, pathEndsWithSlash)      
+                branch = private$createBranch(splitPath, filePath$fileSize)      
             })
 
-            root <- TreeNode$new("./", "root")
+            root <- TreeNode$new("./", "root", NULL)
             root$relativePath = ""
 
             sapply(treeBranches, function(branch)
@@ -188,31 +179,27 @@ Collection <- R6::R6Class(
             root
         },
 
-        createBranch = function(splitPath, pathEndsWithSlash)
+        createBranch = function(splitPath, fileSize)
         {
             branch <- NULL
             lastElementIndex <- length(splitPath)
-            
-            lastElementInPathType = "file"
-            if(pathEndsWithSlash)
-                lastElementInPathType = "folder"
 
             for(elementIndex in lastElementIndex:1)
             {
                 if(elementIndex == lastElementIndex)
                 {
-                    branch = TreeNode$new(splitPath[[elementIndex]], lastElementInPathType)
+                    branch = TreeNode$new(splitPath[[elementIndex]], "file", fileSize)
                 }
                 else
                 {
-                    newFolder = TreeNode$new(splitPath[[elementIndex]], "folder")
+                    newFolder = TreeNode$new(splitPath[[elementIndex]], "folder", NULL)
                     newFolder$addChild(branch)
                     branch = newFolder
                 }
 
                 branch$relativePath <- paste(unlist(splitPath[1:elementIndex]), collapse = "/")
             }
-
+            
             branch
         },
 
@@ -226,6 +213,7 @@ Collection <- R6::R6Class(
             }
             else
             {
+                child$type = "folder"
                 private$addNode(child, node$getFirstChild())
             }
         },
@@ -266,19 +254,18 @@ TreeNode <- R6::R6Class(
 
     public = list(
 
-        name = NULL,
+        name         = NULL,
         relativePath = NULL,
-        children = NULL,
-        parent = NULL,
-        type = NULL,
+        size         = NULL,
+        children     = NULL,
+        parent       = NULL,
+        type         = NULL,
 
-        initialize = function(name, type)
+        initialize = function(name, type, size)
         {
-            if(type == "folder")
-                name <- paste0(name, "/")
-
             self$name <- name
             self$type <- type
+            self$size <- size
             self$children <- list()
         },
 
@@ -324,7 +311,10 @@ TreeNode <- R6::R6Class(
         printContent = function(depth)
         {
             indentation <- paste(rep("....", depth), collapse = "")
-            print(paste0(indentation, self$name))
+            if(self$type == "folder")
+                print(paste0(indentation, self$name, "/"))
+            else
+                print(paste0(indentation, self$size))
             
             for(child in self$children)
                 child$printContent(depth + 1)

@@ -20,6 +20,15 @@ Subcollection <- R6::R6Class(
 
         getRelativePath = function() private$relativePath,
 
+        getSizeInBytes = function()
+        {
+            overallSize = 0
+            for(child in private$children)
+                overallSize = overallSize + child$getSizeInBytes()
+
+            overallSize
+        },
+
         setParent = function(parent) private$parent <- parent
     ),
 
