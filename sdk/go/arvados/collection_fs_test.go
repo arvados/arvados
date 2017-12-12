@@ -77,6 +77,21 @@ func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
 	c.Check(ok, check.Equals, true)
 }
 
+func (s *CollectionFSSuite) TestColonInFilename(c *check.C) {
+	fs, err := (&Collection{
+		ManifestText: "./foo:foo 3858f62230ac3c915f300c664312c63f+3 0:3:bar:bar\n",
+	}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	f, err := fs.Open("/foo:foo")
+	c.Assert(err, check.IsNil)
+
+	fis, err := f.Readdir(0)
+	c.Check(err, check.IsNil)
+	c.Check(len(fis), check.Equals, 1)
+	c.Check(fis[0].Name(), check.Equals, "bar:bar")
+}
+
 func (s *CollectionFSSuite) TestReaddirFull(c *check.C) {
 	f, err := s.fs.Open("/dir1")
 	c.Assert(err, check.IsNil)
@@ -928,7 +943,7 @@ func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
 		".  0:0:foo\n",
 		". 0:0:foo 0:0:bar\n",
 		". d41d8cd98f00b204e9800998ecf8427e 0:0:foo\n",
-		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 :0:0:foo\n",
 		". d41d8cd98f00b204e9800998ecf8427e+0 foo:0:foo\n",
 		". d41d8cd98f00b204e9800998ecf8427e+0 0:foo:foo\n",
 		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:foo 1:1:bar\n",
