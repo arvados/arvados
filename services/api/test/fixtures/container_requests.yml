@@ -743,6 +743,28 @@ uncommitted-with-required-and-optional-inputs:
     ram: 256000000
     API: true
 
+cr_in_trashed_project:
+  uuid: zzzzz-xvhdp-cr5trashedcontr
+  owner_uuid: zzzzz-j7d0g-trashedproject1
+  name: completed container request
+  state: Final
+  priority: 1
+  created_at: <%= 2.minute.ago.to_s(:db) %>
+  updated_at: <%= 1.minute.ago.to_s(:db) %>
+  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-compltcontainer
+  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
