@@ -444,6 +444,13 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertEquals((True, "node state is ('idle', 'open', 'boot wait', 'idle exceeded')"),
                           self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
+    def test_shutdown_when_node_state_fail(self):
+        self.make_actor(5, testutil.arvados_node_mock(
+            5, crunch_worker_state='fail'))
+        self.shutdowns._set_state(True, 600)
+        self.assertEquals((True, "node state is ('fail', 'open', 'boot wait', 'idle exceeded')"),
+                          self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
     def test_no_shutdown_when_node_state_stale(self):
         self.make_actor(6, testutil.arvados_node_mock(6, age=90000))
         self.shutdowns._set_state(True, 600)

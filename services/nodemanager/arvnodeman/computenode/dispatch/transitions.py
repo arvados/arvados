@@ -53,4 +53,17 @@ transitions = {
  ('unpaired', 'open', 'boot exceeded', 'not idle'): "START_SHUTDOWN",
  ('unpaired', 'open', 'boot wait', 'idle exceeded'): None,
  ('unpaired', 'open', 'boot wait', 'idle wait'): None,
- ('unpaired', 'open', 'boot wait', 'not idle'): None}
+ ('unpaired', 'open', 'boot wait', 'not idle'): None,
+
+ ('fail', 'closed', 'boot exceeded', 'idle exceeded'): "START_SHUTDOWN",
+ ('fail', 'closed', 'boot exceeded', 'idle wait'): "START_SHUTDOWN",
+ ('fail', 'closed', 'boot exceeded', 'not idle'): "START_SHUTDOWN",
+ ('fail', 'closed', 'boot wait', 'idle exceeded'): "START_SHUTDOWN",
+ ('fail', 'closed', 'boot wait', 'idle wait'): "START_SHUTDOWN",
+ ('fail', 'closed', 'boot wait', 'not idle'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot exceeded', 'idle exceeded'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot exceeded', 'idle wait'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot exceeded', 'not idle'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot wait', 'idle exceeded'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot wait', 'idle wait'): "START_SHUTDOWN",
+ ('fail', 'open', 'boot wait', 'not idle'): "START_SHUTDOWN"}
