@@ -81,7 +81,7 @@ COLUMNS=80
 title "Start build packages"
 timer_reset
 
-$WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET
+$WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET --build-version $VERNO
 
 checkexit $? "build packages"
 title "End of build packages (`timer`)"
@@ -90,7 +90,7 @@ title "Start test packages"
 timer_reset
 
 if [ ${#failures[@]} -eq 0 ]; then
-  $WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET --test-packages
+  $WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET --test-packages --build-version $VERNO
 else
   echo "Skipping package upload, there were errors building the packages"
 fi
