@@ -121,23 +121,20 @@ cd "$WORKSPACE"
 python_sdk_ts=$(cd sdk/python && timestamp_from_git)
 cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
 
-python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)-2
-cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)-3
+python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)
+cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)
 
 if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)-3
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
-else
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
+    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
 fi
 
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
 cd docker/jobs
 docker build $NOCACHE \
-       --build-arg python_sdk_version=$python_sdk_version \
-       --build-arg cwl_runner_version=$cwl_runner_version \
-       -t arvados/jobs:$gittag .
+       --build-arg python_sdk_version=${python_sdk_version}-2 \
+       --build-arg cwl_runner_version=${cwl_runner_version}-3 \
+       -t arvados/jobs:$cwl_runner_version .
 
 ECODE=$?
 
@@ -160,7 +157,7 @@ if docker --version |grep " 1\.[0-9]\." ; then
     FORCE=-f
 fi
 
-docker tag $FORCE arvados/jobs:$gittag arvados/jobs:latest
+docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:latest
 
 ECODE=$?
 
@@ -183,7 +180,7 @@ else
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/jobs:$gittag
+        docker_push arvados/jobs:$cwl_runner_version
         docker_push arvados/jobs:latest
         title "upload arvados images finished (`timer`)"
     else
