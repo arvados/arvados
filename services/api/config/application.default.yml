@@ -383,14 +383,37 @@ common:
   reuse_job_if_outputs_differ: false
 
   ###
+  ### Federation support.
+  ###
+
+  # You can enable use of this cluster by users who are authenticated
+  # by a remote Arvados site. Control which remote hosts are trusted
+  # to authenticate which user IDs by configuring remote_hosts,
+  # remote_hosts_via_dns, or both. The default configuration disables
+  # remote authentication.
+
+  # Map known prefixes to hosts. For example, if user IDs beginning
+  # with "zzzzz-" should be authenticated by the Arvados server at
+  # "zzzzz.example.com", use:
+  #
+  # remote_hosts:
+  #   zzzzz: zzzzz.example.com
+  remote_hosts: {}
+
+  # Use {prefix}.arvadosapi.com for any prefix not given in
+  # remote_hosts above.
+  remote_hosts_via_dns: false
+
+  ###
   ### Remaining assorted configuration options.
   ###
 
   arvados_theme: default
 
-  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the Single Sign
-  # On (sso) server.  Should only be enabled during development when the SSO
-  # server is using a self-signed cert.
+  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the
+  # Single Sign On (sso) server and remote Arvados sites.  Should only
+  # be enabled during development when the SSO server is using a
+  # self-signed cert.
   sso_insecure: false
 
   ## Set Time.zone default to the specified zone and make Active

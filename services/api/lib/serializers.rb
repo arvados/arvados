@@ -32,7 +32,10 @@ class Serializer
   end
 
   def self.load(s)
-    if s.nil?
+    if s.is_a?(object_class)
+      # Rails already deserialized for us
+      s
+    elsif s.nil?
       object_class.new()
     elsif s[0] == first_json_char
       SafeJSON.load(s)

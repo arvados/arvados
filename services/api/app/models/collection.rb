@@ -24,9 +24,6 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   before_save :set_file_names
 
-  # Query only untrashed collections by default.
-  default_scope { where("is_trashed = false") }
-
   api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :description

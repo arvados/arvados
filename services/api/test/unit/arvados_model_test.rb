@@ -258,4 +258,24 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
     assert_equal true, (updated_at_2 > updated_at_1), "Expected updated time 2 to be newer than 1"
   end
+
+  test 'jsonb column' do
+    set_user_from_auth :active
+
+    c = Collection.create!(properties: {})
+    assert_equal({}, c.properties)
+
+    c.update_attributes(properties: {'foo' => 'foo'})
+    c.reload
+    assert_equal({'foo' => 'foo'}, c.properties)
+
+    c.update_attributes(properties: nil)
+    c.reload
+    assert_equal({}, c.properties)
+
+    c.update_attributes(properties: {foo: 'bar'})
+    assert_equal({'foo' => 'bar'}, c.properties)
+    c.reload
+    assert_equal({'foo' => 'bar'}, c.properties)
+  end
 end

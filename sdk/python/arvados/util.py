@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import division
+from builtins import range
+
 import fcntl
 import hashlib
 import httplib2
 import os
+import random
 import re
 import subprocess
 import errno
@@ -399,3 +403,16 @@ def ca_certs_path(fallback=httplib2.CA_CERTS):
         if os.path.exists(ca_certs_path):
             return ca_certs_path
     return fallback
+
+def new_request_id():
+    rid = "req-"
+    # 2**104 > 36**20 > 2**103
+    n = random.getrandbits(104)
+    for _ in range(20):
+        c = n % 36
+        if c < 10:
+            rid += chr(c+ord('0'))
+        else:
+            rid += chr(c+ord('a')-10)
+        n = n // 36
+    return rid

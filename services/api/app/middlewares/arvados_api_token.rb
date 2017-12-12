@@ -15,57 +15,50 @@ class ArvadosApiToken
   end
 
   def call env
-    # First, clean up just in case we have a multithreaded server and thread
-    # local variables are still set from a prior request.  Also useful for
-    # tests that call this code to set up the environment.
-    Thread.current[:api_client_ip_address] = nil
-    Thread.current[:api_client_authorization] = nil
-    Thread.current[:api_client_uuid] = nil
-    Thread.current[:api_client] = nil
-    Thread.current[:user] = nil
-
     request = Rack::Request.new(env)
     params = request.params
     remote_ip = env["action_dispatch.remote_ip"]
 
     Thread.current[:request_starttime] = Time.now
-    user = nil
-    api_client = nil
-    api_client_auth = nil
-    if request.get? || params["_method"] == 'GET'
+
+    remote = false
+    reader_tokens = nil
+    if params["remote"] && request.get? && (
+         request.path.start_with?('/arvados/v1/groups') ||
+         request.path.start_with?('/arvados/v1/users/current'))
+      # Request from a remote API server, asking to validate a salted
+      # token.
+      remote = params["remote"]
+    elsif request.get? || params["_method"] == 'GET'
       reader_tokens = params["reader_tokens"]
       if reader_tokens.is_a? String
         reader_tokens = SafeJSON.load(reader_tokens)
       end
-    else
-      reader_tokens = nil
     end
 
     # Set current_user etc. based on the primary session token if a
     # valid one is present. Otherwise, use the first valid token in
     # reader_tokens.
+    auth = nil
     [params["api_token"],
      params["oauth_token"],
-     env["HTTP_AUTHORIZATION"].andand.match(/OAuth2 ([a-zA-Z0-9]+)/).andand[1],
+     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2],
      *reader_tokens,
     ].each do |supplied|
       next if !supplied
       try_auth = ApiClientAuthorization.
-        includes(:api_client, :user).
-        where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied).
-        first
+                 validate(token: supplied, remote: remote)
       if try_auth.andand.user
-        api_client_auth = try_auth
-        user = api_client_auth.user
-        api_client = api_client_auth.api_client
+        auth = try_auth
         break
       end
     end
+
     Thread.current[:api_client_ip_address] = remote_ip
-    Thread.current[:api_client_authorization] = api_client_auth
-    Thread.current[:api_client_uuid] = api_client.andand.uuid
-    Thread.current[:api_client] = api_client
-    Thread.current[:user] = user
+    Thread.current[:api_client_authorization] = auth
+    Thread.current[:api_client_uuid] = auth.andand.api_client.andand.uuid
+    Thread.current[:api_client] = auth.andand.api_client
+    Thread.current[:user] = auth.andand.user
 
     @app.call env if @app
   end

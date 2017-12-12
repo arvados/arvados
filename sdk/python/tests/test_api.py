@@ -143,6 +143,33 @@ class RetryREST(unittest.TestCase):
                          [mock.call(RETRY_DELAY_INITIAL)])
 
     @mock.patch('time.sleep')
+    def test_same_automatic_request_id_on_retry(self, sleep):
+        self.api._http.orig_http_request.side_effect = (
+            socket.error('mock error'),
+            self.request_success,
+        )
+        self.api.users().current().execute()
+        calls = self.api._http.orig_http_request.call_args_list
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(
+            calls[0][1]['headers']['X-Request-Id'],
+            calls[1][1]['headers']['X-Request-Id'])
+        self.assertRegex(calls[0][1]['headers']['X-Request-Id'], r'^req-[a-z0-9]{20}$')
+
+    @mock.patch('time.sleep')
+    def test_provided_request_id_on_retry(self, sleep):
+        self.api.request_id='fake-request-id'
+        self.api._http.orig_http_request.side_effect = (
+            socket.error('mock error'),
+            self.request_success,
+        )
+        self.api.users().current().execute()
+        calls = self.api._http.orig_http_request.call_args_list
+        self.assertEqual(len(calls), 2)
+        for call in calls:
+            self.assertEqual(call[1]['headers']['X-Request-Id'], 'fake-request-id')
+
+    @mock.patch('time.sleep')
     def test_socket_error_retry_delay(self, sleep):
         self.api._http.orig_http_request.side_effect = socket.error('mock')
         self.api._http._retry_count = 3

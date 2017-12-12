@@ -352,9 +352,12 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       uuid = c.uuid
 
+      c = Collection.readable_by(current_user).where(uuid: uuid)
+      assert_not_empty c, 'Should be able to find live collection'
+
       # mark collection as expired
-      c.update_attributes!(trash_at: Time.new.strftime("%Y-%m-%d"))
-      c = Collection.where(uuid: uuid)
+      c.first.update_attributes!(trash_at: Time.new.strftime("%Y-%m-%d"))
+      c = Collection.readable_by(current_user).where(uuid: uuid)
       assert_empty c, 'Should not be able to find expired collection'
 
       # recreate collection with the same name
@@ -419,7 +422,7 @@ class CollectionTest < ActiveSupport::TestCase
         if fixture_name == :expired_collection
           # Fixture-finder shorthand doesn't find trashed collections
           # because they're not in the default scope.
-          c = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3ih')
+          c = Collection.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3ih')
         else
           c = collections(fixture_name)
         end
@@ -488,7 +491,7 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
     SweepTrashedCollections.sweep_now
-    c = Collection.unscoped.where('uuid=? and is_trashed=true', c.uuid).first
+    c = Collection.where('uuid=? and is_trashed=true', c.uuid).first
     assert c
     act_as_user users(:active) do
       assert Collection.create!(owner_uuid: c.owner_uuid,
@@ -498,9 +501,9 @@ class CollectionTest < ActiveSupport::TestCase
 
   test "delete in SweepTrashedCollections" do
     uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
-    assert_not_empty Collection.unscoped.where(uuid: uuid)
+    assert_not_empty Collection.where(uuid: uuid)
     SweepTrashedCollections.sweep_now
-    assert_empty Collection.unscoped.where(uuid: uuid)
+    assert_empty Collection.where(uuid: uuid)
   end
 
   test "delete referring links in SweepTrashedCollections" do
@@ -512,10 +515,10 @@ class CollectionTest < ActiveSupport::TestCase
                    name: 'something')
     end
     past = db_current_time
-    Collection.unscoped.where(uuid: uuid).
+    Collection.where(uuid: uuid).
       update_all(is_trashed: true, trash_at: past, delete_at: past)
-    assert_not_empty Collection.unscoped.where(uuid: uuid)
+    assert_not_empty Collection.where(uuid: uuid)
     SweepTrashedCollections.sweep_now
-    assert_empty Collection.unscoped.where(uuid: uuid)
+    assert_empty Collection.where(uuid: uuid)
   end
 end

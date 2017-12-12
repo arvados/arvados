@@ -596,7 +596,7 @@ class ContainerTest < ActiveSupport::TestCase
     c.lock
     c.update_attributes! state: Container::Running
 
-    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
+    output = Collection.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
 
     assert output.is_trashed
     assert c.update_attributes output: output.portable_data_hash
@@ -609,7 +609,7 @@ class ContainerTest < ActiveSupport::TestCase
     c.lock
     c.update_attributes! state: Container::Running
 
-    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jr')
+    output = Collection.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jr')
 
     Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
     Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)

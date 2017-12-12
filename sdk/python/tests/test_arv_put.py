@@ -12,6 +12,7 @@ import apiclient
 import datetime
 import hashlib
 import json
+import logging
 import mock
 import os
 import pwd
@@ -581,8 +582,10 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
     def call_main_with_args(self, args):
-        self.main_stdout = tutil.StringIO()
-        self.main_stderr = tutil.StringIO()
+        self.main_stdout.seek(0, 0)
+        self.main_stdout.truncate(0)
+        self.main_stderr.seek(0, 0)
+        self.main_stderr.truncate(0)
         return arv_put.main(args, self.main_stdout, self.main_stderr)
 
     def call_main_on_test_file(self, args=[]):
@@ -598,8 +601,14 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         super(ArvadosPutTest, self).setUp()
         run_test_server.authorize_with('active')
         arv_put.api_client = None
+        self.main_stdout = tutil.StringIO()
+        self.main_stderr = tutil.StringIO()
+        self.loggingHandler = logging.StreamHandler(self.main_stderr)
+        self.loggingHandler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logging.getLogger().addHandler(self.loggingHandler)
 
     def tearDown(self):
+        logging.getLogger().removeHandler(self.loggingHandler)
         for outbuf in ['main_stdout', 'main_stderr']:
             if hasattr(self, outbuf):
                 getattr(self, outbuf).close()
@@ -696,6 +705,15 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             self.assertLess(0, exc_test.exception.args[0])
             self.assertLess(0, coll_save_mock.call_count)
             self.assertEqual("", self.main_stdout.getvalue())
+
+    def test_request_id_logging(self):
+        matcher = r'INFO: X-Request-Id: req-[a-z0-9]{20}\n'
+
+        self.call_main_on_test_file()
+        self.assertRegex(self.main_stderr.getvalue(), matcher)
+
+        self.call_main_on_test_file(['--silent'])
+        self.assertNotRegex(self.main_stderr.getvalue(), matcher)
 
 
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,

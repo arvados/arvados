@@ -1,9 +1,8 @@
 #!/usr/bin/env perl
+# -*- mode: perl; perl-indent-level: 2; indent-tabs-mode: nil; -*-
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
-
-# -*- mode: perl; perl-indent-level: 2; indent-tabs-mode: nil; -*-
 
 =head1 NAME
 
@@ -1188,6 +1187,8 @@ sub reapchildren
                     . $slot[$proc{$pid}->{slot}]->{cpu});
     my $jobstepidx = $proc{$pid}->{jobstepidx};
 
+    readfrompipes_after_exit ($jobstepidx);
+
     $children_reaped++;
     my $elapsed = time - $proc{$pid}->{time};
     my $Jobstep = $jobstep[$jobstepidx];
@@ -1259,7 +1260,6 @@ sub reapchildren
     $Jobstep->{finishtime} = time;
     $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
     retry_op(sub { $Jobstep->{'arvados_task'}->save; }, "job_tasks.update API");
-    process_stderr_final ($jobstepidx);
     Log ($jobstepidx, sprintf("task output (%d bytes): %s",
                               length($Jobstep->{'arvados_task'}->{output}),
                               $Jobstep->{'arvados_task'}->{output}));
@@ -1562,9 +1562,27 @@ sub preprocess_stderr
 }
 
 
-sub process_stderr_final
+# Read whatever is still available on its stderr+stdout pipes after
+# the given child process has exited.
+sub readfrompipes_after_exit
 {
   my $jobstepidx = shift;
+
+  # The fact that the child has exited allows some convenient
+  # simplifications: (1) all data must have already been written, so
+  # there's no need to wait for more once sysread returns 0; (2) the
+  # total amount of data available is bounded by the pipe buffer size,
+  # so it's safe to read everything into one string.
+  my $buf;
+  while (0 < sysread ($reader{$jobstepidx}, $buf, 65536)) {
+    $jobstep[$jobstepidx]->{stderr_at} = time;
+    $jobstep[$jobstepidx]->{stderr} .= $buf;
+  }
+  if ($jobstep[$jobstepidx]->{stdout_r}) {
+    while (0 < sysread ($jobstep[$jobstepidx]->{stdout_r}, $buf, 65536)) {
+      $jobstep[$jobstepidx]->{stdout_captured} .= $buf;
+    }
+  }
   preprocess_stderr ($jobstepidx);
 
   map {
@@ -2036,8 +2054,7 @@ sub srun_sync
   }
   my $exited = $?;
 
-  1 while readfrompipes();
-  process_stderr_final ($jobstepidx);
+  readfrompipes_after_exit ($jobstepidx);
 
   Log (undef, "$label: exit ".exit_status_s($exited));
 

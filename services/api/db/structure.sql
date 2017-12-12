@@ -166,7 +166,7 @@ CREATE TABLE collections (
     manifest_text text,
     name character varying(255),
     description character varying(524288),
-    properties text,
+    properties jsonb,
     delete_at timestamp without time zone,
     file_names character varying(8192),
     trash_at timestamp without time zone,
@@ -778,7 +778,8 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
             links.head_uuid,
             pv.val,
             ((pv.val = 3) OR (groups.uuid IS NOT NULL)) AS follow,
-            (0)::smallint AS trashed
+            (0)::smallint AS trashed,
+            (0)::smallint AS followtrash
            FROM ((links
              LEFT JOIN perm_value pv ON ((pv.name = (links.name)::text)))
              LEFT JOIN groups ON (((pv.val < 3) AND ((groups.uuid)::text = (links.head_uuid)::text))))
@@ -791,7 +792,8 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
                 CASE
                     WHEN ((groups.trash_at IS NOT NULL) AND (groups.trash_at < clock_timestamp())) THEN 1
                     ELSE 0
-                END AS "case"
+                END AS "case",
+            1
            FROM groups
         ), perm(val, follow, user_uuid, target_uuid, trashed) AS (
          SELECT (3)::smallint AS val,
@@ -805,7 +807,7 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
             edges.follow,
             perm_1.user_uuid,
             (edges.head_uuid)::character varying(32) AS target_uuid,
-            (GREATEST((perm_1.trashed)::integer, edges.trashed))::smallint AS trashed
+            ((GREATEST((perm_1.trashed)::integer, edges.trashed) * edges.followtrash))::smallint AS trashed
            FROM (perm perm_1
              JOIN perm_edges edges ON ((perm_1.follow AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
         )
@@ -1607,7 +1609,7 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
+CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
 
 
 --
@@ -3026,9 +3028,14 @@ INSERT INTO schema_migrations (version) VALUES ('20170419175801');
 
 INSERT INTO schema_migrations (version) VALUES ('20170628185847');
 
+INSERT INTO schema_migrations (version) VALUES ('20170704160233');
+
+INSERT INTO schema_migrations (version) VALUES ('20170706141334');
+
 INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 
 INSERT INTO schema_migrations (version) VALUES ('20170906224040');
 
 INSERT INTO schema_migrations (version) VALUES ('20171027183824');
 
+INSERT INTO schema_migrations (version) VALUES ('20171208203841');
