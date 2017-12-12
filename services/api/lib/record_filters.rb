@@ -63,11 +63,17 @@ module RecordFilters
       attrs.each do |attr|
         subproperty = attr.split(".", 2)
 
-        if !model_class.searchable_columns(operator).index subproperty[0]
-          raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' in filter")
-        end
+        col = model_class.columns.select { |c| c.name == subproperty[0] }.first
 
         if subproperty.length == 2
+          if col.type != :jsonb
+            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for operator '#{operator}' in filter")
+          end
+
+          if subproperty[1][0] == "<" and subproperty[1][-1] == ">"
+            subproperty[1] = subproperty[1][1..-2]
+          end
+
         # jsonb search
           case operator.downcase
           when '=', '!='
@@ -112,7 +118,18 @@ module RecordFilters
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
+        elsif operator.downcase == "exists"
+          if col.type != :jsonb
+            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for operator '#{operator}' in filter")
+          end
+
+          cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+          param_out << operand
         else
+          if !model_class.searchable_columns(operator).index subproperty[0]
+            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' in filter")
+          end
+
           case operator.downcase
           when '=', '<', '<=', '>', '>=', '!=', 'like', 'ilike'
             attr_type = model_class.attribute_column(attr).type
@@ -185,9 +202,6 @@ module RecordFilters
               end
             end
             cond_out << cond.join(' OR ')
-          when 'exists'
-            cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
-            param_out << operand
           else
             raise ArgumentError.new("Invalid operator '#{operator}'")
           end

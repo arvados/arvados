@@ -147,7 +147,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
         search_index_columns = table_class.searchable_columns('ilike')
         # Disappointing, but text columns aren't indexed yet.
         search_index_columns -= table_class.columns.select { |c|
-          c.type == :text or c.name == 'description' or c.name == 'file_names'
+          c.type == :text or c.name == 'description' or c.name == 'file_names' or c.name == 'properties'
         }.collect(&:name)
 
         indexes = ActiveRecord::Base.connection.indexes(table)
