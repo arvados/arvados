@@ -280,6 +280,7 @@ class NodeManagerDaemonActor(actor_class):
             "unpaired": 0,
             "busy": 0,
             "idle": 0,
+            "fail": 0,
             "down": 0,
             "shutdown": 0
         }
@@ -321,7 +322,7 @@ class NodeManagerDaemonActor(actor_class):
                           counts["unpaired"],
                           counts["idle"],
                           busy_count,
-                          counts["down"],
+                          counts["down"]+counts["fail"],
                           counts["shutdown"])
 
         if over_max >= 0:
