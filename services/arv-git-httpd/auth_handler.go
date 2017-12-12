@@ -5,9 +5,11 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -118,26 +120,16 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
 	arv.ApiToken = apiToken
-	reposFound := arvadosclient.Dict{}
-	if err := arv.List("repositories", arvadosclient.Dict{
-		"filters": [][]string{{"name", "=", repoName}},
-	}, &reposFound); err != nil {
+	repoUUID, err := h.lookupRepo(arv, repoName)
+	if err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
 	validApiToken = true
-	if avail, ok := reposFound["items_available"].(float64); !ok {
-		statusCode, statusText = http.StatusInternalServerError, "bad list response from API"
-		return
-	} else if avail < 1 {
+	if repoUUID == "" {
 		statusCode, statusText = http.StatusNotFound, "not found"
 		return
-	} else if avail > 1 {
-		statusCode, statusText = http.StatusInternalServerError, "name collision"
-		return
 	}
-
-	repoUUID := reposFound["items"].([]interface{})[0].(map[string]interface{})["uuid"].(string)
 
 	isWrite := strings.HasSuffix(r.URL.Path, "/git-receive-pack")
 	if !isWrite {
@@ -190,4 +182,29 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	r.URL.Path = rewrittenPath
 
 	h.handler.ServeHTTP(w, r)
+}
+
+var uuidRegexp = regexp.MustCompile(`^[0-9a-z]{5}-s0uqq-[0-9a-z]{15}$`)
+
+func (h *authHandler) lookupRepo(arv *arvadosclient.ArvadosClient, repoName string) (string, error) {
+	reposFound := arvadosclient.Dict{}
+	var column string
+	if uuidRegexp.MatchString(repoName) {
+		column = "uuid"
+	} else {
+		column = "name"
+	}
+	err := arv.List("repositories", arvadosclient.Dict{
+		"filters": [][]string{{column, "=", repoName}},
+	}, &reposFound)
+	if err != nil {
+		return "", err
+	} else if avail, ok := reposFound["items_available"].(float64); !ok {
+		return "", errors.New("bad list response from API")
+	} else if avail < 1 {
+		return "", nil
+	} else if avail > 1 {
+		return "", errors.New("name collision")
+	}
+	return reposFound["items"].([]interface{})[0].(map[string]interface{})["uuid"].(string), nil
 }
