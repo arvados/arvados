@@ -66,8 +66,8 @@ module RecordFilters
         col = model_class.columns.select { |c| c.name == subproperty[0] }.first
 
         if subproperty.length == 2
-          if col.type != :jsonb
-            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for operator '#{operator}' in filter")
+          if col.nil? or col.type != :jsonb
+            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for subproperty filter")
           end
 
           if subproperty[1][0] == "<" and subproperty[1][-1] == ">"

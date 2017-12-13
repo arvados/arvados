@@ -230,6 +230,41 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       filters: [ ['properties.prop1', 'exists', nil] ]
     }
     assert_response 422
+    assert_match(/Invalid operand '' for 'exists' must be true or false/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb checks column exists" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['puppies.prop1', '=', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid attribute 'puppies' for subproperty filter/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb checks column is valid" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['name.prop1', '=', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid attribute 'name' for subproperty filter/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb invalid operator" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '###', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid operator for subproperty search '###'/,
+                 json_response['errors'].join(' '))
   end
 
   test "replication_desired = 2" do
