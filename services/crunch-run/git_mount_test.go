@@ -22,15 +22,10 @@ type GitMountSuite struct {
 
 var _ = check.Suite(&GitMountSuite{})
 
-func (s *GitMountSuite) SetUpSuite(c *check.C) {
-	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
-}
-
 func (s *GitMountSuite) SetUpTest(c *check.C) {
-	port, err := ioutil.ReadFile("../../tmp/arv-git-httpd-ssl.port")
-	c.Assert(err, check.IsNil)
-	discoveryMap["gitUrl"] = "https://localhost:" + string(port)
+	s.useTestGitServer(c)
 
+	var err error
 	s.tmpdir, err = ioutil.TempDir("", "")
 	c.Assert(err, check.IsNil)
 }
@@ -117,6 +112,17 @@ func (s *GitMountSuite) TestNonexistentCommit(c *check.C) {
 	s.checkTmpdirContents(c, []string{})
 }
 
+func (s *GitMountSuite) TestGitUrlDiscoveryFails(c *check.C) {
+	delete(discoveryMap, "gitUrl")
+	gm := gitMount{
+		Path:   "/",
+		UUID:   arvadostest.Repository2UUID,
+		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+	}
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	c.Check(err, check.ErrorMatches, ".*gitUrl.*")
+}
+
 func (s *GitMountSuite) TestInvalid(c *check.C) {
 	for _, trial := range []struct {
 		gm      gitMount
@@ -150,7 +156,7 @@ func (s *GitMountSuite) TestInvalid(c *check.C) {
 		c.Check(err, check.NotNil)
 		s.checkTmpdirContents(c, []string{})
 
-		err := trial.gm.validate()
+		err = trial.gm.validate()
 		c.Check(err, check.ErrorMatches, trial.matcher)
 	}
 }
@@ -161,4 +167,12 @@ func (s *GitMountSuite) checkTmpdirContents(c *check.C, expect []string) {
 	names, err := f.Readdirnames(-1)
 	c.Check(err, check.IsNil)
 	c.Check(names, check.DeepEquals, expect)
+}
+
+func (*GitMountSuite) useTestGitServer(c *check.C) {
+	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
+
+	port, err := ioutil.ReadFile("../../tmp/arv-git-httpd-ssl.port")
+	c.Assert(err, check.IsNil)
+	discoveryMap["gitUrl"] = "https://localhost:" + string(port)
 }

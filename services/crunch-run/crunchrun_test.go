@@ -28,6 +28,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -1260,6 +1261,64 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
 		os.RemoveAll(cr.ArvMountPoint)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
+	// git_tree mounts
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		(*GitMountSuite)(nil).useTestGitServer(c)
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/tip": {
+				Kind:   "git_tree",
+				UUID:   arvadostest.Repository2UUID,
+				Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
+				Path:   "/",
+			},
+			"/non-tip": {
+				Kind:     "git_tree",
+				UUID:     arvadostest.Repository2UUID,
+				Commit:   "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+				Path:     "/",
+				Writable: true,
+			},
+		}
+		cr.OutputPath = "/tmp"
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+
+		// dirMap[mountpoint] == tmpdir
+		dirMap := make(map[string]string)
+		for _, bind := range cr.Binds {
+			tokens := strings.Split(bind, ":")
+			dirMap[tokens[1]] = tokens[0]
+
+			if cr.Container.Mounts[tokens[1]].Writable {
+				c.Check(len(tokens), Equals, 2)
+			} else {
+				c.Check(len(tokens), Equals, 3)
+				c.Check(tokens[2], Equals, "ro")
+			}
+		}
+
+		data, err := ioutil.ReadFile(dirMap["/tip"] + "/dir1/dir2/file with mode 0644")
+		c.Check(err, IsNil)
+		c.Check(string(data), Equals, "\000\001\002\003")
+		_, err = ioutil.ReadFile(dirMap["/tip"] + "/file only on testbranch")
+		c.Check(err, FitsTypeOf, &os.PathError{})
+		c.Check(os.IsNotExist(err), Equals, true)
+
+		data, err = ioutil.ReadFile(dirMap["/non-tip"] + "/dir1/dir2/file with mode 0644")
+		c.Check(err, IsNil)
+		c.Check(string(data), Equals, "\000\001\002\003")
+		data, err = ioutil.ReadFile(dirMap["/non-tip"] + "/file only on testbranch")
+		c.Check(err, IsNil)
+		c.Check(string(data), Equals, "testfile\n")
+
 		cr.CleanupDirs()
 		checkEmpty()
 	}

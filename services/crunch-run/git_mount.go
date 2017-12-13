@@ -33,7 +33,10 @@ func (gm gitMount) extractTree(ac IArvadosClient, dir string) error {
 	baseURL, err := ac.Discovery("gitUrl")
 	if err != nil {
 		return fmt.Errorf("discover gitUrl from API: %s", err)
+	} else if _, ok := baseURL.(string); !ok {
+		return fmt.Errorf("discover gitUrl from API: expected string, found %T", baseURL)
 	}
+
 	u, err := url.Parse(baseURL.(string))
 	if err != nil {
 		return fmt.Errorf("parse gitUrl %q: %s", baseURL, err)
