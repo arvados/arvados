@@ -61,7 +61,6 @@ Collection <- R6::R6Class(
             self$trash_at                 <- result$trash_at                           
             self$is_trashed               <- result$is_trashed                         
 
-            #Todo(Fudo): Replace this when you get access to webDAV server.
             private$fileItems <- private$getCollectionContent()
 
             private$fileTree <- private$generateTree(private$fileItems)
@@ -98,6 +97,16 @@ Collection <- R6::R6Class(
             {
                 return(NULL)
             }
+        },
+
+        update = function(subcollection, event)
+        {
+            #Todo(Fudo): Add some king of check here later on.
+            if(event == "File size changed")
+            {
+                private$handleFileSizeChange(subcollection$getRelativePath(),
+                                             subcollection$getSizeInBytes())
+            }
         }
     ),
 
@@ -118,6 +127,14 @@ Collection <- R6::R6Class(
         fileItems = NULL,
         api       = NULL,
         fileTree  = NULL,
+
+        handleFileSizeChange = function(filePath, newSize)
+        {
+            print(paste(filePath, newSize))
+
+            node <- private$getNode(filePath)
+            node$size <- newSize
+        },
 
         createSubcollectionTree = function(treeNode)
         {
@@ -144,18 +161,17 @@ Collection <- R6::R6Class(
 
         getCollectionContent = function()
         {
-            #TODO(Fudo): Use proper URL here.
             uri <- URLencode(paste0(private$api$getWebDavHostName(), "c=", self$uuid))
 
             # fetch directory listing via curl and parse XML response
             h <- curl::new_handle()
             curl::handle_setopt(h, customrequest = "PROPFIND")
 
-            #TODO(Fudo): Use proper token here.
             curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
             response <- curl::curl_fetch_memory(uri, h)
 
-            HttpParser$new()$parseWebDAVResponse(response, uri)
+            parsedResponse <- HttpParser$new()$parseWebDAVResponse(response, uri)
+            parsedResponse[-1]
         },
 
         #Todo(Fudo): Move tree creation to another file.
@@ -241,6 +257,25 @@ Collection <- R6::R6Class(
             {
                 return(predicate(node))
             }
+        },
+
+        getNode = function(relativePathToNode)
+        {
+            treeBranches <- sapply(relativePathToNode, function(filePath)
+            {
+                splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
+                
+                node = private$fileTree
+                for(pathFragment in splitPath)
+                {
+                    child = node$getChild(pathFragment)
+                    if(is.null(child))
+                        stop("Subcollection/ArvadosFile you are looking for doesn't exist.")
+                    node = child
+                }
+
+                node
+            })
         }
 
     ),
@@ -314,7 +349,7 @@ TreeNode <- R6::R6Class(
             if(self$type == "folder")
                 print(paste0(indentation, self$name, "/"))
             else
-                print(paste0(indentation, self$size))
+                print(paste0(indentation, self$name))
             
             for(child in self$children)
                 child$printContent(depth + 1)

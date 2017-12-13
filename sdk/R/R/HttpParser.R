@@ -24,16 +24,16 @@ HttpParser <- R6::R6Class(
             base <- paste(paste("/", strsplit(uri, "/")[[1]][-1:-3], sep="", collapse=""), "/", sep="")
             result <- XML::xpathApply(doc, "//D:response", function(node) {
                 result = list()
-                children = xmlChildren(node)
+                children = XML::xmlChildren(node)
 
                 result$name = sub(base, "", URLdecode(XML::xmlValue(children$href)), fixed=TRUE)
-                sizeXMLNode = xmlChildren(xmlChildren(children$propstat)$prop)$getcontentlength
-                result$fileSize = as.numeric(xmlValue(sizeXMLNode))
+                sizeXMLNode = XML::xmlChildren(XML::xmlChildren(children$propstat)$prop)$getcontentlength
+                result$fileSize = as.numeric(XML::xmlValue(sizeXMLNode))
 
                 result
             })
 
-            result[-1]
+            result
         }
     )
 )

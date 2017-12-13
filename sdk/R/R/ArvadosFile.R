@@ -37,15 +37,47 @@ ArvadosFile <- R6::R6Class(
                 range = paste0(range, offset + length - 1)
             
             fileURL = paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid, "/", private$relativePath);
+            print(fileURL)
             headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
                             Range = range)
 
-            #TODO(Fudo): Move this to HttpRequest.R
-            # serverResponse <- httr::GET(url = fileURL,
-                                        # config = httr::add_headers(unlist(headers)))
             serverResponse <- private$http$GET(fileURL, headers)
-            parsed_response <- httr::content(serverResponse, "raw")
 
+            if(serverResponse$status_code != 206)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            collection
+            parsed_response <- httr::content(serverResponse, "raw")
+        },
+        
+        write = function(content, contentType)
+        {
+            fileURL = paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid, "/", private$relativePath);
+            headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
+                            "Content-Type" = contentType)
+            body <- content
+
+            serverResponse <- private$http$PUT(fileURL, headers, body)
+
+            if(serverResponse$status_code != 201)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            #Note(Fudo): Everything went well we need to update file size 
+            # in collection tree.
+
+            #Todo(Fudo): Move this into HttpRequest
+            uri <- URLencode(paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid))
+            h <- curl::new_handle()
+            curl::handle_setopt(h, customrequest = "PROPFIND")
+
+            curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
+            propfindResponse <- curl::curl_fetch_memory(fileURL, h)
+
+            fileInfo <- private$httpParser$parseWebDAVResponse(propfindResponse, uri)
+
+            private$size <- fileInfo[[1]]$fileSize
+            private$collection$update(self, "File size changed")
+            #parsed_response <- httr::content(serverResponse, "text")
         }
     ),
 

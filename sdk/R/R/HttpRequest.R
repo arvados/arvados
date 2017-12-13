@@ -55,7 +55,7 @@ HttpRequest <- R6::R6Class(
         # Python array from R list (recursion?)
         createQuery = function(filters, limit, offset)
         {
-            finalQuery <- "?alt=json"
+            finalQuery <- NULL
 
             if(!is.null(filters))
             {
@@ -95,10 +95,12 @@ HttpRequest <- R6::R6Class(
 
                 encodedQuery <- URLencode(filters, reserved = T, repeated = T)
 
-                finalQuery <- paste0(finalQuery, "&filters=", encodedQuery)
-
                 #Todo(Fudo): This is a hack for now. Find a proper solution.
-                finalQuery <- stringr::str_replace_all(finalQuery, "%2B", "+")
+                encodedQuery <- stringr::str_replace_all(encodedQuery, "%2B", "+")
+
+                finalQuery <- c(finalQuery, paste0("filters=", encodedQuery))
+
+                finalQuery
             }
 
             if(!is.null(limit))
@@ -106,7 +108,7 @@ HttpRequest <- R6::R6Class(
                 if(!is.numeric(limit))
                     stop("Limit must be a numeric type.")
                 
-                finalQuery <- paste0(finalQuery, "&limit=", limit)
+                finalQuery <- c(finalQuery, paste0("limit=", limit))
             }
 
             if(!is.null(offset))
@@ -114,7 +116,13 @@ HttpRequest <- R6::R6Class(
                 if(!is.numeric(offset))
                     stop("Offset must be a numeric type.")
                 
-                finalQuery <- paste0(finalQuery, "&offset=", offset)
+                finalQuery <- c(finalQuery, paste0("offset=", offset))
+            }
+
+            if(length(finalQuery) > 1)
+            {
+                finalQuery <- paste0(finalQuery, collapse = "&")
+                finalQuery <- paste0("?", finalQuery)
             }
 
             finalQuery
