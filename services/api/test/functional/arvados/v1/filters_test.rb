@@ -223,6 +223,15 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_includes(found, collections(:collection_with_prop1_other1).uuid)
   end
 
+  test "jsonb 'exists' must be boolean" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'exists', nil] ]
+    }
+    assert_response 422
+  end
+
   test "replication_desired = 2" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin

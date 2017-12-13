@@ -109,10 +109,12 @@ module RecordFilters
                                       "for '#{operator}' operator in filters")
             end
           when 'exists'
-          if operand
+          if operand == true
             cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
-          else
+          elsif operand == false
             cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
+          else
+            raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
           end
           param_out << subproperty[1]
           else
