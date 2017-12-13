@@ -37,7 +37,6 @@ ArvadosFile <- R6::R6Class(
                 range = paste0(range, offset + length - 1)
             
             fileURL = paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid, "/", private$relativePath);
-            print(fileURL)
             headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
                             Range = range)
 
@@ -77,7 +76,8 @@ ArvadosFile <- R6::R6Class(
 
             private$size <- fileInfo[[1]]$fileSize
             private$collection$update(self, "File size changed")
-            #parsed_response <- httr::content(serverResponse, "text")
+
+            parsed_response <- httr::content(serverResponse, "text")
         }
     ),
 
