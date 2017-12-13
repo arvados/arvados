@@ -280,6 +280,7 @@ class NodeManagerDaemonActor(actor_class):
             "unpaired": 0,
             "busy": 0,
             "idle": 0,
+            "fail": 0,
             "down": 0,
             "shutdown": 0
         }
@@ -321,7 +322,7 @@ class NodeManagerDaemonActor(actor_class):
                           counts["unpaired"],
                           counts["idle"],
                           busy_count,
-                          counts["down"],
+                          counts["down"]+counts["fail"],
                           counts["shutdown"])
 
         if over_max >= 0:
@@ -482,7 +483,7 @@ class NodeManagerDaemonActor(actor_class):
                 # grace period without a ping, so shut it down so we can boot a new
                 # node in its place.
                 self._begin_node_shutdown(node_actor, cancellable=False)
-            elif node_actor.in_state('down').get():
+            elif node_actor.in_state('down', 'fail').get():
                 # Node is down and unlikely to come back.
                 self._begin_node_shutdown(node_actor, cancellable=False)
         except pykka.ActorDeadError as e:
