@@ -70,7 +70,9 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// Nobody has called WriteHeader yet: that
 			// must be our job.
 			w.WriteHeader(statusCode)
-			w.Write([]byte(statusText))
+			if statusCode >= 400 {
+				w.Write([]byte(statusText))
+			}
 		}
 
 		// If the given password is a valid token, log the first 10 characters of the token.
