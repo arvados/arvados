@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -16,9 +17,23 @@ import (
 
 type gitMount arvados.Mount
 
+var (
+	sha1re     = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	repoUUIDre = regexp.MustCompile(`^[0-9a-z]{5}-s0uqq-[0-9a-z]{15}$`)
+)
+
 func (gm gitMount) validate() error {
-	if gm.Path != "/" {
-		return fmt.Errorf("cannot mount git_tree path %q -- only \"/\" is supported", gm.Path)
+	if gm.Path != "" && gm.Path != "/" {
+		return fmt.Errorf("cannot mount git_tree with path %q -- only \"/\" is supported", gm.Path)
+	}
+	if !sha1re.MatchString(gm.Commit) {
+		return fmt.Errorf("cannot mount git_tree with commit %q -- must be a 40-char SHA1", gm.Commit)
+	}
+	if gm.RepositoryName != "" || gm.GitURL != "" {
+		return fmt.Errorf("cannot mount git_tree -- repository_name and git_url must be empty")
+	}
+	if !repoUUIDre.MatchString(gm.UUID) {
+		return fmt.Errorf("cannot mount git_tree with uuid %q -- must be a repository UUID", gm.UUID)
 	}
 	return nil
 }

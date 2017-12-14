@@ -73,7 +73,6 @@ func (s *GitMountSuite) TestextractTree(c *check.C) {
 // reachable in branch "crunch-run-non-tip-test".
 func (s *GitMountSuite) TestExtractNonTipCommit(c *check.C) {
 	gm := gitMount{
-		Path:   "/",
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
@@ -134,7 +133,24 @@ func (s *GitMountSuite) TestInvalid(c *check.C) {
 				UUID:   arvadostest.Repository2UUID,
 				Commit: "abc123",
 			},
-			matcher: ".*sha1.*",
+			matcher: ".*SHA1.*",
+		},
+		{
+			gm: gitMount{
+				Path:           "/",
+				UUID:           arvadostest.Repository2UUID,
+				RepositoryName: arvadostest.Repository2Name,
+				Commit:         "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+			},
+			matcher: ".*repository_name.*",
+		},
+		{
+			gm: gitMount{
+				Path:   "/",
+				GitURL: "https://localhost:0/" + arvadostest.Repository2Name + ".git",
+				Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+			},
+			matcher: ".*git_url.*",
 		},
 		{
 			gm: gitMount{
