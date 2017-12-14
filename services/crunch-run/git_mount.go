@@ -35,6 +35,9 @@ func (gm gitMount) validate() error {
 	if !repoUUIDre.MatchString(gm.UUID) {
 		return fmt.Errorf("cannot mount git_tree with uuid %q -- must be a repository UUID", gm.UUID)
 	}
+	if gm.Writable {
+		return fmt.Errorf("writable git_tree mount is not supported")
+	}
 	return nil
 }
 

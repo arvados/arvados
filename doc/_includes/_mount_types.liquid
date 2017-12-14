@@ -27,8 +27,7 @@ At container startup, the target path will have the same directory structure as 
 |Git tree|@git_tree@|@"uuid"@ must be the UUID of an Arvados-hosted git repository.
 @"commit"@ must be a full 40-character commit hash.
 @"path"@, if provided, must be "/".
-At container startup, the target path will have the source tree indicated by the given commit. The @.git@ metadata directory _will not_ be available.
-If @"writable"@ is true, the target directory will be writable. Any changes will be discarded when the container exits.|<pre><code>{
+At container startup, the target path will have the source tree indicated by the given commit. The @.git@ metadata directory _will not_ be available.|<pre><code>{
  "kind":"git_tree",
  "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
  "commit":"f315c59f90934cccae6381e72bba59d27ba42099"

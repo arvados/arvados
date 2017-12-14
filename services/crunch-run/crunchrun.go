@@ -554,11 +554,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if err != nil {
 				return err
 			}
-			bind := tmpdir + ":" + bind
-			if !mnt.Writable {
-				bind = bind + ":ro"
-			}
-			runner.Binds = append(runner.Binds, bind)
+			runner.Binds = append(runner.Binds, tmpdir+":"+bind+":ro")
 		}
 	}
 

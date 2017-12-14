@@ -173,6 +173,15 @@ func (s *GitMountSuite) TestInvalid(c *check.C) {
 			},
 			matcher: ".*UUID.*",
 		},
+		{
+			gm: gitMount{
+				Path:     "/",
+				UUID:     arvadostest.Repository2UUID,
+				Commit:   "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+				Writable: true,
+			},
+			matcher: ".*writable.*",
+		},
 	} {
 		err := trial.gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 		c.Check(err, check.NotNil)

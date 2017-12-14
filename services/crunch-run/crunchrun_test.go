@@ -1280,11 +1280,10 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 				Path:   "/",
 			},
 			"/non-tip": {
-				Kind:     "git_tree",
-				UUID:     arvadostest.Repository2UUID,
-				Commit:   "5ebfab0522851df01fec11ec55a6d0f4877b542e",
-				Path:     "/",
-				Writable: true,
+				Kind:   "git_tree",
+				UUID:   arvadostest.Repository2UUID,
+				Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
+				Path:   "/",
 			},
 		}
 		cr.OutputPath = "/tmp"
