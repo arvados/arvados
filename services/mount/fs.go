@@ -6,12 +6,17 @@ import (
 	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/billziss-gh/cgofuse/fuse"
 )
 
 type keepFS struct {
 	fuse.FileSystemBase
-	root   arvados.CollectionFileSystem
+	Collection arvados.Collection
+	Client     *arvados.Client
+	KeepClient *keepclient.KeepClient
+
+	root   arvados.FileSystem
 	open   map[uint64]arvados.File
 	lastFH uint64
 	sync.Mutex
@@ -33,10 +38,16 @@ func (fs *keepFS) newFH(f arvados.File) uint64 {
 	return fh
 }
 
+func (fs *keepFS) Init() {
+	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
+}
+
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
 	f, err := fs.root.OpenFile(path, flags|os.O_CREATE, os.FileMode(mode))
-	if err != nil {
-		return -fuse.EPERM, invalidFH
+	if err == os.ErrExist {
+		return -fuse.EEXIST, invalidFH
+	} else if err != nil {
+		return -fuse.EINVAL, invalidFH
 	}
 	return 0, fs.newFH(f)
 }
@@ -102,7 +113,28 @@ func (*keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	}
 	m = m | uint32(fi.Mode()&os.ModePerm)
 	stat.Mode = m
+	stat.Nlink = 1
 	stat.Size = fi.Size()
+	t := fuse.NewTimespec(fi.ModTime())
+	stat.Mtim = t
+	stat.Ctim = t
+	stat.Atim = t
+	stat.Birthtim = t
+	stat.Blksize = 1024
+	stat.Blocks = (stat.Size + stat.Blksize - 1) / stat.Blksize
+}
+
+func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	f := fs.lookupFH(fh)
+	if f == nil {
+		return 0
+	}
+	_, err := f.Seek(ofst, io.SeekStart)
+	if err != nil {
+		return 0
+	}
+	n, _ = f.Write(buf)
+	return
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
@@ -114,7 +146,7 @@ func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
 	if err != nil {
 		return 0
 	}
-	n, err = f.Read(buf)
+	n, _ = f.Read(buf)
 	return
 }
 

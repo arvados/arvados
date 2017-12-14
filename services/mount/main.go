@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
 	"log"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -11,14 +11,7 @@ import (
 )
 
 func main() {
-	var coll arvados.Collection
-	flag.StringVar(&coll.UUID, "id", "", "collection `uuid` or pdh")
-	flag.Parse()
 	client := arvados.NewClientFromEnv()
-	err := client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
 	ac, err := arvadosclient.New(client)
 	if err != nil {
 		log.Fatal(err)
@@ -27,10 +20,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fs, err := coll.FileSystem(client, kc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	host := fuse.NewFileSystemHost(&keepFS{root: fs})
-	host.Mount("", flag.Args())
+	host := fuse.NewFileSystemHost(&keepFS{
+		Client:     client,
+		KeepClient: kc,
+	})
+	host.Mount("", os.Args[1:])
 }
