@@ -245,6 +245,7 @@ type DiscoveryDocument struct {
 	BasePath                     string              `json:"basePath"`
 	DefaultCollectionReplication int                 `json:"defaultCollectionReplication"`
 	BlobSignatureTTL             int64               `json:"blobSignatureTtl"`
+	GitURL                       string              `json:"gitUrl"`
 	Schemas                      map[string]Schema   `json:"schemas"`
 	Resources                    map[string]Resource `json:"resources"`
 }

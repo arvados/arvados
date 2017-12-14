@@ -304,8 +304,8 @@ do
     esac
 done
 
-start_api() {
-    echo 'Starting API server...'
+start_services() {
+    echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
 	mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -317,39 +317,26 @@ start_api() {
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
-        && python sdk/python/tests/run_test_server.py start_ws \
-        && python sdk/python/tests/run_test_server.py start_nginx \
-        && (env | egrep ^ARVADOS)
-}
-
-start_nginx_proxy_services() {
-    echo 'Starting keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
-    cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
         && python sdk/python/tests/run_test_server.py start_nginx \
-        && export ARVADOS_TEST_PROXY_SERVICES=1
+        && (env | egrep ^ARVADOS)
 }
 
 stop_services() {
-    if [[ -n "$ARVADOS_TEST_PROXY_SERVICES" ]]; then
-        unset ARVADOS_TEST_PROXY_SERVICES
-        cd "$WORKSPACE" \
-            && python sdk/python/tests/run_test_server.py stop_nginx \
-            && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
-            && python sdk/python/tests/run_test_server.py stop_ws \
-            && python sdk/python/tests/run_test_server.py stop_keep-web \
-            && python sdk/python/tests/run_test_server.py stop_keep_proxy
+    if [[ -z "$ARVADOS_TEST_API_HOST" ]]; then
+        return
     fi
-    if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
-        unset ARVADOS_TEST_API_HOST
-        cd "$WORKSPACE" \
-            && python sdk/python/tests/run_test_server.py stop_nginx \
-            && python sdk/python/tests/run_test_server.py stop_ws \
-            && python sdk/python/tests/run_test_server.py stop
-    fi
+    unset ARVADOS_TEST_API_HOST
+    cd "$WORKSPACE" \
+        && python sdk/python/tests/run_test_server.py stop_nginx \
+        && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
+        && python sdk/python/tests/run_test_server.py stop_ws \
+        && python sdk/python/tests/run_test_server.py stop_keep-web \
+        && python sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python sdk/python/tests/run_test_server.py stop
 }
 
 interrupt() {
@@ -822,6 +809,15 @@ install_apiserver() {
     fi
 
     cd "$WORKSPACE/services/api" \
+        && rm -rf tmp/git \
+        && mkdir -p tmp/git \
+        && cd tmp/git \
+        && tar xf ../../test/test.git.tar \
+        && mkdir -p internal.git \
+        && git --git-dir internal.git init \
+            || return 1
+
+    cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \
         && RAILS_ENV=test bundle exec rake db:fixtures:load
@@ -904,7 +900,7 @@ if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
   exit_cleanly
 fi
 
-start_api || { stop_services; fatal "start_api"; }
+start_services || { stop_services; fatal "start_services"; }
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
@@ -951,37 +947,32 @@ do
 done
 
 test_workbench_units() {
-    start_nginx_proxy_services \
-        && cd "$WORKSPACE/apps/workbench" \
+    cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench_units workbench_units
 
 test_workbench_functionals() {
-    start_nginx_proxy_services \
-        && cd "$WORKSPACE/apps/workbench" \
+    cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench_functionals workbench_functionals
 
 test_workbench_integration() {
-    start_nginx_proxy_services \
-        && cd "$WORKSPACE/apps/workbench" \
+    cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench_integration workbench_integration
 
 
 test_workbench_benchmark() {
-    start_nginx_proxy_services \
-        && cd "$WORKSPACE/apps/workbench" \
+    cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
-    start_nginx_proxy_services \
-        && cd "$WORKSPACE/apps/workbench" \
+    cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile

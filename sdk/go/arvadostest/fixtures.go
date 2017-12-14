@@ -30,6 +30,13 @@ const (
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 
 	QueuedContainerUUID = "zzzzz-dz642-queuedcontainer"
+
+	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
+	ArvadosRepoName = "arvados"
+	FooRepoUUID     = "zzzzz-s0uqq-382brsig8rp3666"
+	FooRepoName     = "active/foo"
+	Repository2UUID = "zzzzz-s0uqq-382brsig8rp3667"
+	Repository2Name = "active/foo2"
 )
 
 // PathologicalManifest : A valid manifest designed to test
