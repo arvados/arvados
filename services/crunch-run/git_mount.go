@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -92,9 +93,18 @@ func (gm gitMount) extractTree(ac IArvadosClient, dir string, token string) erro
 	if err != nil {
 		return fmt.Errorf("checkout failed: %s", err)
 	}
-	err = os.Chmod(dir, 0755)
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// copy user rx bits to group and other, in case
+		// prevailing umask is more restrictive than 022
+		mode := info.Mode()
+		mode = mode | ((mode >> 3) & 050) | ((mode >> 6) & 5)
+		return os.Chmod(path, mode)
+	})
 	if err != nil {
-		return fmt.Errorf("chmod %o %q: %s", 0755, dir, err)
+		return fmt.Errorf("chmod -R %q: %s", dir, err)
 	}
 	return nil
 }
