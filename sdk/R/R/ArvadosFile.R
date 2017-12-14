@@ -45,11 +45,11 @@ ArvadosFile <- R6::R6Class(
             if(serverResponse$status_code != 206)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            collection
-            parsed_response <- httr::content(serverResponse, "raw")
+            parsedServerResponse <- httr::content(serverResponse, "raw")
+            parsedServerResponse
         },
         
-        write = function(content, contentType)
+        write = function(content, contentType = "text/html")
         {
             fileURL = paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid, "/", private$relativePath);
             headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
@@ -61,23 +61,10 @@ ArvadosFile <- R6::R6Class(
             if(serverResponse$status_code != 201)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            #Note(Fudo): Everything went well we need to update file size 
-            # in collection tree.
+            private$notifyCollectionThatFileSizeChanges()
 
-            #Todo(Fudo): Move this into HttpRequest
-            uri <- URLencode(paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid))
-            h <- curl::new_handle()
-            curl::handle_setopt(h, customrequest = "PROPFIND")
-
-            curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
-            propfindResponse <- curl::curl_fetch_memory(fileURL, h)
-
-            fileInfo <- private$httpParser$parseWebDAVResponse(propfindResponse, uri)
-
-            private$size <- fileInfo[[1]]$fileSize
-            private$collection$update(self, "File size changed")
-
-            parsed_response <- httr::content(serverResponse, "text")
+            parsedServerResponse <- httr::content(serverResponse, "text")
+            parsedServerResponse
         }
     ),
 
@@ -90,7 +77,21 @@ ArvadosFile <- R6::R6Class(
         api          = NULL,
         collection   = NULL,
         http         = NULL,
-        httpParser   = NULL
+        httpParser   = NULL,
+
+        notifyCollectionThatFileSizeChanges = function()
+        {
+            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=", private$collection$uuid))
+            fileURL = paste0(collectionURL, "/", private$relativePath);
+            headers = list("Authorization" = paste("OAuth2", private$api$getToken()))
+
+            propfindResponse <- private$http$PROPFIND(fileURL, headers)
+
+            fileInfo <- private$httpParser$parseWebDAVResponse(propfindResponse, collectionURL)
+
+            private$size <- fileInfo[[1]]$fileSize
+            private$collection$update(self, "File size changed")
+        }
     ),
     
     cloneable = FALSE

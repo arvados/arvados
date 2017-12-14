@@ -34,10 +34,10 @@ Arvados <- R6::R6Class(
             version <- "v1"
             host  <- paste0("https://", host, "/arvados/", version, "/")
 
-            private$http <- HttpRequest$new()
+            private$http       <- HttpRequest$new()
             private$httpParser <- HttpParser$new()
-            private$token <- token
-            private$host <- host
+            private$token      <- token
+            private$host       <- host
             
             headers <- list(Authorization = paste("OAuth2", private$token))
 
@@ -73,8 +73,7 @@ Arvados <- R6::R6Class(
             collectionURL <- paste0(private$host, "collections")
             headers <- list(Authorization = paste("OAuth2", private$token))
 
-            serverResponse <- private$http$GET(collectionURL, headers, NULL, filters, limit, offset)
-
+            serverResponse <- private$http$GET(collectionURL, headers, filters, limit, offset)
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))

@@ -8,8 +8,7 @@ HttpRequest <- R6::R6Class(
         {
         },
 
-        GET = function(url, headers = NULL, body = NULL,
-                       queryFilters = NULL, limit = NULL, offset = NULL)
+        GET = function(url, headers = NULL, queryFilters = NULL, limit = NULL, offset = NULL)
         {
             headers <- httr::add_headers(unlist(headers))
             query <- private$createQuery(queryFilters, limit, offset)
@@ -46,6 +45,15 @@ HttpRequest <- R6::R6Class(
             url <- paste0(url, query)
 
             serverResponse <- httr::DELETE(url = url, config = headers)
+        },
+
+        PROPFIND = function(url, headers = NULL)
+        {
+            h <- curl::new_handle()
+            curl::handle_setopt(h, customrequest = "PROPFIND")
+            curl::handle_setheaders(h, .list = headers)
+
+            propfindResponse <- curl::curl_fetch_memory(url, h)
         }
     ),
 

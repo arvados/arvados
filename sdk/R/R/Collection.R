@@ -1,6 +1,8 @@
 source("./R/Subcollection.R")
 source("./R/ArvadosFile.R")
 source("./R/FileTree.R")
+source("./R/HttpRequest.R")
+source("./R/HttpParser.R")
 
 #' Arvados Collection Object
 #'
@@ -62,9 +64,12 @@ Collection <- R6::R6Class(
             self$trash_at                 <- result$trash_at                           
             self$is_trashed               <- result$is_trashed                         
 
-            private$fileItems <- private$getCollectionContent()
+            private$http <- HttpRequest$new()
+            private$httpParser <- HttpParser$new()
 
+            private$fileItems <- private$getCollectionContent()
             private$fileTree <- FileTree$new(private$fileItems)
+
         },
 
         printFileContent = function()
@@ -100,6 +105,29 @@ Collection <- R6::R6Class(
             }
         },
 
+        createNewFile = function(relativePath, content, contentType)
+        {
+            node <- private$fileTree$getNode(relativePath)
+
+            if(is.null(node))
+                stop("File already exists")
+
+            fileURL <- paste0(private$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
+            headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
+                            "Content-Type" = contentType)
+            body <- content
+
+            serverResponse <- private$http$PUT(fileURL, headers, body)
+
+            if(serverResponse$status_code != 201)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            fileSize = private$getNewFileSize(relativePath)
+            private$fileTree$addNode(relativePath, fileSize)
+
+            paste0("File created (size = ", fileSize , ")")
+        },
+
         update = function(subcollection, event)
         {
             #Todo(Fudo): Add some king of check here later on.
@@ -125,13 +153,19 @@ Collection <- R6::R6Class(
     
     private = list(
 
-        fileItems = NULL,
-        api       = NULL,
-        fileTree  = NULL,
+        fileItems  = NULL,
+        api        = NULL,
+        fileTree   = NULL,
+        http       = NULL,
+        httpParser = NULL,
 
         handleFileSizeChange = function(filePath, newSize)
         {
             node <- private$fileTree$getNode(filePath)
+
+            if(is.null(node))
+                stop("File doesn't exits")
+
             node$size <- newSize
         },
 
@@ -160,19 +194,28 @@ Collection <- R6::R6Class(
 
         getCollectionContent = function()
         {
-            uri <- URLencode(paste0(private$api$getWebDavHostName(), "c=", self$uuid))
+            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=", self$uuid))
 
-            # fetch directory listing via curl and parse XML response
-            h <- curl::new_handle()
-            curl::handle_setopt(h, customrequest = "PROPFIND")
+            headers = list("Authorization" = paste("OAuth2", private$api$getToken()))
 
-            curl::handle_setheaders(h, "Authorization" = paste("OAuth2", private$api$getToken()))
-            response <- curl::curl_fetch_memory(uri, h)
+            response <- private$http$PROPFIND(collectionURL, headers)
 
-            parsedResponse <- HttpParser$new()$parseWebDAVResponse(response, uri)
+            parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
             parsedResponse[-1]
-        }
+        },
 
+        getNewFileSize = function(relativePath)
+        {
+            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=", self$uuid))
+            fileURL = paste0(collectionURL, "/", relativePath);
+            headers = list("Authorization" = paste("OAuth2", private$api$getToken()))
+
+            propfindResponse <- private$http$PROPFIND(fileURL, headers)
+
+            fileInfo <- private$httpParser$parseWebDAVResponse(propfindResponse, collectionURL)
+
+            fileInfo[[1]]$fileSize
+        }
     ),
 
     cloneable = FALSE

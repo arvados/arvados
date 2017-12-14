@@ -34,10 +34,10 @@ Subcollection <- R6::R6Class(
 
     private = list(
 
-        name = NULL,
+        name         = NULL,
         relativePath = NULL,
-        children = NULL,
-        parent = NULL
+        children     = NULL,
+        parent       = NULL
     ),
     
     cloneable = FALSE

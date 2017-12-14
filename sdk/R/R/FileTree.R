@@ -70,13 +70,23 @@ FileTree <- R6::R6Class(
                 for(pathFragment in splitPath)
                 {
                     child = node$getChild(pathFragment)
+
                     if(is.null(child))
-                        stop("Subcollection/ArvadosFile you are looking for doesn't exist.")
+                        return(NULL)
+
                     node = child
                 }
 
                 node
             })
+        },
+
+        addNode = function(relativePathToNode, size)
+        {
+            splitPath <- unlist(strsplit(relativePathToNode, "/", fixed = TRUE))
+
+            branch <- private$createBranch(splitPath, size)
+            private$addBranch(private$tree, branch)
         }
     ),
 

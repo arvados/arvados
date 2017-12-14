@@ -73,7 +73,7 @@ arvadosFile <- collection$get("location/to/my/file.cpp")
 
 #or
 
-arvadosSubcollection <- collection.get("location/to/my/directory/")
+arvadosSubcollection <- collection$get("location/to/my/directory/")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -83,9 +83,29 @@ fileContent <- arvadosFile$read(offset = 1024, length = 512)
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Get ArvadosFile or Subcollection size
+#Get ArvadosFile or Subcollection size 
 
 size <- arvadosFile$getSizeInBytes()
 size <- arvadosSubcollection$getSizeInBytes()
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Create new file in a collection
+
+#Call structure
+
+collection$createNewFile("relativePath", "fileContent", "fileContentType")
+
+#Example
+
+collection$createNewFile("cpp/src/main.cpp", "#include<iostream>", "text/html")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Write to existing file (Override current content of the file)
+
+arvadosFile <- collection$get("location/to/my/file.cpp")
+
+arvadosFile$write("This is new file content")
 
 --------------------------------------------------------------------------------------------------------------------------------
