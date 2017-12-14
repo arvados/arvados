@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -87,6 +88,10 @@ func (gm gitMount) extractTree(ac IArvadosClient, dir string, token string) erro
 	})
 	if err != nil {
 		return fmt.Errorf("checkout failed: %s", err)
+	}
+	err = os.Chmod(dir, 0755)
+	if err != nil {
+		return fmt.Errorf("chmod %o %q: %s", 0755, dir, err)
 	}
 	return nil
 }

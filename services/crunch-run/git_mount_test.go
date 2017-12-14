@@ -67,6 +67,12 @@ func (s *GitMountSuite) TestextractTree(c *check.C) {
 
 	// Ensure there's no extra stuff like a ".git" dir
 	s.checkTmpdirContents(c, []string{"dir1"})
+
+	// Ensure tmpdir is world-readable and world-executable so the
+	// UID inside the container can use it.
+	fi, err = os.Stat(s.tmpdir)
+	c.Check(err, check.IsNil)
+	c.Check(fi.Mode()&os.ModePerm, check.Equals, os.FileMode(0755))
 }
 
 // Commit 5ebfab0 is not the tip of any branch or tag, but is
