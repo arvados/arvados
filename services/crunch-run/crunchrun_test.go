@@ -1270,6 +1270,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		i = 0
 		cr.ArvMountPoint = ""
 		(*GitMountSuite)(nil).useTestGitServer(c)
+		cr.token = arvadostest.ActiveToken
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tip": {

@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"gopkg.in/src-d/go-billy.v3/osfs"
 	git "gopkg.in/src-d/go-git.v4"
 	git_config "gopkg.in/src-d/go-git.v4/config"
@@ -40,7 +39,7 @@ func (gm gitMount) validate() error {
 
 // ExtractTree extracts the specified tree into dir, which is an
 // existing empty local directory.
-func (gm gitMount) extractTree(ac IArvadosClient, dir string) error {
+func (gm gitMount) extractTree(ac IArvadosClient, dir string, token string) error {
 	err := gm.validate()
 	if err != nil {
 		return err
@@ -74,7 +73,7 @@ func (gm gitMount) extractTree(ac IArvadosClient, dir string) error {
 	}
 	err = repo.Fetch(&git.FetchOptions{
 		RemoteName: "origin",
-		Auth:       git_http.NewBasicAuth("none", arvadostest.ActiveToken),
+		Auth:       git_http.NewBasicAuth("none", token),
 	})
 	if err != nil {
 		return fmt.Errorf("git fetch %q: %s", u.String(), err)

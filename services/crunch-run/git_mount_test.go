@@ -42,7 +42,7 @@ func (s *GitMountSuite) TestextractTree(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.IsNil)
 
 	fnm := filepath.Join(s.tmpdir, "dir1/dir2/file with mode 0644")
@@ -76,7 +76,7 @@ func (s *GitMountSuite) TestExtractNonTipCommit(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.IsNil)
 
 	fnm := filepath.Join(s.tmpdir, "file only on testbranch")
@@ -91,7 +91,7 @@ func (s *GitMountSuite) TestNonexistentRepository(c *check.C) {
 		UUID:   "zzzzz-s0uqq-nonexistentrepo",
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.NotNil)
 	c.Check(err, check.ErrorMatches, ".*repository not found.*")
 
@@ -104,7 +104,7 @@ func (s *GitMountSuite) TestNonexistentCommit(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "bb66b6bb6b6bbb6b6b6b66b6b6b6b6b6b6b6b66b",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.NotNil)
 	c.Check(err, check.ErrorMatches, ".*object not found.*")
 
@@ -118,7 +118,7 @@ func (s *GitMountSuite) TestGitUrlDiscoveryFails(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir)
+	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.ErrorMatches, ".*gitUrl.*")
 }
 
@@ -168,7 +168,7 @@ func (s *GitMountSuite) TestInvalid(c *check.C) {
 			matcher: ".*UUID.*",
 		},
 	} {
-		err := trial.gm.extractTree(&ArvTestClient{}, s.tmpdir)
+		err := trial.gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
 		c.Check(err, check.NotNil)
 		s.checkTmpdirContents(c, []string{})
 
