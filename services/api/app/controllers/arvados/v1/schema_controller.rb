@@ -60,7 +60,14 @@ class Arvados::V1::SchemaController < ApplicationController
         websocketUrl: Rails.application.config.websocket_address,
         workbenchUrl: Rails.application.config.workbench_address,
         keepWebServiceUrl: Rails.application.config.keep_web_service_url,
-        gitUrl: Rails.application.config.git_repo_https_base || "",
+        gitUrl: case Rails.application.config.git_repo_https_base
+                when false
+                  ''
+                when true
+                  'https://git.%s.arvadosapi.com/' % Rails.configuration.uuid_prefix
+                else
+                  Rails.application.config.git_repo_https_base
+                end,
         parameters: {
           alt: {
             type: "string",
