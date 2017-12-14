@@ -29,7 +29,6 @@ func (h *authHandler) setup() {
 		log.Fatal(err)
 	}
 	h.clientPool = &arvadosclient.ClientPool{Prototype: ac}
-	log.Printf("%+v", h.clientPool.Prototype)
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
