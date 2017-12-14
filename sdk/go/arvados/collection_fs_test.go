@@ -465,6 +465,10 @@ func (s *CollectionFSSuite) TestMkdir(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
 
@@ -1014,6 +1018,10 @@ var _ = check.Suite(&CollectionFSUnitSuite{})
 
 // expect ~2 seconds to load a manifest with 256K files
 func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+
 	const (
 		dirCount  = 512
 		fileCount = 512
