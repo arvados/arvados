@@ -24,25 +24,16 @@ At container startup, the target path will have the same directory structure as 
  "kind":"collection",
  "uuid":"..."
 }</code></pre>|
-|Git tree|@git_tree@|One of { @"git-url"@, @"repository_name"@, @"uuid"@ } must be provided.
-One of { @"commit"@, @"revisions"@ } must be provided.
-"path" may be provided. The default path is "/".
-At container startup, the target path will have the source tree indicated by the given revision. The @.git@ metadata directory _will not_ be available: typically the system will use @git-archive@ rather than @git-checkout@ to prepare the target directory.
-- If a value is given for @"revisions"@, it will be resolved to a set of commits (as desribed in the "ranges" section of git-revisions(1)) and the container request will be satisfiable by any commit in that set.
-- If a value is given for @"commit"@, it will be resolved to a single commit, and the tree resulting from that commit will be used.
-- @"path"@ can be used to select a subdirectory or a single file from the tree indicated by the selected commit.
-- Multiple commits can resolve to the same tree: for example, the file/directory given in @"path"@ might not have changed between commits A and B.
-- The resolved mount (found in the Container record) will have only the "kind" key and a "blob" or "tree" key indicating the 40-character hash of the git tree/blob used.|<pre><code>{
+|Git tree|@git_tree@|@"uuid"@ must be the UUID of an Arvados-hosted git repository.
+@"commit"@ must be a full 40-character commit hash.
+@"path"@, if provided, must be "/".
+At container startup, the target path will have the source tree indicated by the given commit. The @.git@ metadata directory _will not_ be available.
+If @"writable"@ is true, the target directory will be writable. Any changes will be discarded when the container exits.|<pre><code>{
  "kind":"git_tree",
  "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
- "commit":"master"
+ "commit":"f315c59f90934cccae6381e72bba59d27ba42099"
 }
-{
- "kind":"git_tree",
- "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
- "commit_range":"bugfix^..master",
- "path":"/crunch_scripts/grep"
-}</code></pre>|
+</code></pre>|
 |Temporary directory|@tmp@|@"capacity"@: capacity (in bytes) of the storage device.
 @"device_type"@ (optional, default "network"): one of @{"ram", "ssd", "disk", "network"}@ indicating the acceptable level of performance.
 At container startup, the target path will be empty. When the container finishes, the content will be discarded. This will be backed by a storage mechanism no slower than the specified type.|<pre><code>{
