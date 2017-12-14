@@ -26,19 +26,13 @@ module GitTestHelper
       FileUtils.mkdir_p @tmpdir
       system("tar", "-xC", @tmpdir.to_s, "-f", "test/test.git.tar")
       Rails.configuration.git_repositories_dir = "#{@tmpdir}/test"
-
-      # Initialize an empty internal git repo.
-      intdir =
-        Rails.configuration.git_internal_dir =
-        Rails.root.join(@tmpdir, 'internal.git').to_s
-      FileUtils.mkdir_p intdir
-      IO.read("|git --git-dir #{intdir.shellescape} init")
-      assert $?.success?
+      Rails.configuration.git_internal_dir = "#{@tmpdir}/internal.git"
     end
 
     base.teardown do
-      FileUtils.remove_entry @tmpdir, true
       FileUtils.remove_entry Commit.cache_dir_base, true
+      FileUtils.mkdir_p @tmpdir
+      system("tar", "-xC", @tmpdir.to_s, "-f", "test/test.git.tar")
     end
   end
 

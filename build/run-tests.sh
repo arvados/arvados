@@ -813,6 +813,8 @@ install_apiserver() {
         && mkdir -p tmp/git \
         && cd tmp/git \
         && tar xf ../../test/test.git.tar \
+        && mkdir -p internal.git \
+        && git --git-dir internal.git init \
             || return 1
 
     cd "$WORKSPACE/services/api" \
