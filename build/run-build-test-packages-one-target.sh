@@ -14,6 +14,10 @@ Syntax:
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
+--build-version <version>
+    Version to build (default:
+    \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
+    0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -36,7 +40,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,target: \
+    help,upload,target:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -44,6 +48,8 @@ fi
 
 TARGET=debian8
 UPLOAD=0
+
+declare -a build_args=()
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -59,6 +65,10 @@ while [ $# -gt 0 ]; do
         --upload)
             UPLOAD=1
             ;;
+        --build-version)
+            build_args+=("$1" "$2")
+            shift
+            ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -68,6 +78,8 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+build_args+=(--target "$TARGET")
 
 exit_cleanly() {
     trap - INT
@@ -81,7 +93,7 @@ COLUMNS=80
 title "Start build packages"
 timer_reset
 
-$WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET
+$WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}"
 
 checkexit $? "build packages"
 title "End of build packages (`timer`)"
@@ -90,7 +102,7 @@ title "Start test packages"
 timer_reset
 
 if [ ${#failures[@]} -eq 0 ]; then
-  $WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET --test-packages
+  $WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}" --test-packages
 else
   echo "Skipping package upload, there were errors building the packages"
 fi
