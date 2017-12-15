@@ -107,11 +107,6 @@ Collection <- R6::R6Class(
 
         createNewFile = function(relativePath, content, contentType)
         {
-            node <- private$fileTree$getNode(relativePath)
-
-            if(is.null(node))
-                stop("File already exists")
-
             fileURL <- paste0(private$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
             headers <- list(Authorization = paste("OAuth2", private$api$getToken()), 
                             "Content-Type" = contentType)
@@ -126,6 +121,24 @@ Collection <- R6::R6Class(
             private$fileTree$addNode(relativePath, fileSize)
 
             paste0("File created (size = ", fileSize , ")")
+        },
+
+        removeFile = function(relativePath)
+        {
+            node <- private$fileTree$getNode(relativePath)
+
+            if(is.null(node))
+                stop("File doesn't exists.")
+
+            fileURL <- paste0(private$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
+            headers <- list(Authorization = paste("OAuth2", private$api$getToken())) 
+
+            serverResponse <- private$http$DELETE(fileURL, headers)
+
+            if(serverResponse$status_code != 204)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            "File deleted"
         },
 
         update = function(subcollection, event)
