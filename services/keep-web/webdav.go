@@ -38,7 +38,12 @@ var (
 type webdavFS struct {
 	collfs  arvados.CollectionFileSystem
 	writing bool
-	reading bool
+	// webdav PROPFIND reads the first few bytes of each file
+	// whose filename extension isn't recognized, which is
+	// prohibitively expensive: we end up fetching multiple 64MiB
+	// blocks. Avoid this by returning EOF on all reads when
+	// handling a PROPFIND.
+	alwaysReadEOF bool
 }
 
 func (fs *webdavFS) makeparents(name string) {
@@ -73,13 +78,7 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 		// have 405.
 		f = writeFailer{File: f, err: errReadOnly}
 	}
-	if !fs.reading {
-		// webdav PROPFIND reads the first few bytes of each
-		// file whose filename extension isn't recognized,
-		// which is prohibitively expensive: we end up
-		// fetching multiple 64MiB blocks. Avoid this by
-		// returning EOF on all reads when handling a
-		// PROPFIND.
+	if fs.alwaysReadEOF {
 		f = readEOF{File: f}
 	}
 	return
