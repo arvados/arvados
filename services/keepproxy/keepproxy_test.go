@@ -323,41 +323,26 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	kc := runProxy(c, nil, true)
 	defer closeListener()
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
 
-	{
-		_, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
-		c.Log("Ask 1")
-	}
+	_, _, err := kc.Ask(hash)
+	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
 
-	{
-		hash2, rep, err := kc.PutB([]byte("bar"))
-		c.Check(hash2, Equals, "")
-		c.Check(rep, Equals, 0)
-		c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
-		c.Log("PutB")
-	}
+	hash2, rep, err := kc.PutB([]byte("bar"))
+	c.Check(hash2, Equals, "")
+	c.Check(rep, Equals, 0)
+	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
 
-	{
-		blocklen, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Ask 2")
-	}
+	blocklen, _, err := kc.Ask(hash)
+	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
+	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(blocklen, Equals, int64(0))
 
-	{
-		_, blocklen, _, err := kc.Get(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Get")
-	}
+	_, blocklen, _, err = kc.Get(hash)
+	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
+	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(blocklen, Equals, int64(0))
+
 }
 
 func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
@@ -544,35 +529,53 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	c.Assert((err != nil), Equals, true)
 }
 
+func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+	hash, _, err := kc.PutB([]byte("shareddata"))
+	c.Check(err, IsNil)
+	kc.Arvados.ApiToken = arvadostest.FooCollectionSharingToken
+	rdr, _, _, err := kc.Get(hash)
+	c.Assert(err, IsNil)
+	data, err := ioutil.ReadAll(rdr)
+	c.Check(err, IsNil)
+	c.Check(data, DeepEquals, []byte("shareddata"))
+}
+
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
 
 	// Put a test block
 	hash, rep, err := kc.PutB([]byte("foo"))
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(rep, Equals, 2)
 
-	for _, token := range []string{
+	for _, badToken := range []string{
 		"nosuchtoken",
 		"2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx", // expired
 	} {
-		// Change token to given bad token
-		kc.Arvados.ApiToken = token
+		kc.Arvados.ApiToken = badToken
 
-		// Ask should result in error
-		_, _, err = kc.Ask(hash)
-		c.Check(err, NotNil)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound.Temporary(), Equals, false)
-		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
+		// Ask and Get will fail only if the upstream
+		// keepstore server checks for valid signatures.
+		// Without knowing the blob signing key, there is no
+		// way for keepproxy to know whether a given token is
+		// permitted to read a block.  So these tests fail:
+		if false {
+			_, _, err = kc.Ask(hash)
+			c.Assert(err, FitsTypeOf, &keepclient.ErrNotFound{})
+			c.Check(err.(*keepclient.ErrNotFound).Temporary(), Equals, false)
+			c.Check(err, ErrorMatches, ".*HTTP 403.*")
 
-		// Get should result in error
-		_, _, _, err = kc.Get(hash)
-		c.Check(err, NotNil)
-		errNotFound, _ = err.(keepclient.ErrNotFound)
-		c.Check(errNotFound.Temporary(), Equals, false)
-		c.Assert(strings.Contains(err.Error(), "HTTP 403 \"Missing or invalid Authorization header\""), Equals, true)
+			_, _, _, err = kc.Get(hash)
+			c.Assert(err, FitsTypeOf, &keepclient.ErrNotFound{})
+			c.Check(err.(*keepclient.ErrNotFound).Temporary(), Equals, false)
+			c.Check(err, ErrorMatches, ".*HTTP 403 \"Missing or invalid Authorization header\".*")
+		}
+
+		_, _, err = kc.PutB([]byte("foo"))
+		c.Check(err, ErrorMatches, ".*403.*Missing or invalid Authorization header")
 	}
 }
 

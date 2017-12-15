@@ -232,31 +232,43 @@ func GetRemoteAddress(req *http.Request) string {
 }
 
 func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
-	var auth string
-	if auth = req.Header.Get("Authorization"); auth == "" {
+	parts := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
+	if len(parts) < 2 || !(parts[0] == "OAuth2" || parts[0] == "Bearer") || len(parts[1]) == 0 {
 		return false, ""
 	}
+	tok = parts[1]
 
-	_, err := fmt.Sscanf(auth, "OAuth2 %s", &tok)
-	if err != nil {
-		// Scanning error
-		return false, ""
+	// Tokens are validated differently depending on what kind of
+	// operation is being performed. For example, tokens in
+	// collection-sharing links permit GET requests, but not
+	// PUT requests.
+	var op string
+	if req.Method == "GET" || req.Method == "HEAD" {
+		op = "read"
+	} else {
+		op = "write"
 	}
 
-	if cache.RecallToken(tok) {
+	if cache.RecallToken(op + ":" + tok) {
 		// Valid in the cache, short circuit
 		return true, tok
 	}
 
+	var err error
 	arv := *kc.Arvados
 	arv.ApiToken = tok
-	if err := arv.Call("HEAD", "users", "", "current", nil, nil); err != nil {
+	if op == "read" {
+		err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
+	} else {
+		err = arv.Call("HEAD", "users", "", "current", nil, nil)
+	}
+	if err != nil {
 		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
 		return false, ""
 	}
 
 	// Success!  Update cache
-	cache.RememberToken(tok)
+	cache.RememberToken(op + ":" + tok)
 
 	return true, tok
 }
