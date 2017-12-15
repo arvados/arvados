@@ -7,9 +7,11 @@ Description=Arvados Keep web gateway
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/keep-web/keep-web.yml
-# systemd<230
+
+# systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0
-# systemd>=230
+
+# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
@@ -17,6 +19,9 @@ Type=notify
 ExecStart=/usr/bin/keep-web
 Restart=always
 RestartSec=1
+
+# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target
