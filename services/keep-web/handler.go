@@ -443,6 +443,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			FileSystem: &webdavFS{
 				collfs:  fs,
 				writing: writeMethod[r.Method],
+				reading: r.Method != "PROPFIND",
 			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
