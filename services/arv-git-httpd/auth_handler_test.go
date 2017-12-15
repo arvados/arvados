@@ -5,16 +5,132 @@
 package main
 
 import (
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
+	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&AuthHandlerSuite{})
 
 type AuthHandlerSuite struct{}
+
+func (s *AuthHandlerSuite) SetUpSuite(c *check.C) {
+	arvadostest.StartAPI()
+}
+
+func (s *AuthHandlerSuite) TearDownSuite(c *check.C) {
+	arvadostest.StopAPI()
+}
+
+func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
+	arvadostest.ResetEnv()
+	repoRoot, err := filepath.Abs("../api/tmp/git/test")
+	c.Assert(err, check.IsNil)
+	theConfig = &Config{
+		Client: arvados.Client{
+			APIHost:  arvadostest.APIHost(),
+			Insecure: true,
+		},
+		Listen:          ":0",
+		GitCommand:      "/usr/bin/git",
+		RepoRoot:        repoRoot,
+		ManagementToken: arvadostest.ManagementToken,
+	}
+}
+
+func (s *AuthHandlerSuite) TestPermission(c *check.C) {
+	h := &authHandler{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%v", r.URL)
+		io.WriteString(w, r.URL.Path)
+	})}
+	baseURL, err := url.Parse("http://git.example/")
+	c.Assert(err, check.IsNil)
+	for _, trial := range []struct {
+		label   string
+		token   string
+		pathIn  string
+		pathOut string
+		status  int
+	}{
+		{
+			label:   "read repo by name",
+			token:   arvadostest.ActiveToken,
+			pathIn:  arvadostest.Repository2Name + ".git/git-upload-pack",
+			pathOut: arvadostest.Repository2UUID + ".git/git-upload-pack",
+		},
+		{
+			label:   "read repo by uuid",
+			token:   arvadostest.ActiveToken,
+			pathIn:  arvadostest.Repository2UUID + ".git/git-upload-pack",
+			pathOut: arvadostest.Repository2UUID + ".git/git-upload-pack",
+		},
+		{
+			label:   "write repo by name",
+			token:   arvadostest.ActiveToken,
+			pathIn:  arvadostest.Repository2Name + ".git/git-receive-pack",
+			pathOut: arvadostest.Repository2UUID + ".git/git-receive-pack",
+		},
+		{
+			label:   "write repo by uuid",
+			token:   arvadostest.ActiveToken,
+			pathIn:  arvadostest.Repository2UUID + ".git/git-receive-pack",
+			pathOut: arvadostest.Repository2UUID + ".git/git-receive-pack",
+		},
+		{
+			label:  "uuid not found",
+			token:  arvadostest.ActiveToken,
+			pathIn: strings.Replace(arvadostest.Repository2UUID, "6", "z", -1) + ".git/git-upload-pack",
+			status: http.StatusNotFound,
+		},
+		{
+			label:  "name not found",
+			token:  arvadostest.ActiveToken,
+			pathIn: "nonexistent-bogus.git/git-upload-pack",
+			status: http.StatusNotFound,
+		},
+		{
+			label:   "read read-only repo",
+			token:   arvadostest.SpectatorToken,
+			pathIn:  arvadostest.FooRepoName + ".git/git-upload-pack",
+			pathOut: arvadostest.FooRepoUUID + "/.git/git-upload-pack",
+		},
+		{
+			label:  "write read-only repo",
+			token:  arvadostest.SpectatorToken,
+			pathIn: arvadostest.FooRepoName + ".git/git-receive-pack",
+			status: http.StatusForbidden,
+		},
+	} {
+		c.Logf("trial label: %q", trial.label)
+		u, err := baseURL.Parse(trial.pathIn)
+		c.Assert(err, check.IsNil)
+		resp := httptest.NewRecorder()
+		req := &http.Request{
+			Method: "POST",
+			URL:    u,
+			Header: http.Header{
+				"Authorization": {"Bearer " + trial.token}}}
+		h.ServeHTTP(resp, req)
+		if trial.status == 0 {
+			trial.status = http.StatusOK
+		}
+		c.Check(resp.Code, check.Equals, trial.status)
+		if trial.status < 400 {
+			if trial.pathOut != "" && !strings.HasPrefix(trial.pathOut, "/") {
+				trial.pathOut = "/" + trial.pathOut
+			}
+			c.Check(resp.Body.String(), check.Equals, trial.pathOut)
+		}
+	}
+}
 
 func (s *AuthHandlerSuite) TestCORS(c *check.C) {
 	h := &authHandler{}

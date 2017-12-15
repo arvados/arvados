@@ -219,7 +219,7 @@ class Commit < ActiveRecord::Base
   end
 
   def self.cache_dir_base
-    Rails.root.join 'tmp', 'git'
+    Rails.root.join 'tmp', 'git-cache'
   end
 
   def self.fetch_remote_repository gitdir, git_url
