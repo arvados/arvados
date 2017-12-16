@@ -12,9 +12,9 @@ import (
 
 type keepFS struct {
 	fuse.FileSystemBase
-	Collection arvados.Collection
 	Client     *arvados.Client
 	KeepClient *keepclient.KeepClient
+	ReadOnly   bool
 
 	root   arvados.FileSystem
 	open   map[uint64]arvados.File
@@ -43,6 +43,9 @@ func (fs *keepFS) Init() {
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
+	if fs.ReadOnly {
+		return -fuse.EROFS, invalidFH
+	}
 	f, err := fs.root.OpenFile(path, flags|os.O_CREATE, os.FileMode(mode))
 	if err == os.ErrExist {
 		return -fuse.EEXIST, invalidFH
@@ -53,6 +56,9 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 }
 
 func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
+	if fs.ReadOnly && flags&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0 {
+		return -fuse.EROFS, invalidFH
+	}
 	f, err := fs.root.OpenFile(path, flags, 0)
 	if err != nil {
 		return -fuse.ENOENT, invalidFH
@@ -65,12 +71,54 @@ func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 	return 0, fs.newFH(f)
 }
 
+func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	f, err := fs.root.OpenFile(path, 0, 0)
+	if err != nil {
+		return fs.errCode(err)
+	}
+	f.Close()
+	return 0
+}
+
+func (fs *keepFS) errCode(err error) int {
+	if os.IsNotExist(err) {
+		return -fuse.ENOENT
+	}
+	switch err {
+	case os.ErrExist:
+		return -fuse.EEXIST
+	case arvados.ErrInvalidArgument:
+		return -fuse.EINVAL
+	case arvados.ErrInvalidOperation:
+		return -fuse.ENOSYS
+	case nil:
+		return 0
+	default:
+		return -fuse.EIO
+	}
+}
+
+func (fs *keepFS) Mkdir(path string, mode uint32) int {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	f, err := fs.root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)|os.ModeDir)
+	if err != nil {
+		return fs.errCode(err)
+	}
+	f.Close()
+	return 0
+}
+
 func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 	f, err := fs.root.OpenFile(path, 0, 0)
 	if err != nil {
-		return -fuse.ENOENT, invalidFH
+		return fs.errCode(err), invalidFH
 	} else if fi, err := f.Stat(); err != nil {
-		return -fuse.EIO, invalidFH
+		return fs.errCode(err), invalidFH
 	} else if !fi.IsDir() {
 		f.Close()
 		return -fuse.ENOTDIR, invalidFH
@@ -125,13 +173,16 @@ func (*keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
 	f := fs.lookupFH(fh)
 	if f == nil {
-		return 0
+		return -fuse.EBADF
 	}
 	_, err := f.Seek(ofst, io.SeekStart)
 	if err != nil {
-		return 0
+		return -fuse.EINVAL
 	}
 	n, _ = f.Write(buf)
 	return

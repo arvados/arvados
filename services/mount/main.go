@@ -1,8 +1,8 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -11,6 +11,9 @@ import (
 )
 
 func main() {
+	ro := flag.Bool("ro", false, "read-only")
+	flag.Parse()
+
 	client := arvados.NewClientFromEnv()
 	ac, err := arvadosclient.New(client)
 	if err != nil {
@@ -23,6 +26,7 @@ func main() {
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:     client,
 		KeepClient: kc,
+		ReadOnly:   *ro,
 	})
-	host.Mount("", os.Args[1:])
+	host.Mount("", flag.Args())
 }
