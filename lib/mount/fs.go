@@ -15,6 +15,8 @@ type keepFS struct {
 	Client     *arvados.Client
 	KeepClient *keepclient.KeepClient
 	ReadOnly   bool
+	Uid        int
+	Gid        int
 
 	root   arvados.FileSystem
 	open   map[uint64]arvados.File
@@ -152,7 +154,7 @@ func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	return 0
 }
 
-func (*keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
+func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	var m uint32
 	if fi.IsDir() {
 		m = m | fuse.S_IFDIR
@@ -170,6 +172,12 @@ func (*keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	stat.Birthtim = t
 	stat.Blksize = 1024
 	stat.Blocks = (stat.Size + stat.Blksize - 1) / stat.Blksize
+	if fs.Uid > 0 && int64(fs.Uid) < 1<<31 {
+		stat.Uid = uint32(fs.Uid)
+	}
+	if fs.Gid > 0 && int64(fs.Gid) < 1<<31 {
+		stat.Gid = uint32(fs.Gid)
+	}
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {

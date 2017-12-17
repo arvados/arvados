@@ -3,6 +3,7 @@ package mount
 import (
 	"flag"
 	"log"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -32,6 +33,8 @@ func Run(prog string, args []string) int {
 		Client:     client,
 		KeepClient: kc,
 		ReadOnly:   *ro,
+		Uid:        os.Getuid(),
+		Gid:        os.Getgid(),
 	})
 	notOK := host.Mount("", flags.Args())
 	if notOK {
