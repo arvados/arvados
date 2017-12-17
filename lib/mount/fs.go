@@ -96,6 +96,8 @@ func (fs *keepFS) errCode(err error) int {
 		return -fuse.EINVAL
 	case arvados.ErrInvalidOperation:
 		return -fuse.ENOSYS
+	case arvados.ErrDirectoryNotEmpty:
+		return -fuse.ENOTEMPTY
 	case nil:
 		return 0
 	default:
@@ -128,11 +130,11 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 	return 0, fs.newFH(f)
 }
 
-func (fs *keepFS) Releasedir(path string, fh uint64) int {
+func (fs *keepFS) Releasedir(path string, fh uint64) (errc int) {
 	return fs.Release(path, fh)
 }
 
-func (fs *keepFS) Release(path string, fh uint64) int {
+func (fs *keepFS) Release(path string, fh uint64) (errc int) {
 	fs.Lock()
 	defer fs.Unlock()
 	defer delete(fs.open, fh)
@@ -145,13 +147,61 @@ func (fs *keepFS) Release(path string, fh uint64) int {
 	return 0
 }
 
+func (fs *keepFS) Rename(oldname, newname string) (errc int) {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	return fs.errCode(fs.root.Rename(oldname, newname))
+}
+
+func (fs *keepFS) Unlink(path string) (errc int) {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	return fs.errCode(fs.root.Remove(path))
+}
+
+func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	f := fs.lookupFH(fh)
+	if f == nil {
+		var err error
+		if f, err = fs.root.OpenFile(path, os.O_RDWR, 0); err != nil {
+			return fs.errCode(err)
+		}
+		defer f.Close()
+	}
+	return fs.errCode(f.Truncate(size))
+}
+
 func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	fi, err := fs.root.Stat(path)
+	var fi os.FileInfo
+	var err error
+	if f := fs.lookupFH(fh); f != nil {
+		fi, err = f.Stat()
+	} else {
+		fi, err = fs.root.Stat(path)
+	}
 	if err != nil {
-		return -fuse.ENOENT
+		return fs.errCode(err)
 	}
 	fs.fillStat(stat, fi)
 	return 0
+}
+
+func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
+	if fs.ReadOnly {
+		return -fuse.EROFS
+	}
+	if fi, err := fs.root.Stat(path); err != nil {
+		return fs.errCode(err)
+	} else if (os.FileMode(mode)^fi.Mode())&os.ModePerm != 0 {
+		return -fuse.ENOSYS
+	} else {
+		return 0
+	}
 }
 
 func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
@@ -183,30 +233,25 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
-	}
-	f := fs.lookupFH(fh)
-	if f == nil {
+	} else if f := fs.lookupFH(fh); f == nil {
 		return -fuse.EBADF
+	} else if _, err := f.Seek(ofst, io.SeekStart); err != nil {
+		return fs.errCode(err)
+	} else {
+		n, _ = f.Write(buf)
+		return
 	}
-	_, err := f.Seek(ofst, io.SeekStart)
-	if err != nil {
-		return -fuse.EINVAL
-	}
-	n, _ = f.Write(buf)
-	return
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
-	f := fs.lookupFH(fh)
-	if f == nil {
-		return 0
+	if f := fs.lookupFH(fh); f == nil {
+		return -fuse.EBADF
+	} else if _, err := f.Seek(ofst, io.SeekStart); err != nil {
+		return fs.errCode(err)
+	} else {
+		n, _ = f.Read(buf)
+		return
 	}
-	_, err := f.Seek(ofst, io.SeekStart)
-	if err != nil {
-		return 0
-	}
-	n, _ = f.Read(buf)
-	return
 }
 
 func (fs *keepFS) Readdir(path string,
@@ -222,12 +267,11 @@ func (fs *keepFS) Readdir(path string,
 	var stat fuse.Stat_t
 	fis, err := f.Readdir(-1)
 	if err != nil {
-		return -fuse.ENOSYS // ???
+		return fs.errCode(err)
 	}
 	for _, fi := range fis {
 		fs.fillStat(&stat, fi)
-		//fill(fi.Name(), &stat, 0)
-		fill(fi.Name(), nil, 0)
+		fill(fi.Name(), &stat, 0)
 	}
 	return 0
 }
