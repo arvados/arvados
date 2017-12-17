@@ -356,14 +356,22 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		if err != nil {
 			return oldinode
 		}
+		oldinode.Lock()
+		defer oldinode.Unlock()
+		olddn := olddirf.inode.(*dirnode)
+		newdn := newdirf.inode.(*dirnode)
 		switch n := oldinode.(type) {
 		case *dirnode:
 			n.parent = newdirf.inode
+			n.treenode.fileinfo.name = newname
 		case *filenode:
-			n.parent = newdirf.inode.(*dirnode)
+			n.parent = newdn
+			n.fileinfo.name = newname
 		default:
 			panic(fmt.Sprintf("bad inode type %T", n))
 		}
+		olddn.treenode.fileinfo.modTime = time.Now()
+		newdn.treenode.fileinfo.modTime = time.Now()
 		return nil
 	})
 	return err
