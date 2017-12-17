@@ -1,4 +1,4 @@
-package main
+package mount
 
 import (
 	"io"
@@ -7,7 +7,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"github.com/billziss-gh/cgofuse/fuse"
+	"github.com/curoverse/cgofuse/fuse"
 )
 
 type keepFS struct {

@@ -1,4 +1,4 @@
-package main
+package mount
 
 import (
 	"flag"
@@ -7,12 +7,17 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"github.com/billziss-gh/cgofuse/fuse"
+	"github.com/curoverse/cgofuse/fuse"
 )
 
-func main() {
-	ro := flag.Bool("ro", false, "read-only")
-	flag.Parse()
+func Run(prog string, args []string) int {
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	ro := flags.Bool("ro", false, "read-only")
+	err := flags.Parse(args)
+	if err != nil {
+		log.Print(err)
+		return 2
+	}
 
 	client := arvados.NewClientFromEnv()
 	ac, err := arvadosclient.New(client)
@@ -28,5 +33,10 @@ func main() {
 		KeepClient: kc,
 		ReadOnly:   *ro,
 	})
-	host.Mount("", flag.Args())
+	notOK := host.Mount("", flags.Args())
+	if notOK {
+		return 1
+	} else {
+		return 0
+	}
 }
