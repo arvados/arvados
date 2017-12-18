@@ -10,6 +10,14 @@ import (
 	"github.com/curoverse/cgofuse/fuse"
 )
 
+// sharedFile wraps arvados.File with a sync.Mutex, so fuse can safely
+// use a single filehandle concurrently on behalf of multiple
+// threads/processes.
+type sharedFile struct {
+	arvados.File
+	sync.Mutex
+}
+
 type keepFS struct {
 	fuse.FileSystemBase
 	Client     *arvados.Client
@@ -19,7 +27,7 @@ type keepFS struct {
 	Gid        int
 
 	root   arvados.FileSystem
-	open   map[uint64]arvados.File
+	open   map[uint64]*sharedFile
 	lastFH uint64
 	sync.Mutex
 }
@@ -32,12 +40,18 @@ func (fs *keepFS) newFH(f arvados.File) uint64 {
 	fs.Lock()
 	defer fs.Unlock()
 	if fs.open == nil {
-		fs.open = make(map[uint64]arvados.File)
+		fs.open = make(map[uint64]*sharedFile)
 	}
 	fs.lastFH++
 	fh := fs.lastFH
-	fs.open[fh] = f
+	fs.open[fh] = &sharedFile{File: f}
 	return fh
+}
+
+func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
+	fs.Lock()
+	defer fs.Unlock()
+	return fs.open[fh]
 }
 
 func (fs *keepFS) Init() {
@@ -165,14 +179,19 @@ func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	f := fs.lookupFH(fh)
-	if f == nil {
-		var err error
-		if f, err = fs.root.OpenFile(path, os.O_RDWR, 0); err != nil {
-			return fs.errCode(err)
-		}
-		defer f.Close()
+
+	// Sometimes fh is a valid filehandle and we don't need to
+	// waste a name lookup.
+	if f := fs.lookupFH(fh); f != nil {
+		return fs.errCode(f.Truncate(size))
 	}
+
+	// Other times, fh is invalid and we need to lookup path.
+	f, err := fs.root.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return fs.errCode(err)
+	}
+	defer f.Close()
 	return fs.errCode(f.Truncate(size))
 }
 
@@ -180,8 +199,10 @@ func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	var fi os.FileInfo
 	var err error
 	if f := fs.lookupFH(fh); f != nil {
+		// Valid filehandle -- ignore path.
 		fi, err = f.Stat()
 	} else {
+		// Invalid filehandle -- lookup path.
 		fi, err = fs.root.Stat(path)
 	}
 	if err != nil {
@@ -233,9 +254,14 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
-	} else if f := fs.lookupFH(fh); f == nil {
+	}
+	f := fs.lookupFH(fh)
+	if f == nil {
 		return -fuse.EBADF
-	} else if _, err := f.Seek(ofst, io.SeekStart); err != nil {
+	}
+	f.Lock()
+	defer f.Unlock()
+	if _, err := f.Seek(ofst, io.SeekStart); err != nil {
 		return fs.errCode(err)
 	} else {
 		n, _ = f.Write(buf)
@@ -244,9 +270,13 @@ func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) 
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
-	if f := fs.lookupFH(fh); f == nil {
+	f := fs.lookupFH(fh)
+	if f == nil {
 		return -fuse.EBADF
-	} else if _, err := f.Seek(ofst, io.SeekStart); err != nil {
+	}
+	f.Lock()
+	defer f.Unlock()
+	if _, err := f.Seek(ofst, io.SeekStart); err != nil {
 		return fs.errCode(err)
 	} else {
 		n, _ = f.Read(buf)
@@ -274,10 +304,4 @@ func (fs *keepFS) Readdir(path string,
 		fill(fi.Name(), &stat, 0)
 	}
 	return 0
-}
-
-func (fs *keepFS) lookupFH(fh uint64) arvados.File {
-	fs.Lock()
-	defer fs.Unlock()
-	return fs.open[fh]
 }
