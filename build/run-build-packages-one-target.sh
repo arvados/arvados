@@ -22,7 +22,9 @@ Syntax:
 --only-test <package>
     Test only a specific package
 --build-version <string>
-    Version to build (default: \$ARVADOS_BUILDING_VERSION or 0.1.timestamp.commithash)
+    Version to build (default:
+    \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
+    0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 

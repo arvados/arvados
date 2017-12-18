@@ -46,6 +46,7 @@ $RAILS_ENV:
   keep_web_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
   arvados_docsite: http://$localip:${services[doc]}/
   force_ssl: false
+  composer_url: http://$localip:${services[composer]}
 EOF
 
 bundle exec rake assets:precompile

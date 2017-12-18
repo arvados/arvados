@@ -10,7 +10,7 @@ set -ex -o pipefail
 
 cd /usr/src/composer
 
-npm install yarn
+npm -d install yarn
 
 PATH=$PATH:/usr/src/composer/node_modules/.bin
 
