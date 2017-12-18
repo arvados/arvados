@@ -28,6 +28,17 @@ window.SessionDB = function() {
             })
             return sessions
         },
+        loadLocal: function() {
+            var sessions = db.loadActive()
+            var s = false
+            Object.keys(sessions).forEach(function(key) {
+                if (sessions[key].isFromRails) {
+                    s = sessions[key]
+                    return
+                }
+            })
+            return s
+        },
         save: function(k, v) {
             var sessions = db.loadAll()
             sessions[k] = v

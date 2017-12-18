@@ -1,0 +1,18 @@
+{
+    "tags": ["tag1", "tag2", "tag3"],
+    "types": {
+        "tag1": {
+            "type": "select",
+            "options": ["val1", "val2", "val3"],
+            "overridable": true
+        },
+        "tag2": {
+            "type": "select",
+            "options": ["val21", "val22", "val23"]
+        },
+        "tag3": {
+            "type": "select",
+            "options": ["val31", "val32", "val33"]
+        }
+    }
+}
