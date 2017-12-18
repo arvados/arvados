@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -142,6 +143,25 @@ type fileSystem struct {
 
 type collectionFileSystem struct {
 	fileSystem
+}
+
+func (fs collectionFileSystem) Child(name string, replace func(inode) inode) inode {
+	if name == ".arvados#collection" {
+		return &getternode{Getter: func() ([]byte, error) {
+			var coll Collection
+			var err error
+			coll.ManifestText, err = fs.MarshalManifest(".")
+			if err != nil {
+				return nil, err
+			}
+			data, err := json.Marshal(&coll)
+			if err == nil {
+				data = append(data, 10)
+			}
+			return data, err
+		}}
+	}
+	return fs.fileSystem.Child(name, replace)
 }
 
 func (fs collectionFileSystem) MarshalManifest(prefix string) (string, error) {
