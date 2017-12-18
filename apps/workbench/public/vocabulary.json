@@ -1,18 +1,27 @@
 {
-    "tags": ["tag1", "tag2", "tag3"],
+    "strict": "false",
     "types": {
-        "tag1": {
+        "opt1": {
             "type": "select",
             "options": ["val1", "val2", "val3"],
-            "overridable": true
+            "overridable": "true"
         },
-        "tag2": {
+        "opt2": {
             "type": "select",
             "options": ["val21", "val22", "val23"]
         },
-        "tag3": {
+        "opt3": {
             "type": "select",
             "options": ["val31", "val32", "val33"]
+        },
+        "text tag": {
+            "type": "text",
+            "max_length": "80"
+        },
+        "int tag": {
+            "type": "integer",
+            "min": "0",
+            "max": "1000"
         }
     }
 }

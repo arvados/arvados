@@ -126,8 +126,7 @@ window.SelectField = {
                         }
                     })
                 },
-            },
-                opts.map(function(k) {
+            }, opts.map(function(k) {
                     return m("option", {
                         value: k,
                         selected: tags.data[vnode.attrs.tagIdx]["value"] === k,
@@ -153,7 +152,7 @@ window.TagEditor = {
         var voc = vnode.attrs.voc
         var tagIdx = vnode.attrs.tagIdx
         if (tagIdx in tags.data) {
-            var tagName = tags.getName(vnode.attrs.tagIdx)//tags.data[tagIdx].name
+            var tagName = tags.getName(vnode.attrs.tagIdx)
             var tagType = voc.getDef(tagName).type
             return m("tr.collection-tag-"+tagName, [
                 m("td",
@@ -231,7 +230,7 @@ window.TagEditorApp = {
         vnode.state.objType = pathname.pop()
         vnode.state.tags = new Tags(vnode.state.sessionDB, vnode.state.uuid, vnode.state.objType)
         vnode.state.tags.load()
-        vnode.state.vocabulary = new Vocabulary()
+        vnode.state.vocabulary = new Vocabulary(vnode.state.url)
         vnode.state.vocabulary.load()
         vnode.state.editMode = m.stream(false)
         vnode.state.tagTable = TagTable

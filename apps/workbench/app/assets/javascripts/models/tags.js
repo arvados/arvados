@@ -2,41 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+// Fallback vocabulary that accepts any tag type. Will be used if
+// no custom vocabulary provided.
 var vocabulary = {
-    "strict": false, // Allow other tags not described here
-    "types": {
-        "opt1": {
-            "type": "select",
-            "options": ["val1", "val2", "val3"],
-            "overridable": true // Allow value not listed in options
-        },
-        "opt2": {
-            "type": "select",
-            "options": ["val21", "val22", "val23"]
-        },
-        "opt3": {
-            "type": "select",
-            "options": ["val31", "val32", "val33"]
-        },
-        "text tag": {
-            "type": "text",
-            "max_length": 80,
-        },
-        "int tag": {
-            "type": "integer",
-            "min": 0,
-            "max": 1000
-        }
-    }
+    "strict": false,
+    "types": {}
 }
 
-window.Vocabulary = function() {
+window.Vocabulary = function(url) {
     var v = this
     Object.assign(v, {
+        url: url,
         data: {},
         load: function() {
-            // TODO: get the vocabulary file from http
-            v.data = vocabulary
+            // Load vocabulary from rails' public directory
+            m.request(v.url.origin + '/vocabulary.json').then(function(resp) {
+                console.log('Vocabulary loaded')
+                v.data = resp
+            }).catch(function(err) {
+                // Not found, use a default vocabulary
+                console.log('Using default vocabulary')
+                v.data = vocabulary
+            })
         },
         getDef: function(tagName) {
             if (tagName in v.data.types) {
