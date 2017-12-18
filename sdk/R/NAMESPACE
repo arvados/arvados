@@ -2,5 +2,7 @@
 
 export(Arvados)
 export(ArvadosFile)
+export(CTest)
 export(Collection)
+export(CollectionTree)
 export(Subcollection)

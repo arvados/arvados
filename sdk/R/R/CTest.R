@@ -8,9 +8,11 @@ source("./R/HttpParser.R")
 #' Update description
 #'
 #' @examples arv = Collection$new(api, uuid)
-#' @export CTest
-CTest <- R6::R6Class(
-    "CTest",
+#' @export Collection
+Collection <- R6::R6Class(
+
+    "Collection",
+
     public = list(
 
         api  = NULL,

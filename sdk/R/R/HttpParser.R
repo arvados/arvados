@@ -14,26 +14,32 @@ HttpParser <- R6::R6Class(
             parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
         },
 
-        #Todo(Fudo): Test this.
+        #TODO rename this
         parseWebDAVResponse = function(response, uri)
         {
             text <- rawToChar(response$content)
             doc <- XML::xmlParse(text, asText=TRUE)
-
-            # calculate relative paths
             base <- paste(paste("/", strsplit(uri, "/")[[1]][-1:-3], sep="", collapse=""), "/", sep="")
-            result <- XML::xpathApply(doc, "//D:response", function(node) {
-                result = list()
-                children = XML::xmlChildren(node)
+            result <- unlist(
+                XML::xpathApply(doc, "//D:response/D:href", function(node) {
+                    sub(base, "", URLdecode(XML::xmlValue(node)), fixed=TRUE)
+                })
+            )
+            result <- result[result != ""]
+            result
+        },
 
-                result$name = sub(base, "", URLdecode(XML::xmlValue(children$href)), fixed=TRUE)
-                sizeXMLNode = XML::xmlChildren(XML::xmlChildren(children$propstat)$prop)$getcontentlength
-                result$fileSize = as.numeric(XML::xmlValue(sizeXMLNode))
+        extractFileSizeFromWebDAVResponse = function(response, uri)    
+        {
+            text <- rawToChar(response$content)
+            doc <- XML::xmlParse(text, asText=TRUE)
 
-                result
+            base <- paste(paste("/", strsplit(uri, "/")[[1]][-1:-3], sep="", collapse=""), "/", sep="")
+            result <- XML::xpathApply(doc, "//D:response/D:propstat/D:prop/D:getcontentlength", function(node) {
+              XML::xmlValue(node)
             })
 
-            result
+            unlist(result)
         }
     )
 )

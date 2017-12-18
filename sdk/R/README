@@ -55,12 +55,6 @@ collection <- Collection$new(arv, "uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Print content of the collection (directory/folder tree structure)
-
-collection$printFileContent()
-
---------------------------------------------------------------------------------------------------------------------------------
-
 #Get file/folder content as character vector
 
 collection$getFileContent()
@@ -94,11 +88,26 @@ size <- arvadosSubcollection$getSizeInBytes()
 
 #Call structure
 
-collection$createNewFile("relativePath", "fileContent", "fileContentType")
+collection$add(arvadosFileOrSubcollectionOrFileName, optionalRelativePath)
 
 #Example
 
-collection$createNewFile("cpp/src/main.cpp", "#include<iostream>", "text/html")
+collection$add("main.cpp", "cpp/src/")
+
+#or
+
+folder <- Subcollection$new("src")
+file <- ArvadosFile$new("main.cpp")
+folder$add(file)
+
+collection$add(folder, "cpp")
+
+#Both examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.
+#If subcollection contains more files or folders they will be added recursively.
+
+#You can also add multiple files
+
+collection$add(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -107,5 +116,24 @@ collection$createNewFile("cpp/src/main.cpp", "#include<iostream>", "text/html")
 arvadosFile <- collection$get("location/to/my/file.cpp")
 
 arvadosFile$write("This is new file content")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Delete file from a collection
+
+file <- collection$get("location/to/my/file.cpp")
+
+file$removeFromCollection()
+
+#Or
+
+collection$remove(file)
+
+#Both examples will remove file "file.cpp" from a collection
+#If subcollection contains more files or folders they will be removed recursively.
+
+#You can also remove multiple files
+
+collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
 
 --------------------------------------------------------------------------------------------------------------------------------
