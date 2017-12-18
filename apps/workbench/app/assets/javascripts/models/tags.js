@@ -13,16 +13,11 @@ window.Vocabulary = function(url) {
     var v = this
     Object.assign(v, {
         url: url,
-        data: {},
+        data: vocabulary, // Default vocabulary
         load: function() {
             // Load vocabulary from rails' public directory
             m.request(v.url.origin + '/vocabulary.json').then(function(resp) {
-                console.log('Vocabulary loaded')
                 v.data = resp
-            }).catch(function(err) {
-                // Not found, use a default vocabulary
-                console.log('Using default vocabulary')
-                v.data = vocabulary
             })
         },
         getDef: function(tagName) {
