@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+// SiteFileSystem returns a FileSystem that maps collections and other
+// Arvados objects onto a filesystem layout.
+//
+// This is experimental: the filesystem layout is not stable, and
+// there are significant known bugs and shortcomings. For example,
+// although the FileSystem allows files to be added and modified in
+// collections, these changes are not persistent or visible to other
+// Arvados clients.
 func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 	root := &treenode{
 		fileinfo: fileinfo{
