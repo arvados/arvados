@@ -33,6 +33,9 @@
 //= require jquery.number.min
 //= require npm-dependencies
 //= require mithril/stream/stream
+//= require microplugin
+//= require sifter
+//= require selectize
 //= require_tree .
 
 Es6ObjectAssign.polyfill()
