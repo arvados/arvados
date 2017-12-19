@@ -47,13 +47,14 @@ window.TagEditorRow = {
                 style: "cursor: pointer;",
                 onclick: function(e) {
                     console.log('Erase tag clicked')
+                    vnode.attrs.removeTag()
                 }
             })
             : ""),
             // Tag name
             m("td",
             vnode.attrs.editMode ?
-            m("div", [m(SelectOrAutocomplete, {
+            m("div", {key: 'name-'+vnode.attrs.name()},[m(SelectOrAutocomplete, {
                 options: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
                     ? Object.keys(vnode.attrs.vocabulary().types)
                     : Object.keys(vnode.attrs.vocabulary().types).concat(vnode.attrs.name()),
@@ -64,7 +65,7 @@ window.TagEditorRow = {
             // Tag value
             m("td",
             vnode.attrs.editMode ?
-            m("div", {key: vnode.attrs.name()}, [m(SelectOrAutocomplete, {
+            m("div", {key: 'value-'+vnode.attrs.name()}, [m(SelectOrAutocomplete, {
                 options: (vnode.attrs.name() in vnode.attrs.vocabulary().types) 
                     ? vnode.attrs.vocabulary().types[vnode.attrs.name()].options.concat(vnode.attrs.value())
                     : [vnode.attrs.value()],
@@ -80,9 +81,6 @@ window.TagEditorRow = {
 }
 
 window.TagEditorTable = {
-    oninit: function(vnode) {
-        vnode.state.tags = vnode.attrs.tags
-    },
     view: function(vnode) {
         return m("table.table.table-condensed", {
             border: "1"
@@ -100,9 +98,12 @@ window.TagEditorTable = {
                 ])
             ]),
             m("tbody", [
-                vnode.state.tags.map(function(tag, idx) {
+                vnode.attrs.tags.map(function(tag, idx) {
                     return m(TagEditorRow, {
                         key: idx,
+                        removeTag: function() {
+                            vnode.attrs.tags.splice(idx, 1)
+                        },
                         editMode: vnode.attrs.editMode,
                         name: tag.name,
                         value: tag.value,
@@ -120,7 +121,7 @@ window.TagEditorApp = {
         // Get vocabulary
         vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
         m.request('/vocabulary.json').then(vnode.state.vocabulary)
-        vnode.state.editMode = vnode.attrs.targetEditable || true
+        vnode.state.editMode = vnode.attrs.targetEditable
         // Get tags
         vnode.state.tags = []
         var objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
