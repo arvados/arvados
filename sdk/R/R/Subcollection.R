@@ -53,7 +53,7 @@ Subcollection <- R6::R6Class(
 
             #todo rename this add to a collection
             private$addToCollection(NULL)
-            private$detachFromParent()
+            private$dettachFromParent()
 
         },
 
@@ -111,6 +111,35 @@ Subcollection <- R6::R6Class(
             paste0(relativePath, collapse = "/")
         },
 
+        move = function(newLocation)
+        {
+            if(endsWith(newLocation, paste0(private$name, "/")))
+            {
+                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
+            }
+            else if(endsWith(newLocation, private$name))
+            {
+                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(private$name))
+            }
+            else
+            {
+                stop("Destination path is not valid.")
+            }
+
+            newParent <- private$collection$get(newLocation)
+
+            if(is.null(newParent))
+            {
+                stop("Unable to get destination subcollectin")
+            }
+
+            status <- private$collection$.__enclos_env__$private$moveOnRest(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+
+            private$attachToParent(newParent)
+
+            paste("Status code :", status$status_code)
+        },
+
         getParent = function() private$parent
     ),
 
@@ -166,13 +195,21 @@ Subcollection <- R6::R6Class(
             private$collection = collection
         },
 
-        detachFromParent = function()
+        dettachFromParent = function()
         {
             if(!is.null(private$parent))
             {
                 private$parent$.__enclos_env__$private$removeChild(private$name)
                 private$parent <- NULL
             }
+            else
+                stop("Parent doesn't exists.")
+        },
+
+        attachToParent = function(parent)
+        {
+            parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
+            private$parent <- parent
         }
     ),
     

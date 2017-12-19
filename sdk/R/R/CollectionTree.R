@@ -1,4 +1,5 @@
 source("./R/Subcollection.R")
+
 source("./R/ArvadosFile.R")
 
 #' Arvados Collection Object
@@ -36,6 +37,9 @@ CollectionTree <- R6::R6Class(
 
         getElement = function(relativePath)
         {
+            if(endsWith(relativePath, "/"))
+                relativePath <- substr(relativePath, 0, nchar(relativePath) - 1)
+
             splitPath <- unlist(strsplit(relativePath, "/", fixed = TRUE))
             returnElement = private$tree
 
@@ -62,7 +66,7 @@ CollectionTree <- R6::R6Class(
 
             for(elementIndex in lastElementIndex:1)
             {
-            if(elementIndex == lastElementIndex)
+                if(elementIndex == lastElementIndex)
                 {
                     branch = ArvadosFile$new(splitPath[[elementIndex]])
                 }

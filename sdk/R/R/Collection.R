@@ -8,9 +8,11 @@ source("./R/HttpParser.R")
 #' Update description
 #'
 #' @examples arv = Collection$new(api, uuid)
-#' @export CTest
-CTest <- R6::R6Class(
-    "CTest",
+#' @export Collection
+Collection <- R6::R6Class(
+
+    "Collection",
+
     public = list(
 
         api  = NULL,
@@ -90,7 +92,18 @@ CTest <- R6::R6Class(
             }
         },
 
-        getTree = function() private$tree,
+        move = function(content, newLocation)
+        {
+            if(endsWith(content, "/"))
+                content <- substr(content, 0, nchar(content) - 1)
+
+            elementToMove <- self$get(content)
+
+            if(is.null(elementToMove))
+                stop("Element you want to move doesn't exist in the collection.")
+
+            elementToMove$move(newLocation)
+        },
 
         getFileContent = function() private$getCollectionContent(),
 
@@ -164,6 +177,23 @@ CTest <- R6::R6Class(
                 stop(paste("Server code:", serverResponse$status_code))
 
             print(paste("File deleted", relativePath))
+        },
+
+        moveOnRest = function(from, to)
+        {
+            collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/"))
+            fromURL <- paste0(collectionURL, from)
+            toURL <- paste0(collectionURL, to)
+
+            headers = list("Authorization" = paste("OAuth2", self$api$getToken()),
+                           "Destination" = toURL)
+
+            serverResponse <- private$http$MOVE(fromURL, headers)
+
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            serverResponse
         }
     ),
 

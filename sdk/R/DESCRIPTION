@@ -1,6 +1,7 @@
 Package: ArvadosR
 Type: Package
 Title: Arvados R SDK
+Version: 0.0.1
 Author: Fuad Muhic
 Maintainer: Ward Vandewege <wvandewege@veritasgenetics.com>
 Description: This is the Arvados R SDK

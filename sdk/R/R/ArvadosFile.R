@@ -104,6 +104,35 @@ ArvadosFile <- R6::R6Class(
 
             parsedServerResponse <- httr::content(serverResponse, "text")
             parsedServerResponse
+        },
+
+        move = function(newLocation)
+        {
+            if(endsWith(newLocation, paste0(private$name, "/")))
+            {
+                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
+            }
+            else if(endsWith(newLocation, private$name))
+            {
+                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(private$name))
+            }
+            else
+            {
+                stop("Destination path is not valid.")
+            }
+
+            newParent <- private$collection$get(newLocation)
+
+            if(is.null(newParent))
+            {
+                stop("Unable to get destination subcollectin")
+            }
+
+            status <- private$collection$.__enclos_env__$private$moveOnRest(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+
+            private$attachToParent(newParent)
+
+            paste("Status code :", status$status_code)
         }
     ),
 
@@ -138,6 +167,12 @@ ArvadosFile <- R6::R6Class(
                 private$parent$.__enclos_env__$private$removeChild(private$name)
                 private$parent <- NULL
             }
+        },
+
+        attachToParent = function(parent)
+        {
+            parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
+            private$parent <- parent
         }
     ),
     
