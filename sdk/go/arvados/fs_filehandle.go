@@ -97,3 +97,8 @@ func (f *filehandle) Stat() (os.FileInfo, error) {
 func (f *filehandle) Close() error {
 	return nil
 }
+
+func (f *filehandle) Sync() error {
+	// Sync the containing filesystem.
+	return f.FS().Sync()
+}

@@ -2,7 +2,9 @@ package mount
 
 import (
 	"io"
+	"log"
 	"os"
+	"runtime/debug"
 	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -55,10 +57,12 @@ func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
 }
 
 func (fs *keepFS) Init() {
+	defer fs.debugPanics()
 	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS, invalidFH
 	}
@@ -72,6 +76,7 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 }
 
 func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
+	defer fs.debugPanics()
 	if fs.ReadOnly && flags&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0 {
 		return -fuse.EROFS, invalidFH
 	}
@@ -88,6 +93,7 @@ func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -120,6 +126,7 @@ func (fs *keepFS) errCode(err error) int {
 }
 
 func (fs *keepFS) Mkdir(path string, mode uint32) int {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -132,6 +139,7 @@ func (fs *keepFS) Mkdir(path string, mode uint32) int {
 }
 
 func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
+	defer fs.debugPanics()
 	f, err := fs.root.OpenFile(path, 0, 0)
 	if err != nil {
 		return fs.errCode(err), invalidFH
@@ -145,10 +153,12 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Releasedir(path string, fh uint64) (errc int) {
+	defer fs.debugPanics()
 	return fs.Release(path, fh)
 }
 
 func (fs *keepFS) Release(path string, fh uint64) (errc int) {
+	defer fs.debugPanics()
 	fs.Lock()
 	defer fs.Unlock()
 	defer delete(fs.open, fh)
@@ -162,6 +172,7 @@ func (fs *keepFS) Release(path string, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Rename(oldname, newname string) (errc int) {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -169,6 +180,7 @@ func (fs *keepFS) Rename(oldname, newname string) (errc int) {
 }
 
 func (fs *keepFS) Unlink(path string) (errc int) {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -176,6 +188,7 @@ func (fs *keepFS) Unlink(path string) (errc int) {
 }
 
 func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -196,6 +209,7 @@ func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+	defer fs.debugPanics()
 	var fi os.FileInfo
 	var err error
 	if f := fs.lookupFH(fh); f != nil {
@@ -218,7 +232,7 @@ func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
 	}
 	if fi, err := fs.root.Stat(path); err != nil {
 		return fs.errCode(err)
-	} else if (os.FileMode(mode)^fi.Mode())&os.ModePerm != 0 {
+	} else if mode & ^uint32(fuse.S_IFREG|fuse.S_IFDIR|0777) != 0 || (fi.Mode()&os.ModeDir != 0) != (mode&fuse.S_IFDIR != 0) {
 		return -fuse.ENOSYS
 	} else {
 		return 0
@@ -226,6 +240,7 @@ func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
 }
 
 func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
+	defer fs.debugPanics()
 	var m uint32
 	if fi.IsDir() {
 		m = m | fuse.S_IFDIR
@@ -252,6 +267,7 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	defer fs.debugPanics()
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
@@ -270,6 +286,7 @@ func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) 
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	defer fs.debugPanics()
 	f := fs.lookupFH(fh)
 	if f == nil {
 		return -fuse.EBADF
@@ -288,6 +305,7 @@ func (fs *keepFS) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
+	defer fs.debugPanics()
 	f := fs.lookupFH(fh)
 	if f == nil {
 		return -fuse.EBADF
@@ -304,4 +322,25 @@ func (fs *keepFS) Readdir(path string,
 		fill(fi.Name(), &stat, 0)
 	}
 	return 0
+}
+
+func (fs *keepFS) Fsync(path string, datasync bool, fh uint64) int {
+	defer fs.debugPanics()
+	f := fs.lookupFH(fh)
+	if f == nil {
+		return -fuse.EBADF
+	}
+	return fs.errCode(f.Sync())
+}
+
+func (fs *keepFS) Fsyncdir(path string, datasync bool, fh uint64) int {
+	return fs.Fsync(path, datasync, fh)
+}
+
+func (fs *keepFS) debugPanics() {
+	if err := recover(); err != nil {
+		log.Printf("(%T) %v", err, err)
+		debug.PrintStack()
+		panic(err)
+	}
 }

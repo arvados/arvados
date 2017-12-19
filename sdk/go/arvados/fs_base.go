@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -40,6 +41,7 @@ type File interface {
 	Readdir(int) ([]os.FileInfo, error)
 	Stat() (os.FileInfo, error)
 	Truncate(int64) error
+	Sync() error
 }
 
 // A FileSystem is an http.Filesystem plus Stat() and support for
@@ -47,8 +49,10 @@ type File interface {
 // goroutines.
 type FileSystem interface {
 	http.FileSystem
+	fsBackend
 
-	inode
+	newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
+	newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
 	// analogous to os.Stat()
 	Stat(name string) (os.FileInfo, error)
@@ -75,10 +79,12 @@ type FileSystem interface {
 	Remove(name string) error
 	RemoveAll(name string) error
 	Rename(oldname, newname string) error
+	Sync() error
 }
 
 type inode interface {
 	Parent() inode
+	FS() FileSystem
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
 	Write([]byte, filenodePtr) (int, filenodePtr, error)
 	Truncate(int64) error
@@ -186,11 +192,16 @@ func (*nullnode) Child(name string, replace func(inode) inode) inode {
 }
 
 type treenode struct {
+	fs       FileSystem
 	parent   inode
 	inodes   map[string]inode
 	fileinfo fileinfo
 	sync.RWMutex
 	nullnode
+}
+
+func (n *treenode) FS() FileSystem {
+	return n.fs
 }
 
 func (n *treenode) Parent() inode {
@@ -239,7 +250,8 @@ func (n *treenode) Readdir() (fi []os.FileInfo) {
 }
 
 type fileSystem struct {
-	inode
+	root inode
+	fsBackend
 }
 
 // OpenFile is analogous to os.OpenFile().
@@ -248,12 +260,11 @@ func (fs *fileSystem) OpenFile(name string, flag int, perm os.FileMode) (File, e
 }
 
 func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*filehandle, error) {
-	var dn inode = fs.inode
 	if flag&os.O_SYNC != 0 {
 		return nil, ErrSyncNotSupported
 	}
 	dirname, name := path.Split(name)
-	parent := rlookup(dn, dirname)
+	parent := rlookup(fs.root, dirname)
 	if parent == nil {
 		return nil, os.ErrNotExist
 	}
@@ -294,20 +305,10 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		}
 		var err error
 		n = parent.Child(name, func(inode) inode {
-			var dn *dirnode
-			switch parent := parent.(type) {
-			case *dirnode:
-				dn = parent
-			case *collectionFileSystem:
-				dn = parent.inode.(*dirnode)
-			default:
-				err = ErrInvalidArgument
-				return nil
-			}
 			if perm.IsDir() {
-				n, err = dn.newDirnode(dn, name, perm|0755, time.Now())
+				n, err = fs.newDirnode(parent, name, perm|0755, time.Now())
 			} else {
-				n, err = dn.newFilenode(dn, name, perm|0755, time.Now())
+				n, err = fs.newFilenode(parent, name, perm|0755, time.Now())
 			}
 			return n
 		})
@@ -322,10 +323,10 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 	} else if flag&os.O_TRUNC != 0 {
 		if !writable {
 			return nil, fmt.Errorf("invalid flag O_TRUNC in read-only mode")
-		} else if fn, ok := n.(*filenode); !ok {
+		} else if n.IsDir() {
 			return nil, fmt.Errorf("invalid flag O_TRUNC when opening directory")
-		} else {
-			fn.Truncate(0)
+		} else if err := n.Truncate(0); err != nil {
+			return nil, err
 		}
 	}
 	return &filehandle{
@@ -346,7 +347,7 @@ func (fs *fileSystem) Create(name string) (File, error) {
 
 func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 	dirname, name := path.Split(name)
-	n := rlookup(fs.inode, dirname)
+	n := rlookup(fs.root, dirname)
 	if n == nil {
 		return os.ErrNotExist
 	}
@@ -355,12 +356,8 @@ func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 	if n.Child(name, nil) != nil {
 		return os.ErrExist
 	}
-	dn, ok := n.(*dirnode)
-	if !ok {
-		return ErrInvalidArgument
-	}
 	child := n.Child(name, func(inode) (child inode) {
-		child, err = dn.newDirnode(dn, name, perm, time.Now())
+		child, err = fs.newDirnode(n, name, perm, time.Now())
 		return
 	})
 	if err != nil {
@@ -372,7 +369,7 @@ func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 }
 
 func (fs *fileSystem) Stat(name string) (fi os.FileInfo, err error) {
-	node := rlookup(fs.inode, name)
+	node := rlookup(fs.root, name)
 	if node == nil {
 		err = os.ErrNotExist
 	} else {
@@ -414,7 +411,7 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 	for _, f := range []*filehandle{olddirf, newdirf} {
 		node := f.inode
 		needLock = append(needLock, node)
-		for node.Parent() != node {
+		for node.Parent() != node && node.Parent().FS() == node.FS() {
 			node = node.Parent()
 			needLock = append(needLock, node)
 		}
@@ -426,10 +423,6 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 			defer n.Unlock()
 			locked[n] = true
 		}
-	}
-
-	if _, ok := newdirf.inode.(*dirnode); !ok {
-		return ErrInvalidOperation
 	}
 
 	err = nil
@@ -450,20 +443,18 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		}
 		oldinode.Lock()
 		defer oldinode.Unlock()
-		olddn := olddirf.inode.(*dirnode)
-		newdn := newdirf.inode.(*dirnode)
 		switch n := oldinode.(type) {
 		case *dirnode:
 			n.parent = newdirf.inode
-			n.treenode.fileinfo.name = newname
+			n.fileinfo.name = newname
 		case *filenode:
-			n.parent = newdn
+			n.parent = newdirf.inode
 			n.fileinfo.name = newname
 		default:
 			panic(fmt.Sprintf("bad inode type %T", n))
 		}
-		olddn.treenode.fileinfo.modTime = time.Now()
-		newdn.treenode.fileinfo.modTime = time.Now()
+		//TODO: olddirf.setModTime(time.Now())
+		//TODO: newdirf.setModTime(time.Now())
 		return nil
 	})
 	return err
@@ -488,7 +479,7 @@ func (fs *fileSystem) remove(name string, recursive bool) (err error) {
 	if name == "" || name == "." || name == ".." {
 		return ErrInvalidArgument
 	}
-	dir := rlookup(fs, dirname)
+	dir := rlookup(fs.root, dirname)
 	if dir == nil {
 		return os.ErrNotExist
 	}
@@ -506,4 +497,71 @@ func (fs *fileSystem) remove(name string, recursive bool) (err error) {
 		return nil
 	})
 	return err
+}
+
+// Caller must have parent lock, and must have already ensured
+// parent.Child(name,nil) is nil.
+func (fs *fileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	if name == "" || name == "." || name == ".." {
+		return nil, ErrInvalidArgument
+	}
+	return &dirnode{
+		treenode: treenode{
+			fs:     parent.FS(),
+			parent: parent,
+			fileinfo: fileinfo{
+				name:    name,
+				mode:    perm | os.ModeDir,
+				modTime: modTime,
+			},
+			inodes: make(map[string]inode),
+		},
+	}, nil
+}
+
+func (fs *fileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	if name == "" || name == "." || name == ".." {
+		return nil, ErrInvalidArgument
+	}
+	return &filenode{
+		fs:     parent.FS(),
+		parent: parent,
+		fileinfo: fileinfo{
+			name:    name,
+			mode:    perm & ^os.ModeDir,
+			modTime: modTime,
+		},
+	}, nil
+}
+
+func (fs *fileSystem) Sync() error {
+	log.Printf("TODO: sync fileSystem")
+	return ErrInvalidOperation
+}
+
+// rlookup (recursive lookup) returns the inode for the file/directory
+// with the given name (which may contain "/" separators). If no such
+// file/directory exists, the returned node is nil.
+func rlookup(start inode, path string) (node inode) {
+	node = start
+	for _, name := range strings.Split(path, "/") {
+		if node == nil {
+			break
+		}
+		if node.IsDir() {
+			if name == "." || name == "" {
+				continue
+			}
+			if name == ".." {
+				node = node.Parent()
+				continue
+			}
+		}
+		node = func() inode {
+			node.RLock()
+			defer node.RUnlock()
+			return node.Child(name, nil)
+		}()
+	}
+	return
 }
