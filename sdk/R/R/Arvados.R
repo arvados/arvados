@@ -73,6 +73,8 @@ Arvados <- R6::R6Class(
             collectionURL <- paste0(private$host, "collections")
             headers <- list(Authorization = paste("OAuth2", private$token))
 
+            names(filters) <- c("collection")
+
             serverResponse <- private$http$GET(collectionURL, headers, filters, limit, offset)
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
@@ -104,6 +106,7 @@ Arvados <- R6::R6Class(
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
 
+            names(body) <- c("collection")
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$PUT(collectionURL, headers, body)
@@ -121,6 +124,8 @@ Arvados <- R6::R6Class(
             collectionURL <- paste0(private$host, "collections")
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
+
+            names(body) <- c("collection")
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$POST(collectionURL, headers, body)
@@ -131,8 +136,92 @@ Arvados <- R6::R6Class(
                 stop(collection$errors)       
 
             collection
-        }
+        },
 
+        getProject = function(uuid)
+        {
+            projectURL <- paste0(private$host, "groups/", uuid)
+            headers <- list(Authorization = paste("OAuth2", private$token))
+
+            serverResponse <- private$http$GET(projectURL, headers)
+
+            project <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(project$errors))
+                stop(project$errors)       
+
+            project
+        },
+
+        createProject = function(body) 
+        {
+            projectURL <- paste0(private$host, "groups")
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
+
+            names(body) <- c("group")
+            body <- jsonlite::toJSON(body, auto_unbox = T)
+
+            serverResponse <- private$http$POST(projectURL, headers, body)
+
+            project <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(project$errors))
+                stop(project$errors)       
+
+            project
+        },
+
+        updateProject = function(uuid, body) 
+        {
+            projectURL <- paste0(private$host, "groups/", uuid)
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
+
+            names(body) <- c("group")
+            body <- jsonlite::toJSON(body, auto_unbox = T)
+
+            serverResponse <- private$http$PUT(projectURL, headers, body)
+
+            project <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(project$errors))
+                stop(project$errors)       
+
+            project
+        },
+
+        listProjects = function(filters = NULL, limit = 100, offset = 0) 
+        {
+            projectURL <- paste0(private$host, "groups")
+            headers <- list(Authorization = paste("OAuth2", private$token))
+
+            names(filters) <- c("groups")
+
+            serverResponse <- private$http$GET(projectURL, headers, filters, limit, offset)
+            projects <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(projects$errors))
+                stop(projects$errors)       
+
+            projects
+        },
+
+        deleteProject = function(uuid) 
+        {
+            projectURL <- paste0(private$host, "groups/", uuid)
+            headers <- list("Authorization" = paste("OAuth2", private$token),
+                            "Content-Type"  = "application/json")
+
+            serverResponse <- private$http$DELETE(projectURL, headers)
+
+            project <- private$httpParser$parseJSONResponse(serverResponse)
+
+            if(!is.null(project$errors))
+                stop(project$errors)       
+
+            project
+        }
     ),
     
     private = list(

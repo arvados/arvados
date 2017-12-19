@@ -30,19 +30,19 @@ deletedCollection <- arv$deleteCollection("uuid")
 
 #Update collection:
 
-updatedCollection <- arv$updateCollection("uuid", list(collection = list(name = "new_name", description = "new_desciption")))
+updatedCollection <- arv$updateCollection("uuid", list((name = "new_name", description = "new_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create collection:
 
-updatedCollection <- arv$createCollection("uuid", list(collection = list(name = "new_name", description = "new_desciption")))
+cratedCollection <- arv$createCollection(list(list(name = "new_name", description = "new_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Collection manipulation:
+#Collection content manipulation:
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -135,5 +135,37 @@ collection$remove(file)
 #You can also remove multiple files
 
 collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Get project:
+
+arv$getProject("uuid")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#List projects:
+
+projects <- arv$listProjects(list("uuid", "=" "aaaaa-bbbbb-ccccccccccccccc"), limit = 10, offset = 2)
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Delete project:
+
+deletedProject <- arv$deleteProject("uuid")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Update project:
+
+updatedProject <- arv$updateProject("uuid", list((name = "new_name", description = "new_desciption")))
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Create project:
+
+cratedProject <- arv$createProject(list(list(name = "project_name", description = "project_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
