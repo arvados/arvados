@@ -27,7 +27,6 @@ window.SelectOrAutocomplete = {
                 return {value: option}
             }),
             onChange: function(val) {
-                vnode.state.dirty = true
                 vnode.attrs.value(val)
                 m.redraw()
             }
@@ -39,18 +38,25 @@ window.SelectOrAutocomplete = {
 // selector/editor depending of the tag type.
 window.TagEditorRow = {
     view: function(vnode) {
+        // Value options list
+        valueOpts = []
+        if (vnode.attrs.name() in vnode.attrs.vocabulary().types &&
+            'options' in vnode.attrs.vocabulary().types[vnode.attrs.name()]) {
+                valueOpts = vnode.attrs.vocabulary().types[vnode.attrs.name()].options
+        }
+        valueOpts.push(vnode.attrs.value())
+
         return m("tr", [
             // Erase tag
             m("td",
-            vnode.attrs.editMode ?
-            m("i.glyphicon.glyphicon-remove", {
-                style: "cursor: pointer;",
-                onclick: function(e) {
-                    console.log('Erase tag clicked')
-                    vnode.attrs.removeTag()
-                }
-            })
-            : ""),
+            vnode.attrs.editMode &&
+                m('div.text-center', m('a.btn.btn-default.btn-sm', {
+                    style: {
+                        align: 'center'
+                    },
+                    onclick: function(e) { vnode.attrs.removeTag() }
+                }, m('i.fa.fa-fw.fa-trash-o'))),
+            ),
             // Tag name
             m("td",
             vnode.attrs.editMode ?
@@ -66,12 +72,11 @@ window.TagEditorRow = {
             m("td",
             vnode.attrs.editMode ?
             m("div", {key: 'value-'+vnode.attrs.name()}, [m(SelectOrAutocomplete, {
-                options: (vnode.attrs.name() in vnode.attrs.vocabulary().types) 
-                    ? vnode.attrs.vocabulary().types[vnode.attrs.name()].options.concat(vnode.attrs.value())
-                    : [vnode.attrs.value()],
+                options: valueOpts,
                 value: vnode.attrs.value,
                 create: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
-                    ? vnode.attrs.vocabulary().types[vnode.attrs.name()].overridable || false
+                    ? (vnode.attrs.vocabulary().types[vnode.attrs.name()].type == 'text') || 
+                        vnode.attrs.vocabulary().types[vnode.attrs.name()].overridable || false
                     : true, // If tag not in vocabulary, we should accept any value
                 })
             ])
@@ -101,9 +106,7 @@ window.TagEditorTable = {
                 vnode.attrs.tags.map(function(tag, idx) {
                     return m(TagEditorRow, {
                         key: idx,
-                        removeTag: function() {
-                            vnode.attrs.tags.splice(idx, 1)
-                        },
+                        removeTag: function() { vnode.attrs.tags.splice(idx, 1) },
                         editMode: vnode.attrs.editMode,
                         name: tag.name,
                         value: tag.value,
@@ -117,6 +120,7 @@ window.TagEditorTable = {
 
 window.TagEditorApp = {
     oninit: function(vnode) {
+        vnode.state.saveLabel = m.stream(' Save ')
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
         vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
@@ -124,14 +128,25 @@ window.TagEditorApp = {
         vnode.state.editMode = vnode.attrs.targetEditable
         // Get tags
         vnode.state.tags = []
-        var objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
+        vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
         vnode.state.sessionDB.request(
-            vnode.state.sessionDB.loadLocal(), objPath).then(function(obj) {
+            vnode.state.sessionDB.loadLocal(), vnode.state.objPath, {
+                data: {
+                    select: JSON.stringify(['properties']) // FIXME: not working
+                },
+            }).then(function(obj) {
+                console.log(obj)
                 Object.keys(obj.properties).forEach(function(k) {
                     vnode.state.tags.push({
                         name: m.stream(k),
                         value: m.stream(obj.properties[k])
                     })
+                })
+                vnode.state.dirty = m.stream(null)
+                vnode.state.tags.map(function(tag) {
+                  tag.name.map(m.redraw)
+                  tag.name.map(vnode.state.dirty)
+                  tag.value.map(vnode.state.dirty)
                 })
             }
         )
@@ -144,7 +159,7 @@ window.TagEditorApp = {
                 tags: vnode.state.tags,
                 vocabulary: vnode.state.vocabulary
             }),
-            vnode.state.editMode ?
+            vnode.state.editMode &&
             m("div", [
                 m("div.pull-left", [
                     // Add tag button
@@ -164,15 +179,25 @@ window.TagEditorApp = {
                     // Save button
                     m("a.btn.btn-primary.btn-sm", {
                         onclick: function(e) {
-                            console.log('Save button clicked')
-                            // vnode.state.tags.save().then(function() {
-                            //     vnode.state.tags.load()
-                            // })
+                            vnode.state.saveLabel('Saving...')
+                            var tags = {}
+                            vnode.state.tags.forEach(function(t) {
+                                tags[t.name()] = t.value()
+                            })
+                            vnode.state.sessionDB.request(
+                                vnode.state.sessionDB.loadLocal(),
+                                vnode.state.objPath, {
+                                    method: "PUT",
+                                    data: {properties: JSON.stringify(tags)}
+                                }
+                            ).then(function(v) {
+                                vnode.state.saveLabel(' Save ')
+                                console.log('ok!')
+                            })
                         }
-                    }, " Save ")
+                    }, vnode.state.saveLabel)
                 ])
             ])
-            : ""
         ]
     },
 }
