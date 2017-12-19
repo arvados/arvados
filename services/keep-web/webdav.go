@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	prand "math/rand"
 	"os"
 	"path"
@@ -37,6 +38,12 @@ var (
 type webdavFS struct {
 	collfs  arvados.CollectionFileSystem
 	writing bool
+	// webdav PROPFIND reads the first few bytes of each file
+	// whose filename extension isn't recognized, which is
+	// prohibitively expensive: we end up fetching multiple 64MiB
+	// blocks. Avoid this by returning EOF on all reads when
+	// handling a PROPFIND.
+	alwaysReadEOF bool
 }
 
 func (fs *webdavFS) makeparents(name string) {
@@ -71,6 +78,9 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 		// have 405.
 		f = writeFailer{File: f, err: errReadOnly}
 	}
+	if fs.alwaysReadEOF {
+		f = readEOF{File: f}
+	}
 	return
 }
 
@@ -104,6 +114,14 @@ func (wf writeFailer) Write([]byte) (int, error) {
 
 func (wf writeFailer) Close() error {
 	return wf.err
+}
+
+type readEOF struct {
+	webdav.File
+}
+
+func (readEOF) Read(p []byte) (int, error) {
+	return 0, io.EOF
 }
 
 // noLockSystem implements webdav.LockSystem by returning success for
