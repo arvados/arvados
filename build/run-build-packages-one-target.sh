@@ -161,7 +161,6 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
-        arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager
         arvados-src
@@ -176,14 +175,14 @@ if test -z "$packages" ; then
         keep-rsync
         keepstore
         keep-web
-        libarvados-perl"
+        libarvados-perl
+        python-arvados-fuse
+        python-arvados-python-client
+        python-arvados-cwl-runner"
 
-    case "$TARGET" in
-        *)
-            packages="$packages python-arvados-fuse
-                  python-arvados-python-client python-arvados-cwl-runner"
-            ;;
-    esac
+    if [[ $TARGET != centos7 ]]; then
+        packages="$packages arvados-docker-cleaner"
+    fi
 fi
 
 FINAL_EXITCODE=0
