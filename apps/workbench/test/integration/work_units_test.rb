@@ -216,7 +216,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
           old_attributes: {state: 'Running'},
           new_attributes: {state: 'Complete', exit_code: 1},
         },
-      }, "Container #{c['uuid']} finished with exit code 1 (failure)"],
+      }, "Container #{c['uuid']} finished"],
      # It's unrealistic for state to change again once it's Complete,
      # but the logging code doesn't care, so we do it to keep the test
      # simple.
