@@ -18,7 +18,11 @@ import (
 // collections, these changes are not persistent or visible to other
 // Arvados clients.
 func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
+	fs := &fileSystem{
+		fsBackend: keepBackend{apiClient: c, keepClient: kc},
+	}
 	root := &treenode{
+		fs: fs,
 		fileinfo: fileinfo{
 			name:    "/",
 			mode:    os.ModeDir | 0755,
@@ -28,8 +32,10 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 	}
 	root.parent = root
 	root.Child("by_id", func(inode) inode {
-		return &vdirnode{
+		var vn inode
+		vn = &vdirnode{
 			treenode: treenode{
+				fs:     fs,
 				parent: root,
 				inodes: make(map[string]inode),
 				fileinfo: fileinfo{
@@ -39,25 +45,29 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 				},
 			},
 			create: func(name string) inode {
-				return newEntByID(c, kc, name)
+				return newEntByID(vn, name)
 			},
 		}
+		return vn
 	})
-	return &fileSystem{inode: root}
+	fs.root = root
+	return fs
 }
 
-func newEntByID(c *Client, kc keepClient, id string) inode {
+func newEntByID(parent inode, id string) inode {
 	var coll Collection
-	err := c.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
+	err := parent.FS().RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
 	if err != nil {
 		return nil
 	}
-	fs, err := coll.FileSystem(c, kc)
-	fs.(*collectionFileSystem).inode.(*dirnode).fileinfo.name = id
+	fs, err := coll.FileSystem(parent.FS(), parent.FS())
 	if err != nil {
 		return nil
 	}
-	return fs
+	root := fs.(*collectionFileSystem).root.(*dirnode)
+	root.fileinfo.name = id
+	root.parent = parent
+	return root
 }
 
 type vdirnode struct {
