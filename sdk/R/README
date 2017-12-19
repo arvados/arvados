@@ -138,7 +138,27 @@ collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
+#Move file or folder inside collection
+
+file <- collection$get("location/to/my/file.cpp")
+
+file$move("destination/file.cpp")
+
+#Or subcollections
+
+subcollection <- collection$get("location/to/folder")
+
+file$move("destination/folder")
+
+#Make sure to include folder name in destination
+#For example
+#file$move("destination/") will not work
+
 --------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+# Working with projects:
 
 #Get project:
 

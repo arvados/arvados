@@ -14,7 +14,6 @@ HttpParser <- R6::R6Class(
             parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
         },
 
-        #TODO rename this
         parseWebDAVResponse = function(response, uri)
         {
             text <- rawToChar(response$content)
