@@ -31,9 +31,9 @@ window.SessionDB = function() {
         loadLocal: function() {
             var sessions = db.loadActive()
             var s = false
-            Object.keys(sessions).forEach(function(key) {
-                if (sessions[key].isFromRails) {
-                    s = sessions[key]
+            Object.values(sessions).forEach(function(session) {
+                if (session.isFromRails) {
+                    s = session
                     return
                 }
             })

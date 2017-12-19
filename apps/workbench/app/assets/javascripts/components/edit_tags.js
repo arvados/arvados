@@ -2,193 +2,87 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.IntegerField = {
+window.SelectOrAutocomplete = {
     view: function(vnode) {
-        var tags = vnode.attrs.tags
-        var voc = vnode.attrs.voc
-        var tagName = tags.getName(vnode.attrs.tagIdx)
-        var tagDef = voc.getDef(tagName)
-        var min = tagDef.min || false
-        var max = tagDef.max || false
         return m("input", {
-            type: 'number',
-            style: {
-                width: '100%',
-            },
-            oninput: m.withAttr("value", function(val) {
-                // Validations
-                if (isNaN(parseInt(val))) { return }
-                if (min && val < min) { return }
-                if (max && val > max) { return }
-                // Value accepted
-                tags.data[vnode.attrs.tagIdx]["value"] = parseInt(val)
-            }),
-            value: tags.data[vnode.attrs.tagIdx]["value"]
-        }, tags.data[vnode.attrs.tagIdx]["value"])
-    }
-}
-
-window.TextField = {
-    view: function(vnode) {
-        var tags = vnode.attrs.tags
-        var voc = vnode.attrs.voc
-        var tagName = tags.getName(vnode.attrs.tagIdx)
-        var tagDef = voc.getDef(tagName)
-        var max_length = tagDef.max_length || false
-        return m("input", {
-            type: 'text',
-            style: {
-                width: '100%',
-            },
-            oninput: m.withAttr("value", function(val) {
-                // Validation
-                if (max_length && val.length > max_length) { return }
-                // Value accepted
-                tags.data[vnode.attrs.tagIdx]["value"] = val
-            }),
-            value: tags.data[vnode.attrs.tagIdx]["value"]
-        }, tags.data[vnode.attrs.tagIdx]["value"])
-    }
-}
-
-window.SelectNameField = {
-    view: function(vnode) {
-        return m("input[type=text]", {
             style: {
                 width: '100%'
             },
-        })
+            type: 'text',
+            value: vnode.attrs.value
+        }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        var tags = vnode.attrs.tags
-        var voc = vnode.attrs.voc
-        var opts = voc.getTypes().map(function(x) {
-            return {
-                value: x,
-                label: x
-            }
-        })
-        // Tag name not included on vocabulary, add it to the options
-        var tagName = tags.getName(vnode.attrs.tagIdx)
-        if (!voc.getTypes().includes(tagName)) {
-            opts = opts.concat([{value: tagName, label: tagName}])
-        }
-        $(vnode.dom).selectize({
-            options: opts,
-            persist: false,
-            maxItems: 1,
-            labelField: 'label',
+        vnode.state.selector = $(vnode.dom).selectize({
+            labelField: 'value',
             valueField: 'value',
-            items: [tags.data[vnode.attrs.tagIdx]["name"]],
-            create: function(input) {
-                return {
-                    value: input,
-                    label: input
-                }
-            },
+            searchField: 'value',
+            sortField: 'value',
+            maxItems: 1,
+            create: vnode.attrs.create ? function(input) {
+                return {value: input}
+            } : false,
+            items: [vnode.attrs.value()],
+            options: vnode.attrs.options.map(function(option) {
+                return {value: option}
+            }),
             onChange: function(val) {
-                tags.data[vnode.attrs.tagIdx]["name"] = val
+                vnode.state.dirty = true
+                vnode.attrs.value(val)
                 m.redraw()
             }
-        })
+        }).data('selectize')
     }
-}
-
-window.SelectField = {
-    view: function(vnode) {
-        var tags = vnode.attrs.tags
-        var voc = vnode.attrs.voc
-        var tagName = tags.getName(vnode.attrs.tagIdx)
-        var overridable = voc.getDef(tagName).overridable || false
-        var opts = voc.getDef(tagName).options
-        // If current value isn't listed and it's an overridable type, add
-        // it to the available options
-        if (!opts.includes(tags.data[vnode.attrs.tagIdx]["value"]) &&
-            overridable) {
-            opts = opts.concat([tags.data[vnode.attrs.tagIdx]["value"]])
-        }
-        // Wrap the select inside a div element so it can be replaced
-        return m("div", {
-            style: {
-                width: '100%'
-            },
-        }, [
-            m("select", {
-                style: {
-                    width: '100%'
-                },
-                oncreate: function(v) {
-                    $(v.dom).selectize({
-                        create: overridable,
-                        onChange: function(val) {
-                            tags.data[vnode.attrs.tagIdx]["value"] = val
-                            m.redraw() // 3rd party event handlers need to do this
-                        }
-                    })
-                },
-            }, opts.map(function(k) {
-                    return m("option", {
-                        value: k,
-                        selected: tags.data[vnode.attrs.tagIdx]["value"] === k,
-                    }, k)
-                })
-            )
-        ])
-    }
-}
-
-// Maps tag types against editor components
-var typeMap = {
-    "select": SelectField,
-    "text": TextField,
-    "integer": IntegerField
 }
 
 // When in edit mode, present a tag name selector and tag value
 // selector/editor depending of the tag type.
-window.TagEditor = {
+window.TagEditorRow = {
     view: function(vnode) {
-        var tags = vnode.attrs.tags
-        var voc = vnode.attrs.voc
-        var tagIdx = vnode.attrs.tagIdx
-        if (tagIdx in tags.data) {
-            var tagName = tags.getName(vnode.attrs.tagIdx)
-            var tagType = voc.getDef(tagName).type
-            return m("tr.collection-tag-"+tagName, [
-                m("td",
-                    vnode.attrs.editMode() ?
-                    m("i.glyphicon.glyphicon-remove.collection-tag-remove", {
-                        style: "cursor: pointer;",
-                        onclick: function(e) {
-                            // Erase tag
-                            tags.removeTag(tagIdx)
-                        }
-                    })
-                : ""),
-            m("td.collection-tag-field.collection-tag-field-key",
-                // Tag name
-                vnode.attrs.editMode() ? 
-                m(SelectNameField, {
-                    tagIdx: tagIdx,
-                    tags: tags,
-                    voc: voc
+        return m("tr", [
+            // Erase tag
+            m("td",
+            vnode.attrs.editMode ?
+            m("i.glyphicon.glyphicon-remove", {
+                style: "cursor: pointer;",
+                onclick: function(e) {
+                    console.log('Erase tag clicked')
+                }
+            })
+            : ""),
+            // Tag name
+            m("td",
+            vnode.attrs.editMode ?
+            m("div", [m(SelectOrAutocomplete, {
+                options: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
+                    ? Object.keys(vnode.attrs.vocabulary().types)
+                    : Object.keys(vnode.attrs.vocabulary().types).concat(vnode.attrs.name()),
+                value: vnode.attrs.name,
+                create: vnode.attrs.vocabulary().strict
+            })])
+            : vnode.attrs.name),
+            // Tag value
+            m("td",
+            vnode.attrs.editMode ?
+            m("div", {key: vnode.attrs.name()}, [m(SelectOrAutocomplete, {
+                options: (vnode.attrs.name() in vnode.attrs.vocabulary().types) 
+                    ? vnode.attrs.vocabulary().types[vnode.attrs.name()].options.concat(vnode.attrs.value())
+                    : [vnode.attrs.value()],
+                value: vnode.attrs.value,
+                create: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
+                    ? vnode.attrs.vocabulary().types[vnode.attrs.name()].overridable || false
+                    : true, // If tag not in vocabulary, we should accept any value
                 })
-                : tags.data[tagIdx]["name"]),
-            m("td.collection-tag-field.collection-tag-field-value",
-                // Tag value
-                vnode.attrs.editMode() ? 
-                m(typeMap[tagType], {
-                    tagIdx: tagIdx,
-                    tags: tags,
-                    voc: voc
-                })
-                : tags.data[tagIdx]["value"])
             ])
-        }
+            : vnode.attrs.value)
+        ])
     }
 }
 
-window.TagTable = {
+window.TagEditorTable = {
+    oninit: function(vnode) {
+        vnode.state.tags = vnode.attrs.tags
+    },
     view: function(vnode) {
         return m("table.table.table-condensed", {
             border: "1"
@@ -205,83 +99,76 @@ window.TagTable = {
                     m("th", "Value"),
                 ])
             ]),
-            m("tbody.collection-tag-rows", [
-                Object.keys(vnode.attrs.tags.data).map(function(k) {
-                    return m(TagEditor, {
-                        tagIdx: k,
-                        key: k,
+            m("tbody", [
+                vnode.state.tags.map(function(tag, idx) {
+                    return m(TagEditorRow, {
+                        key: idx,
                         editMode: vnode.attrs.editMode,
-                        tags: vnode.attrs.tags,
-                        voc: vnode.attrs.voc
+                        name: tag.name,
+                        value: tag.value,
+                        vocabulary: vnode.attrs.vocabulary
                     })
                 })
             ]),
-            ]
-        )
+        ])
     }
 }
 
 window.TagEditorApp = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
-        vnode.state.url = new URL(document.URL)
-        var pathname = vnode.state.url.pathname.split("/")
-        vnode.state.uuid = pathname.pop()
-        vnode.state.objType = pathname.pop()
-        vnode.state.tags = new Tags(vnode.state.sessionDB, vnode.state.uuid, vnode.state.objType)
-        vnode.state.tags.load()
-        vnode.state.vocabulary = new Vocabulary(vnode.state.url)
-        vnode.state.vocabulary.load()
-        vnode.state.editMode = m.stream(false)
-        vnode.state.tagTable = TagTable
+        // Get vocabulary
+        vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
+        m.request('/vocabulary.json').then(vnode.state.vocabulary)
+        vnode.state.editMode = vnode.attrs.targetEditable || true
+        // Get tags
+        vnode.state.tags = []
+        var objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
+        vnode.state.sessionDB.request(
+            vnode.state.sessionDB.loadLocal(), objPath).then(function(obj) {
+                Object.keys(obj.properties).forEach(function(k) {
+                    vnode.state.tags.push({
+                        name: m.stream(k),
+                        value: m.stream(obj.properties[k])
+                    })
+                })
+            }
+        )
     },
     view: function(vnode) {
         return [
-            m("p", [
-                // Edit button
-                m("a.btn.btn-primary"+(vnode.state.editMode() ? '.disabled':''), {
-                    onclick: function(e) {
-                        vnode.state.editMode(true)
-                    }
-                }, " Edit "),
-            ]),
             // Tags table
-            m(vnode.state.tagTable, {
+            m(TagEditorTable, {
                 editMode: vnode.state.editMode,
                 tags: vnode.state.tags,
-                voc: vnode.state.vocabulary
+                vocabulary: vnode.state.vocabulary
             }),
-            vnode.state.editMode() ? 
+            vnode.state.editMode ?
             m("div", [
                 m("div.pull-left", [
                     // Add tag button
                     m("a.btn.btn-primary.btn-sm", {
                         onclick: function(e) {
-                            vnode.state.tags.addTag(vnode.state.vocabulary.getTypes()[0])
+                            vnode.state.tags.push({
+                                name: m.stream('new tag'),
+                                value: m.stream('new tag value')
+                            })
                         }
                     }, [
                         m("i.glyphicon.glyphicon-plus"),
                         " Add new tag "
-                    ])         
+                    ])
                 ]),
                 m("div.pull-right", [
                     // Save button
                     m("a.btn.btn-primary.btn-sm", {
                         onclick: function(e) {
-                            vnode.state.editMode(false)
-                            vnode.state.tags.save().then(function() {
-                                vnode.state.tags.load()
-                            })
+                            console.log('Save button clicked')
+                            // vnode.state.tags.save().then(function() {
+                            //     vnode.state.tags.load()
+                            // })
                         }
-                    }, " Save "),
-                    // Cancel button
-                    m("a.btn.btn-primary.btn-sm", {
-                        onclick: function(e) {
-                            vnode.state.editMode(false)
-                            e.redraw = false
-                            vnode.state.tags.load().then(m.redraw())
-                        }
-                    }, " Cancel ")                    
+                    }, " Save ")
                 ])
             ])
             : ""
