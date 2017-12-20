@@ -102,22 +102,34 @@ window.TagEditorTable = {
                 ])
             ]),
             m("tbody", [
-                vnode.attrs.tags.map(function(tag, idx) {
+                vnode.attrs.tags.length > 0
+                ? vnode.attrs.tags.map(function(tag, idx) {
                     return m(TagEditorRow, {
                         key: idx,
-                        removeTag: function() { vnode.attrs.tags.splice(idx, 1) },
+                        removeTag: function() {
+                            vnode.attrs.tags.splice(idx, 1)
+                            vnode.attrs.dirty(true)
+                        },
                         editMode: vnode.attrs.editMode,
                         name: tag.name,
                         value: tag.value,
                         vocabulary: vnode.attrs.vocabulary
                     })
                 })
+                : m("tr", m("td[colspan=3]", m("center","(no tags)")))
             ]),
         ])
     }
 }
 
 window.TagEditorApp = {
+    appendTag: function(vnode, name, value) {
+        var tag = {name: m.stream(name), value: m.stream(value)}
+        tag.name.map(vnode.state.dirty)
+        tag.value.map(vnode.state.dirty)
+        tag.name.map(m.redraw)
+        vnode.state.tags.push(tag)
+    },
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
@@ -127,6 +139,7 @@ window.TagEditorApp = {
         // Get tags
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
+        vnode.state.dirty.map(m.redraw)
         vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(), vnode.state.objPath, {
@@ -136,66 +149,55 @@ window.TagEditorApp = {
             }).then(function(obj) {
                 console.log(obj)
                 Object.keys(obj.properties).forEach(function(k) {
-                    vnode.state.tags.push({
-                        name: m.stream(k),
-                        value: m.stream(obj.properties[k])
-                    })
+                    vnode.state.appendTag(vnode, k, obj.properties[k])
                 })
-                vnode.state.dirty = m.stream(null)
-                vnode.state.tags.map(function(tag) {
-                    console.log('connecting events for tag: '+tag.name())
-                    tag.name.map(m.redraw)
-                    tag.name.map(vnode.state.dirty)
-                    tag.value.map(vnode.state.dirty)
-                })
-                console.log('Setting up dirty to false')
+                // Data synced with server, so dirty state should be false
                 vnode.state.dirty(false)
             }
         )
     },
     view: function(vnode) {
         return [
+            vnode.state.editMode &&
+            m("div.pull-left", [
+                m("a.btn.btn-primary.btn-sm"+(vnode.state.dirty() ? '' : '.disabled'), {
+                    style: {
+                        margin: '10px 0px'
+                    },
+                    onclick: function(e) {
+                        var tags = {}
+                        vnode.state.tags.forEach(function(t) {
+                            tags[t.name()] = t.value()
+                        })
+                        vnode.state.sessionDB.request(
+                            vnode.state.sessionDB.loadLocal(),
+                            vnode.state.objPath, {
+                                method: "PUT",
+                                data: {properties: JSON.stringify(tags)}
+                            }
+                        ).then(function(v) {
+                            vnode.state.dirty(false)
+                        })
+                    }
+                }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
+            ]),
             // Tags table
             m(TagEditorTable, {
                 editMode: vnode.state.editMode,
                 tags: vnode.state.tags,
-                vocabulary: vnode.state.vocabulary
+                vocabulary: vnode.state.vocabulary,
+                dirty: vnode.state.dirty
             }),
             vnode.state.editMode &&
-            m("div", [
-                m("div.pull-left", [
-                    // Add tag button
-                    m("a.btn.btn-primary.btn-sm", {
-                        onclick: function(e) {
-                            vnode.state.tags.push({
-                                name: m.stream('new tag'),
-                                value: m.stream('new tag value')
-                            })
-                        }
-                    }, [
-                        m("i.glyphicon.glyphicon-plus"),
-                        " Add new tag "
-                    ])
-                ]),
-                m("div.pull-right", [
-                    m("a.btn.btn-primary.btn-sm", {
-                        onclick: function(e) {
-                            var tags = {}
-                            vnode.state.tags.forEach(function(t) {
-                                tags[t.name()] = t.value()
-                            })
-                            vnode.state.sessionDB.request(
-                                vnode.state.sessionDB.loadLocal(),
-                                vnode.state.objPath, {
-                                    method: "PUT",
-                                    data: {properties: JSON.stringify(tags)}
-                                }
-                            ).then(function(v) {
-                                console.log('ok!')
-                                vnode.state.dirty(false)
-                            })
-                        }
-                    }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
+            m("div.pull-left", [
+                // Add tag button
+                m("a.btn.btn-primary.btn-sm", {
+                    onclick: function(e) {
+                        vnode.state.appendTag(vnode, 'new tag', 'new value')
+                    }
+                }, [
+                    m("i.glyphicon.glyphicon-plus"),
+                    " Add new tag "
                 ])
             ])
         ]
