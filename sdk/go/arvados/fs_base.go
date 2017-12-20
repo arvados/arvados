@@ -51,6 +51,7 @@ type FileSystem interface {
 	http.FileSystem
 	fsBackend
 
+	rootnode() inode
 	newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 	newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
@@ -83,6 +84,7 @@ type FileSystem interface {
 }
 
 type inode interface {
+	SetParent(inode)
 	Parent() inode
 	FS() FileSystem
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
@@ -204,6 +206,12 @@ func (n *treenode) FS() FileSystem {
 	return n.fs
 }
 
+func (n *treenode) SetParent(p inode) {
+	n.RLock()
+	defer n.RUnlock()
+	n.parent = p
+}
+
 func (n *treenode) Parent() inode {
 	n.RLock()
 	defer n.RUnlock()
@@ -218,11 +226,13 @@ func (n *treenode) Child(name string, replace func(inode) inode) (child inode) {
 	// TODO: special treatment for "", ".", ".."
 	child = n.inodes[name]
 	if replace != nil {
-		child = replace(child)
-		if child == nil {
+		newchild := replace(child)
+		if newchild == nil {
 			delete(n.inodes, name)
-		} else {
-			n.inodes[name] = child
+		} else if newchild != child {
+			n.inodes[name] = newchild
+			newchild.SetParent(n)
+			child = newchild
 		}
 	}
 	return
@@ -252,6 +262,10 @@ func (n *treenode) Readdir() (fi []os.FileInfo) {
 type fileSystem struct {
 	root inode
 	fsBackend
+}
+
+func (fs *fileSystem) rootnode() inode {
+	return fs.root
 }
 
 // OpenFile is analogous to os.OpenFile().
@@ -306,9 +320,9 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		var err error
 		n = parent.Child(name, func(inode) inode {
 			if perm.IsDir() {
-				n, err = fs.newDirnode(parent, name, perm|0755, time.Now())
+				n, err = parent.FS().newDirnode(parent, name, perm|0755, time.Now())
 			} else {
-				n, err = fs.newFilenode(parent, name, perm|0755, time.Now())
+				n, err = parent.FS().newFilenode(parent, name, perm|0755, time.Now())
 			}
 			return n
 		})
@@ -357,7 +371,7 @@ func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 		return os.ErrExist
 	}
 	child := n.Child(name, func(inode) (child inode) {
-		child, err = fs.newDirnode(n, name, perm, time.Now())
+		child, err = n.FS().newDirnode(n, name, perm, time.Now())
 		return
 	})
 	if err != nil {
@@ -404,12 +418,12 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 
 	// When acquiring locks on multiple nodes, all common
 	// ancestors must be locked first in order to avoid
-	// deadlock. This is assured by locking the path from root to
-	// newdir, then locking the path from root to olddir, skipping
-	// any already-locked nodes.
+	// deadlock. This is assured by locking the path from
+	// filesystem root to newdir, then locking the path from
+	// filesystem root to olddir, skipping any already-locked
+	// nodes.
 	needLock := []sync.Locker{}
-	for _, f := range []*filehandle{olddirf, newdirf} {
-		node := f.inode
+	for _, node := range []inode{olddirf.inode, newdirf.inode} {
 		needLock = append(needLock, node)
 		for node.Parent() != node && node.Parent().FS() == node.FS() {
 			node = node.Parent()
@@ -497,41 +511,6 @@ func (fs *fileSystem) remove(name string, recursive bool) (err error) {
 		return nil
 	})
 	return err
-}
-
-// Caller must have parent lock, and must have already ensured
-// parent.Child(name,nil) is nil.
-func (fs *fileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	if name == "" || name == "." || name == ".." {
-		return nil, ErrInvalidArgument
-	}
-	return &dirnode{
-		treenode: treenode{
-			fs:     parent.FS(),
-			parent: parent,
-			fileinfo: fileinfo{
-				name:    name,
-				mode:    perm | os.ModeDir,
-				modTime: modTime,
-			},
-			inodes: make(map[string]inode),
-		},
-	}, nil
-}
-
-func (fs *fileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	if name == "" || name == "." || name == ".." {
-		return nil, ErrInvalidArgument
-	}
-	return &filenode{
-		fs:     parent.FS(),
-		parent: parent,
-		fileinfo: fileinfo{
-			name:    name,
-			mode:    perm & ^os.ModeDir,
-			modTime: modTime,
-		},
-	}, nil
 }
 
 func (fs *fileSystem) Sync() error {
