@@ -126,7 +126,7 @@ window.TagEditorApp = {
         vnode.state.editMode = vnode.attrs.targetEditable
         // Get tags
         vnode.state.tags = []
-        vnode.state.isDirty = false
+        vnode.state.dirty = m.stream(false)
         vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(), vnode.state.objPath, {
@@ -148,12 +148,8 @@ window.TagEditorApp = {
                     tag.name.map(vnode.state.dirty)
                     tag.value.map(vnode.state.dirty)
                 })
-                vnode.state.dirty.map(function() {
-                    vnode.state.isDirty = true
-                    console.log('dirty!')
-                })
-                console.log('Setting up isDirty to false')
-                vnode.state.isDirty = false
+                console.log('Setting up dirty to false')
+                vnode.state.dirty(false)
             }
         )
     },
@@ -196,10 +192,10 @@ window.TagEditorApp = {
                                 }
                             ).then(function(v) {
                                 console.log('ok!')
-                                vnode.state.isDirty = false
+                                vnode.state.dirty(false)
                             })
                         }
-                    }, vnode.state.isDirty ? ' Save changes ' : ' Saved ')
+                    }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
                 ])
             ])
         ]
