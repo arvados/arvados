@@ -13,7 +13,7 @@ window.SelectOrAutocomplete = {
         }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        vnode.state.selector = $(vnode.dom).selectize({
+        $(vnode.dom).selectize({
             labelField: 'value',
             valueField: 'value',
             searchField: 'value',
@@ -28,9 +28,8 @@ window.SelectOrAutocomplete = {
             }),
             onChange: function(val) {
                 vnode.attrs.value(val)
-                m.redraw()
             }
-        }).data('selectize')
+        })
     }
 }
 
@@ -120,7 +119,6 @@ window.TagEditorTable = {
 
 window.TagEditorApp = {
     oninit: function(vnode) {
-        vnode.state.saveLabel = m.stream(' Save ')
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
         vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
@@ -128,6 +126,7 @@ window.TagEditorApp = {
         vnode.state.editMode = vnode.attrs.targetEditable
         // Get tags
         vnode.state.tags = []
+        vnode.state.isDirty = false
         vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(), vnode.state.objPath, {
@@ -144,10 +143,17 @@ window.TagEditorApp = {
                 })
                 vnode.state.dirty = m.stream(null)
                 vnode.state.tags.map(function(tag) {
-                  tag.name.map(m.redraw)
-                  tag.name.map(vnode.state.dirty)
-                  tag.value.map(vnode.state.dirty)
+                    console.log('connecting events for tag: '+tag.name())
+                    tag.name.map(m.redraw)
+                    tag.name.map(vnode.state.dirty)
+                    tag.value.map(vnode.state.dirty)
                 })
+                vnode.state.dirty.map(function() {
+                    vnode.state.isDirty = true
+                    console.log('dirty!')
+                })
+                console.log('Setting up isDirty to false')
+                vnode.state.isDirty = false
             }
         )
     },
@@ -176,10 +182,8 @@ window.TagEditorApp = {
                     ])
                 ]),
                 m("div.pull-right", [
-                    // Save button
                     m("a.btn.btn-primary.btn-sm", {
                         onclick: function(e) {
-                            vnode.state.saveLabel('Saving...')
                             var tags = {}
                             vnode.state.tags.forEach(function(t) {
                                 tags[t.name()] = t.value()
@@ -191,11 +195,11 @@ window.TagEditorApp = {
                                     data: {properties: JSON.stringify(tags)}
                                 }
                             ).then(function(v) {
-                                vnode.state.saveLabel(' Save ')
                                 console.log('ok!')
+                                vnode.state.isDirty = false
                             })
                         }
-                    }, vnode.state.saveLabel)
+                    }, vnode.state.isDirty ? ' Save changes ' : ' Saved ')
                 ])
             ])
         ]
