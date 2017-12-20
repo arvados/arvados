@@ -160,6 +160,7 @@ Arvados <- R6::R6Class(
                             "Content-Type"  = "application/json")
 
             names(body) <- c("group")
+            body$group <- c("group_class" = "project", body$group)
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$POST(projectURL, headers, body)
@@ -197,6 +198,7 @@ Arvados <- R6::R6Class(
             headers <- list(Authorization = paste("OAuth2", private$token))
 
             names(filters) <- c("groups")
+            filters[[length(filters) + 1]] <- list("group_class", "=", "project")
 
             serverResponse <- private$http$GET(projectURL, headers, filters, limit, offset)
             projects <- private$httpParser$parseJSONResponse(serverResponse)
