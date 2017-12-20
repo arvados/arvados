@@ -151,4 +151,132 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_equal all_objects['arvados#pipelineInstance'], second_page['arvados#pipelineInstance']+5
     assert_equal true, second_page['arvados#pipelineTemplate']>0
   end
+
+  [['prop1', '=', 'value1', [:collection_with_prop1_value1], [:collection_with_prop1_value2, :collection_with_prop2_1]],
+   ['prop1', '!=', 'value1', [:collection_with_prop1_value2, :collection_with_prop2_1], [:collection_with_prop1_value1]],
+   ['prop1', 'exists', true, [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1], [:collection_with_prop2_1]],
+   ['prop1', 'exists', false, [:collection_with_prop2_1], [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1]],
+   ['prop1', 'in', ['value1', 'value2'], [:collection_with_prop1_value1, :collection_with_prop1_value2], [:collection_with_prop1_value3, :collection_with_prop2_1]],
+   ['prop1', 'in', ['value1', 'valueX'], [:collection_with_prop1_value1], [:collection_with_prop1_value3, :collection_with_prop2_1]],
+   ['prop1', 'not in', ['value1', 'value2'], [:collection_with_prop1_value3, :collection_with_prop1_other1, :collection_with_prop2_1], [:collection_with_prop1_value1, :collection_with_prop1_value2]],
+   ['prop1', 'not in', ['value1', 'valueX'], [:collection_with_prop1_value2, :collection_with_prop1_value3, :collection_with_prop1_other1, :collection_with_prop2_1], [:collection_with_prop1_value1]],
+   ['prop1', '>', 'value2', [:collection_with_prop1_value3], [:collection_with_prop1_other1, :collection_with_prop1_value1]],
+   ['prop1', '<', 'value2', [:collection_with_prop1_other1, :collection_with_prop1_value1], [:collection_with_prop1_value2, :collection_with_prop1_value2]],
+   ['prop1', '<=', 'value2', [:collection_with_prop1_other1, :collection_with_prop1_value1, :collection_with_prop1_value2], [:collection_with_prop1_value3]],
+   ['prop1', '>=', 'value2', [:collection_with_prop1_value2, :collection_with_prop1_value3], [:collection_with_prop1_other1, :collection_with_prop1_value1]],
+   ['prop1', 'like', 'value%', [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3], [:collection_with_prop1_other1]],
+   ['prop1', 'like', '%1', [:collection_with_prop1_value1, :collection_with_prop1_other1], [:collection_with_prop1_value2, :collection_with_prop1_value3]],
+   ['prop1', 'ilike', 'VALUE%', [:collection_with_prop1_value1, :collection_with_prop1_value2, :collection_with_prop1_value3], [:collection_with_prop1_other1]],
+   ['prop2', '>',  1, [:collection_with_prop2_5], [:collection_with_prop2_1]],
+   ['prop2', '<',  5, [:collection_with_prop2_1], [:collection_with_prop2_5]],
+   ['prop2', '<=', 5, [:collection_with_prop2_1, :collection_with_prop2_5], []],
+   ['prop2', '>=', 1, [:collection_with_prop2_1, :collection_with_prop2_5], []],
+   ['<http://schema.org/example>', '=', "value1", [:collection_with_uri_prop], []],
+  ].each do |prop, op, opr, inc, ex|
+    test "jsonb filter properties.#{prop} #{op} #{opr})" do
+      @controller = Arvados::V1::CollectionsController.new
+      authorize_with :admin
+      get :index, {
+            filters: SafeJSON.dump([ ["properties.#{prop}", op, opr] ]),
+            limit: 1000
+          }
+      assert_response :success
+      found = assigns(:objects).collect(&:uuid)
+
+      inc.each do |i|
+        assert_includes(found, collections(i).uuid)
+      end
+
+      ex.each do |e|
+        assert_not_includes(found, collections(e).uuid)
+      end
+    end
+  end
+
+  test "jsonb 'exists' and '!=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'exists', true], ['properties.prop1', '!=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.length, 3
+    assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value3).uuid)
+    assert_includes(found, collections(:collection_with_prop1_other1).uuid)
+  end
+
+  test "jsonb alternate form 'exists' and '!=' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties', 'exists', 'prop1'], ['properties.prop1', '!=', 'value1'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.length, 3
+    assert_not_includes(found, collections(:collection_with_prop1_value1).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value2).uuid)
+    assert_includes(found, collections(:collection_with_prop1_value3).uuid)
+    assert_includes(found, collections(:collection_with_prop1_other1).uuid)
+  end
+
+  test "jsonb 'exists' must be boolean" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', 'exists', nil] ]
+    }
+    assert_response 422
+    assert_match(/Invalid operand '' for 'exists' must be true or false/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb checks column exists" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['puppies.prop1', '=', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid attribute 'puppies' for subproperty filter/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb checks column is valid" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['name.prop1', '=', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid attribute 'name' for subproperty filter/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "jsonb invalid operator" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['properties.prop1', '###', 'value1'] ]
+    }
+    assert_response 422
+    assert_match(/Invalid operator for subproperty search '###'/,
+                 json_response['errors'].join(' '))
+  end
+
+  test "replication_desired = 2" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: SafeJSON.dump([ ['replication_desired', '=', 2] ])
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_includes(found, collections(:replication_desired_2_unconfirmed).uuid)
+    assert_includes(found, collections(:replication_desired_2_confirmed_2).uuid)
+  end
+
 end

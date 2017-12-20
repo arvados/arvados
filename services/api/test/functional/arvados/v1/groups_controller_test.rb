@@ -704,6 +704,5 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_response :success
       assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
     end
-
   end
 end

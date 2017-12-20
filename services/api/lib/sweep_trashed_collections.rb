@@ -9,10 +9,10 @@ module SweepTrashedCollections
 
   def self.sweep_now
     act_as_system_user do
-      Collection.unscoped.
+      Collection.
         where('delete_at is not null and delete_at < statement_timestamp()').
         destroy_all
-      Collection.unscoped.
+      Collection.
         where('is_trashed = false and trash_at < statement_timestamp()').
         update_all('is_trashed = true')
     end

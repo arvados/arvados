@@ -69,7 +69,7 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
     %w(GET HEAD POST PUT DELETE).each do |m|
       assert_includes allowed, m, "A-C-A-Methods should include #{m}"
     end
-    assert_equal 'Authorization', response.headers['Access-Control-Allow-Headers']
+    assert_equal 'Authorization, Content-Type', response.headers['Access-Control-Allow-Headers']
   end
 
   def assert_no_cors_headers

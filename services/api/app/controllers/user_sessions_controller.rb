@@ -24,7 +24,11 @@ class UserSessionsController < ApplicationController
       return redirect_to login_failure_url
     end
 
-    user = User.find_by_identity_url(omniauth['info']['identity_url'])
+    # Only local users can create sessions, hence uuid_like_pattern
+    # here.
+    user = User.where('identity_url = ? and uuid like ?',
+                      omniauth['info']['identity_url'],
+                      User.uuid_like_pattern).first
     if not user
       # Check for permission to log in to an existing User record with
       # a different identity_url

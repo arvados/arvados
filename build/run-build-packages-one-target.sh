@@ -21,6 +21,10 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--build-version <string>
+    Version to build (default:
+    \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
+    0.1.timestamp.commithash)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -45,7 +49,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,only-build: \
+    help,debug,test-packages,target:,command:,only-test:,only-build:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -83,6 +87,18 @@ while [ $# -gt 0 ]; do
         --test-packages)
             test_packages=1
             ;;
+        --build-version)
+            if [[ -z "$2" ]]; then
+                :
+            elif ! [[ "$2" =~ (.*)-(.*) ]]; then
+                echo >&2 "FATAL: --build-version '$2' does not include an iteration. Try '${2}-1'?"
+                exit 1
+            else
+                ARVADOS_BUILDING_VERSION="${BASH_REMATCH[1]}"
+                ARVADOS_BUILDING_ITERATION="${BASH_REMATCH[2]}"
+            fi
+            shift
+            ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -95,8 +111,21 @@ done
 
 set -e
 
+if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+    echo "build version='$ARVADOS_BUILDING_VERSION', package iteration='$ARVADOS_BUILDING_ITERATION'"
+fi
+
 if [[ -n "$test_packages" ]]; then
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
+	set +e
+	/usr/bin/which createrepo >/dev/null
+	if [[ "$?" != "0" ]]; then
+		echo >&2
+		echo >&2 "Error: please install createrepo. E.g. sudo apt-get install createrepo"
+		echo >&2
+		exit 1
+	fi
+	set -e
         createrepo $WORKSPACE/packages/$TARGET
     fi
 
@@ -132,7 +161,6 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
-        arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager
         arvados-src
@@ -147,14 +175,14 @@ if test -z "$packages" ; then
         keep-rsync
         keepstore
         keep-web
-        libarvados-perl"
+        libarvados-perl
+        python-arvados-fuse
+        python-arvados-python-client
+        python-arvados-cwl-runner"
 
-    case "$TARGET" in
-        *)
-            packages="$packages python-arvados-fuse
-                  python-arvados-python-client python-arvados-cwl-runner"
-            ;;
-    esac
+    if [[ $TARGET != centos7 ]]; then
+        packages="$packages arvados-docker-cleaner"
+    fi
 fi
 
 FINAL_EXITCODE=0
@@ -207,6 +235,8 @@ else
     # Build packages
     if docker run --rm \
         "${docker_volume_args[@]}" \
+        --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
+        --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND

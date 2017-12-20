@@ -53,6 +53,7 @@ run_bundler() {
         else
             flock /var/lib/gems/gems.lock gem install --no-document bundler
         fi
+        ln -sf /var/lib/gems/bin/bundle /usr/local/bin
     fi
     if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
         flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"

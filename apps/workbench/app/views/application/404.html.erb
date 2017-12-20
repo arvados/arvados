@@ -16,20 +16,29 @@ SPDX-License-Identifier: AGPL-3.0 %>
    end
 %>
 
+  <% untrash_object = nil %>
+
   <% if check_trash.andand.any? %>
-    <h2>Trashed</h2>
-
-      <% object = check_trash.first %>
-
+    <% object = check_trash.first %>
+    <% if object.respond_to?(:is_trashed) && object.is_trashed %>
       <% untrash_object = object %>
-      <% while !untrash_object.is_trashed %>
-        <% owner = Group.where(uuid: untrash_object.owner_uuid).include_trash(true).first %>
-        <% if owner.nil? then %>
+    <% else %>
+      <% owner = object %>
+      <% while true %>
+        <% owner = Group.where(uuid: owner.owner_uuid).include_trash(true).first %>
+        <% if owner.nil? %>
           <% break %>
-        <% else %>
+        <% end %>
+        <% if owner.is_trashed %>
           <% untrash_object = owner %>
+          <% break %>
         <% end %>
       <% end %>
+    <% end %>
+  <% end %>
+
+  <% if !untrash_object.nil? %>
+    <h2>Trashed</h2>
 
       <% untrash_name = if !untrash_object.name.blank? then
                  "'#{untrash_object.name}'"

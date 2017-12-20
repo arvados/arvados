@@ -39,10 +39,7 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
                 txt += stamp + "Container "+eventData.object_uuid+" started\n";
                 break;
             case "Complete":
-                var outcome = eventData.properties.new_attributes.exit_code === 0 ? "success" : "failure";
-                txt += stamp + "Container "+eventData.object_uuid+" finished with exit code " +
-                    eventData.properties.new_attributes.exit_code +
-                    " ("+outcome+")\n";
+                txt += stamp + "Container "+eventData.object_uuid+" finished\n";
                 break;
             case "Cancelled":
                 txt += stamp + "Container "+eventData.object_uuid+" was cancelled\n";

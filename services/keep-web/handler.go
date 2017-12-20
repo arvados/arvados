@@ -441,8 +441,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		h := webdav.Handler{
 			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
 			FileSystem: &webdavFS{
-				collfs:  fs,
-				writing: writeMethod[r.Method],
+				collfs:        fs,
+				writing:       writeMethod[r.Method],
+				alwaysReadEOF: r.Method == "PROPFIND",
 			},
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {

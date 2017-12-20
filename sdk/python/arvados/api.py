@@ -52,19 +52,18 @@ class OrderedJsonModel(apiclient.model.JsonModel):
         return body
 
 
-def _intercept_http_request(self, uri, method="GET", **kwargs):
+def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
     if (self.max_request_size and
         kwargs.get('body') and
         self.max_request_size < len(kwargs['body'])):
         raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-    if 'headers' not in kwargs:
-        kwargs['headers'] = {}
-
     if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
-        kwargs['headers']['X-External-Client'] = '1'
+        headers['X-External-Client'] = '1'
 
-    kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
+    headers['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
+    if not headers.get('X-Request-Id'):
+        headers['X-Request-Id'] = self._request_id()
 
     retryable = method in [
         'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT']
@@ -83,7 +82,7 @@ def _intercept_http_request(self, uri, method="GET", **kwargs):
     for _ in range(retry_count):
         self._last_request_time = time.time()
         try:
-            return self.orig_http_request(uri, method, **kwargs)
+            return self.orig_http_request(uri, method, headers=headers, **kwargs)
         except http.client.HTTPException:
             _logger.debug("Retrying API request in %d s after HTTP error",
                           delay, exc_info=True)
@@ -101,7 +100,7 @@ def _intercept_http_request(self, uri, method="GET", **kwargs):
         delay = delay * self._retry_delay_backoff
 
     self._last_request_time = time.time()
-    return self.orig_http_request(uri, method, **kwargs)
+    return self.orig_http_request(uri, method, headers=headers, **kwargs)
 
 def _patch_http_request(http, api_token):
     http.arvados_api_token = api_token
@@ -113,6 +112,7 @@ def _patch_http_request(http, api_token):
     http._retry_delay_initial = RETRY_DELAY_INITIAL
     http._retry_delay_backoff = RETRY_DELAY_BACKOFF
     http._retry_count = RETRY_COUNT
+    http._request_id = util.new_request_id
     return http
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
@@ -148,7 +148,8 @@ def http_cache(data_type):
         return None
     return cache.SafeHTTPCache(path, max_age=60*60*24*2)
 
-def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
+def api(version=None, cache=True, host=None, token=None, insecure=False,
+        request_id=None, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
     :version:
@@ -167,6 +168,12 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
 
     :insecure:
       If True, ignore SSL certificate validation errors.
+
+    :request_id:
+      Default X-Request-Id header value for outgoing requests that
+      don't already provide one. If None or omitted, generate a random
+      ID. When retrying failed requests, the same ID is used on all
+      attempts.
 
     Additional keyword arguments will be passed directly to
     `apiclient_discovery.build` if a new Resource object is created.
@@ -192,7 +199,8 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     elif host and token:
         pass
     elif not host and not token:
-        return api_from_config(version=version, cache=cache, **kwargs)
+        return api_from_config(
+            version=version, cache=cache, request_id=request_id, **kwargs)
     else:
         # Caller provided one but not the other
         if not host:
@@ -218,8 +226,10 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     svc = apiclient_discovery.build('arvados', version, cache_discovery=False, **kwargs)
     svc.api_token = token
     svc.insecure = insecure
+    svc.request_id = request_id
     kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
     kwargs['http'].cache = None
+    kwargs['http']._request_id = lambda: svc.request_id or util.new_request_id()
     return svc
 
 def api_from_config(version=None, apiconfig=None, **kwargs):

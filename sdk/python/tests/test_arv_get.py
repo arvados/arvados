@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 from future.utils import listitems
 import io
+import logging
 import mock
 import os
 import re
@@ -30,7 +31,14 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         self.tempdir = tempfile.mkdtemp()
         self.col_loc, self.col_pdh, self.col_manifest = self.write_test_collection()
 
+        self.stdout = tutil.BytesIO()
+        self.stderr = tutil.StringIO()
+        self.loggingHandler = logging.StreamHandler(self.stderr)
+        self.loggingHandler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logging.getLogger().addHandler(self.loggingHandler)
+
     def tearDown(self):
+        logging.getLogger().removeHandler(self.loggingHandler)
         super(ArvadosGetTestCase, self).tearDown()
         shutil.rmtree(self.tempdir)
 
@@ -52,8 +60,10 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
                 c.manifest_text(strip=strip_manifest))
 
     def run_get(self, args):
-        self.stdout = tutil.BytesIO()
-        self.stderr = tutil.StringIO()
+        self.stdout.seek(0, 0)
+        self.stdout.truncate(0)
+        self.stderr.seek(0, 0)
+        self.stderr.truncate(0)
         return arv_get.main(args, self.stdout, self.stderr)
 
     def test_version_argument(self):
@@ -184,3 +194,15 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         self.assertEqual(0, r)
         self.assertEqual(b'', stdout.getvalue())
         self.assertFalse(stderr.write.called)
+
+    request_id_regex = r'INFO: X-Request-Id: req-[a-z0-9]{20}\n'
+
+    def test_request_id_logging_on(self):
+        r = self.run_get(["-v", "{}/".format(self.col_loc), self.tempdir])
+        self.assertEqual(0, r)
+        self.assertRegex(self.stderr.getvalue(), self.request_id_regex)
+
+    def test_request_id_logging_off(self):
+        r = self.run_get(["{}/".format(self.col_loc), self.tempdir])
+        self.assertEqual(0, r)
+        self.assertNotRegex(self.stderr.getvalue(), self.request_id_regex)

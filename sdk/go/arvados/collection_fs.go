@@ -864,7 +864,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
 
-			toks := strings.Split(token, ":")
+			toks := strings.SplitN(token, ":", 3)
 			if len(toks) != 3 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}

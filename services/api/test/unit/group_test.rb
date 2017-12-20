@@ -165,4 +165,28 @@ class GroupTest < ActiveSupport::TestCase
     assert Group.readable_by(users(:active)).where(uuid: g_baz.uuid).any?
   end
 
+  test "trashed does not propagate across permission links" do
+    set_user_from_auth :admin
+
+    g_foo = Group.create!(name: "foo")
+    u_bar = User.create!(first_name: "bar")
+
+    assert Group.readable_by(users(:admin)).where(uuid: g_foo.uuid).any?
+    assert User.readable_by(users(:admin)).where(uuid:  u_bar.uuid).any?
+    g_foo.update! is_trashed: true
+
+    assert Group.readable_by(users(:admin)).where(uuid: g_foo.uuid).empty?
+    assert User.readable_by(users(:admin)).where(uuid:  u_bar.uuid).any?
+
+    g_foo.update! is_trashed: false
+    ln = Link.create!(tail_uuid: g_foo.uuid,
+                      head_uuid: u_bar.uuid,
+                      link_class: "permission",
+                      name: "can_read")
+    g_foo.update! is_trashed: true
+
+    assert Group.readable_by(users(:admin)).where(uuid: g_foo.uuid).empty?
+    assert User.readable_by(users(:admin)).where(uuid:  u_bar.uuid).any?
+  end
+
 end

@@ -255,36 +255,44 @@ class ArvadosModel < ActiveRecord::Base
     # Collect the UUIDs of the authorized users.
     sql_table = kwargs.fetch(:table_name, table_name)
     include_trash = kwargs.fetch(:include_trash, false)
-    query_on = kwargs.fetch(:query_on, self)
 
     sql_conds = []
     user_uuids = users_list.map { |u| u.uuid }
 
+    exclude_trashed_records = if !include_trash and (sql_table == "groups" or sql_table == "collections") then
+                                # Only include records that are not explicitly trashed
+                                "AND #{sql_table}.is_trashed = false"
+                              else
+                                ""
+                              end
+
     if users_list.select { |u| u.is_admin }.any?
       if !include_trash
-        # exclude rows that are explicitly trashed.
         if sql_table != "api_client_authorizations"
-          sql_conds.push "NOT EXISTS(SELECT 1
-                  FROM #{PERMISSION_VIEW}
-                  WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"
+          # Exclude rows where the owner is trashed
+          sql_conds.push "NOT EXISTS(SELECT 1 "+
+                  "FROM #{PERMISSION_VIEW} "+
+                  "WHERE trashed = 1 AND "+
+                  "(#{sql_table}.owner_uuid = target_uuid)) "+
+                  exclude_trashed_records
         end
       end
     else
-      if include_trash
-        trashed_check = ""
-      else
-        trashed_check = "AND trashed = 0"
-      end
+      trashed_check = if !include_trash then
+                        "AND trashed = 0"
+                      else
+                        ""
+                      end
 
-      if sql_table != "api_client_authorizations" and sql_table != "groups"
-        owner_check = "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
-      else
-        owner_check = ""
-      end
+      owner_check = if sql_table != "api_client_authorizations" and sql_table != "groups" then
+                      "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
+                    else
+                      ""
+                    end
 
       sql_conds.push "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check})) "+
+                     exclude_trashed_records
 
       if sql_table == "links"
         # Match any permission link that gives one of the authorized
@@ -295,7 +303,7 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
 
-    query_on.where(sql_conds.join(' OR '),
+    self.where(sql_conds.join(' OR '),
                     user_uuids: user_uuids,
                     permission_link_classes: ['permission', 'resources'])
   end
@@ -357,13 +365,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.full_text_searchable_columns
     self.columns.select do |col|
-      col.type == :string or col.type == :text
+      [:string, :text, :jsonb].include?(col.type)
     end.map(&:name)
   end
 
   def self.full_text_tsvector
     parts = full_text_searchable_columns.collect do |column|
-      "coalesce(#{column},'')"
+      cast = serialized_attributes[column] ? '::text' : ''
+      "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', #{parts.join(" || ' ' || ")})"
   end
@@ -733,7 +742,7 @@ class ArvadosModel < ActiveRecord::Base
     if self == ArvadosModel
       # If called directly as ArvadosModel.find_by_uuid rather than via subclass,
       # delegate to the appropriate subclass based on the given uuid.
-      self.resource_class_for_uuid(uuid).unscoped.find_by_uuid(uuid)
+      self.resource_class_for_uuid(uuid).find_by_uuid(uuid)
     else
       super
     end

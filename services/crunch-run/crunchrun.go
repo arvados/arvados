@@ -390,6 +390,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
 
+	token, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("could not get container token: %s", err)
+	}
+
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{
@@ -538,6 +543,18 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				return fmt.Errorf("writing temp file: %v", err)
 			}
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
+
+		case mnt.Kind == "git_tree":
+			tmpdir, err := runner.MkTempDir("", "")
+			if err != nil {
+				return fmt.Errorf("creating temp dir: %v", err)
+			}
+			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
+			err = gitMount(mnt).extractTree(runner.ArvClient, tmpdir, token)
+			if err != nil {
+				return err
+			}
+			runner.Binds = append(runner.Binds, tmpdir+":"+bind+":ro")
 		}
 	}
 
@@ -561,11 +578,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
-
-	token, err := runner.ContainerToken()
-	if err != nil {
-		return fmt.Errorf("could not get container token: %s", err)
-	}
 
 	runner.ArvMount, err = runner.RunArvMount(arvMountCmd, token)
 	if err != nil {

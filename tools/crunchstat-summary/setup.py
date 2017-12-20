@@ -11,14 +11,18 @@ from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 
-try:
-    import gittaggers
-    tagger = gittaggers.EggInfoFromGit
-except ImportError:
-    tagger = egg_info_cmd.egg_info
+tagger = egg_info_cmd.egg_info
+version = os.environ.get("ARVADOS_BUILDING_VERSION")
+if not version:
+    version = "0.1"
+    try:
+        import gittaggers
+        tagger = gittaggers.EggInfoFromGit
+    except ImportError:
+        pass
 
 setup(name='crunchstat_summary',
-      version='0.1',
+      version=version,
       description='read crunch log files and summarize resource usage',
       author='Arvados',
       author_email='info@arvados.org',

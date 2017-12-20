@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Using arv-sync-groups"
+title: "Using arvados-sync-groups"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,9 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The @arv-sync-groups@ tool allows to synchronize remote groups into Arvados from an external source.
+The @arvados-sync-groups@ tool allows to synchronize remote groups into Arvados from an external source.
 
-h1. Using arv-sync-groups
+h1. Using arvados-sync-groups
 
 This tool reads a CSV (comma-separated values) file having information about external groups and their members. When running it for the first time, it'll create a special group named 'Externally synchronized groups' meant to be the parent of all the remote groups.
 
@@ -22,7 +22,7 @@ Users can be identified by their email address or username: the tool will check 
 This tool is designed to be run periodically reading a file created by a remote auth system (ie: LDAP) dump script, applying what's included on the file as the source of truth.
 
 
-bq. NOTE: @arv-sync-groups@ needs to perform several administrative tasks on Arvados, so must be run using a superuser token
+bq. NOTE: @arvados-sync-groups@ needs to perform several administrative tasks on Arvados, so must be run using a superuser token
 
 h2. Options
 
@@ -41,13 +41,13 @@ h2. Examples
 To sync groups using the username to identify every account, reading from some @external_groups.csv@ file, the command should be called as follows:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-sync-groups --user-id username /path/to/external_groups.csv </span>
+<pre><code>~$ <span class="userinput">arvados-sync-groups --user-id username /path/to/external_groups.csv </span>
 </code></pre>
 </notextile>
 
 If you want to use a specific preexisting group as the parent of all the remote groups, you can do it this way:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-sync-groups --parent-group-uuid &lt;preexisting group UUID&gt; --user-id username /path/to/external_groups.csv </span>
+<pre><code>~$ <span class="userinput">arvados-sync-groups --parent-group-uuid &lt;preexisting group UUID&gt; --user-id username /path/to/external_groups.csv </span>
 </code></pre>
 </notextile>

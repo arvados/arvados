@@ -72,7 +72,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 </li>
                 <% if current_user.is_active %>
                 <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> Home project </a></li>
-
+                  <% if Rails.configuration.composer_url %>
+                    <li role="menuitem">
+                      <%= link_to Rails.configuration.composer_url, role: 'menu-item' do %>
+                      <i class="fa fa-lg fa-share-alt fa-fw"></i> Workflow Composer
+                  <% end %>
+                    </li>
+                  <% end %>
                 <li role="menuitem">
                   <%= link_to virtual_machines_user_path(current_user), role: 'menu-item' do %>
                     <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
@@ -85,7 +91,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
                   <% end %>
                 </li>
-
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>

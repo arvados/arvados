@@ -39,8 +39,8 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
                              'mix',   'mix*',
                              'drng',  'drng*'):
                     nodestates[nodename] = 'busy'
-                elif state == 'idle':
-                    nodestates[nodename] = 'idle'
+                elif state in ('idle', 'fail'):
+                    nodestates[nodename] = state
                 else:
                     nodestates[nodename] = 'down'
             except ValueError:

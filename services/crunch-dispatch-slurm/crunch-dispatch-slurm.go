@@ -222,7 +222,12 @@ func submit(dispatcher *dispatch.Dispatcher, container arvados.Container, crunch
 
 	// Send a tiny script on stdin to execute the crunch-run
 	// command (slurm requires this to be a #! script)
-	cmd.Stdin = strings.NewReader(execScript(append(crunchRunCommand, container.UUID)))
+
+	// append() here avoids modifying crunchRunCommand's
+	// underlying array, which is shared with other goroutines.
+	args := append([]string(nil), crunchRunCommand...)
+	args = append(args, container.UUID)
+	cmd.Stdin = strings.NewReader(execScript(args))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

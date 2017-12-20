@@ -309,3 +309,8 @@ common:
   # Example:
   # multi_site_search: https://workbench.qr1hi.arvadosapi.com/collections/multisite
   multi_site_search: false
+
+  #
+  # Link to use for Arvados Workflow Composer app, or false if not available.
+  #
+  composer_url: false

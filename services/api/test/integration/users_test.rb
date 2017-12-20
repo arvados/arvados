@@ -216,5 +216,4 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
     nil
   end
-
 end
