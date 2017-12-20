@@ -30,7 +30,8 @@ class Arvados::V1::NodesController < ApplicationController
         ip: params[:local_ipv4] || request.remote_ip,
         ec2_instance_id: params[:instance_id]
       }
-      [:ping_secret, :total_cpu_cores, :total_ram_mb, :total_scratch_mb]
+
+      [:ping_secret, :total_cpu_cores, :total_ram_mb, :total_scratch_mb, :hostname]
         .each do |key|
         ping_data[key] = params[key] if params[key]
       end

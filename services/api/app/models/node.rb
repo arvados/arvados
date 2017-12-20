@@ -124,8 +124,14 @@ class Node < ArvadosModel
     end
 
     # Assign hostname
-    if self.hostname.nil? and Rails.configuration.assign_node_hostname
-      self.hostname = self.class.hostname_for_slot(self.slot_number)
+    if self.hostname.nil?
+      if Rails.configuration.assign_node_hostname
+        self.hostname = self.class.hostname_for_slot(self.slot_number)
+      elsif o[:hostname]
+        self.hostname = o[:hostname]
+      else
+         raise "Hostname of Node nil and assign_node_hostname false, but no hostname was send in the initial ping"
+      end
     end
 
     # Record other basic stats
