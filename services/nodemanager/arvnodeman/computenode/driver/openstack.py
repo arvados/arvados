@@ -90,10 +90,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         * arvados_node: The Arvados node record that will be associated
           with this cloud node, as returned from the API server.
         """
-        node_name = self.create_cloud_name(arvados_node)
-        self._logger.warning("Creating node: %s", node_name)
         return {
-            'name': node_name,
+            'name': self.create_cloud_name(arvados_node),
             'size': self._create_node_flavor,
             'ex_userdata': cloud_init_config.format(self._make_ping_url(arvados_node)),
             'ex_config_drive': True,
@@ -104,9 +102,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         }
 
     def sync_node(self, cloud_node, arvados_node):
-        print("SYNC")
-        print(cloud_node)
-        print(arvados_node)
         return True
 
     def node_fqdn(cls, node):
@@ -114,8 +109,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         This method should return the FQDN of the node object argument.
         Different clouds store this in different places.
         """
-        print("NODE_FQDN:")
-        print(node)
         return node.name
 
     @classmethod
@@ -158,9 +151,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def create_node(self, size, arvados_node):
         with filelock.FileLock(self._lockfile):
-             print("START CREATE NODE")
-             res =  super(ComputeNodeDriver, self).create_node(size, arvados_node)
-             print("END CREATE NODE")
-             return res
+             return super(ComputeNodeDriver, self).create_node(size, arvados_node)
 
+    @classmethod
+    def node_id(cls, node):
+        return node.uuid
 
