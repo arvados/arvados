@@ -33,8 +33,6 @@ window.SelectOrAutocomplete = {
     }
 }
 
-// When in edit mode, present a tag name selector and tag value
-// selector/editor depending of the tag type.
 window.TagEditorRow = {
     view: function(vnode) {
         // Value options list
@@ -136,23 +134,28 @@ window.TagEditorApp = {
         vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
         m.request('/vocabulary.json').then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
-        // Get tags
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
         vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
+        // Get tags
         vnode.state.sessionDB.request(
-            vnode.state.sessionDB.loadLocal(), vnode.state.objPath, {
+            vnode.state.sessionDB.loadLocal(),
+            '/arvados/v1/'+vnode.attrs.targetController,
+            {
                 data: {
-                    select: JSON.stringify(['properties']) // FIXME: not working
+                    filters: JSON.stringify([['uuid', '=', vnode.attrs.targetUuid]]),
+                    select: JSON.stringify(['properties'])
                 },
             }).then(function(obj) {
-                console.log(obj)
-                Object.keys(obj.properties).forEach(function(k) {
-                    vnode.state.appendTag(vnode, k, obj.properties[k])
-                })
-                // Data synced with server, so dirty state should be false
-                vnode.state.dirty(false)
+                if (obj.items.length == 1) {
+                    o = obj.items[0]
+                    Object.keys(o.properties).forEach(function(k) {
+                        vnode.state.appendTag(vnode, k, o.properties[k])
+                    })
+                    // Data synced with server, so dirty state should be false
+                    vnode.state.dirty(false)
+                }
             }
         )
     },
