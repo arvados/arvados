@@ -45,16 +45,17 @@ Subcollection <- R6::R6Class(
             if(is.null(private$collection))
                 stop("Subcollection doesn't belong to any collection.")
 
+            if(self$name == "")
+                stop("Unable to delete root folder.")
+
             collectionList <- paste0(self$getRelativePath(), "/", self$getFileList(fullpath = FALSE))
             sapply(collectionList, function(file)
             {
                 private$collection$.__enclos_env__$private$deleteFromREST(file)
             })
 
-            #todo rename this add to a collection
             private$addToCollection(NULL)
             private$dettachFromParent()
-
         },
 
         getFileList = function(fullpath = TRUE)
