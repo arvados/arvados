@@ -9,17 +9,21 @@ import (
 	"time"
 )
 
+type siteFileSystem struct {
+	fileSystem
+}
+
 // SiteFileSystem returns a FileSystem that maps collections and other
 // Arvados objects onto a filesystem layout.
 //
 // This is experimental: the filesystem layout is not stable, and
 // there are significant known bugs and shortcomings. For example,
-// although the FileSystem allows files to be added and modified in
-// collections, these changes are not persistent or visible to other
-// Arvados clients.
+// writes are not persisted until Sync() is called.
 func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
-	fs := &fileSystem{
-		fsBackend: keepBackend{apiClient: c, keepClient: kc},
+	fs := &siteFileSystem{
+		fileSystem: fileSystem{
+			fsBackend: keepBackend{apiClient: c, keepClient: kc},
+		},
 	}
 	root := &treenode{
 		fs: fs,
@@ -34,7 +38,7 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 	root.Child("by_id", func(inode) inode {
 		var vn inode
 		vn = &vdirnode{
-			treenode: treenode{
+			inode: &treenode{
 				fs:     fs,
 				parent: root,
 				inodes: make(map[string]inode),
@@ -44,9 +48,7 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 					mode:    0755 | os.ModeDir,
 				},
 			},
-			create: func(name string) inode {
-				return newEntByID(vn, name)
-			},
+			create: fs.mountCollection,
 		}
 		return vn
 	})
@@ -54,33 +56,51 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 	return fs
 }
 
-func newEntByID(parent inode, id string) inode {
+func (fs *siteFileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	return nil, ErrInvalidOperation
+}
+
+func (fs *siteFileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	return nil, ErrInvalidOperation
+}
+
+func (fs *siteFileSystem) mountCollection(parent inode, id string) inode {
 	var coll Collection
-	err := parent.FS().RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
+	err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
 	if err != nil {
 		return nil
 	}
-	fs, err := coll.FileSystem(parent.FS(), parent.FS())
+	cfs, err := coll.FileSystem(fs, fs)
 	if err != nil {
 		return nil
 	}
-	root := fs.(*collectionFileSystem).root.(*dirnode)
-	root.fileinfo.name = id
-	root.parent = parent
+	root := cfs.rootnode()
+	root.SetParent(parent)
+	root.(*dirnode).fileinfo.name = id
 	return root
 }
 
+// vdirnode wraps an inode by ignoring any requests to add/replace
+// children, and calling a create() func when a non-existing child is
+// looked up.
+//
+// create() can return either a new node, which will be added to the
+// treenode, or nil for ENOENT.
 type vdirnode struct {
-	treenode
-	create func(string) inode
+	inode
+	create func(parent inode, name string) inode
 }
 
 func (vn *vdirnode) Child(name string, _ func(inode) inode) inode {
-	return vn.treenode.Child(name, func(existing inode) inode {
+	return vn.inode.Child(name, func(existing inode) inode {
 		if existing != nil {
 			return existing
 		} else {
-			return vn.create(name)
+			n := vn.create(vn, name)
+			if n != nil {
+				n.SetParent(vn)
+			}
+			return n
 		}
 	})
 }

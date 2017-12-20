@@ -64,14 +64,14 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 		modTime = *c.ModifiedAt
 	}
 	fs := &collectionFileSystem{
+		uuid: c.UUID,
 		fileSystem: fileSystem{
 			fsBackend: keepBackend{apiClient: client, keepClient: kc},
 		},
-		uuid: c.UUID,
 	}
-	dn := &dirnode{
+	root := &dirnode{
+		fs: fs,
 		treenode: treenode{
-			fs: fs,
 			fileinfo: fileinfo{
 				name:    ".",
 				mode:    os.ModeDir | 0755,
@@ -80,17 +80,50 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 			inodes: make(map[string]inode),
 		},
 	}
-	dn.parent = dn
-	fs.fileSystem.root = dn
-	if err := dn.loadManifest(c.ManifestText); err != nil {
+	root.SetParent(root)
+	if err := root.loadManifest(c.ManifestText); err != nil {
 		return nil, err
 	}
+	fs.root = root
 	return fs, nil
 }
 
 type collectionFileSystem struct {
 	fileSystem
 	uuid string
+}
+
+// Caller must have parent lock, and must have already ensured
+// parent.Child(name,nil) is nil.
+func (fs *collectionFileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	if name == "" || name == "." || name == ".." {
+		return nil, ErrInvalidArgument
+	}
+	return &dirnode{
+		fs: fs,
+		treenode: treenode{
+			fileinfo: fileinfo{
+				name:    name,
+				mode:    perm | os.ModeDir,
+				modTime: modTime,
+			},
+			inodes: make(map[string]inode),
+		},
+	}, nil
+}
+
+func (fs *collectionFileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	if name == "" || name == "." || name == ".." {
+		return nil, ErrInvalidArgument
+	}
+	return &filenode{
+		fs: fs,
+		fileinfo: fileinfo{
+			name:    name,
+			mode:    perm & ^os.ModeDir,
+			modTime: modTime,
+		},
+	}, nil
 }
 
 func (fs *collectionFileSystem) Sync() error {
@@ -114,12 +147,12 @@ func (fs *collectionFileSystem) Sync() error {
 	return err
 }
 
-func (fs *collectionFileSystem) Child(name string, replace func(inode) inode) inode {
-	if name == ".arvados#collection" {
-		return &getternode{Getter: func() ([]byte, error) {
+func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
+	if dn == dn.fs.rootnode() && name == ".arvados#collection" {
+		gn := &getternode{Getter: func() ([]byte, error) {
 			var coll Collection
 			var err error
-			coll.ManifestText, err = fs.MarshalManifest(".")
+			coll.ManifestText, err = dn.fs.MarshalManifest(".")
 			if err != nil {
 				return nil, err
 			}
@@ -129,8 +162,10 @@ func (fs *collectionFileSystem) Child(name string, replace func(inode) inode) in
 			}
 			return data, err
 		}}
+		gn.SetParent(dn)
+		return gn
 	}
-	return fs.fileSystem.root.Child(name, replace)
+	return dn.treenode.Child(name, replace)
 }
 
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
@@ -230,6 +265,12 @@ type filenode struct {
 func (fn *filenode) appendSegment(e segment) {
 	fn.segments = append(fn.segments, e)
 	fn.fileinfo.size += int64(e.Len())
+}
+
+func (fn *filenode) SetParent(p inode) {
+	fn.RLock()
+	defer fn.RUnlock()
+	fn.parent = p
 }
 
 func (fn *filenode) Parent() inode {
@@ -496,7 +537,7 @@ func (fn *filenode) pruneMemSegments() {
 		}
 		fn.memsize -= int64(seg.Len())
 		fn.segments[idx] = storedSegment{
-			kc:      fn.parent.(fsBackend),
+			kc:      fn.parent.FS(),
 			locator: locator,
 			size:    seg.Len(),
 			offset:  0,
@@ -506,7 +547,12 @@ func (fn *filenode) pruneMemSegments() {
 }
 
 type dirnode struct {
+	fs *collectionFileSystem
 	treenode
+}
+
+func (dn *dirnode) FS() FileSystem {
+	return dn.fs
 }
 
 // sync flushes in-memory data (for all files in the tree rooted at
@@ -801,7 +847,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 				// can't be sure parent will be a *dirnode
 				return nil, ErrInvalidArgument
 			}
-			node = node.Parent().(*dirnode)
+			node = node.Parent()
 			continue
 		}
 		node.Child(name, func(child inode) inode {
@@ -832,7 +878,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 			err = ErrIsDirectory
 			return child
 		default:
-			err = ErrInvalidOperation
+			err = ErrInvalidArgument
 			return child
 		}
 	})
