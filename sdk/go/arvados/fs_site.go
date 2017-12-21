@@ -56,11 +56,7 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 	return fs
 }
 
-func (fs *siteFileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	return nil, ErrInvalidOperation
-}
-
-func (fs *siteFileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+func (fs *siteFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
 	return nil, ErrInvalidOperation
 }
 

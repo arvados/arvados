@@ -21,28 +21,6 @@ import (
 
 var maxBlockSize = 1 << 26
 
-type fsBackend interface {
-	keepClient
-	apiClient
-}
-
-// Ideally *Client would do everything; meanwhile keepBackend
-// implements fsBackend by merging the two kinds of arvados client.
-type keepBackend struct {
-	keepClient
-	apiClient
-}
-
-type keepClient interface {
-	ReadAt(locator string, p []byte, off int) (int, error)
-	PutB(p []byte) (string, int, error)
-}
-
-type apiClient interface {
-	RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error
-	UpdateBody(rsc resource) io.Reader
-}
-
 // A CollectionFileSystem is a FileSystem that can be serialized as a
 // manifest and stored as a collection.
 type CollectionFileSystem interface {
@@ -53,6 +31,11 @@ type CollectionFileSystem interface {
 	// Prefix (normally ".") is a top level directory, effectively
 	// prepended to all paths in the returned manifest.
 	MarshalManifest(prefix string) (string, error)
+}
+
+type collectionFileSystem struct {
+	fileSystem
+	uuid string
 }
 
 // FileSystem returns a CollectionFileSystem for the collection.
@@ -86,11 +69,6 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 	}
 	fs.root = root
 	return fs, nil
-}
-
-type collectionFileSystem struct {
-	fileSystem
-	uuid string
 }
 
 func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
@@ -140,27 +118,6 @@ func (fs *collectionFileSystem) Sync() error {
 		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
 	}
 	return err
-}
-
-func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
-	if dn == dn.fs.rootnode() && name == ".arvados#collection" {
-		gn := &getternode{Getter: func() ([]byte, error) {
-			var coll Collection
-			var err error
-			coll.ManifestText, err = dn.fs.MarshalManifest(".")
-			if err != nil {
-				return nil, err
-			}
-			data, err := json.Marshal(&coll)
-			if err == nil {
-				data = append(data, 10)
-			}
-			return data, err
-		}}
-		gn.SetParent(dn)
-		return gn
-	}
-	return dn.treenode.Child(name, replace)
 }
 
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
@@ -548,6 +505,27 @@ type dirnode struct {
 
 func (dn *dirnode) FS() FileSystem {
 	return dn.fs
+}
+
+func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
+	if dn == dn.fs.rootnode() && name == ".arvados#collection" {
+		gn := &getternode{Getter: func() ([]byte, error) {
+			var coll Collection
+			var err error
+			coll.ManifestText, err = dn.fs.MarshalManifest(".")
+			if err != nil {
+				return nil, err
+			}
+			data, err := json.Marshal(&coll)
+			if err == nil {
+				data = append(data, 10)
+			}
+			return data, err
+		}}
+		gn.SetParent(dn)
+		return gn
+	}
+	return dn.treenode.Child(name, replace)
 }
 
 // sync flushes in-memory data (for all files in the tree rooted at
