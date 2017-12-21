@@ -94,6 +94,7 @@ func (vn *vdirnode) Child(name string, _ func(inode) inode) inode {
 			n := vn.create(vn, name)
 			if n != nil {
 				n.SetParent(vn, name)
+				vn.inode.(*treenode).fileinfo.modTime = time.Now()
 			}
 			return n
 		}

@@ -67,8 +67,21 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 	if err := root.loadManifest(c.ManifestText); err != nil {
 		return nil, err
 	}
+	backdateTree(root, modTime)
 	fs.root = root
 	return fs, nil
+}
+
+func backdateTree(n inode, modTime time.Time) {
+	switch n := n.(type) {
+	case *filenode:
+		n.fileinfo.modTime = modTime
+	case *dirnode:
+		n.fileinfo.modTime = modTime
+		for _, n := range n.inodes {
+			backdateTree(n, modTime)
+		}
+	}
 }
 
 func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {

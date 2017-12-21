@@ -232,8 +232,9 @@ func (n *treenode) Child(name string, replace func(inode) inode) (child inode) {
 		if newchild == nil {
 			delete(n.inodes, name)
 		} else if newchild != child {
-			n.inodes[name] = newchild
 			newchild.SetParent(n, name)
+			n.inodes[name] = newchild
+			n.fileinfo.modTime = time.Now()
 			child = newchild
 		}
 	}
@@ -458,8 +459,6 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 			// Leave oldinode in olddir.
 			return oldinode
 		}
-		//TODO: olddirf.setModTime(time.Now())
-		//TODO: newdirf.setModTime(time.Now())
 		return nil
 	})
 	return err
