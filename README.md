@@ -46,7 +46,7 @@ doc/README.textile for instructions.
 
 ## Community
 
-The [#arvados](irc://irc.oftc.net:6667/#arvados IRC) (Internet Relay Chat)
+The [#arvados](irc://irc.oftc.net:6667/#arvados) IRC (Internet Relay Chat)
 channel at the
 [Open and Free Technology Community (irc.oftc.net)](http://www.oftc.net/oftc/)
 is available for live discussion and support.  You can use a traditional IRC
@@ -58,7 +58,7 @@ is a forum for general discussion, questions, and news about Arvados
 development.  The
 [Arvados developer mailing list](http://lists.arvados.org/mailman/listinfo/arvados-dev)
 is a forum for more technical discussion, intended for developers and
-contributers to Arvados.
+contributors to Arvados.
 
 ## Development
 
@@ -72,6 +72,10 @@ Continuous integration is hosted at https://ci.curoverse.com/
 Instructions for setting up a development environment and working on specific
 components can be found on the
 ["Hacking Arvados" page of the Arvados wiki](https://dev.arvados.org/projects/arvados/wiki/Hacking).
+
+## Contributing
+
+When making a pull request, please ensure *every git commit message* includes a one-line [Developer Certificate of Origin](https://dev.arvados.org/projects/arvados/wiki/Developer_Certificate_Of_Origin). If you have already made commits without it, fix them with `git commit --amend` or `git rebase`.
 
 ## Licensing
 
