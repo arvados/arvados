@@ -158,7 +158,7 @@ if docker --version |grep " 1\.[0-9]\." ; then
 fi
 if ! [[ -z "$version_tag" ]]; then
     docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:"$version_tag"
-else    
+else
     docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:latest
 fi
 
