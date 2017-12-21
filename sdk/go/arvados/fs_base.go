@@ -85,7 +85,7 @@ type FileSystem interface {
 }
 
 type inode interface {
-	SetParent(inode)
+	SetParent(parent inode, name string)
 	Parent() inode
 	FS() FileSystem
 	Read([]byte, filenodePtr) (int, filenodePtr, error)
@@ -207,10 +207,11 @@ func (n *treenode) FS() FileSystem {
 	return n.fs
 }
 
-func (n *treenode) SetParent(p inode) {
-	n.RLock()
-	defer n.RUnlock()
+func (n *treenode) SetParent(p inode, name string) {
+	n.Lock()
+	defer n.Unlock()
 	n.parent = p
+	n.fileinfo.name = name
 }
 
 func (n *treenode) Parent() inode {
@@ -232,7 +233,7 @@ func (n *treenode) Child(name string, replace func(inode) inode) (child inode) {
 			delete(n.inodes, name)
 		} else if newchild != child {
 			n.inodes[name] = newchild
-			newchild.SetParent(n)
+			newchild.SetParent(n, name)
 			child = newchild
 		}
 	}
@@ -442,27 +443,20 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 			err = os.ErrNotExist
 			return nil
 		}
-		newdirf.inode.Child(newname, func(existing inode) inode {
+		accepted := newdirf.inode.Child(newname, func(existing inode) inode {
 			if existing != nil && existing.IsDir() {
 				err = ErrIsDirectory
 				return existing
 			}
 			return oldinode
 		})
-		if err != nil {
+		if accepted != oldinode {
+			if err == nil {
+				// newdirf didn't accept oldinode.
+				err = ErrInvalidArgument
+			}
+			// Leave oldinode in olddir.
 			return oldinode
-		}
-		oldinode.Lock()
-		defer oldinode.Unlock()
-		switch n := oldinode.(type) {
-		case *dirnode:
-			n.parent = newdirf.inode
-			n.fileinfo.name = newname
-		case *filenode:
-			n.parent = newdirf.inode
-			n.fileinfo.name = newname
-		default:
-			panic(fmt.Sprintf("bad inode type %T", n))
 		}
 		//TODO: olddirf.setModTime(time.Now())
 		//TODO: newdirf.setModTime(time.Now())

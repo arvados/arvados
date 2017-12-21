@@ -63,7 +63,7 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 			inodes: make(map[string]inode),
 		},
 	}
-	root.SetParent(root)
+	root.SetParent(root, ".")
 	if err := root.loadManifest(c.ManifestText); err != nil {
 		return nil, err
 	}
@@ -219,10 +219,11 @@ func (fn *filenode) appendSegment(e segment) {
 	fn.fileinfo.size += int64(e.Len())
 }
 
-func (fn *filenode) SetParent(p inode) {
-	fn.RLock()
-	defer fn.RUnlock()
+func (fn *filenode) SetParent(p inode, name string) {
+	fn.Lock()
+	defer fn.Unlock()
 	fn.parent = p
+	fn.fileinfo.name = name
 }
 
 func (fn *filenode) Parent() inode {
@@ -522,7 +523,7 @@ func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
 			}
 			return data, err
 		}}
-		gn.SetParent(dn)
+		gn.SetParent(dn, name)
 		return gn
 	}
 	return dn.treenode.Child(name, replace)

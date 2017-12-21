@@ -71,8 +71,7 @@ func (fs *siteFileSystem) mountCollection(parent inode, id string) inode {
 		return nil
 	}
 	root := cfs.rootnode()
-	root.SetParent(parent)
-	root.(*dirnode).fileinfo.name = id
+	root.SetParent(parent, id)
 	return root
 }
 
@@ -94,7 +93,7 @@ func (vn *vdirnode) Child(name string, _ func(inode) inode) inode {
 		} else {
 			n := vn.create(vn, name)
 			if n != nil {
-				n.SetParent(vn)
+				n.SetParent(vn, name)
 			}
 			return n
 		}
