@@ -1,6 +1,28 @@
 R SDK for Arvados
 
-Examples of usage:
+Installation from source
+
+1. Dependencies
+
+libxml2-dev, libssl-dev, curl
+
+2. Build the ArvadosR package tarball
+
+cd arvados/sdk
+R CMD build R
+
+That will create a tarball of the Arvados package in the current directory.
+
+3. Install the R package and its dependencies
+
+Then start R. Assuming the generated tarball is named `ArvadosR_0.0.1.tar.gz`,
+install it like this:
+
+> install.packages(c('R6', 'httr', 'stringr', 'jsonlite', 'curl', 'XML'))
+> install.packages('./ArvadosR_0.0.1.tar.gz', repos = NULL, type="source", dependencies = TRUE)
+> library('ArvadosR')
+
+4. Examples of usage:
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -17,8 +39,7 @@ arv$getCollection("uuid")
 --------------------------------------------------------------------------------------------------------------------------------
 
 #List collections:
-
-collectionList <- arv$listCollections(list("uuid", "=" "aaaaa-bbbbb-ccccccccccccccc"), limit = 10, offset = 2)
+collectionList <- arv$listCollections(list(list("uuid", "=", "aaaaa-4zz18-ccccccccccccccc")), limit = 10, offset = 2)
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -30,13 +51,13 @@ deletedCollection <- arv$deleteCollection("uuid")
 
 #Update collection:
 
-updatedCollection <- arv$updateCollection("uuid", list((name = "new_name", description = "new_desciption")))
+updatedCollection <- arv$updateCollection("uuid", list(list(name = "new_name", description = "new_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create collection:
 
-cratedCollection <- arv$createCollection(list(list(name = "new_name", description = "new_desciption")))
+createdCollection <- arv$createCollection(list(list(name = "new_name", description = "new_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -50,7 +71,6 @@ cratedCollection <- arv$createCollection(list(list(name = "new_name", descriptio
 
 #Create collection object:
 
-arv <- Arvados$new("insert_token", "insert_host_name")
 collection <- Collection$new(arv, "uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
@@ -150,7 +170,7 @@ file$move("destination/file.cpp")
 
 subcollection <- collection$get("location/to/folder")
 
-file$move("destination/folder")
+subcollection$move("destination/folder")
 
 #Make sure to include folder name in destination
 #For example
@@ -169,8 +189,7 @@ arv$getProject("uuid")
 --------------------------------------------------------------------------------------------------------------------------------
 
 #List projects:
-
-projects <- arv$listProjects(list("uuid", "=" "aaaaa-bbbbb-ccccccccccccccc"), limit = 10, offset = 2)
+projects <- arv$listProjects(list(list("uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")), limit = 10, offset = 2)
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -182,12 +201,12 @@ deletedProject <- arv$deleteProject("uuid")
 
 #Update project:
 
-updatedProject <- arv$updateProject("uuid", list((name = "new_name", description = "new_desciption")))
+updatedProject <- arv$updateProject("uuid", list(list(name = "new_name", description = "new_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create project:
 
-cratedProject <- arv$createProject(list(list(name = "project_name", description = "project_desciption")))
+createdProject <- arv$createProject(list(list(name = "project_name", description = "project_desciption")))
 
 --------------------------------------------------------------------------------------------------------------------------------
