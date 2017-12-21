@@ -79,7 +79,7 @@ HttpRequest <- R6::R6Class(
                 filters <- sapply(filters, function(filter)
                 {
                     if(length(filter) != 3)
-                        stop("Filter list must have exacthey 3 elements.")
+                        stop("Filter list must have exactly 3 elements.")
 
                     attributeAndOperator = filter[c(1, 2)]
                     filterList = filter[[3]]
