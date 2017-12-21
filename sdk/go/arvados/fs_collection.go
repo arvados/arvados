@@ -480,7 +480,7 @@ func (fn *filenode) pruneMemSegments() {
 		if !ok || seg.Len() < maxBlockSize {
 			continue
 		}
-		locator, _, err := fn.parent.(fsBackend).PutB(seg.buf)
+		locator, _, err := fn.FS().PutB(seg.buf)
 		if err != nil {
 			// TODO: stall (or return errors from)
 			// subsequent writes until flushing
@@ -489,7 +489,7 @@ func (fn *filenode) pruneMemSegments() {
 		}
 		fn.memsize -= int64(seg.Len())
 		fn.segments[idx] = storedSegment{
-			kc:      fn.parent.FS(),
+			kc:      fn.FS(),
 			locator: locator,
 			size:    seg.Len(),
 			offset:  0,
