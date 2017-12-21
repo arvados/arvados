@@ -133,6 +133,17 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		},
 		{
 			path:  writePath,
+			cmd:   "move newdir1 newdir1/\n",
+			match: `(?ms).*Moving .* failed.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "get newdir1/testfile '" + checkfile.Name() + "'\n",
+			match: `(?ms).*succeeded.*`,
+			data:  testdata,
+		},
+		{
+			path:  writePath,
 			cmd:   "put '" + localfile.Name() + "' newdir1/testfile1\n",
 			match: `(?ms).*Uploading .* succeeded.*`,
 		},
