@@ -160,7 +160,7 @@ Collection <- R6::R6Class(
 
             serverResponse <- private$http$PUT(fileURL, headers, body)
 
-            if(serverResponse$status_code != 201)
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
             print(paste("File created:", relativePath))
@@ -173,13 +173,13 @@ Collection <- R6::R6Class(
 
             serverResponse <- private$http$DELETE(fileURL, headers)
 
-            if(serverResponse$status_code != 204)
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            print(paste("File deleted", relativePath))
+            print(paste("File deleted:", relativePath))
         },
 
-        moveOnRest = function(from, to)
+        moveOnREST = function(from, to)
         {
             collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/"))
             fromURL <- paste0(collectionURL, from)

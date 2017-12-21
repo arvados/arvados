@@ -73,7 +73,9 @@ arvadosSubcollection <- collection$get("location/to/my/directory/")
 
 #Read whole file or just a portion of it.
 
-fileContent <- arvadosFile$read(offset = 1024, length = 512)
+fileContent <- arvadosFile$read()
+fileContent <- arvadosFile$read("text")
+fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 
 --------------------------------------------------------------------------------------------------------------------------------
 

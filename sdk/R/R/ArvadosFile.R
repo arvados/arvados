@@ -11,9 +11,9 @@ ArvadosFile <- R6::R6Class(
 
         initialize = function(name)
         {
-            private$name       <- name
-            private$http       <- HttpRequest$new()
-            private$httpParser <- HttpParser$new()
+            private$name             <- name
+            private$http             <- HttpRequest$new()
+            private$httpParser       <- HttpParser$new()
         },
 
         getName = function() private$name,
@@ -39,13 +39,14 @@ ArvadosFile <- R6::R6Class(
         removeFromCollection = function()
         {
             if(is.null(private$collection))
-                stop("Subcollection doesn't belong to any collection.")
+                stop("ArvadosFile doesn't belong to any collection.")
             
             private$collection$.__enclos_env__$private$deleteFromREST(self$getRelativePath())
 
-            #todo rename this add to a collection
             private$addToCollection(NULL)
             private$detachFromParent()
+
+            "Content removed successfully."
         },
 
         getRelativePath = function()
@@ -53,7 +54,6 @@ ArvadosFile <- R6::R6Class(
             relativePath <- c(private$name)
             parent <- private$parent
 
-            #Recurse back to root
             while(!is.null(parent))
             {
                 relativePath <- c(parent$getName(), relativePath)
@@ -66,11 +66,16 @@ ArvadosFile <- R6::R6Class(
 
         getParent = function() private$parent,
 
-        read = function(offset = 0, length = 0)
+        read = function(contentType = "raw", offset = 0, length = 0)
         {
-            #todo range is wrong fix it
+            if(is.null(private$collection))
+                stop("ArvadosFile doesn't belong to any collection.")
+
             if(offset < 0 || length < 0)
-            stop("Offset and length must be positive values.")
+                stop("Offset and length must be positive values.")
+
+            if(!(contentType %in% private$http$validContentTypes))
+                stop("Invalid contentType. Please use text or raw.")
 
             range = paste0("bytes=", offset, "-")
 
@@ -78,20 +83,31 @@ ArvadosFile <- R6::R6Class(
                 range = paste0(range, offset + length - 1)
             
             fileURL = paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid, "/", self$getRelativePath());
-            headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
-                            Range = range)
+
+            if(offset == 0 && length == 0)
+            {
+                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken())) 
+            }
+            else
+            {
+                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
+                                Range = range)
+            }
 
             serverResponse <- private$http$GET(fileURL, headers)
 
-            if(serverResponse$status_code != 206)
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            parsedServerResponse <- httr::content(serverResponse, "raw")
+            parsedServerResponse <- httr::content(serverResponse, contentType)
             parsedServerResponse
         },
         
         write = function(content, contentType = "text/html")
         {
+            if(is.null(private$collection))
+                stop("ArvadosFile doesn't belong to any collection.")
+
             fileURL = paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid, "/", self$getRelativePath());
             headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
                             "Content-Type" = contentType)
@@ -99,7 +115,7 @@ ArvadosFile <- R6::R6Class(
 
             serverResponse <- private$http$PUT(fileURL, headers, body)
 
-            if(serverResponse$status_code != 201)
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
             parsedServerResponse <- httr::content(serverResponse, "text")
@@ -108,6 +124,9 @@ ArvadosFile <- R6::R6Class(
 
         move = function(newLocation)
         {
+            if(is.null(private$collection))
+                stop("ArvadosFile doesn't belong to any collection.")
+
             if(endsWith(newLocation, paste0(private$name, "/")))
             {
                 newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
@@ -125,25 +144,25 @@ ArvadosFile <- R6::R6Class(
 
             if(is.null(newParent))
             {
-                stop("Unable to get destination subcollectin")
+                stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnRest(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
 
             private$attachToParent(newParent)
 
-            paste("Status code :", status$status_code)
+            "Content moved successfully."
         }
     ),
 
     private = list(
 
-        name         = NULL,
-        size         = NULL,
-        parent       = NULL,
-        collection   = NULL,
-        http         = NULL,
-        httpParser   = NULL,
+        name       = NULL,
+        size       = NULL,
+        parent     = NULL,
+        collection = NULL,
+        http       = NULL,
+        httpParser = NULL,
 
         getChild = function(name)
         {
@@ -157,7 +176,7 @@ ArvadosFile <- R6::R6Class(
 
         addToCollection = function(collection)
         {
-            private$collection = collection
+            private$collection <- collection
         },
 
         detachFromParent = function()

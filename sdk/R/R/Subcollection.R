@@ -24,6 +24,10 @@ Subcollection <- R6::R6Class(
                 if(!is.null(content$.__enclos_env__$private$collection))
                     stop("ArvadosFile/Subcollection already belongs to a collection.")
 
+                childWithSameName <- private$getChild(content$getName())
+                if(!is.null(childWithSameName))
+                stop("Subcollection already contains ArvadosFile or Subcollection with same name.")
+
                 if(!is.null(private$collection))
                 {       
                     contentPath <- paste0(self$getRelativePath(), "/", content$getFileList())
@@ -33,10 +37,12 @@ Subcollection <- R6::R6Class(
 
                 private$children <- c(private$children, content)
                 content$.__enclos_env__$private$parent = self
+
+                "Content added successfully."
             }
             else
             {
-                stop("Expected AravodsFile or Subcollection object, got ...")
+                stop(paste("Expected AravodsFile or Subcollection object, got", class(content), "."))
             }
         },
 
@@ -45,7 +51,7 @@ Subcollection <- R6::R6Class(
             if(is.null(private$collection))
                 stop("Subcollection doesn't belong to any collection.")
 
-            if(self$name == "")
+            if(private$name == "")
                 stop("Unable to delete root folder.")
 
             collectionList <- paste0(self$getRelativePath(), "/", self$getFileList(fullpath = FALSE))
@@ -56,6 +62,8 @@ Subcollection <- R6::R6Class(
 
             private$addToCollection(NULL)
             private$dettachFromParent()
+
+            "Content removed successfully."
         },
 
         getFileList = function(fullpath = TRUE)
@@ -114,6 +122,9 @@ Subcollection <- R6::R6Class(
 
         move = function(newLocation)
         {
+            if(is.null(private$collection))
+                stop("Subcollection doesn't belong to any collection.")
+
             if(endsWith(newLocation, paste0(private$name, "/")))
             {
                 newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
@@ -131,14 +142,14 @@ Subcollection <- R6::R6Class(
 
             if(is.null(newParent))
             {
-                stop("Unable to get destination subcollectin")
+                stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnRest(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
 
             private$attachToParent(newParent)
 
-            paste("Status code :", status$status_code)
+            "Content moved successfully."
         },
 
         getParent = function() private$parent
@@ -209,8 +220,11 @@ Subcollection <- R6::R6Class(
 
         attachToParent = function(parent)
         {
-            parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
-            private$parent <- parent
+            if(private$name != "")
+            {
+                parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
+                private$parent <- parent
+            }
         }
     ),
     

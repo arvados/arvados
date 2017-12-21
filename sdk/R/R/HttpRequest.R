@@ -4,8 +4,11 @@ HttpRequest <- R6::R6Class(
 
     public = list(
 
+        validContentTypes = NULL,
+
         initialize = function() 
         {
+            self$validContentTypes <- c("text", "raw")
         },
 
         GET = function(url, headers = NULL, queryFilters = NULL, limit = NULL, offset = NULL)
