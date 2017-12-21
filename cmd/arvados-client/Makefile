@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 all:
 	go get .
 	docker build --tag=cgofuse --build-arg=http_proxy="$(http_proxy)" --build-arg=https_proxy="$(https_proxy)" "$(GOPATH)"/src/github.com/curoverse/cgofuse
