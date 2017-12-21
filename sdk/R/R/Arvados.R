@@ -100,13 +100,16 @@ Arvados <- R6::R6Class(
             collection
         },
 
-        updateCollection = function(uuid, body) 
+        updateCollection = function(uuid, newContent) 
         {
             collectionURL <- paste0(private$host, "collections/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
 
+            body <- list(list())
             names(body) <- c("collection")
+            body$collection <- newContent
+
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$PUT(collectionURL, headers, body)
@@ -119,13 +122,16 @@ Arvados <- R6::R6Class(
             collection
         },
 
-        createCollection = function(body) 
+        createCollection = function(content) 
         {
             collectionURL <- paste0(private$host, "collections")
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
 
+            body <- list(list())
             names(body) <- c("collection")
+            body$collection <- content
+
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$POST(collectionURL, headers, body)
@@ -153,14 +159,15 @@ Arvados <- R6::R6Class(
             project
         },
 
-        createProject = function(body) 
+        createProject = function(content) 
         {
             projectURL <- paste0(private$host, "groups")
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
 
+            body <- list(list())
             names(body) <- c("group")
-            body$group <- c("group_class" = "project", body$group)
+            body$group <- c("group_class" = "project", content)
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$POST(projectURL, headers, body)
@@ -173,13 +180,15 @@ Arvados <- R6::R6Class(
             project
         },
 
-        updateProject = function(uuid, body) 
+        updateProject = function(uuid, newContent) 
         {
             projectURL <- paste0(private$host, "groups/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
                             "Content-Type"  = "application/json")
 
+            body <- list(list())
             names(body) <- c("group")
+            body$group <- newContent
             body <- jsonlite::toJSON(body, auto_unbox = T)
 
             serverResponse <- private$http$PUT(projectURL, headers, body)

@@ -51,13 +51,13 @@ deletedCollection <- arv$deleteCollection("uuid")
 
 #Update collection:
 
-updatedCollection <- arv$updateCollection("uuid", list(list(name = "new_name", description = "new_desciption")))
+updatedCollection <- arv$updateCollection("uuid", list(name = "new_name", description = "new_desciption"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create collection:
 
-createdCollection <- arv$createCollection(list(list(name = "new_name", description = "new_desciption")))
+createdCollection <- arv$createCollection(list(name = "new_name", description = "new_desciption"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -201,12 +201,12 @@ deletedProject <- arv$deleteProject("uuid")
 
 #Update project:
 
-updatedProject <- arv$updateProject("uuid", list(list(name = "new_name", description = "new_desciption")))
+updatedProject <- arv$updateProject("uuid", list(name = "new_name", description = "new_desciption"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create project:
 
-createdProject <- arv$createProject(list(list(name = "project_name", description = "project_desciption")))
+createdProject <- arv$createProject(list(name = "project_name", description = "project_desciption"))
 
 --------------------------------------------------------------------------------------------------------------------------------
