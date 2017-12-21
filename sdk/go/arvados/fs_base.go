@@ -52,8 +52,9 @@ type FileSystem interface {
 	fsBackend
 
 	rootnode() inode
-	newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
-	newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error)
+
+	// create a new node with nil parent.
+	newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
 	// analogous to os.Stat()
 	Stat(name string) (os.FileInfo, error)
@@ -319,11 +320,7 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		}
 		var err error
 		n = parent.Child(name, func(inode) inode {
-			if perm.IsDir() {
-				n, err = parent.FS().newDirnode(parent, name, perm|0755, time.Now())
-			} else {
-				n, err = parent.FS().newFilenode(parent, name, perm|0755, time.Now())
-			}
+			n, err = parent.FS().newNode(name, perm|0755, time.Now())
 			return n
 		})
 		if err != nil {
@@ -371,7 +368,7 @@ func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 		return os.ErrExist
 	}
 	child := n.Child(name, func(inode) (child inode) {
-		child, err = n.FS().newDirnode(n, name, perm, time.Now())
+		child, err = n.FS().newNode(name, perm|os.ModeDir, time.Now())
 		return
 	})
 	if err != nil {
