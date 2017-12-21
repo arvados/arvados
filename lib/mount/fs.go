@@ -20,6 +20,7 @@ type sharedFile struct {
 	sync.Mutex
 }
 
+// keepFS implements cgofuse's FileSystemInterface.
 type keepFS struct {
 	fuse.FileSystemBase
 	Client     *arvados.Client
@@ -38,6 +39,8 @@ var (
 	invalidFH = ^uint64(0)
 )
 
+// newFH wraps f in a sharedFile, adds it to fs's lookup table using a
+// new handle number, and returns the handle number.
 func (fs *keepFS) newFH(f arvados.File) uint64 {
 	fs.Lock()
 	defer fs.Unlock()
@@ -155,6 +158,11 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 func (fs *keepFS) Releasedir(path string, fh uint64) (errc int) {
 	defer fs.debugPanics()
 	return fs.Release(path, fh)
+}
+
+func (fs *keepFS) Rmdir(path string) int {
+	defer fs.debugPanics()
+	return fs.errCode(fs.root.Remove(path))
 }
 
 func (fs *keepFS) Release(path string, fh uint64) (errc int) {
@@ -337,6 +345,9 @@ func (fs *keepFS) Fsyncdir(path string, datasync bool, fh uint64) int {
 	return fs.Fsync(path, datasync, fh)
 }
 
+// debugPanics (when deferred by keepFS handlers) prints an error and
+// stack trace on stderr when a handler crashes. (Without this,
+// cgofuse recovers from panics silently and returns EIO.)
 func (fs *keepFS) debugPanics() {
 	if err := recover(); err != nil {
 		log.Printf("(%T) %v", err, err)
