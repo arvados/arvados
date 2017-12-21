@@ -93,37 +93,32 @@ type collectionFileSystem struct {
 	uuid string
 }
 
-// Caller must have parent lock, and must have already ensured
-// parent.Child(name,nil) is nil.
-func (fs *collectionFileSystem) newDirnode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
 	if name == "" || name == "." || name == ".." {
 		return nil, ErrInvalidArgument
 	}
-	return &dirnode{
-		fs: fs,
-		treenode: treenode{
+	if perm.IsDir() {
+		return &dirnode{
+			fs: fs,
+			treenode: treenode{
+				fileinfo: fileinfo{
+					name:    name,
+					mode:    perm | os.ModeDir,
+					modTime: modTime,
+				},
+				inodes: make(map[string]inode),
+			},
+		}, nil
+	} else {
+		return &filenode{
+			fs: fs,
 			fileinfo: fileinfo{
 				name:    name,
-				mode:    perm | os.ModeDir,
+				mode:    perm & ^os.ModeDir,
 				modTime: modTime,
 			},
-			inodes: make(map[string]inode),
-		},
-	}, nil
-}
-
-func (fs *collectionFileSystem) newFilenode(parent inode, name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	if name == "" || name == "." || name == ".." {
-		return nil, ErrInvalidArgument
+		}, nil
 	}
-	return &filenode{
-		fs: fs,
-		fileinfo: fileinfo{
-			name:    name,
-			mode:    perm & ^os.ModeDir,
-			modTime: modTime,
-		},
-	}, nil
 }
 
 func (fs *collectionFileSystem) Sync() error {
@@ -852,7 +847,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		}
 		node.Child(name, func(child inode) inode {
 			if child == nil {
-				node, err = node.FS().newDirnode(node, name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				node, err = node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
 				child = node
 			} else if !child.IsDir() {
 				err = ErrFileExists
@@ -868,7 +863,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	node.Child(basename, func(child inode) inode {
 		switch child := child.(type) {
 		case nil:
-			child, err = node.FS().newFilenode(node, basename, 0755, node.FileInfo().ModTime())
+			child, err = node.FS().newNode(basename, 0755, node.FileInfo().ModTime())
 			fn = child.(*filenode)
 			return child
 		case *filenode:
