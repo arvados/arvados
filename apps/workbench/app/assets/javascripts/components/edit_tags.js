@@ -19,6 +19,7 @@ window.SelectOrAutocomplete = {
             searchField: 'value',
             sortField: 'value',
             maxItems: 1,
+            placeholder: vnode.attrs.placeholder,
             create: vnode.attrs.create ? function(input) {
                 return {value: input}
             } : false,
@@ -27,7 +28,9 @@ window.SelectOrAutocomplete = {
                 return {value: option}
             }),
             onChange: function(val) {
-                vnode.attrs.value(val)
+                if (val != '') {
+                    vnode.attrs.value(val)
+                }
             }
         })
     }
@@ -35,14 +38,20 @@ window.SelectOrAutocomplete = {
 
 window.TagEditorRow = {
     view: function(vnode) {
+        // Name options list
+        var nameOpts = Object.keys(vnode.attrs.vocabulary().types)
+        if (vnode.attrs.name() != '' && !(vnode.attrs.name() in vnode.attrs.vocabulary().types)) {
+            nameOpts.push(vnode.attrs.name())
+        }
         // Value options list
-        valueOpts = []
+        var valueOpts = []
         if (vnode.attrs.name() in vnode.attrs.vocabulary().types &&
             'options' in vnode.attrs.vocabulary().types[vnode.attrs.name()]) {
                 valueOpts = vnode.attrs.vocabulary().types[vnode.attrs.name()].options
         }
-        valueOpts.push(vnode.attrs.value())
-
+        if (vnode.attrs.value() != '') {
+            valueOpts.push(vnode.attrs.value())
+        }
         return m("tr", [
             // Erase tag
             m("td",
@@ -58,11 +67,10 @@ window.TagEditorRow = {
             m("td",
             vnode.attrs.editMode ?
             m("div", {key: 'name-'+vnode.attrs.name()},[m(SelectOrAutocomplete, {
-                options: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
-                    ? Object.keys(vnode.attrs.vocabulary().types)
-                    : Object.keys(vnode.attrs.vocabulary().types).concat(vnode.attrs.name()),
+                options: nameOpts,
                 value: vnode.attrs.name,
-                create: vnode.attrs.vocabulary().strict
+                create: !vnode.attrs.vocabulary().strict,
+                placeholder: 'new tag',
             })])
             : vnode.attrs.name),
             // Tag value
@@ -71,6 +79,7 @@ window.TagEditorRow = {
             m("div", {key: 'value-'+vnode.attrs.name()}, [m(SelectOrAutocomplete, {
                 options: valueOpts,
                 value: vnode.attrs.value,
+                placeholder: 'new value',
                 create: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
                     ? (vnode.attrs.vocabulary().types[vnode.attrs.name()].type == 'text') || 
                         vnode.attrs.vocabulary().types[vnode.attrs.name()].overridable || false
@@ -163,7 +172,7 @@ window.TagEditorApp = {
         return [
             vnode.state.editMode &&
             m("div.pull-left", [
-                m("a.btn.btn-primary.btn-sm"+(vnode.state.dirty() ? '' : '.disabled'), {
+                m("a.btn.btn-primary.btn-sm"+(!(vnode.state.dirty() === false) ? '' : '.disabled'), {
                     style: {
                         margin: '10px 0px'
                     },
@@ -182,7 +191,7 @@ window.TagEditorApp = {
                             vnode.state.dirty(false)
                         })
                     }
-                }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
+                }, !(vnode.state.dirty() === false) ? ' Save changes ' : ' Saved ')
             ]),
             // Tags table
             m(TagEditorTable, {
@@ -196,7 +205,7 @@ window.TagEditorApp = {
                 // Add tag button
                 m("a.btn.btn-primary.btn-sm", {
                     onclick: function(e) {
-                        vnode.state.appendTag(vnode, 'new tag', 'new value')
+                        vnode.state.appendTag(vnode, '', '')
                     }
                 }, [
                     m("i.glyphicon.glyphicon-plus"),
