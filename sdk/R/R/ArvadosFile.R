@@ -18,7 +18,7 @@ ArvadosFile <- R6::R6Class(
 
         getName = function() private$name,
 
-        getFileList = function(fullpath = TRUE)
+        getFileListing = function(fullpath = TRUE)
         {
             self$getName()
         },

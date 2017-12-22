@@ -105,7 +105,7 @@ Collection <- R6::R6Class(
             elementToMove$move(newLocation)
         },
 
-        getFileContent = function() private$getCollectionContent(),
+        getFileListing = function() private$getCollectionContent(),
 
         get = function(relativePath)
         {

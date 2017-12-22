@@ -32,7 +32,7 @@ Subcollection <- R6::R6Class(
                 if(!is.null(private$collection))
                 {       
                     contentPath <- paste0(self$getRelativePath(),
-                                          "/", content$getFileList())
+                                          "/", content$getFileListing())
 
                     private$collection$.__enclos_env__$private$createFilesOnREST(contentPath)
                     content$.__enclos_env__$private$addToCollection(private$collection)
@@ -59,7 +59,7 @@ Subcollection <- R6::R6Class(
                 stop("Unable to delete root folder.")
 
             collectionList <- paste0(self$getRelativePath(),
-                                     "/", self$getFileList(fullpath = FALSE))
+                                     "/", self$getFileListing(fullpath = FALSE))
             sapply(collectionList, function(file)
             {
                 private$collection$.__enclos_env__$private$deleteFromREST(file)
@@ -71,14 +71,14 @@ Subcollection <- R6::R6Class(
             "Content removed successfully."
         },
 
-        getFileList = function(fullpath = TRUE)
+        getFileListing = function(fullpath = TRUE)
         {
             content <- NULL
 
             if(fullpath)
             {
                 for(child in private$children)
-                    content <- c(content, child$getFileList())
+                    content <- c(content, child$getFileListing())
 
                 if(private$name != "")
                     content <- unlist(paste0(private$name, "/", content))
