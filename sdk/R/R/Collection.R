@@ -50,17 +50,61 @@ Collection <- R6::R6Class(
             if(is.null(subcollection))
                 stop(paste("Subcollection", relativePath, "doesn't exist."))
 
-            if(is.character(content))
-            {
-                sapply(content, function(fileName)
-                {
-                    subcollection$add(ArvadosFile$new(fileName))
-                })
-            }
-            else if("ArvadosFile"   %in% class(content) ||
-                    "Subcollection" %in% class(content))
+            if("ArvadosFile"   %in% class(content) ||
+               "Subcollection" %in% class(content))
             {
                 subcollection$add(content)
+
+                content
+            }
+            else
+            {
+                contentClass <- paste(class(content), collapse = ", ")
+                stop(paste("Expected AravodsFile or Subcollection object, got",
+                           paste0("(", contentClass, ")"), "."))
+            }
+        },
+
+        create = function(fileNames, relativePath = "")
+        {
+            if(relativePath == "" ||
+               relativePath == "." ||
+               relativePath == "./")
+            {
+                subcollection <- private$tree$.__enclos_env__$private$tree
+            }
+            else
+            {
+                if(endsWith(relativePath, "/") && nchar(relativePath) > 0)
+                    relativePath <- substr(relativePath, 1, nchar(relativePath) - 1)
+
+                subcollection <- self$get(relativePath)
+            }
+
+            if(is.null(subcollection))
+                stop(paste("Subcollection", relativePath, "doesn't exist."))
+
+            if(is.character(fileNames))
+            {
+                arvadosFiles <- NULL
+                sapply(fileNames, function(fileName)
+                {
+                    newFile <- ArvadosFile$new(fileName)
+                    subcollection$add(newFile)
+
+                    arvadosFiles <<- c(arvadosFiles, newFile)
+                })
+
+                if(length(arvadosFiles) == 1)
+                    return(arvadosFiles[[1]])
+                else
+                    return(arvadosFiles)
+            }
+            else 
+            {
+                contentClass <- paste(class(fileNames), collapse = ", ")
+                stop(paste("Expected character vector, got",
+                           paste0("(", contentClass, ")"), "."))
             }
         },
 

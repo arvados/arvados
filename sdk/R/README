@@ -108,15 +108,16 @@ size <- arvadosSubcollection$getSizeInBytes()
 
 #Create new file in a collection
 
-#Call structure
-
-collection$add(arvadosFileOrSubcollectionOrFileName, optionalRelativePath)
+collection$create(fileNames, optionalRelativePath)
 
 #Example
 
-collection$add("main.cpp", "cpp/src/")
+mainFile <- collection$create("main.cpp", "cpp/src/")
+fileList <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
 
-#or
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Add existing ArvadosFile or Subcollection to a collection
 
 folder <- Subcollection$new("src")
 file <- ArvadosFile$new("main.cpp")
@@ -124,12 +125,8 @@ folder$add(file)
 
 collection$add(folder, "cpp")
 
-#Both examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.
+#This examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.
 #If subcollection contains more files or folders they will be added recursively.
-
-#You can also add multiple files
-
-collection$add(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
