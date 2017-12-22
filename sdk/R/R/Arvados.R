@@ -47,6 +47,9 @@ Arvados <- R6::R6Class(
 
             discoveryDocument <- private$httpParser$parseJSONResponse(serverResponse)
             private$webDavHostName <- discoveryDocument$keepWebServiceUrl
+
+            if(is.null(private$webDavHostName))
+                stop("Unable to find WebDAV server.")
         },
 
         getToken    = function() private$token,
