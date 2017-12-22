@@ -27,6 +27,8 @@ write_files:
     permissions: '0400'
 """
 LOCKFILE_NAME = 'lockfile'
+DOMAIN_NAME = 'domain'
+DOMAIN_NAME_VALUE = None
 
 class ComputeNodeDriver(BaseComputeNodeDriver):
 
@@ -43,11 +45,16 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
+        global DOMAIN_NAME_VALUE
         if LOCKFILE_NAME not in create_kwargs:
             raise Exception("'{}' not set in config. Cannot continue!".format(LOCKFILE_NAME))
-        self._lockfile = create_kwargs[LOCKFILE_NAME]               
+        if DOMAIN_NAME not in create_kwargs:
+            raise Exception("'{}' not set in config. Cannot continue!".format(DOMAIN_NAME))
+        self._lockfile = create_kwargs[LOCKFILE_NAME]
+        if DOMAIN_NAME_VALUE is None:
+            DOMAIN_NAME_VALUE = create_kwargs[DOMAIN_NAME]
         list_kwargs = list_kwargs.copy()
-        create_kwargs = { key: value for (key, value) in create_kwargs.items() if key != LOCKFILE_NAME}
+        create_kwargs = { key: value for (key, value) in create_kwargs.items() if key != LOCKFILE_NAME and key != DOMAIN_NAME}
         
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
@@ -56,10 +63,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         for required_value in ['image_id', 'flavor_id', 'network_id', 'security_group_id']:
             if required_value not in self.create_kwargs:
                 raise Exception("FATAL: [Cloud Create] Configuration does not specify " + required_value)     
-        
-        #self.REGEX_COMPUTE = re.compile(r'^compute-[0-9]+$')
-        #self.REGEX_NUMBER = re.compile(r'[0-9]+')
-        #self.COMPUTE_NUMBERS = frozenset(range(0,1000))
         
         # Select the arguments used for spawning new nodes
         self._create_node_image = self._select_by_id(self.create_kwargs['image_id'], self.real.list_images())
@@ -109,7 +112,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         This method should return the FQDN of the node object argument.
         Different clouds store this in different places.
         """
-        return node.name
+        global DOMAIN_NAME_VALUE
+        return (node.name + "." + DOMAIN_NAME_VALUE)
 
     @classmethod
     def node_start_time(cls, node):
@@ -155,5 +159,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     @classmethod
     def node_id(cls, node):
-        return node.uuid
+        global DOMAIN_NAME_VALUE
+        return (node.name + "." + DOMAIN_NAME_VALUE)
 
