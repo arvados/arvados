@@ -161,6 +161,7 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
+        arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager
         arvados-src
@@ -179,10 +180,6 @@ if test -z "$packages" ; then
         python-arvados-fuse
         python-arvados-python-client
         python-arvados-cwl-runner"
-
-    if [[ $TARGET != centos7 ]]; then
-        packages="$packages arvados-docker-cleaner"
-    fi
 fi
 
 FINAL_EXITCODE=0
