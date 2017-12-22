@@ -61,7 +61,7 @@ window.TagEditorRow = {
                         align: 'center'
                     },
                     onclick: function(e) { vnode.attrs.removeTag() }
-                }, m('i.fa.fa-fw.fa-trash-o'))),
+                }, m('i.fa.fa-fw.fa-trash-o')))
             ),
             // Tag name
             m("td",
