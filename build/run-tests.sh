@@ -69,7 +69,10 @@ apps/workbench_functionals (*)
 apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
+cmd/arvados-client
 doc
+lib/cli
+lib/crunchstat
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -829,6 +832,9 @@ cd "$GOPATH/src/git.curoverse.com/arvados.git" && \
         fatal "govendor sync failed"
 declare -a gostuff
 gostuff=(
+    cmd/arvados-client
+    lib/cli
+    lib/crunchstat
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
@@ -839,7 +845,6 @@ gostuff=(
     sdk/go/asyncbuf
     sdk/go/crunchrunner
     sdk/go/stats
-    lib/crunchstat
     services/arv-git-httpd
     services/crunchstat
     services/health
