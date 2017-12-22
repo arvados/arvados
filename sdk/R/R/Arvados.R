@@ -83,12 +83,21 @@ Arvados <- R6::R6Class(
             serverResponse <- private$http$GET(collectionURL, headers, filters,
                                                limit, offset)
 
-            collection <- private$httpParser$parseJSONResponse(serverResponse)
+            collections <- private$httpParser$parseJSONResponse(serverResponse)
 
-            if(!is.null(collection$errors))
-                stop(collection$errors)       
+            if(!is.null(collections$errors))
+                stop(collections$errors)       
 
-            collection
+            collections
+        },
+
+        listAllCollections = function(filters = NULL)
+        {
+            if(!is.null(filters))
+                names(filters) <- c("collection")
+
+            collectionURL <- paste0(private$host, "collections")
+            private$fetchAllItems(collectionURL, filters)
         },
 
         deleteCollection = function(uuid) 
@@ -229,6 +238,18 @@ Arvados <- R6::R6Class(
             projects
         },
 
+        listAllProjects = function(filters = NULL)
+        {
+            if(!is.null(filters))
+                names(filters) <- c("groups")
+
+            filters[[length(filters) + 1]] <- list("group_class", "=", "project")
+
+            projectURL <- paste0(private$host, "groups")
+
+            private$fetchAllItems(projectURL, filters)
+        },
+
         deleteProject = function(uuid) 
         {
             projectURL <- paste0(private$host, "groups/", uuid)
@@ -252,7 +273,35 @@ Arvados <- R6::R6Class(
         host           = NULL,
         webDavHostName = NULL,
         http           = NULL,
-        httpParser     = NULL
+        httpParser     = NULL,
+
+        fetchAllItems = function(resourceURL, filters)
+        {
+            headers <- list(Authorization = paste("OAuth2", private$token))
+
+            offset <- 0
+            itemsAvailable <- .Machine$integer.max
+            items <- c()
+            while(length(items) < itemsAvailable)
+            {
+                serverResponse <- private$http$GET(url          = resourceURL,
+                                                   headers      = headers,
+                                                   queryFilters = filters,
+                                                   limit        = NULL,
+                                                   offset       = offset)
+
+                parsedResponse <- private$httpParser$parseJSONResponse(serverResponse)
+
+                if(!is.null(parsedResponse$errors))
+                    stop(parsedResponse$errors)       
+
+                items          <- c(items, parsedResponse$items)
+                offset         <- length(items)
+                itemsAvailable <- parsedResponse$items_available
+            }
+
+            items
+        }
     ),
     
     cloneable = FALSE

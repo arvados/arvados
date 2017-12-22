@@ -139,8 +139,9 @@ HttpRequest <- R6::R6Class(
             if(length(finalQuery) > 1)
             {
                 finalQuery <- paste0(finalQuery, collapse = "&")
-                finalQuery <- paste0("?", finalQuery)
             }
+
+            finalQuery <- paste0("/?", finalQuery)
 
             finalQuery
         }
