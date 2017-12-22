@@ -179,7 +179,9 @@ window.TagEditorApp = {
                     onclick: function(e) {
                         var tags = {}
                         vnode.state.tags.forEach(function(t) {
-                            tags[t.name()] = t.value()
+                            if (t.name() != '' && t.value() != '') {
+                                tags[t.name()] = t.value()
+                            }
                         })
                         vnode.state.sessionDB.request(
                             vnode.state.sessionDB.loadLocal(),
