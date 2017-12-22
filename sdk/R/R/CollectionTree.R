@@ -88,7 +88,6 @@ CollectionTree <- R6::R6Class(
             if(is.null(child))
             {
                 container$add(node)
-                #todo add it to collection
             }
             else
             {

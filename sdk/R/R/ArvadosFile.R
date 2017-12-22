@@ -25,7 +25,8 @@ ArvadosFile <- R6::R6Class(
 
         getSizeInBytes = function()
         {
-            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid))
+            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(),
+                                              "c=", private$collection$uuid))
             fileURL <- paste0(collectionURL, "/", self$getRelativePath());
 
             headers = list("Authorization" = paste("OAuth2", private$collection$api$getToken()))
@@ -82,11 +83,13 @@ ArvadosFile <- R6::R6Class(
             if(length > 0)
                 range = paste0(range, offset + length - 1)
             
-            fileURL = paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid, "/", self$getRelativePath());
+            fileURL = paste0(private$collection$api$getWebDavHostName(),
+                             "c=", private$collection$uuid, "/", self$getRelativePath());
 
             if(offset == 0 && length == 0)
             {
-                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken())) 
+                headers <- list(Authorization = paste("OAuth2",
+                                                      private$collection$api$getToken())) 
             }
             else
             {
@@ -108,7 +111,8 @@ ArvadosFile <- R6::R6Class(
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection.")
 
-            fileURL = paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid, "/", self$getRelativePath());
+            fileURL = paste0(private$collection$api$getWebDavHostName(), 
+                             "c=", private$collection$uuid, "/", self$getRelativePath());
             headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
                             "Content-Type" = contentType)
             body <- content
@@ -129,7 +133,8 @@ ArvadosFile <- R6::R6Class(
 
             if(endsWith(newLocation, paste0(private$name, "/")))
             {
-                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
+                newLocation <- substr(newLocation, 0,
+                                      nchar(newLocation) - nchar(paste0(private$name, "/")))
             }
             else if(endsWith(newLocation, private$name))
             {
@@ -147,7 +152,8 @@ ArvadosFile <- R6::R6Class(
                 stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(),
+                                                                            paste0(newParent$getRelativePath(), "/", self$getName()))
 
             private$attachToParent(newParent)
 

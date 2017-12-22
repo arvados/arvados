@@ -71,8 +71,6 @@ HttpRequest <- R6::R6Class(
 
     private = list(
 
-        #Todo(Fudo): Refactor this and find a better way to build
-        # Python array from R list (recursion?)
         createQuery = function(filters, limit, offset)
         {
             finalQuery <- NULL
@@ -115,7 +113,6 @@ HttpRequest <- R6::R6Class(
 
                 encodedQuery <- URLencode(filters, reserved = T, repeated = T)
 
-                #Todo(Fudo): This is a hack for now. Find a proper solution.
                 encodedQuery <- stringr::str_replace_all(encodedQuery, "%2B", "+")
 
                 finalQuery <- c(finalQuery, paste0("filters=", encodedQuery))

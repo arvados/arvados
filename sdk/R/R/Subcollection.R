@@ -26,11 +26,14 @@ Subcollection <- R6::R6Class(
 
                 childWithSameName <- private$getChild(content$getName())
                 if(!is.null(childWithSameName))
-                stop("Subcollection already contains ArvadosFile or Subcollection with same name.")
+                    stop("Subcollection already contains ArvadosFile
+                          or Subcollection with same name.")
 
                 if(!is.null(private$collection))
                 {       
-                    contentPath <- paste0(self$getRelativePath(), "/", content$getFileList())
+                    contentPath <- paste0(self$getRelativePath(),
+                                          "/", content$getFileList())
+
                     private$collection$.__enclos_env__$private$createFilesOnREST(contentPath)
                     content$.__enclos_env__$private$addToCollection(private$collection)
                 }
@@ -42,7 +45,8 @@ Subcollection <- R6::R6Class(
             }
             else
             {
-                stop(paste("Expected AravodsFile or Subcollection object, got", class(content), "."))
+                stop(paste("Expected AravodsFile or Subcollection object, got",
+                           class(content), "."))
             }
         },
 
@@ -54,7 +58,8 @@ Subcollection <- R6::R6Class(
             if(private$name == "")
                 stop("Unable to delete root folder.")
 
-            collectionList <- paste0(self$getRelativePath(), "/", self$getFileList(fullpath = FALSE))
+            collectionList <- paste0(self$getRelativePath(),
+                                     "/", self$getFileList(fullpath = FALSE))
             sapply(collectionList, function(file)
             {
                 private$collection$.__enclos_env__$private$deleteFromREST(file)
@@ -89,7 +94,8 @@ Subcollection <- R6::R6Class(
 
         getSizeInBytes = function()
         {
-            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(), "c=", private$collection$uuid))
+            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(),
+                                              "c=", private$collection$uuid))
             subcollectionURL <- paste0(collectionURL, "/", self$getRelativePath(), "/");
 
             headers = list("Authorization" = paste("OAuth2", private$collection$api$getToken()))
@@ -109,7 +115,6 @@ Subcollection <- R6::R6Class(
             relativePath <- c(private$name)
             parent <- private$parent
 
-            #Recurse back to root
             while(!is.null(parent))
             {
                 relativePath <- c(parent$getName(), relativePath)
@@ -127,11 +132,13 @@ Subcollection <- R6::R6Class(
 
             if(endsWith(newLocation, paste0(private$name, "/")))
             {
-                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(paste0(private$name, "/")))
+                newLocation <- substr(newLocation, 0,
+                                      nchar(newLocation) - nchar(paste0(private$name, "/")))
             }
             else if(endsWith(newLocation, private$name))
             {
-                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(private$name))
+                newLocation <- substr(newLocation, 0,
+                                      nchar(newLocation) - nchar(private$name))
             }
             else
             {
@@ -145,7 +152,8 @@ Subcollection <- R6::R6Class(
                 stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(), paste0(newParent$getRelativePath(), "/", self$getName()))
+            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(),
+                                                                            paste0(newParent$getRelativePath(), "/", self$getName()))
 
             private$attachToParent(newParent)
 

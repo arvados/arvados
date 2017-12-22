@@ -11,7 +11,9 @@ HttpParser <- R6::R6Class(
 
         parseJSONResponse = function(serverResponse) 
         {
-            parsed_response <- httr::content(serverResponse, as = "parsed", type = "application/json")
+            parsed_response <- httr::content(serverResponse,
+                                             as = "parsed",
+                                             type = "application/json")
         },
 
         parseWebDAVResponse = function(response, uri)

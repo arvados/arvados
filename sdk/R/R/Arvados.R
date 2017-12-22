@@ -27,9 +27,11 @@ Arvados <- R6::R6Class(
             token <- Sys.getenv("ARVADOS_API_TOKEN");
 
             if(host == "" | token == "")
-                stop("Please provide host name and authentification token or set ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
+                stop("Please provide host name and authentification token or set
+                     ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
 
-            discoveryDocumentURL <- paste0("https://", host, "/discovery/v1/apis/arvados/v1/rest")
+            discoveryDocumentURL <- paste0("https://", host,
+                                           "/discovery/v1/apis/arvados/v1/rest")
 
             version <- "v1"
             host  <- paste0("https://", host, "/arvados/", version, "/")
@@ -50,7 +52,6 @@ Arvados <- R6::R6Class(
         getToken    = function() private$token,
         getHostName = function() private$host,
 
-        #Todo(Fudo): Hardcoded credentials to WebDAV server. Remove them later
         getWebDavHostName = function() private$webDavHostName,
 
         getCollection = function(uuid) 
@@ -73,9 +74,12 @@ Arvados <- R6::R6Class(
             collectionURL <- paste0(private$host, "collections")
             headers <- list(Authorization = paste("OAuth2", private$token))
 
-            names(filters) <- c("collection")
+            if(!is.null(filters))
+                names(filters) <- c("collection")
 
-            serverResponse <- private$http$GET(collectionURL, headers, filters, limit, offset)
+            serverResponse <- private$http$GET(collectionURL, headers, filters,
+                                               limit, offset)
+
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))
@@ -206,10 +210,14 @@ Arvados <- R6::R6Class(
             projectURL <- paste0(private$host, "groups")
             headers <- list(Authorization = paste("OAuth2", private$token))
 
-            names(filters) <- c("groups")
+            if(!is.null(filters))
+                names(filters) <- c("groups")
+
             filters[[length(filters) + 1]] <- list("group_class", "=", "project")
 
-            serverResponse <- private$http$GET(projectURL, headers, filters, limit, offset)
+            serverResponse <- private$http$GET(projectURL, headers, filters,
+                                               limit, offset)
+
             projects <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(projects$errors))
