@@ -7,6 +7,7 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 	"io"
 )
@@ -40,5 +41,38 @@ func Multi(m map[string]RunFunc) RunFunc {
 		} else {
 			return cmd(prog+" "+args[0], args[1:], stdin, stdout, stderr)
 		}
+	}
+}
+
+// WithLateSubcommand wraps a RunFunc by skipping over some known
+// flags to find a subcommand, and moving that subcommand to the front
+// of the args before calling the wrapped RunFunc. For example:
+//
+//	// Translate [           --format foo subcommand bar]
+//	//        to [subcommand --format foo            bar]
+//	WithLateSubcommand(fn, []string{"format"}, nil)
+func WithLateSubcommand(run RunFunc, argFlags, boolFlags []string) RunFunc {
+	return func(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+		flags := flag.NewFlagSet("prog", flag.ContinueOnError)
+		for _, arg := range argFlags {
+			flags.String(arg, "", "")
+		}
+		for _, arg := range boolFlags {
+			flags.Bool(arg, false, "")
+		}
+		// Ignore errors. We can't report a useful error
+		// message anyway.
+		flags.Parse(args)
+		if flags.NArg() > 0 {
+			// Move the first arg after the recognized
+			// flags up to the front.
+			flagargs := len(args) - flags.NArg()
+			newargs := make([]string, len(args))
+			newargs[0] = args[flagargs]
+			copy(newargs[1:flagargs+1], args[:flagargs])
+			copy(newargs[flagargs+1:], args[flagargs+1:])
+			args = newargs
+		}
+		return run(prog, args, stdin, stdout, stderr)
 	}
 }

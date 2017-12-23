@@ -72,6 +72,7 @@ apps/workbench_profile
 cmd/arvados-client
 doc
 lib/cli
+lib/cmd
 lib/crunchstat
 services/api
 services/arv-git-httpd
@@ -834,6 +835,7 @@ declare -a gostuff
 gostuff=(
     cmd/arvados-client
     lib/cli
+    lib/cmd
     lib/crunchstat
     sdk/go/arvados
     sdk/go/arvadosclient
