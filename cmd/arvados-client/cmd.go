@@ -17,12 +17,13 @@ import (
 
 var version = "dev"
 
-var Run = cmd.Multi(map[string]cmd.RunFunc{
+var Run = cmd.WithLateSubcommand(cmd.Multi(map[string]cmd.RunFunc{
 	"get":       cli.Get,
+	"-e":        cmdVersion,
 	"version":   cmdVersion,
 	"-version":  cmdVersion,
 	"--version": cmdVersion,
-})
+}), []string{"f", "format"}, []string{"n", "dry-run", "v", "verbose", "s", "short"})
 
 func cmdVersion(prog string, args []string, _ io.Reader, stdout, _ io.Writer) int {
 	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")

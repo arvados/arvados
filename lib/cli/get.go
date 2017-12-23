@@ -23,7 +23,14 @@ func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) 
 	}()
 
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	format := flags.String("format", "json", "output format (json or yaml)")
+	format := flags.String("format", "json", "output format (json, yaml, or uuid)")
+	flags.StringVar(format, "f", "json", "output format (json, yaml, or uuid)")
+	short := flags.Bool("short", false, "equivalent to --format=uuid")
+	flags.BoolVar(short, "s", false, "equivalent to --format=uuid")
+	flags.Bool("dry-run", false, "dry run (ignored, for compatibility)")
+	flags.Bool("n", false, "dry run (ignored, for compatibility)")
+	flags.Bool("verbose", false, "verbose (ignored, for compatibility)")
+	flags.Bool("v", false, "verbose (ignored, for compatibility)")
 	err = flags.Parse(args)
 	if err != nil {
 		return 2
@@ -31,6 +38,9 @@ func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) 
 	if len(flags.Args()) != 1 {
 		flags.Usage()
 		return 2
+	}
+	if *short {
+		*format = "uuid"
 	}
 
 	id := flags.Args()[0]
@@ -52,6 +62,8 @@ func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) 
 		if err == nil {
 			_, err = stdout.Write(buf)
 		}
+	} else if *format == "uuid" {
+		fmt.Fprintln(stdout, obj["uuid"])
 	} else {
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
