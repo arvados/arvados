@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/lib/cmdtest"
 	check "gopkg.in/check.v1"
 )
 
@@ -31,6 +32,7 @@ var testCmd = Multi(map[string]RunFunc{
 })
 
 func (s *CmdSuite) TestHello(c *check.C) {
+	defer cmdtest.LeakCheck(c)()
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
 	exited := testCmd("prog", []string{"echo", "hello", "world"}, bytes.NewReader(nil), stdout, stderr)
@@ -39,7 +41,18 @@ func (s *CmdSuite) TestHello(c *check.C) {
 	c.Check(stderr.String(), check.Equals, "")
 }
 
+func (s *CmdSuite) TestUsage(c *check.C) {
+	defer cmdtest.LeakCheck(c)()
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	exited := testCmd("prog", []string{"nosuchcommand", "hi"}, bytes.NewReader(nil), stdout, stderr)
+	c.Check(exited, check.Equals, 2)
+	c.Check(stdout.String(), check.Equals, "")
+	c.Check(stderr.String(), check.Matches, `(?ms)^unrecognized command "nosuchcommand"\n.*echo.*\n`)
+}
+
 func (s *CmdSuite) TestWithLateSubcommand(c *check.C) {
+	defer cmdtest.LeakCheck(c)()
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
 	run := WithLateSubcommand(testCmd, []string{"format", "f"}, []string{"n"})

@@ -23,6 +23,8 @@ func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) 
 	}()
 
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
+	flags.SetOutput(stderr)
+
 	format := flags.String("format", "json", "output format (json, yaml, or uuid)")
 	flags.StringVar(format, "f", "json", "output format (json, yaml, or uuid)")
 	short := flags.Bool("short", false, "equivalent to --format=uuid")
