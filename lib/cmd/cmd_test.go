@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -51,13 +52,11 @@ func (s *CmdSuite) TestUsage(c *check.C) {
 	c.Check(stderr.String(), check.Matches, `(?ms)^unrecognized command "nosuchcommand"\n.*echo.*\n`)
 }
 
-func (s *CmdSuite) TestWithLateSubcommand(c *check.C) {
+func (s *CmdSuite) TestSubcommandToFront(c *check.C) {
 	defer cmdtest.LeakCheck(c)()
-	stdout := bytes.NewBuffer(nil)
-	stderr := bytes.NewBuffer(nil)
-	run := WithLateSubcommand(testCmd, []string{"format", "f"}, []string{"n"})
-	exited := run("prog", []string{"--format=yaml", "-n", "-format", "beep", "echo", "hi"}, bytes.NewReader(nil), stdout, stderr)
-	c.Check(exited, check.Equals, 0)
-	c.Check(stdout.String(), check.Equals, "--format=yaml -n -format beep hi\n")
-	c.Check(stderr.String(), check.Equals, "")
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.String("format", "json", "")
+	flags.Bool("n", false, "")
+	args := SubcommandToFront([]string{"--format=yaml", "-n", "-format", "beep", "echo", "hi"}, flags)
+	c.Check(args, check.DeepEquals, []string{"echo", "--format=yaml", "-n", "-format", "beep", "hi"})
 }

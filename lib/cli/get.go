@@ -12,6 +12,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
+	"rsc.io/getopt"
 )
 
 func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -22,17 +23,17 @@ func Get(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) 
 		}
 	}()
 
-	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
+	flags := getopt.NewFlagSet(prog, flag.ContinueOnError)
 	flags.SetOutput(stderr)
 
 	format := flags.String("format", "json", "output format (json, yaml, or uuid)")
-	flags.StringVar(format, "f", "json", "output format (json, yaml, or uuid)")
+	flags.Alias("f", "format")
 	short := flags.Bool("short", false, "equivalent to --format=uuid")
-	flags.BoolVar(short, "s", false, "equivalent to --format=uuid")
+	flags.Alias("s", "short")
 	flags.Bool("dry-run", false, "dry run (ignored, for compatibility)")
-	flags.Bool("n", false, "dry run (ignored, for compatibility)")
+	flags.Alias("n", "dry-run")
 	flags.Bool("verbose", false, "verbose (ignored, for compatibility)")
-	flags.Bool("v", false, "verbose (ignored, for compatibility)")
+	flags.Alias("v", "verbose")
 	err = flags.Parse(args)
 	if err != nil {
 		return 2

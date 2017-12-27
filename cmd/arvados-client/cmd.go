@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -13,17 +14,18 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cli"
 	"git.curoverse.com/arvados.git/lib/cmd"
+	"rsc.io/getopt"
 )
 
 var version = "dev"
 
-var Run = cmd.WithLateSubcommand(cmd.Multi(map[string]cmd.RunFunc{
+var Run = cmd.Multi(map[string]cmd.RunFunc{
 	"get":       cli.Get,
 	"-e":        cmdVersion,
 	"version":   cmdVersion,
 	"-version":  cmdVersion,
 	"--version": cmdVersion,
-}), []string{"f", "format"}, []string{"n", "dry-run", "v", "verbose", "s", "short"})
+})
 
 func cmdVersion(prog string, args []string, _ io.Reader, stdout, _ io.Writer) int {
 	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
@@ -31,6 +33,19 @@ func cmdVersion(prog string, args []string, _ io.Reader, stdout, _ io.Writer) in
 	return 0
 }
 
+func fixLegacyArgs(args []string) []string {
+	flags := getopt.NewFlagSet("", flag.ContinueOnError)
+	flags.Bool("dry-run", false, "dry run")
+	flags.Alias("n", "dry-run")
+	flags.String("format", "json", "output format")
+	flags.Alias("f", "format")
+	flags.Bool("short", false, "short")
+	flags.Alias("s", "short")
+	flags.Bool("verbose", false, "verbose")
+	flags.Alias("v", "verbose")
+	return cmd.SubcommandToFront(args, flags)
+}
+
 func main() {
-	os.Exit(Run(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+	os.Exit(Run(os.Args[0], fixLegacyArgs(os.Args[1:]), os.Stdin, os.Stdout, os.Stderr))
 }

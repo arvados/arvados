@@ -67,37 +67,33 @@ func multiUsage(stderr io.Writer, m map[string]RunFunc) {
 	}
 }
 
-// WithLateSubcommand wraps a RunFunc by skipping over some known
-// flags to find a subcommand, and moving that subcommand to the front
-// of the args before calling the wrapped RunFunc. For example:
+type FlagSet interface {
+	Init(string, flag.ErrorHandling)
+	NArg() int
+	Parse([]string) error
+	SetOutput(io.Writer)
+}
+
+// SubcommandToFront silently parses args using flagset, and returns a
+// copy of args with the first non-flag argument moved to the
+// front. If parsing fails or consumes all of args, args is returned
+// unchanged.
 //
-//	// Translate [           --format foo subcommand bar]
-//	//        to [subcommand --format foo            bar]
-//	WithLateSubcommand(fn, []string{"format"}, nil)
-func WithLateSubcommand(run RunFunc, argFlags, boolFlags []string) RunFunc {
-	return func(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-		flags := flag.NewFlagSet("prog", flag.ContinueOnError)
-		for _, arg := range argFlags {
-			flags.String(arg, "", "")
-		}
-		for _, arg := range boolFlags {
-			flags.Bool(arg, false, "")
-		}
-		// Ignore errors. We can't report a useful error
-		// message anyway.
-		flags.SetOutput(ioutil.Discard)
-		flags.Usage = func() {}
-		flags.Parse(args)
-		if flags.NArg() > 0 {
-			// Move the first arg after the recognized
-			// flags up to the front.
-			flagargs := len(args) - flags.NArg()
-			newargs := make([]string, len(args))
-			newargs[0] = args[flagargs]
-			copy(newargs[1:flagargs+1], args[:flagargs])
-			copy(newargs[flagargs+1:], args[flagargs+1:])
-			args = newargs
-		}
-		return run(prog, args, stdin, stdout, stderr)
+// SubcommandToFront invokes methods on flagset that have side
+// effects, including Parse. In typical usage, flagset will not used
+// for anything else after being passed to SubcommandToFront.
+func SubcommandToFront(args []string, flagset FlagSet) []string {
+	flagset.Init("", flag.ContinueOnError)
+	flagset.SetOutput(ioutil.Discard)
+	if err := flagset.Parse(args); err != nil || flagset.NArg() == 0 {
+		// No subcommand found.
+		return args
 	}
+	// Move subcommand to the front.
+	flagargs := len(args) - flagset.NArg()
+	newargs := make([]string, len(args))
+	newargs[0] = args[flagargs]
+	copy(newargs[1:flagargs+1], args[:flagargs])
+	copy(newargs[flagargs+1:], args[flagargs+1:])
+	return newargs
 }
