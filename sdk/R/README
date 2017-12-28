@@ -12,7 +12,7 @@ INSTALLATION
 
 If needed, you may have to install the supporting packages first. On Linux, these are:
 
-    libxml2-dev, libssl-dev, curl
+    libxml2-dev, libssl-dev, libcurl4-gnutls-dev or libcurl4-openssl-dev
 
 2. Install the ArvardosR package
 
