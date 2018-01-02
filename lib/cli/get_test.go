@@ -25,7 +25,7 @@ type GetSuite struct{}
 func (s *GetSuite) TestGetCollectionJSON(c *check.C) {
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	exited := Get("arvados-client get", []string{arvadostest.FooCollection}, bytes.NewReader(nil), stdout, stderr)
+	exited := Get.RunCommand("arvados-client get", []string{arvadostest.FooCollection}, bytes.NewReader(nil), stdout, stderr)
 	c.Check(stdout.String(), check.Matches, `(?ms){.*"uuid": "`+arvadostest.FooCollection+`".*}\n`)
 	c.Check(stdout.String(), check.Matches, `(?ms){.*"portable_data_hash": "`+regexp.QuoteMeta(arvadostest.FooCollectionPDH)+`".*}\n`)
 	c.Check(stderr.String(), check.Equals, "")

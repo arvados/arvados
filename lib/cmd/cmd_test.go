@@ -25,18 +25,18 @@ var _ = check.Suite(&CmdSuite{})
 
 type CmdSuite struct{}
 
-var testCmd = Multi(map[string]RunFunc{
-	"echo": func(prog string, args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int {
+var testCmd = Multi(map[string]Handler{
+	"echo": HandlerFunc(func(prog string, args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int {
 		fmt.Fprintln(stdout, strings.Join(args, " "))
 		return 0
-	},
+	}),
 })
 
 func (s *CmdSuite) TestHello(c *check.C) {
 	defer cmdtest.LeakCheck(c)()
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	exited := testCmd("prog", []string{"echo", "hello", "world"}, bytes.NewReader(nil), stdout, stderr)
+	exited := testCmd.RunCommand("prog", []string{"echo", "hello", "world"}, bytes.NewReader(nil), stdout, stderr)
 	c.Check(exited, check.Equals, 0)
 	c.Check(stdout.String(), check.Equals, "hello world\n")
 	c.Check(stderr.String(), check.Equals, "")
@@ -46,7 +46,7 @@ func (s *CmdSuite) TestUsage(c *check.C) {
 	defer cmdtest.LeakCheck(c)()
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	exited := testCmd("prog", []string{"nosuchcommand", "hi"}, bytes.NewReader(nil), stdout, stderr)
+	exited := testCmd.RunCommand("prog", []string{"nosuchcommand", "hi"}, bytes.NewReader(nil), stdout, stderr)
 	c.Check(exited, check.Equals, 2)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Matches, `(?ms)^unrecognized command "nosuchcommand"\n.*echo.*\n`)
