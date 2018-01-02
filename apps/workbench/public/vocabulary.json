@@ -1,10 +1,10 @@
 {
-    "strict": "false",
+    "strict": false,
     "types": {
         "fruit": {
             "type": "select",
             "options": ["pineapple", "tomato", "orange", "banana"],
-            "overridable": "true"
+            "strict": true
         },
         "animal": {
             "type": "select",

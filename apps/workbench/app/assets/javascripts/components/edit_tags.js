@@ -69,7 +69,8 @@ window.TagEditorRow = {
             m("div", {key: 'name-'+vnode.attrs.name()},[m(SelectOrAutocomplete, {
                 options: nameOpts,
                 value: vnode.attrs.name,
-                create: !vnode.attrs.vocabulary().strict,
+                // Allow any tag name unless "strict" is set to true.
+                create: !(vnode.attrs.vocabulary().strict === true),
                 placeholder: 'new tag',
             })])
             : vnode.attrs.name),
@@ -80,10 +81,12 @@ window.TagEditorRow = {
                 options: valueOpts,
                 value: vnode.attrs.value,
                 placeholder: 'new value',
-                create: (vnode.attrs.name() in vnode.attrs.vocabulary().types)
-                    ? (vnode.attrs.vocabulary().types[vnode.attrs.name()].type == 'text') || 
-                        vnode.attrs.vocabulary().types[vnode.attrs.name()].overridable || false
-                    : true, // If tag not in vocabulary, we should accept any value
+                // Allow any value on tags not listed on the vocabulary.
+                // Allow any value on text tags, or the ones that aren't 
+                // explicitly declared to be strict.
+                create: !(vnode.attrs.name() in vnode.attrs.vocabulary().types)
+                    || (vnode.attrs.vocabulary().types[vnode.attrs.name()].type === 'text')
+                    || !(vnode.attrs.vocabulary().types[vnode.attrs.name()].strict === true)
                 })
             ])
             : vnode.attrs.value)
