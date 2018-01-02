@@ -300,30 +300,6 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def tags
-    render
-  end
-
-  def save_tags
-    tags_param = params['tag_data']
-    if tags_param
-      if tags_param.is_a?(String) && tags_param == "empty"
-        tags = {}
-      else
-        tags = tags_param
-      end
-    end
-
-    if tags
-      if @object.update_attributes properties: tags
-        @saved_tags = true
-        render
-      else
-        self.render_error status: 422
-      end
-    end
-  end
-
   protected
 
   def find_usable_token(token_list)
