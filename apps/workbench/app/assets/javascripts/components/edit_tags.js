@@ -57,57 +57,60 @@ window.TagEditorRow = {
         }
         return m("tr", [
             // Erase tag
-            m("td",
-            vnode.attrs.editMode &&
+            m("td", [
+                vnode.attrs.editMode &&
                 m('div.text-center', m('a.btn.btn-default.btn-sm', {
                     style: {
                         align: 'center'
                     },
                     onclick: function(e) { vnode.attrs.removeTag() }
                 }, m('i.fa.fa-fw.fa-trash-o')))
-            ),
+            ]),
             // Tag name
-            m("td",
-            vnode.attrs.editMode ?
-            m("div", {key: 'name-'+vnode.attrs.name()},[m(SelectOrAutocomplete, {
-                options: nameOpts,
-                value: vnode.attrs.name,
-                // Allow any tag name unless "strict" is set to true.
-                create: !vnode.attrs.vocabulary().strict,
-                placeholder: 'new tag',
-                // Focus on tag name field when adding a new tag that's not
-                // the first one.
-                setFocus: !vnode.attrs.firstRow && vnode.attrs.name() === ''
-            })])
-            : vnode.attrs.name),
+            m("td", [
+                vnode.attrs.editMode ?
+                m("div", {key: 'name-'+vnode.attrs.name()},[
+                    m(SelectOrAutocomplete, {
+                        options: nameOpts,
+                        value: vnode.attrs.name,
+                        // Allow any tag name unless "strict" is set to true.
+                        create: !vnode.attrs.vocabulary().strict,
+                        placeholder: 'new tag',
+                        // Focus on tag name field when adding a new tag that's
+                        // not the first one.
+                        setFocus: !vnode.attrs.firstRow && vnode.attrs.name() === ''
+                    })
+                ])
+                : vnode.attrs.name
+            ]),
             // Tag value
-            m("td",
-            vnode.attrs.editMode ?
-            m("div", {key: 'value-'+vnode.attrs.name()}, [m(SelectOrAutocomplete, {
-                options: valueOpts,
-                value: vnode.attrs.value,
-                placeholder: 'new value',
-                // Allow any value on tags not listed on the vocabulary.
-                // Allow any value on tags without values, or the ones that
-                // aren't explicitly declared to be strict.
-                create: !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)
-                    || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
-                    || vnode.attrs.vocabulary().tags[vnode.attrs.name()].values.length === 0
-                    || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].strict,
-                // Focus on tag value field when new tag name is set
-                setFocus: vnode.attrs.name() !== '' && vnode.attrs.value() === ''
-                })
+            m("td", [
+                vnode.attrs.editMode ?
+                m("div", {key: 'value-'+vnode.attrs.name()}, [
+                    m(SelectOrAutocomplete, {
+                        options: valueOpts,
+                        value: vnode.attrs.value,
+                        placeholder: 'new value',
+                        // Allow any value on tags not listed on the vocabulary.
+                        // Allow any value on tags without values, or the ones
+                        // that aren't explicitly declared to be strict.
+                        create: !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)
+                            || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
+                            || vnode.attrs.vocabulary().tags[vnode.attrs.name()].values.length === 0
+                            || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].strict,
+                        // Focus on tag value field when new tag name is set
+                        setFocus: vnode.attrs.name() !== '' && vnode.attrs.value() === ''
+                    })
+                ])
+                : vnode.attrs.value
             ])
-            : vnode.attrs.value)
         ])
     }
 }
 
 window.TagEditorTable = {
     view: function(vnode) {
-        return m("table.table.table-condensed", {
-            border: "1"
-        }, [
+        return m("table.table.table-condensed", [
             m("colgroup", [
                 m("col", {width:"5%"}),
                 m("col", {width:"25%"}),
