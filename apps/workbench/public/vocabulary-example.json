@@ -1,0 +1,18 @@
+{
+    "strict": false,
+    "tags": {
+        "fruit": {
+            "values": ["pineapple", "tomato", "orange", "banana"],
+            "strict": true
+        },
+        "animal": {
+            "values": ["human", "dog", "elephant", "eagle"],
+            "strict": false
+        },
+        "color": {
+            "values": ["yellow", "red", "magenta", "green"],
+            "strict": false
+        },
+        "text tag": {}
+    }
+}

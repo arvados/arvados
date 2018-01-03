@@ -13,7 +13,7 @@ window.SelectOrAutocomplete = {
         }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        $(vnode.dom).selectize({
+        this.selectized = $(vnode.dom).selectize({
             labelField: 'value',
             valueField: 'value',
             searchField: 'value',
@@ -33,21 +33,24 @@ window.SelectOrAutocomplete = {
                 }
             }
         })
+        if (vnode.attrs.setFocus) {
+            this.selectized[0].selectize.focus()
+        }
     }
 }
 
 window.TagEditorRow = {
     view: function(vnode) {
         // Name options list
-        var nameOpts = Object.keys(vnode.attrs.vocabulary().types)
-        if (vnode.attrs.name() != '' && !(vnode.attrs.name() in vnode.attrs.vocabulary().types)) {
+        var nameOpts = Object.keys(vnode.attrs.vocabulary().tags)
+        if (vnode.attrs.name() != '' && !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)) {
             nameOpts.push(vnode.attrs.name())
         }
         // Value options list
         var valueOpts = []
-        if (vnode.attrs.name() in vnode.attrs.vocabulary().types &&
-            'options' in vnode.attrs.vocabulary().types[vnode.attrs.name()]) {
-                valueOpts = vnode.attrs.vocabulary().types[vnode.attrs.name()].options
+        if (vnode.attrs.name() in vnode.attrs.vocabulary().tags &&
+            'values' in vnode.attrs.vocabulary().tags[vnode.attrs.name()]) {
+                valueOpts = vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
         }
         if (vnode.attrs.value() != '') {
             valueOpts.push(vnode.attrs.value())
@@ -70,8 +73,11 @@ window.TagEditorRow = {
                 options: nameOpts,
                 value: vnode.attrs.name,
                 // Allow any tag name unless "strict" is set to true.
-                create: !(vnode.attrs.vocabulary().strict === true),
+                create: !vnode.attrs.vocabulary().strict,
                 placeholder: 'new tag',
+                // Focus on tag name field when adding a new tag that's not
+                // the first one.
+                setFocus: !vnode.attrs.firstRow && vnode.attrs.name() === ''
             })])
             : vnode.attrs.name),
             // Tag value
@@ -82,11 +88,14 @@ window.TagEditorRow = {
                 value: vnode.attrs.value,
                 placeholder: 'new value',
                 // Allow any value on tags not listed on the vocabulary.
-                // Allow any value on text tags, or the ones that aren't 
-                // explicitly declared to be strict.
-                create: !(vnode.attrs.name() in vnode.attrs.vocabulary().types)
-                    || (vnode.attrs.vocabulary().types[vnode.attrs.name()].type === 'text')
-                    || !(vnode.attrs.vocabulary().types[vnode.attrs.name()].strict === true)
+                // Allow any value on tags without values, or the ones that
+                // aren't explicitly declared to be strict.
+                create: !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)
+                    || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
+                    || vnode.attrs.vocabulary().tags[vnode.attrs.name()].values.length === 0
+                    || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].strict,
+                // Focus on tag value field when new tag name is set
+                setFocus: vnode.attrs.name() !== '' && vnode.attrs.value() === ''
                 })
             ])
             : vnode.attrs.value)
@@ -121,12 +130,13 @@ window.TagEditorTable = {
                             vnode.attrs.dirty(true)
                         },
                         editMode: vnode.attrs.editMode,
+                        firstRow: vnode.attrs.tags.length === 1,
                         name: tag.name,
                         value: tag.value,
                         vocabulary: vnode.attrs.vocabulary
                     })
                 })
-                : m("tr", m("td[colspan=3]", m("center","(no tags)")))
+                : m("tr", m("td[colspan=3]", m("center","loading tags...")))
             ]),
         ])
     }
@@ -135,15 +145,24 @@ window.TagEditorTable = {
 window.TagEditorApp = {
     appendTag: function(vnode, name, value) {
         var tag = {name: m.stream(name), value: m.stream(value)}
-        tag.name.map(vnode.state.dirty)
-        tag.value.map(vnode.state.dirty)
-        tag.name.map(m.redraw)
         vnode.state.tags.push(tag)
+        // Set dirty flag when any of name/value changes to non empty string
+        tag.name.map(function(v) {
+            if (v !== '') {
+                vnode.state.dirty(true)
+            }
+        })
+        tag.value.map(function(v) {
+            if (v !== '') {
+                vnode.state.dirty(true)
+            }
+        })
+        tag.name.map(m.redraw)
     },
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
-        vnode.state.vocabulary = m.stream({"strict":false, "types":{}})
+        vnode.state.vocabulary = m.stream({"strict":false, "tags":{}})
         m.request('/vocabulary.json').then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
         vnode.state.tags = []
@@ -167,6 +186,14 @@ window.TagEditorApp = {
                     })
                     // Data synced with server, so dirty state should be false
                     vnode.state.dirty(false)
+                    // Add new tag row when the last one is completed
+                    vnode.state.dirty.map(function() {
+                        if (!vnode.state.editMode) { return }
+                        lastTag = vnode.state.tags.slice(-1).pop()
+                        if (lastTag === undefined || (lastTag.name() !== '' && lastTag.value() !== '')) {
+                            vnode.state.appendTag(vnode, '', '')
+                        }
+                    })
                 }
             }
         )
@@ -175,7 +202,7 @@ window.TagEditorApp = {
         return [
             vnode.state.editMode &&
             m("div.pull-left", [
-                m("a.btn.btn-primary.btn-sm"+(!(vnode.state.dirty() === false) ? '' : '.disabled'), {
+                m("a.btn.btn-primary.btn-sm"+(vnode.state.dirty() ? '' : '.disabled'), {
                     style: {
                         margin: '10px 0px'
                     },
@@ -196,7 +223,7 @@ window.TagEditorApp = {
                             vnode.state.dirty(false)
                         })
                     }
-                }, !(vnode.state.dirty() === false) ? ' Save changes ' : ' Saved ')
+                }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
             ]),
             // Tags table
             m(TagEditorTable, {
@@ -204,19 +231,7 @@ window.TagEditorApp = {
                 tags: vnode.state.tags,
                 vocabulary: vnode.state.vocabulary,
                 dirty: vnode.state.dirty
-            }),
-            vnode.state.editMode &&
-            m("div.pull-left", [
-                // Add tag button
-                m("a.btn.btn-primary.btn-sm", {
-                    onclick: function(e) {
-                        vnode.state.appendTag(vnode, '', '')
-                    }
-                }, [
-                    m("i.glyphicon.glyphicon-plus"),
-                    " Add new tag "
-                ])
-            ])
+            })
         ]
     },
 }
