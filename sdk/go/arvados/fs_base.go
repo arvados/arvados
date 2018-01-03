@@ -103,6 +103,14 @@ type inode interface {
 	// the child inode is replaced with the one returned by
 	// replace().
 	//
+	// If replace(x) returns an inode (besides x or nil) that is
+	// subsequently returned by Child(), then Child()'s caller
+	// must ensure the new child's name and parent are set/updated
+	// to Child()'s name argument and its receiver respectively.
+	// This is not necessarily done before replace(x) returns, but
+	// it must be done before Child()'s caller releases the
+	// parent's lock.
+	//
 	// Nil represents "no child". replace(nil) signifies that no
 	// child with this name exists yet. If replace() returns nil,
 	// the existing child should be deleted if possible.
@@ -232,7 +240,6 @@ func (n *treenode) Child(name string, replace func(inode) inode) (child inode) {
 		if newchild == nil {
 			delete(n.inodes, name)
 		} else if newchild != child {
-			newchild.SetParent(n, name)
 			n.inodes[name] = newchild
 			n.fileinfo.modTime = time.Now()
 			child = newchild
@@ -323,6 +330,7 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		var err error
 		n = parent.Child(name, func(inode) inode {
 			n, err = parent.FS().newNode(name, perm|0755, time.Now())
+			n.SetParent(parent, name)
 			return n
 		})
 		if err != nil {
@@ -371,6 +379,7 @@ func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
 	}
 	child := n.Child(name, func(inode) (child inode) {
 		child, err = n.FS().newNode(name, perm|os.ModeDir, time.Now())
+		child.SetParent(n, name)
 		return
 	})
 	if err != nil {
@@ -464,6 +473,7 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 			// Leave oldinode in olddir.
 			return oldinode
 		}
+		accepted.SetParent(newdirf.inode, newname)
 		return nil
 	})
 	return err
