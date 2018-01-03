@@ -532,19 +532,14 @@ func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
 			}
 			data, err := json.Marshal(&coll)
 			if err == nil {
-				data = append(data, 10)
+				data = append(data, '\n')
 			}
 			return data, err
 		}}
 		gn.SetParent(dn, name)
 		return gn
 	}
-	oldchild := dn.treenode.Child(name, nil)
-	child := dn.treenode.Child(name, replace)
-	if child != nil && child != oldchild {
-		child.SetParent(dn, name)
-	}
-	return child
+	return dn.treenode.Child(name, replace)
 }
 
 // sync flushes in-memory data (for all files in the tree rooted at
@@ -844,8 +839,9 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		}
 		node.Child(name, func(child inode) inode {
 			if child == nil {
-				node, err = node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
-				child = node
+				child, err = node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				child.SetParent(node, name)
+				node = child
 			} else if !child.IsDir() {
 				err = ErrFileExists
 			} else {
@@ -861,6 +857,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		switch child := child.(type) {
 		case nil:
 			child, err = node.FS().newNode(basename, 0755, node.FileInfo().ModTime())
+			child.SetParent(node, basename)
 			fn = child.(*filenode)
 			return child
 		case *filenode:
