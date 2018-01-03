@@ -444,6 +444,11 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 			err = os.ErrNotExist
 			return nil
 		}
+		if locked[oldinode] {
+			// oldinode cannot become a descendant of itself.
+			err = ErrInvalidArgument
+			return oldinode
+		}
 		accepted := newdirf.inode.Child(newname, func(existing inode) inode {
 			if existing != nil && existing.IsDir() {
 				err = ErrIsDirectory
