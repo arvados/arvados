@@ -539,7 +539,12 @@ func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
 		gn.SetParent(dn, name)
 		return gn
 	}
-	return dn.treenode.Child(name, replace)
+	oldchild := dn.treenode.Child(name, nil)
+	child := dn.treenode.Child(name, replace)
+	if child != nil && child != oldchild {
+		child.SetParent(dn, name)
+	}
+	return child
 }
 
 // sync flushes in-memory data (for all files in the tree rooted at
