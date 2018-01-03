@@ -6,6 +6,7 @@ package mount
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 
@@ -15,23 +16,30 @@ import (
 	"github.com/curoverse/cgofuse/fuse"
 )
 
-func Run(prog string, args []string) int {
+var Command = cmd{}
+
+type cmd struct{}
+
+func (cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	logger := log.New(stderr, prog+" ", 0)
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	err := flags.Parse(args)
 	if err != nil {
-		log.Print(err)
+		logger.Print(err)
 		return 2
 	}
 
 	client := arvados.NewClientFromEnv()
 	ac, err := arvadosclient.New(client)
 	if err != nil {
-		log.Fatal(err)
+		logger.Print(err)
+		return 1
 	}
 	kc, err := keepclient.MakeKeepClient(ac)
 	if err != nil {
-		log.Fatal(err)
+		logger.Print(err)
+		return 1
 	}
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:     client,

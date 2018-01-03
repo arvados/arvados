@@ -13,6 +13,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cli"
 	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.curoverse.com/arvados.git/lib/mount"
 )
 
 var (
@@ -58,6 +59,8 @@ var (
 		"user":                     cli.APICall,
 		"virtual_machine":          cli.APICall,
 		"workflow":                 cli.APICall,
+
+		"mount": mount.Command,
 	})
 )
 
