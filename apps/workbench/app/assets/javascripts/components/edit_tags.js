@@ -27,6 +27,16 @@ window.SimpleInput = {
 }
 
 window.SelectOrAutocomplete = {
+    onFocus: function(vnode) {
+        // Allow the user to edit an already entered value by removing it
+        // and filling the input field with the same text
+        activeSelect = vnode.state.selectized[0].selectize
+        value = activeSelect.getValue()
+        if (value.length > 0) {
+            activeSelect.clear(silent = true)
+            activeSelect.setTextboxValue(value)
+        }
+    },
     view: function(vnode) {
         return m("input", {
             style: {
@@ -37,7 +47,7 @@ window.SelectOrAutocomplete = {
         }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        this.selectized = $(vnode.dom).selectize({
+        vnode.state.selectized = $(vnode.dom).selectize({
             labelField: 'value',
             valueField: 'value',
             searchField: 'value',
@@ -59,10 +69,13 @@ window.SelectOrAutocomplete = {
                 if (val != '') {
                     vnode.attrs.value(val)
                 }
+            },
+            onFocus: function() {
+                vnode.state.onFocus(vnode)
             }
         })
         if (vnode.attrs.setFocus) {
-            this.selectized[0].selectize.focus()
+            vnode.state.selectized[0].selectize.focus()
         }
     }
 }
