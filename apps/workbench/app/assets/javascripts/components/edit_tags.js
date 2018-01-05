@@ -2,6 +2,30 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+window.SimpleInput = {
+    view: function(vnode) {
+        return m("input.form-control", {
+            style: {
+                width: '100%',
+            },
+            type: 'text',
+            placeholder: vnode.attrs.placeholder,
+            value: vnode.attrs.value,
+            onchange: function() {
+                console.log(this.value)
+                if (this.value != '') {
+                    vnode.attrs.value(this.value)
+                }
+            },
+        }, vnode.attrs.value)
+    },
+    oncreate: function(vnode) {
+        if (vnode.attrs.setFocus) {
+            vnode.dom.focus()
+        }
+    }
+}
+
 window.SelectOrAutocomplete = {
     view: function(vnode) {
         return m("input", {
@@ -18,6 +42,10 @@ window.SelectOrAutocomplete = {
             valueField: 'value',
             searchField: 'value',
             sortField: 'value',
+            persist: false,
+            hideSelected: true,
+            openOnFocus: false,
+            createOnBlur: true,
             maxItems: 1,
             placeholder: vnode.attrs.placeholder,
             create: vnode.attrs.create ? function(input) {
@@ -41,19 +69,25 @@ window.SelectOrAutocomplete = {
 
 window.TagEditorRow = {
     view: function(vnode) {
-        // Name options list
         var nameOpts = Object.keys(vnode.attrs.vocabulary().tags)
-        if (vnode.attrs.name() != '' && !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)) {
-            nameOpts.push(vnode.attrs.name())
-        }
-        // Value options list
         var valueOpts = []
-        if (vnode.attrs.name() in vnode.attrs.vocabulary().tags &&
-            'values' in vnode.attrs.vocabulary().tags[vnode.attrs.name()]) {
-                valueOpts = vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
-        }
-        if (vnode.attrs.value() != '') {
-            valueOpts.push(vnode.attrs.value())
+        var inputComponent = SelectOrAutocomplete
+        if (nameOpts.length === 0) {
+            // If there's not vocabulary defined, switch to a simple input field
+            inputComponent = SimpleInput
+        } else {
+            // Name options list
+            if (vnode.attrs.name() != '' && !(vnode.attrs.name() in vnode.attrs.vocabulary().tags)) {
+                nameOpts.push(vnode.attrs.name())
+            }
+            // Value options list
+            if (vnode.attrs.name() in vnode.attrs.vocabulary().tags &&
+                'values' in vnode.attrs.vocabulary().tags[vnode.attrs.name()]) {
+                    valueOpts = vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
+            }
+            if (vnode.attrs.value() != '') {
+                valueOpts.push(vnode.attrs.value())
+            }
         }
         return m("tr", [
             // Erase tag
@@ -70,7 +104,7 @@ window.TagEditorRow = {
             m("td", [
                 vnode.attrs.editMode ?
                 m("div", {key: 'name-'+vnode.attrs.name()},[
-                    m(SelectOrAutocomplete, {
+                    m(inputComponent, {
                         options: nameOpts,
                         value: vnode.attrs.name,
                         // Allow any tag name unless "strict" is set to true.
@@ -78,7 +112,7 @@ window.TagEditorRow = {
                         placeholder: 'new tag',
                         // Focus on tag name field when adding a new tag that's
                         // not the first one.
-                        setFocus: !vnode.attrs.firstRow && vnode.attrs.name() === ''
+                        setFocus: vnode.attrs.name() === ''
                     })
                 ])
                 : vnode.attrs.name
@@ -87,7 +121,7 @@ window.TagEditorRow = {
             m("td", [
                 vnode.attrs.editMode ?
                 m("div", {key: 'value-'+vnode.attrs.name()}, [
-                    m(SelectOrAutocomplete, {
+                    m(inputComponent, {
                         options: valueOpts,
                         value: vnode.attrs.value,
                         placeholder: 'new value',
@@ -110,7 +144,7 @@ window.TagEditorRow = {
 
 window.TagEditorTable = {
     view: function(vnode) {
-        return m("table.table.table-condensed", [
+        return m("table.table.table-condensed.table-justforlayout", [
             m("colgroup", [
                 m("col", {width:"5%"}),
                 m("col", {width:"25%"}),
@@ -133,7 +167,6 @@ window.TagEditorTable = {
                             vnode.attrs.dirty(true)
                         },
                         editMode: vnode.attrs.editMode,
-                        firstRow: vnode.attrs.tags.length === 1,
                         name: tag.name,
                         value: tag.value,
                         vocabulary: vnode.attrs.vocabulary
