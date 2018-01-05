@@ -721,4 +721,73 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    'zzzzz-borkd-abcde12345abcde',
+    'zzzzz-j7d0g-abcde12345abcde',
+    'zzzzz-tpzed-borkd',
+  ].each do |new_uuid|
+    test "update_uuid to invalid uuid #{new_uuid}" do
+      u = users(:active)
+      orig_uuid = u.uuid
+      act_as_system_user do
+        assert_raises do
+          u.update_uuid(new_uuid: new_uuid)
+        end
+      end
+      # "Successfully aborted orig->new" outcome looks the same as
+      # "successfully updated new->orig".
+      assert_update_success(old_uuid: new_uuid, new_uuid: orig_uuid)
+    end
+  end
+
+  [:active, :spectator, :admin].each do |target|
+    test "update_uuid on #{target} as non-admin user" do
+      act_as_user users(:active) do
+        assert_raises(ArvadosModel::PermissionDeniedError) do
+          users(target).update_uuid(new_uuid: 'zzzzz-tpzed-abcde12345abcde')
+        end
+      end
+    end
+  end
+
+  test "update_uuid to existing uuid" do
+    u = users(:active)
+    orig_uuid = u.uuid
+    new_uuid = users(:admin).uuid
+    act_as_system_user do
+      assert_raises do
+        u.update_uuid(new_uuid: new_uuid)
+      end
+    end
+    u.reload
+    assert_equal u.uuid, orig_uuid
+    assert_not_empty Collection.where(owner_uuid: orig_uuid)
+    assert_not_empty Group.where(owner_uuid: orig_uuid)
+  end
+
+  [
+    'zbbbb-tpzed-abcde12345abcde',
+    'zzzzz-tpzed-abcde12345abcde',
+  ].each do |new_uuid|
+    test "update_uuid to unused uuid #{new_uuid}" do
+      u = users(:active)
+      orig_uuid = u.uuid
+      act_as_system_user do
+        u.update_uuid(new_uuid: new_uuid)
+      end
+      assert_update_success(old_uuid: orig_uuid, new_uuid: new_uuid)
+    end
+  end
+
+  def assert_update_success(old_uuid:, new_uuid:)
+    [[User, :uuid],
+     [Link, :head_uuid],
+     [Link, :tail_uuid],
+     [Group, :owner_uuid],
+     [Collection, :owner_uuid],
+    ].each do |klass, attr|
+      assert_empty klass.where(attr => old_uuid)
+      assert_not_empty klass.where(attr => new_uuid)
+    end
+  end
 end

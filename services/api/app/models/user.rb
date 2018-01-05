@@ -254,6 +254,29 @@ class User < ArvadosModel
     end
   end
 
+  def update_uuid(new_uuid:)
+    if !current_user.andand.is_admin
+      raise PermissionDeniedError
+    end
+    if self.class != self.class.resource_class_for_uuid(new_uuid)
+      raise "invalid new_uuid #{new_uuid.inspect}"
+    end
+    transaction(requires_new: true) do
+      reload
+      old_uuid = self.uuid
+      self.uuid = new_uuid
+      save!(validate: false)
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
+        klass.columns.each do |col|
+          if col.name.end_with?('_uuid')
+            column = col.name.to_sym
+            klass.where(column => old_uuid).update_all(column => new_uuid)
+          end
+        end
+      end
+    end
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user
