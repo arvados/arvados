@@ -7,16 +7,21 @@ Description=Arvados healthcheck server
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/config.yml
-# systemd<230
+
+# systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0
-# systemd>=230
+
+# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/arvados-health
 Restart=always
-RestartSec=1s
+RestartSec=1
+
+# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target
