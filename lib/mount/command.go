@@ -16,11 +16,24 @@ import (
 	"github.com/curoverse/cgofuse/fuse"
 )
 
-var Command = cmd{}
+var Command = &cmd{}
 
-type cmd struct{}
+type cmd struct {
+	// ready, if non-nil, will be closed when the mount is
+	// initialized.  If ready is non-nil, it RunCommand() should
+	// not be called more than once, or when ready is already
+	// closed.
+	ready chan struct{}
+	// It is safe to call Unmount ounly after ready has been
+	// closed.
+	Unmount func() (ok bool)
+}
 
-func (cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+// RunCommand implements the subcommand "mount <path> [fuse options]".
+//
+// The "-d" fuse option (and perhaps other features) ignores the
+// stderr argument and prints to os.Stderr instead.
+func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := log.New(stderr, prog+" ", 0)
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
@@ -47,11 +60,12 @@ func (cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stder
 		ReadOnly:   *ro,
 		Uid:        os.Getuid(),
 		Gid:        os.Getgid(),
+		ready:      c.ready,
 	})
-	notOK := host.Mount("", flags.Args())
-	if notOK {
+	c.Unmount = host.Unmount
+	ok := host.Mount("", flags.Args())
+	if !ok {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }

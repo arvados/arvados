@@ -37,6 +37,10 @@ type keepFS struct {
 	open   map[uint64]*sharedFile
 	lastFH uint64
 	sync.Mutex
+
+	// If non-nil, this channel will be closed by Init() to notify
+	// other goroutines that the mount is ready.
+	ready chan struct{}
 }
 
 var (
@@ -66,6 +70,9 @@ func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
 func (fs *keepFS) Init() {
 	defer fs.debugPanics()
 	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
+	if fs.ready != nil {
+		close(fs.ready)
+	}
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
