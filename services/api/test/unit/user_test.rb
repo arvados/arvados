@@ -722,12 +722,14 @@ class UserTest < ActiveSupport::TestCase
   end
 
   [
-    'zzzzz-borkd-abcde12345abcde',
-    'zzzzz-j7d0g-abcde12345abcde',
-    'zzzzz-tpzed-borkd',
-  ].each do |new_uuid|
-    test "update_uuid to invalid uuid #{new_uuid}" do
-      u = users(:active)
+    [:active, 'zzzzz-borkd-abcde12345abcde'],
+    [:active, 'zzzzz-j7d0g-abcde12345abcde'],
+    [:active, 'zzzzz-tpzed-borkd'],
+    [:system_user, 'zzzzz-tpzed-abcde12345abcde'],
+    [:anonymous, 'zzzzz-tpzed-abcde12345abcde'],
+  ].each do |fixture, new_uuid|
+    test "disallow update_uuid #{fixture} -> #{new_uuid}" do
+      u = users(fixture)
       orig_uuid = u.uuid
       act_as_system_user do
         assert_raises do
@@ -736,7 +738,9 @@ class UserTest < ActiveSupport::TestCase
       end
       # "Successfully aborted orig->new" outcome looks the same as
       # "successfully updated new->orig".
-      assert_update_success(old_uuid: new_uuid, new_uuid: orig_uuid)
+      assert_update_success(old_uuid: new_uuid,
+                            new_uuid: orig_uuid,
+                            expect_owned_objects: fixture == :active)
     end
   end
 
@@ -766,20 +770,24 @@ class UserTest < ActiveSupport::TestCase
   end
 
   [
-    'zbbbb-tpzed-abcde12345abcde',
-    'zzzzz-tpzed-abcde12345abcde',
-  ].each do |new_uuid|
-    test "update_uuid to unused uuid #{new_uuid}" do
-      u = users(:active)
+    [:active, 'zbbbb-tpzed-abcde12345abcde'],
+    [:active, 'zzzzz-tpzed-abcde12345abcde'],
+    [:admin, 'zbbbb-tpzed-abcde12345abcde'],
+    [:admin, 'zzzzz-tpzed-abcde12345abcde'],
+  ].each do |fixture, new_uuid|
+    test "update_uuid #{fixture} to unused uuid #{new_uuid}" do
+      u = users(fixture)
       orig_uuid = u.uuid
       act_as_system_user do
         u.update_uuid(new_uuid: new_uuid)
       end
-      assert_update_success(old_uuid: orig_uuid, new_uuid: new_uuid)
+      assert_update_success(old_uuid: orig_uuid,
+                            new_uuid: new_uuid,
+                            expect_owned_objects: fixture == :active)
     end
   end
 
-  def assert_update_success(old_uuid:, new_uuid:)
+  def assert_update_success(old_uuid:, new_uuid:, expect_owned_objects: true)
     [[User, :uuid],
      [Link, :head_uuid],
      [Link, :tail_uuid],
@@ -787,7 +795,9 @@ class UserTest < ActiveSupport::TestCase
      [Collection, :owner_uuid],
     ].each do |klass, attr|
       assert_empty klass.where(attr => old_uuid)
-      assert_not_empty klass.where(attr => new_uuid)
+      if klass == User || expect_owned_objects
+        assert_not_empty klass.where(attr => new_uuid)
+      end
     end
   end
 end

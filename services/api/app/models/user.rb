@@ -258,6 +258,9 @@ class User < ArvadosModel
     if !current_user.andand.is_admin
       raise PermissionDeniedError
     end
+    if uuid == system_user_uuid || uuid == anonymous_user_uuid
+      raise "update_uuid cannot update system accounts"
+    end
     if self.class != self.class.resource_class_for_uuid(new_uuid)
       raise "invalid new_uuid #{new_uuid.inspect}"
     end
