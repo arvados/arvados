@@ -1,0 +1,22 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[Unit]
+Description=Arvados healthcheck server
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/config.yml
+# systemd<230
+StartLimitInterval=0
+# systemd>=230
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/arvados-health
+Restart=always
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target

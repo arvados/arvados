@@ -221,7 +221,7 @@ type ArvLogWriter struct {
 	closing                      bool
 }
 
-func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
+func (arvlog *ArvLogWriter) Write(p []byte) (int, error) {
 	// Write to the next writer in the chain (a file in Keep)
 	var err1 error
 	if arvlog.writeCloser != nil {
@@ -230,7 +230,6 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 
 	// write to API after checking rate limit
 	now := time.Now()
-	bytesWritten := 0
 
 	if now.After(arvlog.logThrottleResetTime) {
 		// It has been more than throttle_period seconds since the last
@@ -275,7 +274,6 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 			"properties":  map[string]string{"text": arvlog.bufToFlush.String()}}}
 		err2 := arvlog.ArvClient.Create("logs", lr, nil)
 
-		bytesWritten = arvlog.bufToFlush.Len()
 		arvlog.bufToFlush = bytes.Buffer{}
 		arvlog.bufFlushedAt = now
 
@@ -284,7 +282,7 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	return bytesWritten, nil
+	return len(p), nil
 }
 
 // Close the underlying writer

@@ -1078,6 +1078,10 @@ func (dn *dirnode) Rename(oldname, newname string) error {
 	if !ok {
 		return os.ErrNotExist
 	}
+	if locked[oldinode] {
+		// oldinode cannot become a descendant of itself.
+		return ErrInvalidArgument
+	}
 	if existing, ok := newdn.inodes[newname]; ok {
 		// overwriting an existing file or dir
 		if dn, ok := existing.(*dirnode); ok {
