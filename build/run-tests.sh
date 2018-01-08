@@ -478,8 +478,14 @@ export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
-rmdir --parents "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
-ln -snfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
+rmdir -v --parents --ignore-fail-on-non-empty "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
+for d in \
+    "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
+    "$GOPATH/src/git.curoverse.com/arvados.git"; do
+    [[ -d "$d" ]] && rmdir "$d"
+    [[ -h "$d" ]] && rm "$d"
+done
+ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 go get -v github.com/kardianos/govendor \
     || fatal "govendor install failed"
