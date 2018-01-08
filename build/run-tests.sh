@@ -486,7 +486,7 @@ for d in \
     [[ -d "$d" ]] && rmdir "$d"
     [[ -h "$d" ]] && rm "$d"
 done
-ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
+ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 go get -v github.com/kardianos/govendor \
     || fatal "govendor install failed"

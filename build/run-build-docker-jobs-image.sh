@@ -8,13 +8,13 @@ function usage {
     echo >&2 "usage: $0 [options]"
     echo >&2
     echo >&2 "$0 options:"
+    echo >&2 "  -t, --tags                    version tag for docker"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
     echo >&2 "  --no-cache                    Don't use build cache"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, just builds the images."
 }
-
 upload=false
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
@@ -45,7 +45,7 @@ do
                   exit 1
                   ;;
                 *)
-                  echo "WARNING: --tags is deprecated and doesn't do anything";
+                  version_tag="$2";
                   shift 2
                   ;;
             esac
@@ -156,8 +156,11 @@ if docker --version |grep " 1\.[0-9]\." ; then
     # -f flag removed in Docker 1.12
     FORCE=-f
 fi
-
-docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:latest
+if ! [[ -z "$version_tag" ]]; then
+    docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:"$version_tag"
+else
+    docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:latest
+fi
 
 ECODE=$?
 
@@ -179,9 +182,12 @@ else
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
-
-        docker_push arvados/jobs:$cwl_runner_version
-        docker_push arvados/jobs:latest
+        if ! [[ -z "$version_tag" ]]; then
+            docker_push arvados/jobs:"$version_tag"
+        else
+           docker_push arvados/jobs:$cwl_runner_version
+           docker_push arvados/jobs:latest
+        fi
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"

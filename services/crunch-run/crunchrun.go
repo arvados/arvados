@@ -664,7 +664,6 @@ type infoCommand struct {
 // purposes.
 func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	w := runner.NewLogWriter("node-info")
-	logger := log.New(w, "node-info", 0)
 
 	commands := []infoCommand{
 		{
@@ -690,17 +689,17 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	}
 
 	// Run commands with informational output to be logged.
-	var out []byte
 	for _, command := range commands {
-		out, err = exec.Command(command.cmd[0], command.cmd[1:]...).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("While running command %q: %v",
-				command.cmd, err)
+		fmt.Fprintln(w, command.label)
+		cmd := exec.Command(command.cmd[0], command.cmd[1:]...)
+		cmd.Stdout = w
+		cmd.Stderr = w
+		if err := cmd.Run(); err != nil {
+			err = fmt.Errorf("While running command %q: %v", command.cmd, err)
+			fmt.Fprintln(w, err)
+			return err
 		}
-		logger.Println(command.label)
-		for _, line := range strings.Split(string(out), "\n") {
-			logger.Println(" ", line)
-		}
+		fmt.Fprintln(w, "")
 	}
 
 	err = w.Close()

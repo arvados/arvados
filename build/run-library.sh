@@ -349,11 +349,13 @@ fpm_build () {
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"
+  local python=""
 
   case "$PACKAGE_TYPE" in
       python)
           # All Arvados Python2 packages depend on Python 2.7.
           # Make sure we build with that for consistency.
+          python=python2.7
           set -- "$@" --python-bin python2.7 \
               --python-easyinstall "$EASY_INSTALL2" \
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
@@ -369,6 +371,7 @@ fpm_build () {
           # necessary arguments to fpm's command line later, after we're
           # done handling positional arguments.
           PACKAGE_TYPE=python
+          python=python3
           set -- "$@" --python-bin python3 \
               --python-easyinstall "$EASY_INSTALL3" \
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
@@ -392,8 +395,10 @@ fpm_build () {
   # packages cleanup on upgrade depends on files being listed on the %files
   # section in the generated SPEC files. To remove DIRECTORIES, they need to
   # be listed in that sectiontoo, so we need to add this parameter to properly
-  # remove lingering dirs.
-  if [[ rpm = "$FORMAT" ]]; then
+  # remove lingering dirs. But this only works for python2: if used on
+  # python33, it includes dirs like /opt/rh/python33 that belong to
+  # other packages.
+  if [[ "$FORMAT" = rpm ]] && [[ "$python" = python2.7 ]]; then
     COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
