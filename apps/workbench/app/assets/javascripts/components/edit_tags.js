@@ -2,60 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Plugin taken from: https://gist.github.com/thiago-negri/132bf33b5312e2da823c
-// This behavior seems to be planned to be integrated on the next selectize release
-Selectize.define('no_results', function(options) {
-    var self = this;
-
-    options = $
-        .extend({message: 'No results found.', html: function(data) {
-            return ('<div class="selectize-dropdown ' + data.classNames + ' dropdown-empty-message">' + '<div class="selectize-dropdown-content" style="padding: 3px 12px">' + data.message + '</div>' + '</div>');
-        }}, options);
-
-    self.displayEmptyResultsMessage = function() {
-        this.$empty_results_container.css('top', this.$control.outerHeight());
-        this.$empty_results_container.css('width', this.$control.outerWidth());
-        this.$empty_results_container.show();
-    };
-
-    self.on('type', function(str) {
-        if (str && !self.hasOptions) {
-            self.displayEmptyResultsMessage();
-        } else {
-            self.$empty_results_container.hide();
-        }
-    });
-
-    self.onKeyDown = (function() {
-        var original = self.onKeyDown;
-
-        return function(e) {
-            original.apply(self, arguments);
-            this.$empty_results_container.hide();
-        }
-    })();
-
-    self.onBlur = (function() {
-        var original = self.onBlur;
-
-        return function() {
-            original.apply(self, arguments);
-            this.$empty_results_container.hide();
-        };
-    })();
-
-    self.setup = (function() {
-        var original = self.setup;
-        return function() {
-            original.apply(self, arguments);
-            self.$empty_results_container = $(options.html(
-                $.extend({classNames: self.$input.attr('class')}, options)));
-            self.$empty_results_container.insertBefore(self.$dropdown);
-            self.$empty_results_container.hide();
-        };
-    })();
-});
-
 window.SimpleInput = {
     view: function(vnode) {
         return m("input.form-control", {
@@ -83,10 +29,10 @@ window.SimpleInput = {
 window.SelectOrAutocomplete = {
     onFocus: function(vnode) {
         // Allow the user to edit an already entered value by removing it
-        // and filling the input field with the same text
+        // and filling the input field with the same text. (non-strict listings)
         var activeSelect = vnode.state.selectized[0].selectize
         value = activeSelect.getValue()
-        if (value.length > 0) {
+        if (vnode.attrs.create && value.length > 0) {
             activeSelect.clear(silent = true)
             activeSelect.setTextboxValue(value)
         }
@@ -102,7 +48,6 @@ window.SelectOrAutocomplete = {
     },
     oncreate: function(vnode) {
         vnode.state.selectized = $(vnode.dom).selectize({
-            plugins: ['no_results'],
             labelField: 'value',
             valueField: 'value',
             searchField: 'value',
