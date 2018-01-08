@@ -951,7 +951,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 
 	c.Check(api.CalledWith("container.log", nil), NotNil)
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
+	c.Check(api.Logs["stdout"].String(), Matches, "(?ms).*foo\n$")
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
