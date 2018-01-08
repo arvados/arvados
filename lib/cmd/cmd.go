@@ -56,6 +56,11 @@ func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 }
 
 func (m Multi) Usage(stderr io.Writer) {
+	fmt.Fprintf(stderr, "\nAvailable commands:\n")
+	m.listSubcommands(stderr, "")
+}
+
+func (m Multi) listSubcommands(out io.Writer, prefix string) {
 	var subcommands []string
 	for sc := range m {
 		if strings.HasPrefix(sc, "-") {
@@ -67,9 +72,13 @@ func (m Multi) Usage(stderr io.Writer) {
 		subcommands = append(subcommands, sc)
 	}
 	sort.Strings(subcommands)
-	fmt.Fprintf(stderr, "\nAvailable commands:\n")
 	for _, sc := range subcommands {
-		fmt.Fprintf(stderr, "    %s\n", sc)
+		switch cmd := m[sc].(type) {
+		case Multi:
+			cmd.listSubcommands(out, prefix+sc+" ")
+		default:
+			fmt.Fprintf(out, "    %s%s\n", prefix, sc)
+		}
 	}
 }
 
