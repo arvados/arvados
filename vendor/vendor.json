@@ -716,6 +716,12 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b",
 			"revisionTime": "2017-04-07T17:21:22Z"
+		},
+		{
+			"checksumSHA1": "rBIcwbUjE9w1aV0qh7lAL1hcxCQ=",
+			"path": "rsc.io/getopt",
+			"revision": "20be20937449f18bb9967c10d732849fb4401e63",
+			"revisionTime": "2017-08-11T00:05:52Z"
 		}
 	],
 	"rootPath": "git.curoverse.com/arvados.git"
