@@ -37,17 +37,21 @@ ArvadosFile <- R6::R6Class(
             as.numeric(sizes)
         },
 
-        removeFromCollection = function()
+        get = function(fileLikeObjectName)
         {
-            if(is.null(private$collection))
-                stop("ArvadosFile doesn't belong to any collection.")
-            
-            private$collection$.__enclos_env__$private$deleteFromREST(self$getRelativePath())
+            return(NULL)
+        },
 
-            private$addToCollection(NULL)
-            private$detachFromParent()
+        getFirst = function()
+        {
+            return(NULL)
+        },
 
-            "Content removed successfully."
+        getCollection = function() private$collection,
+
+        setCollection = function(collection)
+        {
+            private$collection <- collection
         },
 
         getRelativePath = function()
@@ -66,6 +70,8 @@ ArvadosFile <- R6::R6Class(
         },
 
         getParent = function() private$parent,
+
+        setParent = function(newParent) private$parent <- newParent,
 
         read = function(contentType = "raw", offset = 0, length = 0)
         {
@@ -128,17 +134,21 @@ ArvadosFile <- R6::R6Class(
 
         move = function(newLocation)
         {
+            #todo test if file can be moved
+
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection.")
 
             if(endsWith(newLocation, paste0(private$name, "/")))
             {
                 newLocation <- substr(newLocation, 0,
-                                      nchar(newLocation) - nchar(paste0(private$name, "/")))
+                                      nchar(newLocation)
+                                      - nchar(paste0(private$name, "/")))
             }
             else if(endsWith(newLocation, private$name))
             {
-                newLocation <- substr(newLocation, 0, nchar(newLocation) - nchar(private$name))
+                newLocation <- substr(newLocation, 0,
+                                      nchar(newLocation) - nchar(private$name))
             }
             else
             {
@@ -152,10 +162,25 @@ ArvadosFile <- R6::R6Class(
                 stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(),
-                                                                            paste0(newParent$getRelativePath(), "/", self$getName()))
+            childWithSameName <- newParent$get(private$name)
 
-            private$attachToParent(newParent)
+            if(!is.null(childWithSameName))
+                stop("Destination already contains file with same name.")
+
+            status <- private$collection$moveOnREST(self$getRelativePath(),
+                                                    paste0(newParent$getRelativePath(),
+                                                           "/", self$getName()))
+
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      add method doesn't post file on REST server.
+            parentsCollection <- newParent$getCollection()
+            newParent$setCollection(NULL, setRecursively = FALSE)
+
+            newParent$add(self)
+
+            newParent$setCollection(parentsCollection, setRecursively = FALSE)
+
+            private$parent <- newParent
 
             "Content moved successfully."
         }
@@ -168,37 +193,7 @@ ArvadosFile <- R6::R6Class(
         parent     = NULL,
         collection = NULL,
         http       = NULL,
-        httpParser = NULL,
-
-        getChild = function(name)
-        {
-            return(NULL)
-        },
-
-        getFirstChild = function()
-        {
-            return(NULL)
-        },
-
-        addToCollection = function(collection)
-        {
-            private$collection <- collection
-        },
-
-        detachFromParent = function()
-        {
-            if(!is.null(private$parent))
-            {
-                private$parent$.__enclos_env__$private$removeChild(private$name)
-                private$parent <- NULL
-            }
-        },
-
-        attachToParent = function(parent)
-        {
-            parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
-            private$parent <- parent
-        }
+        httpParser = NULL
     ),
     
     cloneable = FALSE

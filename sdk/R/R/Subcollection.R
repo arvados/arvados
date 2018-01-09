@@ -15,31 +15,48 @@ Subcollection <- R6::R6Class(
             private$http       <- HttpRequest$new()
             private$httpParser <- HttpParser$new()
         },
+
+        getName = function() private$name,
         
+        getRelativePath = function()
+        {
+            relativePath <- c(private$name)
+            parent <- private$parent
+
+            while(!is.null(parent))
+            {
+                relativePath <- c(parent$getName(), relativePath)
+                parent <- parent$getParent()
+            }
+
+            relativePath <- relativePath[relativePath != ""]
+            paste0(relativePath, collapse = "/")
+        },
+
         add = function(content)
         {
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
-                if(!is.null(content$.__enclos_env__$private$collection))
-                    stop("ArvadosFile/Subcollection already belongs to a collection.")
-
-                childWithSameName <- private$getChild(content$getName())
+                childWithSameName <- self$get(content$getName())
                 if(!is.null(childWithSameName))
                     stop("Subcollection already contains ArvadosFile
                           or Subcollection with same name.")
 
                 if(!is.null(private$collection))
                 {       
-                    contentPath <- paste0(self$getRelativePath(),
-                                          "/", content$getFileListing())
+                    if(self$getRelativePath() != "")
+                        contentPath <- paste0(self$getRelativePath(),
+                                              "/", content$getFileListing())
+                    else
+                        contentPath <- content$getFileListing()
 
-                    private$collection$.__enclos_env__$private$createFilesOnREST(contentPath)
-                    content$.__enclos_env__$private$addToCollection(private$collection)
+                    private$collection$createFilesOnREST(contentPath)
+                    content$setCollection(private$collection)
                 }
 
                 private$children <- c(private$children, content)
-                content$.__enclos_env__$private$parent = self
+                content$setParent(self)
 
                 "Content added successfully."
             }
@@ -50,25 +67,31 @@ Subcollection <- R6::R6Class(
             }
         },
 
-        removeFromCollection = function()
+        remove = function(name)
         {
-            if(is.null(private$collection))
-                stop("Subcollection doesn't belong to any collection.")
-
-            if(private$name == "")
-                stop("Unable to delete root folder.")
-
-            collectionList <- paste0(self$getRelativePath(),
-                                     "/", self$getFileListing(fullpath = FALSE))
-            sapply(collectionList, function(file)
+            if(is.character(name))
             {
-                private$collection$.__enclos_env__$private$deleteFromREST(file)
-            })
+                child <- self$get(name)
 
-            private$addToCollection(NULL)
-            private$dettachFromParent()
+                if(is.null(child))
+                    stop("Subcollection doesn't contains ArvadosFile
+                          or Subcollection with same name.")
 
-            "Content removed successfully."
+                if(!is.null(private$collection))
+                {
+                    private$collection$deleteFromREST(child$getRelativePath())
+                    child$setCollection(NULL)
+                }
+
+                private$removeChild(name)
+                child$setParent(NULL)
+
+                "Content removed"
+            }
+            else
+            {
+                stop(paste("Expected character, got", class(content), "."))
+            }
         },
 
         getFileListing = function(fullpath = TRUE)
@@ -108,23 +131,6 @@ Subcollection <- R6::R6Class(
             sum(sizes)
         },
 
-        getName = function() private$name,
-
-        getRelativePath = function()
-        {
-            relativePath <- c(private$name)
-            parent <- private$parent
-
-            while(!is.null(parent))
-            {
-                relativePath <- c(parent$getName(), relativePath)
-                parent <- parent$getParent()
-            }
-
-            relativePath <- relativePath[relativePath != ""]
-            paste0(relativePath, collapse = "/")
-        },
-
         move = function(newLocation)
         {
             if(is.null(private$collection))
@@ -152,27 +158,25 @@ Subcollection <- R6::R6Class(
                 stop("Unable to get destination subcollection.")
             }
 
-            status <- private$collection$.__enclos_env__$private$moveOnREST(self$getRelativePath(),
-                                                                            paste0(newParent$getRelativePath(), "/", self$getName()))
+            status <- private$collection$moveOnREST(self$getRelativePath(),
+                                                    paste0(newParent$getRelativePath(),
+                                                           "/", self$getName()))
 
-            private$attachToParent(newParent)
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      add method doesn't post file on REST server.
+            parentsCollection <- newParent$getCollection()
+            newParent$setCollection(NULL, setRecursively = FALSE)
+
+            newParent$add(self)
+
+            newParent$setCollection(parentsCollection, setRecursively = FALSE)
+
+            private$parent <- newParent
 
             "Content moved successfully."
         },
 
-        getParent = function() private$parent
-    ),
-
-    private = list(
-
-        name       = NULL,
-        children   = NULL,
-        parent     = NULL,
-        collection = NULL,
-        http       = NULL,
-        httpParser = NULL,
-
-        getChild = function(name)
+        get = function(name)
         {
             for(child in private$children)
             {
@@ -183,13 +187,40 @@ Subcollection <- R6::R6Class(
             return(NULL)
         },
 
-        getFirstChild = function()
+        getFirst = function()
         {
             if(length(private$children) == 0)
                return(NULL)
 
             private$children[[1]]
         },
+
+        setCollection = function(collection, setRecursively = TRUE)
+        {
+            private$collection = collection
+
+            if(setRecursively)
+            {
+                for(child in private$children)
+                    child$setCollection(collection)
+            }
+        },
+
+        getCollection = function() private$collection,
+
+        getParent = function() private$parent,
+
+        setParent = function(newParent) private$parent <- newParent
+    ),
+
+    private = list(
+
+        name       = NULL,
+        children   = NULL,
+        parent     = NULL,
+        collection = NULL,
+        http       = NULL,
+        httpParser = NULL,
 
         removeChild = function(name)
         {
@@ -204,34 +235,6 @@ Subcollection <- R6::R6Class(
                         return()
                     }
                 }
-            }
-        },
-
-        addToCollection = function(collection)
-        {
-            for(child in private$children)
-                child$.__enclos_env__$private$addToCollection(collection)
-
-            private$collection = collection
-        },
-
-        dettachFromParent = function()
-        {
-            if(!is.null(private$parent))
-            {
-                private$parent$.__enclos_env__$private$removeChild(private$name)
-                private$parent <- NULL
-            }
-            else
-                stop("Parent doesn't exists.")
-        },
-
-        attachToParent = function(parent)
-        {
-            if(private$name != "")
-            {
-                parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
-                private$parent <- parent
             }
         }
     ),

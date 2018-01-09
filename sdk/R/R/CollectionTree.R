@@ -21,7 +21,7 @@ CollectionTree <- R6::R6Class(
             treeBranches <- sapply(fileContent, function(filePath)
             {
                 splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
-                branch = private$createBranch(splitPath)      
+                branch <- private$createBranch(splitPath)      
             })
 
             root <- Subcollection$new("")
@@ -31,7 +31,7 @@ CollectionTree <- R6::R6Class(
                 private$addBranch(root, branch)
             })
 
-            root$.__enclos_env__$private$addToCollection(collection)
+            root$setCollection(collection)
             private$tree <- root
         },
 
@@ -41,18 +41,20 @@ CollectionTree <- R6::R6Class(
                 relativePath <- substr(relativePath, 0, nchar(relativePath) - 1)
 
             splitPath <- unlist(strsplit(relativePath, "/", fixed = TRUE))
-            returnElement = private$tree
+            returnElement <- private$tree
 
             for(pathFragment in splitPath)
             {
-                returnElement = returnElement$.__enclos_env__$private$getChild(pathFragment)
+                returnElement <- returnElement$get(pathFragment)
 
                 if(is.null(returnElement))
                     return(NULL)
             }
 
             returnElement
-        }
+        },
+
+        getTree = function() private$tree
     ),
 
     private = list(
@@ -68,13 +70,13 @@ CollectionTree <- R6::R6Class(
             {
                 if(elementIndex == lastElementIndex)
                 {
-                    branch = ArvadosFile$new(splitPath[[elementIndex]])
+                    branch <- ArvadosFile$new(splitPath[[elementIndex]])
                 }
                 else
                 {
-                    newFolder = Subcollection$new(splitPath[[elementIndex]])
+                    newFolder <- Subcollection$new(splitPath[[elementIndex]])
                     newFolder$add(branch)
-                    branch = newFolder
+                    branch <- newFolder
                 }
             }
             
@@ -83,7 +85,7 @@ CollectionTree <- R6::R6Class(
 
         addBranch = function(container, node)
         {
-            child = container$.__enclos_env__$private$getChild(node$getName())
+            child <- container$get(node$getName())
 
             if(is.null(child))
             {
@@ -96,18 +98,18 @@ CollectionTree <- R6::R6Class(
                     child = private$replaceFileWithSubcollection(child)
                 }
 
-                private$addBranch(child, node$.__enclos_env__$private$getFirstChild())
+                private$addBranch(child, node$getFirst())
             }
         },
 
         replaceFileWithSubcollection = function(arvadosFile)
         {
             subcollection <- Subcollection$new(arvadosFile$getName())
-            fileParent <- arvadosFile$.__enclos_env__$private$parent
-            fileParent$.__enclos_env__$private$removeChild(arvadosFile$getName())
+            fileParent <- arvadosFile$getParent()
+            fileParent$remove(arvadosFile$getName())
             fileParent$add(subcollection)
 
-            arvadosFile$.__enclos_env__$private$parent <- NULL
+            arvadosFile$setParent(NULL)
 
             subcollection
         }

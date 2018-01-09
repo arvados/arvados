@@ -21,17 +21,18 @@ HttpRequest <- R6::R6Class(
         },
 
         PUT = function(url, headers = NULL, body = NULL,
-                       queryFilters = NULL, limit = 100, offset = 0)
+                       queryFilters = NULL, limit = NULL, offset = NULL)
         {
             headers <- httr::add_headers(unlist(headers))
             query <- private$createQuery(queryFilters, limit, offset)
             url <- paste0(url, query)
+            print(url)
 
             serverResponse <- httr::PUT(url = url, config = headers, body = body)
         },
 
         POST = function(url, headers = NULL, body = NULL,
-                        queryFilters = NULL, limit = 100, offset = 0)
+                        queryFilters = NULL, limit = NULL, offset = NULL)
         {
             headers <- httr::add_headers(unlist(headers))
             query <- private$createQuery(queryFilters, limit, offset)
@@ -141,7 +142,8 @@ HttpRequest <- R6::R6Class(
                 finalQuery <- paste0(finalQuery, collapse = "&")
             }
 
-            finalQuery <- paste0("/?", finalQuery)
+            if(!is.null(finalQuery))
+                finalQuery <- paste0("/?", finalQuery)
 
             finalQuery
         }

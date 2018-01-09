@@ -37,7 +37,7 @@ Collection <- R6::R6Class(
                relativePath == "." ||
                relativePath == "./")
             {
-                subcollection <- private$tree$.__enclos_env__$private$tree
+                subcollection <- private$tree$getTree()
             }
             else
             {
@@ -71,7 +71,7 @@ Collection <- R6::R6Class(
                relativePath == "." ||
                relativePath == "./")
             {
-                subcollection <- private$tree$.__enclos_env__$private$tree
+                subcollection <- private$tree$getTree()
             }
             else
             {
@@ -89,6 +89,10 @@ Collection <- R6::R6Class(
                 arvadosFiles <- NULL
                 sapply(fileNames, function(fileName)
                 {
+                    childWithSameName <- subcollection$get(fileName)
+                    if(!is.null(childWithSameName))
+                        stop("Destination already contains file with same name.")
+
                     newFile <- ArvadosFile$new(fileName)
                     subcollection$add(newFile)
 
@@ -122,14 +126,15 @@ Collection <- R6::R6Class(
                     if(is.null(file))
                         stop(paste("File", filePath, "doesn't exist."))
 
-                    file$removeFromCollection()
+                    parent <- file$getParent()
+                    parent$remove(filePath)
                 })
             }
             else if("ArvadosFile"   %in% class(content) ||
                     "Subcollection" %in% class(content))
             {
-                if(is.null(content$.__enclos_env__$private$collection) || 
-                   content$.__enclos_env__$private$collection$uuid != self$uuid)
+                if(is.null(content$getCollection()) || 
+                   content$getCollection()$uuid != self$uuid)
                     stop("Subcollection doesn't belong to this collection.")
 
                 content$removeFromCollection()
@@ -154,44 +159,14 @@ Collection <- R6::R6Class(
         get = function(relativePath)
         {
             private$tree$getElement(relativePath)
-        }
-    ),
-
-    private = list(
-
-        http       = NULL,
-        httpParser = NULL,
-        tree       = NULL,
-
-        fileContent = NULL,
-
-        getCollectionContent = function()
-        {
-            collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid))
-
-            headers = list("Authorization" = paste("OAuth2", self$api$getToken()))
-
-            response <- private$http$PROPFIND(collectionURL, headers)
-
-            parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
-            parsedResponse[-1]
         },
-
+        
+        #Todo: Move these methods to another class.
         createFilesOnREST = function(files)
         {
             sapply(files, function(filePath)
             {
-                private$createNewFile(filePath, NULL, "text/html")
-            })
-        },
-        
-        generateTree = function(content)
-        {
-            treeBranches <- sapply(collectionContent, function(filePath)
-            {
-                splitPath <- unlist(strsplit(filePath$name, "/", fixed = TRUE))
-
-                branch = private$createBranch(splitPath, filePath$fileSize)      
+                self$createNewFile(filePath, NULL, "text/html")
             })
         },
 
@@ -209,7 +184,7 @@ Collection <- R6::R6Class(
 
             print(paste("File created:", relativePath))
         },
-        
+
         deleteFromREST = function(relativePath)
         {
             fileURL <- paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
@@ -238,6 +213,37 @@ Collection <- R6::R6Class(
                 stop(paste("Server code:", serverResponse$status_code))
 
             serverResponse
+        }
+    ),
+
+    private = list(
+
+        http       = NULL,
+        httpParser = NULL,
+        tree       = NULL,
+
+        fileContent = NULL,
+
+        getCollectionContent = function()
+        {
+            collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid))
+
+            headers = list("Authorization" = paste("OAuth2", self$api$getToken()))
+
+            response <- private$http$PROPFIND(collectionURL, headers)
+
+            parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
+            parsedResponse[-1]
+        },
+
+        generateTree = function(content)
+        {
+            treeBranches <- sapply(collectionContent, function(filePath)
+            {
+                splitPath <- unlist(strsplit(filePath$name, "/", fixed = TRUE))
+
+                branch = private$createBranch(splitPath, filePath$fileSize)      
+            })
         }
     ),
 
