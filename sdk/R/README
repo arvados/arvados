@@ -1,72 +1,69 @@
 R SDK for Arvados
 
-Installation from source
+This SDK focuses on providing support for accessing Arvados projects, collections, and the files within collections.
 
-1. Dependencies
+The API is not final and feedback is solicited from users on ways in which it could be improved.
 
-libxml2-dev, libssl-dev, curl
+INSTALLATION
 
-2. Build the ArvadosR package tarball
+1. Install the dependencies
 
-cd arvados/sdk
-R CMD build R
+    > install.packages(c('R6', 'httr', 'stringr', 'jsonlite', 'curl', 'XML'))
 
-That will create a tarball of the Arvados package in the current directory.
+If needed, you may have to install the supporting packages first. On Linux, these are:
 
-3. Install the R package and its dependencies
+    libxml2-dev, libssl-dev, libcurl4-gnutls-dev or libcurl4-openssl-dev
 
-Then start R. Assuming the generated tarball is named `ArvadosR_0.0.1.tar.gz`,
-install it like this:
+2. Install the ArvardosR package
 
-> install.packages(c('R6', 'httr', 'stringr', 'jsonlite', 'curl', 'XML'))
-> install.packages('./ArvadosR_0.0.1.tar.gz', repos = NULL, type="source", dependencies = TRUE)
-> library('ArvadosR')
+    > install.packages('/path/to/ArvadosR_0.0.1.tar.gz', repos = NULL, type="source", dependencies = TRUE)
 
-4. Examples of usage:
 
---------------------------------------------------------------------------------------------------------------------------------
+EXAMPLES OF USAGE
 
-#Initialize API:
 
-arv <- Arvados$new("insert_token", "insert_host_name")
+#Load Library and Initialize API:
+
+library('ArvadosR')
+arv <- Arvados$new() # uses environment variables ARVADOS_API_TOKEN and ARVADOS_API_HOST
+arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Get collection:
+#Get a collection:
 
 arv$getCollection("uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #List collections:
-collectionList <- arv$listCollections(list(list("uuid", "=", "aaaaa-4zz18-ccccccccccccccc")), limit = 10, offset = 2)
+collectionList <- arv$listCollections(list(list("name", "like", "Test%"))) # offset of 0 and default limit of 100
+collectionList <- arv$listCollections(list(list("name", "like", "Test%")), limit = 10, offset = 2)
+
+collectionList$items_available # count of total number of items (may be more than returned due to paging)
+collectionList$items # items which match the filter criteria
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Delete collection:
+#Delete a collection:
 
 deletedCollection <- arv$deleteCollection("uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Update collection:
+#Update a collection's metadata:
 
-updatedCollection <- arv$updateCollection("uuid", list(name = "new_name", description = "new_desciption"))
+updatedCollection <- arv$updateCollection("uuid", list(name = "My new name", description = "a brand new description"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create collection:
 
-createdCollection <- arv$createCollection(list(name = "new_name", description = "new_desciption"))
+createdCollection <- arv$createCollection(list(name = "Example", description = "This is a test collection"))
+
 
 --------------------------------------------------------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------------------------------------------------------
-
-#Collection content manipulation:
-
---------------------------------------------------------------------------------------------------------------------------------
-
+COLLECTION CONTENT MANIPULATION
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create collection object:
@@ -99,7 +96,7 @@ fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Get ArvadosFile or Subcollection size 
+#Get ArvadosFile or Subcollection size
 
 size <- arvadosFile$getSizeInBytes()
 size <- arvadosSubcollection$getSizeInBytes()
@@ -173,24 +170,25 @@ subcollection$move("destination/folder")
 #For example
 #file$move("destination/") will not work
 
---------------------------------------------------------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------------------------------------------------------
+WORKING WITH ARVADOS PROJECTS
+--------------------------------------------------------------------------------------------------------------------------------
 
-# Working with projects:
-
-#Get project:
+#Get a project:
 
 arv$getProject("uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #List projects:
-projects <- arv$listProjects(list(list("uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")), limit = 10, offset = 2)
+
+projects <- arv$listProjects(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc"))) # list subprojects of a project
+arv$listProjects(list(list("name","like","Example%"))) # list projects which have names beginning with Example
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Delete project:
+#Delete a project:
 
 deletedProject <- arv$deleteProject("uuid")
 
@@ -198,12 +196,21 @@ deletedProject <- arv$deleteProject("uuid")
 
 #Update project:
 
-updatedProject <- arv$updateProject("uuid", list(name = "new_name", description = "new_desciption"))
+updatedProject <- arv$updateProject("uuid", list(name = "new_name", description = "new description"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Create project:
 
-createdProject <- arv$createProject(list(name = "project_name", description = "project_desciption"))
+createdProject <- arv$createProject(list(name = "project_name", description = "project description"))
+
 
 --------------------------------------------------------------------------------------------------------------------------------
+BUILDING THE ARVADOS SDK TARBALL
+--------------------------------------------------------------------------------------------------------------------------------
+
+
+cd arvados/sdk
+R CMD build R
+
+This will create a tarball of the Arvados package in the current directory.
