@@ -30,9 +30,6 @@ Arvados <- R6::R6Class(
                 stop("Please provide host name and authentification token or set
                      ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
 
-            discoveryDocumentURL <- paste0("https://", host,
-                                           "/discovery/v1/apis/arvados/v1/rest")
-
             version <- "v1"
             host  <- paste0("https://", host, "/arvados/", version, "/")
 
@@ -40,22 +37,31 @@ Arvados <- R6::R6Class(
             private$httpParser <- HttpParser$new()
             private$token      <- token
             private$host       <- host
-            
-            headers <- list(Authorization = paste("OAuth2", private$token))
-
-            serverResponse <- private$http$GET(discoveryDocumentURL, headers)
-
-            discoveryDocument <- private$httpParser$parseJSONResponse(serverResponse)
-            private$webDavHostName <- discoveryDocument$keepWebServiceUrl
-
-            if(is.null(private$webDavHostName))
-                stop("Unable to find WebDAV server.")
         },
 
         getToken    = function() private$token,
         getHostName = function() private$host,
 
-        getWebDavHostName = function() private$webDavHostName,
+        getWebDavHostName = function()
+        {
+            if(is.null(private$webDavHostName))
+            {
+                discoveryDocumentURL <- paste0("https://", host,
+                                               "/discovery/v1/apis/arvados/v1/rest")
+
+                headers <- list(Authorization = paste("OAuth2", private$token))
+
+                serverResponse <- private$http$GET(discoveryDocumentURL, headers)
+
+                discoveryDocument <- private$httpParser$parseJSONResponse(serverResponse)
+                private$webDavHostName <- discoveryDocument$keepWebServiceUrl
+
+                if(is.null(private$webDavHostName))
+                    stop("Unable to find WebDAV server.")
+            }
+
+            private$webDavHostName
+        },
 
         getCollection = function(uuid) 
         {
