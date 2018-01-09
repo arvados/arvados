@@ -159,10 +159,11 @@ class InodeCache(object):
             if obj.in_use():
                 _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
                 return
-            obj.kernel_invalidate()
             if obj.has_ref(True):
-                _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
+                _logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
                 return
+            obj.kernel_invalidate()
+            _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
             obj.clear()
 
         # The llfuse lock is released in del_entry(), which is called by

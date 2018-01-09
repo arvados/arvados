@@ -599,6 +599,30 @@ func (s *CollectionFSSuite) TestRemove(c *check.C) {
 	c.Check(err, check.IsNil)
 }
 
+func (s *CollectionFSSuite) TestRenameError(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("first", 0755)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("first/second", 0755)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("first/second/file", os.O_CREATE|os.O_WRONLY, 0755)
+	c.Assert(err, check.IsNil)
+	f.Write([]byte{1, 2, 3, 4, 5})
+	f.Close()
+	err = fs.Rename("first", "first/second/third")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Rename("first", "first/third")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Rename("first/second", "second")
+	c.Check(err, check.IsNil)
+	f, err = fs.OpenFile("second/file", 0, 0)
+	c.Assert(err, check.IsNil)
+	data, err := ioutil.ReadAll(f)
+	c.Check(err, check.IsNil)
+	c.Check(data, check.DeepEquals, []byte{1, 2, 3, 4, 5})
+}
+
 func (s *CollectionFSSuite) TestRename(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)

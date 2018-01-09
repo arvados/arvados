@@ -123,3 +123,8 @@
     out: out
   tool: wf/runin-wf.cwl
   doc: "RunInSingleContainer cwl.input.json needs to be consistent with pathmapper manipulations"
+
+- job: secondary/wf-job.yml
+  output: {}
+  tool: secondary/wf.cwl
+  doc: "RunInSingleContainer applies secondaryFile discovery & manipulation before generating cwl.input.yml"

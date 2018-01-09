@@ -8,9 +8,9 @@ class: CommandLineTool
 
 hints:
   DockerRequirement:
-    dockerPull: biodckr/bwa
+    dockerPull: lh3lh3/bwa
 
-baseCommand: [bwa, mem]
+baseCommand: [mem]
 
 arguments:
   - {prefix: "-t", valueFrom: $(runtime.cores)}
