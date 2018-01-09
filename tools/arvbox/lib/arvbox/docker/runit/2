@@ -2,5 +2,9 @@
 
 PATH=/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
 
+echo
+echo "Arvados-in-a-box starting"
+echo
+
 exec env - PATH=$PATH \
 runsvdir -P $SVDIR
