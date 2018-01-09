@@ -794,6 +794,27 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                     "user's writable_by should include its owner_uuid")
   end
 
+  [
+    [:admin, true],
+    [:active, false],
+  ].each do |auth_user, expect_success|
+    test "update_uuid as #{auth_user}" do
+      authorize_with auth_user
+      orig_uuid = users(:active).uuid
+      post :update_uuid, {
+             id: orig_uuid,
+             new_uuid: 'zbbbb-tpzed-abcde12345abcde',
+           }
+      if expect_success
+        assert_response :success
+        assert_empty User.where(uuid: orig_uuid)
+      else
+        assert_response 403
+        assert_not_empty User.where(uuid: orig_uuid)
+      end
+    end
+  end
+
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name"].sort
