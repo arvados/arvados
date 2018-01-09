@@ -158,7 +158,7 @@ class ArvadosWorkflow(Workflow):
                 "inputs": self.tool["inputs"],
                 "outputs": self.tool["outputs"],
                 "stdout": "cwl.output.json",
-                "requirements": workflowobj["requirements"]+[
+                "requirements": self.requirements+[
                     {
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
@@ -172,7 +172,7 @@ class ArvadosWorkflow(Workflow):
                             "entry": json.dumps(joborder_keepmount, indent=2, sort_keys=True, separators=(',',': ')).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }]
                 }],
-                "hints": workflowobj["hints"],
+                "hints": self.hints,
                 "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"]
             })
             kwargs["loader"] = self.doc_loader
