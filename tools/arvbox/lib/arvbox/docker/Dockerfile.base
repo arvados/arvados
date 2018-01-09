@@ -92,9 +92,6 @@ ADD crunch-setup.sh gitolite.rc \
     application_yml_override.py api-setup.sh \
     /usr/local/lib/arvbox/
 
-RUN mkdir /etc/docker
-ADD daemon.json /etc/docker/
-
 ADD runit /etc/runit
 
 # Start the supervisor.

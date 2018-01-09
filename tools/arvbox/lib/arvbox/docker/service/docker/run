@@ -100,6 +100,12 @@ rm -rf /var/run/docker.pid
 read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
 trap "kill -TERM -$pgrp; exit" EXIT TERM KILL SIGKILL SIGTERM SIGQUIT
 
-if ! docker daemon --storage-driver=overlay $DOCKER_DAEMON_ARGS ; then
-    docker daemon $DOCKER_DAEMON_ARGS
+mkdir /etc/docker
+# Prefer overlay2
+echo '{"storage-driver": "overlay2"}' > /etc/docker/daemon.json
+
+if ! dockerd ; then
+    # Oops overlay2 didn't work, let docker choose a default.
+    echo '{}' > /etc/docker/daemon.json
+    dockerd
 fi
