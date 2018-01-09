@@ -191,12 +191,8 @@ def tag_git_version(packed):
             packed["http://schema.org/version"] = githash
 
 
-def upload_job_order(arvrunner, name, tool, job_order):
-    """Upload local files referenced in the input object and return updated input
-    object with 'location' updated to the proper keep references.
-    """
-
-    for t in tool.tool["inputs"]:
+def discover_secondary_files(inputs, job_order):
+    for t in inputs:
         def setSecondary(fileobj):
             if isinstance(fileobj, dict) and fileobj.get("class") == "File":
                 if "secondaryFiles" not in fileobj:
@@ -208,6 +204,13 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
         if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
             setSecondary(job_order[shortname(t["id"])])
+
+def upload_job_order(arvrunner, name, tool, job_order):
+    """Upload local files referenced in the input object and return updated input
+    object with 'location' updated to the proper keep references.
+    """
+
+    discover_secondary_files(tool.tool["inputs"], job_order)
 
     jobmapper = upload_dependencies(arvrunner,
                                     name,

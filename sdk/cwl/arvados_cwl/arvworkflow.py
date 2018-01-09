@@ -17,7 +17,8 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 
 import ruamel.yaml as yaml
 
-from .runner import upload_dependencies, packed_workflow, upload_workflow_collection, trim_anonymous_location, remove_redundant_fields
+from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
+                     trim_anonymous_location, remove_redundant_fields, discover_secondary_files)
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool
 from .perf import Perf
@@ -87,6 +88,8 @@ class ArvadosWorkflow(Workflow):
                 if "id" not in self.tool:
                     raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
+
+            discover_secondary_files(self.tool["inputs"], joborder)
 
             with Perf(metrics, "subworkflow upload_deps"):
                 upload_dependencies(self.arvrunner,
