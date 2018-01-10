@@ -1051,6 +1051,21 @@ func (runner *ContainerRunner) UploadOutputFile(
 	followed int) (manifestText string, err error) {
 
 	if info.Mode().IsDir() {
+		// if empty, need to create a .keep file
+		dir, direrr := os.Open(path)
+		if (direrr != nil) {
+			return "", direrr
+		}
+		defer dir.Close()
+		names, eof := dir.Readdirnames(1)
+		if len(names) == 0 && eof == io.EOF {
+			keep, keeperr := os.Create(path+"/.keep")
+			if keeperr != nil {
+				return "", keeperr
+			}
+			keep.Close()
+		}
+
 		return
 	}
 
