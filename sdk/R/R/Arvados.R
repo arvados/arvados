@@ -27,8 +27,9 @@ Arvados <- R6::R6Class(
             token <- Sys.getenv("ARVADOS_API_TOKEN");
 
             if(host == "" | token == "")
-                stop("Please provide host name and authentification token or set
-                     ARVADOS_API_HOST and ARVADOS_API_TOKEN environmental variables.")
+                stop(paste0("Please provide host name and authentification token",
+                            " or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
+                            " environmental variables."))
 
             version <- "v1"
             host  <- paste0("https://", host, "/arvados/", version, "/")
@@ -37,16 +38,23 @@ Arvados <- R6::R6Class(
             private$httpParser <- HttpParser$new()
             private$token      <- token
             private$host       <- host
+            private$rawHost    <- host_name
         },
 
         getToken    = function() private$token,
         getHostName = function() private$host,
 
+        getHttpClient = function() private$http,
+        setHttpClient = function(newClient) private$http <- newClient,
+
+        getHttpParser = function() private$httpParser,
+        setHttpParser = function(newParser) private$httpParser <- newParser,
+
         getWebDavHostName = function()
         {
             if(is.null(private$webDavHostName))
             {
-                discoveryDocumentURL <- paste0("https://", host,
+                discoveryDocumentURL <- paste0("https://", private$rawHost,
                                                "/discovery/v1/apis/arvados/v1/rest")
 
                 headers <- list(Authorization = paste("OAuth2", private$token))
@@ -277,6 +285,7 @@ Arvados <- R6::R6Class(
 
         token          = NULL,
         host           = NULL,
+        rawHost        = NULL,
         webDavHostName = NULL,
         http           = NULL,
         httpParser     = NULL,
