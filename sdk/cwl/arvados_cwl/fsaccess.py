@@ -110,7 +110,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if collection is not None and not rest:
             return [pattern]
         patternsegments = rest.split("/")
-        return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
+        return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))
 
     def open(self, fn, mode):
         collection, rest = self.get_collection(fn)
