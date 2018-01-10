@@ -342,7 +342,7 @@ func copyfile(src string, dst string) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = io.Copy(srcfile, dstfile)
+	_, err = io.Copy(dstfile, srcfile)
 	if err != nil {
 		return
 	}
@@ -1135,7 +1135,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 	// go through mounts and try reverse map to collection reference
 	for _, bind := range binds {
 		mnt := runner.Container.Mounts[bind]
-		if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
+		if (tgt == bind || strings.HasPrefix(tgt, bind+"/")) && !mnt.Writable {
 			// get path relative to bind
 			targetSuffix := tgt[len(bind):]
 
@@ -1274,7 +1274,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 			continue
 		}
 
-		if mnt.ExcludeFromOutput == true {
+		if mnt.ExcludeFromOutput == true || mnt.Writable {
 			continue
 		}
 
