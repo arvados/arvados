@@ -1107,7 +1107,7 @@ func TestUntrashHandler(t *testing.T) {
 	response = IssueRequest(datamanagerWrongMethodReq)
 	ExpectStatusCode(t,
 		"Only PUT method is supported for untrash",
-		http.StatusBadRequest,
+		http.StatusMethodNotAllowed,
 		response)
 
 	// datamanagerReq => StatusOK
