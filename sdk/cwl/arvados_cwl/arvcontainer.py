@@ -109,7 +109,7 @@ class ArvadosContainer(object):
                     for f, p in generatemapper.items():
                         if not p.target:
                             pass
-                        elif p.type in ("File", "Directory"):
+                        elif p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
                             source, path = self.arvrunner.fs_access.get_collection(p.resolved)
                             vwd.copy(path, p.target, source_collection=source)
                         elif p.type == "CreateFile":
@@ -126,6 +126,8 @@ class ArvadosContainer(object):
                     mounts[mountpoint] = {"kind": "collection",
                                           "portable_data_hash": vwd.portable_data_hash(),
                                           "path": p.target}
+                    if t.type.startswith("Writable"):
+                        mounts[mountpoint]["writable"] = True
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:

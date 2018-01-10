@@ -224,8 +224,8 @@ class ArvCwlRunner(object):
 
     def check_features(self, obj):
         if isinstance(obj, dict):
-            if obj.get("writable"):
-                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
+            #if obj.get("writable"):
+            #    raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
             if obj.get("class") == "DockerRequirement":
                 if obj.get("dockerOutputDirectory"):
                     # TODO: can be supported by containers API, but not jobs API.
