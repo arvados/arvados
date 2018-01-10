@@ -126,7 +126,7 @@ class ArvadosContainer(object):
                     mounts[mountpoint] = {"kind": "collection",
                                           "portable_data_hash": vwd.portable_data_hash(),
                                           "path": p.target}
-                    if t.type.startswith("Writable"):
+                    if p.type.startswith("Writable"):
                         mounts[mountpoint]["writable"] = True
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
