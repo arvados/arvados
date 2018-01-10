@@ -236,6 +236,14 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 			"uuid": "`+fakeAuthUUID+`",
 			"api_token": "`+fakeAuthToken+`"
 			}`), output)
+	case method == "GET" && resourceType == "nodes" && uuid == "" && action == "":
+		return json.Unmarshal([]byte(`{
+			"kind": "arvados#nodeList",
+			"items": [{
+				"uuid": "zzzzz-7ekkf-2z3mc76g2q73aio",
+				"hostname": "compute2",
+				"properties": {"total_cpu_cores": 16}
+			}]}`), output)
 	default:
 		return fmt.Errorf("Not found")
 	}
@@ -768,6 +776,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
+	os.Setenv("SLURMD_NODENAME", "compute2")
 	api, _, _ := FullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -787,11 +796,13 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 
 	c.Assert(api.Logs["node-info"], NotNil)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Host Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*CPU Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Memory Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk Space.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk INodes.*`)
+	inf := api.Logs["node-info"].String()
+	c.Check(inf, Matches, `(?ms).*Node properties.*zzzzz-7ekkf-2z3mc76g2q73aio.*"total_cpu_cores":16.*`)
+	c.Check(inf, Matches, `(?ms).*Host Information.*`)
+	c.Check(inf, Matches, `(?ms).*CPU Information.*`)
+	c.Check(inf, Matches, `(?ms).*Memory Information.*`)
+	c.Check(inf, Matches, `(?ms).*Disk Space.*`)
+	c.Check(inf, Matches, `(?ms).*Disk INodes.*`)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {

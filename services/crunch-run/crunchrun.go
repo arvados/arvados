@@ -660,10 +660,29 @@ type infoCommand struct {
 	cmd   []string
 }
 
-// LogNodeInfo gathers node information and store it on the log for debugging
-// purposes.
+// LogNodeInfo gathers node information and logs it for debugging and
+// accounting purposes.
 func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	w := runner.NewLogWriter("node-info")
+
+	hostname := os.Getenv("SLURMD_NODENAME")
+	if hostname == "" {
+		hostname, _ = os.Hostname()
+	}
+	var nodes arvados.NodeList
+	err = runner.ArvClient.Call("GET", "nodes", "", "", map[string]interface{}{
+		"filters": [][]string{{"hostname", "=", hostname}},
+	}, &nodes)
+	if err != nil {
+		return fmt.Errorf("Error retrieving node list: %s", err)
+	}
+	if len(nodes.Items) < 1 {
+		fmt.Fprintf(w, "Node record not available for hostname %s\n", hostname)
+	} else {
+		fmt.Fprintf(w, "Node properties for node %s with hostname %q\n", nodes.Items[0].UUID, hostname)
+		json.NewEncoder(w).Encode(nodes.Items[0].Properties)
+	}
+	fmt.Fprintln(w, "")
 
 	commands := []infoCommand{
 		{
