@@ -244,8 +244,23 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
 	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
 	var j []byte
-	if method == "GET" && resourceType == "containers" && action == "" && !client.callraw {
-		j, err = json.Marshal(client.Container)
+	if method == "GET" && resourceType == "nodes" && uuid == "" && action == "" {
+		j = []byte(`{
+			"kind": "arvados#nodeList",
+			"items": [{
+				"uuid": "zzzzz-7ekkf-2z3mc76g2q73aio",
+				"hostname": "compute2",
+				"properties": {"total_cpu_cores": 16}
+			}]}`)
+	} else if method == "GET" && resourceType == "containers" && action == "" && !client.callraw {
+		if uuid == "" {
+			j, err = json.Marshal(map[string]interface{}{
+				"items": []interface{}{client.Container},
+				"kind":  "arvados#nodeList",
+			})
+		} else {
+			j, err = json.Marshal(client.Container)
+		}
 	} else {
 		j = []byte(`{
 			"command": ["sleep", "1"],
@@ -768,6 +783,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
+	os.Setenv("SLURMD_NODENAME", "compute2")
 	api, _, _ := FullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -786,12 +802,19 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 
+	c.Assert(api.Logs["node"], NotNil)
+	json := api.Logs["node"].String()
+	c.Check(json, Matches, `(?ms).*"uuid": *"zzzzz-7ekkf-2z3mc76g2q73aio".*`)
+	c.Check(json, Matches, `(?ms).*"total_cpu_cores": *16.*`)
+	c.Check(json, Not(Matches), `(?ms).*"info":.*`)
+
 	c.Assert(api.Logs["node-info"], NotNil)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Host Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*CPU Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Memory Information.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk Space.*`)
-	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk INodes.*`)
+	json = api.Logs["node-info"].String()
+	c.Check(json, Matches, `(?ms).*Host Information.*`)
+	c.Check(json, Matches, `(?ms).*CPU Information.*`)
+	c.Check(json, Matches, `(?ms).*Memory Information.*`)
+	c.Check(json, Matches, `(?ms).*Disk Space.*`)
+	c.Check(json, Matches, `(?ms).*Disk INodes.*`)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {
