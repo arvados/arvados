@@ -746,8 +746,7 @@ func (runner *ContainerRunner) logAPIResponse(label, path string, params map[str
 		writeCloser:   runner.LogCollection.Open(label + ".json"),
 	}
 
-	// Get Container record JSON from the API Server
-	reader, err := runner.ArvClient.CallRaw("GET", path, "", "", nil)
+	reader, err := runner.ArvClient.CallRaw("GET", path, "", "", arvadosclient.Dict(params))
 	if err != nil {
 		return false, fmt.Errorf("error getting %s record: %v", label, err)
 	}
