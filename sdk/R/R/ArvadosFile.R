@@ -88,18 +88,18 @@ ArvadosFile <- R6::R6Class(
 
             if(length > 0)
                 range = paste0(range, offset + length - 1)
-            
+
             fileURL = paste0(private$collection$api$getWebDavHostName(),
                              "c=", private$collection$uuid, "/", self$getRelativePath());
 
             if(offset == 0 && length == 0)
             {
                 headers <- list(Authorization = paste("OAuth2",
-                                                      private$collection$api$getToken())) 
+                                                      private$collection$api$getToken()))
             }
             else
             {
-                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
+                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()),
                                 Range = range)
             }
 
@@ -111,15 +111,31 @@ ArvadosFile <- R6::R6Class(
             parsedServerResponse <- httr::content(serverResponse, contentType)
             parsedServerResponse
         },
-        
+
+	connection = function(rw)
+	{
+	  if (rw == "r") {
+	    return(textConnection(self$read("text")))
+	  } else if (rw == "w") {
+	    private$buffer <- textConnection(NULL, "w")
+	    return(private$buffer)
+	  }
+	},
+
+	flush = function() {
+	  v <- textConnectionValue(private$buffer)
+	  close(private$buffer)
+	  self$write(paste(v, collapse='\n'))
+	},
+
         write = function(content, contentType = "text/html")
         {
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection.")
 
-            fileURL = paste0(private$collection$api$getWebDavHostName(), 
+            fileURL = paste0(private$collection$api$getWebDavHostName(),
                              "c=", private$collection$uuid, "/", self$getRelativePath());
-            headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()), 
+            headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()),
                             "Content-Type" = contentType)
             body <- content
 
@@ -193,8 +209,9 @@ ArvadosFile <- R6::R6Class(
         parent     = NULL,
         collection = NULL,
         http       = NULL,
-        httpParser = NULL
+        httpParser = NULL,
+        buffer     = NULL
     ),
-    
+
     cloneable = FALSE
 )

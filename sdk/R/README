@@ -72,9 +72,9 @@ collection <- Collection$new(arv, "uuid")
 
 --------------------------------------------------------------------------------------------------------------------------------
 
-#Get file/folder content as character vector
+#Get list of files
 
-collection$getFileContent()
+collection$getFileListing()
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -85,6 +85,21 @@ arvadosFile <- collection$get("location/to/my/file.cpp")
 #or
 
 arvadosSubcollection <- collection$get("location/to/my/directory/")
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+#Read a table
+
+arvadosFile <- collection$get("myinput.txt")
+arvConnection <- arvadosFile$connection("r")
+mytable <- read.table(arvConnection)
+
+#Write a table
+
+arvadosFile <- collection$create("myoutput.txt")
+arvConnection <- arvadosFile$connection("w")
+write.table(mytable, arvConnection)
+arvadosFile$flush()
 
 --------------------------------------------------------------------------------------------------------------------------------
 
