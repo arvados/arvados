@@ -137,6 +137,7 @@ Arvados <- R6::R6Class(
                             "Content-Type"  = "application/json")
 
             body <- list(list())
+            #test if this is needed
             names(body) <- c("collection")
             body$collection <- newContent
 
