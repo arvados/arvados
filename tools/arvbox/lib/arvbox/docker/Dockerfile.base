@@ -62,10 +62,6 @@ RUN mkdir -p /etc/apt/sources.list.d && \
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
 
-RUN cd /root && \
-    GOPATH=$PWD go get github.com/curoverse/runsvinit && \
-    install bin/runsvinit /usr/local/bin
-
 ENV PJSVERSION=1.9.8
 # bitbucket is the origin, but downloads fail sometimes, so use our own mirror instead.
 #ENV PJSURL=https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2
@@ -96,8 +92,9 @@ ADD crunch-setup.sh gitolite.rc \
     application_yml_override.py api-setup.sh \
     /usr/local/lib/arvbox/
 
-RUN mkdir /etc/docker
-ADD daemon.json /etc/docker/
+ADD runit /etc/runit
 
 # Start the supervisor.
-CMD ["/usr/local/bin/runsvinit"]
+ENV SVDIR /etc/service
+STOPSIGNAL SIGINT
+CMD ["/sbin/runit"]
