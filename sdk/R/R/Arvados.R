@@ -15,7 +15,7 @@ Arvados <- R6::R6Class(
 
     public = list(
 
-        initialize = function(auth_token = NULL, host_name = NULL) 
+        initialize = function(auth_token = NULL, host_name = NULL)
         {
             if(!is.null(host_name))
                Sys.setenv(ARVADOS_API_HOST  = host_name)
@@ -23,16 +23,16 @@ Arvados <- R6::R6Class(
             if(!is.null(auth_token))
                 Sys.setenv(ARVADOS_API_TOKEN = auth_token)
 
-            host  <- Sys.getenv("ARVADOS_API_HOST");
+            host_name  <- Sys.getenv("ARVADOS_API_HOST");
             token <- Sys.getenv("ARVADOS_API_TOKEN");
 
-            if(host == "" | token == "")
+            if(host_name == "" | token == "")
                 stop(paste0("Please provide host name and authentification token",
                             " or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
                             " environmental variables."))
 
             version <- "v1"
-            host  <- paste0("https://", host, "/arvados/", version, "/")
+            host  <- paste0("https://", host_name, "/arvados/", version, "/")
 
             private$http       <- HttpRequest$new()
             private$httpParser <- HttpParser$new()
@@ -71,7 +71,7 @@ Arvados <- R6::R6Class(
             private$webDavHostName
         },
 
-        getCollection = function(uuid) 
+        getCollection = function(uuid)
         {
             collectionURL <- paste0(private$host, "collections/", uuid)
             headers <- list(Authorization = paste("OAuth2", private$token))
@@ -81,12 +81,12 @@ Arvados <- R6::R6Class(
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))
-                stop(collection$errors)       
+                stop(collection$errors)
 
             collection
         },
 
-        listCollections = function(filters = NULL, limit = 100, offset = 0) 
+        listCollections = function(filters = NULL, limit = 100, offset = 0)
         {
             collectionURL <- paste0(private$host, "collections")
             headers <- list(Authorization = paste("OAuth2", private$token))
@@ -100,7 +100,7 @@ Arvados <- R6::R6Class(
             collections <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collections$errors))
-                stop(collections$errors)       
+                stop(collections$errors)
 
             collections
         },
@@ -114,7 +114,7 @@ Arvados <- R6::R6Class(
             private$fetchAllItems(collectionURL, filters)
         },
 
-        deleteCollection = function(uuid) 
+        deleteCollection = function(uuid)
         {
             collectionURL <- paste0(private$host, "collections/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -125,12 +125,12 @@ Arvados <- R6::R6Class(
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))
-                stop(collection$errors)       
+                stop(collection$errors)
 
             collection
         },
 
-        updateCollection = function(uuid, newContent) 
+        updateCollection = function(uuid, newContent)
         {
             collectionURL <- paste0(private$host, "collections/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -148,12 +148,12 @@ Arvados <- R6::R6Class(
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))
-                stop(collection$errors)       
+                stop(collection$errors)
 
             collection
         },
 
-        createCollection = function(content) 
+        createCollection = function(content)
         {
             collectionURL <- paste0(private$host, "collections")
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -170,7 +170,7 @@ Arvados <- R6::R6Class(
             collection <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(collection$errors))
-                stop(collection$errors)       
+                stop(collection$errors)
 
             collection
         },
@@ -185,12 +185,12 @@ Arvados <- R6::R6Class(
             project <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(project$errors))
-                stop(project$errors)       
+                stop(project$errors)
 
             project
         },
 
-        createProject = function(content) 
+        createProject = function(content)
         {
             projectURL <- paste0(private$host, "groups")
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -206,12 +206,12 @@ Arvados <- R6::R6Class(
             project <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(project$errors))
-                stop(project$errors)       
+                stop(project$errors)
 
             project
         },
 
-        updateProject = function(uuid, newContent) 
+        updateProject = function(uuid, newContent)
         {
             projectURL <- paste0(private$host, "groups/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -227,12 +227,12 @@ Arvados <- R6::R6Class(
             project <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(project$errors))
-                stop(project$errors)       
+                stop(project$errors)
 
             project
         },
 
-        listProjects = function(filters = NULL, limit = 100, offset = 0) 
+        listProjects = function(filters = NULL, limit = 100, offset = 0)
         {
             projectURL <- paste0(private$host, "groups")
             headers <- list(Authorization = paste("OAuth2", private$token))
@@ -248,7 +248,7 @@ Arvados <- R6::R6Class(
             projects <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(projects$errors))
-                stop(projects$errors)       
+                stop(projects$errors)
 
             projects
         },
@@ -265,7 +265,7 @@ Arvados <- R6::R6Class(
             private$fetchAllItems(projectURL, filters)
         },
 
-        deleteProject = function(uuid) 
+        deleteProject = function(uuid)
         {
             projectURL <- paste0(private$host, "groups/", uuid)
             headers <- list("Authorization" = paste("OAuth2", private$token),
@@ -276,12 +276,12 @@ Arvados <- R6::R6Class(
             project <- private$httpParser$parseJSONResponse(serverResponse)
 
             if(!is.null(project$errors))
-                stop(project$errors)       
+                stop(project$errors)
 
             project
         }
     ),
-    
+
     private = list(
 
         token          = NULL,
@@ -309,7 +309,7 @@ Arvados <- R6::R6Class(
                 parsedResponse <- private$httpParser$parseJSONResponse(serverResponse)
 
                 if(!is.null(parsedResponse$errors))
-                    stop(parsedResponse$errors)       
+                    stop(parsedResponse$errors)
 
                 items          <- c(items, parsedResponse$items)
                 offset         <- length(items)
@@ -319,6 +319,6 @@ Arvados <- R6::R6Class(
             items
         }
     ),
-    
+
     cloneable = FALSE
 )
