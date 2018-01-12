@@ -64,7 +64,7 @@ When a container's output_path is a tmp mount backed by local disk, this output 
 
 1. Only mount points of kind @collection@ are supported.
 
-2. Mount points underneath output_path must not use @"writable":true@. If any of them are set as @writable@, the API will refuse to create/update the container request, and crunch-run will fail the container.
+2. Mount points underneath output_path which have "writable":true will be copied into output_path the mount point during container initialization.  These files may be updated, renamed, or deleted by the running container.  On container completetion, the (possibly modified) copies are saved to the output collection.
 
 3. If any such mount points are configured as @exclude_from_output":true@, they will be excluded from the output.
 
