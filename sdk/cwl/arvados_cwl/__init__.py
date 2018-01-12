@@ -224,13 +224,12 @@ class ArvCwlRunner(object):
 
     def check_features(self, obj):
         if isinstance(obj, dict):
-            #if obj.get("writable"):
-            #    raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
+            if obj.get("writable") and self.work_api != "containers":
+                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported with --api=jobs")
             if obj.get("class") == "DockerRequirement":
-                if obj.get("dockerOutputDirectory"):
-                    # TODO: can be supported by containers API, but not jobs API.
+                if obj.get("dockerOutputDirectory") and self.work_api != "containers":
                     raise SourceLine(obj, "dockerOutputDirectory", UnsupportedRequirement).makeError(
-                        "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
+                        "Option 'dockerOutputDirectory' of DockerRequirement not supported with --api=jobs.")
             for v in obj.itervalues():
                 self.check_features(v)
         elif isinstance(obj, list):

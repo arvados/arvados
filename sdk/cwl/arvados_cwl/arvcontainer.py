@@ -105,16 +105,31 @@ class ArvadosContainer(object):
                 generatemapper = NoFollowPathMapper([self.generatefiles], "", "",
                                                     separateDirs=False)
 
+                logger.debug("generatemapper is %s", generatemapper._pathmap)
+
                 with Perf(metrics, "createfiles %s" % self.name):
                     for f, p in generatemapper.items():
                         if not p.target:
                             pass
                         elif p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
-                            source, path = self.arvrunner.fs_access.get_collection(p.resolved)
-                            vwd.copy(path, p.target, source_collection=source)
+                            if p.resolved.startswith("_:"):
+                                vwd.mkdirs(p.target)
+                            else:
+                                source, path = self.arvrunner.fs_access.get_collection(p.resolved)
+                                vwd.copy(path, p.target, source_collection=source)
                         elif p.type == "CreateFile":
                             with vwd.open(p.target, "w") as n:
                                 n.write(p.resolved.encode("utf-8"))
+
+                def keepemptydirs(p):
+                    if isinstance(p, arvados.collection.RichCollectionBase):
+                        if len(p) == 0:
+                            p.open(".keep", "w").close()
+                        else:
+                            for c in p:
+                                keepemptydirs(p[c])
+
+                keepemptydirs(vwd)
 
                 with Perf(metrics, "generatefiles.save_new %s" % self.name):
                     vwd.save_new()
