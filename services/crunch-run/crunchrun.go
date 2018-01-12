@@ -1068,7 +1068,6 @@ func (runner *ContainerRunner) UploadOutputFile(
 				mnt := runner.Container.Mounts[bind]
 				// Check if there is a bind for this
 				// directory, in which case assume we don't need .keep
-				runner.CrunchLog.Printf("%v %v", path, bind)
 				if (containerPath == bind || strings.HasPrefix(containerPath, bind+"/")) && mnt.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
 					return
 				}
