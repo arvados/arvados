@@ -74,7 +74,10 @@ navbar:
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
+    - Admin tools:
       - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/change-account-owner.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
     - Query the metadata database:
       - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
