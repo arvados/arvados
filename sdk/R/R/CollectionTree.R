@@ -37,6 +37,9 @@ CollectionTree <- R6::R6Class(
 
         getElement = function(relativePath)
         {
+            if(startsWith(relativePath, "./"))
+                relativePath <- substr(relativePath, 3, nchar(relativePath))
+
             if(endsWith(relativePath, "/"))
                 relativePath <- substr(relativePath, 0, nchar(relativePath) - 1)
 

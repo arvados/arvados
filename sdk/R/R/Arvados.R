@@ -18,7 +18,7 @@ Arvados <- R6::R6Class(
         initialize = function(auth_token = NULL, host_name = NULL)
         {
             if(!is.null(host_name))
-               Sys.setenv(ARVADOS_API_HOST  = host_name)
+               Sys.setenv(ARVADOS_API_HOST = host_name)
 
             if(!is.null(auth_token))
                 Sys.setenv(ARVADOS_API_TOKEN = auth_token)
@@ -29,7 +29,7 @@ Arvados <- R6::R6Class(
             if(host_name == "" | token == "")
                 stop(paste0("Please provide host name and authentification token",
                             " or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
-                            " environmental variables."))
+                            " environment variables."))
 
             version <- "v1"
             host  <- paste0("https://", host_name, "/arvados/", version, "/")
