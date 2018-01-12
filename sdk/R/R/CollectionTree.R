@@ -1,6 +1,6 @@
 source("./R/Subcollection.R")
-
 source("./R/ArvadosFile.R")
+source("./R/util.R")
 
 #' Arvados Collection Object
 #'
@@ -37,8 +37,8 @@ CollectionTree <- R6::R6Class(
 
         getElement = function(relativePath)
         {
-            if(startsWith(relativePath, "./"))
-                relativePath <- substr(relativePath, 3, nchar(relativePath))
+            relativePath <- trimFromStart(relativePath, "./")
+            relativePath <- trimFromEnd(relativePath, "/")
 
             if(endsWith(relativePath, "/"))
                 relativePath <- substr(relativePath, 0, nchar(relativePath) - 1)
