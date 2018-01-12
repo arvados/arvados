@@ -154,18 +154,25 @@ arvadosFile$write("This is new file content")
 
 file <- collection$get("location/to/my/file.cpp")
 
-file$removeFromCollection()
+collection$remove(file)
 
 #Or
 
-collection$remove(file)
+collection$remove("location/to/my/file.cpp")
 
 #Both examples will remove file "file.cpp" from a collection
+#You can remove both Subcollection and ArvadosFile
 #If subcollection contains more files or folders they will be removed recursively.
 
 #You can also remove multiple files
 
 collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
+
+#Delete file or folder from a Subcollection
+
+subcollection <- collection$get("mySubcollection/")
+subcollection$remove("fileInsideSubcollection.exe")
+subcollection$remove("folderInsideSubcollection/")
 
 --------------------------------------------------------------------------------------------------------------------------------
 

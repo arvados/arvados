@@ -42,7 +42,7 @@ test_that("Constructor raises exception if fields and environment variables are 
     expect_that(Arvados$new(),
                 throws_error(paste0("Please provide host name and authentification token",
                                     " or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
-                                    " environmental variables.")))
+                                    " environment variables.")))
 }) 
 
 test_that("getWebDavHostName calls REST service properly", {

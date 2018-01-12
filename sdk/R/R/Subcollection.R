@@ -63,7 +63,8 @@ Subcollection <- R6::R6Class(
             else
             {
                 stop(paste("Expected AravodsFile or Subcollection object, got",
-                           class(content), "."))
+                           paste0("(", paste0(class(content), collapse = ", "), ")"),
+                           "."))
             }
         },
 
@@ -90,7 +91,9 @@ Subcollection <- R6::R6Class(
             }
             else
             {
-                stop(paste("Expected character, got", class(content), "."))
+                stop(paste("Expected character, got",
+                           paste0("(", paste0(class(name), collapse = ", "), ")"),
+                           "."))
             }
         },
 
