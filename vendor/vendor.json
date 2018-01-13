@@ -48,6 +48,12 @@
 			"revisionTime": "2016-12-14T20:08:43Z"
 		},
 		{
+			"checksumSHA1": "gMBls0ytB5wHvZizUQE8Eivv9WQ=",
+			"path": "github.com/curoverse/cgofuse/fuse",
+			"revision": "d08d9e36b4ca1364eb7a4eb9db0b7fa76c9250a2",
+			"revisionTime": "2017-12-17T05:18:50Z"
+		},
+		{
 			"checksumSHA1": "Gj+xR1VgFKKmFXYOJMnAczC3Znk=",
 			"path": "github.com/docker/distribution/digestset",
 			"revision": "277ed486c948042cab91ad367c379524f3b25e18",
