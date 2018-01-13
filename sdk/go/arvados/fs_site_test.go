@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"net/http"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -47,6 +48,12 @@ func (s *SiteFSSuite) TestByUUID(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(len(fis), check.Equals, 0)
 
+	err = s.fs.Mkdir("/by_id/"+arvadostest.FooCollection, 0755)
+	c.Check(err, check.Equals, os.ErrExist)
+
+	f, err = s.fs.Open("/by_id/" + arvadostest.NonexistentCollection)
+	c.Assert(err, check.Equals, os.ErrNotExist)
+
 	f, err = s.fs.Open("/by_id/" + arvadostest.FooCollection)
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(-1)
@@ -55,4 +62,18 @@ func (s *SiteFSSuite) TestByUUID(c *check.C) {
 		names = append(names, fi.Name())
 	}
 	c.Check(names, check.DeepEquals, []string{"foo"})
+
+	_, err = s.fs.OpenFile("/by_id/"+arvadostest.NonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
+	c.Check(err, check.Equals, ErrInvalidOperation)
+	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection, "/by_id/beep")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection+"/foo", "/by_id/beep")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	_, err = s.fs.Stat("/by_id/beep")
+	c.Check(err, check.Equals, os.ErrNotExist)
+	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection+"/foo", "/by_id/"+arvadostest.FooCollection+"/bar")
+	c.Check(err, check.IsNil)
+
+	err = s.fs.Rename("/by_id", "/beep")
+	c.Check(err, check.Equals, ErrInvalidArgument)
 }

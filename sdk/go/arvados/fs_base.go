@@ -53,6 +53,10 @@ type FileSystem interface {
 
 	rootnode() inode
 
+	// filesystem-wide lock: used by Rename() to prevent deadlock
+	// while locking multiple inodes.
+	locker() sync.Locker
+
 	// create a new node with nil parent.
 	newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
@@ -272,10 +276,15 @@ func (n *treenode) Readdir() (fi []os.FileInfo) {
 type fileSystem struct {
 	root inode
 	fsBackend
+	mutex sync.Mutex
 }
 
 func (fs *fileSystem) rootnode() inode {
 	return fs.root
+}
+
+func (fs *fileSystem) locker() sync.Locker {
+	return &fs.mutex
 }
 
 // OpenFile is analogous to os.OpenFile().
@@ -424,12 +433,31 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 	}
 	defer newdirf.Close()
 
-	// When acquiring locks on multiple nodes, all common
-	// ancestors must be locked first in order to avoid
-	// deadlock. This is assured by locking the path from
-	// filesystem root to newdir, then locking the path from
-	// filesystem root to olddir, skipping any already-locked
-	// nodes.
+	// TODO: If the nearest common ancestor ("nca") of olddirf and
+	// newdirf is on a different filesystem than fs, we should
+	// call nca.FS().Rename() instead of proceeding. Until then
+	// it's awkward for filesystems to implement their own Rename
+	// methods effectively: the only one that runs is the one on
+	// the root filesystem exposed to the caller (webdav, fuse,
+	// etc).
+
+	// When acquiring locks on multiple inodes, avoid deadlock by
+	// locking the entire containing filesystem first.
+	cfs := olddirf.inode.FS()
+	cfs.locker().Lock()
+	defer cfs.locker().Unlock()
+
+	if cfs != newdirf.inode.FS() {
+		// Moving inodes across filesystems is not (yet)
+		// supported. Locking inodes from different
+		// filesystems could deadlock, so we must error out
+		// now.
+		return ErrInvalidArgument
+	}
+
+	// To ensure we can test reliably whether we're about to move
+	// a directory into itself, lock all potential common
+	// ancestors of olddir and newdir.
 	needLock := []sync.Locker{}
 	for _, node := range []inode{olddirf.inode, newdirf.inode} {
 		needLock = append(needLock, node)
@@ -447,14 +475,23 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		}
 	}
 
-	err = nil
+	// Return ErrInvalidOperation if olddirf.inode doesn't even
+	// bother calling our "remove oldname entry" replacer func.
+	err = ErrInvalidArgument
 	olddirf.inode.Child(oldname, func(oldinode inode) inode {
+		err = nil
 		if oldinode == nil {
 			err = os.ErrNotExist
 			return nil
 		}
 		if locked[oldinode] {
 			// oldinode cannot become a descendant of itself.
+			err = ErrInvalidArgument
+			return oldinode
+		}
+		if oldinode.FS() != cfs && newdirf.inode != olddirf.inode {
+			// moving a mount point to a different parent
+			// is not (yet) supported.
 			err = ErrInvalidArgument
 			return oldinode
 		}

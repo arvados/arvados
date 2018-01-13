@@ -20,13 +20,16 @@ type siteFileSystem struct {
 // there are significant known bugs and shortcomings. For example,
 // writes are not persisted until Sync() is called.
 func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
+	root := &vdirnode{}
 	fs := &siteFileSystem{
 		fileSystem: fileSystem{
 			fsBackend: keepBackend{apiClient: c, keepClient: kc},
+			root:      root,
 		},
 	}
-	root := &treenode{
-		fs: fs,
+	root.inode = &treenode{
+		fs:     fs,
+		parent: root,
 		fileinfo: fileinfo{
 			name:    "/",
 			mode:    os.ModeDir | 0755,
@@ -34,13 +37,12 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		},
 		inodes: make(map[string]inode),
 	}
-	root.parent = root
-	root.Child("by_id", func(inode) inode {
+	root.inode.Child("by_id", func(inode) inode {
 		var vn inode
 		vn = &vdirnode{
 			inode: &treenode{
 				fs:     fs,
-				parent: root,
+				parent: fs.root,
 				inodes: make(map[string]inode),
 				fileinfo: fileinfo{
 					name:    "by_id",
@@ -52,7 +54,6 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		}
 		return vn
 	})
-	fs.root = root
 	return fs
 }
 
