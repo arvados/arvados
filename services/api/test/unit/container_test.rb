@@ -584,7 +584,7 @@ class ContainerTest < ActiveSupport::TestCase
     c.lock
     c.update_attributes! state: Container::Running
 
-    set_user_from_auth :not_running_container_auth
+    set_user_from_auth :running_to_be_deleted_container_auth
     assert_raises ArvadosModel::PermissionDeniedError do
       c.update_attributes! output: collections(:foo_file).portable_data_hash
     end

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados Keep web gateway
+Description=Arvados healthcheck server
 Documentation=https://doc.arvados.org/
 After=network.target
-AssertPathExists=/etc/arvados/keep-web/keep-web.yml
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0
@@ -15,8 +15,8 @@ StartLimitInterval=0
 StartLimitIntervalSec=0
 
 [Service]
-Type=notify
-ExecStart=/usr/bin/keep-web
+Type=simple
+ExecStart=/usr/bin/arvados-health
 Restart=always
 RestartSec=1
 

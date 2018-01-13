@@ -220,8 +220,8 @@ run() {
                        "--volume=$PIPCACHE:/var/lib/pip:rw" \
                        "--volume=$NPMCACHE:/var/lib/npm:rw" \
                        "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-                       arvados/arvbox-dev$TAG \
-                       /usr/local/bin/runsvinit -svdir=/etc/test-service
+		       "--env=SVDIR=/etc/test-service" \
+                       arvados/arvbox-dev$TAG
 
                 docker exec -ti \
                        $ARVBOX_CONTAINER \

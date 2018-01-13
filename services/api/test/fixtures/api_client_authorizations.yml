@@ -300,14 +300,14 @@ running_container_auth:
   uuid: zzzzz-gj3su-077z32aux8dg2s2
   api_client: untrusted
   user: active
-  api_token: 3kg6k6lzmp9kj6bpkcoxie963cmvjahbt2fod9zru30k1jqdmi
+  api_token: it2gl94mgu3rbn5s2d06vzh73ns1y6cthct0tvg82qdlsxvbwk
   expires_at: 2038-01-01 00:00:00
 
-not_running_container_auth:
-  uuid: zzzzz-gj3su-077z32aux8dg2s3
+running_to_be_deleted_container_auth:
+  uuid: zzzzz-gj3su-ty6lvu9d7u7c2sq
   api_client: untrusted
   user: active
-  api_token: 4kg6k6lzmp9kj6bpkcoxie963cmvjahbt2fod9zru30k1jqdmj
+  api_token: ge1pez7dkk7nqntwcsj922g2b7a2t27xz6nsx39r15kbcqmp55
   expires_at: 2038-01-01 00:00:00
 
 permission_perftest:

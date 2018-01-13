@@ -145,7 +145,6 @@ requester_container:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
-  auth_uuid: zzzzz-gj3su-077z32aux8dg2s3
 
 failed_container:
   uuid: zzzzz-dz642-failedcontainr1
@@ -232,4 +231,4 @@ running_to_be_deleted:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
-  auth_uuid: zzzzz-gj3su-077z32aux8dg2s2
+  auth_uuid: zzzzz-gj3su-ty6lvu9d7u7c2sq

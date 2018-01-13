@@ -9,7 +9,7 @@ class Arvados::V1::UsersController < ApplicationController
     [:activate, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
     [:activate, :current, :system, :setup]
-  before_filter :admin_required, only: [:setup, :unsetup]
+  before_filter :admin_required, only: [:setup, :unsetup, :update_uuid]
 
   def current
     if current_user
@@ -118,6 +118,13 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
+  # Change UUID to a new (unused) uuid and transfer all owned/linked
+  # objects accordingly.
+  def update_uuid
+    @object.update_uuid(new_uuid: params[:new_uuid])
+    show
+  end
+
   protected
 
   def self._setup_requires_parameters
@@ -136,6 +143,14 @@ class Arvados::V1::UsersController < ApplicationController
       },
       send_notification_email: {
         type: 'boolean', required: false, default: false
+      },
+    }
+  end
+
+  def self._update_uuid_requires_parameters
+    {
+      new_uuid: {
+        type: 'string', required: true,
       },
     }
   end
