@@ -8,9 +8,6 @@
 set -eu -o pipefail
 
 if ! [[ -d /tmp/arvbox-ready ]] ; then
-   echo
-   echo "Arvados-in-a-box starting"
-   echo
    echo "Note: if this is a fresh arvbox installation, it may take 10-15 minutes (or longer) to download and"
    echo "install dependencies.  Use \"arvbox log\" to monitor the progress of specific services."
    echo

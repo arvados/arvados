@@ -355,7 +355,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		_, _, err := kc.Ask(hash)
 		errNotFound, _ := err.(keepclient.ErrNotFound)
 		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
+		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
 		c.Log("Ask 1")
 	}
 
@@ -371,7 +371,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		blocklen, _, err := kc.Ask(hash)
 		errNotFound, _ := err.(keepclient.ErrNotFound)
 		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
+		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
 		c.Check(blocklen, Equals, int64(0))
 		c.Log("Ask 2")
 	}
@@ -380,7 +380,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 		_, blocklen, _, err := kc.Get(hash)
 		errNotFound, _ := err.(keepclient.ErrNotFound)
 		c.Check(errNotFound, NotNil)
-		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
+		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
 		c.Check(blocklen, Equals, int64(0))
 		c.Log("Get")
 	}
@@ -596,14 +596,14 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 	c.Check(err, NotNil)
 	errNotFound, _ := err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+	c.Assert(err, ErrorMatches, ".*connection refused.*")
 
 	// Get should result in temporary connection refused error
 	_, _, _, err = kc.Get(hash)
 	c.Check(err, NotNil)
 	errNotFound, _ = err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+	c.Assert(err, ErrorMatches, ".*connection refused.*")
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
@@ -644,5 +644,5 @@ func (s *ServerRequiredSuite) TestPing(c *C) {
 	resp := httptest.NewRecorder()
 	rtr.ServeHTTP(resp, req)
 	c.Check(resp.Code, Equals, 200)
-	c.Assert(strings.Contains(resp.Body.String(), `{"health":"OK"}`), Equals, true)
+	c.Assert(resp.Body.String(), Matches, `{"health":"OK"}\n?`)
 }

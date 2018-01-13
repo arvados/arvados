@@ -85,6 +85,8 @@ Whenever you change this file, you will need to update the copy _on every comput
 
 *@ControlMachine@* should be a DNS name that resolves to the SLURM controller (dispatch/API server). This must resolve correctly on all SLURM worker nodes as well as the controller itself. In general SLURM is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
 
+*@SelectType=select/linear@* is needed on cloud-based installations that update node sizes dynamically, but it can only schedule one container at a time on each node. On a static or homogeneous cluster, use @SelectType=select/cons_res@ with @SelectTypeParameters=CR_CPU_Memory@ instead to enable node sharing.
+
 *@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc. through compute255.
 * There are several ways to compress sequences of names, like @compute[0-9,80,100-110]@. See the "hostlist" discussion in the @slurm.conf(5)@ and @scontrol(1)@ man pages for more information.
 * It is not necessary for all of the nodes listed here to be alive in order for SLURM to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS records as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.

@@ -69,7 +69,11 @@ apps/workbench_functionals (*)
 apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
+cmd/arvados-client
 doc
+lib/cli
+lib/cmd
+lib/crunchstat
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -472,13 +476,36 @@ setup_virtualenv() {
 export PERLINSTALLBASE
 export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
+
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
-rmdir --parents "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
-ln -snfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
+rmdir -v --parents --ignore-fail-on-non-empty "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
+for d in \
+    "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
+    "$GOPATH/src/git.curoverse.com/arvados.git"; do
+    [[ -d "$d" ]] && rmdir "$d"
+    [[ -h "$d" ]] && rm "$d"
+done
+ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 go get -v github.com/kardianos/govendor \
     || fatal "govendor install failed"
+cd "$GOPATH/src/git.curoverse.com/arvados.git" \
+    || fatal
+# Remove cached source dirs in workdir. Otherwise, they won't qualify
+# as +missing or +external below, and we won't be able to detect that
+# they're missing from vendor/vendor.json.
+rm -r vendor/*/
+go get -v -d ...
+"$GOPATH/bin/govendor" sync \
+    || fatal "govendor sync failed"
+[[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
+    || fatal "vendor/vendor.json has unused or missing dependencies -- try:
+* govendor remove +unused
+* govendor add +missing +external
+"
+cd "$WORKSPACE"
+
 
 setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
@@ -824,11 +851,12 @@ install_apiserver() {
 }
 do_install services/api apiserver
 
-cd "$GOPATH/src/git.curoverse.com/arvados.git" && \
-    "$GOPATH/bin/govendor" sync -v || \
-        fatal "govendor sync failed"
 declare -a gostuff
 gostuff=(
+    cmd/arvados-client
+    lib/cli
+    lib/cmd
+    lib/crunchstat
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
@@ -839,7 +867,6 @@ gostuff=(
     sdk/go/asyncbuf
     sdk/go/crunchrunner
     sdk/go/stats
-    lib/crunchstat
     services/arv-git-httpd
     services/crunchstat
     services/health

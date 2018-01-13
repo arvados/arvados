@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"gopkg.in/src-d/go-billy.v3/osfs"
+	"gopkg.in/src-d/go-billy.v4/osfs"
 	git "gopkg.in/src-d/go-git.v4"
 	git_config "gopkg.in/src-d/go-git.v4/config"
 	git_plumbing "gopkg.in/src-d/go-git.v4/plumbing"
@@ -78,7 +78,10 @@ func (gm gitMount) extractTree(ac IArvadosClient, dir string, token string) erro
 	}
 	err = repo.Fetch(&git.FetchOptions{
 		RemoteName: "origin",
-		Auth:       git_http.NewBasicAuth("none", token),
+		Auth: &git_http.BasicAuth{
+			Username: "none",
+			Password: token,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("git fetch %q: %s", u.String(), err)
