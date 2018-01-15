@@ -9,10 +9,9 @@ window.SimpleInput = {
                 width: '100%',
             },
             type: 'text',
-            placeholder: vnode.attrs.placeholder,
+            placeholder: 'Add ' + vnode.attrs.placeholder,
             value: vnode.attrs.value,
             onchange: function() {
-                console.log(this.value)
                 if (this.value != '') {
                     vnode.attrs.value(this.value)
                 }
@@ -27,56 +26,45 @@ window.SimpleInput = {
 }
 
 window.SelectOrAutocomplete = {
-    onFocus: function(vnode) {
-        // Allow the user to edit an already entered value by removing it
-        // and filling the input field with the same text. (non-strict listings)
-        var activeSelect = vnode.state.selectized[0].selectize
-        value = activeSelect.getValue()
-        if (vnode.attrs.create && value.length > 0) {
-            activeSelect.clear(silent = true)
-            activeSelect.setTextboxValue(value)
-        }
-    },
     view: function(vnode) {
-        return m("input", {
+        return m("input.form-control", {
             style: {
                 width: '100%'
             },
             type: 'text',
-            value: vnode.attrs.value
+            value: vnode.attrs.value,
+            placeholder: (vnode.attrs.create ? 'Add or select ': 'Select ') + vnode.attrs.placeholder,
         }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        vnode.state.selectized = $(vnode.dom).selectize({
-            labelField: 'value',
-            valueField: 'value',
-            searchField: 'value',
-            sortField: 'value',
-            persist: false,
-            hideSelected: true,
-            openOnFocus: !vnode.attrs.create,
-            createOnBlur: true,
-            // selectOnTab: true,
-            maxItems: 1,
-            placeholder: (vnode.attrs.create ? 'Add or select ': 'Select ') + vnode.attrs.placeholder,
-            create: vnode.attrs.create ? function(input) {
-                return {value: input}
-            } : false,
-            items: [vnode.attrs.value()],
-            options: vnode.attrs.options.map(function(option) {
-                return {value: option}
-            }),
-            onChange: function(val) {
-                if (val != '') {
-                    vnode.attrs.value(val)
+        var awesomplete = new Awesomplete(vnode.dom, {
+            list: vnode.attrs.options,
+            minChars: 0,
+            autoFirst: true,
+        })
+        // Option is selected from the list.
+        $(vnode.dom).on('awesomplete-selectcomplete', function(event) {
+            vnode.attrs.value(this.value)
+        })
+        $(vnode.dom).on('change', function(event) {
+            if (!vnode.attrs.create && !(this.value in vnode.attrs.options)) {
+                this.value = vnode.attrs.value()
+            } else {
+                if (vnode.attrs.value() !== this.value) {
+                    vnode.attrs.value(this.value)
                 }
-            },
-            onFocus: function() {
-                vnode.state.onFocus(vnode)
+            }
+        })
+        $(vnode.dom).on('focusin', function(event) {
+            // Open list when focusing on empty strict fields
+            if (!vnode.attrs.create && this.value === '') {
+                // minChars = 0 && evaluate() makes the list open without
+                // input events
+                awesomplete.evaluate()
             }
         })
         if (vnode.attrs.setFocus) {
-            vnode.state.selectized[0].selectize.focus()
+            $(vnode.dom).focus()
         }
     }
 }
@@ -99,9 +87,6 @@ window.TagEditorRow = {
                 'values' in vnode.attrs.vocabulary().tags[vnode.attrs.name()]) {
                     valueOpts = vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
             }
-            if (vnode.attrs.value() != '') {
-                valueOpts.push(vnode.attrs.value())
-            }
         }
         return m("tr", [
             // Erase tag
@@ -114,19 +99,17 @@ window.TagEditorRow = {
                     onclick: function(e) { vnode.attrs.removeTag() }
                 }, m('i.fa.fa-fw.fa-trash-o')))
             ]),
-            // Tag name
+            // Tag key
             m("td", [
                 vnode.attrs.editMode ?
-                m("div", {key: 'name-'+vnode.attrs.name()},[
+                m("div", [
                     m(inputComponent, {
                         options: nameOpts,
                         value: vnode.attrs.name,
                         // Allow any tag name unless "strict" is set to true.
                         create: !vnode.attrs.vocabulary().strict,
-                        placeholder: 'name',
-                        // Focus on tag name field when adding a new tag that's
-                        // not the first one.
-                        setFocus: vnode.attrs.name() === ''
+                        placeholder: 'key',
+                        setFocus: false
                     })
                 ])
                 : vnode.attrs.name
@@ -186,7 +169,7 @@ window.TagEditorTable = {
                         vocabulary: vnode.attrs.vocabulary
                     })
                 })
-                : m("tr", m("td[colspan=3]", m("center","loading tags...")))
+                : m("tr", m("td[colspan=3]", m("center", "Loading tags...")))
             ]),
         ])
     }
@@ -240,7 +223,7 @@ window.TagEditorApp = {
                     vnode.state.dirty.map(function() {
                         if (!vnode.state.editMode) { return }
                         lastTag = vnode.state.tags.slice(-1).pop()
-                        if (lastTag === undefined || (lastTag.name() !== '' && lastTag.value() !== '')) {
+                        if (lastTag === undefined || (lastTag.name() !== '' || lastTag.value() !== '')) {
                             vnode.state.appendTag(vnode, '', '')
                         }
                     })

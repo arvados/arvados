@@ -7,9 +7,7 @@
 # Browserify is required.
 npm 'browserify', require: false
 npm 'jquery'
-npm 'microplugin'
-npm 'sifter'
-npm 'selectize'
+npm 'awesomplete'
 
 npm 'mithril'
 npm 'es6-object-assign'

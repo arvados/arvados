@@ -16,8 +16,7 @@
  *= require bootstrap
  *= require bootstrap3-editable/bootstrap-editable
  *= require morris
- *= require selectize
- *= require selectize.default
+ *= require awesomplete
  *= require_tree .
  */
 
@@ -321,4 +320,9 @@ ul.nav.nav-tabs {
 .arv-description-as-subtitle .editable-inline .form-group .editable-input textarea,
 {
     width: 98%!important;
+}
+
+/* Needed for awesomplete to play nice with bootstrap */
+div.awesomplete {
+    display: block;
 }
