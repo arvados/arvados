@@ -1057,7 +1057,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 	if info.Mode().IsDir() {
 		// if empty, need to create a .keep file
 		dir, direrr := os.Open(path)
-		if (direrr != nil) {
+		if direrr != nil {
 			return "", direrr
 		}
 		defer dir.Close()
