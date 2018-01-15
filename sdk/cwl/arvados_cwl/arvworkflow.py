@@ -173,7 +173,8 @@ class ArvadosWorkflow(Workflow):
                         }]
                 }],
                 "hints": self.hints,
-                "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"]
+                "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"],
+                "id": "#"
             })
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema

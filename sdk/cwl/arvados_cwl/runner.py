@@ -246,7 +246,7 @@ def upload_workflow_deps(arvrunner, tool, override_tools):
                                 False,
                                 include_primary=False)
             document_loader.idx[deptool["id"]] = deptool
-            override_tools[deptool["id"]] = json.dumps(deptool)
+            override_tools[deptool["id"]] = yaml.round_trip_dump(deptool)
 
     tool.visit(upload_tool_deps)
 

@@ -22,7 +22,6 @@ from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
 import cwltool.process
-import schema_salad
 from schema_salad.sourceline import SourceLine
 
 import arvados
@@ -378,6 +377,12 @@ class ArvCwlRunner(object):
                                   avsc_names=tool.doc_schema,
                                   metadata=tool.metadata,
                                   override_tools=override_tools)
+
+        tool.doc_loader.fetcher_constructor = partial(CollectionFetcher,
+                                                api_client=self.api,
+                                                fs_access=CollectionFsAccess("", collection_cache=self.collection_cache),
+                                                num_retries=self.num_retries,
+                                                overrides=override_tools)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % kwargs["name"],
