@@ -102,7 +102,7 @@ window.TagEditorRow = {
             // Tag key
             m("td", [
                 vnode.attrs.editMode ?
-                m("div", [
+                m("div", {key: 'key-'+vnode.attrs.name()}, [
                     m(inputComponent, {
                         options: nameOpts,
                         value: vnode.attrs.name,
