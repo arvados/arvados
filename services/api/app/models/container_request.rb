@@ -134,7 +134,9 @@ class ContainerRequest < ArvadosModel
                             })
       coll.save_with_unique_name!
       if out_type == 'output'
-        out_coll = coll.uuid
+        if c.state == Container::Complete && c.exit_code == 0
+          out_coll = coll.uuid
+        end
       else
         log_coll = coll.uuid
       end

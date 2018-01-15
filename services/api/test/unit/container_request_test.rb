@@ -245,6 +245,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     act_as_system_user do
       c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
                            output: output_pdh,
                            log: log_pdh)
     end
@@ -613,6 +614,22 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_equal cr2.container_uuid, cr.container_uuid
   end
 
+  [
+    ['failed', {exit_code: 1, end_state: Container::Complete}],
+    ['cancelled', {exit_code: nil, end_state: Container::Cancelled}],
+  ].each do |label, fate|
+    test "output_uuid not set after container #{label}" do
+      set_user_from_auth :active
+      cr = create_minimal_req!(priority: 1,
+                               container_count_max: 1,
+                               state: ContainerRequest::Committed)
+      run_container(cr, exit_code: fate[:exit_code], end_state: fate[:end_state])
+      cr.reload
+      assert_not_nil cr.log_uuid
+      assert_nil cr.output_uuid
+    end
+  end
+
   test "Output collection name setting using output_name with name collision resolution" do
     set_user_from_auth :active
     output_name = 'unimaginative name'
@@ -673,13 +690,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_in_delta(delete, now + year, 10)
   end
 
-  def run_container(cr)
+  def run_container(cr, end_state: Container::Complete, exit_code: 0)
     act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
       c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: Container::Complete,
-                           exit_code: 0,
+      c.update_attributes!(state: end_state,
+                           exit_code: exit_code,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
       c
