@@ -176,16 +176,8 @@ window.TagEditorApp = {
         var tag = {name: m.stream(name), value: m.stream(value), rowKey: uniqueID++}
         vnode.state.tags.push(tag)
         // Set dirty flag when any of name/value changes to non empty string
-        tag.name.map(function(v) {
-            if (v !== '') {
-                vnode.state.dirty(true)
-            }
-        })
-        tag.value.map(function(v) {
-            if (v !== '') {
-                vnode.state.dirty(true)
-            }
-        })
+        tag.name.map(function() { vnode.state.dirty(true) })
+        tag.value.map(function() { vnode.state.dirty(true) })
         tag.name.map(m.redraw)
     },
     oninit: function(vnode) {
@@ -213,6 +205,9 @@ window.TagEditorApp = {
                     Object.keys(o.properties).forEach(function(k) {
                         vnode.state.appendTag(vnode, k, o.properties[k])
                     })
+                    if (vnode.state.editMode) {
+                        vnode.state.appendTag(vnode, '', '')
+                    }
                     // Data synced with server, so dirty state should be false
                     vnode.state.dirty(false)
                     // Add new tag row when the last one is completed
