@@ -28,6 +28,17 @@ window.SessionDB = function() {
             })
             return sessions
         },
+        loadLocal: function() {
+            var sessions = db.loadActive()
+            var s = false
+            Object.values(sessions).forEach(function(session) {
+                if (session.isFromRails) {
+                    s = session
+                    return
+                }
+            })
+            return s
+        },
         save: function(k, v) {
             var sessions = db.loadAll()
             sessions[k] = v
@@ -134,10 +145,11 @@ window.SessionDB = function() {
             // Guess workbench.{apihostport} is a Workbench... unless
             // the host part of apihostport is an IPv4 or [IPv6]
             // address.
-            if (!session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])'))
+            if (!session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])')) {
                 var wbUrl = session.baseURL.replace('://', '://workbench.')
                 // Remove the trailing slash, if it's there.
                 return wbUrl.slice(-1) == '/' ? wbUrl.slice(0, -1) : wbUrl
+            }
             return null
         },
         // Return a m.stream that will get fulfilled with the
