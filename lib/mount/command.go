@@ -37,9 +37,14 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 	logger := log.New(stderr, prog+" ", 0)
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
+	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
 	err := flags.Parse(args)
 	if err != nil {
 		logger.Print(err)
+		return 2
+	}
+	if !*experimental {
+		logger.Printf("error: experimental command %q used without --experimental flag", prog)
 		return 2
 	}
 

@@ -37,7 +37,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	mountCmd := cmd{ready: make(chan struct{})}
 	ready := false
 	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{s.mnt}, stdin, stdout, stderr)
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", s.mnt}, stdin, stdout, stderr)
 	}()
 	go func() {
 		<-mountCmd.ready
