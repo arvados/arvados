@@ -37,12 +37,14 @@ window.SelectOrAutocomplete = {
             minChars: 0,
             autoFirst: true,
         })
+        vnode.state.create = vnode.attrs.create
+        vnode.state.options = vnode.attrs.options
         // Option is selected from the list.
         $(vnode.dom).on('awesomplete-selectcomplete', function(event) {
             vnode.attrs.value(this.value)
         })
         $(vnode.dom).on('change', function(event) {
-            if (!vnode.attrs.create && !(this.value in vnode.attrs.options)) {
+            if (!vnode.state.create && !(this.value in vnode.state.options)) {
                 this.value = vnode.attrs.value()
             } else {
                 if (vnode.attrs.value() !== this.value) {
@@ -51,16 +53,16 @@ window.SelectOrAutocomplete = {
             }
         })
         $(vnode.dom).on('focusin', function(event) {
-            // Open list when focusing on empty strict fields
-            if (!vnode.attrs.create && this.value === '') {
-                // minChars = 0 && evaluate() makes the list open without
-                // input events
+            if (this.value === '') {
                 vnode.state.awesomplete.evaluate()
+                vnode.state.awesomplete.open()
             }
         })
     },
     onupdate: function(vnode) {
         vnode.state.awesomplete.list = vnode.attrs.options
+        vnode.state.create = vnode.attrs.create
+        vnode.state.options = vnode.attrs.options
     },
 }
 
