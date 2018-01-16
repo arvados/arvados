@@ -51,11 +51,9 @@ window.SelectOrAutocomplete = {
             }
         })
         $(vnode.dom).on('focusin', function(event) {
-            // Open list when focusing on empty strict fields
-            if (!vnode.attrs.create && this.value === '') {
-                // minChars = 0 && evaluate() makes the list open without
-                // input events
+            if (this.value === '') {
                 vnode.state.awesomplete.evaluate()
+                vnode.state.awesomplete.open()
             }
         })
     },
