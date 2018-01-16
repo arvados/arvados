@@ -35,7 +35,9 @@ window.SelectOrAutocomplete = {
         vnode.state.awesomplete = new Awesomplete(vnode.dom, {
             list: vnode.attrs.options,
             minChars: 0,
+            maxItems: 1000000,
             autoFirst: true,
+            sort: false,
         })
         vnode.state.create = vnode.attrs.create
         vnode.state.options = vnode.attrs.options

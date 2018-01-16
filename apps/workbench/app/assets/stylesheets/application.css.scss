@@ -326,3 +326,8 @@ ul.nav.nav-tabs {
 div.awesomplete {
     display: block;
 }
+/* Makes awesomplete listings to be scrollable */
+.awesomplete > ul {
+    max-height: 410px;
+    overflow-y: auto;
+}
