@@ -233,7 +233,8 @@ window.TagEditorApp = {
                     onclick: function(e) {
                         var tags = {}
                         vnode.state.tags.forEach(function(t) {
-                            if (t.name() != '' && t.value() != '') {
+                            // Only ignore tags with empty key
+                            if (t.name() != '') {
                                 tags[t.name()] = t.value()
                             }
                         })
