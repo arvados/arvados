@@ -18,11 +18,6 @@ window.SimpleInput = {
             },
         }, vnode.attrs.value)
     },
-    oncreate: function(vnode) {
-        if (vnode.attrs.setFocus) {
-            vnode.dom.focus()
-        }
-    }
 }
 
 window.SelectOrAutocomplete = {
@@ -37,7 +32,7 @@ window.SelectOrAutocomplete = {
         }, vnode.attrs.value)
     },
     oncreate: function(vnode) {
-        var awesomplete = new Awesomplete(vnode.dom, {
+        vnode.state.awesomplete = new Awesomplete(vnode.dom, {
             list: vnode.attrs.options,
             minChars: 0,
             autoFirst: true,
@@ -60,13 +55,13 @@ window.SelectOrAutocomplete = {
             if (!vnode.attrs.create && this.value === '') {
                 // minChars = 0 && evaluate() makes the list open without
                 // input events
-                awesomplete.evaluate()
+                vnode.state.awesomplete.evaluate()
             }
         })
-        if (vnode.attrs.setFocus) {
-            $(vnode.dom).focus()
-        }
-    }
+    },
+    onupdate: function(vnode) {
+        vnode.state.awesomplete.list = vnode.attrs.options
+    },
 }
 
 window.TagEditorRow = {
@@ -102,14 +97,13 @@ window.TagEditorRow = {
             // Tag key
             m("td", [
                 vnode.attrs.editMode ?
-                m("div", {key: 'key-'+vnode.attrs.name()}, [
+                m("div", {key: 'key'}, [
                     m(inputComponent, {
                         options: nameOpts,
                         value: vnode.attrs.name,
                         // Allow any tag name unless "strict" is set to true.
                         create: !vnode.attrs.vocabulary().strict,
                         placeholder: 'key',
-                        setFocus: false
                     })
                 ])
                 : vnode.attrs.name
@@ -117,7 +111,7 @@ window.TagEditorRow = {
             // Tag value
             m("td", [
                 vnode.attrs.editMode ?
-                m("div", {key: 'value-'+vnode.attrs.name()}, [
+                m("div", {key: 'value'}, [
                     m(inputComponent, {
                         options: valueOpts,
                         value: vnode.attrs.value,
@@ -129,8 +123,6 @@ window.TagEditorRow = {
                             || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
                             || vnode.attrs.vocabulary().tags[vnode.attrs.name()].values.length === 0
                             || !vnode.attrs.vocabulary().tags[vnode.attrs.name()].strict,
-                        // Focus on tag value field when new tag name is set
-                        setFocus: vnode.attrs.name() !== '' && vnode.attrs.value() === ''
                     })
                 ])
                 : vnode.attrs.value
@@ -158,7 +150,7 @@ window.TagEditorTable = {
                 vnode.attrs.tags.length > 0
                 ? vnode.attrs.tags.map(function(tag, idx) {
                     return m(TagEditorRow, {
-                        key: idx,
+                        key: tag.rowKey,
                         removeTag: function() {
                             vnode.attrs.tags.splice(idx, 1)
                             vnode.attrs.dirty(true)
@@ -175,9 +167,11 @@ window.TagEditorTable = {
     }
 }
 
+var uniqueID = 1
+
 window.TagEditorApp = {
     appendTag: function(vnode, name, value) {
-        var tag = {name: m.stream(name), value: m.stream(value)}
+        var tag = {name: m.stream(name), value: m.stream(value), rowKey: uniqueID++}
         vnode.state.tags.push(tag)
         // Set dirty flag when any of name/value changes to non empty string
         tag.name.map(function(v) {
