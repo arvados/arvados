@@ -27,9 +27,9 @@ logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
-                    submit_runner_ram=0, name=None):
+                    submit_runner_ram=0, name=None, merged_map=None):
 
-    packed = packed_workflow(arvRunner, tool)
+    packed = packed_workflow(arvRunner, tool, merged_map)
 
     adjustDirObjs(job_order, trim_listing)
     adjustFileObjs(job_order, trim_anonymous_location)

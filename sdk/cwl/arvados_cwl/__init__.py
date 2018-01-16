@@ -110,8 +110,7 @@ class ArvCwlRunner(object):
         kwargs["fetcher_constructor"] = partial(CollectionFetcher,
                                                 api_client=self.api,
                                                 fs_access=CollectionFsAccess("", collection_cache=self.collection_cache),
-                                                num_retries=self.num_retries,
-                                                overrides=kwargs.get("override_tools"))
+                                                num_retries=self.num_retries)
         kwargs["resolver"] = partial(collectionResolver, self.api, num_retries=self.num_retries)
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
@@ -366,8 +365,7 @@ class ArvCwlRunner(object):
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        override_tools = {}
-        upload_workflow_deps(self, tool, override_tools)
+        merged_map = upload_workflow_deps(self, tool)
 
         # Reload tool object which may have been updated by
         # upload_workflow_deps
@@ -375,14 +373,7 @@ class ArvCwlRunner(object):
                                   makeTool=self.arv_make_tool,
                                   loader=tool.doc_loader,
                                   avsc_names=tool.doc_schema,
-                                  metadata=tool.metadata,
-                                  override_tools=override_tools)
-
-        tool.doc_loader.fetcher_constructor = partial(CollectionFetcher,
-                                                api_client=self.api,
-                                                fs_access=CollectionFsAccess("", collection_cache=self.collection_cache),
-                                                num_retries=self.num_retries,
-                                                overrides=override_tools)
+                                  metadata=tool.metadata)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % kwargs["name"],
@@ -396,7 +387,8 @@ class ArvCwlRunner(object):
                                       kwargs.get("enable_reuse"),
                                       uuid=existing_uuid,
                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs["name"])
+                                      name=kwargs["name"],
+                                      merged_map=merged_map)
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
                 return (tmpl.uuid, "success")
@@ -405,7 +397,8 @@ class ArvCwlRunner(object):
                                         self.project_uuid,
                                         uuid=existing_uuid,
                                         submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                        name=kwargs["name"]),
+                                        name=kwargs["name"],
+                                        merged_map=merged_map),
                         "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
@@ -443,7 +436,8 @@ class ArvCwlRunner(object):
                                                 name=kwargs.get("name"),
                                                 on_error=kwargs.get("on_error"),
                                                 submit_runner_image=kwargs.get("submit_runner_image"),
-                                                intermediate_output_ttl=kwargs.get("intermediate_output_ttl"))
+                                                intermediate_output_ttl=kwargs.get("intermediate_output_ttl"),
+                                                merged_map=merged_map)
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
                                       self.output_name,
@@ -451,7 +445,8 @@ class ArvCwlRunner(object):
                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
                                       name=kwargs.get("name"),
                                       on_error=kwargs.get("on_error"),
-                                      submit_runner_image=kwargs.get("submit_runner_image"))
+                                      submit_runner_image=kwargs.get("submit_runner_image"),
+                                      merged_map=merged_map)
         elif "cwl_runner_job" not in kwargs and self.work_api == "jobs":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(

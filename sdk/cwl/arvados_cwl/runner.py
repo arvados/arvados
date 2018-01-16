@@ -172,13 +172,32 @@ def upload_docker(arvrunner, tool):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
 
-def packed_workflow(arvrunner, tool):
+def packed_workflow(arvrunner, tool, merged_map):
     """Create a packed workflow.
 
     A "packed" workflow is one where all the components have been combined into a single document."""
 
-    return pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
-                tool.tool["id"], tool.metadata)
+    rewrites = {}
+    packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
+                  tool.tool["id"], tool.metadata, rewrite_out=rewrites)
+
+    rewrite_to_orig = {}
+    for k,v in rewrites.items():
+        rewrite_to_orig[v] = k
+
+    def visit(v, cur_id):
+        if isinstance(v, dict):
+            if v.get("class") in ("CommandLineTool", "Workflow"):
+                cur_id = rewrite_to_orig.get(v["id"], v["id"])
+            if "location" in v and not v["location"].startswith("keep:"):
+                v["location"] = merged_map[cur_id][v["location"]]
+            for l in v:
+                visit(v[l], cur_id)
+        if isinstance(v, list):
+            for l in v:
+                visit(l, cur_id)
+    visit(packed, None)
+    return packed
 
 def tag_git_version(packed):
     if tool.tool["id"].startswith("file://"):
@@ -229,16 +248,18 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
     return job_order
 
-def upload_workflow_deps(arvrunner, tool, override_tools):
+def upload_workflow_deps(arvrunner, tool):
     # Ensure that Docker images needed by this workflow are available
 
     upload_docker(arvrunner, tool)
 
     document_loader = tool.doc_loader
 
+    merged_map = {}
+
     def upload_tool_deps(deptool):
         if "id" in deptool:
-            upload_dependencies(arvrunner,
+            pm = upload_dependencies(arvrunner,
                                 "%s dependencies" % (shortname(deptool["id"])),
                                 document_loader,
                                 deptool,
@@ -246,9 +267,14 @@ def upload_workflow_deps(arvrunner, tool, override_tools):
                                 False,
                                 include_primary=False)
             document_loader.idx[deptool["id"]] = deptool
-            override_tools[deptool["id"]] = yaml.round_trip_dump(deptool)
+            toolmap = {}
+            for k,v in pm.items():
+                toolmap[k] = v.resolved
+            merged_map[deptool["id"]] = toolmap
 
     tool.visit(upload_tool_deps)
+
+    return merged_map
 
 def arvados_jobs_image(arvrunner, img):
     """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
@@ -291,7 +317,7 @@ class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
-                 intermediate_output_ttl=0):
+                 intermediate_output_ttl=0, merged_map=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -319,6 +345,8 @@ class Runner(object):
 
         if self.submit_runner_ram <= 0:
             raise Exception("Value of --submit-runner-ram must be greater than zero")
+
+        self.merged_map = merged_map or {}
 
     def update_pipeline_component(self, record):
         pass
