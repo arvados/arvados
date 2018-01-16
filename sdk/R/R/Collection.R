@@ -2,6 +2,8 @@ source("./R/Subcollection.R")
 source("./R/ArvadosFile.R")
 source("./R/HttpRequest.R")
 source("./R/HttpParser.R")
+source("./R/RESTService.R")
+source("./R/util.R")
 
 #' Arvados Collection Object
 #'
@@ -21,19 +23,20 @@ Collection <- R6::R6Class(
         initialize = function(api, uuid)
         {
             self$api <- api
-            private$http <- HttpRequest$new()
-            private$httpParser <- HttpParser$new()
+            private$http <- api$getHttpClient()
+            private$httpParser <- api$getHttpParser()
+            private$REST <- api$getRESTService()
 
             self$uuid <- uuid
             collection <- self$api$getCollection(uuid)
 
-            private$fileContent <- private$getCollectionContent()
+            private$fileContent <- private$REST$getCollectionContent(uuid)
             private$tree <- CollectionTree$new(private$fileContent, self)
         },
 
         add = function(content, relativePath = "")
         {
-            if(relativePath == "" ||
+            if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
             {
@@ -41,13 +44,11 @@ Collection <- R6::R6Class(
             }
             else
             {
-                if(endsWith(relativePath, "/") && nchar(relativePath) > 0)
-                    relativePath <- substr(relativePath, 1, nchar(relativePath) - 1)
-
+                relativePath <- trimFromEnd(relativePath, "/")
                 subcollection <- self$get(relativePath)
             }
 
-            if(is.null(subcollection))
+            if(is.null(subcollection) || !("Subcollection" %in% class(Subcollection)))
                 stop(paste("Subcollection", relativePath, "doesn't exist."))
 
             if("ArvadosFile"   %in% class(content) ||
@@ -65,6 +66,7 @@ Collection <- R6::R6Class(
             }
         },
 
+        #todo collapse 2 parameters in one
         create = function(fileNames, relativePath = "")
         {
             if(relativePath == "" ||
@@ -143,8 +145,7 @@ Collection <- R6::R6Class(
 
         move = function(content, newLocation)
         {
-            if(endsWith(content, "/"))
-                content <- substr(content, 0, nchar(content) - 1)
+            content <- trimFromEnd(content, "/")
 
             elementToMove <- self$get(content)
 
@@ -154,87 +155,25 @@ Collection <- R6::R6Class(
             elementToMove$move(newLocation)
         },
 
-        getFileListing = function() private$getCollectionContent(),
+        getFileListing = function() private$REST$getCollectionContent(self$uuid),
 
         get = function(relativePath)
         {
             private$tree$getElement(relativePath)
         },
-        
-        #Todo: Move these methods to another class.
-        createFilesOnREST = function(files)
-        {
-            sapply(files, function(filePath)
-            {
-                self$createNewFile(filePath, NULL, "text/html")
-            })
-        },
 
-        createNewFile = function(relativePath, content, contentType)
-        {
-            fileURL <- paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$api$getToken()), 
-                            "Content-Type" = contentType)
-            body <- content
-
-            serverResponse <- private$http$PUT(fileURL, headers, body)
-
-            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
-                stop(paste("Server code:", serverResponse$status_code))
-
-            print(paste("File created:", relativePath))
-        },
-
-        deleteFromREST = function(relativePath)
-        {
-            fileURL <- paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$api$getToken())) 
-
-            serverResponse <- private$http$DELETE(fileURL, headers)
-
-            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
-                stop(paste("Server code:", serverResponse$status_code))
-
-            print(paste("File deleted:", relativePath))
-        },
-
-        moveOnREST = function(from, to)
-        {
-            collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid, "/"))
-            fromURL <- paste0(collectionURL, from)
-            toURL <- paste0(collectionURL, to)
-
-            headers = list("Authorization" = paste("OAuth2", self$api$getToken()),
-                           "Destination" = toURL)
-
-            serverResponse <- private$http$MOVE(fromURL, headers)
-
-            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
-                stop(paste("Server code:", serverResponse$status_code))
-
-            serverResponse
-        }
+        getRESTService = function() private$REST,
+        setRESTService = function(newRESTService) private$REST <- newRESTService
     ),
 
     private = list(
 
         http       = NULL,
         httpParser = NULL,
+        REST       = NULL,
         tree       = NULL,
 
         fileContent = NULL,
-
-        getCollectionContent = function()
-        {
-            collectionURL <- URLencode(paste0(self$api$getWebDavHostName(), "c=", self$uuid))
-
-            headers = list("Authorization" = paste("OAuth2", self$api$getToken()))
-
-            response <- private$http$PROPFIND(collectionURL, headers)
-
-            parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
-            parsedResponse[-1]
-        },
 
         generateTree = function(content)
         {

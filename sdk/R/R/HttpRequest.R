@@ -26,7 +26,6 @@ HttpRequest <- R6::R6Class(
             headers <- httr::add_headers(unlist(headers))
             query <- private$createQuery(queryFilters, limit, offset)
             url <- paste0(url, query)
-            print(url)
 
             serverResponse <- httr::PUT(url = url, config = headers, body = body)
         },
@@ -65,6 +64,7 @@ HttpRequest <- R6::R6Class(
             h <- curl::new_handle()
             curl::handle_setopt(h, customrequest = "MOVE")
             curl::handle_setheaders(h, .list = headers)
+            print(url)
 
             propfindResponse <- curl::curl_fetch_memory(url, h)
         }

@@ -12,8 +12,6 @@ Subcollection <- R6::R6Class(
         initialize = function(name)
         {
             private$name       <- name
-            private$http       <- HttpRequest$new()
-            private$httpParser <- HttpParser$new()
         },
 
         getName = function() private$name,
@@ -40,8 +38,8 @@ Subcollection <- R6::R6Class(
             {
                 childWithSameName <- self$get(content$getName())
                 if(!is.null(childWithSameName))
-                    stop("Subcollection already contains ArvadosFile
-                          or Subcollection with same name.")
+                    stop(paste("Subcollection already contains ArvadosFile",
+                               "or Subcollection with same name."))
 
                 if(!is.null(private$collection))
                 {       
@@ -51,7 +49,8 @@ Subcollection <- R6::R6Class(
                     else
                         contentPath <- content$getFileListing()
 
-                    private$collection$createFilesOnREST(contentPath)
+                    REST <- private$collection$getRESTService()
+                    REST$create(contentPath, private$collection$uuid)
                     content$setCollection(private$collection)
                 }
 
@@ -62,9 +61,9 @@ Subcollection <- R6::R6Class(
             }
             else
             {
-                stop(paste("Expected AravodsFile or Subcollection object, got",
-                           paste0("(", paste0(class(content), collapse = ", "), ")"),
-                           "."))
+                stop(paste0("Expected AravodsFile or Subcollection object, got ",
+                            paste0("(", paste0(class(content), collapse = ", "), ")"),
+                            "."))
             }
         },
 
@@ -75,12 +74,13 @@ Subcollection <- R6::R6Class(
                 child <- self$get(name)
 
                 if(is.null(child))
-                    stop("Subcollection doesn't contains ArvadosFile
-                          or Subcollection with same name.")
+                    stop(paste("Subcollection doesn't contains ArvadosFile",
+                               "or Subcollection with specified name."))
 
                 if(!is.null(private$collection))
                 {
-                    private$collection$deleteFromREST(child$getRelativePath())
+                    REST <- private$collection$getRESTService()
+                    REST$delete(child$getRelativePath(), private$collection$uuid)
                     child$setCollection(NULL)
                 }
 
@@ -91,17 +91,17 @@ Subcollection <- R6::R6Class(
             }
             else
             {
-                stop(paste("Expected character, got",
-                           paste0("(", paste0(class(name), collapse = ", "), ")"),
-                           "."))
+                stop(paste0("Expected character, got ",
+                            paste0("(", paste0(class(name), collapse = ", "), ")"),
+                            "."))
             }
         },
 
-        getFileListing = function(fullpath = TRUE)
+        getFileListing = function(fullPath = TRUE)
         {
             content <- NULL
 
-            if(fullpath)
+            if(fullPath)
             {
                 for(child in private$children)
                     content <- c(content, child$getFileListing())
@@ -120,63 +120,43 @@ Subcollection <- R6::R6Class(
 
         getSizeInBytes = function()
         {
-            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(),
-                                              "c=", private$collection$uuid))
-            subcollectionURL <- paste0(collectionURL, "/", self$getRelativePath(), "/");
-
-            headers = list("Authorization" = paste("OAuth2", private$collection$api$getToken()))
-
-            propfindResponse <- private$http$PROPFIND(subcollectionURL, headers)
-
-            sizes <- private$httpParser$extractFileSizeFromWebDAVResponse(propfindResponse, collectionURL)
-            sizes <- as.numeric(sizes[-1])
-
-            sum(sizes)
-        },
-
-        move = function(newLocation)
-        {
-            if(is.null(private$collection))
-                stop("Subcollection doesn't belong to any collection.")
-
-            if(endsWith(newLocation, paste0(private$name, "/")))
+            if(!is.null(private$collection))
             {
-                newLocation <- substr(newLocation, 0,
-                                      nchar(newLocation) - nchar(paste0(private$name, "/")))
-            }
-            else if(endsWith(newLocation, private$name))
-            {
-                newLocation <- substr(newLocation, 0,
-                                      nchar(newLocation) - nchar(private$name))
+                REST <- private$collection$getRESTService()
+                subcollectionSize <- REST$getResourceSize(private$collection$uuid,
+                                                          self$getRelativePath())
+                return(subcollectionSize)
             }
             else
             {
-                stop("Destination path is not valid.")
+                return(0)
             }
+        },
 
-            newParent <- private$collection$get(newLocation)
+        move = function(newLocationInCollection)
+        {
+            if(is.null(private$collection))
+                stop("Subcollection doesn't belong to any collection")
+
+            newLocationInCollection <- trimFromEnd(newLocationInCollection, "/")
+            newParentLocation <- trimFromEnd(newLocationInCollection, private$name)
+
+            newParent <- private$collection$get(newParentLocation)
 
             if(is.null(newParent))
             {
-                stop("Unable to get destination subcollection.")
+                stop("Unable to get destination subcollection")
             }
 
-            status <- private$collection$moveOnREST(self$getRelativePath(),
-                                                    paste0(newParent$getRelativePath(),
-                                                           "/", self$getName()))
+            REST <- private$collection$getRESTService()
+            REST$move(self$getRelativePath(),
+                      paste0(newParent$getRelativePath(), "/", self$getName()),
+                      private$collection$uuid)
 
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      add method doesn't post file on REST server.
-            parentsCollection <- newParent$getCollection()
-            newParent$setCollection(NULL, setRecursively = FALSE)
+            private$dettachFromCurrentParent()
+            private$attachToNewParent(newParent)
 
-            newParent$add(self)
-
-            newParent$setCollection(parentsCollection, setRecursively = FALSE)
-
-            private$parent <- newParent
-
-            "Content moved successfully."
+            "Content moved successfully"
         },
 
         get = function(name)
@@ -222,8 +202,6 @@ Subcollection <- R6::R6Class(
         children   = NULL,
         parent     = NULL,
         collection = NULL,
-        http       = NULL,
-        httpParser = NULL,
 
         removeChild = function(name)
         {
@@ -239,6 +217,33 @@ Subcollection <- R6::R6Class(
                     }
                 }
             }
+        },
+
+        attachToNewParent = function(newParent)
+        {
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      add method doesn't post file on REST.
+            parentsCollection <- newParent$getCollection()
+            newParent$setCollection(NULL, setRecursively = FALSE)
+
+            newParent$add(self)
+
+            newParent$setCollection(parentsCollection, setRecursively = FALSE)
+
+            private$parent <- newParent
+        },
+
+        dettachFromCurrentParent = function()
+        {
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      remove method doesn't remove this subcollection from REST.
+            parent <- private$parent
+            parentsCollection <- parent$getCollection()
+            parent$setCollection(NULL, setRecursively = FALSE)
+
+            parent$remove(private$name)
+
+            parent$setCollection(parentsCollection, setRecursively = FALSE)
         }
     ),
     

@@ -183,9 +183,11 @@ ArvadosFile <- R6::R6Class(
             if(!is.null(childWithSameName))
                 stop("Destination already contains file with same name.")
 
-            status <- private$collection$moveOnREST(self$getRelativePath(),
-                                                    paste0(newParent$getRelativePath(),
-                                                           "/", self$getName()))
+            REST <- private$collection$getRESTService()
+            status <- REST$move(self$getRelativePath(),
+                                paste0(newParent$getRelativePath(),
+                                "/", self$getName()),
+                                private$collection$uuid)
 
             #Note: We temporary set parents collection to NULL. This will ensure that
             #      add method doesn't post file on REST server.

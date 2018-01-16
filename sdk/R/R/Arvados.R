@@ -1,5 +1,6 @@
 source("./R/HttpRequest.R")
 source("./R/HttpParser.R")
+source("./R/RESTService.R")
 
 #' Arvados SDK Object
 #'
@@ -36,6 +37,7 @@ Arvados <- R6::R6Class(
 
             private$http       <- HttpRequest$new()
             private$httpParser <- HttpParser$new()
+            private$REST       <- RESTService$new(self)
             private$token      <- token
             private$host       <- host
             private$rawHost    <- host_name
@@ -49,6 +51,9 @@ Arvados <- R6::R6Class(
 
         getHttpParser = function() private$httpParser,
         setHttpParser = function(newParser) private$httpParser <- newParser,
+
+        getRESTService = function() private$REST,
+        setRESTService = function(newRESTService) private$REST <- newRESTService,
 
         getWebDavHostName = function()
         {
@@ -290,6 +295,7 @@ Arvados <- R6::R6Class(
         webDavHostName = NULL,
         http           = NULL,
         httpParser     = NULL,
+        REST           = NULL,
 
         fetchAllItems = function(resourceURL, filters)
         {
