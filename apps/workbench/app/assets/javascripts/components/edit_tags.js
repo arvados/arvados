@@ -186,7 +186,8 @@ window.TagEditorApp = {
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
         vnode.state.vocabulary = m.stream({"strict":false, "tags":{}})
-        m.request('/vocabulary.json').then(vnode.state.vocabulary)
+        var vocabularyTimestamp = parseInt(Date.now() / 300000) // Bust cache every 5 minutes
+        m.request('/vocabulary.json?v=' + vocabularyTimestamp).then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
