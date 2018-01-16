@@ -91,13 +91,14 @@ func (vn *vdirnode) Child(name string, _ func(inode) inode) inode {
 	return vn.inode.Child(name, func(existing inode) inode {
 		if existing != nil {
 			return existing
-		} else {
-			n := vn.create(vn, name)
-			if n != nil {
-				n.SetParent(vn, name)
-				vn.inode.(*treenode).fileinfo.modTime = time.Now()
-			}
-			return n
+		} else if vn.create == nil {
+			return nil
 		}
+		n := vn.create(vn, name)
+		if n != nil {
+			n.SetParent(vn, name)
+			vn.inode.(*treenode).fileinfo.modTime = time.Now()
+		}
+		return n
 	})
 }
