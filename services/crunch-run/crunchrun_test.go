@@ -7,7 +7,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/json"
 	"errors"
@@ -30,6 +29,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
