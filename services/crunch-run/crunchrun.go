@@ -1086,12 +1086,32 @@ func (runner *ContainerRunner) UploadOutputFile(
 	relocateTo string,
 	followed int) (manifestText string, err error) {
 
-	if info.Mode().IsDir() {
-		return
-	}
-
 	if infoerr != nil {
 		return "", infoerr
+	}
+
+	if info.Mode().IsDir() {
+		// if empty, need to create a .keep file
+		dir, direrr := os.Open(path)
+		if direrr != nil {
+			return "", direrr
+		}
+		defer dir.Close()
+		names, eof := dir.Readdirnames(1)
+		if len(names) == 0 && eof == io.EOF && path != runner.HostOutputDir {
+			containerPath := runner.OutputPath + path[len(runner.HostOutputDir):]
+			for _, bind := range binds {
+				mnt := runner.Container.Mounts[bind]
+				// Check if there is a bind for this
+				// directory, in which case assume we don't need .keep
+				if (containerPath == bind || strings.HasPrefix(containerPath, bind+"/")) && mnt.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
+					return
+				}
+			}
+			outputSuffix := path[len(runner.HostOutputDir)+1:]
+			return fmt.Sprintf("./%v d41d8cd98f00b204e9800998ecf8427e+0 0:0:.keep\n", outputSuffix), nil
+		}
+		return
 	}
 
 	if followed >= limitFollowSymlinks {
@@ -1101,9 +1121,16 @@ func (runner *ContainerRunner) UploadOutputFile(
 		return
 	}
 
-	// When following symlinks, the source path may need to be logically
-	// relocated to some other path within the output collection.  Remove
-	// the relocateFrom prefix and replace it with relocateTo.
+	// "path" is the actual path we are visiting
+	// "tgt" is the target of "path" (a non-symlink) after following symlinks
+	// "relocated" is the path in the output manifest where the file should be placed,
+	// but has HostOutputDir as a prefix.
+
+	// The destination path in the output manifest may need to be
+	// logically relocated to some other path in order to appear
+	// in the correct location as a result of following a symlink.
+	// Remove the relocateFrom prefix and replace it with
+	// relocateTo.
 	relocated := relocateTo + path[len(relocateFrom):]
 
 	tgt, readlinktgt, info, derefErr := runner.derefOutputSymlink(path, info)
@@ -1124,7 +1151,7 @@ func (runner *ContainerRunner) UploadOutputFile(
 
 			// Terminates in this keep mount, so add the
 			// manifest text at appropriate location.
-			outputSuffix := path[len(runner.HostOutputDir):]
+			outputSuffix := relocated[len(runner.HostOutputDir):]
 			manifestText, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
 			return
 		}
