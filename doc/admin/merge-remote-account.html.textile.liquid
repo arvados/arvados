@@ -1,0 +1,47 @@
+---
+layout: default
+navsection: userguide
+title: "Merging a remote account"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+When you use federation capabilities to connect two or more clusters that were already operating, some users might already have accounts on multiple clusters. Typically, they will want to choose a single account on one of the clusters and abandon the rest, transferring all data or permissions from their old “remote” accounts to a single “home” account.
+
+This effect can be achieved by changing the UUIDs of the user records on the remote clusters. This should be done before the user has ever used federation features to access cluster B with cluster A credentials. Otherwise, see "managing conflicting accounts" below.
+
+For example, a user might have:
+* an account A on cluster A with uuid @aaaaa-tpzed-abcdefghijklmno@, and
+* an account B on cluster B with uuid @bbbbb-tpzed-lmnopqrstuvwxyz@
+
+An administrator at cluster B can merge the two accounts by renaming account B to account A.
+
+<notextile>
+<pre><code>#!/usr/bin/env python
+import arvados
+arvados.api('v1').users().update_uuid(
+    uuid="<span class="userinput">bbbbb-tpzed-lmnopqrstuvwxyz</span>",
+    new_uuid="<span class="userinput">aaaaa-tpzed-abcdefghijklmno</span>").execute()
+</code></pre></notextile>
+
+This should be done when the user is idle, i.e., not logged in and not running any jobs or containers.
+
+h2. Managing conflicting accounts
+
+If the user has already used federation capabilities to access cluster B using account A before the above migration has been done, this will have already created a database entry for account A on cluster B, and the above program will error out. To fix this, the same "update_uuid API call":../api/methods/users.html#update_uuid can be used to move the conflicting account out of the way first.
+
+<notextile>
+<pre><code>#!/usr/bin/env python
+import arvados
+import random
+import string
+random_chars = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(15))
+arvados.api('v1').users().update_uuid(
+    uuid="<span class="userinput">aaaaa-tpzed-abcdefghijklmno</span>",
+    new_uuid="bbbbb-tpzed-"+random_chars).execute()
+</code></pre></notextile>
+
+After this is done and the migration is complete, the affected user should wait 5 minutes for the authorization cache to expire before using the remote cluster.

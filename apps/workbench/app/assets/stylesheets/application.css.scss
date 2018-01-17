@@ -16,6 +16,7 @@
  *= require bootstrap
  *= require bootstrap3-editable/bootstrap-editable
  *= require morris
+ *= require awesomplete
  *= require_tree .
  */
 
@@ -319,4 +320,14 @@ ul.nav.nav-tabs {
 .arv-description-as-subtitle .editable-inline .form-group .editable-input textarea,
 {
     width: 98%!important;
+}
+
+/* Needed for awesomplete to play nice with bootstrap */
+div.awesomplete {
+    display: block;
+}
+/* Makes awesomplete listings to be scrollable */
+.awesomplete > ul {
+    max-height: 410px;
+    overflow-y: auto;
 }

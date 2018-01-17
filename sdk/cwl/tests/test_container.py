@@ -44,7 +44,8 @@ class TestContainer(unittest.TestCase):
                 "inputs": [],
                 "outputs": [],
                 "baseCommand": "ls",
-                "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+                "id": "#"
             })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -124,7 +125,8 @@ class TestContainer(unittest.TestCase):
                 "class": "http://arvados.org/cwl#ReuseRequirement",
                 "enableReuse": False
             }],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "id": "#"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -231,7 +233,8 @@ class TestContainer(unittest.TestCase):
                     "location": "keep:99999999999999999999999999999995+99/subdir"
                 }                        ]
             }],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "id": "#"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -329,7 +332,8 @@ class TestContainer(unittest.TestCase):
             "stdout": "stdout.txt",
             "stderr": "stderr.txt",
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
-            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -449,7 +453,8 @@ class TestContainer(unittest.TestCase):
             ],
             "outputs": [],
             "baseCommand": "ls",
-            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                      collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))

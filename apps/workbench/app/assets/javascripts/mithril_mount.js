@@ -4,6 +4,7 @@
 
 $(document).on('ready arv:pane:loaded', function() {
     $('[data-mount-mithril]').each(function() {
-        m.mount(this, window[$(this).data('mount-mithril')])
+        var data = $(this).data()
+        m.mount(this, {view: function () {return m(window[data.mountMithril], data)}})
     })
 })
