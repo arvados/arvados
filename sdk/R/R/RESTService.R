@@ -56,7 +56,7 @@ RESTService <- R6::R6Class(
         {
             collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=", uuid))
 
-            headers = list("Authorization" = paste("OAuth2", private$api$getToken()))
+            headers <- list("Authorization" = paste("OAuth2", private$api$getToken()))
 
             response <- private$http$PROPFIND(collectionURL, headers)
 
@@ -64,23 +64,71 @@ RESTService <- R6::R6Class(
             parsedResponse[-1]
         },
 
-        getResourceSize = function(uuid, relativePathToResource)
+        getResourceSize = function(uuid, relativePath)
         {
             collectionURL <- URLencode(paste0(private$api$getWebDavHostName(),
                                               "c=", uuid))
-            subcollectionURL <- paste0(collectionURL, "/",
-                                       relativePathToResource, "/");
 
-            headers = list("Authorization" = paste("OAuth2",
+            subcollectionURL <- paste0(collectionURL, "/", relativePath);
+
+            headers <- list("Authorization" = paste("OAuth2",
                                                    private$api$getToken()))
 
             propfindResponse <- private$http$PROPFIND(subcollectionURL, headers)
 
             sizes <- private$httpParser$extractFileSizeFromWebDAVResponse(propfindResponse,
                                                                           collectionURL)
-            sizes <- as.numeric(sizes[-1])
+            as.numeric(sizes)
+        },
 
-            return(sum(sizes))
+        read = function(uuid, relativePath, contentType = "raw", offset = 0, length = 0)
+        {
+            fileURL <- paste0(private$api$getWebDavHostName(),
+                             "c=", uuid, "/", relativePath);
+
+            range <- paste0("bytes=", offset, "-")
+
+            if(length > 0)
+                range = paste0(range, offset + length - 1)
+
+            if(offset == 0 && length == 0)
+            {
+                headers <- list(Authorization = paste("OAuth2", private$api$getToken()))
+            }
+            else
+            {
+                headers <- list(Authorization = paste("OAuth2", private$api$getToken()),
+                                Range = range)
+            }
+
+            if(!(contentType %in% private$http$validContentTypes))
+                stop("Invalid contentType. Please use text or raw.")
+
+            serverResponse <- private$http$GET(fileURL, headers)
+
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            #todo remove all references to httr from here 
+            parsedServerResponse <- httr::content(serverResponse, contentType)
+            parsedServerResponse
+        },
+
+        write = function(uuid, relativePath, content, contentType)
+        {
+            fileURL <- paste0(private$api$getWebDavHostName(),
+                             "c=", uuid, "/", relativePath);
+            headers <- list(Authorization = paste("OAuth2", private$api$getToken()),
+                            "Content-Type" = contentType)
+            body <- content
+
+            serverResponse <- private$http$PUT(fileURL, headers, body)
+
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            parsedServerResponse <- httr::content(serverResponse, "text")
+            parsedServerResponse
         }
     ),
 

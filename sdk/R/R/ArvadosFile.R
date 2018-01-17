@@ -1,3 +1,5 @@
+source("./R/util.R")
+
 #' ArvadosFile Object
 #'
 #' Update description
@@ -25,16 +27,15 @@ ArvadosFile <- R6::R6Class(
 
         getSizeInBytes = function()
         {
-            collectionURL <- URLencode(paste0(private$collection$api$getWebDavHostName(),
-                                              "c=", private$collection$uuid))
-            fileURL <- paste0(collectionURL, "/", self$getRelativePath());
+            if(is.null(private$collection))
+                return(0)
 
-            headers = list("Authorization" = paste("OAuth2", private$collection$api$getToken()))
+            REST <- private$collection$getRESTService()
 
-            propfindResponse <- private$http$PROPFIND(fileURL, headers)
+            fileSize <- REST$getResourceSize(private$collection$uuid,
+                                             self$getRelativePath())
 
-            sizes <- private$httpParser$extractFileSizeFromWebDAVResponse(propfindResponse, collectionURL)
-            as.numeric(sizes)
+            fileSize
         },
 
         get = function(fileLikeObjectName)
@@ -81,124 +82,73 @@ ArvadosFile <- R6::R6Class(
             if(offset < 0 || length < 0)
                 stop("Offset and length must be positive values.")
 
-            if(!(contentType %in% private$http$validContentTypes))
-                stop("Invalid contentType. Please use text or raw.")
+            REST <- private$collection$getRESTService()
 
-            range = paste0("bytes=", offset, "-")
-
-            if(length > 0)
-                range = paste0(range, offset + length - 1)
-
-            fileURL = paste0(private$collection$api$getWebDavHostName(),
-                             "c=", private$collection$uuid, "/", self$getRelativePath());
-
-            if(offset == 0 && length == 0)
-            {
-                headers <- list(Authorization = paste("OAuth2",
-                                                      private$collection$api$getToken()))
-            }
-            else
-            {
-                headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()),
-                                Range = range)
-            }
-
-            serverResponse <- private$http$GET(fileURL, headers)
-
-            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
-                stop(paste("Server code:", serverResponse$status_code))
-
-            parsedServerResponse <- httr::content(serverResponse, contentType)
-            parsedServerResponse
+            REST$read(private$collection$uuid,
+                      self$getRelativePath(),
+                      contentType, offset, length)
         },
 
-	connection = function(rw)
-	{
-	  if (rw == "r") {
-	    return(textConnection(self$read("text")))
-	  } else if (rw == "w") {
-	    private$buffer <- textConnection(NULL, "w")
-	    return(private$buffer)
-	  }
-	},
+        connection = function(rw)
+        {
+            if (rw == "r") 
+            {
+                return(textConnection(self$read("text")))
+            }
+            else if (rw == "w") 
+            {
+                private$buffer <- textConnection(NULL, "w")
 
-	flush = function() {
-	  v <- textConnectionValue(private$buffer)
-	  close(private$buffer)
-	  self$write(paste(v, collapse='\n'))
-	},
+                return(private$buffer)
+            }
+        },
+
+        flush = function() 
+        {
+            v <- textConnectionValue(private$buffer)
+            close(private$buffer)
+            self$write(paste(v, collapse='\n'))
+        },
 
         write = function(content, contentType = "text/html")
         {
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection.")
 
-            fileURL = paste0(private$collection$api$getWebDavHostName(),
-                             "c=", private$collection$uuid, "/", self$getRelativePath());
-            headers <- list(Authorization = paste("OAuth2", private$collection$api$getToken()),
-                            "Content-Type" = contentType)
-            body <- content
+            REST <- private$collection$getRESTService()
 
-            serverResponse <- private$http$PUT(fileURL, headers, body)
-
-            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
-                stop(paste("Server code:", serverResponse$status_code))
-
-            parsedServerResponse <- httr::content(serverResponse, "text")
-            parsedServerResponse
+            result <- REST$write(private$collection$uuid,
+                                 self$getRelativePath(),
+                                 content, contentType)
         },
 
-        move = function(newLocation)
+        move = function(newLocationInCollection)
         {
-            #todo test if file can be moved
-
             if(is.null(private$collection))
-                stop("ArvadosFile doesn't belong to any collection.")
+                stop("ArvadosFile doesn't belong to any collection")
 
-            if(endsWith(newLocation, paste0(private$name, "/")))
-            {
-                newLocation <- substr(newLocation, 0,
-                                      nchar(newLocation)
-                                      - nchar(paste0(private$name, "/")))
-            }
-            else if(endsWith(newLocation, private$name))
-            {
-                newLocation <- substr(newLocation, 0,
-                                      nchar(newLocation) - nchar(private$name))
-            }
-            else
-            {
-                stop("Destination path is not valid.")
-            }
+            newLocationInCollection <- trimFromEnd(newLocationInCollection, "/")
+            newParentLocation <- trimFromEnd(newLocationInCollection, private$name)
 
-            newParent <- private$collection$get(newLocation)
+            newParent <- private$collection$get(newParentLocation)
 
             if(is.null(newParent))
             {
-                stop("Unable to get destination subcollection.")
+                stop("Unable to get destination subcollection")
             }
 
             childWithSameName <- newParent$get(private$name)
 
             if(!is.null(childWithSameName))
-                stop("Destination already contains file with same name.")
+                stop("Destination already contains content with same name.")
 
             REST <- private$collection$getRESTService()
-            status <- REST$move(self$getRelativePath(),
-                                paste0(newParent$getRelativePath(),
-                                "/", self$getName()),
-                                private$collection$uuid)
+            REST$move(self$getRelativePath(),
+                      paste0(newParent$getRelativePath(), "/", self$getName()),
+                      private$collection$uuid)
 
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      add method doesn't post file on REST server.
-            parentsCollection <- newParent$getCollection()
-            newParent$setCollection(NULL, setRecursively = FALSE)
-
-            newParent$add(self)
-
-            newParent$setCollection(parentsCollection, setRecursively = FALSE)
-
-            private$parent <- newParent
+            private$dettachFromCurrentParent()
+            private$attachToNewParent(newParent)
 
             "Content moved successfully."
         }
@@ -212,7 +162,34 @@ ArvadosFile <- R6::R6Class(
         collection = NULL,
         http       = NULL,
         httpParser = NULL,
-        buffer     = NULL
+        buffer     = NULL,
+
+        attachToNewParent = function(newParent)
+        {
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      add method doesn't post file on REST.
+            parentsCollection <- newParent$getCollection()
+            newParent$setCollection(NULL, setRecursively = FALSE)
+
+            newParent$add(self)
+
+            newParent$setCollection(parentsCollection, setRecursively = FALSE)
+
+            private$parent <- newParent
+        },
+
+        dettachFromCurrentParent = function()
+        {
+            #Note: We temporary set parents collection to NULL. This will ensure that
+            #      remove method doesn't remove this subcollection from REST.
+            parent <- private$parent
+            parentsCollection <- parent$getCollection()
+            parent$setCollection(NULL, setRecursively = FALSE)
+
+            parent$remove(private$name)
+
+            parent$setCollection(parentsCollection, setRecursively = FALSE)
+        }
     ),
 
     cloneable = FALSE

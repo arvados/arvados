@@ -2,7 +2,7 @@ source("fakes/FakeRESTService.R")
 
 context("Subcollection")
 
-test_that("getRelativePath returns relative path properly", {
+test_that("getRelativePath returns path relative to the tree root", {
 
     animal <- Subcollection$new("animal")
 
@@ -263,6 +263,28 @@ test_that(paste("move raises exception if subcollection",
                 throws_error("Subcollection doesn't belong to any collection"))
 }) 
 
+test_that("move raises exception if new location contains content with the same name", {
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setHttpClient(FakeHttpRequest$new())
+    api$setHttpParser(FakeHttpParser$new())
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "fish")
+
+    fakeREST <- FakeRESTService$new(collectionContent)
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    expect_that(fish$move("fish"),
+                throws_error("Destination already contains content with same name."))
+
+}) 
+
 test_that(paste("move raises exception if newLocationInCollection",
                 "parameter is invalid"), {
 
@@ -280,9 +302,9 @@ test_that(paste("move raises exception if newLocationInCollection",
     api$setRESTService(fakeREST)
 
     collection <- Collection$new(api, "myUUID")
-    dog <- collection$get("animal/dog")
+    fish <- collection$get("animal/fish")
 
-    expect_that(dog$move("objects/dog"),
+    expect_that(fish$move("objects/dog"),
                 throws_error("Unable to get destination subcollection"))
 }) 
 

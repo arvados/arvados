@@ -1,3 +1,5 @@
+source("./R/util.R")
+
 #' Arvados SubCollection Object
 #'
 #' Update description
@@ -120,17 +122,14 @@ Subcollection <- R6::R6Class(
 
         getSizeInBytes = function()
         {
-            if(!is.null(private$collection))
-            {
-                REST <- private$collection$getRESTService()
-                subcollectionSize <- REST$getResourceSize(private$collection$uuid,
-                                                          self$getRelativePath())
-                return(subcollectionSize)
-            }
-            else
-            {
+            if(is.null(private$collection))
                 return(0)
-            }
+
+            REST <- private$collection$getRESTService()
+
+            fileSizes <- REST$getResourceSize(private$collection$uuid,
+                                              paste0(self$getRelativePath(), "/"))
+            return(sum(fileSizes))
         },
 
         move = function(newLocationInCollection)
@@ -147,6 +146,11 @@ Subcollection <- R6::R6Class(
             {
                 stop("Unable to get destination subcollection")
             }
+
+            childWithSameName <- newParent$get(private$name)
+
+            if(!is.null(childWithSameName))
+                stop("Destination already contains content with same name.")
 
             REST <- private$collection$getRESTService()
             REST$move(self$getRelativePath(),

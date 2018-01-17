@@ -4,20 +4,27 @@ FakeRESTService <- R6::R6Class(
 
     public = list(
 
-        createCallCount          = NULL,
-        deleteCallCount          = NULL,
-        moveCallCount            = NULL,
-        getResourceSizeCallCount = NULL,
+        createCallCount               = NULL,
+        deleteCallCount               = NULL,
+        moveCallCount                 = NULL,
+        getCollectionContentCallCount = NULL,
+        getResourceSizeCallCount      = NULL,
+        readCallCount                 = NULL,
+        writeCallCount                = NULL,
+        writeBuffer                   = NULL,
 
         collectionContent = NULL,
         returnContent = NULL,
 
         initialize = function(collectionContent = NULL, returnContent = NULL)
         {
-            self$createCallCount <- 0
-            self$deleteCallCount <- 0
-            self$moveCallCount   <- 0
-            self$getResourceSizeCallCount   <- 0
+            self$createCallCount               <- 0
+            self$deleteCallCount               <- 0
+            self$moveCallCount                 <- 0
+            self$getCollectionContentCallCount <- 0
+            self$getResourceSizeCallCount      <- 0
+            self$readCallCount                 <- 0
+            self$writeCallCount                <- 0
 
             self$collectionContent <- collectionContent
             self$returnContent <- returnContent
@@ -44,12 +51,26 @@ FakeRESTService <- R6::R6Class(
 
         getCollectionContent = function(uuid)
         {
+            self$getCollectionContentCallCount <- self$getCollectionContentCallCount + 1
             self$collectionContent
         },
 
         getResourceSize = function(uuid, relativePathToResource)
         {
             self$getResourceSizeCallCount <- self$getResourceSizeCallCount + 1
+            self$returnContent
+        },
+        
+        read = function(uuid, relativePath, contentType = "text", offset = 0, length = 0)
+        {
+            self$readCallCount <- self$readCallCount + 1
+            self$returnContent
+        },
+
+        write = function(uuid, relativePath, content, contentType)
+        {
+            self$writeBuffer <- content
+            self$writeCallCount <- self$writeCallCount + 1
             self$returnContent
         }
     ),

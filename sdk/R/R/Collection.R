@@ -48,7 +48,7 @@ Collection <- R6::R6Class(
                 subcollection <- self$get(relativePath)
             }
 
-            if(is.null(subcollection) || !("Subcollection" %in% class(Subcollection)))
+            if(is.null(subcollection))
                 stop(paste("Subcollection", relativePath, "doesn't exist."))
 
             if("ArvadosFile"   %in% class(content) ||
@@ -60,16 +60,15 @@ Collection <- R6::R6Class(
             }
             else
             {
-                contentClass <- paste(class(content), collapse = ", ")
-                stop(paste("Expected AravodsFile or Subcollection object, got",
-                           paste0("(", contentClass, ")"), "."))
+                stop(paste0("Expected AravodsFile or Subcollection object, got ",
+                            paste0("(", paste0(class(content), collapse = ", "), ")"),
+                            "."))
             }
         },
 
-        #todo collapse 2 parameters in one
         create = function(fileNames, relativePath = "")
         {
-            if(relativePath == "" ||
+            if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
             {
@@ -77,9 +76,7 @@ Collection <- R6::R6Class(
             }
             else
             {
-                if(endsWith(relativePath, "/") && nchar(relativePath) > 0)
-                    relativePath <- substr(relativePath, 1, nchar(relativePath) - 1)
-
+                relativePath <- trimFromEnd(relativePath, "/") 
                 subcollection <- self$get(relativePath)
             }
 
@@ -108,38 +105,33 @@ Collection <- R6::R6Class(
             }
             else 
             {
-                contentClass <- paste(class(fileNames), collapse = ", ")
-                stop(paste("Expected character vector, got",
-                           paste0("(", contentClass, ")"), "."))
+                stop(paste0("Expected character vector, got ",
+                            paste0("(", paste0(class(fileNames), collapse = ", "), ")"),
+                            "."))
             }
         },
 
-        remove = function(content)
+        remove = function(paths)
         {
-            if(is.character(content))
+            if(is.character(paths))
             {
-                sapply(content, function(filePath)
+                sapply(paths, function(filePath)
                 {
-                    if(endsWith(filePath, "/") && nchar(filePath) > 0)
-                        filePath <- substr(filePath, 1, nchar(filePath) - 1)
-
+                    filePath <- trimFromEnd(filePath, "/")
                     file <- self$get(filePath)
 
                     if(is.null(file))
                         stop(paste("File", filePath, "doesn't exist."))
 
                     parent <- file$getParent()
-                    parent$remove(filePath)
+                    parent$remove(file$getName())
                 })
             }
-            else if("ArvadosFile"   %in% class(content) ||
-                    "Subcollection" %in% class(content))
+            else 
             {
-                if(is.null(content$getCollection()) || 
-                   content$getCollection()$uuid != self$uuid)
-                    stop("Subcollection doesn't belong to this collection.")
-
-                content$removeFromCollection()
+                stop(paste0("Expected character vector, got ",
+                            paste0("(", paste0(class(paths), collapse = ", "), ")"),
+                            "."))
             }
         },
 

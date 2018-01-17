@@ -1,6 +1,6 @@
 context("CollectionTree")
 
-test_that("Creates file tree from character array properly", {
+test_that("constructor creates file tree from character array properly", {
 
     collection <- "myCollection"
     characterArray <- c("animal", 
