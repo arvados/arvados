@@ -127,7 +127,7 @@ window.SessionDB = function() {
                     },
                 }).then(function(user) {
                     session.user = user
-                    db.save(user.uuid.slice(0, 5), session)
+                    db.save(user.owner_uuid.slice(0, 5), session)
                     db.trash(key)
                 })
             })

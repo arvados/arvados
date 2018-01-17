@@ -33,6 +33,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
     assert_equal discovery_doc['websocketUrl'], Rails.application.config.websocket_address
     assert_equal discovery_doc['workbenchUrl'], Rails.application.config.workbench_address
+    assert_equal('zzzzz', discovery_doc['uuidPrefix'])
   end
 
   test "discovery document overrides source_version with config" do
