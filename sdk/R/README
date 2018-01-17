@@ -16,7 +16,7 @@ If needed, you may have to install the supporting packages first. On Linux, thes
 
 2. Install the ArvardosR package
 
-    > install.packages('/path/to/ArvadosR_0.0.1.tar.gz', repos = NULL, type="source", dependencies = TRUE)
+    > install.packages('/path/to/ArvadosR_0.0.2.tar.gz', repos = NULL, type="source", dependencies = TRUE)
 
 
 EXAMPLES OF USAGE
