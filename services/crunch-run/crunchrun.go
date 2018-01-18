@@ -150,11 +150,10 @@ func (runner *ContainerRunner) setupSignals() {
 	signal.Notify(runner.SigChan, syscall.SIGQUIT)
 
 	go func(sig chan os.Signal) {
-		s := <-sig
-		if s != nil {
-			runner.CrunchLog.Printf("Caught signal %v", s)
+		for s := range sig {
+			runner.CrunchLog.Printf("caught signal: %v", s)
+			runner.stop()
 		}
-		runner.stop()
 	}(runner.SigChan)
 }
 
@@ -162,25 +161,21 @@ func (runner *ContainerRunner) setupSignals() {
 func (runner *ContainerRunner) stop() {
 	runner.cStateLock.Lock()
 	defer runner.cStateLock.Unlock()
-	if runner.cCancelled {
+	if !runner.cStarted {
 		return
 	}
 	runner.cCancelled = true
-	if runner.cStarted {
-		timeout := time.Duration(10)
-		err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, &(timeout))
-		if err != nil {
-			runner.CrunchLog.Printf("StopContainer failed: %s", err)
-		}
-		// Suppress multiple calls to stop()
-		runner.cStarted = false
+	runner.CrunchLog.Printf("stopping container")
+	timeout := 10 * time.Second
+	err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, &timeout)
+	if err != nil {
+		runner.CrunchLog.Printf("error stopping container: %s", err)
 	}
 }
 
 func (runner *ContainerRunner) stopSignals() {
 	if runner.SigChan != nil {
 		signal.Stop(runner.SigChan)
-		close(runner.SigChan)
 	}
 }
 
