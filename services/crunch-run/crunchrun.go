@@ -930,7 +930,7 @@ func (runner *ContainerRunner) StartContainer() error {
 func (runner *ContainerRunner) WaitFinish() (err error) {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
-	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, "not-running")
+	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, dockercontainer.WaitConditionNotRunning)
 
 	go func() {
 		<-runner.ArvMountExit
