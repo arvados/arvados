@@ -26,7 +26,28 @@ func (scli *slurmCLI) Batch(script io.Reader, args []string) error {
 }
 
 func (scli *slurmCLI) Cancel(name string) error {
-	return scli.run(nil, "scancel", []string{"--name=" + name})
+	for _, args := range [][]string{
+		// If the slurm job hasn't started yet, remove it from
+		// the queue.
+		{"--state=pending"},
+		// If the slurm job has started, send SIGTERM. If we
+		// cancel a running job without a --signal argument,
+		// slurm will send SIGTERM and then (after some
+		// site-configured interval) SIGKILL. This would kill
+		// crunch-run without stopping the container, which we
+		// don't want.
+		{"--batch", "--signal=TERM", "--state=running"},
+		{"--batch", "--signal=TERM", "--state=suspended"},
+	} {
+		err := scli.run(nil, "scancel", append([]string{"--name=" + name}, args...))
+		if err != nil {
+			// scancel exits 0 if no job matches the given
+			// name and state. Any error from scancel here
+			// really indicates something is wrong.
+			return err
+		}
+	}
+	return nil
 }
 
 func (scli *slurmCLI) QueueCommand(args []string) *exec.Cmd {
