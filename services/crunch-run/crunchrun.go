@@ -1139,10 +1139,6 @@ func (runner *ContainerRunner) UploadOutputFile(
 
 // HandleOutput sets the output, unmounts the FUSE mount, and deletes temporary directories
 func (runner *ContainerRunner) CaptureOutput() error {
-	if runner.finalState != "Complete" {
-		return nil
-	}
-
 	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		// Output may have been set directly by the container, so
 		// refresh the container record to check.
@@ -1595,7 +1591,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.WaitFinish()
-	if err == nil {
+	if err == nil && !runner.IsCancelled() {
 		runner.finalState = "Complete"
 	}
 	return
