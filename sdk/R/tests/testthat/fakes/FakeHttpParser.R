@@ -19,11 +19,13 @@ FakeHttpParser <- R6::R6Class(
 
         parseWebDAVResponse = function(response, uri)
         {
+            self$parserCallCount <- self$parserCallCount + 1
             response
         },
 
         extractFileSizeFromWebDAVResponse = function(response, uri)    
         {
+            self$parserCallCount <- self$parserCallCount + 1
             response
         }
     )

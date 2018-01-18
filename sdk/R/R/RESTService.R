@@ -30,14 +30,12 @@ RESTService <- R6::R6Class(
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            print(paste("File deleted:", relativePath))
+            paste("File deleted:", relativePath)
         },
 
         move = function(from, to, uuid)
         {
-            #Todo Do we need this URLencode?
-            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=",
-                                              uuid, "/"))
+            collectionURL <- paste0(private$api$getWebDavHostName(), "c=", uuid, "/")
             fromURL <- paste0(collectionURL, from)
             toURL <- paste0(collectionURL, to)
 
@@ -60,11 +58,14 @@ RESTService <- R6::R6Class(
 
             response <- private$http$PROPFIND(collectionURL, headers)
 
+            if(all(response == ""))
+                stop("Response is empty, reques may be misconfigured")
+
             parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
             parsedResponse[-1]
         },
 
-        getResourceSize = function(uuid, relativePath)
+        getResourceSize = function(relativePath, uuid)
         {
             collectionURL <- URLencode(paste0(private$api$getWebDavHostName(),
                                               "c=", uuid))
@@ -138,7 +139,6 @@ RESTService <- R6::R6Class(
         http       = NULL,
         httpParser = NULL,
 
-
         createNewFile = function(relativePath, uuid, contentType)
         {
             fileURL <- paste0(private$api$getWebDavHostName(), "c=",
@@ -152,7 +152,7 @@ RESTService <- R6::R6Class(
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            print(paste("File created:", relativePath))
+            paste("File created:", relativePath)
         }
     ),
 

@@ -33,7 +33,6 @@ FakeRESTService <- R6::R6Class(
         create = function(files, uuid)
         {
             self$createCallCount <- self$createCallCount + 1
-
             self$returnContent
         },
 

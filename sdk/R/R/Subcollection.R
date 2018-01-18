@@ -127,8 +127,8 @@ Subcollection <- R6::R6Class(
 
             REST <- private$collection$getRESTService()
 
-            fileSizes <- REST$getResourceSize(private$collection$uuid,
-                                              paste0(self$getRelativePath(), "/"))
+            fileSizes <- REST$getResourceSize(paste0(self$getRelativePath(), "/"),
+                                              private$collection$uuid)
             return(sum(fileSizes))
         },
 

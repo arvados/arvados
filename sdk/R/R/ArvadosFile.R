@@ -32,8 +32,8 @@ ArvadosFile <- R6::R6Class(
 
             REST <- private$collection$getRESTService()
 
-            fileSize <- REST$getResourceSize(private$collection$uuid,
-                                             self$getRelativePath())
+            fileSize <- REST$getResourceSize(self$getRelativePath(),
+                                             private$collection$uuid)
 
             fileSize
         },

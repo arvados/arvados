@@ -12,29 +12,40 @@ FakeHttpRequest <- R6::R6Class(
         expectedQueryFilters                    = NULL,
         queryFiltersAreCorrect                  = NULL,
         requestHeaderContainsAuthorizationField = NULL,
+        requestHeaderContainsDestinationField   = NULL,
         JSONEncodedBodyIsProvided               = NULL,
 
         numberOfGETRequests    = NULL,
         numberOfDELETERequests = NULL,
         numberOfPUTRequests    = NULL,
         numberOfPOSTRequests   = NULL,
+        numberOfMOVERequests   = NULL,
 
-        initialize = function(expectedURL = NULL,
-                              serverResponse = NULL,
-                              expectedFilters = NULL)
+        initialize = function(expectedURL      = NULL,
+                              serverResponse   = NULL,
+                              expectedFilters  = NULL)
         {
-            self$content <- serverResponse
+            if(is.null(serverResponse))
+            {
+                self$content <- list()
+                self$content$status_code <- 200
+            }
+            else
+                self$content <- serverResponse
+
             self$expectedURL <- expectedURL
             self$URLIsProperlyConfigured <- FALSE
             self$expectedQueryFilters <- expectedFilters
             self$queryFiltersAreCorrect <- FALSE
             self$requestHeaderContainsAuthorizationField <- FALSE
+            self$requestHeaderContainsDestinationField <- FALSE
             self$JSONEncodedBodyIsProvided <- FALSE
 
             self$numberOfGETRequests <- 0
             self$numberOfDELETERequests <- 0
             self$numberOfPUTRequests <- 0
             self$numberOfPOSTRequests <- 0
+            self$numberOfMOVERequests <- 0
 
             self$serverMaxElementsPerRequest <- 5
         },
@@ -87,11 +98,16 @@ FakeHttpRequest <- R6::R6Class(
 
         PROPFIND = function(url, headers = NULL)
         {
+            private$validateURL(url)
+            private$validateHeaders(headers)
             self$content
         },
 
         MOVE = function(url, headers = NULL)
         {
+            private$validateURL(url)
+            private$validateHeaders(headers)
+            self$numberOfMOVERequests <- self$numberOfMOVERequests + 1
             self$content
         }
     ),
@@ -108,6 +124,9 @@ FakeHttpRequest <- R6::R6Class(
         {
             if(!is.null(headers$Authorization))
                 self$requestHeaderContainsAuthorizationField <- TRUE
+
+            if(!is.null(headers$Destination))
+                self$requestHeaderContainsDestinationField <- TRUE
         },
 
         validateBody = function(body)
