@@ -60,7 +60,7 @@ FakeRESTService <- R6::R6Class(
             self$returnContent
         },
         
-        read = function(uuid, relativePath, contentType = "text", offset = 0, length = 0)
+        read = function(relativePath, uuid, contentType = "text", offset = 0, length = 0)
         {
             self$readCallCount <- self$readCallCount + 1
             self$returnContent

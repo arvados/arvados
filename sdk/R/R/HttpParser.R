@@ -5,8 +5,12 @@ HttpParser <- R6::R6Class(
     "HttrParser",
 
     public = list(
+
+        validContentTypes = NULL,
+
         initialize = function() 
         {
+            self$validContentTypes <- c("text", "raw")
         },
 
         parseJSONResponse = function(serverResponse) 
@@ -16,7 +20,12 @@ HttpParser <- R6::R6Class(
                                              type = "application/json")
         },
 
-        parseWebDAVResponse = function(response, uri)
+        parseResponse = function(serverResponse, outputType)
+        {
+            parsed_response <- httr::content(serverResponse, as = outputType)
+        },
+
+        getFileNamesFromResponse = function(response, uri)
         {
             text <- rawToChar(response$content)
             doc <- XML::xmlParse(text, asText=TRUE)
@@ -27,10 +36,10 @@ HttpParser <- R6::R6Class(
                 })
             )
             result <- result[result != ""]
-            result
+            result[-1]
         },
 
-        extractFileSizeFromWebDAVResponse = function(response, uri)    
+        getFileSizesFromResponse = function(response, uri)    
         {
             text <- rawToChar(response$content)
             doc <- XML::xmlParse(text, asText=TRUE)

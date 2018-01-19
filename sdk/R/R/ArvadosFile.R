@@ -84,9 +84,10 @@ ArvadosFile <- R6::R6Class(
 
             REST <- private$collection$getRESTService()
 
-            REST$read(private$collection$uuid,
-                      self$getRelativePath(),
-                      contentType, offset, length)
+            fileContent <- REST$read(self$getRelativePath(),
+                                     private$collection$uuid,
+                                     contentType, offset, length)
+            fileContent
         },
 
         connection = function(rw)
@@ -117,9 +118,10 @@ ArvadosFile <- R6::R6Class(
 
             REST <- private$collection$getRESTService()
 
-            result <- REST$write(private$collection$uuid,
-                                 self$getRelativePath(),
-                                 content, contentType)
+            writeResult <- REST$write(self$getRelativePath(),
+                                      private$collection$uuid,
+                                      content, contentType)
+            writeResult
         },
 
         move = function(newLocationInCollection)

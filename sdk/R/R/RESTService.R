@@ -52,17 +52,17 @@ RESTService <- R6::R6Class(
 
         getCollectionContent = function(uuid)
         {
-            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(), "c=", uuid))
+            collectionURL <- URLencode(paste0(private$api$getWebDavHostName(),
+                                              "c=", uuid))
 
             headers <- list("Authorization" = paste("OAuth2", private$api$getToken()))
 
             response <- private$http$PROPFIND(collectionURL, headers)
 
             if(all(response == ""))
-                stop("Response is empty, reques may be misconfigured")
+                stop("Response is empty, request may be misconfigured")
 
-            parsedResponse <- private$httpParser$parseWebDAVResponse(response, collectionURL)
-            parsedResponse[-1]
+            private$httpParser$getFileNamesFromResponse(response, collectionURL)
         },
 
         getResourceSize = function(relativePath, uuid)
@@ -75,14 +75,17 @@ RESTService <- R6::R6Class(
             headers <- list("Authorization" = paste("OAuth2",
                                                    private$api$getToken()))
 
-            propfindResponse <- private$http$PROPFIND(subcollectionURL, headers)
+            response <- private$http$PROPFIND(subcollectionURL, headers)
 
-            sizes <- private$httpParser$extractFileSizeFromWebDAVResponse(propfindResponse,
-                                                                          collectionURL)
+            if(all(response == ""))
+                stop("Response is empty, request may be misconfigured")
+
+            sizes <- private$httpParser$getFileSizesFromResponse(response,
+                                                             collectionURL)
             as.numeric(sizes)
         },
 
-        read = function(uuid, relativePath, contentType = "raw", offset = 0, length = 0)
+        read = function(relativePath, uuid, contentType = "raw", offset = 0, length = 0)
         {
             fileURL <- paste0(private$api$getWebDavHostName(),
                              "c=", uuid, "/", relativePath);
@@ -102,7 +105,7 @@ RESTService <- R6::R6Class(
                                 Range = range)
             }
 
-            if(!(contentType %in% private$http$validContentTypes))
+            if(!(contentType %in% private$httpParser$validContentTypes))
                 stop("Invalid contentType. Please use text or raw.")
 
             serverResponse <- private$http$GET(fileURL, headers)
@@ -110,12 +113,10 @@ RESTService <- R6::R6Class(
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            #todo remove all references to httr from here 
-            parsedServerResponse <- httr::content(serverResponse, contentType)
-            parsedServerResponse
+            private$httpParser$parseResponse(serverResponse, contentType)
         },
 
-        write = function(uuid, relativePath, content, contentType)
+        write = function(relativePath, uuid, content, contentType)
         {
             fileURL <- paste0(private$api$getWebDavHostName(),
                              "c=", uuid, "/", relativePath);
@@ -128,8 +129,7 @@ RESTService <- R6::R6Class(
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            parsedServerResponse <- httr::content(serverResponse, "text")
-            parsedServerResponse
+            private$httpParser$parseResponse(serverResponse, "text")
         }
     ),
 

@@ -1,32 +1,48 @@
 FakeHttpParser <- R6::R6Class(
 
-    "HttrParser",
+    "FakeHttrParser",
 
     public = list(
 
+        validContentTypes = NULL,
         parserCallCount = NULL,
 
         initialize = function() 
         {
             self$parserCallCount <- 0
+            self$validContentTypes <- c("text", "raw")
         },
 
         parseJSONResponse = function(serverResponse) 
         {
             self$parserCallCount <- self$parserCallCount + 1
+
+            if(!is.null(serverResponse$content))
+                return(serverResponse$content)
+
             serverResponse
         },
 
-        parseWebDAVResponse = function(response, uri)
+        parseResponse = function(serverResponse, outputType)
         {
             self$parserCallCount <- self$parserCallCount + 1
-            response
+
+            if(!is.null(serverResponse$content))
+                return(serverResponse$content)
+
+            serverResponse
         },
 
-        extractFileSizeFromWebDAVResponse = function(response, uri)    
+        getFileNamesFromResponse = function(serverResponse, uri)
         {
             self$parserCallCount <- self$parserCallCount + 1
-            response
+            serverResponse
+        },
+
+        getFileSizesFromResponse = function(serverResponse, uri)    
+        {
+            self$parserCallCount <- self$parserCallCount + 1
+            serverResponse
         }
     )
 )

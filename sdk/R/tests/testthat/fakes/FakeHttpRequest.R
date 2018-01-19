@@ -13,7 +13,10 @@ FakeHttpRequest <- R6::R6Class(
         queryFiltersAreCorrect                  = NULL,
         requestHeaderContainsAuthorizationField = NULL,
         requestHeaderContainsDestinationField   = NULL,
+        requestHeaderContainsRangeField         = NULL,
+        requestHeaderContainsContentTypeField   = NULL,
         JSONEncodedBodyIsProvided               = NULL,
+        requestBodyIsProvided                   = NULL,
 
         numberOfGETRequests    = NULL,
         numberOfDELETERequests = NULL,
@@ -39,7 +42,10 @@ FakeHttpRequest <- R6::R6Class(
             self$queryFiltersAreCorrect <- FALSE
             self$requestHeaderContainsAuthorizationField <- FALSE
             self$requestHeaderContainsDestinationField <- FALSE
+            self$requestHeaderContainsRangeField <- FALSE
+            self$requestHeaderContainsContentTypeField <- FALSE
             self$JSONEncodedBodyIsProvided <- FALSE
+            self$requestBodyIsProvided <- FALSE
 
             self$numberOfGETRequests <- 0
             self$numberOfDELETERequests <- 0
@@ -127,12 +133,26 @@ FakeHttpRequest <- R6::R6Class(
 
             if(!is.null(headers$Destination))
                 self$requestHeaderContainsDestinationField <- TRUE
+
+            if(!is.null(headers$Range))
+                self$requestHeaderContainsRangeField <- TRUE
+
+            if(!is.null(headers[["Content-Type"]]))
+                self$requestHeaderContainsContentTypeField <- TRUE
         },
 
         validateBody = function(body)
         {
             if(!is.null(body) && class(body) == "json")           
                 self$JSONEncodedBodyIsProvided <- TRUE
+
+            if(!is.null(body))           
+            {
+                self$requestBodyIsProvided <- TRUE
+
+                if(class(body) == "json")           
+                    self$JSONEncodedBodyIsProvided <- TRUE
+            }
         },
 
         validateFilters = function(filters)
