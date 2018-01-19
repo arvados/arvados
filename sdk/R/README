@@ -171,20 +171,22 @@ subcollection$remove("folderInsideSubcollection/")
 
 #Move file or folder inside collection
 
+#Directley from collection
+
+collection$move("folder/file.cpp", "file.cpp")
+
+#Or from file
+
 file <- collection$get("location/to/my/file.cpp")
+file$move("newDestination/file.cpp")
 
-file$move("destination/file.cpp")
-
-#Or subcollections
+#Or from subcollection
 
 subcollection <- collection$get("location/to/folder")
+subcollection$move("newDestination/folder")
 
-subcollection$move("destination/folder")
-
-#Make sure to include folder name in destination
-#For example
-#file$move("destination/") will not work
-
+#Make sure to include file name in new destination
+#In second example file$move("newDestination/") will not work
 
 --------------------------------------------------------------------------------------------------------------------------------
 WORKING WITH ARVADOS PROJECTS
