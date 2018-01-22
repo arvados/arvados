@@ -75,7 +75,7 @@ type ThinDockerClient interface {
 	ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig,
 		networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error)
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
-	ContainerStop(ctx context.Context, container string, timeout *time.Duration) error
+	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
@@ -165,11 +165,10 @@ func (runner *ContainerRunner) stop() {
 		return
 	}
 	runner.cCancelled = true
-	runner.CrunchLog.Printf("stopping container")
-	timeout := 10 * time.Second
-	err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, &timeout)
+	runner.CrunchLog.Printf("removing container")
+	err := runner.Docker.ContainerRemove(context.TODO(), runner.ContainerID, dockertypes.ContainerRemoveOptions{Force: true})
 	if err != nil {
-		runner.CrunchLog.Printf("error stopping container: %s", err)
+		runner.CrunchLog.Printf("error removing container: %s", err)
 	}
 }
 

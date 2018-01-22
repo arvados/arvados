@@ -152,7 +152,7 @@ func (t *TestDockerClient) ContainerStart(ctx context.Context, container string,
 	}
 }
 
-func (t *TestDockerClient) ContainerStop(ctx context.Context, container string, timeout *time.Duration) error {
+func (t *TestDockerClient) ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error {
 	t.stop <- true
 	return nil
 }
