@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.SessionDB = function() {
+window.SessionDB = function(rhosts) {
     var db = this
     Object.assign(db, {
+        remoteHosts: rhosts || [],
         discoveryCache: {},
         loadFromLocalStorage: function() {
             try {
@@ -81,7 +82,10 @@ window.SessionDB = function() {
             // also call checkForNewToken() on (at least) its first
             // render. Otherwise, the login procedure can't be
             // completed.
-            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
+            var remoteAPI = new URL(baseURL)
+            db.saltedToken(remoteAPI.hostname.split('.')[0]).then(function(token) {
+                document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL)) + '&api_token='+encodeURIComponent(token)
+            })
             return false
         },
         logout: function(k) {
@@ -91,6 +95,28 @@ window.SessionDB = function() {
             var sessions = db.loadAll()
             delete sessions[k].token
             db.save(k, sessions[k])
+        },
+        saltedToken: function(uuid_prefix) {
+            // Takes a cluster UUID prefix and returns a salted token to allow
+            // log into said cluster using federated identity.
+            var session = db.loadLocal()
+            var st = m.stream()
+            return db.request(session, '/arvados/v1/api_client_authorizations', {
+                data: {
+                    filters: JSON.stringify([['api_token', '=', session.token]]),
+                }
+            }).then(function(resp) {
+                if (resp.items.length == 1) {
+                    var token_uuid = resp.items[0].uuid
+                    if (token_uuid.length !== '') {
+                        var shaObj = new jsSHA("SHA-1", "TEXT")
+                        shaObj.setHMACKey(session.token, "TEXT")
+                        shaObj.update(uuid_prefix)
+                        var hmac = shaObj.getHMAC("HEX")
+                        return 'v2/' + token_uuid + '/' + hmac
+                    } else { return null }
+                }
+            }).catch(function(err) { return null })
         },
         checkForNewToken: function() {
             // If there's a token and baseURL in the location bar (i.e.,
@@ -127,7 +153,7 @@ window.SessionDB = function() {
                     },
                 }).then(function(user) {
                     session.user = user
-                    db.save(user.uuid.slice(0, 5), session)
+                    db.save(user.owner_uuid.slice(0, 5), session)
                     db.trash(key)
                 })
             })

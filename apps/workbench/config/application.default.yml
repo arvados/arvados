@@ -314,3 +314,8 @@ common:
   # Link to use for Arvados Workflow Composer app, or false if not available.
   #
   composer_url: false
+
+  # Multi site search federation feature:
+  # * remote_hosts: List of API servers that allow logins from accounts on this
+  #   workbench's cluster.
+  remote_hosts: []

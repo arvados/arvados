@@ -90,7 +90,7 @@ window.SearchResultsTable = {
 
 window.Search = {
     oninit: function(vnode) {
-        vnode.state.sessionDB = new SessionDB()
+        vnode.state.sessionDB = new SessionDB(vnode.attrs.remoteHosts)
         vnode.state.searchEntered = m.stream()
         vnode.state.searchActive = m.stream()
         // When searchActive changes (e.g., when restoring state
@@ -154,7 +154,8 @@ window.Search = {
         })
     },
     view: function(vnode) {
-        var sessions = vnode.state.sessionDB.loadAll()
+        // FIXME: The line below seems superfluous
+        // var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchActive(vnode.state.searchEntered())
