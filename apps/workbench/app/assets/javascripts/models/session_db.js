@@ -82,9 +82,20 @@ window.SessionDB = function(rhosts) {
             // also call checkForNewToken() on (at least) its first
             // render. Otherwise, the login procedure can't be
             // completed.
-            var remoteAPI = new URL(baseURL)
-            db.saltedToken(remoteAPI.hostname.split('.')[0]).then(function(token) {
-                document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL)) + '&api_token='+encodeURIComponent(token)
+            var session = db.loadLocal()
+            var uuidPrefix = session.user.owner_uuid.slice(0, 5)
+            var apiHostname = new URL(session.baseURL).hostname
+            m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
+                if (uuidPrefix in dd.remoteHosts ||
+                    (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
+                    // Federated identity login via salted token
+                    db.saltedToken(dd.uuidPrefix).then(function(token) {
+                        document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL)) + '&api_token='+encodeURIComponent(token)
+                    })
+                } else {
+                    // Classic login
+                    document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
+                }
             })
             return false
         },
@@ -100,7 +111,6 @@ window.SessionDB = function(rhosts) {
             // Takes a cluster UUID prefix and returns a salted token to allow
             // log into said cluster using federated identity.
             var session = db.loadLocal()
-            var st = m.stream()
             return db.request(session, '/arvados/v1/api_client_authorizations', {
                 data: {
                     filters: JSON.stringify([['api_token', '=', session.token]]),
