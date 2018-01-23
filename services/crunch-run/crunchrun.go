@@ -582,7 +582,6 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 				}
 			}
 
-			runner.loggingDone <- true
 			close(runner.loggingDone)
 			return
 		}
