@@ -5,15 +5,13 @@ context("Collection")
 test_that(paste("constructor creates file tree from text content",
                 "retreived form REST service"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -26,15 +24,12 @@ test_that(paste("constructor creates file tree from text content",
 test_that(paste("add raises exception if passed argumet is not",
                 "ArvadosFile or Subcollection"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -47,15 +42,12 @@ test_that(paste("add raises exception if passed argumet is not",
 
 test_that("add raises exception if relative path is not valid", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -69,15 +61,12 @@ test_that("add raises exception if relative path is not valid", {
 test_that(paste("add adds ArvadosFile or Subcollection",
                 "to local tree structure and remote REST service"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -93,15 +82,12 @@ test_that(paste("add adds ArvadosFile or Subcollection",
 
 test_that("create raises exception if passed argumet is not character vector", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -112,15 +98,12 @@ test_that("create raises exception if passed argumet is not character vector", {
 
 test_that("create raises exception if relative path is not valid", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -134,15 +117,12 @@ test_that("create raises exception if relative path is not valid", {
 test_that(paste("create adds files specified by fileNames",
                 "to local tree structure and remote REST service"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -161,15 +141,12 @@ test_that(paste("create adds files specified by fileNames",
 
 test_that("remove raises exception if passed argumet is not character vector", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -181,17 +158,14 @@ test_that("remove raises exception if passed argumet is not character vector", {
 test_that(paste("remove removes files specified by paths",
                 "from local tree structure and from remote REST service"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/cat",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -210,15 +184,12 @@ test_that(paste("remove removes files specified by paths",
 test_that(paste("move moves content to a new location inside file tree",
                 "and on REST service"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/dog",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -234,15 +205,12 @@ test_that(paste("move moves content to a new location inside file tree",
 
 test_that("move raises exception if new location is not valid", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -253,15 +221,12 @@ test_that("move raises exception if new location is not valid", {
 
 test_that("getFileListing returns collection content received from REST service", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
@@ -276,15 +241,12 @@ test_that("getFileListing returns collection content received from REST service"
 
 test_that("get returns arvados file or subcollection from internal tree structure", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 

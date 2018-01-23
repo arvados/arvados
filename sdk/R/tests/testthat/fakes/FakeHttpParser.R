@@ -36,12 +36,20 @@ FakeHttpParser <- R6::R6Class(
         getFileNamesFromResponse = function(serverResponse, uri)
         {
             self$parserCallCount <- self$parserCallCount + 1
+
+            if(!is.null(serverResponse$content))
+                return(serverResponse$content)
+
             serverResponse
         },
 
         getFileSizesFromResponse = function(serverResponse, uri)    
         {
             self$parserCallCount <- self$parserCallCount + 1
+
+            if(!is.null(serverResponse$content))
+                return(serverResponse$content)
+
             serverResponse
         }
     )

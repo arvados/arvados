@@ -103,12 +103,10 @@ test_that(paste("add raises exception if passed argument is",
 test_that(paste("add post content to a REST service", 
                 "if subcollection belongs to a collection"), {
     
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
 
     collection <- Collection$new(api, "myUUID")
@@ -156,13 +154,10 @@ test_that("remove raises exception if passed argument is not character vector", 
 test_that(paste("remove removes content from REST service", 
                 "if subcollection belongs to a collection"), {
     
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish", "animal/dog")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     animal <- collection$get("animal")
@@ -265,17 +260,14 @@ test_that(paste("move raises exception if subcollection",
 
 test_that("move raises exception if new location contains content with the same name", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "fish")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -288,17 +280,14 @@ test_that("move raises exception if new location contains content with the same 
 test_that(paste("move raises exception if newLocationInCollection",
                 "parameter is invalid"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
 
     collection <- Collection$new(api, "myUUID")
@@ -310,17 +299,14 @@ test_that(paste("move raises exception if newLocationInCollection",
 
 test_that("move moves subcollection inside collection tree", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -344,14 +330,11 @@ test_that(paste("getSizeInBytes returns zero if subcollection",
 test_that(paste("getSizeInBytes delegates size calculation",
                 "to REST service class"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish")
     returnSize <- 100
-
     fakeREST <- FakeRESTService$new(collectionContent, returnSize)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     animal <- collection$get("animal")

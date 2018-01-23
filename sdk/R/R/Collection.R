@@ -1,7 +1,5 @@
 source("./R/Subcollection.R")
 source("./R/ArvadosFile.R")
-source("./R/HttpRequest.R")
-source("./R/HttpParser.R")
 source("./R/RESTService.R")
 source("./R/util.R")
 
@@ -23,12 +21,9 @@ Collection <- R6::R6Class(
         initialize = function(api, uuid)
         {
             self$api <- api
-            private$http <- api$getHttpClient()
-            private$httpParser <- api$getHttpParser()
             private$REST <- api$getRESTService()
 
             self$uuid <- uuid
-            collection <- self$api$getCollection(uuid)
 
             private$fileContent <- private$REST$getCollectionContent(uuid)
             private$tree <- CollectionTree$new(private$fileContent, self)
@@ -76,7 +71,7 @@ Collection <- R6::R6Class(
             }
             else
             {
-                relativePath <- trimFromEnd(relativePath, "/") 
+                relativePath  <- trimFromEnd(relativePath, "/") 
                 subcollection <- self$get(relativePath)
             }
 
@@ -160,11 +155,8 @@ Collection <- R6::R6Class(
 
     private = list(
 
-        http       = NULL,
-        httpParser = NULL,
-        REST       = NULL,
-        tree       = NULL,
-
+        REST        = NULL,
+        tree        = NULL,
         fileContent = NULL,
 
         generateTree = function(content)

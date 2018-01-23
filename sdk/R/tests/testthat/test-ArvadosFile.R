@@ -36,14 +36,11 @@ test_that(paste("getSizeInBytes returns zero if arvadosFile",
 test_that(paste("getSizeInBytes delegates size calculation",
                 "to REST service class"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish")
     returnSize <- 100
-
     fakeREST <- FakeRESTService$new(collectionContent, returnSize)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -75,13 +72,11 @@ test_that("read raises exception if file doesn't belong to a collection", {
 
 test_that("read raises exception offset or length is negative number", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal", "animal/fish")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -96,14 +91,11 @@ test_that("read raises exception offset or length is negative number", {
 
 test_that("read delegates reading operation to REST service class", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish")
     readContent <- "my file"
-
     fakeREST <- FakeRESTService$new(collectionContent, readContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -117,14 +109,11 @@ test_that("read delegates reading operation to REST service class", {
 test_that(paste("connect returns textConnection opened",
                 "in read mode when 'r' is passed as argument"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
-
     collectionContent <- c("animal", "animal/fish")
     readContent <- "file content"
-
     fakeREST <- FakeRESTService$new(collectionContent, readContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -137,13 +126,11 @@ test_that(paste("connect returns textConnection opened",
 test_that(paste("connect returns textConnection opened",
                 "in write mode when 'w' is passed as argument"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal", "animal/fish")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -161,13 +148,11 @@ test_that(paste("connect returns textConnection opened",
 
 test_that("flush sends data stored in a connection to a REST server", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal", "animal/fish")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -191,13 +176,11 @@ test_that("write raises exception if file doesn't belong to a collection", {
 
 test_that("write delegates writing operation to REST service class", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal", "animal/fish")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
@@ -219,17 +202,15 @@ test_that(paste("move raises exception if arvados file",
 test_that(paste("move raises exception if newLocationInCollection",
                 "parameter is invalid"), {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
 
     collection <- Collection$new(api, "myUUID")
@@ -241,17 +222,15 @@ test_that(paste("move raises exception if newLocationInCollection",
 
 test_that("move raises exception if new location contains content with the same name", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "dog")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     dog <- collection$get("animal/dog")
@@ -263,17 +242,15 @@ test_that("move raises exception if new location contains content with the same 
 
 test_that("move moves arvados file inside collection tree", {
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setHttpClient(FakeHttpRequest$new())
-    api$setHttpParser(FakeHttpParser$new())
 
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
-
     fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
     dog <- collection$get("animal/dog")
