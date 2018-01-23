@@ -10,6 +10,8 @@ class ContainerRequest < ArvadosModel
   include CommonApiTemplate
   include WhitelistUpdate
 
+  belongs_to :container, foreign_key: :container_uuid, primary_key: :uuid
+
   serialize :properties, Hash
   serialize :environment, Hash
   serialize :mounts, Hash
