@@ -909,7 +909,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 func (s *TestSuite) TestStopOnSignal(c *C) {
 	s.testStopContainer(c, func(cr *ContainerRunner) {
 		go func() {
-			for !cr.cStarted {
+			for cr.ContainerID == "" {
 				time.Sleep(time.Millisecond)
 			}
 			cr.SigChan <- syscall.SIGINT

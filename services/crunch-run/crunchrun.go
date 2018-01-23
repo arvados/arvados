@@ -133,7 +133,6 @@ type ContainerRunner struct {
 	setCgroupParent string
 
 	cStateLock sync.Mutex
-	cStarted   bool // StartContainer() succeeded
 	cCancelled bool // StopContainer() invoked
 
 	enableNetwork string // one of "default" or "always"
@@ -161,7 +160,7 @@ func (runner *ContainerRunner) setupSignals() {
 func (runner *ContainerRunner) stop() {
 	runner.cStateLock.Lock()
 	defer runner.cStateLock.Unlock()
-	if !runner.cStarted {
+	if runner.ContainerID == "" {
 		return
 	}
 	runner.cCancelled = true
@@ -920,46 +919,38 @@ func (runner *ContainerRunner) StartContainer() error {
 		}
 		return fmt.Errorf("could not start container: %v%s", err, advice)
 	}
-	runner.cStarted = true
 	return nil
 }
 
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
-func (runner *ContainerRunner) WaitFinish() (err error) {
+func (runner *ContainerRunner) WaitFinish() error {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
 	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, dockercontainer.WaitConditionNotRunning)
+	arvMountExit := runner.ArvMountExit
+	for {
+		select {
+		case waitBody := <-waitOk:
+			runner.CrunchLog.Printf("Container exited with code: %v", waitBody.StatusCode)
+			code := int(waitBody.StatusCode)
+			runner.ExitCode = &code
 
-	go func() {
-		<-runner.ArvMountExit
-		if runner.cStarted {
+			// wait for stdout/stderr to complete
+			<-runner.loggingDone
+			return nil
+
+		case err := <-waitErr:
+			return fmt.Errorf("container wait: %v", err)
+
+		case <-arvMountExit:
 			runner.CrunchLog.Printf("arv-mount exited while container is still running.  Stopping container.")
 			runner.stop()
+			// arvMountExit will always be ready now that
+			// it's closed, but that doesn't interest us.
+			arvMountExit = nil
 		}
-	}()
-
-	var waitBody dockercontainer.ContainerWaitOKBody
-	select {
-	case waitBody = <-waitOk:
-	case err = <-waitErr:
 	}
-
-	// Container isn't running any more
-	runner.cStarted = false
-
-	if err != nil {
-		return fmt.Errorf("container wait: %v", err)
-	}
-
-	runner.CrunchLog.Printf("Container exited with code: %v", waitBody.StatusCode)
-	code := int(waitBody.StatusCode)
-	runner.ExitCode = &code
-
-	// wait for stdout/stderr to complete
-	<-runner.loggingDone
-
-	return nil
 }
 
 var ErrNotInOutputDir = fmt.Errorf("Must point to path within the output directory")
