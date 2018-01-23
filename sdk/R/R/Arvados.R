@@ -158,9 +158,9 @@ Arvados <- R6::R6Class(
 
     private = list(
 
-        token          = NULL,
-        host           = NULL,
-        REST           = NULL
+        token = NULL,
+        host  = NULL,
+        REST  = NULL
     ),
 
     cloneable = FALSE

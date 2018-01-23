@@ -124,33 +124,36 @@ ArvadosFile <- R6::R6Class(
             writeResult
         },
 
-        move = function(newLocationInCollection)
+        move = function(newLocation)
         {
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection")
 
-            newLocationInCollection <- trimFromEnd(newLocationInCollection, "/")
-            newParentLocation <- trimFromEnd(newLocationInCollection, private$name)
 
-            newParent <- private$collection$get(newParentLocation)
+            newLocation <- trimFromEnd(newLocation, "/")
+            nameAndPath <- splitToPathAndName(newLocation)
+
+            newParent <- private$collection$get(nameAndPath$path)
 
             if(is.null(newParent))
             {
                 stop("Unable to get destination subcollection")
             }
 
-            childWithSameName <- newParent$get(private$name)
+            childWithSameName <- newParent$get(nameAndPath$name)
 
             if(!is.null(childWithSameName))
                 stop("Destination already contains content with same name.")
 
             REST <- private$collection$getRESTService()
             REST$move(self$getRelativePath(),
-                      paste0(newParent$getRelativePath(), "/", self$getName()),
+                      paste0(newParent$getRelativePath(), "/", nameAndPath$name),
                       private$collection$uuid)
 
             private$dettachFromCurrentParent()
             private$attachToNewParent(newParent)
+
+            private$name <- nameAndPath$name
 
             "Content moved successfully."
         }
