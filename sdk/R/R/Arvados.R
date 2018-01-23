@@ -79,7 +79,6 @@ Arvados <- R6::R6Class(
         updateCollection = function(uuid, newContent)
         {
             body <- list(list())
-            #test if this is needed
             names(body) <- c("collection")
             body$collection <- newContent
 

@@ -64,7 +64,6 @@ HttpRequest <- R6::R6Class(
             h <- curl::new_handle()
             curl::handle_setopt(h, customrequest = "MOVE")
             curl::handle_setheaders(h, .list = headers)
-            print(url)
 
             propfindResponse <- curl::curl_fetch_memory(url, h)
         }
@@ -76,7 +75,7 @@ HttpRequest <- R6::R6Class(
         {
             finalQuery <- NULL
 
-            if(!is.null(filters))
+        if(!is.null(filters))
             {
                 filters <- sapply(filters, function(filter)
                 {

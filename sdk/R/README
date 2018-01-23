@@ -43,6 +43,10 @@ collectionList <- arv$listCollections(list(list("name", "like", "Test%")), limit
 collectionList$items_available # count of total number of items (may be more than returned due to paging)
 collectionList$items # items which match the filter criteria
 
+#Next example will list all collections even when the number of items is greater than maximum API limit
+
+collectionList <- arv$listAllCollections(list(list("name", "like", "Test%")))
+
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Delete a collection:
@@ -202,6 +206,10 @@ arv$getProject("uuid")
 
 projects <- arv$listProjects(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc"))) # list subprojects of a project
 arv$listProjects(list(list("name","like","Example%"))) # list projects which have names beginning with Example
+
+#Next example will list all projects even when the number of items is greater than maximum API limit
+
+collectionList <- arv$listAllProjects(list(list("name","like","Example%")))
 
 --------------------------------------------------------------------------------------------------------------------------------
 

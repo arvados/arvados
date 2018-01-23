@@ -19,11 +19,15 @@ FakeRESTService <- R6::R6Class(
         readCallCount                 = NULL,
         writeCallCount                = NULL,
         writeBuffer                   = NULL,
+        filtersAreConfiguredCorrectly = NULL,
+        bodyIsConfiguredCorrectly     = NULL,
+        expectedFilterContent         = NULL,
 
         collectionContent = NULL,
-        returnContent = NULL,
+        returnContent     = NULL,
 
-        initialize = function(collectionContent = NULL, returnContent = NULL)
+        initialize = function(collectionContent = NULL, returnContent = NULL, 
+                              expectedFilterContent = NULL)
         {
             self$getResourceCallCount    <- 0
             self$createResourceCallCount <- 0
@@ -39,9 +43,12 @@ FakeRESTService <- R6::R6Class(
             self$getResourceSizeCallCount      <- 0
             self$readCallCount                 <- 0
             self$writeCallCount                <- 0
+            self$filtersAreConfiguredCorrectly <- FALSE
+            self$bodyIsConfiguredCorrectly     <- FALSE
 
-            self$collectionContent <- collectionContent
-            self$returnContent <- returnContent
+            self$collectionContent     <- collectionContent
+            self$returnContent         <- returnContent
+            self$expectedFilterContent <- expectedFilterContent
         },
 
         getWebDavHostName = function()
@@ -57,12 +64,22 @@ FakeRESTService <- R6::R6Class(
         listResources = function(resource, filters = NULL, limit = 100, offset = 0)
         {
             self$listResourcesCallCount <- self$listResourcesCallCount + 1
+
+            if(!is.null(self$expectedFilterContent) && !is.null(filters))
+               if(all.equal(filters, self$expectedFilterContent))
+                    self$filtersAreConfiguredCorrectly <- TRUE
+
             self$returnContent
         },
 
         fetchAllItems = function(resourceURL, filters)
         {
             self$fetchAllItemsCallCount <- self$fetchAllItemsCallCount + 1
+
+            if(!is.null(self$expectedFilterContent) && !is.null(filters))
+               if(all.equal(filters, self$expectedFilterContent))
+                    self$filtersAreConfiguredCorrectly <- TRUE
+
             self$returnContent
         },
 
@@ -75,12 +92,22 @@ FakeRESTService <- R6::R6Class(
         updateResource = function(resource, uuid, newContent)
         {
             self$updateResourceCallCount <- self$updateResourceCallCount + 1
+
+            if(!is.null(self$returnContent) && !is.null(newContent))
+               if(all.equal(newContent, self$returnContent))
+                    self$bodyIsConfiguredCorrectly <- TRUE
+
             self$returnContent
         },
 
         createResource = function(resource, content)
         {
             self$createResourceCallCount <- self$createResourceCallCount + 1
+
+            if(!is.null(self$returnContent) && !is.null(content))
+               if(all.equal(content, self$returnContent))
+                    self$bodyIsConfiguredCorrectly <- TRUE
+
             self$returnContent
         },
 
