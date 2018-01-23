@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package arvados
 
 import (
@@ -48,6 +52,16 @@ type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
 	SystemNodes     map[string]SystemNode
+	InstanceTypes   []InstanceType
+}
+
+type InstanceType struct {
+	Name         string
+	ProviderType string
+	VCPUs        int
+	RAM          int64
+	Scratch      int64
+	Price        float64
 }
 
 // GetThisSystemNode returns a SystemNode for the node we're running

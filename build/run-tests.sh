@@ -77,6 +77,7 @@ lib/crunchstat
 services/api
 services/arv-git-httpd
 services/crunchstat
+services/dispatchcloud
 services/dockercleaner
 services/fuse
 services/health
@@ -869,6 +870,7 @@ gostuff=(
     sdk/go/stats
     services/arv-git-httpd
     services/crunchstat
+    services/dispatchcloud
     services/health
     services/keep-web
     services/keepstore
