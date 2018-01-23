@@ -94,10 +94,8 @@ HttpRequest <- R6::R6Class(
         {
             if(!is.null(filters))
             {
-                filters <- RListToPythonList(filters, ",+")
-
+                filters <- RListToPythonList(filters, ",")
                 encodedQuery <- URLencode(filters, reserved = T, repeated = T)
-                encodedQuery <- stringr::str_replace_all(encodedQuery, "%2B", "+")
 
                 return(paste0("filters=", encodedQuery))
             }
