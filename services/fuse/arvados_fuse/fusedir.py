@@ -1041,29 +1041,25 @@ class SharedDirectory(Directory):
                 all_projects = arvados.util.list_all(
                     self.api.groups().list, self.num_retries,
                     filters=[['group_class','=','project']],
-                    select=["uuid", "owner_uuid", "name"])
+                    select=["uuid", "owner_uuid"])
                 objects = {}
                 for ob in all_projects:
                     objects[ob['uuid']] = ob
 
                 roots = []
                 root_owners = set()
+                current_uuid = self.current_user['uuid']
                 for ob in all_projects:
-                    if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in objects:
-                        roots.append(ob)
+                    if ob['owner_uuid'] != current_uuid and ob['owner_uuid'] not in objects:
+                        roots.append(ob['uuid'])
                         root_owners.add(ob['owner_uuid'])
 
                 lusers = arvados.util.list_all(
                     self.api.users().list, self.num_retries,
-                    filters=[['uuid','in', list(root_owners)]],
-                    select=["uuid", "first_name", "last_name"])
+                    filters=[['uuid','in', list(root_owners)]])
                 lgroups = arvados.util.list_all(
                     self.api.groups().list, self.num_retries,
-                    filters=[['uuid','in', list(root_owners)]],
-                    select=["uuid", "name"])
-
-                users = {}
-                groups = {}
+                    filters=[['uuid','in', list(root_owners)+roots]])
 
                 for l in lusers:
                     objects[l["uuid"]] = l
@@ -1081,10 +1077,11 @@ class SharedDirectory(Directory):
                         elif "first_name" in obr:
                             contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
 
-
                 for r in roots:
-                    if r['owner_uuid'] not in objects:
-                        contents[r['name']] = r
+                    if r in objects:
+                        obr = objects[r]
+                        if obr['owner_uuid'] not in objects:
+                            contents[obr["name"]] = obr
 
             # end with llfuse.lock_released, re-acquire lock
 
