@@ -6,7 +6,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -33,6 +32,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
@@ -75,58 +75,11 @@ type ThinDockerClient interface {
 	ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig,
 		networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error)
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
-	ContainerStop(ctx context.Context, container string, timeout *time.Duration) error
+	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
-}
-
-// ThinDockerClientProxy is a proxy implementation of ThinDockerClient
-// that executes the docker requests on dockerclient.Client
-type ThinDockerClientProxy struct {
-	Docker *dockerclient.Client
-}
-
-// ContainerAttach invokes dockerclient.Client.ContainerAttach
-func (proxy ThinDockerClientProxy) ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error) {
-	return proxy.Docker.ContainerAttach(ctx, container, options)
-}
-
-// ContainerCreate invokes dockerclient.Client.ContainerCreate
-func (proxy ThinDockerClientProxy) ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig,
-	networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error) {
-	return proxy.Docker.ContainerCreate(ctx, config, hostConfig, networkingConfig, containerName)
-}
-
-// ContainerStart invokes dockerclient.Client.ContainerStart
-func (proxy ThinDockerClientProxy) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
-	return proxy.Docker.ContainerStart(ctx, container, options)
-}
-
-// ContainerStop invokes dockerclient.Client.ContainerStop
-func (proxy ThinDockerClientProxy) ContainerStop(ctx context.Context, container string, timeout *time.Duration) error {
-	return proxy.Docker.ContainerStop(ctx, container, timeout)
-}
-
-// ContainerWait invokes dockerclient.Client.ContainerWait
-func (proxy ThinDockerClientProxy) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
-	return proxy.Docker.ContainerWait(ctx, container, condition)
-}
-
-// ImageInspectWithRaw invokes dockerclient.Client.ImageInspectWithRaw
-func (proxy ThinDockerClientProxy) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
-	return proxy.Docker.ImageInspectWithRaw(ctx, image)
-}
-
-// ImageLoad invokes dockerclient.Client.ImageLoad
-func (proxy ThinDockerClientProxy) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
-	return proxy.Docker.ImageLoad(ctx, input, quiet)
-}
-
-// ImageRemove invokes dockerclient.Client.ImageRemove
-func (proxy ThinDockerClientProxy) ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error) {
-	return proxy.Docker.ImageRemove(ctx, image, options)
 }
 
 // ContainerRunner is the main stateful struct used for a single execution of a
@@ -180,7 +133,6 @@ type ContainerRunner struct {
 	setCgroupParent string
 
 	cStateLock sync.Mutex
-	cStarted   bool // StartContainer() succeeded
 	cCancelled bool // StopContainer() invoked
 
 	enableNetwork string // one of "default" or "always"
@@ -197,11 +149,10 @@ func (runner *ContainerRunner) setupSignals() {
 	signal.Notify(runner.SigChan, syscall.SIGQUIT)
 
 	go func(sig chan os.Signal) {
-		s := <-sig
-		if s != nil {
-			runner.CrunchLog.Printf("Caught signal %v", s)
+		for s := range sig {
+			runner.CrunchLog.Printf("caught signal: %v", s)
+			runner.stop()
 		}
-		runner.stop()
 	}(runner.SigChan)
 }
 
@@ -209,25 +160,20 @@ func (runner *ContainerRunner) setupSignals() {
 func (runner *ContainerRunner) stop() {
 	runner.cStateLock.Lock()
 	defer runner.cStateLock.Unlock()
-	if runner.cCancelled {
+	if runner.ContainerID == "" {
 		return
 	}
 	runner.cCancelled = true
-	if runner.cStarted {
-		timeout := time.Duration(10)
-		err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, &(timeout))
-		if err != nil {
-			runner.CrunchLog.Printf("StopContainer failed: %s", err)
-		}
-		// Suppress multiple calls to stop()
-		runner.cStarted = false
+	runner.CrunchLog.Printf("removing container")
+	err := runner.Docker.ContainerRemove(context.TODO(), runner.ContainerID, dockertypes.ContainerRemoveOptions{Force: true})
+	if err != nil {
+		runner.CrunchLog.Printf("error removing container: %s", err)
 	}
 }
 
 func (runner *ContainerRunner) stopSignals() {
 	if runner.SigChan != nil {
 		signal.Stop(runner.SigChan)
-		close(runner.SigChan)
 	}
 }
 
@@ -636,7 +582,6 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 				}
 			}
 
-			runner.loggingDone <- true
 			close(runner.loggingDone)
 			return
 		}
@@ -973,46 +918,38 @@ func (runner *ContainerRunner) StartContainer() error {
 		}
 		return fmt.Errorf("could not start container: %v%s", err, advice)
 	}
-	runner.cStarted = true
 	return nil
 }
 
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
-func (runner *ContainerRunner) WaitFinish() (err error) {
+func (runner *ContainerRunner) WaitFinish() error {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
-	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, "not-running")
+	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, dockercontainer.WaitConditionNotRunning)
+	arvMountExit := runner.ArvMountExit
+	for {
+		select {
+		case waitBody := <-waitOk:
+			runner.CrunchLog.Printf("Container exited with code: %v", waitBody.StatusCode)
+			code := int(waitBody.StatusCode)
+			runner.ExitCode = &code
 
-	go func() {
-		<-runner.ArvMountExit
-		if runner.cStarted {
+			// wait for stdout/stderr to complete
+			<-runner.loggingDone
+			return nil
+
+		case err := <-waitErr:
+			return fmt.Errorf("container wait: %v", err)
+
+		case <-arvMountExit:
 			runner.CrunchLog.Printf("arv-mount exited while container is still running.  Stopping container.")
 			runner.stop()
+			// arvMountExit will always be ready now that
+			// it's closed, but that doesn't interest us.
+			arvMountExit = nil
 		}
-	}()
-
-	var waitBody dockercontainer.ContainerWaitOKBody
-	select {
-	case waitBody = <-waitOk:
-	case err = <-waitErr:
 	}
-
-	// Container isn't running any more
-	runner.cStarted = false
-
-	if err != nil {
-		return fmt.Errorf("container wait: %v", err)
-	}
-
-	runner.CrunchLog.Printf("Container exited with code: %v", waitBody.StatusCode)
-	code := int(waitBody.StatusCode)
-	runner.ExitCode = &code
-
-	// wait for stdout/stderr to complete
-	<-runner.loggingDone
-
-	return nil
 }
 
 var ErrNotInOutputDir = fmt.Errorf("Must point to path within the output directory")
@@ -1191,10 +1128,6 @@ func (runner *ContainerRunner) UploadOutputFile(
 
 // HandleOutput sets the output, unmounts the FUSE mount, and deletes temporary directories
 func (runner *ContainerRunner) CaptureOutput() error {
-	if runner.finalState != "Complete" {
-		return nil
-	}
-
 	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		// Output may have been set directly by the container, so
 		// refresh the container record to check.
@@ -1647,7 +1580,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.WaitFinish()
-	if err == nil {
+	if err == nil && !runner.IsCancelled() {
 		runner.finalState = "Complete"
 	}
 	return
@@ -1739,10 +1672,8 @@ func main() {
 	// API version 1.21 corresponds to Docker 1.9, which is currently the
 	// minimum version we want to support.
 	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
-	dockerClientProxy := ThinDockerClientProxy{Docker: docker}
 
-	cr := NewContainerRunner(api, kc, dockerClientProxy, containerId)
-
+	cr := NewContainerRunner(api, kc, docker, containerId)
 	if dockererr != nil {
 		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
 		cr.checkBrokenNode(dockererr)
