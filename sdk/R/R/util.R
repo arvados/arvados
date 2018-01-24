@@ -14,22 +14,23 @@ trimFromEnd <- function(sample, trimCharacters)
     sample
 }
 
-RListToPythonList <- function(sample, separator = ", ")
+RListToPythonList <- function(RList, separator = ", ")
 {
-    pythonArrayContent <- sapply(sample, function(sampleUnit)
+    pythonArrayContent <- sapply(RList, function(elementInList)
     {
-        if((is.vector(sampleUnit) || is.list(sampleUnit)) &&
-            length(sampleUnit) > 1)
+        if((is.vector(elementInList) || is.list(elementInList)) &&
+            length(elementInList) > 1)
         {
-            return(RListToPythonList(sampleUnit, separator))
+            return(RListToPythonList(elementInList, separator))
         }
         else
         {
-            return(paste0("\"", sampleUnit, "\""))
+            return(paste0("\"", elementInList, "\""))
         }
     })
 
-    return(paste0("[", paste0(pythonArrayContent, collapse = separator), "]"))
+    pythonArray <- paste0("[", paste0(pythonArrayContent, collapse = separator), "]")
+    pythonArray
 }
 
 appendToStartIfNotExist <- function(sample, characters)
