@@ -92,9 +92,12 @@ ArvadosFile <- R6::R6Class(
 
         connection = function(rw)
         {
-            if (rw == "r") 
+            if (rw == "r" || rw == "rb") 
             {
-                return(textConnection(self$read("text")))
+                REST <- private$collection$getRESTService()
+                return(REST$getConnection(private$collection$uuid,
+                                          self$getRelativePath(),
+                                          rw))
             }
             else if (rw == "w") 
             {

@@ -279,6 +279,20 @@ RESTService <- R6::R6Class(
                 stop(paste("Server code:", serverResponse$status_code))
 
             self$httpParser$parseResponse(serverResponse, "text")
+        },
+
+        getConnection = function(uuid, relativePath, openMode)
+        {
+            fileURL <- paste0(self$getWebDavHostName(), 
+                              "c=", uuid, "/", relativePath);
+            headers <- list(Authorization = paste("OAuth2", self$token))
+
+            h <- curl::new_handle()
+            curl::handle_setheaders(h, .list = headers)
+
+            conn <- curl::curl(url = fileURL, open = openMode, handle = h)
+
+            conn
         }
     ),
 

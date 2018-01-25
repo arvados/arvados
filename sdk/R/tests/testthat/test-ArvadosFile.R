@@ -106,12 +106,12 @@ test_that("read delegates reading operation to REST service class", {
     expect_that(fakeREST$readCallCount, equals(1))
 }) 
 
-test_that(paste("connect returns textConnection opened",
-                "in read mode when 'r' is passed as argument"), {
+test_that(paste("connection delegates connection creation ro RESTService class",
+                "which returns curl connection opened in read mode when", 
+                "'r' of 'rb' is passed as argument"), {
 
     collectionContent <- c("animal", "animal/fish")
-    readContent <- "file content"
-    fakeREST <- FakeRESTService$new(collectionContent, readContent)
+    fakeREST <- FakeRESTService$new(collectionContent)
 
     api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
@@ -120,12 +120,11 @@ test_that(paste("connect returns textConnection opened",
 
     connection <- fish$connection("r")
 
-    expect_that(readLines(connection), equals("file content"))
+    expect_that(fakeREST$getConnectionCallCount, equals(1))
 }) 
 
-test_that(paste("connect returns textConnection opened",
+test_that(paste("connection returns textConnection opened",
                 "in write mode when 'w' is passed as argument"), {
-
 
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)

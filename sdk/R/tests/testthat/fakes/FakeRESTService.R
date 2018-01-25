@@ -18,6 +18,7 @@ FakeRESTService <- R6::R6Class(
         getResourceSizeCallCount      = NULL,
         readCallCount                 = NULL,
         writeCallCount                = NULL,
+        getConnectionCallCount        = NULL,
         writeBuffer                   = NULL,
         filtersAreConfiguredCorrectly = NULL,
         bodyIsConfiguredCorrectly     = NULL,
@@ -43,6 +44,7 @@ FakeRESTService <- R6::R6Class(
             self$getResourceSizeCallCount      <- 0
             self$readCallCount                 <- 0
             self$writeCallCount                <- 0
+            self$getConnectionCallCount        <- 0
             self$filtersAreConfiguredCorrectly <- FALSE
             self$bodyIsConfiguredCorrectly     <- FALSE
 
@@ -151,6 +153,12 @@ FakeRESTService <- R6::R6Class(
         {
             self$writeBuffer <- content
             self$writeCallCount <- self$writeCallCount + 1
+            self$returnContent
+        },
+
+        getConnection = function(relativePath, uuid, openMode)
+        {
+            self$getConnectionCallCount <- self$getConnectionCallCount + 1
             self$returnContent
         }
     ),

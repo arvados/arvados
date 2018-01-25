@@ -58,7 +58,7 @@ HttpRequest <- R6::R6Class(
             curl::handle_setopt(h, customrequest = "PROPFIND")
             curl::handle_setheaders(h, .list = headers)
 
-        propfindResponse <- curl::curl_fetch_memory(url, h)
+            propfindResponse <- curl::curl_fetch_memory(url, h)
         },
 
         MOVE = function(url, headers = NULL)
