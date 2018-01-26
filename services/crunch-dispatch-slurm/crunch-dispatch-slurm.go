@@ -25,13 +25,16 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 )
 
-var version = "dev"
+var (
+	version           = "dev"
+	defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
+)
 
-type command struct {
-	dispatcher *dispatch.Dispatcher
-	cluster    *arvados.Cluster
-	sqCheck    *SqueueChecker
-	slurm      Slurm
+type Dispatcher struct {
+	*dispatch.Dispatcher
+	cluster *arvados.Cluster
+	sqCheck *SqueueChecker
+	slurm   Slurm
 
 	Client arvados.Client
 
@@ -49,15 +52,23 @@ type command struct {
 }
 
 func main() {
-	err := (&command{}).Run(os.Args[0], os.Args[1:])
+	disp := &Dispatcher{}
+	err := disp.Run(os.Args[0], os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
+func (disp *Dispatcher) Run(prog string, args []string) error {
+	if err := disp.configure(prog, args); err != nil {
+		return err
+	}
+	disp.setup()
+	return disp.run()
+}
 
-func (cmd *command) Run(prog string, args []string) error {
+// configure() loads config files. Tests skip this.
+func (disp *Dispatcher) configure(prog string, args []string) error {
 	flags := flag.NewFlagSet(prog, flag.ExitOnError)
 	flags.Usage = func() { usage(flags) }
 
@@ -84,81 +95,84 @@ func (cmd *command) Run(prog string, args []string) error {
 
 	log.Printf("crunch-dispatch-slurm %s started", version)
 
-	err := cmd.readConfig(*configPath)
+	err := disp.readConfig(*configPath)
 	if err != nil {
 		return err
 	}
 
-	if cmd.CrunchRunCommand == nil {
-		cmd.CrunchRunCommand = []string{"crunch-run"}
+	if disp.CrunchRunCommand == nil {
+		disp.CrunchRunCommand = []string{"crunch-run"}
 	}
 
-	if cmd.PollPeriod == 0 {
-		cmd.PollPeriod = arvados.Duration(10 * time.Second)
+	if disp.PollPeriod == 0 {
+		disp.PollPeriod = arvados.Duration(10 * time.Second)
 	}
 
-	if cmd.Client.APIHost != "" || cmd.Client.AuthToken != "" {
+	if disp.Client.APIHost != "" || disp.Client.AuthToken != "" {
 		// Copy real configs into env vars so [a]
 		// MakeArvadosClient() uses them, and [b] they get
 		// propagated to crunch-run via SLURM.
-		os.Setenv("ARVADOS_API_HOST", cmd.Client.APIHost)
-		os.Setenv("ARVADOS_API_TOKEN", cmd.Client.AuthToken)
+		os.Setenv("ARVADOS_API_HOST", disp.Client.APIHost)
+		os.Setenv("ARVADOS_API_TOKEN", disp.Client.AuthToken)
 		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
-		if cmd.Client.Insecure {
+		if disp.Client.Insecure {
 			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
-		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(cmd.Client.KeepServiceURIs, " "))
+		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(disp.Client.KeepServiceURIs, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
 		log.Printf("warning: Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}
 
 	if *dumpConfig {
-		log.Fatal(config.DumpAndExit(cmd))
+		return config.DumpAndExit(disp)
 	}
-
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Printf("Error making Arvados client: %v", err)
-		return err
-	}
-	arv.Retries = 25
 
 	siteConfig, err := arvados.GetConfig(arvados.DefaultConfigFile)
 	if os.IsNotExist(err) {
-		log.Printf("warning: no cluster config file %q (%s), proceeding with no node types defined", arvados.DefaultConfigFile, err)
+		log.Printf("warning: no cluster config (%s), proceeding with no node types defined", err)
 	} else if err != nil {
-		log.Fatalf("error loading config: %s", err)
-	} else if cmd.cluster, err = siteConfig.GetCluster(""); err != nil {
-		log.Fatalf("config error: %s", err)
-	} else if len(cmd.cluster.InstanceTypes) > 0 {
-		go dispatchcloud.SlurmNodeTypeFeatureKludge(cmd.cluster)
+		return fmt.Errorf("error loading config: %s", err)
+	} else if disp.cluster, err = siteConfig.GetCluster(""); err != nil {
+		return fmt.Errorf("config error: %s", err)
 	}
 
-	if cmd.slurm == nil {
-		cmd.slurm = &slurmCLI{}
-	}
+	return nil
+}
 
-	cmd.sqCheck = &SqueueChecker{
-		Period: time.Duration(cmd.PollPeriod),
-		Slurm:  cmd.slurm,
+// setup() initializes private fields after configure().
+func (disp *Dispatcher) setup() {
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("Error making Arvados client: %v", err)
 	}
-	defer cmd.sqCheck.Stop()
+	arv.Retries = 25
 
-	cmd.dispatcher = &dispatch.Dispatcher{
+	disp.slurm = &slurmCLI{}
+	disp.sqCheck = &SqueueChecker{
+		Period: time.Duration(disp.PollPeriod),
+		Slurm:  disp.slurm,
+	}
+	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
-		RunContainer:   cmd.run,
-		PollPeriod:     time.Duration(cmd.PollPeriod),
-		MinRetryPeriod: time.Duration(cmd.MinRetryPeriod),
+		RunContainer:   disp.runContainer,
+		PollPeriod:     time.Duration(disp.PollPeriod),
+		MinRetryPeriod: time.Duration(disp.MinRetryPeriod),
+	}
+}
+
+func (disp *Dispatcher) run() error {
+	defer disp.sqCheck.Stop()
+
+	if disp.cluster != nil && len(disp.cluster.InstanceTypes) > 0 {
+		go dispatchcloud.SlurmNodeTypeFeatureKludge(disp.cluster)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-
-	go cmd.checkSqueueForOrphans()
-
-	return cmd.dispatcher.Run(context.Background())
+	go disp.checkSqueueForOrphans()
+	return disp.Dispatcher.Run(context.Background())
 }
 
 var containerUuidPattern = regexp.MustCompile(`^[a-z0-9]{5}-dz642-[a-z0-9]{15}$`)
@@ -168,19 +182,19 @@ var containerUuidPattern = regexp.MustCompile(`^[a-z0-9]{5}-dz642-[a-z0-9]{15}$`
 // jobs started by a previous dispatch process that never released
 // their slurm allocations even though their container states are
 // Cancelled or Complete. See https://dev.arvados.org/issues/10979
-func (cmd *command) checkSqueueForOrphans() {
-	for _, uuid := range cmd.sqCheck.All() {
+func (disp *Dispatcher) checkSqueueForOrphans() {
+	for _, uuid := range disp.sqCheck.All() {
 		if !containerUuidPattern.MatchString(uuid) {
 			continue
 		}
-		err := cmd.dispatcher.TrackContainer(uuid)
+		err := disp.TrackContainer(uuid)
 		if err != nil {
 			log.Printf("checkSqueueForOrphans: TrackContainer(%s): %s", uuid, err)
 		}
 	}
 }
 
-func (cmd *command) niceness(priority int) int {
+func (disp *Dispatcher) niceness(priority int) int {
 	if priority > 1000 {
 		priority = 1000
 	}
@@ -191,7 +205,7 @@ func (cmd *command) niceness(priority int) int {
 	return (1000 - priority) * 10
 }
 
-func (cmd *command) sbatchArgs(container arvados.Container) ([]string, error) {
+func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
 	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM) / float64(1048576)))
 
 	var disk int64
@@ -203,19 +217,19 @@ func (cmd *command) sbatchArgs(container arvados.Container) ([]string, error) {
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 
 	var sbatchArgs []string
-	sbatchArgs = append(sbatchArgs, cmd.SbatchArguments...)
+	sbatchArgs = append(sbatchArgs, disp.SbatchArguments...)
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem=%d", mem))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--tmp=%d", disk))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--nice=%d", cmd.niceness(container.Priority)))
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--nice=%d", disp.niceness(container.Priority)))
 	if len(container.SchedulingParameters.Partitions) > 0 {
 		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
-	if cmd.cluster == nil {
+	if disp.cluster == nil {
 		// no instance types configured
-	} else if it, err := dispatchcloud.ChooseInstanceType(cmd.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
+	} else if it, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
 		// ditto
 	} else if err != nil {
 		return nil, err
@@ -226,39 +240,39 @@ func (cmd *command) sbatchArgs(container arvados.Container) ([]string, error) {
 	return sbatchArgs, nil
 }
 
-func (cmd *command) submit(container arvados.Container, crunchRunCommand []string) error {
+func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []string) error {
 	// append() here avoids modifying crunchRunCommand's
 	// underlying array, which is shared with other goroutines.
 	crArgs := append([]string(nil), crunchRunCommand...)
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
 
-	cmd.sqCheck.L.Lock()
-	defer cmd.sqCheck.L.Unlock()
+	disp.sqCheck.L.Lock()
+	defer disp.sqCheck.L.Unlock()
 
-	sbArgs, err := cmd.sbatchArgs(container)
+	sbArgs, err := disp.sbatchArgs(container)
 	if err != nil {
 		return err
 	}
 	log.Printf("running sbatch %+q", sbArgs)
-	return cmd.slurm.Batch(crScript, sbArgs)
+	return disp.slurm.Batch(crScript, sbArgs)
 }
 
 // Submit a container to the slurm queue (or resume monitoring if it's
 // already in the queue).  Cancel the slurm job if the container's
 // priority changes to zero or its state indicates it's no longer
 // running.
-func (cmd *command) run(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if ctr.State == dispatch.Locked && !cmd.sqCheck.HasUUID(ctr.UUID) {
+	if ctr.State == dispatch.Locked && !disp.sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
-		if err := cmd.submit(ctr, cmd.CrunchRunCommand); err != nil {
+		if err := disp.submit(ctr, disp.CrunchRunCommand); err != nil {
 			var text string
 			if err == dispatchcloud.ErrConstraintsNotSatisfiable {
 				text = fmt.Sprintf("cannot run container %s: %s", ctr.UUID, err)
-				cmd.dispatcher.UpdateState(ctr.UUID, dispatch.Cancelled)
+				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
 			} else {
 				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
 			}
@@ -268,9 +282,9 @@ func (cmd *command) run(_ *dispatch.Dispatcher, ctr arvados.Container, status <-
 				"object_uuid": ctr.UUID,
 				"event_type":  "dispatch",
 				"properties":  map[string]string{"text": text}}}
-			cmd.dispatcher.Arv.Create("logs", lr, nil)
+			disp.Arv.Create("logs", lr, nil)
 
-			cmd.dispatcher.Unlock(ctr.UUID)
+			disp.Unlock(ctr.UUID)
 			return
 		}
 	}
@@ -282,7 +296,7 @@ func (cmd *command) run(_ *dispatch.Dispatcher, ctr arvados.Container, status <-
 	// no point in waiting for further dispatch updates: just
 	// clean up and return.
 	go func(uuid string) {
-		for ctx.Err() == nil && cmd.sqCheck.HasUUID(uuid) {
+		for ctx.Err() == nil && disp.sqCheck.HasUUID(uuid) {
 		}
 		cancel()
 	}(ctr.UUID)
@@ -291,68 +305,68 @@ func (cmd *command) run(_ *dispatch.Dispatcher, ctr arvados.Container, status <-
 		select {
 		case <-ctx.Done():
 			// Disappeared from squeue
-			if err := cmd.dispatcher.Arv.Get("containers", ctr.UUID, nil, &ctr); err != nil {
+			if err := disp.Arv.Get("containers", ctr.UUID, nil, &ctr); err != nil {
 				log.Printf("Error getting final container state for %s: %s", ctr.UUID, err)
 			}
 			switch ctr.State {
 			case dispatch.Running:
-				cmd.dispatcher.UpdateState(ctr.UUID, dispatch.Cancelled)
+				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
 			case dispatch.Locked:
-				cmd.dispatcher.Unlock(ctr.UUID)
+				disp.Unlock(ctr.UUID)
 			}
 			return
 		case updated, ok := <-status:
 			if !ok {
-				log.Printf("Dispatcher says container %s is done: cancel slurm job", ctr.UUID)
-				cmd.scancel(ctr)
+				log.Printf("container %s is done: cancel slurm job", ctr.UUID)
+				disp.scancel(ctr)
 			} else if updated.Priority == 0 {
-				log.Printf("Container %s has state %q, priority %d: cancel slurm job", ctr.UUID, updated.State, updated.Priority)
-				cmd.scancel(ctr)
+				log.Printf("container %s has state %q, priority %d: cancel slurm job", ctr.UUID, updated.State, updated.Priority)
+				disp.scancel(ctr)
 			} else {
-				cmd.renice(updated)
+				disp.renice(updated)
 			}
 		}
 	}
 }
 
-func (cmd *command) scancel(ctr arvados.Container) {
-	cmd.sqCheck.L.Lock()
-	err := cmd.slurm.Cancel(ctr.UUID)
-	cmd.sqCheck.L.Unlock()
+func (disp *Dispatcher) scancel(ctr arvados.Container) {
+	disp.sqCheck.L.Lock()
+	err := disp.slurm.Cancel(ctr.UUID)
+	disp.sqCheck.L.Unlock()
 
 	if err != nil {
 		log.Printf("scancel: %s", err)
 		time.Sleep(time.Second)
-	} else if cmd.sqCheck.HasUUID(ctr.UUID) {
+	} else if disp.sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("container %s is still in squeue after scancel", ctr.UUID)
 		time.Sleep(time.Second)
 	}
 }
 
-func (cmd *command) renice(ctr arvados.Container) {
-	nice := cmd.niceness(ctr.Priority)
-	oldnice := cmd.sqCheck.GetNiceness(ctr.UUID)
+func (disp *Dispatcher) renice(ctr arvados.Container) {
+	nice := disp.niceness(ctr.Priority)
+	oldnice := disp.sqCheck.GetNiceness(ctr.UUID)
 	if nice == oldnice || oldnice == -1 {
 		return
 	}
 	log.Printf("updating slurm nice value to %d (was %d)", nice, oldnice)
-	cmd.sqCheck.L.Lock()
-	err := cmd.slurm.Renice(ctr.UUID, nice)
-	cmd.sqCheck.L.Unlock()
+	disp.sqCheck.L.Lock()
+	err := disp.slurm.Renice(ctr.UUID, nice)
+	disp.sqCheck.L.Unlock()
 
 	if err != nil {
 		log.Printf("renice: %s", err)
 		time.Sleep(time.Second)
 		return
 	}
-	if cmd.sqCheck.HasUUID(ctr.UUID) {
+	if disp.sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("container %s has arvados priority %d, slurm nice %d",
-			ctr.UUID, ctr.Priority, cmd.sqCheck.GetNiceness(ctr.UUID))
+			ctr.UUID, ctr.Priority, disp.sqCheck.GetNiceness(ctr.UUID))
 	}
 }
 
-func (cmd *command) readConfig(path string) error {
-	err := config.LoadFile(cmd, path)
+func (disp *Dispatcher) readConfig(path string) error {
+	err := config.LoadFile(disp, path)
 	if err != nil && os.IsNotExist(err) && path == defaultConfigPath {
 		log.Printf("Config not specified. Continue with default configuration.")
 		err = nil

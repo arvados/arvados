@@ -37,12 +37,16 @@ var _ = Suite(&IntegrationSuite{})
 var _ = Suite(&StubbedSuite{})
 
 type IntegrationSuite struct {
-	cmd command
+	disp  Dispatcher
+	slurm slurmFake
 }
 
 func (s *IntegrationSuite) SetUpTest(c *C) {
 	arvadostest.StartAPI()
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
+	s.disp = Dispatcher{}
+	s.disp.setup()
+	s.slurm = slurmFake{}
 }
 
 func (s *IntegrationSuite) TearDownTest(c *C) {
@@ -87,15 +91,13 @@ func (sf *slurmFake) Cancel(name string) error {
 	return nil
 }
 
-func (s *IntegrationSuite) integrationTest(c *C, slurm *slurmFake,
+func (s *IntegrationSuite) integrationTest(c *C,
 	expectBatch [][]string,
 	runContainer func(*dispatch.Dispatcher, arvados.Container)) arvados.Container {
 	arvadostest.ResetEnv()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, IsNil)
-
-	s.cmd.slurm = slurm
 
 	// There should be one queued container
 	params := arvadosclient.Dict{
@@ -106,34 +108,35 @@ func (s *IntegrationSuite) integrationTest(c *C, slurm *slurmFake,
 	c.Check(err, IsNil)
 	c.Check(len(containers.Items), Equals, 1)
 
-	s.cmd.CrunchRunCommand = []string{"echo"}
+	s.disp.CrunchRunCommand = []string{"echo"}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneRun := make(chan struct{})
 
-	s.cmd.dispatcher = &dispatch.Dispatcher{
+	s.disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 			go func() {
 				runContainer(disp, ctr)
-				slurm.queue = ""
+				s.slurm.queue = ""
 				doneRun <- struct{}{}
 			}()
-			s.cmd.run(disp, ctr, status)
+			s.disp.runContainer(disp, ctr, status)
 			cancel()
 		},
 	}
 
-	s.cmd.sqCheck = &SqueueChecker{Period: 500 * time.Millisecond, Slurm: slurm}
+	s.disp.slurm = &s.slurm
+	s.disp.sqCheck = &SqueueChecker{Period: 500 * time.Millisecond, Slurm: s.disp.slurm}
 
-	err = s.cmd.dispatcher.Run(ctx)
+	err = s.disp.Dispatcher.Run(ctx)
 	<-doneRun
 	c.Assert(err, Equals, context.Canceled)
 
-	s.cmd.sqCheck.Stop()
+	s.disp.sqCheck.Stop()
 
-	c.Check(slurm.didBatch, DeepEquals, expectBatch)
+	c.Check(s.slurm.didBatch, DeepEquals, expectBatch)
 
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
@@ -148,8 +151,8 @@ func (s *IntegrationSuite) integrationTest(c *C, slurm *slurmFake,
 }
 
 func (s *IntegrationSuite) TestNormal(c *C) {
+	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
 	container := s.integrationTest(c,
-		&slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"},
 		nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -160,11 +163,10 @@ func (s *IntegrationSuite) TestNormal(c *C) {
 }
 
 func (s *IntegrationSuite) TestCancel(c *C) {
-	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
+	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
 	readyToCancel := make(chan bool)
-	slurm.onCancel = func() { <-readyToCancel }
+	s.slurm.onCancel = func() { <-readyToCancel }
 	container := s.integrationTest(c,
-		slurm,
 		nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -177,12 +179,12 @@ func (s *IntegrationSuite) TestCancel(c *C) {
 			close(readyToCancel)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
-	c.Check(len(slurm.didCancel) > 1, Equals, true)
-	c.Check(slurm.didCancel[:2], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "zzzzz-dz642-queuedcontainer"})
+	c.Check(len(s.slurm.didCancel) > 1, Equals, true)
+	c.Check(s.slurm.didCancel[:2], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "zzzzz-dz642-queuedcontainer"})
 }
 
 func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
-	container := s.integrationTest(c, &slurmFake{},
+	container := s.integrationTest(c,
 		[][]string{{
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 			fmt.Sprintf("--mem=%d", 11445),
@@ -198,8 +200,8 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 }
 
 func (s *IntegrationSuite) TestSbatchFail(c *C) {
+	s.slurm = slurmFake{errBatch: errors.New("something terrible happened")}
 	container := s.integrationTest(c,
-		&slurmFake{errBatch: errors.New("something terrible happened")},
 		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--mem=11445", "--cpus-per-task=4", "--tmp=45777", "--nice=9990"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -219,8 +221,8 @@ func (s *IntegrationSuite) TestSbatchFail(c *C) {
 }
 
 func (s *IntegrationSuite) TestChangePriority(c *C) {
-	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
-	container := s.integrationTest(c, slurm, nil,
+	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
+	container := s.integrationTest(c, nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(time.Second)
@@ -232,16 +234,17 @@ func (s *IntegrationSuite) TestChangePriority(c *C) {
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-	c.Assert(len(slurm.didRenice), Not(Equals), 0)
-	c.Check(slurm.didRenice[len(slurm.didRenice)-1], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "4000"})
+	c.Assert(len(s.slurm.didRenice), Not(Equals), 0)
+	c.Check(s.slurm.didRenice[len(s.slurm.didRenice)-1], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "4000"})
 }
 
 type StubbedSuite struct {
-	cmd command
+	disp Dispatcher
 }
 
 func (s *StubbedSuite) SetUpTest(c *C) {
-	s.cmd = command{}
+	s.disp = Dispatcher{}
+	s.disp.setup()
 }
 
 func (s *StubbedSuite) TestAPIErrorGettingContainers(c *C) {
@@ -270,7 +273,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	s.cmd.CrunchRunCommand = []string{crunchCmd}
+	s.disp.CrunchRunCommand = []string{crunchCmd}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
@@ -282,7 +285,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 				disp.UpdateState(ctr.UUID, dispatch.Running)
 				disp.UpdateState(ctr.UUID, dispatch.Complete)
 			}()
-			s.cmd.run(disp, ctr, status)
+			s.disp.runContainer(disp, ctr, status)
 			cancel()
 		},
 	}
@@ -301,7 +304,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 }
 
 func (s *StubbedSuite) TestNoSuchConfigFile(c *C) {
-	err := s.cmd.readConfig("/nosuchdir89j7879/8hjwr7ojgyy7")
+	err := s.disp.readConfig("/nosuchdir89j7879/8hjwr7ojgyy7")
 	c.Assert(err, NotNil)
 }
 
@@ -313,7 +316,7 @@ func (s *StubbedSuite) TestBadSbatchArgsConfig(c *C) {
 	_, err = tmpfile.Write([]byte(`{"SbatchArguments": "oops this is not a string array"}`))
 	c.Check(err, IsNil)
 
-	err = s.cmd.readConfig(tmpfile.Name())
+	err = s.disp.readConfig(tmpfile.Name())
 	c.Assert(err, NotNil)
 }
 
@@ -325,9 +328,9 @@ func (s *StubbedSuite) TestNoSuchArgInConfigIgnored(c *C) {
 	_, err = tmpfile.Write([]byte(`{"NoSuchArg": "Nobody loves me, not one tiny hunk."}`))
 	c.Check(err, IsNil)
 
-	err = s.cmd.readConfig(tmpfile.Name())
+	err = s.disp.readConfig(tmpfile.Name())
 	c.Assert(err, IsNil)
-	c.Check(0, Equals, len(s.cmd.SbatchArguments))
+	c.Check(0, Equals, len(s.disp.SbatchArguments))
 }
 
 func (s *StubbedSuite) TestReadConfig(c *C) {
@@ -340,9 +343,9 @@ func (s *StubbedSuite) TestReadConfig(c *C) {
 	_, err = tmpfile.Write([]byte(argsS))
 	c.Check(err, IsNil)
 
-	err = s.cmd.readConfig(tmpfile.Name())
+	err = s.disp.readConfig(tmpfile.Name())
 	c.Assert(err, IsNil)
-	c.Check(args, DeepEquals, s.cmd.SbatchArguments)
+	c.Check(args, DeepEquals, s.disp.SbatchArguments)
 }
 
 func (s *StubbedSuite) TestSbatchArgs(c *C) {
@@ -358,9 +361,9 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 		{"--arg1=v1", "--arg2"},
 	} {
 		c.Logf("%#v", defaults)
-		s.cmd.SbatchArguments = defaults
+		s.disp.SbatchArguments = defaults
 
-		args, err := s.cmd.sbatchArgs(container)
+		args, err := s.disp.sbatchArgs(container)
 		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990"))
 		c.Check(err, IsNil)
 	}
@@ -401,9 +404,9 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 		},
 	} {
 		c.Logf("%#v", trial)
-		s.cmd.cluster = &arvados.Cluster{InstanceTypes: trial.types}
+		s.disp.cluster = &arvados.Cluster{InstanceTypes: trial.types}
 
-		args, err := s.cmd.sbatchArgs(container)
+		args, err := s.disp.sbatchArgs(container)
 		c.Check(err, Equals, trial.err)
 		if trial.err == nil {
 			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990"}, trial.sbatchArgs...))
@@ -419,7 +422,7 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 		Priority:             1,
 	}
 
-	args, err := s.cmd.sbatchArgs(container)
+	args, err := s.disp.sbatchArgs(container)
 	c.Check(args, DeepEquals, []string{
 		"--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990",
 		"--partition=blurb,b2",
