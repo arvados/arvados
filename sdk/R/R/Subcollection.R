@@ -117,7 +117,7 @@ Subcollection <- R6::R6Class(
                     content <- c(content, child$getName())
             }
 
-            content
+            content[order(tolower(content))]
         },
 
         getSizeInBytes = function()

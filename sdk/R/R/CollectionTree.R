@@ -96,6 +96,11 @@ CollectionTree <- R6::R6Class(
             }
             else
             {
+                # Note: REST always returns folder name alone before other folder content
+                # (for some reason), so in first iteration we don't know if it's a file
+                # or folder since its just a name, so we assume it's a file. 
+                # If we encounter that same name again we know 
+                # it's a folder so we need to replace ArvadosFile with Subcollection.
                 if("ArvadosFile" %in% class(child))
                 {
                     child = private$replaceFileWithSubcollection(child)

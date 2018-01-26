@@ -142,7 +142,11 @@ Collection <- R6::R6Class(
             elementToMove$move(newLocation)
         },
 
-        getFileListing = function() private$REST$getCollectionContent(self$uuid),
+        getFileListing = function()
+        {
+            content <- private$REST$getCollectionContent(self$uuid)
+            content[order(tolower(content))]
+        },
 
         get = function(relativePath)
         {
