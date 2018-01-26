@@ -219,7 +219,7 @@ test_that("move raises exception if new location is not valid", {
                              fixed = TRUE))
 })
 
-test_that("getFileListing returns collection content received from REST service", {
+test_that("getFileListing returns sorted collection content received from REST service", {
 
     collectionContent <- c("animal",
                            "animal/fish",
