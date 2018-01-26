@@ -114,10 +114,12 @@ type ContainerRunner struct {
 	ArvMountExit   chan error
 	finalState     string
 
-	statLogger   io.WriteCloser
-	statReporter *crunchstat.Reporter
-	statInterval time.Duration
-	cgroupRoot   string
+	statLogger       io.WriteCloser
+	statReporter     *crunchstat.Reporter
+	hoststatLogger   io.WriteCloser
+	hoststatReporter *crunchstat.Reporter
+	statInterval     time.Duration
+	cgroupRoot       string
 	// What we expect the container's cgroup parent to be.
 	expectCgroupParent string
 	// What we tell docker to use as the container's cgroup
@@ -543,52 +545,70 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 	// Handle docker log protocol
 	// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.15/#attach-to-a-container
+	defer close(runner.loggingDone)
 
 	header := make([]byte, 8)
-	for {
-		_, readerr := io.ReadAtLeast(containerReader, header, 8)
-
-		if readerr == nil {
-			readsize := int64(header[7]) | (int64(header[6]) << 8) | (int64(header[5]) << 16) | (int64(header[4]) << 24)
-			if header[0] == 1 {
-				// stdout
-				_, readerr = io.CopyN(runner.Stdout, containerReader, readsize)
-			} else {
-				// stderr
-				_, readerr = io.CopyN(runner.Stderr, containerReader, readsize)
+	var err error
+	for err == nil {
+		_, err = io.ReadAtLeast(containerReader, header, 8)
+		if err != nil {
+			if err == io.EOF {
+				err = nil
 			}
+			break
 		}
+		readsize := int64(header[7]) | (int64(header[6]) << 8) | (int64(header[5]) << 16) | (int64(header[4]) << 24)
+		if header[0] == 1 {
+			// stdout
+			_, err = io.CopyN(runner.Stdout, containerReader, readsize)
+		} else {
+			// stderr
+			_, err = io.CopyN(runner.Stderr, containerReader, readsize)
+		}
+	}
 
-		if readerr != nil {
-			if readerr != io.EOF {
-				runner.CrunchLog.Printf("While reading docker logs: %v", readerr)
-			}
+	if err != nil {
+		runner.CrunchLog.Printf("error reading docker logs: %v", err)
+	}
 
-			closeerr := runner.Stdout.Close()
-			if closeerr != nil {
-				runner.CrunchLog.Printf("While closing stdout logs: %v", closeerr)
-			}
+	err = runner.Stdout.Close()
+	if err != nil {
+		runner.CrunchLog.Printf("error closing stdout logs: %v", err)
+	}
 
-			closeerr = runner.Stderr.Close()
-			if closeerr != nil {
-				runner.CrunchLog.Printf("While closing stderr logs: %v", closeerr)
-			}
+	err = runner.Stderr.Close()
+	if err != nil {
+		runner.CrunchLog.Printf("error closing stderr logs: %v", err)
+	}
 
-			if runner.statReporter != nil {
-				runner.statReporter.Stop()
-				closeerr = runner.statLogger.Close()
-				if closeerr != nil {
-					runner.CrunchLog.Printf("While closing crunchstat logs: %v", closeerr)
-				}
-			}
+	if runner.statReporter != nil {
+		runner.statReporter.Stop()
+		err = runner.statLogger.Close()
+		if err != nil {
+			runner.CrunchLog.Printf("error closing crunchstat logs: %v", err)
+		}
+	}
 
-			close(runner.loggingDone)
-			return
+	if runner.hoststatReporter != nil {
+		runner.hoststatReporter.Stop()
+		err = runner.hoststatLogger.Close()
+		if err != nil {
+			runner.CrunchLog.Printf("error closing hoststat logs: %v", err)
 		}
 	}
 }
 
-func (runner *ContainerRunner) StartCrunchstat() {
+func (runner *ContainerRunner) startHoststat() {
+	runner.hoststatLogger = NewThrottledLogger(runner.NewLogWriter("hoststat"))
+	runner.hoststatReporter = &crunchstat.Reporter{
+		Logger:     log.New(runner.hoststatLogger, "", 0),
+		CgroupRoot: runner.cgroupRoot,
+		PollPeriod: runner.statInterval,
+	}
+	runner.hoststatReporter.Start()
+}
+
+func (runner *ContainerRunner) startCrunchstat() {
 	runner.statLogger = NewThrottledLogger(runner.NewLogWriter("crunchstat"))
 	runner.statReporter = &crunchstat.Reporter{
 		CID:          runner.ContainerID,
@@ -1520,9 +1540,8 @@ func (runner *ContainerRunner) Run() (err error) {
 	if err != nil {
 		return
 	}
-
-	// setup signal handling
 	runner.setupSignals()
+	runner.startHoststat()
 
 	// check for and/or load image
 	err = runner.LoadImage()
@@ -1571,7 +1590,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 	runner.finalState = "Cancelled"
 
-	runner.StartCrunchstat()
+	runner.startCrunchstat()
 
 	err = runner.StartContainer()
 	if err != nil {
