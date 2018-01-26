@@ -131,6 +131,8 @@ func (cmd *command) Run(prog string, args []string) error {
 		log.Fatalf("error loading config: %s", err)
 	} else if cmd.cluster, err = siteConfig.GetCluster(""); err != nil {
 		log.Fatalf("config error: %s", err)
+	} else if len(cmd.cluster.InstanceTypes) > 0 {
+		go dispatchcloud.SlurmNodeTypeFeatureKludge(cmd.cluster)
 	}
 
 	if cmd.slurm == nil {
@@ -211,6 +213,16 @@ func (cmd *command) sbatchArgs(container arvados.Container) ([]string, error) {
 		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
+	if cmd.cluster == nil {
+		// no instance types configured
+	} else if it, err := dispatchcloud.ChooseInstanceType(cmd.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
+		// ditto
+	} else if err != nil {
+		return nil, err
+	} else {
+		sbatchArgs = append(sbatchArgs, "--constraint="+it.Name)
+	}
+
 	return sbatchArgs, nil
 }
 
@@ -243,7 +255,13 @@ func (cmd *command) run(_ *dispatch.Dispatcher, ctr arvados.Container, status <-
 	if ctr.State == dispatch.Locked && !cmd.sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		if err := cmd.submit(ctr, cmd.CrunchRunCommand); err != nil {
-			text := fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
+			var text string
+			if err == dispatchcloud.ErrConstraintsNotSatisfiable {
+				text = fmt.Sprintf("cannot run container %s: %s", ctr.UUID, err)
+				cmd.dispatcher.UpdateState(ctr.UUID, dispatch.Cancelled)
+			} else {
+				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
+			}
 			log.Print(text)
 
 			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
