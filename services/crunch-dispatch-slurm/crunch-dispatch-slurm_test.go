@@ -35,8 +35,9 @@ func Test(t *testing.T) {
 var _ = Suite(&TestSuite{})
 var _ = Suite(&MockArvadosServerSuite{})
 
-type TestSuite struct{}
-type MockArvadosServerSuite struct{}
+type TestSuite struct {
+	cmd command
+}
 
 var initialArgs []string
 
@@ -59,10 +60,6 @@ func (s *TestSuite) TearDownTest(c *C) {
 	os.Args = initialArgs
 	arvadostest.ResetEnv()
 	arvadostest.StopAPI()
-}
-
-func (s *MockArvadosServerSuite) TearDownTest(c *C) {
-	arvadostest.ResetEnv()
 }
 
 type slurmFake struct {
@@ -110,10 +107,7 @@ func (s *TestSuite) integrationTest(c *C, slurm *slurmFake,
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, IsNil)
 
-	defer func(orig Slurm) {
-		theConfig.slurm = orig
-	}(theConfig.slurm)
-	theConfig.slurm = slurm
+	s.cmd.slurm = slurm
 
 	// There should be one queued container
 	params := arvadosclient.Dict{
@@ -124,12 +118,12 @@ func (s *TestSuite) integrationTest(c *C, slurm *slurmFake,
 	c.Check(err, IsNil)
 	c.Check(len(containers.Items), Equals, 1)
 
-	theConfig.CrunchRunCommand = []string{"echo"}
+	s.cmd.CrunchRunCommand = []string{"echo"}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneRun := make(chan struct{})
 
-	dispatcher := dispatch.Dispatcher{
+	s.cmd.dispatcher = &dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
@@ -138,18 +132,18 @@ func (s *TestSuite) integrationTest(c *C, slurm *slurmFake,
 				slurm.queue = ""
 				doneRun <- struct{}{}
 			}()
-			run(disp, ctr, status)
+			s.cmd.run(disp, ctr, status)
 			cancel()
 		},
 	}
 
-	sqCheck = &SqueueChecker{Period: 500 * time.Millisecond}
+	s.cmd.sqCheck = &SqueueChecker{Period: 500 * time.Millisecond, Slurm: slurm}
 
-	err = dispatcher.Run(ctx)
+	err = s.cmd.dispatcher.Run(ctx)
 	<-doneRun
 	c.Assert(err, Equals, context.Canceled)
 
-	sqCheck.Stop()
+	s.cmd.sqCheck.Stop()
 
 	c.Check(slurm.didBatch, DeepEquals, expectBatch)
 
@@ -236,15 +230,41 @@ func (s *TestSuite) TestSbatchFail(c *C) {
 	c.Assert(len(ll.Items), Equals, 1)
 }
 
+func (s *TestSuite) TestIntegrationChangePriority(c *C) {
+	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
+	container := s.integrationTest(c, slurm, nil,
+		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
+			dispatcher.UpdateState(container.UUID, dispatch.Running)
+			time.Sleep(time.Second)
+			dispatcher.Arv.Update("containers", container.UUID,
+				arvadosclient.Dict{
+					"container": arvadosclient.Dict{"priority": 600}},
+				nil)
+			time.Sleep(time.Second)
+			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+		})
+	c.Check(container.State, Equals, arvados.ContainerStateComplete)
+	c.Assert(len(slurm.didRenice), Not(Equals), 0)
+	c.Check(slurm.didRenice[len(slurm.didRenice)-1], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "4000"})
+}
+
+type MockArvadosServerSuite struct {
+	cmd command
+}
+
+func (s *MockArvadosServerSuite) TearDownTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
 func (s *MockArvadosServerSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
+	s.testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
 }
 
-func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
+func (s *MockArvadosServerSuite) testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
 	apiStub := arvadostest.ServerStub{apiStubResponses}
 
 	api := httptest.NewServer(&apiStub)
@@ -262,7 +282,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	theConfig.CrunchRunCommand = []string{crunchCmd}
+	s.cmd.CrunchRunCommand = []string{crunchCmd}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
@@ -274,7 +294,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 				disp.UpdateState(ctr.UUID, dispatch.Running)
 				disp.UpdateState(ctr.UUID, dispatch.Complete)
 			}()
-			run(disp, ctr, status)
+			s.cmd.run(disp, ctr, status)
 			cancel()
 		},
 	}
@@ -293,14 +313,11 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 }
 
 func (s *MockArvadosServerSuite) TestNoSuchConfigFile(c *C) {
-	var config Config
-	err := readConfig(&config, "/nosuchdir89j7879/8hjwr7ojgyy7")
+	err := s.cmd.readConfig("/nosuchdir89j7879/8hjwr7ojgyy7")
 	c.Assert(err, NotNil)
 }
 
 func (s *MockArvadosServerSuite) TestBadSbatchArgsConfig(c *C) {
-	var config Config
-
 	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
 	c.Check(err, IsNil)
 	defer os.Remove(tmpfile.Name())
@@ -308,13 +325,11 @@ func (s *MockArvadosServerSuite) TestBadSbatchArgsConfig(c *C) {
 	_, err = tmpfile.Write([]byte(`{"SbatchArguments": "oops this is not a string array"}`))
 	c.Check(err, IsNil)
 
-	err = readConfig(&config, tmpfile.Name())
+	err = s.cmd.readConfig(tmpfile.Name())
 	c.Assert(err, NotNil)
 }
 
 func (s *MockArvadosServerSuite) TestNoSuchArgInConfigIgnored(c *C) {
-	var config Config
-
 	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
 	c.Check(err, IsNil)
 	defer os.Remove(tmpfile.Name())
@@ -322,14 +337,12 @@ func (s *MockArvadosServerSuite) TestNoSuchArgInConfigIgnored(c *C) {
 	_, err = tmpfile.Write([]byte(`{"NoSuchArg": "Nobody loves me, not one tiny hunk."}`))
 	c.Check(err, IsNil)
 
-	err = readConfig(&config, tmpfile.Name())
+	err = s.cmd.readConfig(tmpfile.Name())
 	c.Assert(err, IsNil)
-	c.Check(0, Equals, len(config.SbatchArguments))
+	c.Check(0, Equals, len(s.cmd.SbatchArguments))
 }
 
 func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
-	var config Config
-
 	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
 	c.Check(err, IsNil)
 	defer os.Remove(tmpfile.Name())
@@ -339,27 +352,25 @@ func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
 	_, err = tmpfile.Write([]byte(argsS))
 	c.Check(err, IsNil)
 
-	err = readConfig(&config, tmpfile.Name())
+	err = s.cmd.readConfig(tmpfile.Name())
 	c.Assert(err, IsNil)
-	c.Check(3, Equals, len(config.SbatchArguments))
-	c.Check(args, DeepEquals, config.SbatchArguments)
+	c.Check(args, DeepEquals, s.cmd.SbatchArguments)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchFuncWithNoConfigArgs(c *C) {
-	testSbatchFuncWithArgs(c, nil)
+	s.testSbatchFuncWithArgs(c, nil)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchFuncWithEmptyConfigArgs(c *C) {
-	testSbatchFuncWithArgs(c, []string{})
+	s.testSbatchFuncWithArgs(c, []string{})
 }
 
 func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
-	testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
+	s.testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
 }
 
-func testSbatchFuncWithArgs(c *C, args []string) {
-	defer func() { theConfig.SbatchArguments = nil }()
-	theConfig.SbatchArguments = append(theConfig.SbatchArguments, args...)
+func (s *MockArvadosServerSuite) testSbatchFuncWithArgs(c *C, args []string) {
+	s.cmd.SbatchArguments = append([]string(nil), args...)
 
 	container := arvados.Container{
 		UUID:               "123",
@@ -367,9 +378,11 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 		Priority:           1}
 
 	var expected []string
-	expected = append(expected, theConfig.SbatchArguments...)
+	expected = append(expected, s.cmd.SbatchArguments...)
 	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990")
-	c.Check(sbatchArgs(container), DeepEquals, expected)
+	args, err := s.cmd.sbatchArgs(container)
+	c.Check(args, DeepEquals, expected)
+	c.Check(err, IsNil)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
@@ -379,26 +392,10 @@ func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 		SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}},
 		Priority:             1}
 
-	c.Check(sbatchArgs(container), DeepEquals, []string{
+	args, err := s.cmd.sbatchArgs(container)
+	c.Check(args, DeepEquals, []string{
 		"--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990",
 		"--partition=blurb,b2",
 	})
-}
-
-func (s *TestSuite) TestIntegrationChangePriority(c *C) {
-	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
-	container := s.integrationTest(c, slurm, nil,
-		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
-			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(time.Second)
-			dispatcher.Arv.Update("containers", container.UUID,
-				arvadosclient.Dict{
-					"container": arvadosclient.Dict{"priority": 600}},
-				nil)
-			time.Sleep(time.Second)
-			dispatcher.UpdateState(container.UUID, dispatch.Complete)
-		})
-	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-	c.Assert(len(slurm.didRenice), Not(Equals), 0)
-	c.Check(slurm.didRenice[len(slurm.didRenice)-1], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "4000"})
+	c.Check(err, IsNil)
 }
