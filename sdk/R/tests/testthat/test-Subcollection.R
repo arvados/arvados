@@ -13,7 +13,7 @@ test_that("getRelativePath returns path relative to the tree root", {
     expect_that(fish$getRelativePath(), equals("animal/fish"))
 }) 
 
-test_that(paste("getFileListing by default returns path of all files",
+test_that(paste("getFileListing by default returns sorted path of all files",
                 "relative to the current subcollection"), {
 
     animal   <- Subcollection$new("animal")
@@ -26,7 +26,9 @@ test_that(paste("getFileListing by default returns path of all files",
     fish$add(blueFish)
 
     result <- animal$getFileListing()
-    expectedResult <- c("animal/fish/shark", "animal/fish/blueFish")
+
+    #expect sorted array
+    expectedResult <- c("animal/fish/blueFish", "animal/fish/shark")
 
     resultsMatch <- length(expectedResult) == length(result) &&
                     all(expectedResult == result)
@@ -34,7 +36,7 @@ test_that(paste("getFileListing by default returns path of all files",
     expect_that(resultsMatch, is_true())
 }) 
 
-test_that(paste("getFileListing returns names of all direct children",
+test_that(paste("getFileListing returns sorted names of all direct children",
                 "if fullPath is set to FALSE"), {
 
     animal <- Subcollection$new("animal")
@@ -47,7 +49,7 @@ test_that(paste("getFileListing returns names of all direct children",
     fish$add(shark)
 
     result <- animal$getFileListing(fullPath = FALSE)
-    expectedResult <- c("fish", "dog")
+    expectedResult <- c("dog", "fish")
 
     resultsMatch <- length(expectedResult) == length(result) &&
                     all(expectedResult == result)
