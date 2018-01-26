@@ -588,14 +588,18 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 			runner.CrunchLog.Printf("error closing crunchstat logs: %v", err)
 		}
 	}
+}
 
-	if runner.hoststatReporter != nil {
-		runner.hoststatReporter.Stop()
-		err = runner.hoststatLogger.Close()
-		if err != nil {
-			runner.CrunchLog.Printf("error closing hoststat logs: %v", err)
-		}
+func (runner *ContainerRunner) stopHoststat() error {
+	if runner.hoststatReporter == nil {
+		return nil
 	}
+	runner.hoststatReporter.Stop()
+	err := runner.hoststatLogger.Close()
+	if err != nil {
+		return fmt.Errorf("error closing hoststat logs: %v", err)
+	}
+	return nil
 }
 
 func (runner *ContainerRunner) startHoststat() {
@@ -1532,6 +1536,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		}
 
 		checkErr(runner.CaptureOutput())
+		checkErr(runner.stopHoststat())
 		checkErr(runner.CommitLogs())
 		checkErr(runner.UpdateContainerFinal())
 	}()
