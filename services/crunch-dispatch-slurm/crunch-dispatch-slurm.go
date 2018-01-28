@@ -234,7 +234,7 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 	} else if err != nil {
 		return nil, err
 	} else {
-		sbatchArgs = append(sbatchArgs, "--constraint="+it.Name)
+		sbatchArgs = append(sbatchArgs, "--constraint=instancetype="+it.Name)
 	}
 
 	return sbatchArgs, nil

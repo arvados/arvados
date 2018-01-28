@@ -388,7 +388,7 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 				{Name: "a1.small", Price: 0.04, RAM: 256000000, VCPUs: 2},
 				{Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
 			},
-			sbatchArgs: []string{"--constraint=a1.small"},
+			sbatchArgs: []string{"--constraint=instancetype=a1.small"},
 		},
 		// No node types configured => no slurm constraint
 		{

@@ -66,15 +66,19 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 //
 // SlurmNodeTypeFeatureKludge does a test-and-fix operation
 // immediately, and then periodically, in case slurm restarts and
-// forgets the list of valid features. It never returns, so it should
-// generally be invoked with "go".
+// forgets the list of valid features. It never returns (unless there
+// are no node types configured, in which case it returns
+// immediately), so it should generally be invoked with "go".
 func SlurmNodeTypeFeatureKludge(cc *arvados.Cluster) {
-	var types []string
+	if len(cc.InstanceTypes) == 0 {
+		return
+	}
+	var features []string
 	for _, it := range cc.InstanceTypes {
-		types = append(types, it.Name)
+		features = append(features, "instancetype="+it.Name)
 	}
 	for {
-		slurmKludge(types)
+		slurmKludge(features)
 		time.Sleep(time.Minute)
 	}
 }
@@ -85,8 +89,8 @@ var (
 	slurmErrBadGres    = "Invalid generic resource"
 )
 
-func slurmKludge(types []string) {
-	cmd := exec.Command("srun", "--gres=invalid-gres-specification", "--constraint="+strings.Join(types, "&"), "true")
+func slurmKludge(features []string) {
+	cmd := exec.Command("srun", "--gres=invalid-gres-specification", "--constraint="+strings.Join(features, "&"), "true")
 	out, err := cmd.CombinedOutput()
 	switch {
 	case err == nil:
@@ -95,8 +99,8 @@ func slurmKludge(types []string) {
 
 	case bytes.Contains(out, []byte(slurmErrBadFeature)):
 		log.Printf("temporarily configuring node %q with all node type features", slurmDummyNode)
-		for _, features := range []string{strings.Join(types, ","), ""} {
-			cmd = exec.Command("scontrol", "update", "NodeName="+slurmDummyNode, "Features="+features)
+		for _, nodeFeatures := range []string{strings.Join(features, ","), ""} {
+			cmd = exec.Command("scontrol", "update", "NodeName="+slurmDummyNode, "Features="+nodeFeatures)
 			log.Printf("running: %q %q", cmd.Path, cmd.Args)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
