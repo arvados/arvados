@@ -21,6 +21,8 @@ from arvnodeman.computenode.driver import BaseComputeNodeDriver
 from . import testutil
 
 class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
+    ACTOR_CLASS = dispatch.ComputeNodeSetupActor
+
     def make_mocks(self, arvados_effect=None):
         if arvados_effect is None:
             arvados_effect = [testutil.arvados_node_mock()]
@@ -35,7 +37,7 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
     def make_actor(self, arv_node=None):
         if not hasattr(self, 'timer'):
             self.make_mocks(arvados_effect=[arv_node] if arv_node else None)
-        self.setup_actor = dispatch.ComputeNodeSetupActor.start(
+        self.setup_actor = self.ACTOR_CLASS.start(
             self.timer, self.api_client, self.cloud_client,
             testutil.MockSize(1), arv_node).proxy()
 

@@ -13,7 +13,10 @@ import mock
 
 import arvnodeman.computenode.dispatch.slurm as slurm_dispatch
 from . import testutil
-from .test_computenode_dispatch import ComputeNodeShutdownActorMixin, ComputeNodeUpdateActorTestCase
+from .test_computenode_dispatch import \
+    ComputeNodeShutdownActorMixin, \
+    ComputeNodeSetupActorTestCase, \
+    ComputeNodeUpdateActorTestCase
 
 @mock.patch('subprocess.check_output')
 class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
@@ -123,4 +126,14 @@ class SLURMComputeNodeUpdateActorTestCase(ComputeNodeUpdateActorTestCase):
         cloud_node = testutil.cloud_node_mock()
         arv_node = testutil.arvados_node_mock()
         self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
-        check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=99000'])
+        check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=99000', 'Features=instancetype=z99.test'])
+
+class SLURMComputeNodeSetupActorTestCase(ComputeNodeSetupActorTestCase):
+    ACTOR_CLASS = slurm_dispatch.ComputeNodeSetupActor
+
+    @mock.patch('subprocess.check_output')
+    def test_update_node_features(self, check_output):
+        self.make_mocks()
+        self.make_actor()
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
+        check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=1000', 'Features=instancetype=z1.test'])
