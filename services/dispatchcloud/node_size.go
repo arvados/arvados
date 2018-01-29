@@ -18,6 +18,7 @@ import (
 var (
 	ErrConstraintsNotSatisfiable  = errors.New("constraints not satisfiable by any configured instance type")
 	ErrInstanceTypesNotConfigured = errors.New("site configuration does not list any instance types")
+	discountConfiguredRAMPercent  = 5
 )
 
 // ChooseInstanceType returns the cheapest available
@@ -25,6 +26,8 @@ var (
 func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvados.InstanceType, err error) {
 	needVCPUs := ctr.RuntimeConstraints.VCPUs
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
+
+	needRAM = needRAM * 100 / int64(100-discountConfiguredRAMPercent)
 
 	if len(cc.InstanceTypes) == 0 {
 		err = ErrInstanceTypesNotConfigured
