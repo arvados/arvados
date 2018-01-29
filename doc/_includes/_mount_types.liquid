@@ -64,7 +64,7 @@ When a container's output_path is a tmp mount backed by local disk, this output 
 
 1. Only mount points of kind @collection@ are supported.
 
-2. Mount points underneath output_path which have "writable":true will be copied into output_path the mount point during container initialization.  These files may be updated, renamed, or deleted by the running container.  On container completetion, the (possibly modified) copies are saved to the output collection.
+2. Mount points underneath output_path which have "writable":true are copied into output_path during container initialization and may be updated, renamed, or deleted by the running container.  The original collection is not modified.  On container completion, files remaining in the output are saved to the output collection.   The mount at output_path must be big enough to accommodate copies of the inner writable mounts.
 
 3. If any such mount points are configured as @exclude_from_output":true@, they will be excluded from the output.
 
