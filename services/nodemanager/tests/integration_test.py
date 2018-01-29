@@ -25,9 +25,13 @@ from functools import partial
 import arvados
 import StringIO
 
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(formatter)
 logger = logging.getLogger("logger")
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stderr))
+logger.addHandler(handler)
 
 detail = logging.getLogger("detail")
 detail.setLevel(logging.INFO)
@@ -35,7 +39,9 @@ if os.environ.get("ANMTEST_LOGLEVEL"):
     detail_content = sys.stderr
 else:
     detail_content = StringIO.StringIO()
-detail.addHandler(logging.StreamHandler(detail_content))
+handler = logging.StreamHandler(detail_content)
+handler.setFormatter(formatter)
+detail.addHandler(handler)
 
 fake_slurm = None
 compute_nodes = None
