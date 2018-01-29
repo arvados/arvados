@@ -37,7 +37,7 @@ class ArvadosCommandTool(CommandLineTool):
     def job(self, joborder, output_callback, **kwargs):
         if self.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
-            if dockerReq.get("dockerOutputDirectory") and dockerReq.get("dockerOutputDirectory").startswith('/'):
+            if dockerReq and dockerReq.get("dockerOutputDirectory"):
                 kwargs["outdir"] = dockerReq.get("dockerOutputDirectory")
                 kwargs["docker_outdir"] = dockerReq.get("dockerOutputDirectory")
             else:

@@ -577,20 +577,28 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	for _, cp := range copyFiles {
 		dir, err := os.Stat(cp.src)
-		if err == nil {
-			if dir.IsDir() {
-				err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
-					if walkinfo.Mode().IsRegular() {
-						return copyfile(walkpath, path.Join(cp.bind, walkpath[len(cp.src):]))
-					}
+		if err != nil {
+			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)
+		}
+		if dir.IsDir() {
+			err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
+				if walkerr != nil {
+					return walkerr;
+				}
+				if walkinfo.Mode().IsRegular() {
+					return copyfile(walkpath, path.Join(cp.bind, walkpath[len(cp.src):]))
+				} else if walkinfo.Mode().IsDir() {
+					// will be visited by Walk()
 					return nil
-				})
-			} else {
-				err = copyfile(cp.src, cp.bind)
-			}
+				} else {
+					return fmt.Errorf("Source %q is not a regular file or directory", cp.src)
+				}
+			})
+		} else {
+			err = copyfile(cp.src, cp.bind)
 		}
 		if err != nil {
-			return fmt.Errorf("While staging writable files: %v", err)
+			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)
 		}
 	}
 
