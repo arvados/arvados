@@ -1,4 +1,4 @@
-context("Http Parser")
+context("Http Request")
 
 
 test_that(paste("createQuery generates and encodes query portion of http",

@@ -215,7 +215,7 @@ test_that("move raises exception if new location is not valid", {
     collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$move("fish", "object"),
-                throws_error("Element you want to move doesn't exist in the collection.",
+                throws_error("Content you want to move doesn't exist in the collection.",
                              fixed = TRUE))
 })
 

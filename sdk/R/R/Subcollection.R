@@ -13,7 +13,7 @@ Subcollection <- R6::R6Class(
 
         initialize = function(name)
         {
-            private$name       <- name
+            private$name <- name
         },
 
         getName = function() private$name,
@@ -101,21 +101,7 @@ Subcollection <- R6::R6Class(
 
         getFileListing = function(fullPath = TRUE)
         {
-            content <- NULL
-
-            if(fullPath)
-            {
-                for(child in private$children)
-                    content <- c(content, child$getFileListing())
-
-                if(private$name != "")
-                    content <- unlist(paste0(private$name, "/", content))
-            }
-            else
-            {
-                for(child in private$children)
-                    content <- c(content, child$getName())
-            }
+            content <- private$getContentAsCharVector(fullPath)
 
             content[order(tolower(content))]
         },
@@ -250,8 +236,50 @@ Subcollection <- R6::R6Class(
             parent$remove(private$name)
 
             parent$setCollection(parentsCollection, setRecursively = FALSE)
+        },
+
+        getContentAsCharVector = function(fullPath = TRUE)
+        {
+            content <- NULL
+
+            if(fullPath)
+            {
+                for(child in private$children)
+                    content <- c(content, child$getFileListing())
+
+                if(private$name != "")
+                    content <- unlist(paste0(private$name, "/", content))
+            }
+            else
+            {
+                for(child in private$children)
+                    content <- c(content, child$getName())
+            }
+
+            content
+
         }
     ),
     
     cloneable = FALSE
 )
+
+#' @export print.Subcollection
+print.Subcollection = function(subCollection)
+{
+    collection   <- NULL
+    relativePath <- subCollection$getRelativePath()
+
+    if(!is.null(subCollection$getCollection()))
+    {
+        collection <- subCollection$getCollection()$uuid
+
+        if(!subCollection$getName() == "")
+            relativePath <- paste0("/", relativePath)
+    }
+
+    cat(paste0("Type:          ", "\"", "Arvados Subcollection", "\""), sep = "\n")
+    cat(paste0("Name:          ", "\"", subCollection$getName(), "\""), sep = "\n")
+    cat(paste0("Relative path: ", "\"", relativePath, "\"") , sep = "\n")
+    cat(paste0("Collection:    ", "\"", collection, "\""), sep = "\n")
+}

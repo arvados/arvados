@@ -165,3 +165,11 @@ Arvados <- R6::R6Class(
 
     cloneable = FALSE
 )
+
+#' @export print.Arvados
+print.Arvados = function(arvados)
+{
+    cat(paste0("Type:  ", "\"", "Arvados", "\""), sep = "\n")
+    cat(paste0("Host:  ", "\"", arvados$getHostName(), "\""), sep = "\n")
+    cat(paste0("Token: ", "\"", arvados$getToken(), "\"") , sep = "\n")
+}

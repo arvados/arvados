@@ -50,7 +50,6 @@ Collection <- R6::R6Class(
                "Subcollection" %in% class(content))
             {
                 subcollection$add(content)
-
                 content
             }
             else
@@ -137,7 +136,7 @@ Collection <- R6::R6Class(
             elementToMove <- self$get(content)
 
             if(is.null(elementToMove))
-                stop("Element you want to move doesn't exist in the collection.")
+                stop("Content you want to move doesn't exist in the collection.")
 
             elementToMove$move(newLocation)
         },
@@ -161,18 +160,15 @@ Collection <- R6::R6Class(
 
         REST        = NULL,
         tree        = NULL,
-        fileContent = NULL,
-
-        generateTree = function(content)
-        {
-            treeBranches <- sapply(collectionContent, function(filePath)
-            {
-                splitPath <- unlist(strsplit(filePath$name, "/", fixed = TRUE))
-
-                branch = private$createBranch(splitPath, filePath$fileSize)      
-            })
-        }
+        fileContent = NULL
     ),
 
     cloneable = FALSE
 )
+
+#' @export print.Collection
+print.Collection = function(collection)
+{
+    cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
+    cat(paste0("uuid: ", "\"", collection$uuid, "\""), sep = "\n")
+}

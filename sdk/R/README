@@ -57,7 +57,7 @@ deletedCollection <- arv$deleteCollection("uuid")
 
 #Update a collection's metadata:
 
-updatedCollection <- arv$updateCollection("uuid", list(name = "My new name", description = "a brand new description"))
+updatedCollection <- arv$updateCollection("uuid", list(name = "New name", description = "New description"))
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -189,7 +189,7 @@ file$move("newDestination/file.cpp")
 subcollection <- collection$get("location/to/folder")
 subcollection$move("newDestination/folder")
 
-#Make sure to include file name in new destination
+#Make sure to include new file name in destination
 #In second example file$move("newDestination/") will not work
 
 --------------------------------------------------------------------------------------------------------------------------------

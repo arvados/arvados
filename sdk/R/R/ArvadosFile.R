@@ -202,3 +202,21 @@ ArvadosFile <- R6::R6Class(
 
     cloneable = FALSE
 )
+
+#' @export print.ArvadosFile
+print.ArvadosFile = function(arvadosFile)
+{
+    collection   <- NULL
+    relativePath <- arvadosFile$getRelativePath()
+
+    if(!is.null(arvadosFile$getCollection()))
+    {
+        collection <- arvadosFile$getCollection()$uuid
+        relativePath <- paste0("/", relativePath)
+    }
+
+    cat(paste0("Type:          ", "\"", "ArvadosFile", "\""), sep = "\n")
+    cat(paste0("Name:          ", "\"", arvadosFile$getName(), "\""), sep = "\n")
+    cat(paste0("Relative path: ", "\"", relativePath, "\"") , sep = "\n")
+    cat(paste0("Collection:    ", "\"", collection, "\""), sep = "\n")
+}

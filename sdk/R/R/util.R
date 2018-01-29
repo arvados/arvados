@@ -49,6 +49,6 @@ splitToPathAndName = function(path)
     nameAndPath$name <- components[length(components)]
     nameAndPath$path <- trimFromStart(paste0(components[-length(components)], collapse = "/"),
                                       "/")
-    
+
     nameAndPath
 }
