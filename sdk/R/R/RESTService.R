@@ -174,7 +174,7 @@ RESTService <- R6::R6Class(
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
 
-            paste("File deleted:", relativePath)
+            serverResponse
         },
 
         move = function(from, to, uuid)

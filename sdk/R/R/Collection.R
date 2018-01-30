@@ -49,6 +49,10 @@ Collection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
+
+                if(content$getName() == "")
+                    stop("Content has invalid name.")
+
                 subcollection$add(content)
                 content
             }
@@ -118,8 +122,14 @@ Collection <- R6::R6Class(
                         stop(paste("File", filePath, "doesn't exist."))
 
                     parent <- file$getParent()
+
+                    if(is.null(parent))
+                        stop("You can't delete root folder.")
+
                     parent$remove(file$getName())
                 })
+
+                "Content removed"
             }
             else 
             {
@@ -170,5 +180,5 @@ Collection <- R6::R6Class(
 print.Collection = function(collection)
 {
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
-    cat(paste0("uuid: ", "\"", collection$uuid, "\""), sep = "\n")
+    cat(paste0("uuid: ", "\"", collection$uuid,      "\""), sep = "\n")
 }

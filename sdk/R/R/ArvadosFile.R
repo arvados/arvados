@@ -13,9 +13,10 @@ ArvadosFile <- R6::R6Class(
 
         initialize = function(name)
         {
-            private$name             <- name
-            private$http             <- HttpRequest$new()
-            private$httpParser       <- HttpParser$new()
+            if(name == "")
+                stop("Invalid name.")
+
+            private$name <- name
         },
 
         getName = function() private$name,
@@ -132,7 +133,6 @@ ArvadosFile <- R6::R6Class(
             if(is.null(private$collection))
                 stop("ArvadosFile doesn't belong to any collection")
 
-
             newLocation <- trimFromEnd(newLocation, "/")
             nameAndPath <- splitToPathAndName(newLocation)
 
@@ -168,8 +168,6 @@ ArvadosFile <- R6::R6Class(
         size       = NULL,
         parent     = NULL,
         collection = NULL,
-        http       = NULL,
-        httpParser = NULL,
         buffer     = NULL,
 
         attachToNewParent = function(newParent)
@@ -215,8 +213,8 @@ print.ArvadosFile = function(arvadosFile)
         relativePath <- paste0("/", relativePath)
     }
 
-    cat(paste0("Type:          ", "\"", "ArvadosFile", "\""), sep = "\n")
+    cat(paste0("Type:          ", "\"", "ArvadosFile",         "\""), sep = "\n")
     cat(paste0("Name:          ", "\"", arvadosFile$getName(), "\""), sep = "\n")
-    cat(paste0("Relative path: ", "\"", relativePath, "\"") , sep = "\n")
-    cat(paste0("Collection:    ", "\"", collection, "\""), sep = "\n")
+    cat(paste0("Relative path: ", "\"", relativePath,          "\""), sep = "\n")
+    cat(paste0("Collection:    ", "\"", collection,            "\""), sep = "\n")
 }

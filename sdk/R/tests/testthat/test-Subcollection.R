@@ -73,6 +73,15 @@ test_that("add adds content to inside collection tree", {
     expect_that(animalContainsDog, is_true())
 }) 
 
+test_that("add raises exception if content name is empty string", {
+
+    animal     <- Subcollection$new("animal")
+    rootFolder <- Subcollection$new("")
+
+    expect_that(animal$add(rootFolder),
+                throws_error("Content has invalid name.", fixed = TRUE))
+})
+
 test_that(paste("add raises exception if ArvadosFile/Subcollection", 
                 "with same name already exists in the subcollection"), {
 

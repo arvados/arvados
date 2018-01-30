@@ -2,6 +2,11 @@ source("fakes/FakeRESTService.R")
 
 context("ArvadosFile")
 
+test_that("constructor raises error if  file name is empty string", {
+
+    expect_that(ArvadosFile$new(""), throws_error("Invalid name."))
+}) 
+
 test_that("getFileListing always returns file name", {
 
     dog <- ArvadosFile$new("dog")
@@ -207,6 +212,7 @@ test_that(paste("move raises exception if newLocationInCollection",
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
+
     fakeREST <- FakeRESTService$new(collectionContent)
 
     api <- Arvados$new("myToken", "myHostName")
@@ -227,6 +233,7 @@ test_that("move raises exception if new location contains content with the same 
                            "animal/dog",
                            "animal/fish/shark",
                            "dog")
+
     fakeREST <- FakeRESTService$new(collectionContent)
 
     api <- Arvados$new("myToken", "myHostName")
@@ -247,6 +254,7 @@ test_that("move moves arvados file inside collection tree", {
                            "animal/dog",
                            "animal/fish/shark",
                            "ball")
+
     fakeREST <- FakeRESTService$new(collectionContent)
 
     api <- Arvados$new("myToken", "myHostName")

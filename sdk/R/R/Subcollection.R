@@ -38,7 +38,11 @@ Subcollection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
+                if(content$getName() == "")
+                    stop("Content has invalid name.")
+
                 childWithSameName <- self$get(content$getName())
+
                 if(!is.null(childWithSameName))
                     stop(paste("Subcollection already contains ArvadosFile",
                                "or Subcollection with same name."))
@@ -83,6 +87,7 @@ Subcollection <- R6::R6Class(
                 {
                     REST <- private$collection$getRESTService()
                     REST$delete(child$getRelativePath(), private$collection$uuid)
+
                     child$setCollection(NULL)
                 }
 
@@ -102,7 +107,6 @@ Subcollection <- R6::R6Class(
         getFileListing = function(fullPath = TRUE)
         {
             content <- private$getContentAsCharVector(fullPath)
-
             content[order(tolower(content))]
         },
 
@@ -257,7 +261,6 @@ Subcollection <- R6::R6Class(
             }
 
             content
-
         }
     ),
     
@@ -280,6 +283,6 @@ print.Subcollection = function(subCollection)
 
     cat(paste0("Type:          ", "\"", "Arvados Subcollection", "\""), sep = "\n")
     cat(paste0("Name:          ", "\"", subCollection$getName(), "\""), sep = "\n")
-    cat(paste0("Relative path: ", "\"", relativePath, "\"") , sep = "\n")
-    cat(paste0("Collection:    ", "\"", collection, "\""), sep = "\n")
+    cat(paste0("Relative path: ", "\"", relativePath,            "\""), sep = "\n")
+    cat(paste0("Collection:    ", "\"", collection,              "\""), sep = "\n")
 }

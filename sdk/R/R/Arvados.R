@@ -25,12 +25,12 @@ Arvados <- R6::R6Class(
                 Sys.setenv(ARVADOS_API_TOKEN = authToken)
 
             hostName  <- Sys.getenv("ARVADOS_API_HOST");
-            token <- Sys.getenv("ARVADOS_API_TOKEN");
+            token     <- Sys.getenv("ARVADOS_API_TOKEN");
 
             if(hostName == "" | token == "")
-                stop(paste0("Please provide host name and authentification token",
-                            " or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
-                            " environment variables."))
+                stop(paste("Please provide host name and authentification token",
+                           "or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
+                           "environment variables."))
 
             private$REST  <- RESTService$new(token, hostName, NULL,
                                              HttpRequest$new(), HttpParser$new())
@@ -119,8 +119,7 @@ Arvados <- R6::R6Class(
             names(body) <- c("group")
             body$group <- newContent
 
-            updatedProject <- private$REST$updateResource("groups",
-                                                          uuid, body)
+            updatedProject <- private$REST$updateResource("groups", uuid, body)
             updatedProject
         },
 
@@ -131,8 +130,7 @@ Arvados <- R6::R6Class(
 
             filters[[length(filters) + 1]] <- list("group_class", "=", "project")
 
-            projects <- private$REST$listResources("groups", filters,
-                                                   limit, offset)
+            projects <- private$REST$listResources("groups", filters, limit, offset)
             projects
         },
 
@@ -169,7 +167,7 @@ Arvados <- R6::R6Class(
 #' @export print.Arvados
 print.Arvados = function(arvados)
 {
-    cat(paste0("Type:  ", "\"", "Arvados", "\""), sep = "\n")
+    cat(paste0("Type:  ", "\"", "Arvados",             "\""), sep = "\n")
     cat(paste0("Host:  ", "\"", arvados$getHostName(), "\""), sep = "\n")
-    cat(paste0("Token: ", "\"", arvados$getToken(), "\"") , sep = "\n")
+    cat(paste0("Token: ", "\"", arvados$getToken(),    "\""), sep = "\n")
 }
