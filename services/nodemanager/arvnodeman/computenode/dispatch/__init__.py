@@ -113,14 +113,16 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
-        self.arvados_node = self._arvados.nodes().create(body={}).execute()
+        self.arvados_node = self._arvados.nodes().create(
+            body={}, assign_slot=True).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
-        self.arvados_node = self._clean_arvados_node(
-            node, "Prepared by Node Manager")
+        self._clean_arvados_node(node, "Prepared by Node Manager")
+        self.arvados_node = self._arvados.nodes().update(
+            body={}, assign_slot=True).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception

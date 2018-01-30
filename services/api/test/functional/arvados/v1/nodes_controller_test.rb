@@ -78,6 +78,40 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_not_nil json_response['uuid']
     assert_not_nil json_response['info'].is_a? Hash
     assert_not_nil json_response['info']['ping_secret']
+    assert_nil json_response['slot_number']
+    assert_nil json_response['hostname']
+  end
+
+  test "create node and assign slot" do
+    authorize_with :admin
+    post :create, {node: {}, assign_slot: true}
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_not_nil json_response['info'].is_a? Hash
+    assert_not_nil json_response['info']['ping_secret']
+    assert_operator 0, :<, json_response['slot_number']
+    n = json_response['slot_number']
+    assert_equal "compute#{n}", json_response['hostname']
+  end
+
+  test "update node and assign slot" do
+    authorize_with :admin
+    node = nodes(:new_with_no_hostname)
+    post :update, {id: node.uuid, node: {}, assign_slot: true}
+    assert_response :success
+    assert_operator 0, :<, json_response['slot_number']
+    n = json_response['slot_number']
+    assert_equal "compute#{n}", json_response['hostname']
+  end
+
+  test "update node and assign slot, don't clobber hostname" do
+    authorize_with :admin
+    node = nodes(:new_with_custom_hostname)
+    post :update, {id: node.uuid, node: {}, assign_slot: true}
+    assert_response :success
+    assert_operator 0, :<, json_response['slot_number']
+    n = json_response['slot_number']
+    assert_equal "custom1", json_response['hostname']
   end
 
   test "ping adds node stats to info" do

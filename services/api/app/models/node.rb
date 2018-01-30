@@ -106,27 +106,7 @@ class Node < ArvadosModel
       end
     end
 
-    # Assign slot_number
-    if self.slot_number.nil?
-      while true
-        n = self.class.available_slot_number
-        if n.nil?
-          raise "No available node slots"
-        end
-        self.slot_number = n
-        begin
-          self.save!
-          break
-        rescue ActiveRecord::RecordNotUnique
-          # try again
-        end
-      end
-    end
-
-    # Assign hostname
-    if self.hostname.nil? and Rails.configuration.assign_node_hostname
-      self.hostname = self.class.hostname_for_slot(self.slot_number)
-    end
+    assign_slot
 
     # Record other basic stats
     ['total_cpu_cores', 'total_ram_mb', 'total_scratch_mb'].each do |key|
@@ -140,7 +120,29 @@ class Node < ArvadosModel
     save!
   end
 
+  def assign_slot
+    return if self.slot_number.andand > 0
+    while true
+      self.slot_number = self.class.available_slot_number
+      if self.slot_number.nil?
+        raise "No available node slots"
+      end
+      begin
+        save!
+        return assign_hostname
+      rescue ActiveRecord::RecordNotUnique
+        # try again
+      end
+    end
+  end
+
   protected
+
+  def assign_hostname
+    if self.hostname.nil? and Rails.configuration.assign_node_hostname
+      self.hostname = self.class.hostname_for_slot(self.slot_number)
+    end
+  end
 
   def self.available_slot_number
     # Join the sequence 1..max with the nodes table. Return the first

@@ -25,7 +25,12 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
     def make_mocks(self, arvados_effect=None):
         if arvados_effect is None:
-            arvados_effect = [testutil.arvados_node_mock()]
+            arvados_effect = [testutil.arvados_node_mock(
+                slot_number=None,
+                hostname=None,
+                first_ping_at=None,
+                last_ping_at=None,
+            )]
         self.arvados_effect = arvados_effect
         self.timer = testutil.MockTimer()
         self.api_client = mock.MagicMock(name='api_client')
