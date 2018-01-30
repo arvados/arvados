@@ -7,6 +7,7 @@ window.SessionDB = function(rhosts) {
     Object.assign(db, {
         remoteHosts: rhosts || [],
         discoveryCache: {},
+        tokenUUIDCache: null,
         loadFromLocalStorage: function() {
             try {
                 return JSON.parse(window.localStorage.getItem('sessions')) || {}
@@ -111,22 +112,13 @@ window.SessionDB = function(rhosts) {
             // Takes a cluster UUID prefix and returns a salted token to allow
             // log into said cluster using federated identity.
             var session = db.loadLocal()
-            return db.request(session, '/arvados/v1/api_client_authorizations', {
-                data: {
-                    filters: JSON.stringify([['api_token', '=', session.token]]),
-                }
-            }).then(function(resp) {
-                if (resp.items.length == 1) {
-                    var token_uuid = resp.items[0].uuid
-                    if (token_uuid.length !== '') {
-                        var shaObj = new jsSHA("SHA-1", "TEXT")
-                        shaObj.setHMACKey(session.token, "TEXT")
-                        shaObj.update(uuid_prefix)
-                        var hmac = shaObj.getHMAC("HEX")
-                        return 'v2/' + token_uuid + '/' + hmac
-                    } else { return null }
-                }
-            }).catch(function(err) { return null })
+            return db.tokenUUID().then(function(token_uuid){
+                var shaObj = new jsSHA("SHA-1", "TEXT")
+                shaObj.setHMACKey(session.token, "TEXT")
+                shaObj.update(uuid_prefix)
+                var hmac = shaObj.getHMAC("HEX")
+                return 'v2/' + token_uuid + '/' + hmac
+            })
         },
         checkForNewToken: function() {
             // If there's a token and baseURL in the location bar (i.e.,
@@ -197,6 +189,26 @@ window.SessionDB = function(rhosts) {
                 m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(cache)
             }
             return cache
+        },
+        // Return a promise with the local session token's UUID from the API server.
+        tokenUUID: function() {
+            var cache = db.tokenUUIDCache
+            if (!cache) {
+                var session = db.loadLocal()
+                return db.request(session, '/arvados/v1/api_client_authorizations', {
+                    data: {
+                        filters: JSON.stringify([['api_token', '=', session.token]]),
+                    }
+                }).then(function(resp) {
+                    var uuid = resp.items[0].uuid
+                    db.tokenUUIDCache = uuid
+                    return uuid
+                })
+            } else {
+                return new Promise(function(resolve, reject) {
+                    resolve(cache)
+                })
+            }
         },
         request: function(session, path, opts) {
             opts = opts || {}
