@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -28,12 +27,6 @@ type SqueueChecker struct {
 	done      chan struct{}
 	sync.Cond
 }
-
-func squeueFunc() *exec.Cmd {
-	return exec.Command("squeue", "--all", "--format=%j %y %Q")
-}
-
-var squeueCmd = squeueFunc
 
 // HasUUID checks if a given container UUID is in the slurm queue.
 // This does not run squeue directly, but instead blocks until woken
@@ -84,7 +77,7 @@ func (sqc *SqueueChecker) check() {
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 
-	cmd := squeueCmd()
+	cmd := theConfig.slurm.QueueCommand([]string{"--all", "--format=%j %y %Q"})
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Run(); err != nil {
