@@ -63,6 +63,7 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.assertEqual(self.arvados_effect[-1],
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
         assert(finished.wait(self.TIMEOUT))
+        self.api_client.nodes().create.called_with(body={}, assign_slot=True)
         self.assertEqual(1, self.api_client.nodes().create().execute.call_count)
         self.assertEqual(1, self.api_client.nodes().update().execute.call_count)
         self.assert_node_properties_updated()
@@ -78,7 +79,8 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
         assert(finished.wait(self.TIMEOUT))
         self.assert_node_properties_updated()
-        self.assertEqual(2, self.api_client.nodes().update().execute.call_count)
+        self.api_client.nodes().create.called_with(body={}, assign_slot=True)
+        self.assertEqual(3, self.api_client.nodes().update().execute.call_count)
         self.assertEqual(self.cloud_client.create_node(),
                          self.setup_actor.cloud_node.get(self.TIMEOUT))
 
@@ -195,7 +197,7 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
             start_time = time.time()
         monitor_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_node, start_time, self.shutdowns,
-            testutil.cloud_node_fqdn, self.timer, self.updates, self.cloud_client,
+            self.timer, self.updates, self.cloud_client,
             self.arvados_node)
         self.shutdown_actor = self.ACTOR_CLASS.start(
             self.timer, self.cloud_client, self.arvados_client, monitor_actor,
@@ -333,7 +335,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
             start_time = time.time()
         self.node_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns,
-            testutil.cloud_node_fqdn, self.timer, self.updates, self.cloud_client,
+            self.timer, self.updates, self.cloud_client,
             arv_node, boot_fail_after=300).proxy()
         self.node_actor.subscribe(self.subscriber).get(self.TIMEOUT)
 
@@ -518,19 +520,10 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(testutil.ip_address_mock(4),
                          current_arvados['ip_address'])
 
-    def test_update_arvados_node_syncs_when_fqdn_mismatch(self):
+    def test_update_arvados_node_calls_sync_node(self):
         self.make_mocks(5)
         self.cloud_mock.extra['testname'] = 'cloudfqdn.zzzzz.arvadosapi.com'
         self.make_actor()
         arv_node = testutil.arvados_node_mock(5)
         self.node_actor.update_arvados_node(arv_node).get(self.TIMEOUT)
         self.assertEqual(1, self.updates.sync_node.call_count)
-
-    def test_update_arvados_node_skips_sync_when_fqdn_match(self):
-        self.make_mocks(6)
-        arv_node = testutil.arvados_node_mock(6)
-        self.cloud_mock.extra['testname'] ='{n[hostname]}.{n[domain]}'.format(
-            n=arv_node)
-        self.make_actor()
-        self.node_actor.update_arvados_node(arv_node).get(self.TIMEOUT)
-        self.assertEqual(0, self.updates.sync_node.call_count)

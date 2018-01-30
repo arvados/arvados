@@ -28,6 +28,12 @@ class SlurmMixin(object):
             self._logger.error(
                 "SLURM update %r failed", cmd, exc_info=True)
 
+    def _update_slurm_size_attrs(self, nodename, size):
+        self._update_slurm_node(nodename, [
+            'Weight=%i' % int(size.price * 1000),
+            'Features=instancetype=' + size.name,
+        ])
+
     def _get_slurm_state(self, nodename):
         return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', nodename])
 
@@ -36,10 +42,7 @@ class ComputeNodeSetupActor(SlurmMixin, SetupActorBase):
     def create_cloud_node(self):
         hostname = self.arvados_node.get("hostname")
         if hostname:
-            self._update_slurm_node(self.arvados_node['hostname'], [
-                'Weight=%i' % int(self.cloud_size.price * 1000),
-                'Features=instancetype='+self.cloud_size.name,
-            ])
+            self._update_slurm_size_attrs(hostname, self.cloud_size)
         return super(ComputeNodeSetupActor, self).create_cloud_node()
 
 
@@ -103,11 +106,14 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
 
 class ComputeNodeUpdateActor(SlurmMixin, UpdateActorBase):
     def sync_node(self, cloud_node, arvados_node):
+        """Keep SLURM's node properties up to date."""
         hostname = arvados_node.get("hostname")
         if hostname:
-            self._update_slurm_node(hostname, [
-                'Weight=%i' % int(cloud_node.size.price * 1000),
-                'Features=instancetype=' + cloud_node.size.name,
-            ])
+            # This is only needed when slurm has restarted and lost
+            # the dynamically configured node properties. So it's
+            # usually redundant, but detecting when it's necessary
+            # would be about the same amount of work as doing it
+            # repetitively.
+            self._update_slurm_size_attrs(hostname, cloud_node.size)
         return super(ComputeNodeUpdateActor, self).sync_node(
             cloud_node, arvados_node)

@@ -133,7 +133,11 @@ class SLURMComputeNodeSetupActorTestCase(ComputeNodeSetupActorTestCase):
 
     @mock.patch('subprocess.check_output')
     def test_update_node_features(self, check_output):
-        self.make_mocks()
+        # `scontrol update` happens only if the Arvados node record
+        # has a hostname. ComputeNodeSetupActorTestCase.make_mocks
+        # uses mocks with scrubbed hostnames, so we override with the
+        # default testutil.arvados_node_mock.
+        self.make_mocks(arvados_effect=[testutil.arvados_node_mock()])
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
         check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=1000', 'Features=instancetype=z1.test'])
