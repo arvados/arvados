@@ -239,12 +239,13 @@ class ContainerRequest < ArvadosModel
       end
 
     when Final
-      if self.state_changed? and not current_user.andand.is_admin
-        self.errors.add :state, "of container request can only be set to Final by system."
-      end
-
       if self.state_was == Committed
-        permitted.push :output_uuid, :log_uuid
+        # "Cancel" means setting priority=0, state=Committed
+        permitted.push :priority
+
+        if current_user.andand.is_admin
+          permitted.push :output_uuid, :log_uuid
+        end
       end
 
     end
