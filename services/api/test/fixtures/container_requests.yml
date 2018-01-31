@@ -219,7 +219,7 @@ canceled_with_queued_container:
   uuid: zzzzz-xvhdp-canceledqueuedc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: canceled with queued container
-  state: Committed
+  state: Final
   priority: 0
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
@@ -238,7 +238,7 @@ canceled_with_locked_container:
   uuid: zzzzz-xvhdp-canceledlocekdc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: canceled with locked container
-  state: Committed
+  state: Final
   priority: 0
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
