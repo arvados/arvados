@@ -1028,64 +1028,71 @@ class SharedDirectory(Directory):
         self.current_user = api.users().current().execute(num_retries=num_retries)
         self._poll = True
         self._poll_time = poll_time
+        self._updating_lock = threading.Lock()
 
     @use_counter
     def update(self):
-        with llfuse.lock_released:
-            all_projects = arvados.util.list_all(
-                self.api.groups().list, self.num_retries,
-                filters=[['group_class','=','project']])
-            objects = {}
-            for ob in all_projects:
-                objects[ob['uuid']] = ob
-
-            roots = []
-            root_owners = {}
-            for ob in all_projects:
-                if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in objects:
-                    roots.append(ob)
-                    root_owners[ob['owner_uuid']] = True
-
-            lusers = arvados.util.list_all(
-                self.api.users().list, self.num_retries,
-                filters=[['uuid','in', list(root_owners)]])
-            lgroups = arvados.util.list_all(
-                self.api.groups().list, self.num_retries,
-                filters=[['uuid','in', list(root_owners)]])
-
-            users = {}
-            groups = {}
-
-            for l in lusers:
-                objects[l["uuid"]] = l
-            for l in lgroups:
-                objects[l["uuid"]] = l
-
-            contents = {}
-            for r in root_owners:
-                if r in objects:
-                    obr = objects[r]
-                    if obr.get("name"):
-                        contents[obr["name"]] = obr
-                    #elif obr.get("username"):
-                    #    contents[obr["username"]] = obr
-                    elif "first_name" in obr:
-                        contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
-
-
-            for r in roots:
-                if r['owner_uuid'] not in objects:
-                    contents[r['name']] = r
-
-        # end with llfuse.lock_released, re-acquire lock
-
         try:
+            with llfuse.lock_released:
+                self._updating_lock.acquire()
+                if not self.stale():
+                    return
+
+                all_projects = arvados.util.list_all(
+                    self.api.groups().list, self.num_retries,
+                    filters=[['group_class','=','project']],
+                    select=["uuid", "owner_uuid"])
+                objects = {}
+                for ob in all_projects:
+                    objects[ob['uuid']] = ob
+
+                roots = []
+                root_owners = set()
+                current_uuid = self.current_user['uuid']
+                for ob in all_projects:
+                    if ob['owner_uuid'] != current_uuid and ob['owner_uuid'] not in objects:
+                        roots.append(ob['uuid'])
+                        root_owners.add(ob['owner_uuid'])
+
+                lusers = arvados.util.list_all(
+                    self.api.users().list, self.num_retries,
+                    filters=[['uuid','in', list(root_owners)]])
+                lgroups = arvados.util.list_all(
+                    self.api.groups().list, self.num_retries,
+                    filters=[['uuid','in', list(root_owners)+roots]])
+
+                for l in lusers:
+                    objects[l["uuid"]] = l
+                for l in lgroups:
+                    objects[l["uuid"]] = l
+
+                contents = {}
+                for r in root_owners:
+                    if r in objects:
+                        obr = objects[r]
+                        if obr.get("name"):
+                            contents[obr["name"]] = obr
+                        #elif obr.get("username"):
+                        #    contents[obr["username"]] = obr
+                        elif "first_name" in obr:
+                            contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
+
+                for r in roots:
+                    if r in objects:
+                        obr = objects[r]
+                        if obr['owner_uuid'] not in objects:
+                            contents[obr["name"]] = obr
+
+            # end with llfuse.lock_released, re-acquire lock
+
             self.merge(contents.items(),
                        lambda i: i[0],
                        lambda a, i: a.uuid() == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
         except Exception:
-            _logger.exception()
+            _logger.exception("arv-mount shared dir error")
+        finally:
+            self._updating_lock.release()
 
     def want_event_subscribe(self):
         return True

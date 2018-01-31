@@ -402,7 +402,17 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 	}()
 	errChan := make(chan error)
 	go func() {
-		errChan <- v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), bufr, nil)
+		var body io.Reader = bufr
+		if len(block) == 0 {
+			// We must send a "Content-Length: 0" header,
+			// but the http client interprets
+			// ContentLength==0 as "unknown" unless it can
+			// confirm by introspection that Body will
+			// read 0 bytes.
+			body = http.NoBody
+			bufr.Close()
+		}
+		errChan <- v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), body, nil)
 	}()
 	select {
 	case <-ctx.Done():
@@ -722,7 +732,9 @@ func (c *azureBlobClient) GetBlobRange(cname, bname, byterange string, hdrs map[
 
 func (c *azureBlobClient) CreateBlockBlobFromReader(cname, bname string, size uint64, rdr io.Reader, hdrs map[string]string) error {
 	c.stats.Tick(&c.stats.Ops, &c.stats.CreateOps)
-	rdr = NewCountingReader(rdr, c.stats.TickOutBytes)
+	if size != 0 {
+		rdr = NewCountingReader(rdr, c.stats.TickOutBytes)
+	}
 	err := c.client.CreateBlockBlobFromReader(cname, bname, size, rdr, hdrs)
 	c.stats.TickErr(err)
 	return err

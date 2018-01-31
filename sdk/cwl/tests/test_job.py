@@ -52,7 +52,8 @@ class TestJob(unittest.TestCase):
                 "inputs": [],
                 "outputs": [],
                 "baseCommand": "ls",
-                "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+                "id": "#"
             })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -142,7 +143,8 @@ class TestJob(unittest.TestCase):
                 "class": "http://arvados.org/cwl#ReuseRequirement",
                 "enableReuse": False
             }],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "id": "#"
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
