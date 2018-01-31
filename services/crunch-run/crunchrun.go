@@ -113,6 +113,7 @@ type ContainerRunner struct {
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
+	parentTemp     string
 
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
@@ -327,7 +328,7 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 
 func (runner *ContainerRunner) SetupArvMountPoint(prefix string) (err error) {
 	if runner.ArvMountPoint == "" {
-		runner.ArvMountPoint, err = runner.MkTempDir("", prefix)
+		runner.ArvMountPoint, err = runner.MkTempDir(runner.parentTemp, prefix)
 	}
 	return
 }
@@ -490,7 +491,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 		case mnt.Kind == "tmp":
 			var tmpdir string
-			tmpdir, err = runner.MkTempDir("", "")
+			tmpdir, err = runner.MkTempDir(runner.parentTemp, "tmp")
 			if err != nil {
 				return fmt.Errorf("While creating mount temp dir: %v", err)
 			}
@@ -518,7 +519,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			// can ensure the file is world-readable
 			// inside the container, without having to
 			// make it world-readable on the docker host.
-			tmpdir, err := runner.MkTempDir("", "")
+			tmpdir, err := runner.MkTempDir(runner.parentTemp, "json")
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
@@ -531,7 +532,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
 
 		case mnt.Kind == "git_tree":
-			tmpdir, err := runner.MkTempDir("", "")
+			tmpdir, err := runner.MkTempDir(runner.parentTemp, "git_tree")
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
@@ -1432,6 +1433,10 @@ func (runner *ContainerRunner) CleanupDirs() {
 			runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", tmpdir, rmerr)
 		}
 	}
+
+	if rmerr := os.RemoveAll(runner.parentTemp); rmerr != nil {
+		runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", runner.parentTemp, rmerr)
+	}
 }
 
 // CommitLogs posts the collection containing the final container logs.
@@ -1769,6 +1774,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	parentTemp, tmperr := cr.MkTempDir("", "crunch-run")
+	if tmperr != nil {
+		log.Fatalf("%s: %v", containerId, tmperr)
+	}
+
+	cr.parentTemp = parentTemp
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent
