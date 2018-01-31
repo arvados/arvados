@@ -1233,20 +1233,36 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
-	// Writable mount points are not allowed underneath output_dir mount point
+	// Writable mount points copied to output_dir mount point
 	{
 		i = 0
 		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
-			"/tmp":     {Kind: "tmp"},
-			"/tmp/foo": {Kind: "collection", Writable: true},
+			"/tmp": {Kind: "tmp"},
+			"/tmp/foo": {Kind: "collection",
+				PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53",
+				Writable:         true},
+			"/tmp/bar": {Kind: "collection",
+				PortableDataHash: "59389a8f9ee9d399be35462a0f92541d+53",
+				Path:             "baz",
+				Writable:         true},
 		}
 		cr.OutputPath = "/tmp"
 
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541d+53/baz", os.ModePerm)
+
+		rf, _ := os.Create(realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541d+53/baz/quux")
+		rf.Write([]byte("bar"))
+		rf.Close()
+
 		err := cr.SetupMounts()
-		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		c.Check(err, IsNil)
+		_, err = os.Stat(cr.HostOutputDir + "/foo")
+		c.Check(err, IsNil)
+		_, err = os.Stat(cr.HostOutputDir + "/bar/quux")
+		c.Check(err, IsNil)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
