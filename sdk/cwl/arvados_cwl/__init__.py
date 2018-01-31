@@ -282,7 +282,7 @@ class ArvCwlRunner(object):
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
-            for k in ("basename", "listing", "contents", "nameext", "nameroot", "dirname"):
+            for k in ("listing", "contents", "nameext", "nameroot", "dirname"):
                 if k in fileobj:
                     del fileobj[k]
 
