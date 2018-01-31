@@ -7,67 +7,26 @@ HttpRequest <- R6::R6Class(
     public = list(
 
         validContentTypes = NULL,
+        validVerbs = NULL,
 
         initialize = function() 
         {
             self$validContentTypes <- c("text", "raw")
+            self$validVerbs <- c("GET", "POST", "PUT", "DELETE", "PROPFIND", "MOVE")
         },
 
-        GET = function(url, headers = NULL, queryFilters = NULL, limit = NULL, offset = NULL)
+        execute = function(verb, url, headers = NULL, body = NULL, query = NULL,
+                           limit = NULL, offset = NULL, retryTimes = 3)
         {
-            headers <- httr::add_headers(unlist(headers))
-            query <- self$createQuery(queryFilters, limit, offset)
-            url <- paste0(url, query)
+            if(!(verb %in% self$validVerbs))
+                stop("Http verb is not valid.")
 
-            serverResponse <- httr::GET(url = url, config = headers)
-        },
+            headers  <- httr::add_headers(unlist(headers))
+            urlQuery <- self$createQuery(query, limit, offset)
+            url      <- paste0(url, urlQuery)
 
-        PUT = function(url, headers = NULL, body = NULL,
-                       queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            headers <- httr::add_headers(unlist(headers))
-            query <- self$createQuery(queryFilters, limit, offset)
-            url <- paste0(url, query)
-
-            serverResponse <- httr::PUT(url = url, config = headers, body = body)
-        },
-
-        POST = function(url, headers = NULL, body = NULL,
-                        queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            headers <- httr::add_headers(unlist(headers))
-            query <- self$createQuery(queryFilters, limit, offset)
-            url <- paste0(url, query)
-
-            serverResponse <- httr::POST(url = url, config = headers, body = body)
-        },
-
-        DELETE = function(url, headers = NULL, body = NULL,
-                          queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            headers <- httr::add_headers(unlist(headers))
-            query <- self$createQuery(queryFilters, limit, offset)
-            url <- paste0(url, query)
-
-            serverResponse <- httr::DELETE(url = url, config = headers)
-        },
-
-        PROPFIND = function(url, headers = NULL)
-        {
-            h <- curl::new_handle()
-            curl::handle_setopt(h, customrequest = "PROPFIND")
-            curl::handle_setheaders(h, .list = headers)
-
-            propfindResponse <- curl::curl_fetch_memory(url, h)
-        },
-
-        MOVE = function(url, headers = NULL)
-        {
-            h <- curl::new_handle()
-            curl::handle_setopt(h, customrequest = "MOVE")
-            curl::handle_setheaders(h, .list = headers)
-
-            propfindResponse <- curl::curl_fetch_memory(url, h)
+            response <- httr::RETRY(verb, url = url, body = body,
+                                    config = headers, times = retryTimes)
         },
 
         createQuery = function(filters, limit, offset)

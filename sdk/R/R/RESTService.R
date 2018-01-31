@@ -4,10 +4,10 @@ RESTService <- R6::R6Class(
 
     public = list(
 
-        hostName       = NULL,
-        token          = NULL,
-        http           = NULL,
-        httpParser     = NULL,
+        hostName   = NULL,
+        token      = NULL,
+        http       = NULL,
+        httpParser = NULL,
 
         initialize = function(token, hostName, webDavHostName = NULL,  http, httpParser)
         {
@@ -32,7 +32,7 @@ RESTService <- R6::R6Class(
 
                 headers <- list(Authorization = paste("OAuth2", self$token))
 
-                serverResponse <- self$http$GET(discoveryDocumentURL, headers)
+                serverResponse <- self$http$execute("GET", discoveryDocumentURL, headers)
 
                 discoveryDocument <- self$httpParser$parseJSONResponse(serverResponse)
                 private$webDavHostName <- discoveryDocument$keepWebServiceUrl
@@ -49,7 +49,7 @@ RESTService <- R6::R6Class(
             resourceURL <- paste0(self$hostName, resource, "/", uuid)
             headers <- list(Authorization = paste("OAuth2", self$token))
 
-            serverResponse <- self$http$GET(resourceURL, headers)
+            serverResponse <- self$http$execute("GET", resourceURL, headers)
 
             resource <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -63,9 +63,10 @@ RESTService <- R6::R6Class(
         {
             resourceURL <- paste0(self$hostName, resource)
             headers <- list(Authorization = paste("OAuth2", self$token))
+            body <- NULL
 
-            serverResponse <- self$http$GET(resourceURL, headers, filters,
-                                            limit, offset)
+            serverResponse <- self$http$execute("GET", resourceURL, headers, body,
+                                                filters, limit, offset)
 
             resources <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -84,11 +85,13 @@ RESTService <- R6::R6Class(
             items <- c()
             while(length(items) < itemsAvailable)
             {
-                serverResponse <- self$http$GET(url          = resourceURL,
-                                                headers      = headers,
-                                                queryFilters = filters,
-                                                limit        = NULL,
-                                                offset       = offset)
+                serverResponse <- self$http$execute(verb    = "GET",
+                                                    url     = resourceURL,
+                                                    headers = headers,
+                                                    body    = NULL,
+                                                    query   = filters,
+                                                    limit   = NULL,
+                                                    offset  = offset)
 
                 parsedResponse <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -109,7 +112,7 @@ RESTService <- R6::R6Class(
             headers <- list("Authorization" = paste("OAuth2", self$token),
                             "Content-Type"  = "application/json")
 
-            serverResponse <- self$http$DELETE(collectionURL, headers)
+            serverResponse <- self$http$execute("DELETE", collectionURL, headers)
 
             removedResource <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -127,7 +130,7 @@ RESTService <- R6::R6Class(
 
             newContent <- jsonlite::toJSON(newContent, auto_unbox = T)
 
-            serverResponse <- self$http$PUT(resourceURL, headers, newContent)
+            serverResponse <- self$http$execute("PUT", resourceURL, headers, newContent)
 
             updatedResource <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -145,7 +148,7 @@ RESTService <- R6::R6Class(
 
             content <- jsonlite::toJSON(content, auto_unbox = T)
 
-            serverResponse <- self$http$POST(resourceURL, headers, content)
+            serverResponse <- self$http$execute("POST", resourceURL, headers, content)
 
             newResource <- self$httpParser$parseJSONResponse(serverResponse)
 
@@ -169,7 +172,7 @@ RESTService <- R6::R6Class(
                               uuid, "/", relativePath);
             headers <- list(Authorization = paste("OAuth2", self$token)) 
 
-            serverResponse <- self$http$DELETE(fileURL, headers)
+            serverResponse <- self$http$execute("DELETE", fileURL, headers)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -186,7 +189,7 @@ RESTService <- R6::R6Class(
             headers <- list("Authorization" = paste("OAuth2", self$token),
                            "Destination" = toURL)
 
-            serverResponse <- self$http$MOVE(fromURL, headers)
+            serverResponse <- self$http$execute("MOVE", fromURL, headers)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -201,7 +204,7 @@ RESTService <- R6::R6Class(
 
             headers <- list("Authorization" = paste("OAuth2", self$token))
 
-            response <- self$http$PROPFIND(collectionURL, headers)
+            response <- self$http$execute("PROPFIND", collectionURL, headers)
 
             if(all(response == ""))
                 stop("Response is empty, request may be misconfigured")
@@ -221,7 +224,7 @@ RESTService <- R6::R6Class(
 
             headers <- list("Authorization" = paste("OAuth2", self$token))
 
-            response <- self$http$PROPFIND(subcollectionURL, headers)
+            response <- self$http$execute("PROPFIND", subcollectionURL, headers)
 
             if(all(response == ""))
                 stop("Response is empty, request may be misconfigured")
@@ -257,7 +260,7 @@ RESTService <- R6::R6Class(
             if(!(contentType %in% self$httpParser$validContentTypes))
                 stop("Invalid contentType. Please use text or raw.")
 
-            serverResponse <- self$http$GET(fileURL, headers)
+            serverResponse <- self$http$execute("GET", fileURL, headers)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -273,7 +276,7 @@ RESTService <- R6::R6Class(
                             "Content-Type" = contentType)
             body <- content
 
-            serverResponse <- self$http$PUT(fileURL, headers, body)
+            serverResponse <- self$http$execute("PUT", fileURL, headers, body)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -309,7 +312,7 @@ RESTService <- R6::R6Class(
                             "Content-Type" = contentType)
             body <- NULL
 
-            serverResponse <- self$http$PUT(fileURL, headers, body)
+            serverResponse <- self$http$execute("PUT", fileURL, headers, body)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))

@@ -1,6 +1,13 @@
 context("Http Request")
 
 
+test_that("execyte raises exception if http verb is not valid", {
+
+    http <- HttpRequest$new()
+    expect_that(http$execute("FAKE VERB", "url"),
+               throws_error("Http verb is not valid."))
+}) 
+
 test_that(paste("createQuery generates and encodes query portion of http",
                 "request based on filters, limit and offset parameters"), {
 

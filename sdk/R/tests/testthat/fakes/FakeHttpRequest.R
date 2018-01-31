@@ -36,85 +36,53 @@ FakeHttpRequest <- R6::R6Class(
             else
                 self$content <- serverResponse
 
-            self$expectedURL <- expectedURL
-            self$URLIsProperlyConfigured <- FALSE
-            self$expectedQueryFilters <- expectedFilters
-            self$queryFiltersAreCorrect <- FALSE
+            self$expectedURL                             <- expectedURL
+            self$URLIsProperlyConfigured                 <- FALSE
+            self$expectedQueryFilters                    <- expectedFilters
+            self$queryFiltersAreCorrect                  <- FALSE
             self$requestHeaderContainsAuthorizationField <- FALSE
-            self$requestHeaderContainsDestinationField <- FALSE
-            self$requestHeaderContainsRangeField <- FALSE
-            self$requestHeaderContainsContentTypeField <- FALSE
-            self$JSONEncodedBodyIsProvided <- FALSE
-            self$requestBodyIsProvided <- FALSE
+            self$requestHeaderContainsDestinationField   <- FALSE
+            self$requestHeaderContainsRangeField         <- FALSE
+            self$requestHeaderContainsContentTypeField   <- FALSE
+            self$JSONEncodedBodyIsProvided               <- FALSE
+            self$requestBodyIsProvided                   <- FALSE
 
-            self$numberOfGETRequests <- 0
+            self$numberOfGETRequests    <- 0
             self$numberOfDELETERequests <- 0
-            self$numberOfPUTRequests <- 0
-            self$numberOfPOSTRequests <- 0
-            self$numberOfMOVERequests <- 0
+            self$numberOfPUTRequests    <- 0
+            self$numberOfPOSTRequests   <- 0
+            self$numberOfMOVERequests   <- 0
 
             self$serverMaxElementsPerRequest <- 5
         },
 
-        GET = function(url, headers = NULL, queryFilters = NULL, limit = NULL, offset = NULL)
+        execute = function(verb, url, headers = NULL, body = NULL, query = NULL,
+                           limit = NULL, offset = NULL, retryTimes = 3)
         {
             private$validateURL(url)
             private$validateHeaders(headers)
             private$validateFilters(queryFilters)
-            self$numberOfGETRequests <- self$numberOfGETRequests + 1
+            private$validateBody(body)
+
+            if(verb == "GET")
+                self$numberOfGETRequests <- self$numberOfGETRequests + 1
+            else if(verb == "POST")
+                self$numberOfPOSTRequests <- self$numberOfPOSTRequests + 1
+            else if(verb == "PUT")
+                self$numberOfPUTRequests <- self$numberOfPUTRequests + 1
+            else if(verb == "DELETE")
+                self$numberOfDELETERequests <- self$numberOfDELETERequests + 1
+            else if(verb == "MOVE")
+                self$numberOfMOVERequests <- self$numberOfMOVERequests + 1
+            else if(verb == "PROPFIND")
+            {
+                return(self$content)
+            }
 
             if(!is.null(self$content$items_available))
-            {
                 return(private$getElements(offset, limit))
-            }
             else
                 return(self$content)
-        },
-
-        PUT = function(url, headers = NULL, body = NULL,
-                       queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            private$validateURL(url)
-            private$validateHeaders(headers)
-            private$validateBody(body)
-            self$numberOfPUTRequests <- self$numberOfPUTRequests + 1
-
-            self$content
-        },
-
-        POST = function(url, headers = NULL, body = NULL,
-                        queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            private$validateURL(url)
-            private$validateHeaders(headers)
-            private$validateBody(body)
-            self$numberOfPOSTRequests <- self$numberOfPOSTRequests + 1
-
-            self$content
-        },
-
-        DELETE = function(url, headers = NULL, body = NULL,
-                          queryFilters = NULL, limit = NULL, offset = NULL)
-        {
-            private$validateURL(url)
-            private$validateHeaders(headers)
-            self$numberOfDELETERequests <- self$numberOfDELETERequests + 1
-            self$content
-        },
-
-        PROPFIND = function(url, headers = NULL)
-        {
-            private$validateURL(url)
-            private$validateHeaders(headers)
-            self$content
-        },
-
-        MOVE = function(url, headers = NULL)
-        {
-            private$validateURL(url)
-            private$validateHeaders(headers)
-            self$numberOfMOVERequests <- self$numberOfMOVERequests + 1
-            self$content
         }
     ),
 
@@ -143,9 +111,6 @@ FakeHttpRequest <- R6::R6Class(
 
         validateBody = function(body)
         {
-            if(!is.null(body) && class(body) == "json")           
-                self$JSONEncodedBodyIsProvided <- TRUE
-
             if(!is.null(body))           
             {
                 self$requestBodyIsProvided <- TRUE
