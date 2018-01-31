@@ -35,7 +35,7 @@ type cmd struct {
 // stderr argument and prints to os.Stderr instead.
 func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := log.New(stderr, prog+" ", 0)
-	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
 	err := flags.Parse(args)
