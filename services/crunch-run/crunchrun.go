@@ -338,7 +338,7 @@ func copyfile(src string, dst string) (err error) {
 		return
 	}
 
-	os.MkdirAll(path.Dir(dst), 0770)
+	os.MkdirAll(path.Dir(dst), 0777)
 
 	dstfile, err := os.Create(dst)
 	if err != nil {
@@ -590,7 +590,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if walkinfo.Mode().IsRegular() {
 					return copyfile(walkpath, path.Join(cp.bind, walkpath[len(cp.src):]))
 				} else if walkinfo.Mode().IsDir() {
-					return os.MkdirAll(path.Join(cp.bind, walkpath[len(cp.src):]), 0770)
+					return os.MkdirAll(path.Join(cp.bind, walkpath[len(cp.src):]), 0777)
 				} else {
 					return fmt.Errorf("Source %q is not a regular file or directory", cp.src)
 				}
