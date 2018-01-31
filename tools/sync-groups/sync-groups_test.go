@@ -83,7 +83,6 @@ func (s *TestSuite) SetUpTest(c *C) {
 	c.Assert(len(s.users), Not(Equals), 0)
 }
 
-// Clean any membership link and remote group created by the test
 func (s *TestSuite) TearDownTest(c *C) {
 	var dst interface{}
 	// Reset database to fixture state after every test run.
@@ -93,7 +92,7 @@ func (s *TestSuite) TearDownTest(c *C) {
 
 var _ = Suite(&TestSuite{})
 
-// MakeTempCVSFile creates a temp file with data as comma separated values
+// MakeTempCSVFile creates a temp file with data as comma separated values
 func MakeTempCSVFile(data [][]string) (f *os.File, err error) {
 	f, err = ioutil.TempFile("", "test_sync_remote_groups")
 	if err != nil {
@@ -266,11 +265,15 @@ func (s *TestSuite) TestIgnoreSpaces(c *C) {
 
 // The absence of a user membership on the CSV file implies its removal
 func (s *TestSuite) TestMembershipRemoval(c *C) {
-	activeUserEmail := s.users[arvadostest.ActiveUserUUID].Email
-	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	localUserEmail := s.users[arvadostest.ActiveUserUUID].Email
+	localUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	remoteUserEmail := s.users[arvadostest.FederatedActiveUserUUID].Email
+	remoteUserUUID := s.users[arvadostest.FederatedActiveUserUUID].UUID
 	data := [][]string{
-		{"TestGroup1", activeUserEmail},
-		{"TestGroup2", activeUserEmail},
+		{"TestGroup1", localUserEmail},
+		{"TestGroup1", remoteUserEmail},
+		{"TestGroup2", localUserEmail},
+		{"TestGroup2", remoteUserEmail},
 	}
 	tmpfile, err := MakeTempCSVFile(data)
 	c.Assert(err, IsNil)
@@ -283,11 +286,13 @@ func (s *TestSuite) TestMembershipRemoval(c *C) {
 		groupUUID, err := RemoteGroupExists(s.cfg, groupName)
 		c.Assert(err, IsNil)
 		c.Assert(groupUUID, Not(Equals), "")
-		c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+		c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, true)
+		c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, true)
 	}
-	// New CSV with one previous membership missing
+	// New CSV with some previous membership missing
 	data = [][]string{
-		{"TestGroup1", activeUserEmail},
+		{"TestGroup1", localUserEmail},
+		{"TestGroup2", remoteUserEmail},
 	}
 	tmpfile2, err := MakeTempCSVFile(data)
 	c.Assert(err, IsNil)
@@ -295,16 +300,18 @@ func (s *TestSuite) TestMembershipRemoval(c *C) {
 	s.cfg.Path = tmpfile2.Name()
 	err = doMain(s.cfg)
 	c.Assert(err, IsNil)
-	// Confirm TestGroup1 membership still exist
+	// Confirm TestGroup1 memberships
 	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup1")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
-	// Confirm TestGroup2 membership was removed
+	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, false)
+	// Confirm TestGroup1 memberships
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup2")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, true)
 }
 
 // If a group doesn't exist on the system, create it before adding users

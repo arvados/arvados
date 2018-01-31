@@ -64,12 +64,13 @@ fi
 python_sdk_ts=$(cd sdk/python && timestamp_from_git)
 cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
 
+python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)
+cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)
+
 if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
-else
-    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
+    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
 fi
 
-docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$gittag "$WORKSPACE/sdk"
-echo arv-keepdocker arvados/jobs $gittag
-arv-keepdocker arvados/jobs $gittag
+docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
+echo arv-keepdocker arvados/jobs $cwl_runner_version
+arv-keepdocker arvados/jobs $cwl_runner_version

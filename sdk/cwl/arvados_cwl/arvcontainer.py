@@ -330,7 +330,7 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         else:
-            packed = packed_workflow(self.arvrunner, self.tool)
+            packed = packed_workflow(self.arvrunner, self.tool, self.merged_map)
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
@@ -338,6 +338,7 @@ class RunnerContainer(Runner):
             }
             if self.tool.tool.get("id", "").startswith("arvwf:"):
                 container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
+
 
         command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:

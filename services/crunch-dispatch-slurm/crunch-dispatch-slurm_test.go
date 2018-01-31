@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,51 +65,55 @@ func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
 }
 
-func (s *TestSuite) integrationTest(c *C,
-	newSqueueCmd func() *exec.Cmd,
-	newScancelCmd func(arvados.Container) *exec.Cmd,
-	newSbatchCmd func(arvados.Container) *exec.Cmd,
-	newScontrolCmd func(arvados.Container) *exec.Cmd,
-	sbatchCmdComps []string,
+type slurmFake struct {
+	didBatch  [][]string
+	didCancel []string
+	didRenice [][]string
+	queue     string
+	// If non-nil, run this func during the 2nd+ call to Cancel()
+	onCancel func()
+	// Error returned by Batch()
+	errBatch error
+}
+
+func (sf *slurmFake) Batch(script io.Reader, args []string) error {
+	sf.didBatch = append(sf.didBatch, args)
+	return sf.errBatch
+}
+
+func (sf *slurmFake) QueueCommand(args []string) *exec.Cmd {
+	return exec.Command("echo", sf.queue)
+}
+
+func (sf *slurmFake) Renice(name string, nice int) error {
+	sf.didRenice = append(sf.didRenice, []string{name, fmt.Sprintf("%d", nice)})
+	return nil
+}
+
+func (sf *slurmFake) Cancel(name string) error {
+	sf.didCancel = append(sf.didCancel, name)
+	if len(sf.didCancel) == 1 {
+		// simulate error on first attempt
+		return errors.New("something terrible happened")
+	}
+	if sf.onCancel != nil {
+		sf.onCancel()
+	}
+	return nil
+}
+
+func (s *TestSuite) integrationTest(c *C, slurm *slurmFake,
+	expectBatch [][]string,
 	runContainer func(*dispatch.Dispatcher, arvados.Container)) arvados.Container {
 	arvadostest.ResetEnv()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, IsNil)
 
-	var sbatchCmdLine []string
-
-	// Override sbatchCmd
-	defer func(orig func(arvados.Container) *exec.Cmd) {
-		sbatchCmd = orig
-	}(sbatchCmd)
-
-	if newSbatchCmd != nil {
-		sbatchCmd = newSbatchCmd
-	} else {
-		sbatchCmd = func(container arvados.Container) *exec.Cmd {
-			sbatchCmdLine = sbatchFunc(container).Args
-			return exec.Command("sh")
-		}
-	}
-
-	// Override squeueCmd
-	defer func(orig func() *exec.Cmd) {
-		squeueCmd = orig
-	}(squeueCmd)
-	squeueCmd = newSqueueCmd
-
-	// Override scancel
-	defer func(orig func(arvados.Container) *exec.Cmd) {
-		scancelCmd = orig
-	}(scancelCmd)
-	scancelCmd = newScancelCmd
-
-	// Override scontrol
-	defer func(orig func(arvados.Container) *exec.Cmd) {
-		scontrolCmd = orig
-	}(scontrolCmd)
-	scontrolCmd = newScontrolCmd
+	defer func(orig Slurm) {
+		theConfig.slurm = orig
+	}(theConfig.slurm)
+	theConfig.slurm = slurm
 
 	// There should be one queued container
 	params := arvadosclient.Dict{
@@ -130,6 +135,7 @@ func (s *TestSuite) integrationTest(c *C,
 		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 			go func() {
 				runContainer(disp, ctr)
+				slurm.queue = ""
 				doneRun <- struct{}{}
 			}()
 			run(disp, ctr, status)
@@ -145,7 +151,7 @@ func (s *TestSuite) integrationTest(c *C,
 
 	sqCheck.Stop()
 
-	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
+	c.Check(slurm.didBatch, DeepEquals, expectBatch)
 
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
@@ -160,77 +166,47 @@ func (s *TestSuite) integrationTest(c *C,
 }
 
 func (s *TestSuite) TestIntegrationNormal(c *C) {
-	done := false
 	container := s.integrationTest(c,
-		func() *exec.Cmd {
-			if done {
-				return exec.Command("true")
-			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
-			}
-		},
+		&slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"},
 		nil,
-		nil,
-		nil,
-		[]string(nil),
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
-			done = true
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
 }
 
 func (s *TestSuite) TestIntegrationCancel(c *C) {
-	var cmd *exec.Cmd
-	var scancelCmdLine []string
-	attempt := 0
-
+	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
+	readyToCancel := make(chan bool)
+	slurm.onCancel = func() { <-readyToCancel }
 	container := s.integrationTest(c,
-		func() *exec.Cmd {
-			if cmd != nil && cmd.ProcessState != nil {
-				return exec.Command("true")
-			} else {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
-			}
-		},
-		func(container arvados.Container) *exec.Cmd {
-			if attempt++; attempt == 1 {
-				return exec.Command("false")
-			} else {
-				scancelCmdLine = scancelFunc(container).Args
-				cmd = exec.Command("echo")
-				return cmd
-			}
-		},
+		slurm,
 		nil,
-		nil,
-		[]string(nil),
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 			dispatcher.Arv.Update("containers", container.UUID,
 				arvadosclient.Dict{
 					"container": arvadosclient.Dict{"priority": 0}},
 				nil)
+			readyToCancel <- true
+			close(readyToCancel)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateCancelled)
-	c.Check(scancelCmdLine, DeepEquals, []string{"scancel", "--name=zzzzz-dz642-queuedcontainer"})
+	c.Check(len(slurm.didCancel) > 1, Equals, true)
+	c.Check(slurm.didCancel[:2], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "zzzzz-dz642-queuedcontainer"})
 }
 
 func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
-	container := s.integrationTest(c,
-		func() *exec.Cmd { return exec.Command("echo") },
-		nil,
-		nil,
-		nil,
-		[]string{"sbatch",
+	container := s.integrationTest(c, &slurmFake{},
+		[][]string{{
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 			fmt.Sprintf("--mem=%d", 11445),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
 			fmt.Sprintf("--tmp=%d", 45777),
-			fmt.Sprintf("--nice=%d", 9990)},
+			fmt.Sprintf("--nice=%d", 9990)}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -241,13 +217,8 @@ func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
 
 func (s *TestSuite) TestSbatchFail(c *C) {
 	container := s.integrationTest(c,
-		func() *exec.Cmd { return exec.Command("echo") },
-		nil,
-		func(container arvados.Container) *exec.Cmd {
-			return exec.Command("false")
-		},
-		nil,
-		[]string(nil),
+		&slurmFake{errBatch: errors.New("something terrible happened")},
+		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--mem=11445", "--cpus-per-task=4", "--tmp=45777", "--nice=9990"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
@@ -387,71 +358,47 @@ func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
 }
 
 func testSbatchFuncWithArgs(c *C, args []string) {
+	defer func() { theConfig.SbatchArguments = nil }()
 	theConfig.SbatchArguments = append(theConfig.SbatchArguments, args...)
 
 	container := arvados.Container{
 		UUID:               "123",
 		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2},
 		Priority:           1}
-	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
-	expected = append(expected, "sbatch")
 	expected = append(expected, theConfig.SbatchArguments...)
 	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=9990")
-
-	c.Check(sbatchCmd.Args, DeepEquals, expected)
+	c.Check(sbatchArgs(container), DeepEquals, expected)
 }
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
-	theConfig.SbatchArguments = nil
 	container := arvados.Container{
 		UUID:                 "123",
 		RuntimeConstraints:   arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1},
 		SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}},
 		Priority:             1}
-	sbatchCmd := sbatchFunc(container)
 
-	var expected []string
-	expected = append(expected, "sbatch")
-	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990", "--partition=blurb,b2")
-
-	c.Check(sbatchCmd.Args, DeepEquals, expected)
+	c.Check(sbatchArgs(container), DeepEquals, []string{
+		"--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=9990",
+		"--partition=blurb,b2",
+	})
 }
 
 func (s *TestSuite) TestIntegrationChangePriority(c *C) {
-	var scontrolCmdLine []string
-	step := 0
-
-	container := s.integrationTest(c,
-		func() *exec.Cmd {
-			if step == 0 {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 9990 100")
-			} else if step == 1 {
-				return exec.Command("echo", "zzzzz-dz642-queuedcontainer 4000 100")
-			} else {
-				return exec.Command("echo")
-			}
-		},
-		func(arvados.Container) *exec.Cmd { return exec.Command("true") },
-		nil,
-		func(container arvados.Container) *exec.Cmd {
-			scontrolCmdLine = scontrolFunc(container).Args
-			step = 1
-			return exec.Command("true")
-		},
-		[]string(nil),
+	slurm := &slurmFake{queue: "zzzzz-dz642-queuedcontainer 9990 100\n"}
+	container := s.integrationTest(c, slurm, nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 			dispatcher.Arv.Update("containers", container.UUID,
 				arvadosclient.Dict{
 					"container": arvadosclient.Dict{"priority": 600}},
 				nil)
-			time.Sleep(1 * time.Second)
-			step = 2
+			time.Sleep(time.Second)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-	c.Check(scontrolCmdLine, DeepEquals, []string{"scontrol", "update", "JobName=zzzzz-dz642-queuedcontainer", "Nice=4000"})
+	c.Assert(len(slurm.didRenice), Not(Equals), 0)
+	c.Check(slurm.didRenice[len(slurm.didRenice)-1], DeepEquals, []string{"zzzzz-dz642-queuedcontainer", "4000"})
 }

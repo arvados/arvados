@@ -110,7 +110,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if collection is not None and not rest:
             return [pattern]
         patternsegments = rest.split("/")
-        return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
+        return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))
 
     def open(self, fn, mode):
         collection, rest = self.get_collection(fn)
@@ -179,16 +179,13 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return os.path.realpath(path)
 
 class CollectionFetcher(DefaultFetcher):
-    def __init__(self, cache, session, api_client=None, fs_access=None, num_retries=4, overrides=None):
+    def __init__(self, cache, session, api_client=None, fs_access=None, num_retries=4):
         super(CollectionFetcher, self).__init__(cache, session)
         self.api_client = api_client
         self.fsaccess = fs_access
         self.num_retries = num_retries
-        self.overrides = overrides if overrides else {}
 
     def fetch_text(self, url):
-        if url in self.overrides:
-            return self.overrides[url]
         if url.startswith("keep:"):
             with self.fsaccess.open(url, "r") as f:
                 return f.read()
@@ -199,8 +196,6 @@ class CollectionFetcher(DefaultFetcher):
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
-        if url in self.overrides:
-            return True
         try:
             if url.startswith("http://arvados.org/cwl"):
                 return True

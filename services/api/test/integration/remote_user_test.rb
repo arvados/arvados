@@ -104,6 +104,13 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response 401
 
+    # simulate cached token indicating wrong user (e.g., local user
+    # entry was migrated out of the way taking the cached token with
+    # it, or authorizing cluster reassigned auth to a different user)
+    ApiClientAuthorization.where(
+      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
+      update_all(user_id: users(:active).id)
+
     # revive original token and re-authorize
     @stub_status = 200
     @stub_content[:username] = 'blarney'

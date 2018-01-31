@@ -43,3 +43,5 @@ arvados.api('v1').users().update_uuid(
     uuid="<span class="userinput">aaaaa-tpzed-abcdefghijklmno</span>",
     new_uuid="bbbbb-tpzed-"+random_chars).execute()
 </code></pre></notextile>
+
+After this is done and the migration is complete, the affected user should wait 5 minutes for the authorization cache to expire before using the remote cluster.

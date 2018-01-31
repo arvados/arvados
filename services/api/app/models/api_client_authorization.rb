@@ -185,7 +185,10 @@ class ApiClientAuthorization < ArvadosModel
         # 5 minutes. TODO: Request the actual api_client_auth
         # record from the remote server in case it wants the token
         # to expire sooner.
-        auth.update_attributes!(expires_at: Time.now + 5.minutes)
+        auth.update_attributes!(user: user,
+                                api_token: secret,
+                                api_client_id: 0,
+                                expires_at: Time.now + 5.minutes)
       end
       return auth
     else
@@ -207,10 +210,8 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def permission_to_update
-    (permission_to_create and
-     not uuid_changed? and
-     not user_id_changed? and
-     not owner_uuid_changed?)
+    permission_to_create && !uuid_changed? &&
+      (current_user.andand.is_admin || !user_id_changed?)
   end
 
   def log_update

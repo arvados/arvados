@@ -33,6 +33,7 @@
 //= require jquery.number.min
 //= require npm-dependencies
 //= require mithril/stream/stream
+//= require awesomplete
 //= require_tree .
 
 Es6ObjectAssign.polyfill()

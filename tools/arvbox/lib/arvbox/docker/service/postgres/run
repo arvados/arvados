@@ -5,6 +5,8 @@
 
 flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
 
+make-ssl-cert generate-default-snakeoil --force-overwrite
+
 . /usr/local/lib/arvbox/common.sh
 
 chown -R $PGUSER:$PGGROUP /var/lib/postgresql

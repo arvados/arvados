@@ -14,14 +14,10 @@ else
   RAILS_ENV=development
 fi
 
-mkdir -p /var/lib/gopath
-cd /var/lib/gopath
+. /usr/local/lib/arvbox/go-setup.sh
 
-export GOPATH=$PWD
-mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/ws"
-install bin/ws /usr/local/bin/arvados-ws
+install $GOPATH/bin/ws /usr/local/bin/arvados-ws
 
 if test "$1" = "--only-deps" ; then
     exit

@@ -6,6 +6,8 @@
 
 # Browserify is required.
 npm 'browserify', require: false
+npm 'jquery'
+npm 'awesomplete'
 
 npm 'mithril'
 npm 'es6-object-assign'

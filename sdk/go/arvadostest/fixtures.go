@@ -13,6 +13,7 @@ const (
 	DataManagerToken        = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
 	ManagementToken         = "jg3ajndnq63sywcd50gbs5dskdc9ckkysb0nsqmfz08nwf17nl"
 	ActiveUserUUID          = "zzzzz-tpzed-xurymjxw79nv3jz"
+	FederatedActiveUserUUID = "zbbbb-tpzed-xurymjxw79nv3jz"
 	SpectatorUserUUID       = "zzzzz-tpzed-l1s2piq4t4mps8r"
 	UserAgreementCollection = "zzzzz-4zz18-uukreo9rbgwsujr" // user_agreement_in_anonymously_accessible_project
 	FooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"

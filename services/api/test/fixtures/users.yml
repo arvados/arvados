@@ -84,6 +84,22 @@ active:
       role: Computational biologist
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
+federated_active:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zbbbb-tpzed-xurymjxw79nv3jz
+  email: zbbbb-active-user@arvados.local
+  first_name: Active
+  last_name: User
+  identity_url: https://active-user.openid.local
+  is_active: true
+  is_admin: false
+  username: federatedactive
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
 project_viewer:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-projectviewer1a

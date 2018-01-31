@@ -532,6 +532,10 @@ class TestSubmit(unittest.TestCase):
                 "enableReuse": False,
             },
         ]
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+            "arv": "http://arvados.org/cwl#",
+            "cwltool": "http://commonwl.org/cwltool#"
+        }
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
