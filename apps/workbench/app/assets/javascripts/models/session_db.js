@@ -25,7 +25,7 @@ window.SessionDB = function(rhosts) {
         loadActive: function() {
             var sessions = db.loadAll()
             Object.keys(sessions).forEach(function(key) {
-                if (!sessions[key].token)
+                if (!sessions[key].token || !sessions[key].user.is_active)
                     delete sessions[key]
             })
             return sessions
@@ -91,7 +91,18 @@ window.SessionDB = function(rhosts) {
                     (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
                     // Federated identity login via salted token
                     db.saltedToken(dd.uuidPrefix).then(function(token) {
-                        document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL)) + '&api_token='+encodeURIComponent(token)
+                        m.request(baseURL+'arvados/v1/users/current', {
+                            headers: {
+                                authorization: 'Bearer '+token,
+                            },
+                        }).then(function(user) {
+                            var remoteSession = {
+                                user: user,
+                                baseURL: baseURL,
+                                token: token
+                            }
+                            db.save(user.owner_uuid.slice(0, 5), remoteSession)
+                        })
                     })
                 } else {
                     // Classic login

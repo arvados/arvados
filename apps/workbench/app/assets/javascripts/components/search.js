@@ -154,8 +154,6 @@ window.Search = {
         })
     },
     view: function(vnode) {
-        // FIXME: The line below seems superfluous
-        // var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchActive(vnode.state.searchEntered())

@@ -38,7 +38,9 @@ window.SessionsTable = {
                         var session = sessions[uuidPrefix]
                         return m('tr', [
                             session.token && session.user ? [
-                                m('td', m('span.label.label-success', 'logged in')),
+                                m('td', session.user.is_active ?
+                                    m('span.label.label-success', 'logged in') :
+                                    m('span.label.label-warning', 'inactive')),
                                 m('td', {title: session.baseURL}, uuidPrefix),
                                 m('td', session.user.username),
                                 m('td', session.user.email),
