@@ -38,8 +38,7 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		inodes: make(map[string]inode),
 	}
 	root.inode.Child("by_id", func(inode) inode {
-		var vn inode
-		vn = &vdirnode{
+		return &vdirnode{
 			inode: &treenode{
 				fs:     fs,
 				parent: fs.root,
@@ -52,7 +51,9 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 			},
 			create: fs.mountCollection,
 		}
-		return vn
+	})
+	root.inode.Child("home", func(inode) inode {
+		return fs.newProjectNode(fs.root, "home", "")
 	})
 	return fs
 }
@@ -74,6 +75,22 @@ func (fs *siteFileSystem) mountCollection(parent inode, id string) inode {
 	root := cfs.rootnode()
 	root.SetParent(parent, id)
 	return root
+}
+
+func (fs *siteFileSystem) newProjectNode(root inode, name, uuid string) inode {
+	return &projectnode{
+		uuid: uuid,
+		inode: &treenode{
+			fs:     fs,
+			parent: root,
+			inodes: make(map[string]inode),
+			fileinfo: fileinfo{
+				name:    name,
+				modTime: time.Now(),
+				mode:    0755 | os.ModeDir,
+			},
+		},
+	}
 }
 
 // vdirnode wraps an inode by ignoring any requests to add/replace
