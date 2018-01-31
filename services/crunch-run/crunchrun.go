@@ -103,17 +103,16 @@ type ContainerRunner struct {
 	LogsPDH       *string
 	RunArvMount
 	MkTempDir
-	ArvMount       *exec.Cmd
-	ArvMountPoint  string
-	HostOutputDir  string
-	CleanupTempDir []string
-	Binds          []string
-	Volumes        map[string]struct{}
-	OutputPDH      *string
-	SigChan        chan os.Signal
-	ArvMountExit   chan error
-	finalState     string
-	parentTemp     string
+	ArvMount      *exec.Cmd
+	ArvMountPoint string
+	HostOutputDir string
+	Binds         []string
+	Volumes       map[string]struct{}
+	OutputPDH     *string
+	SigChan       chan os.Signal
+	ArvMountExit  chan error
+	finalState    string
+	parentTemp    string
 
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
@@ -503,7 +502,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if staterr != nil {
 				return fmt.Errorf("While Chmod temp dir: %v", err)
 			}
-			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", tmpdir, bind))
 			if bind == runner.Container.OutputPath {
 				runner.HostOutputDir = tmpdir
@@ -523,7 +521,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
-			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
 			tmpfn := filepath.Join(tmpdir, "mountdata.json")
 			err = ioutil.WriteFile(tmpfn, jsondata, 0644)
 			if err != nil {
@@ -536,7 +533,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
-			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
 			err = gitMount(mnt).extractTree(runner.ArvClient, tmpdir, token)
 			if err != nil {
 				return err
@@ -1428,12 +1424,6 @@ func (runner *ContainerRunner) CleanupDirs() {
 		}
 	}
 
-	for _, tmpdir := range runner.CleanupTempDir {
-		if rmerr := os.RemoveAll(tmpdir); rmerr != nil {
-			runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", tmpdir, rmerr)
-		}
-	}
-
 	if rmerr := os.RemoveAll(runner.parentTemp); rmerr != nil {
 		runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", runner.parentTemp, rmerr)
 	}
@@ -1774,7 +1764,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	parentTemp, tmperr := cr.MkTempDir("", "crunch-run")
+	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerId+".")
 	if tmperr != nil {
 		log.Fatalf("%s: %v", containerId, tmperr)
 	}
