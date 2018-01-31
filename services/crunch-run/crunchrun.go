@@ -583,7 +583,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		if dir.IsDir() {
 			err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
 				if walkerr != nil {
-					return walkerr;
+					return walkerr
 				}
 				if walkinfo.Mode().IsRegular() {
 					return copyfile(walkpath, path.Join(cp.bind, walkpath[len(cp.src):]))
