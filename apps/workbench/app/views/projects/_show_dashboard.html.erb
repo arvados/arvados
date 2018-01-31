@@ -125,12 +125,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
               </div>
 
               <div class="clearfix">
-                Started at <%= render_localized_date(wu.started_at || wu.created_at, "noseconds") %>.
-                <% wu_time = Time.now - (wu.started_at || wu.created_at) %>
-                Active for <%= render_runtime(wu_time, false) %>.
-
-                <div class="pull-right">
-                </div>
+                <% if wu.started_at %>
+                  Started at <%= render_localized_date(wu.started_at, "noseconds") %>
+                  Active for <%= render_runtime(Time.now - wu.started_at, false) %>.
+                <% else %>
+                  Created at <%= render_localized_date(wu.created_at, "noseconds") %>.
+                  <% if wu.state_label == 'Queued' %>
+                    Queued for <%= render_runtime(Time.now - wu.created_at, false) %>.
+                  <% end %>
+                <% end %>
               </div>
             </div>
             <% end %>
