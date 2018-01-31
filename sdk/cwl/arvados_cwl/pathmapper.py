@@ -225,9 +225,10 @@ class StagingPathMapper(PathMapper):
         tgt = os.path.join(stagedir, obj["basename"])
         basetgt, baseext = os.path.splitext(tgt)
         n = 1
-        while tgt in self.targets:
-            n += 1
-            tgt = "%s_%i%s" % (basetgt, n, baseext)
+        if tgt in self.targets and (self.reversemap(tgt)[0] != loc):
+            while tgt in self.targets:
+                n += 1
+                tgt = "%s_%i%s" % (basetgt, n, baseext)
         self.targets.add(tgt)
         if obj["class"] == "Directory":
             if obj.get("writable"):
