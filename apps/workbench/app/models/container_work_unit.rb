@@ -58,7 +58,10 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def can_cancel?
-    @proxied.is_a?(ContainerRequest) && @proxied.state == "Committed" && @proxied.priority > 0 && @proxied.editable?
+    @proxied.is_a?(ContainerRequest) &&
+      @proxied.state == "Committed" &&
+      (@proxied.priority > 0 || get(:state, @container) != 'Running') &&
+      @proxied.editable?
   end
 
   def container_uuid
