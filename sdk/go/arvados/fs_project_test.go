@@ -5,10 +5,37 @@
 package arvados
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"os"
 
 	check "gopkg.in/check.v1"
 )
+
+type spiedRequest struct {
+	method string
+	path   string
+	params map[string]interface{}
+}
+
+type spyingClient struct {
+	*Client
+	calls []spiedRequest
+}
+
+func (sc *spyingClient) RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error {
+	var paramsCopy map[string]interface{}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(params)
+	json.NewDecoder(&buf).Decode(&paramsCopy)
+	sc.calls = append(sc.calls, spiedRequest{
+		method: method,
+		path:   path,
+		params: paramsCopy,
+	})
+	return sc.Client.RequestAndDecode(dst, method, path, body, params)
+}
 
 func (s *SiteFSSuite) TestHomeProject(c *check.C) {
 	f, err := s.fs.Open("/home")
