@@ -7,16 +7,11 @@ exec 2>&1
 set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
+. /usr/local/lib/arvbox/go-setup.sh
 
-mkdir -p /var/lib/gopath
-cd /var/lib/gopath
-
-export GOPATH=$PWD
-mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/crunchstat"
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/sdk/go/crunchrunner"
-install bin/crunchstat bin/crunchrunner /usr/local/bin
+install $GOPATH/bin/crunchstat $GOPATH/bin/crunchrunner /usr/local/bin
 
 if test -s /var/lib/arvados/api_rails_env ; then
   RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)

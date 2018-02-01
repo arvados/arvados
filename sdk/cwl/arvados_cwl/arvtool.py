@@ -36,8 +36,13 @@ class ArvadosCommandTool(CommandLineTool):
 
     def job(self, joborder, output_callback, **kwargs):
         if self.work_api == "containers":
-            kwargs["outdir"] = "/var/spool/cwl"
-            kwargs["docker_outdir"] = "/var/spool/cwl"
+            dockerReq, is_req = self.get_requirement("DockerRequirement")
+            if dockerReq and dockerReq.get("dockerOutputDirectory"):
+                kwargs["outdir"] = dockerReq.get("dockerOutputDirectory")
+                kwargs["docker_outdir"] = dockerReq.get("dockerOutputDirectory")
+            else:
+                kwargs["outdir"] = "/var/spool/cwl"
+                kwargs["docker_outdir"] = "/var/spool/cwl"
         elif self.work_api == "jobs":
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["docker_outdir"] = "$(task.outdir)"

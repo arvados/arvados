@@ -7,7 +7,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/json"
 	"errors"
@@ -17,7 +16,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime/pprof"
 	"sort"
 	"strings"
@@ -30,6 +28,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
@@ -42,10 +41,16 @@ func TestCrunchExec(t *testing.T) {
 	TestingT(t)
 }
 
-type TestSuite struct{}
-
 // Gocheck boilerplate
 var _ = Suite(&TestSuite{})
+
+type TestSuite struct {
+	docker *TestDockerClient
+}
+
+func (s *TestSuite) SetUpTest(c *C) {
+	s.docker = NewTestDockerClient()
+}
 
 type ArvTestClient struct {
 	Total   int64
@@ -88,18 +93,18 @@ type TestDockerClient struct {
 	logReader   io.ReadCloser
 	logWriter   io.WriteCloser
 	fn          func(t *TestDockerClient)
-	finish      int
+	exitCode    int
 	stop        chan bool
 	cwd         string
 	env         []string
 	api         *ArvTestClient
 	realTemp    string
+	calledWait  bool
 }
 
-func NewTestDockerClient(exitCode int) *TestDockerClient {
+func NewTestDockerClient() *TestDockerClient {
 	t := &TestDockerClient{}
 	t.logReader, t.logWriter = io.Pipe()
-	t.finish = exitCode
 	t.stop = make(chan bool, 1)
 	t.cwd = "/"
 	return t
@@ -131,16 +136,16 @@ func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockerco
 }
 
 func (t *TestDockerClient) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
-	if t.finish == 3 {
+	if t.exitCode == 3 {
 		return errors.New(`Error response from daemon: oci runtime error: container_linux.go:247: starting container process caused "process_linux.go:359: container init caused \"rootfs_linux.go:54: mounting \\\"/tmp/keep453790790/by_id/99999999999999999999999999999999+99999/myGenome\\\" to rootfs \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged\\\" at \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged/keep/99999999999999999999999999999999+99999/myGenome\\\" caused \\\"no such file or directory\\\"\""`)
 	}
-	if t.finish == 4 {
+	if t.exitCode == 4 {
 		return errors.New(`panic: standard_init_linux.go:175: exec user process caused "no such file or directory"`)
 	}
-	if t.finish == 5 {
+	if t.exitCode == 5 {
 		return errors.New(`Error response from daemon: Cannot start container 41f26cbc43bcc1280f4323efb1830a394ba8660c9d1c2b564ba42bf7f7694845: [8] System error: no such file or directory`)
 	}
-	if t.finish == 6 {
+	if t.exitCode == 6 {
 		return errors.New(`Error response from daemon: Cannot start container 58099cd76c834f3dc2a4fb76c8028f049ae6d4fdf0ec373e1f2cfea030670c2d: [8] System error: exec: "foobar": executable file not found in $PATH`)
 	}
 
@@ -152,25 +157,24 @@ func (t *TestDockerClient) ContainerStart(ctx context.Context, container string,
 	}
 }
 
-func (t *TestDockerClient) ContainerStop(ctx context.Context, container string, timeout *time.Duration) error {
+func (t *TestDockerClient) ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error {
 	t.stop <- true
 	return nil
 }
 
 func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
-	body := make(chan dockercontainer.ContainerWaitOKBody)
+	t.calledWait = true
+	body := make(chan dockercontainer.ContainerWaitOKBody, 1)
 	err := make(chan error)
 	go func() {
 		t.fn(t)
-		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.finish)}
-		close(body)
-		close(err)
+		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.exitCode)}
 	}()
 	return body, err
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
-	if t.finish == 2 {
+	if t.exitCode == 2 {
 		return dockertypes.ImageInspect{}, nil, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
 	}
 
@@ -182,7 +186,7 @@ func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string
 }
 
 func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
-	if t.finish == 2 {
+	if t.exitCode == 2 {
 		return dockertypes.ImageLoadResponse{}, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
 	}
 	_, err := io.Copy(ioutil.Discard, input)
@@ -396,8 +400,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
-	docker := NewTestDockerClient(0)
-	cr := NewContainerRunner(&ArvTestClient{}, kc, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
@@ -512,8 +515,7 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
-	docker := NewTestDockerClient(0)
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -531,8 +533,7 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
-	docker := NewTestDockerClient(0)
-	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -572,12 +573,11 @@ func dockerLog(fd byte, msg string) []byte {
 }
 
 func (s *TestSuite) TestRunContainer(c *C) {
-	docker := NewTestDockerClient(0)
-	docker.fn = func(t *TestDockerClient) {
+	s.docker.fn = func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "Hello world\n"))
 		t.logWriter.Close()
 	}
-	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -667,18 +667,18 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
+func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
 	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient(exitCode)
-	docker.fn = fn
-	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.exitCode = exitCode
+	s.docker.fn = fn
+	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
-	docker.api = api
-	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	s.docker.api = api
+	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -687,7 +687,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	c.Assert(err, IsNil)
 	defer os.RemoveAll(realTemp)
 
-	docker.realTemp = realTemp
+	s.docker.realTemp = realTemp
 
 	tempcount := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
@@ -730,7 +730,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 }
 
 func (s *TestSuite) TestFullRunHello(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -751,7 +751,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
 		"cwd": ".",
@@ -784,7 +784,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
 	os.Setenv("SLURMD_NODENAME", "compute2")
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
 		"cwd": ".",
@@ -818,7 +818,7 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
 		"cwd": ".",
@@ -841,7 +841,7 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello ; echo world 1>&2 ; exit 1"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -866,7 +866,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 }
 
 func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["pwd"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -887,7 +887,7 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 }
 
 func (s *TestSuite) TestFullRunSetCwd(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["pwd"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -909,7 +909,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 func (s *TestSuite) TestStopOnSignal(c *C) {
 	s.testStopContainer(c, func(cr *ContainerRunner) {
 		go func() {
-			for !cr.cStarted {
+			for !s.docker.calledWait {
 				time.Sleep(time.Millisecond)
 			}
 			cr.SigChan <- syscall.SIGINT
@@ -943,16 +943,15 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient(0)
-	docker.fn = func(t *TestDockerClient) {
+	s.docker.fn = func(t *TestDockerClient) {
 		<-t.stop
 		t.logWriter.Write(dockerLog(1, "foo\n"))
 		t.logWriter.Close()
 	}
-	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api := &ArvTestClient{Container: rec}
-	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr := NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
 	setup(cr)
 
@@ -978,7 +977,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $FROBIZ"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1029,6 +1028,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	c.Assert(err, IsNil)
 	stubCertPath := stubCert(certTemp)
 
+	cr.parentTemp = realTemp
+
 	defer os.RemoveAll(realTemp)
 	defer os.RemoveAll(certTemp)
 
@@ -1045,11 +1046,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}
 
 	checkEmpty := func() {
-		filepath.Walk(realTemp, func(path string, _ os.FileInfo, err error) error {
-			c.Check(path, Equals, realTemp)
-			c.Check(err, IsNil)
-			return nil
-		})
+		// Should be deleted.
+		_, err := os.Stat(realTemp)
+		c.Assert(os.IsNotExist(err), Equals, true)
+
+		// Now recreate it for the next test.
+		c.Assert(os.Mkdir(realTemp, 0777), IsNil)
 	}
 
 	{
@@ -1064,7 +1066,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1083,7 +1085,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/out", realTemp + "/tmp3:/tmp"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1104,7 +1106,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1200,8 +1202,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2/mountdata.json:/mnt/test.json:ro"})
-		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/json2/mountdata.json:/mnt/test.json:ro"})
+		content, err := ioutil.ReadFile(realTemp + "/json2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1227,26 +1229,42 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
 
-	// Writable mount points are not allowed underneath output_dir mount point
+	// Writable mount points copied to output_dir mount point
 	{
 		i = 0
 		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
-			"/tmp":     {Kind: "tmp"},
-			"/tmp/foo": {Kind: "collection", Writable: true},
+			"/tmp": {Kind: "tmp"},
+			"/tmp/foo": {Kind: "collection",
+				PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53",
+				Writable:         true},
+			"/tmp/bar": {Kind: "collection",
+				PortableDataHash: "59389a8f9ee9d399be35462a0f92541d+53",
+				Path:             "baz",
+				Writable:         true},
 		}
 		cr.OutputPath = "/tmp"
 
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541d+53/baz", os.ModePerm)
+
+		rf, _ := os.Create(realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541d+53/baz/quux")
+		rf.Write([]byte("bar"))
+		rf.Close()
+
 		err := cr.SetupMounts()
-		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		c.Check(err, IsNil)
+		_, err = os.Stat(cr.HostOutputDir + "/foo")
+		c.Check(err, IsNil)
+		_, err = os.Stat(cr.HostOutputDir + "/bar/quux")
+		c.Check(err, IsNil)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1359,7 +1377,7 @@ func (s *TestSuite) TestStdout(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ := FullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
@@ -1370,17 +1388,16 @@ func (s *TestSuite) TestStdout(c *C) {
 }
 
 // Used by the TestStdoutWithWrongPath*()
-func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
+func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
 	rec := arvados.Container{}
 	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient(0)
-	docker.fn = fn
-	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.fn = fn
+	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
-	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
@@ -1389,7 +1406,7 @@ func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (ap
 }
 
 func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
-	_, _, err := StdoutErrorRunHelper(c, `{
+	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path":"/tmpa.out"} },
     "output_path": "/tmp"
 }`, func(t *TestDockerClient) {})
@@ -1399,7 +1416,7 @@ func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
 }
 
 func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
-	_, _, err := StdoutErrorRunHelper(c, `{
+	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "tmp", "path":"/tmp/a.out"} },
     "output_path": "/tmp"
 }`, func(t *TestDockerClient) {})
@@ -1409,7 +1426,7 @@ func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
 }
 
 func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
-	_, _, err := StdoutErrorRunHelper(c, `{
+	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "collection", "path":"/tmp/a.out"} },
     "output_path": "/tmp"
 }`, func(t *TestDockerClient) {})
@@ -1421,7 +1438,7 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
 	defer os.Unsetenv("ARVADOS_API_HOST")
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1444,7 +1461,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
 	defer os.Unsetenv("ARVADOS_API_HOST")
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1484,7 +1501,7 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
@@ -1519,12 +1536,12 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt",
 	}
 
-	api, runner, realtemp := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+	api, runner, realtemp := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
 
-	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/2:/tmp",
+	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/tmp2:/tmp",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt:/tmp/foo/bar:ro",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt:/tmp/foo/baz/sub2file2:ro",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1:/tmp/foo/sub1:ro",
@@ -1571,7 +1588,7 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 	}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
@@ -1612,12 +1629,12 @@ func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 	}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/2/baz")
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz2")
-		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/2/baz3")
-		os.Mkdir(t.realTemp+"/2/baz4", 0700)
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz4/baz5")
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/tmp2/baz")
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz2")
+		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/tmp2/baz3")
+		os.Mkdir(t.realTemp+"/tmp2/baz4", 0700)
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz4/baz5")
 		t.logWriter.Close()
 	})
 
@@ -1654,8 +1671,8 @@ func (s *TestSuite) TestOutputError(c *C) {
 
 	extraMounts := []string{}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/etc/hosts", t.realTemp+"/2/baz")
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		os.Symlink("/etc/hosts", t.realTemp+"/tmp2/baz")
 		t.logWriter.Close()
 	})
 
@@ -1678,22 +1695,22 @@ func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
 
 	extraMounts := []string{}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		rf, _ := os.Create(t.realTemp + "/2/realfile")
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		rf, _ := os.Create(t.realTemp + "/tmp2/realfile")
 		rf.Write([]byte("foo"))
 		rf.Close()
 
-		os.Mkdir(t.realTemp+"/2/realdir", 0700)
-		rf, _ = os.Create(t.realTemp + "/2/realdir/subfile")
+		os.Mkdir(t.realTemp+"/tmp2/realdir", 0700)
+		rf, _ = os.Create(t.realTemp + "/tmp2/realdir/subfile")
 		rf.Write([]byte("bar"))
 		rf.Close()
 
-		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
-		os.Symlink("realfile", t.realTemp+"/2/file2")
-		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
-		os.Symlink("file2", t.realTemp+"/2/file4")
-		os.Symlink("realdir", t.realTemp+"/2/dir1")
-		os.Symlink("/tmp/realdir", t.realTemp+"/2/dir2")
+		os.Symlink("/tmp/realfile", t.realTemp+"/tmp2/file1")
+		os.Symlink("realfile", t.realTemp+"/tmp2/file2")
+		os.Symlink("/tmp/file1", t.realTemp+"/tmp2/file3")
+		os.Symlink("file2", t.realTemp+"/tmp2/file4")
+		os.Symlink("realdir", t.realTemp+"/tmp2/dir1")
+		os.Symlink("/tmp/realdir", t.realTemp+"/tmp2/dir2")
 		t.logWriter.Close()
 	})
 
@@ -1735,7 +1752,7 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 		"b0def87f80dd594d4675809e83bd4f15+367/file1_in_main.txt",
 	}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
@@ -1770,7 +1787,7 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ := FullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
@@ -1790,7 +1807,7 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 }
 
 func (s *TestSuite) TestStderrMount(c *C) {
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello;exit 1"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1887,7 +1904,7 @@ exec echo killme
 	ech := tf.Name()
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1912,7 +1929,7 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
 	ech := ""
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1935,7 +1952,7 @@ func (s *TestSuite) TestFullBrokenDocker3(c *C) {
 	ech := ""
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1957,7 +1974,7 @@ func (s *TestSuite) TestBadCommand1(c *C) {
 	ech := ""
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1979,7 +1996,7 @@ func (s *TestSuite) TestBadCommand2(c *C) {
 	ech := ""
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -2001,7 +2018,7 @@ func (s *TestSuite) TestBadCommand3(c *C) {
 	ech := ""
 	brokenNodeHook = &ech
 
-	api, _, _ := FullRunHelper(c, `{
+	api, _, _ := s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
