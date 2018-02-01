@@ -584,10 +584,19 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if walkerr != nil {
 					return walkerr
 				}
+				target := path.Join(cp.bind, walkpath[len(cp.src):])
 				if walkinfo.Mode().IsRegular() {
-					return copyfile(walkpath, path.Join(cp.bind, walkpath[len(cp.src):]))
+					copyerr := copyfile(walkpath, target)
+					if copyerr != nil {
+						return copyerr
+					}
+					return os.Chmod(target, walkinfo.Mode()|0777)
 				} else if walkinfo.Mode().IsDir() {
-					return os.MkdirAll(path.Join(cp.bind, walkpath[len(cp.src):]), 0777)
+					mkerr := os.MkdirAll(target, 0777)
+					if mkerr != nil {
+						return mkerr
+					}
+					return os.Chmod(target, walkinfo.Mode()|os.ModeSetgid|0777)
 				} else {
 					return fmt.Errorf("Source %q is not a regular file or directory", cp.src)
 				}
