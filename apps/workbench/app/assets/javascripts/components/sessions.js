@@ -6,6 +6,7 @@ $(document).on('ready', function() {
     var db = new SessionDB()
     db.checkForNewToken()
     db.fillMissingUUIDs()
+    db.migrateNonFederatedSessions()
 })
 
 window.SessionsTable = {
@@ -41,7 +42,11 @@ window.SessionsTable = {
                                 m('td', session.user.is_active ?
                                     m('span.label.label-success', 'logged in') :
                                     m('span.label.label-warning', 'inactive')),
-                                m('td', {title: session.baseURL}, uuidPrefix),
+                                m('td', {title: session.baseURL}, [
+                                    m('a', {
+                                        href: db.workbenchBaseURL(session) + '?api_token=' + session.token
+                                    }, uuidPrefix),
+                                ]),
                                 m('td', session.user.username),
                                 m('td', session.user.email),
                                 m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {

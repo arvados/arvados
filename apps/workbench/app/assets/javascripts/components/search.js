@@ -2,6 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+$(document).on('ready', function() {
+    var db = new SessionDB()
+    db.migrateNonFederatedSessions()
+})
+
 window.SearchResultsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
@@ -90,7 +95,7 @@ window.SearchResultsTable = {
 
 window.Search = {
     oninit: function(vnode) {
-        vnode.state.sessionDB = new SessionDB(vnode.attrs.remoteHosts)
+        vnode.state.sessionDB = new SessionDB()
         vnode.state.searchEntered = m.stream()
         vnode.state.searchActive = m.stream()
         // When searchActive changes (e.g., when restoring state

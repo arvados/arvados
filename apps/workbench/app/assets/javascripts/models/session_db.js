@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.SessionDB = function(rhosts) {
+window.SessionDB = function() {
     var db = this
     Object.assign(db, {
-        remoteHosts: rhosts || [],
         discoveryCache: {},
         tokenUUIDCache: null,
         loadFromLocalStorage: function() {
@@ -75,7 +74,7 @@ window.SessionDB = function(rhosts) {
                 })
             })
         },
-        login: function(baseURL) {
+        login: function(baseURL, fallbackLogin = true) {
             // Initiate login procedure with given API base URL (e.g.,
             // "http://api.example/").
             //
@@ -104,7 +103,7 @@ window.SessionDB = function(rhosts) {
                             db.save(user.owner_uuid.slice(0, 5), remoteSession)
                         })
                     })
-                } else {
+                } else if (fallbackLogin) {
                     // Classic login
                     document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
                 }
@@ -226,6 +225,18 @@ window.SessionDB = function(rhosts) {
             opts.headers = opts.headers || {}
             opts.headers.authorization = 'OAuth2 '+ session.token
             return m.request(session.baseURL + path, opts)
+        },
+        // Check non-federated remote active sessions if they should be migrated to
+        // a salted token.
+        migrateNonFederatedSessions: function() {
+            var sessions = db.loadActive()
+            Object.keys(sessions).map(function(uuidPrefix) {
+                session = sessions[uuidPrefix]
+                if (!session.isFromRails && session.token && session.token.indexOf('v2/') < 0) {
+                    // Only try the federated login
+                    db.login(session.baseURL, false)
+                }
+            })
         },
     })
 }
