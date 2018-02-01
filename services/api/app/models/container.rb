@@ -90,7 +90,7 @@ class Container < ArvadosModel
       self.priority = ContainerRequest.
         where(container_uuid: uuid,
               state: ContainerRequest::Committed).
-        maximum('priority')
+        maximum('priority') || 0
       self.save!
     end
   end
@@ -515,7 +515,7 @@ class Container < ArvadosModel
             cr.with_lock do
               # Use row locking because this increments container_count
               cr.container_uuid = c.uuid
-              cr.save
+              cr.save!
             end
           end
         end
@@ -526,11 +526,21 @@ class Container < ArvadosModel
           cr.finalize!
         end
 
-        # Try to cancel any outstanding container requests made by this container.
-        ContainerRequest.where(requesting_container_uuid: uuid,
-                               state: ContainerRequest::Committed).each do |cr|
-          cr.priority = 0
-          cr.save
+        # Cancel outstanding container requests made by this container.
+        ContainerRequest.
+          includes(:container).
+          where(requesting_container_uuid: uuid,
+                state: ContainerRequest::Committed).each do |cr|
+          cr.update_attributes!(priority: 0)
+          cr.container.reload
+          if cr.container.state == Container::Queued || cr.container.state == Container::Locked
+            # If the child container hasn't started yet, finalize the
+            # child CR now instead of leaving it "on hold", i.e.,
+            # Queued with priority 0.  (OTOH, if the child is already
+            # running, leave it alone so it can get cancelled the
+            # usual way, get a copy of the log collection, etc.)
+            cr.update_attributes!(state: ContainerRequest::Final)
+          end
         end
       end
     end
