@@ -575,11 +575,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 
 	for _, cp := range copyFiles {
-		dir, err := os.Stat(cp.src)
+		st, err := os.Stat(cp.src)
 		if err != nil {
 			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)
 		}
-		if dir.IsDir() {
+		if st.IsDir() {
 			err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
 				if walkerr != nil {
 					return walkerr
@@ -601,8 +601,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 					return fmt.Errorf("Source %q is not a regular file or directory", cp.src)
 				}
 			})
-		} else {
+		} else if st.Mode().IsRegular() {
 			err = copyfile(cp.src, cp.bind)
+			if err == nil {
+				err = os.Chmod(cp.bind, st.Mode()|0777)
+			}
 		}
 		if err != nil {
 			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)

@@ -16,7 +16,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime/pprof"
 	"sort"
 	"strings"
@@ -1029,6 +1028,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	c.Assert(err, IsNil)
 	stubCertPath := stubCert(certTemp)
 
+	cr.parentTemp = realTemp
+
 	defer os.RemoveAll(realTemp)
 	defer os.RemoveAll(certTemp)
 
@@ -1045,11 +1046,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}
 
 	checkEmpty := func() {
-		filepath.Walk(realTemp, func(path string, _ os.FileInfo, err error) error {
-			c.Check(path, Equals, realTemp)
-			c.Check(err, IsNil)
-			return nil
-		})
+		// Should be deleted.
+		_, err := os.Stat(realTemp)
+		c.Assert(os.IsNotExist(err), Equals, true)
+
+		// Now recreate it for the next test.
+		c.Assert(os.Mkdir(realTemp, 0777), IsNil)
 	}
 
 	{
@@ -1064,7 +1066,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1083,7 +1085,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/out", realTemp + "/tmp3:/tmp"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1104,7 +1106,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1200,8 +1202,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2/mountdata.json:/mnt/test.json:ro"})
-		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/json2/mountdata.json:/mnt/test.json:ro"})
+		content, err := ioutil.ReadFile(realTemp + "/json2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1227,7 +1229,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
 			"--read-write", "--crunchstat-interval=5",
 			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1539,7 +1541,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		t.logWriter.Close()
 	})
 
-	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/2:/tmp",
+	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/tmp2:/tmp",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt:/tmp/foo/bar:ro",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt:/tmp/foo/baz/sub2file2:ro",
 		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1:/tmp/foo/sub1:ro",
@@ -1628,11 +1630,11 @@ func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
 	}
 
 	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/2/baz")
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz2")
-		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/2/baz3")
-		os.Mkdir(t.realTemp+"/2/baz4", 0700)
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz4/baz5")
+		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/tmp2/baz")
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz2")
+		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/tmp2/baz3")
+		os.Mkdir(t.realTemp+"/tmp2/baz4", 0700)
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz4/baz5")
 		t.logWriter.Close()
 	})
 
@@ -1670,7 +1672,7 @@ func (s *TestSuite) TestOutputError(c *C) {
 	extraMounts := []string{}
 
 	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/etc/hosts", t.realTemp+"/2/baz")
+		os.Symlink("/etc/hosts", t.realTemp+"/tmp2/baz")
 		t.logWriter.Close()
 	})
 
@@ -1694,21 +1696,21 @@ func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
 	extraMounts := []string{}
 
 	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		rf, _ := os.Create(t.realTemp + "/2/realfile")
+		rf, _ := os.Create(t.realTemp + "/tmp2/realfile")
 		rf.Write([]byte("foo"))
 		rf.Close()
 
-		os.Mkdir(t.realTemp+"/2/realdir", 0700)
-		rf, _ = os.Create(t.realTemp + "/2/realdir/subfile")
+		os.Mkdir(t.realTemp+"/tmp2/realdir", 0700)
+		rf, _ = os.Create(t.realTemp + "/tmp2/realdir/subfile")
 		rf.Write([]byte("bar"))
 		rf.Close()
 
-		os.Symlink("/tmp/realfile", t.realTemp+"/2/file1")
-		os.Symlink("realfile", t.realTemp+"/2/file2")
-		os.Symlink("/tmp/file1", t.realTemp+"/2/file3")
-		os.Symlink("file2", t.realTemp+"/2/file4")
-		os.Symlink("realdir", t.realTemp+"/2/dir1")
-		os.Symlink("/tmp/realdir", t.realTemp+"/2/dir2")
+		os.Symlink("/tmp/realfile", t.realTemp+"/tmp2/file1")
+		os.Symlink("realfile", t.realTemp+"/tmp2/file2")
+		os.Symlink("/tmp/file1", t.realTemp+"/tmp2/file3")
+		os.Symlink("file2", t.realTemp+"/tmp2/file4")
+		os.Symlink("realdir", t.realTemp+"/tmp2/dir1")
+		os.Symlink("/tmp/realdir", t.realTemp+"/tmp2/dir2")
 		t.logWriter.Close()
 	})
 
