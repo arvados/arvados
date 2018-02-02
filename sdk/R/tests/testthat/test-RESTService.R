@@ -10,7 +10,7 @@ test_that("getWebDavHostName calls REST service properly", {
     serverResponse <- list(keepWebServiceUrl = "https://myWebDavServer.com")
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", NULL,
+    REST <- RESTService$new("token", "host",
                             httpRequest, FakeHttpParser$new())
 
     REST$getWebDavHostName()
@@ -25,7 +25,7 @@ test_that("getWebDavHostName returns webDAV host name properly", {
     serverResponse <- list(keepWebServiceUrl = "https://myWebDavServer.com")
     httpRequest <- FakeHttpRequest$new(expectedURL = NULL, serverResponse)
 
-    REST <- RESTService$new("token", "host", NULL,
+    REST <- RESTService$new("token", "host",
                             httpRequest, FakeHttpParser$new())
 
     expect_that("https://myWebDavServer.com", equals(REST$getWebDavHostName())) 
@@ -39,8 +39,9 @@ test_that("getResource calls REST service properly", {
 
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, FakeHttpParser$new())
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, FakeHttpParser$new(),
+                            0, "webDavHost")
 
     REST$getResource("collections", resourceUUID)
 
@@ -53,8 +54,9 @@ test_that("getResource parses server response", {
 
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     httpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            FakeHttpRequest$new(), httpParser)
+    REST <- RESTService$new("token", "host", 
+                            FakeHttpRequest$new(), httpParser,
+                            0, "webDavHost")
 
     REST$getResource("collections", resourceUUID)
 
@@ -66,9 +68,10 @@ test_that("getResource raises exception if response contains errors field", {
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     serverResponse <- list(errors = 404)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
+    REST <- RESTService$new("token", "host",
                             FakeHttpRequest$new(NULL, serverResponse),
-                            FakeHttpParser$new())
+                            FakeHttpParser$new(),
+                            0, "webDavHost")
     
     expect_that(REST$getResource("collections", resourceUUID), throws_error(404))
 }) 
@@ -79,8 +82,9 @@ test_that("listResources calls REST service properly", {
     expectedURL    <- paste0("https://host/arvados/v1/collections")
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, FakeHttpParser$new())
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, FakeHttpParser$new(),
+                            0, "webDavHost")
 
     REST$listResources("collections")
 
@@ -92,8 +96,9 @@ test_that("listResources calls REST service properly", {
 test_that("listResources parses server response", {
 
     httpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            FakeHttpRequest$new(), httpParser)
+    REST <- RESTService$new("token", "host", 
+                            FakeHttpRequest$new(), httpParser,
+                            0, "webDavHost")
 
     REST$listResources("collections")
 
@@ -104,9 +109,10 @@ test_that("listResources raises exception if response contains errors field", {
 
     serverResponse <- list(errors = 404)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
+    REST <- RESTService$new("token", "host", 
                             FakeHttpRequest$new(NULL, serverResponse),
-                            FakeHttpParser$new())
+                            FakeHttpParser$new(),
+                            0, "webDavHost")
     
     expect_that(REST$listResources("collections"), throws_error(404))
 }) 
@@ -128,8 +134,9 @@ test_that("fetchAllItems always returns all resource items from server", {
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
     httpRequest$serverMaxElementsPerRequest <- 3
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, httpParser)
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, httpParser,
+                            0, "webDavHost")
 
     result <- REST$fetchAllItems(NULL, NULL)
 
@@ -146,8 +153,9 @@ test_that("deleteResource calls REST service properly", {
 
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, FakeHttpParser$new())
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, FakeHttpParser$new(),
+                            0, "webDavHost")
 
     REST$deleteResource("collections", resourceUUID)
 
@@ -160,8 +168,9 @@ test_that("deleteCollection parses server response", {
 
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     httpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            FakeHttpRequest$new(), httpParser)
+    REST <- RESTService$new("token", "host", 
+                            FakeHttpRequest$new(), httpParser,
+                            0, "webDavHost")
 
     REST$deleteResource("collections", resourceUUID)
 
@@ -173,9 +182,10 @@ test_that("deleteCollection raises exception if response contains errors field",
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     serverResponse <- list(errors = 404)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
+    REST <- RESTService$new("token", "host", 
                             FakeHttpRequest$new(NULL, serverResponse),
-                            FakeHttpParser$new())
+                            FakeHttpParser$new(),
+                            0, "webDavHost")
     
     expect_that(REST$deleteResource("collections", resourceUUID), throws_error(404))
 }) 
@@ -189,8 +199,9 @@ test_that("updateResource calls REST service properly", {
 
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, FakeHttpParser$new())
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, FakeHttpParser$new(),
+                            0, "webDavHost")
 
     REST$updateResource("collections", resourceUUID, newResourceContent)
 
@@ -205,8 +216,9 @@ test_that("updateResource parses server response", {
     newResourceContent <- list(newName = "Brand new shiny name")
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     httpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            FakeHttpRequest$new(), httpParser)
+    REST <- RESTService$new("token", "host", 
+                            FakeHttpRequest$new(), httpParser,
+                            0, "webDavHost")
 
     REST$updateResource("collections", resourceUUID, newResourceContent)
 
@@ -218,9 +230,10 @@ test_that("updateResource raises exception if response contains errors field", {
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     serverResponse <- list(errors = 404)
     newResourceContent <- list(newName = "Brand new shiny name")
-    REST <- RESTService$new("token", "host", "webDavHost",
+    REST <- RESTService$new("token", "host", 
                             FakeHttpRequest$new(NULL, serverResponse),
-                            FakeHttpParser$new())
+                            FakeHttpParser$new(),
+                            0, "webDavHost")
     
     expect_that(REST$updateResource("collections", resourceUUID, newResourceContent),
                 throws_error(404))
@@ -236,8 +249,9 @@ test_that("createResource calls REST service properly", {
 
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            httpRequest, FakeHttpParser$new())
+    REST <- RESTService$new("token", "host", 
+                            httpRequest, FakeHttpParser$new(),
+                            0, "webDavHost")
 
     REST$createResource("collections", resourceContent)
 
@@ -252,8 +266,9 @@ test_that("createResource parses server response", {
     resourceContent <- list(newName = "Brand new shiny name")
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     httpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "host", "webDavHost",
-                            FakeHttpRequest$new(), httpParser)
+    REST <- RESTService$new("token", "host",
+                            FakeHttpRequest$new(), httpParser,
+                            0, "webDavHost")
 
     REST$createResource("collections", resourceContent)
 
@@ -265,9 +280,10 @@ test_that("createResource raises exception if response contains errors field", {
     resourceUUID <- "aaaaa-j7d0g-ccccccccccccccc"
     serverResponse <- list(errors = 404)
     resourceContent <- list(newName = "Brand new shiny name")
-    REST <- RESTService$new("token", "host", "webDavHost",
+    REST <- RESTService$new("token", "host", 
                             FakeHttpRequest$new(NULL, serverResponse),
-                            FakeHttpParser$new())
+                            FakeHttpParser$new(),
+                            0, "webDavHost")
     
     expect_that(REST$createResource("collections", resourceContent),
                 throws_error(404))
@@ -280,8 +296,9 @@ test_that("create calls REST service properly", {
     fakeHttp <- FakeHttpRequest$new(expectedURL)
     fakeHttpParser <- FakeHttpParser$new()
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$create("file", uuid)
 
@@ -297,8 +314,9 @@ test_that("create raises exception if server response code is not between 200 an
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$create("file", uuid),
                 throws_error("Server code: 404"))
@@ -311,8 +329,9 @@ test_that("delete calls REST service properly", {
     fakeHttp <- FakeHttpRequest$new(expectedURL)
     fakeHttpParser <- FakeHttpParser$new()
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$delete("file", uuid)
 
@@ -328,8 +347,9 @@ test_that("delete raises exception if server response code is not between 200 an
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$delete("file", uuid),
                 throws_error("Server code: 404"))
@@ -342,8 +362,9 @@ test_that("move calls REST service properly", {
     fakeHttp <- FakeHttpRequest$new(expectedURL)
     fakeHttpParser <- FakeHttpParser$new()
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$move("file", "newDestination/file", uuid)
 
@@ -360,8 +381,9 @@ test_that("move raises exception if server response code is not between 200 and 
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$move("file", "newDestination/file", uuid),
                 throws_error("Server code: 404"))
@@ -377,8 +399,9 @@ test_that("getCollectionContent retreives correct content from WebDAV server", {
 
     fakeHttp <- FakeHttpRequest$new(expectedURL, returnContent)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     returnResult <- REST$getCollectionContent(uuid)
     returnedContentMatchExpected <- all.equal(returnResult,
@@ -394,8 +417,9 @@ test_that("getCollectionContent raises exception if server returns empty respons
     response <- ""
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$getCollectionContent(uuid),
                 throws_error("Response is empty, request may be misconfigured"))
@@ -405,8 +429,9 @@ test_that("getCollectionContent parses server response", {
 
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"
     fakeHttpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            FakeHttpRequest$new(), fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/", 
+                            FakeHttpRequest$new(), fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$getCollectionContent(uuid)
 
@@ -419,8 +444,9 @@ test_that("getCollectionContent raises exception if server returns empty respons
     response <- ""
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$getCollectionContent(uuid),
                 throws_error("Response is empty, request may be misconfigured"))
@@ -434,8 +460,9 @@ test_that(paste("getCollectionContent raises exception if server",
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$getCollectionContent(uuid),
                 throws_error("Server code: 404"))
@@ -451,8 +478,9 @@ test_that("getResourceSize calls REST service properly", {
     response$content <- c(6, 2, 931, 12003)
     fakeHttp <- FakeHttpRequest$new(expectedURL, response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     returnResult <- REST$getResourceSize("file", uuid)
     returnedContentMatchExpected <- all.equal(returnResult,
@@ -469,8 +497,9 @@ test_that("getResourceSize raises exception if server returns empty response", {
     response <- ""
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$getResourceSize("file", uuid),
                 throws_error("Response is empty, request may be misconfigured"))
@@ -484,8 +513,9 @@ test_that(paste("getResourceSize raises exception if server",
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$getResourceSize("file", uuid),
                 throws_error("Server code: 404"))
@@ -495,8 +525,9 @@ test_that("getResourceSize parses server response", {
 
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"
     fakeHttpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            FakeHttpRequest$new(), fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/", 
+                            FakeHttpRequest$new(), fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$getResourceSize("file", uuid)
 
@@ -513,8 +544,9 @@ test_that("read calls REST service properly", {
 
     fakeHttp <- FakeHttpRequest$new(expectedURL, serverResponse)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     returnResult <- REST$read("file", uuid, "text", 1024, 512)
 
@@ -531,8 +563,9 @@ test_that("read raises exception if server response code is not between 200 and 
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$read("file", uuid),
                 throws_error("Server code: 404"))
@@ -543,8 +576,9 @@ test_that("read raises exception if contentType is not valid", {
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"
     fakeHttp <- FakeHttpRequest$new()
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$read("file", uuid, "some invalid content type"),
                 throws_error("Invalid contentType. Please use text or raw."))
@@ -554,8 +588,9 @@ test_that("read parses server response", {
 
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"
     fakeHttpParser <- FakeHttpParser$new()
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            FakeHttpRequest$new(), fakeHttpParser)
+    REST <- RESTService$new("token", "https://host/", 
+                            FakeHttpRequest$new(), fakeHttpParser,
+                            0, "https://webDavHost/")
 
     REST$read("file", uuid, "text", 1024, 512)
 
@@ -569,8 +604,9 @@ test_that("write calls REST service properly", {
     expectedURL <- "https://webDavHost/c=aaaaa-j7d0g-ccccccccccccccc/file"
     fakeHttp <- FakeHttpRequest$new(expectedURL)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, FakeHttpParser$new())
+    REST <- RESTService$new("token", "https://host/", 
+                            fakeHttp, FakeHttpParser$new(),
+                            0, "https://webDavHost/")
 
     REST$write("file", uuid, fileContent, "text/html")
 
@@ -588,8 +624,9 @@ test_that("write raises exception if server response code is not between 200 and
     response$status_code <- 404
     fakeHttp <- FakeHttpRequest$new(serverResponse = response)
 
-    REST <- RESTService$new("token", "https://host/", "https://webDavHost/",
-                            fakeHttp, HttpParser$new())
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
 
     expect_that(REST$write("file", uuid, fileContent, "text/html"),
                 throws_error("Server code: 404"))

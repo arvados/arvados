@@ -57,7 +57,7 @@ FakeHttpRequest <- R6::R6Class(
         },
 
         execute = function(verb, url, headers = NULL, body = NULL, query = NULL,
-                           limit = NULL, offset = NULL, retryTimes = 3)
+                           limit = NULL, offset = NULL, retryTimes = 0)
         {
             private$validateURL(url)
             private$validateHeaders(headers)

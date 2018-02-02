@@ -16,7 +16,7 @@ Arvados <- R6::R6Class(
 
     public = list(
 
-        initialize = function(authToken = NULL, hostName = NULL)
+        initialize = function(authToken = NULL, hostName = NULL, numRetries = 0)
         {
             if(!is.null(hostName))
                Sys.setenv(ARVADOS_API_HOST = hostName)
@@ -32,8 +32,11 @@ Arvados <- R6::R6Class(
                            "or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
                            "environment variables."))
 
-            private$REST  <- RESTService$new(token, hostName, NULL,
-                                             HttpRequest$new(), HttpParser$new())
+            private$numRetries  <- numRetries
+            private$REST  <- RESTService$new(token, hostName,
+                                             HttpRequest$new(), HttpParser$new(),
+                                             numRetries)
+
             private$token <- private$REST$token
             private$host  <- private$REST$hostName
         },
@@ -43,6 +46,12 @@ Arvados <- R6::R6Class(
         getWebDavHostName = function() private$REST$getWebDavHostName(),
         getRESTService    = function() private$REST,
         setRESTService    = function(newRESTService) private$REST <- newRESTService,
+
+        getNumRetries = function() private$REST$numRetries,
+        setNumRetries = function(newNumOfRetries)
+        {
+            private$REST$setNumRetries(newNumOfRetries)
+        },
 
         getCollection = function(uuid)
         {
@@ -156,9 +165,10 @@ Arvados <- R6::R6Class(
 
     private = list(
 
-        token = NULL,
-        host  = NULL,
-        REST  = NULL
+        token      = NULL,
+        host       = NULL,
+        REST       = NULL,
+        numRetries = NULL
     ),
 
     cloneable = FALSE

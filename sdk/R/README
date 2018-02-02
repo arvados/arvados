@@ -28,6 +28,16 @@ library('ArvadosR')
 arv <- Arvados$new() # uses environment variables ARVADOS_API_TOKEN and ARVADOS_API_HOST
 arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 
+
+#Optionally, add numRetries parameter to specify number of times to retry failed service requests.
+#Default is 0.
+
+arv <- Arvados$new("your Arvados token", "example.arvadosapi.com", numRetries = 3)
+
+#This parameter can be set at any time using setNumRetries 
+
+arv$setNumRetries(5)
+
 --------------------------------------------------------------------------------------------------------------------------------
 
 #Get a collection:

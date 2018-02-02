@@ -16,7 +16,7 @@ HttpRequest <- R6::R6Class(
         },
 
         execute = function(verb, url, headers = NULL, body = NULL, query = NULL,
-                           limit = NULL, offset = NULL, retryTimes = 3)
+                           limit = NULL, offset = NULL, retryTimes = 0)
         {
             if(!(verb %in% self$validVerbs))
                 stop("Http verb is not valid.")
@@ -25,8 +25,9 @@ HttpRequest <- R6::R6Class(
             urlQuery <- self$createQuery(query, limit, offset)
             url      <- paste0(url, urlQuery)
 
+            # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
-                                    config = headers, times = retryTimes)
+                                    config = headers, times = retryTimes + 1)
         },
 
         createQuery = function(filters, limit, offset)
