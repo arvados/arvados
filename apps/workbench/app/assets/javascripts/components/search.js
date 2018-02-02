@@ -41,6 +41,8 @@ window.SearchResultsTable = {
             collections: m('i.fa.fa-fw.fa-archive'),
             projects: m('i.fa.fa-fw.fa-folder'),
         }
+        var db = new SessionDB()
+        var sessions = db.loadActive()
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
                 m('th'),
@@ -50,6 +52,13 @@ window.SearchResultsTable = {
             ])),
             m('tbody', [
                 loader.items().map(function(item) {
+                    var session = sessions[item.uuid.slice(0,5)]
+                    var tokenParam = ''
+                    // Add the salted token to search result links from federated
+                    // remote hosts.
+                    if (!session.isFromRails && session.token.indexOf('v2/') == 0) {
+                        tokenParam = '?api_token='+session.token
+                    }
                     return m('tr', [
                         m('td', [
                             item.workbenchBaseURL() &&
@@ -57,7 +66,7 @@ window.SearchResultsTable = {
                                     'data-original-title': 'show '+item.objectType.description,
                                     'data-placement': 'top',
                                     'data-toggle': 'tooltip',
-                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
+                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid+tokenParam,
                                     // Bootstrap's tooltip feature
                                     oncreate: function(vnode) { $(vnode.dom).tooltip() },
                                 }, iconsMap[item.objectType.wb_path]),
