@@ -108,12 +108,11 @@ class ComputeNodeUpdateActor(SlurmMixin, UpdateActorBase):
     def sync_node(self, cloud_node, arvados_node):
         """Keep SLURM's node properties up to date."""
         hostname = arvados_node.get("hostname")
-        if hostname:
-            # This is only needed when slurm has restarted and lost
-            # the dynamically configured node properties. So it's
-            # usually redundant, but detecting when it's necessary
-            # would be about the same amount of work as doing it
-            # repetitively.
+        features = arvados_node.get("slurm_node_features", "").split(",")
+        sizefeature = "instancetype=" + cloud_node.size.name
+        if hostname and sizefeature not in features:
+            # This probably means SLURM has restarted and lost our
+            # dynamically configured node weights and features.
             self._update_slurm_size_attrs(hostname, cloud_node.size)
         return super(ComputeNodeUpdateActor, self).sync_node(
             cloud_node, arvados_node)
