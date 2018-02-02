@@ -244,15 +244,41 @@ window.SessionDB = function() {
             var activeSessions = db.loadActive()
             var doc = db.discoveryDoc(db.loadLocal())
             doc.map(function(d) {
-                // NOTE: the below line is to simulate that 9tee4 is included as a remote host
-                // the current test cluster
-                // d.remoteHosts = {"9tee4":"9tee4.arvadosapi.com"}
                 Object.keys(d.remoteHosts).map(function(uuidPrefix) {
                     if (!(uuidPrefix in Object.keys(activeSessions))) {
                         db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
                             db.login(baseURL, false)
                         })
                     }
+                })
+            })
+        },
+        autoRedirectToHomeCluster: function(path = '/') {
+            var session = db.loadLocal()
+            var userUUIDPrefix = session.user.uuid.slice(0, 5)
+            // If the current user is local to the cluster, do nothing.
+            if (userUUIDPrefix == session.user.owner_uuid.slice(0, 5)) {
+                return
+            }
+            var doc = db.discoveryDoc(session)
+            doc.map(function(d) {
+                // Guess the remote host from the local discovery doc settings
+                var rHost = null
+                if (d.remoteHosts[userUUIDPrefix]) {
+                    rHost = d.remoteHosts[userUUIDPrefix]
+                } else if (d.remoteHostsViaDNS) {
+                    rHost = userUUIDPrefix + '.arvadosapi.com'
+                } else {
+                    // This should not happen: having remote user whose uuid prefix
+                    // isn't listed on remoteHosts and dns mechanism is deactivated
+                    return
+                }
+                // Get the remote cluster workbench url & redirect there.
+                db.findAPI(rHost).then(function(apiUrl) {
+                    var doc = db.discoveryDoc({baseURL: apiUrl})
+                    doc.map(function(d) {
+                        document.location = d.workbenchUrl + path
+                    })
                 })
             })
         },
