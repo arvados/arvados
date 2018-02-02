@@ -2,11 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-$(document).on('ready', function() {
-    var db = new SessionDB()
-    db.migrateNonFederatedSessions()
-})
-
 window.SearchResultsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader

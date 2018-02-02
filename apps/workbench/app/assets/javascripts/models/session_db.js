@@ -238,5 +238,23 @@ window.SessionDB = function() {
                 }
             })
         },
+        // If remoteHosts is listed on the local API discovery doc, try to add any
+        // listed remote without an active session.
+        autoLoadRemoteHosts: function() {
+            var activeSessions = db.loadActive()
+            var doc = db.discoveryDoc(db.loadLocal())
+            doc.map(function(d) {
+                // NOTE: the below line is to simulate that 9tee4 is included as a remote host
+                // the current test cluster
+                // d.remoteHosts = {"9tee4":"9tee4.arvadosapi.com"}
+                Object.keys(d.remoteHosts).map(function(uuidPrefix) {
+                    if (!(uuidPrefix in Object.keys(activeSessions))) {
+                        db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
+                            db.login(baseURL, false)
+                        })
+                    }
+                })
+            })
+        },
     })
 }

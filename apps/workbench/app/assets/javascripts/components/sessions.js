@@ -7,6 +7,7 @@ $(document).on('ready', function() {
     db.checkForNewToken()
     db.fillMissingUUIDs()
     db.migrateNonFederatedSessions()
+    db.autoLoadRemoteHosts()
 })
 
 window.SessionsTable = {
