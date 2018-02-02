@@ -59,11 +59,13 @@ class TestMakeOutput(unittest.TestCase):
         final.save_new.assert_has_calls([mock.call(ensure_unique_name=True, name='Test output', owner_uuid='zzzzz-j7d0g-zzzzzzzzzzzzzzz')])
         self.assertEqual("""{
     "bar": {
+        "basename": "baz.txt",
         "class": "File",
         "location": "baz.txt",
         "size": 4
     },
     "foo": {
+        "basename": "foo.txt",
         "class": "File",
         "location": "foo.txt",
         "size": 3
