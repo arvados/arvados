@@ -24,7 +24,7 @@ window.SessionDB = function() {
         loadActive: function() {
             var sessions = db.loadAll()
             Object.keys(sessions).forEach(function(key) {
-                if (!sessions[key].token || !sessions[key].user.is_active)
+                if (!sessions[key].token || (sessions[key].user && !sessions[key].user.is_active))
                     delete sessions[key]
             })
             return sessions
@@ -59,6 +59,8 @@ window.SessionDB = function() {
             // for the corresponding API server's base URL.  Typical
             // use:
             // sessionDB.findAPI('https://workbench.example/foo').then(sessionDB.login)
+            if (url.length === 5 && url.indexOf('.') < 0)
+                url += '.arvadosapi.com'
             if (url.indexOf('://') < 0)
                 url = 'https://' + url
             url = new URL(url)
@@ -100,11 +102,17 @@ window.SessionDB = function() {
                                 baseURL: baseURL,
                                 token: token
                             }
-                            db.save(user.owner_uuid.slice(0, 5), remoteSession)
+                            db.save(dd.uuidPrefix, remoteSession)
+                        }).catch(function(e) {
+                            // If the remote system is configured to allow federated
+                            // logins from this cluster, but rejected the salted
+                            // token, save as a logged out session anyways.
+                            db.save(dd.uuidPrefix, {baseURL: baseURL})
                         })
                     })
                 } else if (fallbackLogin) {
-                    // Classic login
+                    // Classic login will be used when the remote system doesn't list this
+                    // cluster as part of the federation.
                     document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
                 }
             })
@@ -253,6 +261,12 @@ window.SessionDB = function() {
                 })
             })
         },
+        // If the current logged in account is from a remote federated cluster,
+        // redirect the user to their home cluster's workbench.
+        // This is meant to avoid confusion when the user clicks through a search
+        // result on the home cluster's multi site search page, landing on the
+        // remote workbench and later trying to do another search by just clicking
+        // on the multi site search button instead of going back with the browser.
         autoRedirectToHomeCluster: function(path = '/') {
             var session = db.loadLocal()
             var userUUIDPrefix = session.user.uuid.slice(0, 5)
