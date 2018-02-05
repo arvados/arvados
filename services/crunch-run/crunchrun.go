@@ -952,6 +952,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 
 	runner.ContainerConfig.Volumes = runner.Volumes
 
+	maxRAM := int64(runner.Container.RuntimeConstraints.RAM)
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds: runner.Binds,
 		LogConfig: dockercontainer.LogConfig{
@@ -959,6 +960,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 		},
 		Resources: dockercontainer.Resources{
 			CgroupParent: runner.setCgroupParent,
+			NanoCPUs:     int64(runner.Container.RuntimeConstraints.VCPUs) * 1000000000,
+			Memory:       maxRAM, // RAM
+			MemorySwap:   maxRAM, // RAM+swap
+			KernelMemory: maxRAM, // kernel portion
 		},
 	}
 
