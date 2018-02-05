@@ -27,7 +27,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	needVCPUs := ctr.RuntimeConstraints.VCPUs
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
 
-	needRAM = needRAM * 100 / int64(100-discountConfiguredRAMPercent)
+	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
 	if len(cc.InstanceTypes) == 0 {
 		err = ErrInstanceTypesNotConfigured
