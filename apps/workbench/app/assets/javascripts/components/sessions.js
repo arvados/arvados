@@ -53,7 +53,7 @@ window.SessionsTable = {
                                 m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: m.withAttr('uuidPrefix', db.logout),
-                                }, 'Log out ', m('span.glyphicon.glyphicon-log-out'))),
+                                }, session.listedHost ? 'Disable ':'Log out ', m('span.glyphicon.glyphicon-log-out'))),
                             ] : [
                                 m('td', m('span.label.label-default', 'logged out')),
                                 m('td', {title: session.baseURL}, uuidPrefix),
@@ -62,7 +62,7 @@ window.SessionsTable = {
                                 m('td', m('a.btn.btn-xs.btn-primary', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: db.login.bind(db, session.baseURL),
-                                }, 'Log in ', m('span.glyphicon.glyphicon-log-in'))),
+                                }, session.listedHost ? 'Enable ':'Log in ', m('span.glyphicon.glyphicon-log-in'))),
                             ],
                             m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
                                 uuidPrefix: uuidPrefix,

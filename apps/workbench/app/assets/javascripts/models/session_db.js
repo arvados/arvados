@@ -87,36 +87,53 @@ window.SessionDB = function() {
             var session = db.loadLocal()
             var uuidPrefix = session.user.owner_uuid.slice(0, 5)
             var apiHostname = new URL(session.baseURL).hostname
-            m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
-                if (uuidPrefix in dd.remoteHosts ||
-                    (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
-                    // Federated identity login via salted token
-                    db.saltedToken(dd.uuidPrefix).then(function(token) {
-                        m.request(baseURL+'arvados/v1/users/current', {
-                            headers: {
-                                authorization: 'Bearer '+token,
-                            },
-                        }).then(function(user) {
-                            var remoteSession = {
-                                user: user,
-                                baseURL: baseURL,
-                                token: token
-                            }
-                            db.save(dd.uuidPrefix, remoteSession)
-                        }).catch(function(e) {
-                            // If the remote system is configured to allow federated
-                            // logins from this cluster, but rejected the salted
-                            // token, save as a logged out session anyways.
-                            db.save(dd.uuidPrefix, {baseURL: baseURL})
+            m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(localDD) {
+                m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
+                    if (uuidPrefix in dd.remoteHosts ||
+                        (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
+                        // Federated identity login via salted token
+                        db.saltedToken(dd.uuidPrefix).then(function(token) {
+                            m.request(baseURL+'arvados/v1/users/current', {
+                                headers: {
+                                    authorization: 'Bearer '+token,
+                                },
+                            }).then(function(user) {
+                                // Federated login successful.
+                                var remoteSession = {
+                                    user: user,
+                                    baseURL: baseURL,
+                                    token: token,
+                                    listedHost: (dd.uuidPrefix in localDD.remoteHosts),
+                                }
+                                db.save(dd.uuidPrefix, remoteSession)
+                            }).catch(function(e) {
+                                if (dd.uuidPrefix in localDD.remoteHosts) {
+                                    // If the remote system is configured to allow federated
+                                    // logins from this cluster, but rejected the salted
+                                    // token, save as a logged out session anyways.
+                                    var remoteSession = {
+                                        baseURL: baseURL,
+                                        listedHost: true,
+                                    }
+                                    db.save(dd.uuidPrefix, remoteSession)
+                                } else if (fallbackLogin) {
+                                    // Remote cluster not listed as a remote host and rejecting
+                                    // the salted token, try classic login.
+                                    db.loginClassic(baseURL)
+                                }
+                            })
                         })
-                    })
-                } else if (fallbackLogin) {
-                    // Classic login will be used when the remote system doesn't list this
-                    // cluster as part of the federation.
-                    document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
-                }
+                    } else if (fallbackLogin) {
+                        // Classic login will be used when the remote system doesn't list this
+                        // cluster as part of the federation.
+                        db.loginClassic(baseURL)
+                    }
+                })
             })
             return false
+        },
+        loginClassic: function(baseURL) {
+            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
         },
         logout: function(k) {
             // Forget the token, but leave the other info in the db so
