@@ -31,7 +31,6 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	log "github.com/Sirupsen/logrus"
 )
 
 type router struct {
@@ -41,54 +40,63 @@ type router struct {
 
 // MakeRESTRouter returns a new router that forwards all Keep requests
 // to the appropriate handlers.
-func MakeRESTRouter() *router {
-	rest := mux.NewRouter()
-	rtr := &router{Router: rest}
+func MakeRESTRouter() http.Handler {
+	rtr := &router{Router: mux.NewRouter()}
 
-	rest.HandleFunc(
+	rtr.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(
+	rtr.HandleFunc(
 		`/{hash:[0-9a-f]{32}}+{hints}`,
 		GetBlockHandler).Methods("GET", "HEAD")
 
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
+	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
 	// List all blocks stored here. Privileged client only.
-	rest.HandleFunc(`/index`, rtr.IndexHandler).Methods("GET", "HEAD")
+	rtr.HandleFunc(`/index`, rtr.IndexHandler).Methods("GET", "HEAD")
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
-	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, rtr.IndexHandler).Methods("GET", "HEAD")
+	rtr.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, rtr.IndexHandler).Methods("GET", "HEAD")
 
 	// Internals/debugging info (runtime.MemStats)
-	rest.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
+	rtr.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
 
 	// List volumes: path, device number, bytes used/avail.
-	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
+	rtr.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
 
 	// List mounts: UUID, readonly, tier, device ID, ...
-	rest.HandleFunc(`/mounts`, rtr.MountsHandler).Methods("GET")
-	rest.HandleFunc(`/mounts/{uuid}/blocks`, rtr.IndexHandler).Methods("GET")
-	rest.HandleFunc(`/mounts/{uuid}/blocks/`, rtr.IndexHandler).Methods("GET")
+	rtr.HandleFunc(`/mounts`, rtr.MountsHandler).Methods("GET")
+	rtr.HandleFunc(`/mounts/{uuid}/blocks`, rtr.IndexHandler).Methods("GET")
+	rtr.HandleFunc(`/mounts/{uuid}/blocks/`, rtr.IndexHandler).Methods("GET")
 
 	// Replace the current pull queue.
-	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
+	rtr.HandleFunc(`/pull`, PullHandler).Methods("PUT")
 
 	// Replace the current trash queue.
-	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
+	rtr.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
 	// Untrash moves blocks from trash back into store
-	rest.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
+	rtr.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
 
-	rest.Handle("/_health/{check}", &health.Handler{
+	rtr.Handle("/_health/{check}", &health.Handler{
 		Token:  theConfig.ManagementToken,
 		Prefix: "/_health/",
 	}).Methods("GET")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
-	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
+	rtr.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
-	return rtr
+	theConfig.metrics.setup()
+
+	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", theConfig.metrics.Instrument(
+		httpserver.AddRequestIDs(httpserver.LogRequests(rtr.limiter))))
+	mux.HandleFunc("/metrics.json", theConfig.metrics.exportJSON)
+	mux.Handle("/metrics", theConfig.metrics.exportProm)
+
+	return mux
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.

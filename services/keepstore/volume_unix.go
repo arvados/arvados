@@ -20,8 +20,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type unixVolumeAdder struct {

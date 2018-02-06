@@ -8,8 +8,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type bufferPool struct {

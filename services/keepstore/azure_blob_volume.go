@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	log "github.com/Sirupsen/logrus"
 	"github.com/curoverse/azure-sdk-for-go/storage"
 )
 

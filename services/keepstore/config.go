@@ -9,11 +9,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	log "github.com/Sirupsen/logrus"
+	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Config struct {
@@ -42,9 +48,23 @@ type Config struct {
 	debugLogf       func(string, ...interface{})
 
 	ManagementToken string
+
+	metrics
 }
 
-var theConfig = DefaultConfig()
+var (
+	theConfig = DefaultConfig()
+	formatter = map[string]logrus.Formatter{
+		"text": &logrus.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: rfc3339NanoFixed,
+		},
+		"json": &logrus.JSONFormatter{
+			TimestampFormat: rfc3339NanoFixed,
+		},
+	}
+	log = logrus.StandardLogger()
+)
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
@@ -66,25 +86,18 @@ func DefaultConfig() *Config {
 // fields, and before using the config.
 func (cfg *Config) Start() error {
 	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
+		log.Level = logrus.DebugLevel
 		cfg.debugLogf = log.Printf
 		cfg.debugLogf("debugging enabled")
 	} else {
+		log.Level = logrus.InfoLevel
 		cfg.debugLogf = func(string, ...interface{}) {}
 	}
 
-	switch strings.ToLower(cfg.LogFormat) {
-	case "text":
-		log.SetFormatter(&log.TextFormatter{
-			FullTimestamp:   true,
-			TimestampFormat: rfc3339NanoFixed,
-		})
-	case "json":
-		log.SetFormatter(&log.JSONFormatter{
-			TimestampFormat: rfc3339NanoFixed,
-		})
-	default:
+	if f := formatter[strings.ToLower(cfg.LogFormat)]; f == nil {
 		return fmt.Errorf(`unsupported log format %q (try "text" or "json")`, cfg.LogFormat)
+	} else {
+		log.Formatter = f
 	}
 
 	if cfg.MaxBuffers < 0 {
@@ -140,6 +153,62 @@ func (cfg *Config) Start() error {
 		log.Printf("Using volume %v (writable=%v)", v, v.Writable())
 	}
 	return nil
+}
+
+type metrics struct {
+	registry     *prometheus.Registry
+	reqDuration  *prometheus.SummaryVec
+	timeToStatus *prometheus.SummaryVec
+	exportProm   http.Handler
+}
+
+func (*metrics) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (m *metrics) Fire(ent *logrus.Entry) error {
+	if tts, ok := ent.Data["timeToStatus"].(stats.Duration); !ok {
+	} else if method, ok := ent.Data["reqMethod"].(string); !ok {
+	} else if code, ok := ent.Data["respStatusCode"].(int); !ok {
+	} else {
+		m.timeToStatus.WithLabelValues(strconv.Itoa(code), strings.ToLower(method)).Observe(time.Duration(tts).Seconds())
+	}
+	return nil
+}
+
+func (m *metrics) setup() {
+	m.registry = prometheus.NewRegistry()
+	m.timeToStatus = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "time_to_status_seconds",
+		Help: "Summary of request TTFB.",
+	}, []string{"code", "method"})
+	m.reqDuration = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "request_duration_seconds",
+		Help: "Summary of request duration.",
+	}, []string{"code", "method"})
+	m.registry.MustRegister(m.timeToStatus)
+	m.registry.MustRegister(m.reqDuration)
+	m.exportProm = promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{
+		ErrorLog: log,
+	})
+	log.AddHook(m)
+}
+
+func (m *metrics) exportJSON(w http.ResponseWriter, req *http.Request) {
+	jm := jsonpb.Marshaler{Indent: "  "}
+	mfs, _ := m.registry.Gather()
+	w.Write([]byte{'['})
+	for i, mf := range mfs {
+		if i > 0 {
+			w.Write([]byte{','})
+		}
+		jm.Marshal(w, mf)
+	}
+	w.Write([]byte{']'})
+}
+
+func (m *metrics) Instrument(next http.Handler) http.Handler {
+	return promhttp.InstrumentHandlerDuration(m.reqDuration, next)
 }
 
 // VolumeTypes is built up by init() funcs in the source files that

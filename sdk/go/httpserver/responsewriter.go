@@ -28,6 +28,13 @@ func WrapResponseWriter(orig http.ResponseWriter) ResponseWriter {
 	return &responseWriter{ResponseWriter: orig}
 }
 
+func (w *responseWriter) CloseNotify() <-chan bool {
+	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	return nil
+}
+
 func (w *responseWriter) WriteHeader(s int) {
 	w.wroteStatus = s
 	w.ResponseWriter.WriteHeader(s)
@@ -41,6 +48,9 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 }
 
 func (w *responseWriter) WroteStatus() int {
+	if w.wroteStatus == 0 {
+		return http.StatusOK
+	}
 	return w.wroteStatus
 }
 
