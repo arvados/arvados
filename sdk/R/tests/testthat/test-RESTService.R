@@ -73,7 +73,7 @@ test_that("getResource raises exception if response contains errors field", {
                             FakeHttpParser$new(),
                             0, "webDavHost")
     
-    expect_that(REST$getResource("collections", resourceUUID), throws_error(404))
+    expect_that(REST$getResource("collections", resourceUUID), throws_error("404", fixed = TRUE))
 }) 
 
 test_that("listResources calls REST service properly", {
@@ -114,7 +114,7 @@ test_that("listResources raises exception if response contains errors field", {
                             FakeHttpParser$new(),
                             0, "webDavHost")
     
-    expect_that(REST$listResources("collections"), throws_error(404))
+    expect_that(REST$listResources("collections"), throws_error("404", fixed = TRUE))
 }) 
 
 test_that("fetchAllItems always returns all resource items from server", {
@@ -187,7 +187,7 @@ test_that("deleteCollection raises exception if response contains errors field",
                             FakeHttpParser$new(),
                             0, "webDavHost")
     
-    expect_that(REST$deleteResource("collections", resourceUUID), throws_error(404))
+    expect_that(REST$deleteResource("collections", resourceUUID), throws_error("404", fixed = TRUE))
 }) 
 
 test_that("updateResource calls REST service properly", {
@@ -236,7 +236,7 @@ test_that("updateResource raises exception if response contains errors field", {
                             0, "webDavHost")
     
     expect_that(REST$updateResource("collections", resourceUUID, newResourceContent),
-                throws_error(404))
+                throws_error("404", fixed = TRUE))
 }) 
 
 test_that("createResource calls REST service properly", {
@@ -286,7 +286,7 @@ test_that("createResource raises exception if response contains errors field", {
                             0, "webDavHost")
     
     expect_that(REST$createResource("collections", resourceContent),
-                throws_error(404))
+                throws_error("404", fixed = TRUE))
 }) 
 
 test_that("create calls REST service properly", {
