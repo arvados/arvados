@@ -1,10 +1,45 @@
 source("./R/util.R")
 
-#' Arvados SubCollection Object
+#' Subcollection
+#' 
+#' Subcollection class represents a folder inside Arvados collection.
+#' It is essentially a composite of ArvadosFiles and other Subcollections.
+#' 
+#' @section Usage:
+#' \preformatted{subcollection = Subcollection$new(name)}
 #'
-#' Update description
+#' @section Arguments:
+#' \describe{
+#'   \item{name}{Name of the subcollection.}
+#' }
+#' 
+#' @section Methods:
+#' \describe{
+#'   \item{getName()}{Returns name of the subcollection.}
+#'   \item{getRelativePath()}{Returns subcollection path relative to the root.}
+#'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the subcollection.}
+#'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
+#'   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
+#'   \item{getFileListing()}{Returns subcollections file content as character vector.}
+#'   \item{getSizeInBytes()}{Returns subcollections content size in bytes.}
+#'   \item{move(newLocation)}{Moves subcollection to a new location inside collection.}
+#' }
 #'
-#' @export Subcollection
+#' @name Subcollection
+#' @examples
+#' \dontrun{
+#' myFolder <- Subcollection$new("myFolder")
+#' myFile   <- ArvadosFile$new("myFile")
+#'
+#' myFolder$add(myFile)
+#' myFolder$get("myFile")
+#' myFolder$remove("myFile")
+#'
+#' myFolder$move("newLocation/myFolder")
+#' }
+NULL
+
+#' @export
 Subcollection <- R6::R6Class(
 
     "Subcollection",

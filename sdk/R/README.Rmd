@@ -51,7 +51,7 @@ The API is not final and feedback is solicited from users on ways in which it co
     `collectionList$items_available # count of total number of items (may be more than returned due to paging)`  
     `collectionList$items # items which match the filter criteria`  
     
-* List all collections even when the number of items is greater than maximum API limit:
+* List all collections even if the number of items is greater than maximum API limit:
     
     `collectionList <- arv$listAllCollections(list(list("name", "like", "Test%")))`  
     
@@ -98,6 +98,11 @@ The API is not final and feedback is solicited from users on ways in which it co
     `arvConnection <- arvadosFile$connection("w")`  
     `write.table(mytable, arvConnection)`  
     `arvadosFile$flush()`  
+
+* Write to existing file (override current content of the file):
+    
+    `arvadosFile <- collection$get("location/to/my/file.cpp")`  
+    `arvadosFile$write("This is new file content")`  
     
 * Read whole file or just a portion of it:
     
@@ -132,11 +137,6 @@ The API is not final and feedback is solicited from users on ways in which it co
     
     This examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.  
     If subcollection contains more files or folders they will be added recursively.  
-    
-* Write to existing file (override current content of the file):
-    
-    `arvadosFile <- collection$get("location/to/my/file.cpp")`  
-    `arvadosFile$write("This is new file content")`  
     
 * Delete file from a collection:
     
@@ -185,7 +185,7 @@ The API is not final and feedback is solicited from users on ways in which it co
     `projects <- arv$listProjects(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc"))) # list subprojects of a project`  
     `arv$listProjects(list(list("name","like","Example%"))) # list projects which have names beginning with Example`  
     
-* List all projects even when the number of items is greater than maximum API limit:
+* List all projects even if the number of items is greater than maximum API limit:
     
     `collectionList <- arv$listAllProjects(list(list("name","like","Example%")))`  
     

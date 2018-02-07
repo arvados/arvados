@@ -1,10 +1,55 @@
 source("./R/util.R")
 
-#' ArvadosFile Object
+#' ArvadosFile
+#' 
+#' ArvadosFile class represents a file inside Arvados collection.
+#' 
+#' @section Usage:
+#' \preformatted{file = ArvadosFile$new(name)}
 #'
-#' Update description
+#' @section Arguments:
+#' \describe{
+#'   \item{name}{Name of the file.}
+#' }
+#' 
+#' @section Methods:
+#' \describe{
+#'   \item{getName()}{Returns name of the file}
+#'   \item{getRelativePath()}{Returns file path relative to the root.}
+#'   \item{read(contentType = "raw", offset = 0, length = 0)}{Read file content.}
+#'   \item{write(content, contentType = "text/html")}{Write to file (override current content of the file).}
+#'   \item{connection(rw)}{Get connection opened in "read" or "write" mode.}
+#'   \item{flush()}{Write content of the connecitons buffer to a file (override current content of the file).}
+#'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
+#'   \item{getSizeInBytes()}{Returns file size in bytes.}
+#'   \item{move(newLocation)}{Moves file to a new location inside collection.}
+#' }
 #'
-#' @export ArvadosFile
+#' @name ArvadosFile
+#' @examples
+#' \dontrun{
+#' myFile <- ArvadosFile$new("myFile")
+#'
+#' myFile$write("This is new file content")
+#' fileContent <- myFile$read()
+#' fileContent <- myFile$read("text")
+#' fileContent <- myFile$read("raw", offset = 1024, length = 512)
+#'
+#'
+#' #Write a table:
+#' arvConnection <- myFile$connection("w")
+#' write.table(mytable, arvConnection)
+#' arvadosFile$flush()
+#'
+#' #Read a table:
+#' arvConnection <- myFile$connection("r")
+#' mytable <- read.table(arvConnection)
+#'
+#' myFile$move("newFolder/myFile")
+#' }
+NULL
+
+#' @export
 ArvadosFile <- R6::R6Class(
 
     "ArvadosFile",
