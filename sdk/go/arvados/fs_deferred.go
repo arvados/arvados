@@ -85,7 +85,7 @@ func (dn *deferrednode) Write(p []byte, pos filenodePtr) (int, filenodePtr, erro
 	return dn.realinode().Write(p, pos)
 }
 
-func (dn *deferrednode) Child(name string, replace func(inode) inode) inode {
+func (dn *deferrednode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	return dn.realinode().Child(name, replace)
 }
 

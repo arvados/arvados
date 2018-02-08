@@ -521,7 +521,7 @@ func (dn *dirnode) FS() FileSystem {
 	return dn.fs
 }
 
-func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
+func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	if dn == dn.fs.rootnode() && name == ".arvados#collection" {
 		gn := &getternode{Getter: func() ([]byte, error) {
 			var coll Collection
@@ -537,7 +537,7 @@ func (dn *dirnode) Child(name string, replace func(inode) inode) inode {
 			return data, err
 		}}
 		gn.SetParent(dn, name)
-		return gn
+		return gn, nil
 	}
 	return dn.treenode.Child(name, replace)
 }
@@ -837,38 +837,41 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 			node = node.Parent()
 			continue
 		}
-		node.Child(name, func(child inode) inode {
+		node, err = node.Child(name, func(child inode) (inode, error) {
 			if child == nil {
-				child, err = node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				child, err := node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				if err != nil {
+					return nil, err
+				}
 				child.SetParent(node, name)
-				node = child
+				return child, nil
 			} else if !child.IsDir() {
-				err = ErrFileExists
+				return child, ErrFileExists
 			} else {
-				node = child
+				return child, nil
 			}
-			return child
 		})
 		if err != nil {
 			return
 		}
 	}
-	node.Child(basename, func(child inode) inode {
+	_, err = node.Child(basename, func(child inode) (inode, error) {
 		switch child := child.(type) {
 		case nil:
 			child, err = node.FS().newNode(basename, 0755, node.FileInfo().ModTime())
+			if err != nil {
+				return nil, err
+			}
 			child.SetParent(node, basename)
 			fn = child.(*filenode)
-			return child
+			return child, nil
 		case *filenode:
 			fn = child
-			return child
+			return child, nil
 		case *dirnode:
-			err = ErrIsDirectory
-			return child
+			return child, ErrIsDirectory
 		default:
-			err = ErrInvalidArgument
-			return child
+			return child, ErrInvalidArgument
 		}
 	})
 	return

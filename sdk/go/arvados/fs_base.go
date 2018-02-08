@@ -27,6 +27,7 @@ var (
 	ErrWriteOnlyMode     = errors.New("file is O_WRONLY")
 	ErrSyncNotSupported  = errors.New("O_SYNC flag is not supported")
 	ErrIsDirectory       = errors.New("cannot rename file to overwrite existing directory")
+	ErrNotADirectory     = errors.New("not a directory")
 	ErrPermission        = os.ErrPermission
 )
 
@@ -128,7 +129,7 @@ type inode interface {
 	// a child was added or changed, the new child is returned.
 	//
 	// Caller must have lock (or rlock if replace is nil).
-	Child(name string, replace func(inode) inode) inode
+	Child(name string, replace func(inode) (inode, error)) (inode, error)
 
 	sync.Locker
 	RLock()
@@ -202,8 +203,8 @@ func (*nullnode) Readdir() ([]os.FileInfo, error) {
 	return nil, ErrInvalidOperation
 }
 
-func (*nullnode) Child(name string, replace func(inode) inode) inode {
-	return nil
+func (*nullnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
+	return nil, ErrNotADirectory
 }
 
 type treenode struct {
@@ -236,18 +237,25 @@ func (n *treenode) IsDir() bool {
 	return true
 }
 
-func (n *treenode) Child(name string, replace func(inode) inode) (child inode) {
-	// TODO: special treatment for "", ".", ".."
+func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child inode, err error) {
 	child = n.inodes[name]
-	if replace != nil {
-		newchild := replace(child)
-		if newchild == nil {
-			delete(n.inodes, name)
-		} else if newchild != child {
-			n.inodes[name] = newchild
-			n.fileinfo.modTime = time.Now()
-			child = newchild
-		}
+	if name == "" || name == "." || name == ".." {
+		err = ErrInvalidArgument
+		return
+	}
+	if replace == nil {
+		return
+	}
+	newchild, err := replace(child)
+	if err != nil {
+		return
+	}
+	if newchild == nil {
+		delete(n.inodes, name)
+	} else if newchild != child {
+		n.inodes[name] = newchild
+		n.fileinfo.modTime = time.Now()
+		child = newchild
 	}
 	return
 }
@@ -297,9 +305,9 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		return nil, ErrSyncNotSupported
 	}
 	dirname, name := path.Split(name)
-	parent := rlookup(fs.root, dirname)
-	if parent == nil {
-		return nil, os.ErrNotExist
+	parent, err := rlookup(fs.root, dirname)
+	if err != nil {
+		return nil, err
 	}
 	var readable, writable bool
 	switch flag & (os.O_RDWR | os.O_RDONLY | os.O_WRONLY) {
@@ -331,22 +339,26 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		parent.RLock()
 		defer parent.RUnlock()
 	}
-	n := parent.Child(name, nil)
-	if n == nil {
+	n, err := parent.Child(name, nil)
+	if err != nil {
+		return nil, err
+	} else if n == nil {
 		if !createMode {
 			return nil, os.ErrNotExist
 		}
-		var err error
-		n = parent.Child(name, func(inode) inode {
-			n, err = parent.FS().newNode(name, perm|0755, time.Now())
-			n.SetParent(parent, name)
-			return n
+		n, err = parent.Child(name, func(inode) (repl inode, err error) {
+			repl, err = parent.FS().newNode(name, perm|0755, time.Now())
+			if err != nil {
+				return
+			}
+			repl.SetParent(parent, name)
+			return
 		})
 		if err != nil {
 			return nil, err
 		} else if n == nil {
-			// parent rejected new child
-			return nil, ErrInvalidOperation
+			// Parent rejected new child, but returned no error
+			return nil, ErrInvalidArgument
 		}
 	} else if flag&os.O_EXCL != 0 {
 		return nil, ErrFileExists
@@ -375,38 +387,37 @@ func (fs *fileSystem) Create(name string) (File, error) {
 	return fs.OpenFile(name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0)
 }
 
-func (fs *fileSystem) Mkdir(name string, perm os.FileMode) (err error) {
+func (fs *fileSystem) Mkdir(name string, perm os.FileMode) error {
 	dirname, name := path.Split(name)
-	n := rlookup(fs.root, dirname)
-	if n == nil {
-		return os.ErrNotExist
+	n, err := rlookup(fs.root, dirname)
+	if err != nil {
+		return err
 	}
 	n.Lock()
 	defer n.Unlock()
-	if n.Child(name, nil) != nil {
+	if child, err := n.Child(name, nil); err != nil {
+		return err
+	} else if child != nil {
 		return os.ErrExist
 	}
-	child := n.Child(name, func(inode) (child inode) {
-		child, err = n.FS().newNode(name, perm|os.ModeDir, time.Now())
-		child.SetParent(n, name)
+
+	_, err = n.Child(name, func(inode) (repl inode, err error) {
+		repl, err = n.FS().newNode(name, perm|os.ModeDir, time.Now())
+		if err != nil {
+			return
+		}
+		repl.SetParent(n, name)
 		return
 	})
-	if err != nil {
-		return err
-	} else if child == nil {
-		return ErrInvalidArgument
-	}
-	return nil
+	return err
 }
 
-func (fs *fileSystem) Stat(name string) (fi os.FileInfo, err error) {
-	node := rlookup(fs.root, name)
-	if node == nil {
-		err = os.ErrNotExist
-	} else {
-		fi = node.FileInfo()
+func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
+	node, err := rlookup(fs.root, name)
+	if err != nil {
+		return nil, err
 	}
-	return
+	return node.FileInfo(), nil
 }
 
 func (fs *fileSystem) Rename(oldname, newname string) error {
@@ -475,43 +486,31 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		}
 	}
 
-	// Return ErrInvalidOperation if olddirf.inode doesn't even
-	// bother calling our "remove oldname entry" replacer func.
-	err = ErrInvalidArgument
-	olddirf.inode.Child(oldname, func(oldinode inode) inode {
-		err = nil
+	_, err = olddirf.inode.Child(oldname, func(oldinode inode) (inode, error) {
 		if oldinode == nil {
-			err = os.ErrNotExist
-			return nil
+			return oldinode, os.ErrNotExist
 		}
 		if locked[oldinode] {
 			// oldinode cannot become a descendant of itself.
-			err = ErrInvalidArgument
-			return oldinode
+			return oldinode, ErrInvalidArgument
 		}
 		if oldinode.FS() != cfs && newdirf.inode != olddirf.inode {
 			// moving a mount point to a different parent
 			// is not (yet) supported.
-			err = ErrInvalidArgument
-			return oldinode
+			return oldinode, ErrInvalidArgument
 		}
-		accepted := newdirf.inode.Child(newname, func(existing inode) inode {
+		accepted, err := newdirf.inode.Child(newname, func(existing inode) (inode, error) {
 			if existing != nil && existing.IsDir() {
-				err = ErrIsDirectory
-				return existing
+				return existing, ErrIsDirectory
 			}
-			return oldinode
+			return oldinode, nil
 		})
-		if accepted != oldinode {
-			if err == nil {
-				// newdirf didn't accept oldinode.
-				err = ErrInvalidArgument
-			}
+		if err != nil {
 			// Leave oldinode in olddir.
-			return oldinode
+			return oldinode, err
 		}
 		accepted.SetParent(newdirf.inode, newname)
-		return nil
+		return nil, nil
 	})
 	return err
 }
@@ -530,27 +529,25 @@ func (fs *fileSystem) RemoveAll(name string) error {
 	return err
 }
 
-func (fs *fileSystem) remove(name string, recursive bool) (err error) {
+func (fs *fileSystem) remove(name string, recursive bool) error {
 	dirname, name := path.Split(name)
 	if name == "" || name == "." || name == ".." {
 		return ErrInvalidArgument
 	}
-	dir := rlookup(fs.root, dirname)
-	if dir == nil {
-		return os.ErrNotExist
+	dir, err := rlookup(fs.root, dirname)
+	if err != nil {
+		return err
 	}
 	dir.Lock()
 	defer dir.Unlock()
-	dir.Child(name, func(node inode) inode {
+	_, err = dir.Child(name, func(node inode) (inode, error) {
 		if node == nil {
-			err = os.ErrNotExist
-			return nil
+			return nil, os.ErrNotExist
 		}
 		if !recursive && node.IsDir() && node.Size() > 0 {
-			err = ErrDirectoryNotEmpty
-			return node
+			return node, ErrDirectoryNotEmpty
 		}
-		return nil
+		return nil, nil
 	})
 	return err
 }
@@ -563,12 +560,9 @@ func (fs *fileSystem) Sync() error {
 // rlookup (recursive lookup) returns the inode for the file/directory
 // with the given name (which may contain "/" separators). If no such
 // file/directory exists, the returned node is nil.
-func rlookup(start inode, path string) (node inode) {
+func rlookup(start inode, path string) (node inode, err error) {
 	node = start
 	for _, name := range strings.Split(path, "/") {
-		if node == nil {
-			break
-		}
 		if node.IsDir() {
 			if name == "." || name == "" {
 				continue
@@ -578,11 +572,17 @@ func rlookup(start inode, path string) (node inode) {
 				continue
 			}
 		}
-		node = func() inode {
+		node, err = func() (inode, error) {
 			node.RLock()
 			defer node.RUnlock()
 			return node.Child(name, nil)
 		}()
+		if node == nil || err != nil {
+			break
+		}
+	}
+	if node == nil && err == nil {
+		err = os.ErrNotExist
 	}
 	return
 }

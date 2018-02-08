@@ -37,7 +37,7 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		},
 		inodes: make(map[string]inode),
 	}
-	root.inode.Child("by_id", func(inode) inode {
+	root.inode.Child("by_id", func(inode) (inode, error) {
 		return &vdirnode{
 			inode: &treenode{
 				fs:     fs,
@@ -50,10 +50,10 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 				},
 			},
 			create: fs.mountCollection,
-		}
+		}, nil
 	})
-	root.inode.Child("home", func(inode) inode {
-		return fs.newProjectNode(fs.root, "home", "")
+	root.inode.Child("home", func(inode) (inode, error) {
+		return fs.newProjectNode(fs.root, "home", ""), nil
 	})
 	return fs
 }
@@ -104,18 +104,23 @@ type vdirnode struct {
 	create func(parent inode, name string) inode
 }
 
-func (vn *vdirnode) Child(name string, _ func(inode) inode) inode {
-	return vn.inode.Child(name, func(existing inode) inode {
-		if existing != nil {
-			return existing
-		} else if vn.create == nil {
-			return nil
+func (vn *vdirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
+	return vn.inode.Child(name, func(existing inode) (inode, error) {
+		if existing == nil && vn.create != nil {
+			existing = vn.create(vn, name)
+			if existing != nil {
+				existing.SetParent(vn, name)
+				vn.inode.(*treenode).fileinfo.modTime = time.Now()
+			}
 		}
-		n := vn.create(vn, name)
-		if n != nil {
-			n.SetParent(vn, name)
-			vn.inode.(*treenode).fileinfo.modTime = time.Now()
+		if replace == nil {
+			return existing, nil
+		} else if tryRepl, err := replace(existing); err != nil {
+			return existing, err
+		} else if tryRepl != existing {
+			return existing, ErrInvalidArgument
+		} else {
+			return existing, nil
 		}
-		return n
 	})
 }
