@@ -23,8 +23,8 @@ func (*getternode) IsDir() bool {
 	return false
 }
 
-func (*getternode) Child(string, func(inode) inode) inode {
-	return nil
+func (*getternode) Child(string, func(inode) (inode, error)) (inode, error) {
+	return nil, ErrInvalidArgument
 }
 
 func (gn *getternode) get() error {

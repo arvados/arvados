@@ -688,13 +688,13 @@ func (s *CollectionFSSuite) TestRename(c *check.C) {
 				err = fs.Rename(
 					fmt.Sprintf("dir%d/file%d/patherror", i, j),
 					fmt.Sprintf("dir%d/irrelevant", i))
-				c.Check(err, check.ErrorMatches, `.*does not exist`)
+				c.Check(err, check.ErrorMatches, `.*not a directory`)
 
 				// newname parent dir is a file
 				err = fs.Rename(
 					fmt.Sprintf("dir%d/dir%d/file%d", i, j, j),
 					fmt.Sprintf("dir%d/file%d/patherror", i, inner-j-1))
-				c.Check(err, check.ErrorMatches, `.*does not exist`)
+				c.Check(err, check.ErrorMatches, `.*not a directory`)
 			}(i, j)
 		}
 	}

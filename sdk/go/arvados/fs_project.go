@@ -5,7 +5,6 @@
 package arvados
 
 import (
-	"log"
 	"os"
 	"sync"
 )
@@ -48,8 +47,8 @@ func (pn *projectnode) setup() {
 			if coll.Name == "" {
 				continue
 			}
-			pn.inode.Child(coll.Name, func(inode) inode {
-				return deferredCollectionFS(fs, pn, coll)
+			pn.inode.Child(coll.Name, func(inode) (inode, error) {
+				return deferredCollectionFS(fs, pn, coll), nil
 			})
 		}
 		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
@@ -71,8 +70,8 @@ func (pn *projectnode) setup() {
 			if group.Name == "" || group.Name == "." || group.Name == ".." {
 				continue
 			}
-			pn.inode.Child(group.Name, func(inode) inode {
-				return fs.newProjectNode(pn, group.Name, group.UUID)
+			pn.inode.Child(group.Name, func(inode) (inode, error) {
+				return fs.newProjectNode(pn, group.Name, group.UUID), nil
 			})
 		}
 		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
@@ -87,30 +86,35 @@ func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
 	return pn.inode.Readdir()
 }
 
-func (pn *projectnode) Child(name string, replace func(inode) inode) inode {
+func (pn *projectnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	pn.setupOnce.Do(pn.setup)
 	if pn.err != nil {
-		log.Printf("BUG: not propagating error setting up %T %v: %s", pn, pn, pn.err)
-		// TODO: propagate error, instead of just being empty
-		return nil
+		return nil, pn.err
 	}
 	if replace == nil {
 		// lookup
 		return pn.inode.Child(name, nil)
 	}
-	return pn.inode.Child(name, func(existing inode) inode {
-		if repl := replace(existing); repl == nil {
-			// delete
+	return pn.inode.Child(name, func(existing inode) (inode, error) {
+		if repl, err := replace(existing); err != nil {
+			return existing, err
+		} else if repl == nil {
+			if existing == nil {
+				return nil, nil
+			}
+			// rmdir
 			// (TODO)
-			return pn.Child(name, nil) // not implemented
+			return existing, ErrInvalidArgument
+		} else if existing != nil {
+			// clobber
+			return existing, ErrInvalidArgument
 		} else if repl.FileInfo().IsDir() {
 			// mkdir
 			// TODO: repl.SetParent(pn, name), etc.
-			return pn.Child(name, nil) // not implemented
+			return existing, ErrInvalidArgument
 		} else {
 			// create file
-			// TODO: repl.SetParent(pn, name), etc.
-			return pn.Child(name, nil) // not implemented
+			return existing, ErrInvalidArgument
 		}
 	})
 }
