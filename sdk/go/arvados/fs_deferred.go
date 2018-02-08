@@ -89,15 +89,15 @@ func (dn *deferrednode) Child(name string, replace func(inode) inode) inode {
 	return dn.realinode().Child(name, replace)
 }
 
-func (dn *deferrednode) Truncate(size int64) error      { return dn.realinode().Truncate(size) }
-func (dn *deferrednode) SetParent(p inode, name string) { dn.realinode().SetParent(p, name) }
-func (dn *deferrednode) IsDir() bool                    { return dn.currentinode().IsDir() }
-func (dn *deferrednode) Readdir() []os.FileInfo         { return dn.realinode().Readdir() }
-func (dn *deferrednode) Size() int64                    { return dn.currentinode().Size() }
-func (dn *deferrednode) FileInfo() os.FileInfo          { return dn.currentinode().FileInfo() }
-func (dn *deferrednode) Lock()                          { dn.realinode().Lock() }
-func (dn *deferrednode) Unlock()                        { dn.realinode().Unlock() }
-func (dn *deferrednode) RLock()                         { dn.realinode().RLock() }
-func (dn *deferrednode) RUnlock()                       { dn.realinode().RUnlock() }
-func (dn *deferrednode) FS() FileSystem                 { return dn.currentinode().FS() }
-func (dn *deferrednode) Parent() inode                  { return dn.currentinode().Parent() }
+func (dn *deferrednode) Truncate(size int64) error       { return dn.realinode().Truncate(size) }
+func (dn *deferrednode) SetParent(p inode, name string)  { dn.realinode().SetParent(p, name) }
+func (dn *deferrednode) IsDir() bool                     { return dn.currentinode().IsDir() }
+func (dn *deferrednode) Readdir() ([]os.FileInfo, error) { return dn.realinode().Readdir() }
+func (dn *deferrednode) Size() int64                     { return dn.currentinode().Size() }
+func (dn *deferrednode) FileInfo() os.FileInfo           { return dn.currentinode().FileInfo() }
+func (dn *deferrednode) Lock()                           { dn.realinode().Lock() }
+func (dn *deferrednode) Unlock()                         { dn.realinode().Unlock() }
+func (dn *deferrednode) RLock()                          { dn.realinode().RLock() }
+func (dn *deferrednode) RUnlock()                        { dn.realinode().RUnlock() }
+func (dn *deferrednode) FS() FileSystem                  { return dn.currentinode().FS() }
+func (dn *deferrednode) Parent() inode                   { return dn.currentinode().Parent() }

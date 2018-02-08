@@ -96,7 +96,7 @@ type inode interface {
 	Write([]byte, filenodePtr) (int, filenodePtr, error)
 	Truncate(int64) error
 	IsDir() bool
-	Readdir() []os.FileInfo
+	Readdir() ([]os.FileInfo, error)
 	Size() int64
 	FileInfo() os.FileInfo
 
@@ -198,8 +198,8 @@ func (*nullnode) IsDir() bool {
 	return false
 }
 
-func (*nullnode) Readdir() []os.FileInfo {
-	return nil
+func (*nullnode) Readdir() ([]os.FileInfo, error) {
+	return nil, ErrInvalidOperation
 }
 
 func (*nullnode) Child(name string, replace func(inode) inode) inode {
@@ -263,7 +263,7 @@ func (n *treenode) FileInfo() os.FileInfo {
 	return n.fileinfo
 }
 
-func (n *treenode) Readdir() (fi []os.FileInfo) {
+func (n *treenode) Readdir() (fi []os.FileInfo, err error) {
 	n.RLock()
 	defer n.RUnlock()
 	fi = make([]os.FileInfo, 0, len(n.inodes))

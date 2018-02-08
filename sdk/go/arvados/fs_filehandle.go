@@ -74,10 +74,14 @@ func (f *filehandle) Readdir(count int) ([]os.FileInfo, error) {
 		return nil, ErrInvalidOperation
 	}
 	if count <= 0 {
-		return f.inode.Readdir(), nil
+		return f.inode.Readdir()
 	}
 	if f.unreaddirs == nil {
-		f.unreaddirs = f.inode.Readdir()
+		var err error
+		f.unreaddirs, err = f.inode.Readdir()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if len(f.unreaddirs) == 0 {
 		return nil, io.EOF
