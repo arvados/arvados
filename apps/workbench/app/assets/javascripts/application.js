@@ -34,6 +34,7 @@
 //= require npm-dependencies
 //= require mithril/stream/stream
 //= require awesomplete
+//= require jssha
 //= require_tree .
 
 Es6ObjectAssign.polyfill()
