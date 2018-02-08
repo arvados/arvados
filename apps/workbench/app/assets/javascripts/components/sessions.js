@@ -6,6 +6,8 @@ $(document).on('ready', function() {
     var db = new SessionDB()
     db.checkForNewToken()
     db.fillMissingUUIDs()
+    db.migrateNonFederatedSessions()
+    db.autoLoadRemoteHosts()
 })
 
 window.SessionsTable = {
@@ -38,14 +40,20 @@ window.SessionsTable = {
                         var session = sessions[uuidPrefix]
                         return m('tr', [
                             session.token && session.user ? [
-                                m('td', m('span.label.label-success', 'logged in')),
-                                m('td', {title: session.baseURL}, uuidPrefix),
+                                m('td', session.user.is_active ?
+                                    m('span.label.label-success', 'logged in') :
+                                    m('span.label.label-warning', 'inactive')),
+                                m('td', {title: session.baseURL}, [
+                                    m('a', {
+                                        href: db.workbenchBaseURL(session) + '?api_token=' + session.token
+                                    }, uuidPrefix),
+                                ]),
                                 m('td', session.user.username),
                                 m('td', session.user.email),
                                 m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: m.withAttr('uuidPrefix', db.logout),
-                                }, 'Log out ', m('span.glyphicon.glyphicon-log-out'))),
+                                }, session.listedHost ? 'Disable ':'Log out ', m('span.glyphicon.glyphicon-log-out'))),
                             ] : [
                                 m('td', m('span.label.label-default', 'logged out')),
                                 m('td', {title: session.baseURL}, uuidPrefix),
@@ -54,7 +62,7 @@ window.SessionsTable = {
                                 m('td', m('a.btn.btn-xs.btn-primary', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: db.login.bind(db, session.baseURL),
-                                }, 'Log in ', m('span.glyphicon.glyphicon-log-in'))),
+                                }, session.listedHost ? 'Enable ':'Log in ', m('span.glyphicon.glyphicon-log-in'))),
                             ],
                             m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
                                 uuidPrefix: uuidPrefix,

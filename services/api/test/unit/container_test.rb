@@ -473,10 +473,12 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container queued cancel" do
-    c, _ = minimal_new
+    c, cr = minimal_new({container_count_max: 1})
     set_user_from_auth :dispatch1
     assert c.update_attributes(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
+    cr.reload
+    assert_equal ContainerRequest::Final, cr.state
   end
 
   test "Container queued count" do

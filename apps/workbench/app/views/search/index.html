@@ -2,4 +2,11 @@
 
 SPDX-License-Identifier: AGPL-3.0 -->
 
+<script type="text/javascript">
+    $(document).on('ready', function() {
+        var db = new SessionDB()
+        db.autoRedirectToHomeCluster('/search')
+    })
+</script>
+
 <div data-mount-mithril="Search"></div>
