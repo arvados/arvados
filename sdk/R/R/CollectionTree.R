@@ -2,11 +2,6 @@ source("./R/Subcollection.R")
 source("./R/ArvadosFile.R")
 source("./R/util.R")
 
-#' Arvados Collection Object
-#'
-#' Update description
-#'
-#' @examples arv = Collection$new(api, uuid)
 CollectionTree <- R6::R6Class(
     "CollectionTree",
     public = list(

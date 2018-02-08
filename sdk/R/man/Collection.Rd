@@ -33,9 +33,11 @@ Collection class provides interface for working with Arvados collections.
 
 \examples{
 \dontrun{
+arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 collection <- Collection$new(arv, "uuid")
 
-collection$add(existingArvadosFile, "cpp")
+newFile <- ArvadosFile$new("myFile")
+collection$add(newFile, "myFolder")
 
 createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
 

@@ -21,12 +21,12 @@ ArvadosFile class represents a file inside Arvados collection.
 \section{Methods}{
 
 \describe{
-  \item{getName()}{Returns name of the file}
+  \item{getName()}{Returns name of the file.}
   \item{getRelativePath()}{Returns file path relative to the root.}
   \item{read(contentType = "raw", offset = 0, length = 0)}{Read file content.}
   \item{write(content, contentType = "text/html")}{Write to file (override current content of the file).}
   \item{connection(rw)}{Get connection opened in "read" or "write" mode.}
-  \item{flush()}{Write content of the connecitons buffer to a file (override current content of the file).}
+  \item{flush()}{Write connections content to a file (override current content of the file).}
   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
   \item{getSizeInBytes()}{Returns file size in bytes.}
   \item{move(newLocation)}{Moves file to a new location inside collection.}
@@ -40,8 +40,7 @@ myFile <- ArvadosFile$new("myFile")
 myFile$write("This is new file content")
 fileContent <- myFile$read()
 fileContent <- myFile$read("text")
-fileContent <- myFile$read("raw", offset = 1024, length = 512)
-
+fileContent <- myFile$read("raw", offset = 8, length = 4) 
 
 #Write a table:
 arvConnection <- myFile$connection("w")

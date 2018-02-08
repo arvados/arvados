@@ -29,9 +29,11 @@ source("./R/util.R")
 #' @name Collection
 #' @examples
 #' \dontrun{
+#' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 #' collection <- Collection$new(arv, "uuid")
 #'
-#' collection$add(existingArvadosFile, "cpp")
+#' newFile <- ArvadosFile$new("myFile")
+#' collection$add(newFile, "myFolder")
 #'
 #' createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
 #'
@@ -212,9 +214,15 @@ Collection <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.Collection
-print.Collection = function(collection)
+#' print.Collection
+#'
+#' Custom print function for Collection class
+#'
+#' @param x Instance of Collection class
+#' @param ... Optional arguments.
+#' @export 
+print.Collection = function(x, ...)
 {
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
-    cat(paste0("uuid: ", "\"", collection$uuid,      "\""), sep = "\n")
+    cat(paste0("uuid: ", "\"", x$uuid,               "\""), sep = "\n")
 }

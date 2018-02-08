@@ -7,7 +7,7 @@ source("./R/HttpParser.R")
 #' Arvados class gives users ability to manipulate collections and projects.
 #' 
 #' @section Usage:
-#' \preformatted{arv = Arvados$new(authToken, hostName, numRetries = 0)}
+#' \preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
 #'
 #' @section Arguments:
 #' \describe{
@@ -48,9 +48,11 @@ source("./R/HttpParser.R")
 #'
 #' deletedCollection <- arv$deleteCollection("uuid")
 #'
-#' updatedCollection <- arv$updateCollection("uuid", list(name = "New name", description = "New description"))
+#' updatedCollection <- arv$updateCollection("uuid", list(name = "New name",
+#'                                                        description = "New description"))
 #'
-#' createdCollection <- arv$createCollection(list(name = "Example", description = "This is a test collection"))
+#' createdCollection <- arv$createCollection(list(name = "Example",
+#'                                                description = "This is a test collection"))
 #' }
 NULL
 
@@ -219,10 +221,16 @@ Arvados <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.Arvados
-print.Arvados = function(arvados)
+#' print.Arvados
+#'
+#' Custom print function for Arvados class
+#'
+#' @param x Instance of Arvados class
+#' @param ... Optional arguments.
+#' @export 
+print.Arvados = function(x, ...)
 {
-    cat(paste0("Type:  ", "\"", "Arvados",             "\""), sep = "\n")
-    cat(paste0("Host:  ", "\"", arvados$getHostName(), "\""), sep = "\n")
-    cat(paste0("Token: ", "\"", arvados$getToken(),    "\""), sep = "\n")
+    cat(paste0("Type:  ", "\"", "Arvados",       "\""), sep = "\n")
+    cat(paste0("Host:  ", "\"", x$getHostName(), "\""), sep = "\n")
+    cat(paste0("Token: ", "\"", x$getToken(),    "\""), sep = "\n")
 }

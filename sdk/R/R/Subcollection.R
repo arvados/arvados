@@ -302,22 +302,28 @@ Subcollection <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.Subcollection
-print.Subcollection = function(subCollection)
+#' print.Subcollection
+#'
+#' Custom print function for Subcollection class
+#'
+#' @param x Instance of Subcollection class
+#' @param ... Optional arguments.
+#' @export 
+print.Subcollection = function(x, ...)
 {
     collection   <- NULL
-    relativePath <- subCollection$getRelativePath()
+    relativePath <- x$getRelativePath()
 
-    if(!is.null(subCollection$getCollection()))
+    if(!is.null(x$getCollection()))
     {
-        collection <- subCollection$getCollection()$uuid
+        collection <- x$getCollection()$uuid
 
-        if(!subCollection$getName() == "")
+        if(!x$getName() == "")
             relativePath <- paste0("/", relativePath)
     }
 
     cat(paste0("Type:          ", "\"", "Arvados Subcollection", "\""), sep = "\n")
-    cat(paste0("Name:          ", "\"", subCollection$getName(), "\""), sep = "\n")
+    cat(paste0("Name:          ", "\"", x$getName(),             "\""), sep = "\n")
     cat(paste0("Relative path: ", "\"", relativePath,            "\""), sep = "\n")
     cat(paste0("Collection:    ", "\"", collection,              "\""), sep = "\n")
 }

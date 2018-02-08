@@ -8,7 +8,7 @@ Arvados class gives users ability to manipulate collections and projects.
 }
 \section{Usage}{
 
-\preformatted{arv = Arvados$new(authToken, hostName, numRetries = 0)}
+\preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
 }
 
 \section{Arguments}{
@@ -53,8 +53,10 @@ collectionList <- arv$listAllCollections(list(list("name", "like", "Test\%")))
 
 deletedCollection <- arv$deleteCollection("uuid")
 
-updatedCollection <- arv$updateCollection("uuid", list(name = "New name", description = "New description"))
+updatedCollection <- arv$updateCollection("uuid", list(name = "New name",
+                                                       description = "New description"))
 
-createdCollection <- arv$createCollection(list(name = "Example", description = "This is a test collection"))
+createdCollection <- arv$createCollection(list(name = "Example",
+                                               description = "This is a test collection"))
 }
 }
