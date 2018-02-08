@@ -79,8 +79,11 @@ func (pn *projectnode) setup() {
 	}
 }
 
-func (pn *projectnode) Readdir() []os.FileInfo {
+func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
 	pn.setupOnce.Do(pn.setup)
+	if pn.err != nil {
+		return nil, pn.err
+	}
 	return pn.inode.Readdir()
 }
 
