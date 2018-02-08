@@ -37,13 +37,14 @@ window.SessionsTable = {
                 ])),
                 m('tbody', [
                     Object.keys(sessions).map(function(uuidPrefix) {
-                        var session = sessions[uuidPrefix]
+                        var session = sessions[uuidPrefix];
                         return m('tr', [
                             session.token && session.user ? [
                                 m('td', session.user.is_active ?
                                     m('span.label.label-success', 'logged in') :
                                     m('span.label.label-warning', 'inactive')),
                                 m('td', {title: session.baseURL}, [
+                                    session.isFromRails ? uuidPrefix :
                                     m('a', {
                                         href: db.workbenchBaseURL(session) + '?api_token=' + session.token
                                     }, uuidPrefix)
