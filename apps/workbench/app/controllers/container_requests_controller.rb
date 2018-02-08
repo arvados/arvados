@@ -77,6 +77,17 @@ class ContainerRequestsController < ApplicationController
   end
 
   def cancel
+    if @object.container_uuid
+      c = Container.select(['state']).where(uuid: @object.container_uuid).first
+      if c && c.state != 'Running'
+        # If the container hasn't started yet, setting priority=0
+        # leaves our request in "Committed" state and doesn't cancel
+        # the container (even if no other requests are giving it
+        # priority). To avoid showing this container request as "on
+        # hold" after hitting the Cancel button, set state=Final too.
+        @object.state = 'Final'
+      end
+    end
     @object.update_attributes! priority: 0
     if params[:return_to]
       redirect_to params[:return_to]

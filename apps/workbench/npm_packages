@@ -8,6 +8,7 @@
 npm 'browserify', require: false
 npm 'jquery'
 npm 'awesomplete'
+npm 'jssha'
 
 npm 'mithril'
 npm 'es6-object-assign'

@@ -6,6 +6,7 @@ window.SessionDB = function() {
     var db = this
     Object.assign(db, {
         discoveryCache: {},
+        tokenUUIDCache: null,
         loadFromLocalStorage: function() {
             try {
                 return JSON.parse(window.localStorage.getItem('sessions')) || {}
@@ -23,7 +24,7 @@ window.SessionDB = function() {
         loadActive: function() {
             var sessions = db.loadAll()
             Object.keys(sessions).forEach(function(key) {
-                if (!sessions[key].token)
+                if (!sessions[key].token || (sessions[key].user && !sessions[key].user.is_active))
                     delete sessions[key]
             })
             return sessions
@@ -58,6 +59,8 @@ window.SessionDB = function() {
             // for the corresponding API server's base URL.  Typical
             // use:
             // sessionDB.findAPI('https://workbench.example/foo').then(sessionDB.login)
+            if (url.length === 5 && url.indexOf('.') < 0)
+                url += '.arvadosapi.com'
             if (url.indexOf('://') < 0)
                 url = 'https://' + url
             url = new URL(url)
@@ -73,7 +76,7 @@ window.SessionDB = function() {
                 })
             })
         },
-        login: function(baseURL) {
+        login: function(baseURL, fallbackLogin = true) {
             // Initiate login procedure with given API base URL (e.g.,
             // "http://api.example/").
             //
@@ -81,8 +84,56 @@ window.SessionDB = function() {
             // also call checkForNewToken() on (at least) its first
             // render. Otherwise, the login procedure can't be
             // completed.
-            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
+            var session = db.loadLocal()
+            var uuidPrefix = session.user.owner_uuid.slice(0, 5)
+            var apiHostname = new URL(session.baseURL).hostname
+            m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(localDD) {
+                m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
+                    if (uuidPrefix in dd.remoteHosts ||
+                        (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
+                        // Federated identity login via salted token
+                        db.saltedToken(dd.uuidPrefix).then(function(token) {
+                            m.request(baseURL+'arvados/v1/users/current', {
+                                headers: {
+                                    authorization: 'Bearer '+token,
+                                },
+                            }).then(function(user) {
+                                // Federated login successful.
+                                var remoteSession = {
+                                    user: user,
+                                    baseURL: baseURL,
+                                    token: token,
+                                    listedHost: (dd.uuidPrefix in localDD.remoteHosts),
+                                }
+                                db.save(dd.uuidPrefix, remoteSession)
+                            }).catch(function(e) {
+                                if (dd.uuidPrefix in localDD.remoteHosts) {
+                                    // If the remote system is configured to allow federated
+                                    // logins from this cluster, but rejected the salted
+                                    // token, save as a logged out session anyways.
+                                    var remoteSession = {
+                                        baseURL: baseURL,
+                                        listedHost: true,
+                                    }
+                                    db.save(dd.uuidPrefix, remoteSession)
+                                } else if (fallbackLogin) {
+                                    // Remote cluster not listed as a remote host and rejecting
+                                    // the salted token, try classic login.
+                                    db.loginClassic(baseURL)
+                                }
+                            })
+                        })
+                    } else if (fallbackLogin) {
+                        // Classic login will be used when the remote system doesn't list this
+                        // cluster as part of the federation.
+                        db.loginClassic(baseURL)
+                    }
+                })
+            })
             return false
+        },
+        loginClassic: function(baseURL) {
+            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
         },
         logout: function(k) {
             // Forget the token, but leave the other info in the db so
@@ -91,6 +142,18 @@ window.SessionDB = function() {
             var sessions = db.loadAll()
             delete sessions[k].token
             db.save(k, sessions[k])
+        },
+        saltedToken: function(uuid_prefix) {
+            // Takes a cluster UUID prefix and returns a salted token to allow
+            // log into said cluster using federated identity.
+            var session = db.loadLocal()
+            return db.tokenUUID().then(function(token_uuid){
+                var shaObj = new jsSHA("SHA-1", "TEXT")
+                shaObj.setHMACKey(session.token, "TEXT")
+                shaObj.update(uuid_prefix)
+                var hmac = shaObj.getHMAC("HEX")
+                return 'v2/' + token_uuid + '/' + hmac
+            })
         },
         checkForNewToken: function() {
             // If there's a token and baseURL in the location bar (i.e.,
@@ -162,11 +225,93 @@ window.SessionDB = function() {
             }
             return cache
         },
+        // Return a promise with the local session token's UUID from the API server.
+        tokenUUID: function() {
+            var cache = db.tokenUUIDCache
+            if (!cache) {
+                var session = db.loadLocal()
+                return db.request(session, '/arvados/v1/api_client_authorizations', {
+                    data: {
+                        filters: JSON.stringify([['api_token', '=', session.token]]),
+                    }
+                }).then(function(resp) {
+                    var uuid = resp.items[0].uuid
+                    db.tokenUUIDCache = uuid
+                    return uuid
+                })
+            } else {
+                return new Promise(function(resolve, reject) {
+                    resolve(cache)
+                })
+            }
+        },
         request: function(session, path, opts) {
             opts = opts || {}
             opts.headers = opts.headers || {}
             opts.headers.authorization = 'OAuth2 '+ session.token
             return m.request(session.baseURL + path, opts)
+        },
+        // Check non-federated remote active sessions if they should be migrated to
+        // a salted token.
+        migrateNonFederatedSessions: function() {
+            var sessions = db.loadActive()
+            Object.keys(sessions).map(function(uuidPrefix) {
+                session = sessions[uuidPrefix]
+                if (!session.isFromRails && session.token && session.token.indexOf('v2/') < 0) {
+                    // Only try the federated login
+                    db.login(session.baseURL, false)
+                }
+            })
+        },
+        // If remoteHosts is listed on the local API discovery doc, try to add any
+        // listed remote without an active session.
+        autoLoadRemoteHosts: function() {
+            var activeSessions = db.loadActive()
+            var doc = db.discoveryDoc(db.loadLocal())
+            doc.map(function(d) {
+                Object.keys(d.remoteHosts).map(function(uuidPrefix) {
+                    if (!(uuidPrefix in Object.keys(activeSessions))) {
+                        db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
+                            db.login(baseURL, false)
+                        })
+                    }
+                })
+            })
+        },
+        // If the current logged in account is from a remote federated cluster,
+        // redirect the user to their home cluster's workbench.
+        // This is meant to avoid confusion when the user clicks through a search
+        // result on the home cluster's multi site search page, landing on the
+        // remote workbench and later trying to do another search by just clicking
+        // on the multi site search button instead of going back with the browser.
+        autoRedirectToHomeCluster: function(path = '/') {
+            var session = db.loadLocal()
+            var userUUIDPrefix = session.user.uuid.slice(0, 5)
+            // If the current user is local to the cluster, do nothing.
+            if (userUUIDPrefix == session.user.owner_uuid.slice(0, 5)) {
+                return
+            }
+            var doc = db.discoveryDoc(session)
+            doc.map(function(d) {
+                // Guess the remote host from the local discovery doc settings
+                var rHost = null
+                if (d.remoteHosts[userUUIDPrefix]) {
+                    rHost = d.remoteHosts[userUUIDPrefix]
+                } else if (d.remoteHostsViaDNS) {
+                    rHost = userUUIDPrefix + '.arvadosapi.com'
+                } else {
+                    // This should not happen: having remote user whose uuid prefix
+                    // isn't listed on remoteHosts and dns mechanism is deactivated
+                    return
+                }
+                // Get the remote cluster workbench url & redirect there.
+                db.findAPI(rHost).then(function(apiUrl) {
+                    var doc = db.discoveryDoc({baseURL: apiUrl})
+                    doc.map(function(d) {
+                        document.location = d.workbenchUrl + path
+                    })
+                })
+            })
         },
     })
 }

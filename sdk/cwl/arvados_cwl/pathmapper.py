@@ -225,12 +225,16 @@ class StagingPathMapper(PathMapper):
         tgt = os.path.join(stagedir, obj["basename"])
         basetgt, baseext = os.path.splitext(tgt)
         n = 1
-        while tgt in self.targets:
-            n += 1
-            tgt = "%s_%i%s" % (basetgt, n, baseext)
+        if tgt in self.targets and (self.reversemap(tgt)[0] != loc):
+            while tgt in self.targets:
+                n += 1
+                tgt = "%s_%i%s" % (basetgt, n, baseext)
         self.targets.add(tgt)
         if obj["class"] == "Directory":
-            self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
+            if obj.get("writable"):
+                self._pathmap[loc] = MapperEnt(loc, tgt, "WritableDirectory", staged)
+            else:
+                self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
             if loc.startswith("_:") or self._follow_dirs:
                 self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
@@ -239,7 +243,7 @@ class StagingPathMapper(PathMapper):
             if "contents" in obj and loc.startswith("_:"):
                 self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
             else:
-                if copy:
+                if copy or obj.get("writable"):
                     self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile", staged)
                 else:
                     self._pathmap[loc] = MapperEnt(loc, tgt, "File", staged)

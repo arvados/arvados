@@ -58,7 +58,10 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def can_cancel?
-    @proxied.is_a?(ContainerRequest) && @proxied.state == "Committed" && @proxied.priority > 0 && @proxied.editable?
+    @proxied.is_a?(ContainerRequest) &&
+      @proxied.state == "Committed" &&
+      (@proxied.priority > 0 || get(:state, @container) != 'Running') &&
+      @proxied.editable?
   end
 
   def container_uuid
@@ -95,14 +98,29 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def state_label
-    ec = exit_code
-    return "Failed" if (ec && ec != 0)
-
-    state = get_combined(:state)
-
-    return "Queued" if state == "Locked"
-    return "Cancelled" if ((priority == 0) and (state == "Queued"))
-    state
+    if get(:state) == 'Final' && get(:state, @container) != 'Complete'
+      # Request was finalized before its container started (or the
+      # container was cancelled)
+      return 'Cancelled'
+    end
+    state = get(:state, @container) || get(:state, @proxied)
+    case state
+    when 'Locked', 'Queued'
+      if priority == 0
+        'On hold'
+      else
+        'Queued'
+      end
+    when 'Complete'
+      if exit_code == 0
+        state
+      else
+        'Failed'
+      end
+    else
+      # Cancelled, Running, or Uncommitted (no container assigned)
+      state
+    end
   end
 
   def exit_code

@@ -42,7 +42,21 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     get :show, {id: uuid}, session_for(:active)
     assert_response :success
 
-   assert_includes @response.body, "action=\"/container_requests/#{uuid}/copy\""
+    assert_includes @response.body, "action=\"/container_requests/#{uuid}/copy\""
+  end
+
+  test "cancel request for queued container" do
+    cr_fixture = api_fixture('container_requests')['queued']
+    post :cancel, {id: cr_fixture['uuid']}, session_for(:active)
+    assert_response 302
+
+    use_token 'active'
+    cr = ContainerRequest.find(cr_fixture['uuid'])
+    assert_equal 'Final', cr.state
+    assert_equal 0, cr.priority
+    c = Container.find(cr_fixture['container_uuid'])
+    assert_equal 'Queued', c.state
+    assert_equal 0, c.priority
   end
 
   [
