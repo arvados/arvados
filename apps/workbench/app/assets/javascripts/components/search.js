@@ -60,9 +60,16 @@ window.SearchResultsTable = {
                         tokenParam = '?api_token='+session.token
                     }
                     return m('tr', [
-                        m('td', [
+                        m('td', m('form', {
+                            onsubmit: function() {
+                                return false;
+                            }
+                        }, [
                             item.workbenchBaseURL() &&
-                                m('a.btn.btn-xs.btn-default', {
+                                m('button.btn.btn-xs.btn-default[type=submit]', {
+                                    onclick: m.withAttr('href', function(v) {
+                                        document.location = v;
+                                    }),
                                     'data-original-title': 'show '+item.objectType.description,
                                     'data-placement': 'top',
                                     'data-toggle': 'tooltip',
@@ -70,7 +77,7 @@ window.SearchResultsTable = {
                                     // Bootstrap's tooltip feature
                                     oncreate: function(vnode) { $(vnode.dom).tooltip() },
                                 }, iconsMap[item.objectType.wb_path]),
-                        ]),
+                        ])),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
                         m('td', m(LocalizedDateTime, {parse: item.modified_at})),
