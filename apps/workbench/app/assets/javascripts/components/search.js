@@ -57,23 +57,20 @@ window.SearchResultsTable = {
                     // Add the salted token to search result links from federated
                     // remote hosts.
                     if (!session.isFromRails && session.token.indexOf('v2/') == 0) {
-                        tokenParam = '?api_token='+session.token
+                        tokenParam = session.token
                     }
                     return m('tr', [
                         m('td', m('form', {
-                            onsubmit: function() {
-                                return false;
-                            }
+                            action: item.workbenchBaseURL() + '/' + item.objectType.wb_path + '/' + item.uuid,
+                            method: 'GET'
                         }, [
+                            tokenParam !== '' &&
+                                m('input[type=hidden][name=api_token][value='+tokenParam+']'),
                             item.workbenchBaseURL() &&
                                 m('button.btn.btn-xs.btn-default[type=submit]', {
-                                    onclick: m.withAttr('href', function(v) {
-                                        document.location = v;
-                                    }),
                                     'data-original-title': 'show '+item.objectType.description,
                                     'data-placement': 'top',
                                     'data-toggle': 'tooltip',
-                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid+tokenParam,
                                     // Bootstrap's tooltip feature
                                     oncreate: function(vnode) { $(vnode.dom).tooltip() },
                                 }, iconsMap[item.objectType.wb_path]),
