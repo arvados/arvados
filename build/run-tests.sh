@@ -249,6 +249,8 @@ sanity_checks() {
     R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
     # needed for roxygen2, needed for devtools, needed for R sdk
     pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
+    # needed for pkgdown, builds R SDK doc pages
+    which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
 }
 
 rotate_logfile() {
@@ -785,6 +787,9 @@ if (!requireNamespace("devtools")) {
 }
 if (!requireNamespace("roxygen2")) {
   install.packages("roxygen2")
+}
+if (!requireNamespace("pkgdown")) {
+  devtools::install_github("hadley/pkgdown")
 }
 devtools::install_dev_deps()
 EOF

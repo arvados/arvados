@@ -6,7 +6,7 @@
 require "rubygems"
 require "colorize"
 
-task :generate => [ :realclean, 'sdk/python/arvados/index.html' ] do
+task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html' ] do
   vars = ['baseurl', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
     if ENV[v]
@@ -25,6 +25,17 @@ file "sdk/python/arvados/index.html" do |t|
   end
 end
 
+file "sdk/R/arvados/index.html" do |t|
+  `which R`
+  if $? == 0
+    STDERR.puts `R --quiet --vanilla -e 'pkgdown::build_site(pkg="../sdk/R/")' 2>&1`
+    raise if $? != 0
+    cp_r("../sdk/R/docs", "sdk/R/arvados")
+  else
+    puts "Warning: R not found, R documentation will not be generated".colorize(:light_red)
+  end
+end
+
 task :linkchecker => [ :generate ] do
   Dir.chdir(".site") do
     `which linkchecker`
@@ -38,6 +49,7 @@ end
 
 task :clean do
   rm_rf "sdk/python/arvados"
+  rm_rf "sdk/R/arvados"
 end
 
 require "zenweb/tasks"
