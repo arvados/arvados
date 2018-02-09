@@ -8,6 +8,7 @@ export GEM_HOME=/var/lib/gems
 export GEM_PATH=/var/lib/gems
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
+export R_LIBS=/var/lib/Rlibs
 
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)

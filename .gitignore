@@ -12,6 +12,7 @@ docker/*/generated
 docker/config.yml
 doc/.site
 doc/sdk/python/arvados
+doc/sdk/R/arvados
 sdk/perl/MYMETA.*
 sdk/perl/Makefile
 sdk/perl/blib
