@@ -28,7 +28,9 @@ end
 file "sdk/R/arvados/index.html" do |t|
   `which R`
   if $? == 0
-    STDERR.puts `R --quiet --vanilla -e 'pkgdown::build_site(pkg="../sdk/R/")' 2>&1`
+    Dir.chdir("../sdk/R/") do
+      STDERR.puts `R --quiet --vanilla -e 'pkgdown::build_site()' 2>&1`
+    end
     raise if $? != 0
     cp_r("../sdk/R/docs", "sdk/R/arvados")
   else
@@ -50,6 +52,7 @@ end
 task :clean do
   rm_rf "sdk/python/arvados"
   rm_rf "sdk/R/arvados"
+  rm_rf "../sdk/R/docs"
 end
 
 require "zenweb/tasks"

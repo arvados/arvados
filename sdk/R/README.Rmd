@@ -5,17 +5,18 @@ The API is not final and feedback is solicited from users on ways in which it co
 
 ### INSTALLATION
 
-1. Install the dependencies
+`install.packages("ArvadosR", repos=c("http://r.arvados.org", getOption("repos")["CRAN"]), dependencies=TRUE)`
 
-    `install.packages(c('R6', 'httr', 'stringr', 'jsonlite', 'curl', 'XML'))`
+Note: on Linux, you may have to install supporting packages.
 
-    If needed, you may have to install the supporting packages first.
-    On Linux, these are: libxml2-dev, libssl-dev, libcurl4-gnutls-dev or libcurl4-openssl-dev
+On Centos 7, this is:
 
+`yum install libxml2-devel openssl-devel curl-devel`
 
-2. Install the ArvardosR package
+On Debian, this is:
 
-    `install.packages('http://r.arvados.org/ArvadosR_0.0.3.tar.gz', repos=NULL, type='source')`
+`apt-get install build-essential libxml2-dev libssl-dev libcurl4-gnutls-dev`
+
 
 ### EXAMPLES OF USAGE
 
