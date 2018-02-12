@@ -44,14 +44,14 @@ setup(name='arvados-node-manager',
           'setuptools'
       ],
       dependency_links=[
-          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.2.2.dev3.zip"
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.2.2.dev4.zip"
       ],
       test_suite='tests',
       tests_require=[
           'requests',
           'pbr<1.7.0',
           'mock>=1.0',
-          'apache-libcloud==2.2.2.dev3',
+          'apache-libcloud==2.2.2.dev4',
       ],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
