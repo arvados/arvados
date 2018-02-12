@@ -94,11 +94,11 @@ func (cfg *Config) Start() error {
 		cfg.debugLogf = func(string, ...interface{}) {}
 	}
 
-	if f := formatter[strings.ToLower(cfg.LogFormat)]; f == nil {
+	f := formatter[strings.ToLower(cfg.LogFormat)]
+	if f == nil {
 		return fmt.Errorf(`unsupported log format %q (try "text" or "json")`, cfg.LogFormat)
-	} else {
-		log.Formatter = f
 	}
+	log.Formatter = f
 
 	if cfg.MaxBuffers < 0 {
 		return fmt.Errorf("MaxBuffers must be greater than zero")
@@ -217,9 +217,9 @@ var VolumeTypes = []func() VolumeWithExamples{}
 
 type VolumeList []Volume
 
-// UnmarshalJSON, given an array of objects, deserializes each object
-// as the volume type indicated by the object's Type field.
-func (vols *VolumeList) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON -- given an array of objects -- deserializes each
+// object as the volume type indicated by the object's Type field.
+func (vl *VolumeList) UnmarshalJSON(data []byte) error {
 	typeMap := map[string]func() VolumeWithExamples{}
 	for _, factory := range VolumeTypes {
 		t := factory().Type()
@@ -252,7 +252,7 @@ func (vols *VolumeList) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		*vols = append(*vols, vol)
+		*vl = append(*vl, vol)
 	}
 	return nil
 }
