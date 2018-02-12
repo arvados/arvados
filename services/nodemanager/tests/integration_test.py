@@ -84,7 +84,7 @@ def job_cancelled(g):
             ['event_type', '=', 'stderr'],
         ]).execute()['items'][0]
     if not re.match(
-            r"Requirements for a single node exceed the available cloud node size",
+            r"Constraints cannot be satisfied",
             log_entry['properties']['text']):
         return 1
     return 0
@@ -94,7 +94,7 @@ def node_paired(g):
     compute_nodes[g.group(1)] = g.group(3)
 
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s alloc'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|alloc|(null)'" % (v) for k,v in compute_nodes.items()))
 
     for k,v in all_jobs.items():
         if v == "ReqNodeNotAvail":
@@ -107,7 +107,7 @@ def node_paired(g):
 
 def remaining_jobs(g):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s alloc'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|alloc|(null)'" % (v) for k,v in compute_nodes.items()))
 
     for k,v in all_jobs.items():
         all_jobs[k] = "Running"
@@ -119,7 +119,7 @@ def remaining_jobs(g):
 
 def node_busy(g):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s idle'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|idle|(null)'" % (v) for k,v in compute_nodes.items()))
     return 0
 
 def node_shutdown(g):
