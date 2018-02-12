@@ -65,7 +65,7 @@ window.SearchResultsTable = {
                             method: 'GET'
                         }, [
                             tokenParam !== '' &&
-                                m('input[type=hidden][name=api_token][value='+tokenParam+']'),
+                                m('input[type=hidden][name=api_token]', {value: tokenParam}),
                             item.workbenchBaseURL() &&
                                 m('button.btn.btn-xs.btn-default[type=submit]', {
                                     'data-original-title': 'show '+item.objectType.description,
