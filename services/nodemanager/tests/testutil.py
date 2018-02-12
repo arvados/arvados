@@ -80,7 +80,7 @@ class MockShutdownTimer(object):
 class MockSize(object):
     def __init__(self, factor):
         self.id = 'z{}.test'.format(factor)
-        self.name = self.id
+        self.name = 'test size '+self.id
         self.ram = 128 * factor
         self.disk = factor   # GB
         self.scratch = 1000 * factor # MB

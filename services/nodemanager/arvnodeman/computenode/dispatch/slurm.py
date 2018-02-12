@@ -31,7 +31,7 @@ class SlurmMixin(object):
     def _update_slurm_size_attrs(self, nodename, size):
         self._update_slurm_node(nodename, [
             'Weight=%i' % int(size.price * 1000),
-            'Features=instancetype=' + size.name,
+            'Features=instancetype=' + size.id,
         ])
 
     def _get_slurm_state(self, nodename):
@@ -109,7 +109,7 @@ class ComputeNodeUpdateActor(SlurmMixin, UpdateActorBase):
         """Keep SLURM's node properties up to date."""
         hostname = arvados_node.get("hostname")
         features = arvados_node.get("slurm_node_features", "").split(",")
-        sizefeature = "instancetype=" + cloud_node.size.name
+        sizefeature = "instancetype=" + cloud_node.size.id
         if hostname and sizefeature not in features:
             # This probably means SLURM has restarted and lost our
             # dynamically configured node weights and features.

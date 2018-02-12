@@ -75,14 +75,14 @@ class ServerCalculator(object):
             return fallback
 
     def cloud_size_for_constraints(self, constraints):
-        specified_name = constraints.get('instance_type')
+        specified_size = constraints.get('instance_type')
         want_value = lambda key: self.coerce_int(constraints.get(key), 0)
         wants = {'cores': want_value('min_cores_per_node'),
                  'ram': want_value('min_ram_mb_per_node'),
                  'scratch': want_value('min_scratch_mb_per_node')}
         for size in self.cloud_sizes:
             if (size.meets_constraints(**wants) and
-                (specified_name is None or size.name == specified_name)):
+                (specified_size is None or size.id == specified_size)):
                     return size
         return None
 
