@@ -30,6 +30,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
     </td>
 
     <td>
+    <% if object.respond_to?(:work_unit) %>
+      <% wu = object.work_unit object.name %>
+      <span class="label label-<%=wu.state_bootstrap_class%>">
+        <%=wu.state_label%>
+      </span>
+    <% end %>
+    </td>
+
+    <td>
       <% if object.respond_to?(:name) %>
         <%= render_editable_attribute (name_link || object), 'name', nil, {}, {tiptitle: 'rename'} %>
       <% end %>
