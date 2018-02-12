@@ -104,6 +104,7 @@ window.SearchResultsTable = {
 window.Search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
+        vnode.state.sessionDB.autoRedirectToHomeCluster('/search')
         vnode.state.searchEntered = m.stream()
         vnode.state.searchActive = m.stream()
         // When searchActive changes (e.g., when restoring state

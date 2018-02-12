@@ -12,6 +12,7 @@ $(document).on('ready', function() {
 window.SessionsTable = {
     oninit: function(vnode) {
         vnode.state.db = new SessionDB();
+        vnode.state.db.autoRedirectToHomeCluster('/sessions');
         vnode.state.db.migrateNonFederatedSessions();
         vnode.state.hostToAdd = m.stream('');
         vnode.state.error = m.stream();
