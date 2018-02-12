@@ -279,14 +279,14 @@ window.SessionDB = function() {
                 }
             });
         },
-        // If remoteHosts is listed on the local API discovery doc, try to add any
-        // listed remote without an active session.
+        // If remoteHosts is populated on the local API discovery doc, try to
+        // add any listed missing session.
         autoLoadRemoteHosts: function() {
-            var activeSessions = db.loadActive();
+            var sessions = db.loadAll();
             var doc = db.discoveryDoc(db.loadLocal());
             doc.map(function(d) {
                 Object.keys(d.remoteHosts).map(function(uuidPrefix) {
-                    if (!(uuidPrefix in Object.keys(activeSessions))) {
+                    if (!(sessions[uuidPrefix])) {
                         db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
                             db.login(baseURL, false);
                         });

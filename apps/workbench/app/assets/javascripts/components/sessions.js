@@ -6,13 +6,13 @@ $(document).on('ready', function() {
     var db = new SessionDB();
     db.checkForNewToken();
     db.fillMissingUUIDs();
-    db.migrateNonFederatedSessions();
     db.autoLoadRemoteHosts();
 });
 
 window.SessionsTable = {
     oninit: function(vnode) {
         vnode.state.db = new SessionDB();
+        vnode.state.db.migrateNonFederatedSessions();
         vnode.state.hostToAdd = m.stream('');
         vnode.state.error = m.stream();
         vnode.state.checking = m.stream();
