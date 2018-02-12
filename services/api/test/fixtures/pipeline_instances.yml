@@ -486,6 +486,8 @@ pipeline_<%=i%>_of_10:
           required: true
           dataclass: Collection
           title: foo instance input
+      job:
+        state: Failed
 <% end %>
 
 # pipelines in project_with_2_pipelines_and_60_crs
