@@ -124,6 +124,11 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (r.Method == "PUT" || r.Method == "POST") && r.Header.Get("Content-Length") == "" {
+		rw.WriteHeader(http.StatusLengthRequired)
+		return
+	}
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return

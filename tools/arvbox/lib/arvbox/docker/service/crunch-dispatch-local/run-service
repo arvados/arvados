@@ -4,19 +4,18 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 exec 2>&1
-set -eux -o pipefail
+set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
+. /usr/local/lib/arvbox/go-setup.sh
 
-mkdir -p /var/lib/gopath
-cd /var/lib/gopath
-
-export GOPATH=$PWD
-mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/crunch-run"
 flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/crunch-dispatch-local"
-install bin/crunch-run bin/crunch-dispatch-local /usr/local/bin
+install $GOPATH/bin/crunch-run $GOPATH/bin/crunch-dispatch-local /usr/local/bin
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
 
 cat > /usr/local/bin/crunch-run.sh <<EOF
 #!/bin/sh

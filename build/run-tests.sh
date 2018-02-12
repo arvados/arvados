@@ -109,6 +109,7 @@ sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
+sdk/R
 tools/sync-groups
 tools/crunchstat-summary
 tools/keep-exercise
@@ -133,6 +134,7 @@ VENV3DIR=
 PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
+R_LIBS=
 
 short=
 only_install=
@@ -240,6 +242,16 @@ sanity_checks() {
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
+
+    # R SDK stuff
+    echo -n 'R: '
+    which R || fatal "No R. Try: apt-get install r-base"
+    echo -n 'testthat: '
+    R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
+    # needed for roxygen2, needed for devtools, needed for R sdk
+    pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
+    # needed for pkgdown, builds R SDK doc pages
+    which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
 }
 
 rotate_logfile() {
@@ -368,7 +380,7 @@ if [[ -z "$temp" ]]; then
 fi
 
 # Set up temporary install dirs (unless existing dirs were supplied)
-for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE
+for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
 do
     if [[ -z "${!tmpdir}" ]]; then
         eval "$tmpdir"="$temp/$tmpdir"
@@ -477,6 +489,7 @@ setup_virtualenv() {
 export PERLINSTALLBASE
 export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
+export R_LIBS
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
@@ -766,6 +779,24 @@ install_ruby_sdk() {
 }
 do_install sdk/ruby ruby_sdk
 
+install_R_sdk() {
+    cd "$WORKSPACE/sdk/R" \
+       && R --quiet --vanilla <<EOF
+options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
+if (!requireNamespace("devtools")) {
+  install.packages("devtools")
+}
+if (!requireNamespace("roxygen2")) {
+  install.packages("roxygen2")
+}
+if (!requireNamespace("pkgdown")) {
+  devtools::install_github("hadley/pkgdown")
+}
+devtools::install_dev_deps()
+EOF
+}
+do_install sdk/R R_sdk
+
 install_perl_sdk() {
     cd "$WORKSPACE/sdk/perl" \
         && perl Makefile.PL INSTALL_BASE="$PERLINSTALLBASE" \
@@ -936,6 +967,12 @@ test_ruby_sdk() {
         && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 do_test sdk/ruby ruby_sdk
+
+test_R_sdk() {
+    cd "$WORKSPACE/sdk/R" \
+        && R --quiet --file=run_test.R
+}
+do_test sdk/R R_sdk
 
 test_cli() {
     cd "$WORKSPACE/sdk/cli" \

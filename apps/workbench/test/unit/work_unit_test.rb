@@ -17,11 +17,12 @@ class WorkUnitTest < ActiveSupport::TestCase
     [PipelineInstance, 'pipeline_in_running_state', nil, 1, "Running", nil, 0.0],
     [PipelineInstance, 'has_component_with_completed_jobs', nil, 3, "Complete", true, 1.0],
     [PipelineInstance, 'pipeline_with_tagged_collection_input', "pwu", 1, "Ready", nil, 0.0],
+    [PipelineInstance, 'failed_pipeline_with_two_jobs', nil, 2, "Cancelled", false, 0.0],
     [Container, 'requester', 'cwu', 1, "Complete", true, 1.0],
     [ContainerRequest, 'cr_for_requester', 'cwu', 1, "Complete", true, 1.0],
     [ContainerRequest, 'queued', 'cwu', 0, "Queued", nil, 0.0],   # priority 1
     [ContainerRequest, 'canceled_with_queued_container', 'cwu', 0, "Cancelled", false, 0.0],
-    [ContainerRequest, 'canceled_with_locked_container', 'cwu', 0, "Queued", nil, 0.0],
+    [ContainerRequest, 'canceled_with_locked_container', 'cwu', 0, "Cancelled", false, 0.0],
     [ContainerRequest, 'canceled_with_running_container', 'cwu', 1, "Running", nil, 0.0],
   ].each do |type, fixture, label, num_children, state, success, progress|
     test "children of #{fixture}" do

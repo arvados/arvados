@@ -19,7 +19,7 @@ RUN apt-get update && \
     apt-transport-https ca-certificates slurm-wlm \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
-    libsecret-1-dev && \
+    libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
@@ -90,6 +90,7 @@ ADD crunch-setup.sh gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
     application_yml_override.py api-setup.sh \
+    go-setup.sh \
     /usr/local/lib/arvbox/
 
 ADD runit /etc/runit

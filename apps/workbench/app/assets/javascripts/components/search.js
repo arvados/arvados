@@ -41,6 +41,8 @@ window.SearchResultsTable = {
             collections: m('i.fa.fa-fw.fa-archive'),
             projects: m('i.fa.fa-fw.fa-folder'),
         }
+        var db = new SessionDB()
+        var sessions = db.loadActive()
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
                 m('th'),
@@ -50,18 +52,29 @@ window.SearchResultsTable = {
             ])),
             m('tbody', [
                 loader.items().map(function(item) {
+                    var session = sessions[item.uuid.slice(0,5)]
+                    var tokenParam = ''
+                    // Add the salted token to search result links from federated
+                    // remote hosts.
+                    if (!session.isFromRails && session.token.indexOf('v2/') == 0) {
+                        tokenParam = session.token
+                    }
                     return m('tr', [
-                        m('td', [
+                        m('td', m('form', {
+                            action: item.workbenchBaseURL() + '/' + item.objectType.wb_path + '/' + item.uuid,
+                            method: 'GET'
+                        }, [
+                            tokenParam !== '' &&
+                                m('input[type=hidden][name=api_token]', {value: tokenParam}),
                             item.workbenchBaseURL() &&
-                                m('a.btn.btn-xs.btn-default', {
+                                m('button.btn.btn-xs.btn-default[type=submit]', {
                                     'data-original-title': 'show '+item.objectType.description,
                                     'data-placement': 'top',
                                     'data-toggle': 'tooltip',
-                                    href: item.workbenchBaseURL()+'/'+item.objectType.wb_path+'/'+item.uuid,
                                     // Bootstrap's tooltip feature
                                     oncreate: function(vnode) { $(vnode.dom).tooltip() },
                                 }, iconsMap[item.objectType.wb_path]),
-                        ]),
+                        ])),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
                         m('td', m(LocalizedDateTime, {parse: item.modified_at})),
@@ -91,6 +104,7 @@ window.SearchResultsTable = {
 window.Search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
+        vnode.state.sessionDB.autoRedirectToHomeCluster('/search')
         vnode.state.searchEntered = m.stream()
         vnode.state.searchActive = m.stream()
         // When searchActive changes (e.g., when restoring state
@@ -154,7 +168,6 @@ window.Search = {
         })
     },
     view: function(vnode) {
-        var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchActive(vnode.state.searchEntered())

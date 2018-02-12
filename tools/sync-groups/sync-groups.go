@@ -307,7 +307,7 @@ func doMain(cfg *ConfigParams) error {
 		}
 		userIDToUUID[uID] = u.UUID
 		if cfg.Verbose {
-			log.Printf("Seen user %q (%s)", u.Username, u.Email)
+			log.Printf("Seen user %q (%s)", u.Username, u.UUID)
 		}
 	}
 
@@ -317,6 +317,11 @@ func doMain(cfg *ConfigParams) error {
 		return err
 	}
 	log.Printf("Found %d remote groups", len(remoteGroups))
+	if cfg.Verbose {
+		for groupUUID := range remoteGroups {
+			log.Printf("- Group %q: %d users", remoteGroups[groupUUID].Group.Name, len(remoteGroups[groupUUID].PreviousMembers))
+		}
+	}
 
 	membershipsRemoved := 0
 
@@ -504,9 +509,9 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 				Operator: "=",
 				Operand:  group.UUID,
 			}, {
-				Attr:     "head_kind",
-				Operator: "=",
-				Operand:  "arvados#user",
+				Attr:     "head_uuid",
+				Operator: "like",
+				Operand:  "%-tpzed-%",
 			}},
 		}
 		// User -> Group filter
@@ -528,9 +533,9 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 				Operator: "=",
 				Operand:  group.UUID,
 			}, {
-				Attr:     "tail_kind",
-				Operator: "=",
-				Operand:  "arvados#user",
+				Attr:     "tail_uuid",
+				Operator: "like",
+				Operand:  "%-tpzed-%",
 			}},
 		}
 		g2uLinks, err := GetAll(cfg.Client, "links", g2uFilter, &LinkList{})
@@ -579,7 +584,7 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 // RemoveMemberFromGroup remove all links related to the membership
 func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.Group) error {
 	if cfg.Verbose {
-		log.Printf("Getting group membership links for user %q (%s) on group %q (%s)", user.Email, user.UUID, group.Name, group.UUID)
+		log.Printf("Getting group membership links for user %q (%s) on group %q (%s)", user.Username, user.UUID, group.Name, group.UUID)
 	}
 	var links []interface{}
 	// Search for all group<->user links (both ways)

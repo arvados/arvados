@@ -59,4 +59,22 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
   def template_uuid
     get(:pipeline_template_uuid)
   end
+
+  def state_label
+    if get(:state) != "Failed"
+      return super
+    end
+    if get(:components_summary).andand[:failed].andand > 0
+      return super
+    end
+    # Show "Cancelled" instead of "Failed" if there are no failed
+    # components. #12840
+    get(:components).each do |_, c|
+      jstate = c[:job][:state] rescue nil
+      if jstate == "Failed"
+        return "Failed"
+      end
+    end
+    "Cancelled"
+  end
 end
