@@ -93,12 +93,12 @@ window.SessionDB = function() {
                 fallbackLogin = true;
             }
             var session = db.loadLocal();
-            var uuidPrefix = session.user.owner_uuid.slice(0, 5);
             var apiHostname = new URL(session.baseURL).hostname;
             m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(localDD) {
+                var uuidPrefix = localDD.uuidPrefix;
                 m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
                     if (uuidPrefix in dd.remoteHosts ||
-                        (dd.remoteHostsViaDNS && apiHostname.indexOf('arvadosapi.com') >= 0)) {
+                        (dd.remoteHostsViaDNS && apiHostname.endsWith('.arvadosapi.com'))) {
                         // Federated identity login via salted token
                         db.saltedToken(dd.uuidPrefix).then(function(token) {
                             m.request(baseURL+'arvados/v1/users/current', {
@@ -269,20 +269,24 @@ window.SessionDB = function() {
             var sessions = db.loadActive();
             Object.keys(sessions).map(function(uuidPrefix) {
                 session = sessions[uuidPrefix];
-                if (!session.isFromRails && session.token && session.token.indexOf('v2/') < 0) {
-                    // Only try the federated login
-                    db.login(session.baseURL, false);
+                if (!session.isFromRails && session.token) {
+                    db.saltedToken(uuidPrefix).then(function(saltedToken) {
+                        if (session.token != saltedToken) {
+                            // Only try the federated login
+                            db.login(session.baseURL, false);
+                        }
+                    });
                 }
             });
         },
-        // If remoteHosts is listed on the local API discovery doc, try to add any
-        // listed remote without an active session.
+        // If remoteHosts is populated on the local API discovery doc, try to
+        // add any listed missing session.
         autoLoadRemoteHosts: function() {
-            var activeSessions = db.loadActive();
+            var sessions = db.loadAll();
             var doc = db.discoveryDoc(db.loadLocal());
             doc.map(function(d) {
                 Object.keys(d.remoteHosts).map(function(uuidPrefix) {
-                    if (!(uuidPrefix in Object.keys(activeSessions))) {
+                    if (!(sessions[uuidPrefix])) {
                         db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
                             db.login(baseURL, false);
                         });

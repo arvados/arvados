@@ -6,13 +6,14 @@ $(document).on('ready', function() {
     var db = new SessionDB();
     db.checkForNewToken();
     db.fillMissingUUIDs();
-    db.migrateNonFederatedSessions();
     db.autoLoadRemoteHosts();
 });
 
 window.SessionsTable = {
     oninit: function(vnode) {
         vnode.state.db = new SessionDB();
+        vnode.state.db.autoRedirectToHomeCluster('/sessions');
+        vnode.state.db.migrateNonFederatedSessions();
         vnode.state.hostToAdd = m.stream('');
         vnode.state.error = m.stream();
         vnode.state.checking = m.stream();
@@ -37,17 +38,13 @@ window.SessionsTable = {
                 ])),
                 m('tbody', [
                     Object.keys(sessions).map(function(uuidPrefix) {
-                        var session = sessions[uuidPrefix]
+                        var session = sessions[uuidPrefix];
                         return m('tr', [
                             session.token && session.user ? [
                                 m('td', session.user.is_active ?
                                     m('span.label.label-success', 'logged in') :
                                     m('span.label.label-warning', 'inactive')),
-                                m('td', {title: session.baseURL}, [
-                                    m('a', {
-                                        href: db.workbenchBaseURL(session) + '?api_token=' + session.token
-                                    }, uuidPrefix)
-                                ]),
+                                m('td', {title: session.baseURL}, uuidPrefix),
                                 m('td', session.user.username),
                                 m('td', session.user.email),
                                 m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
