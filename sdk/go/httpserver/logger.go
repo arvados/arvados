@@ -54,9 +54,13 @@ func logResponse(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 			"timeWriteBody": stats.Duration(tDone.Sub(w.writeTime)),
 		})
 	}
+	respCode := w.WroteStatus()
+	if respCode == 0 {
+		respCode = http.StatusOK
+	}
 	lgr.WithFields(logrus.Fields{
-		"respStatusCode": w.WroteStatus(),
-		"respStatus":     http.StatusText(w.WroteStatus()),
+		"respStatusCode": respCode,
+		"respStatus":     http.StatusText(respCode),
 		"respBytes":      w.WroteBodyBytes(),
 	}).Info("response")
 }

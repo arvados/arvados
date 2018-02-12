@@ -48,9 +48,6 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 }
 
 func (w *responseWriter) WroteStatus() int {
-	if w.wroteStatus == 0 {
-		return http.StatusOK
-	}
 	return w.wroteStatus
 }
 
