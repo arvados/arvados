@@ -6,11 +6,15 @@ package arvados
 
 import (
 	"os"
+	"sync"
 	"time"
 )
 
 type siteFileSystem struct {
 	fileSystem
+
+	staleThreshold time.Time
+	staleLock      sync.Mutex
 }
 
 // SiteFileSystem returns a FileSystem that maps collections and other
@@ -56,6 +60,21 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		return fs.newProjectNode(fs.root, "home", ""), nil
 	})
 	return fs
+}
+
+func (fs *siteFileSystem) Sync() error {
+	fs.staleLock.Lock()
+	defer fs.staleLock.Unlock()
+	fs.staleThreshold = time.Now()
+	return nil
+}
+
+// Stale returns true if information obtained at time t should be
+// considered stale.
+func (fs *siteFileSystem) Stale(t time.Time) bool {
+	fs.staleLock.Lock()
+	defer fs.staleLock.Unlock()
+	return !fs.staleThreshold.Before(t)
 }
 
 func (fs *siteFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
