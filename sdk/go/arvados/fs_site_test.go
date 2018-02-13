@@ -21,7 +21,11 @@ type SiteFSSuite struct {
 }
 
 func (s *SiteFSSuite) SetUpTest(c *check.C) {
-	s.client = NewClientFromEnv()
+	s.client = &Client{
+		APIHost:   os.Getenv("ARVADOS_API_HOST"),
+		AuthToken: arvadostest.ActiveToken,
+		Insecure:  true,
+	}
 	s.kc = &keepClientStub{
 		blocks: map[string][]byte{
 			"3858f62230ac3c915f300c664312c63f": []byte("foobar"),

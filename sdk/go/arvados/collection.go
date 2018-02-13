@@ -16,6 +16,7 @@ import (
 // Collection is an arvados#collection resource.
 type Collection struct {
 	UUID                   string     `json:"uuid,omitempty"`
+	OwnerUUID              string     `json:"owner_uuid,omitempty"`
 	TrashAt                *time.Time `json:"trash_at,omitempty"`
 	ManifestText           string     `json:"manifest_text,omitempty"`
 	UnsignedManifestText   string     `json:"unsigned_manifest_text,omitempty"`

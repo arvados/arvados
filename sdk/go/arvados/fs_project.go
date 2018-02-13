@@ -7,18 +7,29 @@ package arvados
 import (
 	"os"
 	"sync"
+	"time"
 )
 
 // projectnode exposes an Arvados project as a filesystem directory.
 type projectnode struct {
 	inode
-	uuid      string
-	setupOnce sync.Once
-	err       error
+	uuid string
+	err  error
+
+	loadLock  sync.Mutex
+	loadStart time.Time
 }
 
-func (pn *projectnode) setup() {
+func (pn *projectnode) load() {
 	fs := pn.FS().(*siteFileSystem)
+
+	pn.loadLock.Lock()
+	defer pn.loadLock.Unlock()
+	if !fs.Stale(pn.loadStart) {
+		return
+	}
+	pn.loadStart = time.Now()
+
 	if pn.uuid == "" {
 		var resp User
 		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/users/current", nil, nil)
@@ -36,7 +47,6 @@ func (pn *projectnode) setup() {
 		var resp CollectionList
 		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/collections", nil, params)
 		if pn.err != nil {
-			// TODO: retry on next access, instead of returning the same error forever
 			return
 		}
 		if len(resp.Items) == 0 {
@@ -60,7 +70,6 @@ func (pn *projectnode) setup() {
 		var resp GroupList
 		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups", nil, params)
 		if pn.err != nil {
-			// TODO: retry on next access, instead of returning the same error forever
 			return
 		}
 		if len(resp.Items) == 0 {
@@ -76,10 +85,11 @@ func (pn *projectnode) setup() {
 		}
 		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
 	}
+	pn.err = nil
 }
 
 func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
-	pn.setupOnce.Do(pn.setup)
+	pn.load()
 	if pn.err != nil {
 		return nil, pn.err
 	}
@@ -87,7 +97,7 @@ func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
 }
 
 func (pn *projectnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	pn.setupOnce.Do(pn.setup)
+	pn.load()
 	if pn.err != nil {
 		return nil, pn.err
 	}
