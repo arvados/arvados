@@ -74,10 +74,10 @@ doc
 lib/cli
 lib/cmd
 lib/crunchstat
+lib/dispatchcloud
 services/api
 services/arv-git-httpd
 services/crunchstat
-services/dispatchcloud
 services/dockercleaner
 services/fuse
 services/health
@@ -889,6 +889,7 @@ gostuff=(
     lib/cli
     lib/cmd
     lib/crunchstat
+    lib/dispatchcloud
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
@@ -901,7 +902,6 @@ gostuff=(
     sdk/go/stats
     services/arv-git-httpd
     services/crunchstat
-    services/dispatchcloud
     services/health
     services/keep-web
     services/keepstore

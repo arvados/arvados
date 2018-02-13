@@ -17,11 +17,11 @@ import (
 	"strings"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	"git.curoverse.com/arvados.git/services/dispatchcloud"
 	"github.com/coreos/go-systemd/daemon"
 )
 

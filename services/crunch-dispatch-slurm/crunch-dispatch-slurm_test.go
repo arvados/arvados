@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	"git.curoverse.com/arvados.git/services/dispatchcloud"
 	. "gopkg.in/check.v1"
 )
 
