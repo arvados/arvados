@@ -74,6 +74,7 @@ doc
 lib/cli
 lib/cmd
 lib/crunchstat
+lib/dispatchcloud
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -888,6 +889,7 @@ gostuff=(
     lib/cli
     lib/cmd
     lib/crunchstat
+    lib/dispatchcloud
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest

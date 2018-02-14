@@ -6,6 +6,7 @@
 from __future__ import absolute_import, print_function
 
 import logging
+import re
 import subprocess
 
 import arvados.util
@@ -74,13 +75,15 @@ class ServerCalculator(object):
             return fallback
 
     def cloud_size_for_constraints(self, constraints):
+        specified_size = constraints.get('instance_type')
         want_value = lambda key: self.coerce_int(constraints.get(key), 0)
         wants = {'cores': want_value('min_cores_per_node'),
                  'ram': want_value('min_ram_mb_per_node'),
                  'scratch': want_value('min_scratch_mb_per_node')}
         for size in self.cloud_sizes:
-            if size.meets_constraints(**wants):
-                return size
+            if (size.meets_constraints(**wants) and
+                (specified_size is None or size.id == specified_size)):
+                    return size
         return None
 
     def servers_for_queue(self, queue):
@@ -92,8 +95,7 @@ class ServerCalculator(object):
             cloud_size = self.cloud_size_for_constraints(constraints)
             if cloud_size is None:
                 unsatisfiable_jobs[job['uuid']] = (
-                    'Requirements for a single node exceed the available '
-                    'cloud node size')
+                    "Constraints cannot be satisfied by any node type")
             elif (want_count > self.max_nodes):
                 unsatisfiable_jobs[job['uuid']] = (
                     "Job's min_nodes constraint is greater than the configured "
@@ -152,21 +154,43 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         queuelist = []
         if self.slurm_queue:
             # cpus, memory, tempory disk space, reason, job name
-            squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j"])
+            squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j|%f"])
             for out in squeue_out.splitlines():
                 try:
-                    cpu, ram, disk, reason, jobname = out.split("|", 4)
-                    if ("ReqNodeNotAvail" in reason) or ("Resources" in reason) or ("Priority" in reason):
-                        queuelist.append({
-                            "uuid": jobname,
-                            "runtime_constraints": {
-                                "min_cores_per_node": cpu,
-                                "min_ram_mb_per_node": self.coerce_to_mb(ram),
-                                "min_scratch_mb_per_node": self.coerce_to_mb(disk)
-                            }
-                        })
+                    cpu, ram, disk, reason, jobname, features = out.split("|", 5)
                 except ValueError:
-                    pass
+                    self._logger.warning("ignored malformed line in squeue output: %r", out)
+                    continue
+                if '-dz642-' not in jobname:
+                    continue
+                if not re.search(r'ReqNodeNotAvail|Resources|Priority', reason):
+                    continue
+
+                for feature in features.split(','):
+                    m = re.match(r'instancetype=(.*)', feature)
+                    if not m:
+                        continue
+                    instance_type = m.group(1)
+                    # Ignore cpu/ram/scratch requirements, bring up
+                    # the requested node type.
+                    queuelist.append({
+                        "uuid": jobname,
+                        "runtime_constraints": {
+                            "instance_type": instance_type,
+                        }
+                    })
+                    break
+                else:
+                    # No instance type specified. Choose a node type
+                    # to suit cpu/ram/scratch requirements.
+                    queuelist.append({
+                        "uuid": jobname,
+                        "runtime_constraints": {
+                            "min_cores_per_node": cpu,
+                            "min_ram_mb_per_node": self.coerce_to_mb(ram),
+                            "min_scratch_mb_per_node": self.coerce_to_mb(disk)
+                        }
+                    })
 
         if self.jobs_queue:
             queuelist.extend(self._client.jobs().queue().execute()['items'])

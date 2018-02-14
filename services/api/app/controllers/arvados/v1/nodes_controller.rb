@@ -9,15 +9,37 @@ class Arvados::V1::NodesController < ApplicationController
 
   include DbCurrentTime
 
+  def self._ping_requires_parameters
+    { ping_secret: {required: true} }
+  end
+
+  def self._create_requires_parameters
+    super.merge(
+      { assign_slot: {required: false, type: 'boolean', description: 'assign slot and hostname'} })
+  end
+
+  def self._update_requires_parameters
+    super.merge(
+      { assign_slot: {required: false, type: 'boolean', description: 'assign slot and hostname'} })
+  end
+
+  def create
+    @object = model_class.new(resource_attrs)
+    @object.assign_slot if params[:assign_slot]
+    @object.save!
+    show
+  end
+
   def update
     if resource_attrs[:job_uuid].is_a? String
       @object.job_readable = readable_job_uuids([resource_attrs[:job_uuid]]).any?
     end
-    super
-  end
-
-  def self._ping_requires_parameters
-    { ping_secret: {required: true} }
+    attrs_to_update = resource_attrs.reject { |k,v|
+      [:kind, :etag, :href].index k
+    }
+    @object.update_attributes!(attrs_to_update)
+    @object.assign_slot if params[:assign_slot]
+    show
   end
 
   def ping

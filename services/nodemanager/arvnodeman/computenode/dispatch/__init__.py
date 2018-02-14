@@ -113,14 +113,16 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
-        self.arvados_node = self._arvados.nodes().create(body={}).execute()
+        self.arvados_node = self._arvados.nodes().create(
+            body={}, assign_slot=True).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
-        self.arvados_node = self._clean_arvados_node(
-            node, "Prepared by Node Manager")
+        self._clean_arvados_node(node, "Prepared by Node Manager")
+        self.arvados_node = self._arvados.nodes().update(
+            body={}, assign_slot=True).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
@@ -315,7 +317,8 @@ class ComputeNodeUpdateActor(config.actor_class, RetryMixin):
 
     @RetryMixin._retry()
     def sync_node(self, cloud_node, arvados_node):
-        return self._cloud.sync_node(cloud_node, arvados_node)
+        if self._cloud.node_fqdn(cloud_node) != arvados_node_fqdn(arvados_node):
+            return self._cloud.sync_node(cloud_node, arvados_node)
 
 
 class ComputeNodeMonitorActor(config.actor_class):
@@ -326,14 +329,13 @@ class ComputeNodeMonitorActor(config.actor_class):
     for shutdown.
     """
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
-                 cloud_fqdn_func, timer_actor, update_actor, cloud_client,
+                 timer_actor, update_actor, cloud_client,
                  arvados_node=None, poll_stale_after=600, node_stale_after=3600,
                  boot_fail_after=1800
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.tell_proxy()
         self._shutdowns = shutdown_timer
-        self._cloud_node_fqdn = cloud_fqdn_func
         self._timer = timer_actor
         self._update = update_actor
         self._cloud = cloud_client
@@ -486,8 +488,11 @@ class ComputeNodeMonitorActor(config.actor_class):
             self._later.consider_shutdown()
 
     def update_arvados_node(self, arvados_node):
-        # If the cloud node's FQDN doesn't match what's in the Arvados node
-        # record, make them match.
+        """Called when the latest Arvados node record is retrieved.
+
+        Calls the updater's sync_node() method.
+
+        """
         # This method is a little unusual in the way it just fires off the
         # request without checking the result or retrying errors.  That's
         # because this update happens every time we reload the Arvados node
@@ -496,7 +501,5 @@ class ComputeNodeMonitorActor(config.actor_class):
         # the logic to throttle those effective retries when there's trouble.
         if arvados_node is not None:
             self.arvados_node = arvados_node
-            if (self._cloud_node_fqdn(self.cloud_node) !=
-                  arvados_node_fqdn(self.arvados_node)):
-                self._update.sync_node(self.cloud_node, self.arvados_node)
+            self._update.sync_node(self.cloud_node, self.arvados_node)
             self._later.consider_shutdown()
