@@ -35,7 +35,7 @@ const (
 	// used by Microsoft's Azure emulator: the Azure SDK
 	// recognizes that magic string and changes its behavior to
 	// cater to the Azure SDK's own test suite.
-	fakeAccountName = "fakeAccountName"
+	fakeAccountName = "fakeaccountname"
 	fakeAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
@@ -307,7 +307,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				b := storage.Blob{
 					Name: hash,
 					Properties: storage.BlobProperties{
-						LastModified:  blob.Mtime.Format(time.RFC1123),
+						LastModified:  storage.TimeRFC1123(blob.Mtime),
 						ContentLength: int64(len(blob.Data)),
 						Etag:          blob.Etag,
 					},
@@ -385,7 +385,7 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		ReadOnly:         readonly,
 		AzureReplication: replication,
 		azClient:         azClient,
-		bsClient:         &azureBlobClient{client: &bs},
+		container:        &azureContainer{ctr: bs.GetContainerReference(container)},
 	}
 
 	return &TestableAzureBlobVolume{
