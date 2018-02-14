@@ -9,13 +9,6 @@ class Arvados::V1::NodesController < ApplicationController
 
   include DbCurrentTime
 
-  def update
-    if resource_attrs[:job_uuid].is_a? String
-      @object.job_readable = readable_job_uuids([resource_attrs[:job_uuid]]).any?
-    end
-    super
-  end
-
   def self._ping_requires_parameters
     { ping_secret: {required: true} }
   end
@@ -38,6 +31,9 @@ class Arvados::V1::NodesController < ApplicationController
   end
 
   def update
+    if resource_attrs[:job_uuid].is_a? String
+      @object.job_readable = readable_job_uuids([resource_attrs[:job_uuid]]).any?
+    end
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
