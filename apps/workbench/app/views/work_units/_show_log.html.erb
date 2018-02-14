@@ -18,11 +18,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <%# Still running, or recently finished and logs are still available from logs table %>
 <%# Show recent logs in terminal window %>
 <h4>Recent logs</h4>
-<div id="event_log_div"
+<pre id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
      data-object-uuids="<%= wu.log_object_uuids.join(' ') %>"
   ><%= live_log_lines %>
-</div>
+</pre>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
     partial that would normally be triggered by arv-log-event. %>
