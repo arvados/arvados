@@ -5,8 +5,9 @@
 package main
 
 import (
-	. "gopkg.in/check.v1"
 	"time"
+
+	. "gopkg.in/check.v1"
 )
 
 var _ = Suite(&BufferPoolSuite{})

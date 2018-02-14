@@ -5,9 +5,10 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 func init() {
+	log.Level = logrus.DebugLevel
 	theConfig.debugLogf = log.Printf
 }
