@@ -122,7 +122,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     def prepare_arvados_node(self, node):
         self._clean_arvados_node(node, "Prepared by Node Manager")
         self.arvados_node = self._arvados.nodes().update(
-            body={}, assign_slot=True).execute()
+            uuid=node['uuid'], body={}, assign_slot=True).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
