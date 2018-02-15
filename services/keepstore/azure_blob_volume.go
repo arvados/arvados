@@ -110,6 +110,14 @@ type AzureBlobVolume struct {
 	container *azureContainer
 }
 
+// singleSender is a single-attempt storage.Sender.
+type singleSender struct{}
+
+// Send performs req exactly once.
+func (*singleSender) Send(c *storage.Client, req *http.Request) (resp *http.Response, err error) {
+	return c.HTTPClient.Do(req)
+}
+
 // Examples implements VolumeWithExamples.
 func (*AzureBlobVolume) Examples() []Volume {
 	return []Volume{
@@ -155,6 +163,7 @@ func (v *AzureBlobVolume) Start() error {
 	if err != nil {
 		return fmt.Errorf("creating Azure storage client: %s", err)
 	}
+	v.azClient.Sender = &singleSender{}
 
 	if v.RequestTimeout == 0 {
 		v.RequestTimeout = azureDefaultRequestTimeout
