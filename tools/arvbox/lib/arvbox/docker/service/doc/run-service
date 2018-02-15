@@ -12,19 +12,7 @@ cd /usr/src/arvados/doc
 run_bundler --without=development
 
 cd /usr/src/arvados/sdk/R
-R --quiet --vanilla <<EOF
-options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
-if (!requireNamespace("devtools")) {
-  install.packages("devtools")
-}
-if (!requireNamespace("roxygen2")) {
-  install.packages("roxygen2")
-}
-if (!requireNamespace("pkgdown")) {
-  devtools::install_github("hadley/pkgdown")
-}
-devtools::install_dev_deps()
-EOF
+R --quiet --vanilla --file=install_deps.R
 
 if test "$1" = "--only-deps" ; then
     exit

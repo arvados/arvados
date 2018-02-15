@@ -781,19 +781,7 @@ do_install sdk/ruby ruby_sdk
 
 install_R_sdk() {
     cd "$WORKSPACE/sdk/R" \
-       && R --quiet --vanilla <<EOF
-options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
-if (!requireNamespace("devtools")) {
-  install.packages("devtools")
-}
-if (!requireNamespace("roxygen2")) {
-  install.packages("roxygen2")
-}
-if (!requireNamespace("pkgdown")) {
-  devtools::install_github("hadley/pkgdown")
-}
-devtools::install_dev_deps()
-EOF
+       && R --quiet --vanilla --file=install_deps.R
 }
 do_install sdk/R R_sdk
 
