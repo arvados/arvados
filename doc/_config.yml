@@ -104,7 +104,7 @@ navbar:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
     - R:
-      - sdk/R/R.html.textile.liquid
+      - sdk/R/index.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
       - sdk/perl/example.html.textile.liquid
