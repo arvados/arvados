@@ -61,10 +61,13 @@ window.SessionsTable = {
                                     onclick: db.login.bind(db, session.baseURL),
                                 }, session.listedHost ? 'Enable ':'Log in ', m('span.glyphicon.glyphicon-log-in')))
                             ],
-                            m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
-                                uuidPrefix: uuidPrefix,
-                                onclick: m.withAttr('uuidPrefix', db.trash),
-                            }, 'Remove ', m('span.glyphicon.glyphicon-trash'))),
+                            m('td', session.isFromRails ? null :
+                                session.listedHost ? null :
+                                m('button.btn.btn-xs.btn-default', {
+                                    uuidPrefix: uuidPrefix,
+                                    onclick: m.withAttr('uuidPrefix', db.trash),
+                                }, 'Remove ', m('span.glyphicon.glyphicon-trash'))
+                            ),
                         ])
                     }),
                 ]),
