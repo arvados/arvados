@@ -106,8 +106,16 @@ type AzureBlobVolume struct {
 	ReadOnly              bool
 	RequestTimeout        arvados.Duration
 
-	azClient storage.Client
-	bsClient *azureBlobClient
+	azClient  storage.Client
+	container *azureContainer
+}
+
+// singleSender is a single-attempt storage.Sender.
+type singleSender struct{}
+
+// Send performs req exactly once.
+func (*singleSender) Send(c *storage.Client, req *http.Request) (resp *http.Response, err error) {
+	return c.HTTPClient.Do(req)
 }
 
 // Examples implements VolumeWithExamples.
@@ -155,6 +163,7 @@ func (v *AzureBlobVolume) Start() error {
 	if err != nil {
 		return fmt.Errorf("creating Azure storage client: %s", err)
 	}
+	v.azClient.Sender = &singleSender{}
 
 	if v.RequestTimeout == 0 {
 		v.RequestTimeout = azureDefaultRequestTimeout
@@ -163,15 +172,13 @@ func (v *AzureBlobVolume) Start() error {
 		Timeout: time.Duration(v.RequestTimeout),
 	}
 	bs := v.azClient.GetBlobService()
-	v.bsClient = &azureBlobClient{
-		client: &bs,
+	v.container = &azureContainer{
+		ctr: bs.GetContainerReference(v.ContainerName),
 	}
 
-	ok, err := v.bsClient.ContainerExists(v.ContainerName)
-	if err != nil {
+	if ok, err := v.container.Exists(); err != nil {
 		return err
-	}
-	if !ok {
+	} else if !ok {
 		return fmt.Errorf("Azure container %q does not exist", v.ContainerName)
 	}
 	return nil
@@ -184,7 +191,7 @@ func (v *AzureBlobVolume) DeviceID() string {
 
 // Return true if expires_at metadata attribute is found on the block
 func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, error) {
-	metadata, err := v.bsClient.GetBlobMetadata(v.ContainerName, loc)
+	metadata, err := v.container.GetBlobMetadata(loc)
 	if err != nil {
 		return false, metadata, v.translateError(err)
 	}
@@ -251,7 +258,7 @@ func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int,
 	if azureMaxGetBytes < BlockSize {
 		// Unfortunately the handler doesn't tell us how long the blob
 		// is expected to be, so we have to ask Azure.
-		props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
+		props, err := v.container.GetBlobProperties(loc)
 		if err != nil {
 			return 0, v.translateError(err)
 		}
@@ -293,9 +300,9 @@ func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int,
 			go func() {
 				defer close(gotRdr)
 				if startPos == 0 && endPos == expectSize {
-					rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
+					rdr, err = v.container.GetBlob(loc)
 				} else {
-					rdr, err = v.bsClient.GetBlobRange(v.ContainerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
+					rdr, err = v.container.GetBlobRange(loc, startPos, endPos-1, nil)
 				}
 			}()
 			select {
@@ -364,7 +371,7 @@ func (v *AzureBlobVolume) Compare(ctx context.Context, loc string, expect []byte
 	gotRdr := make(chan struct{})
 	go func() {
 		defer close(gotRdr)
-		rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
+		rdr, err = v.container.GetBlob(loc)
 	}()
 	select {
 	case <-ctx.Done():
@@ -411,7 +418,7 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 			body = http.NoBody
 			bufr.Close()
 		}
-		errChan <- v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), body, nil)
+		errChan <- v.container.CreateBlockBlobFromReader(loc, len(block), body, nil)
 	}()
 	select {
 	case <-ctx.Done():
@@ -445,7 +452,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 	}
 
 	metadata["touch"] = fmt.Sprintf("%d", time.Now())
-	return v.bsClient.SetBlobMetadata(v.ContainerName, loc, metadata, nil)
+	return v.container.SetBlobMetadata(loc, metadata, nil)
 }
 
 // Mtime returns the last-modified property of a block blob.
@@ -458,11 +465,11 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 		return time.Time{}, os.ErrNotExist
 	}
 
-	props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
+	props, err := v.container.GetBlobProperties(loc)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Parse(time.RFC1123, props.LastModified)
+	return time.Time(props.LastModified), nil
 }
 
 // IndexTo writes a list of Keep blocks that are stored in the
@@ -470,22 +477,19 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	params := storage.ListBlobsParameters{
 		Prefix:  prefix,
-		Include: "metadata",
+		Include: &storage.IncludeBlobDataset{Metadata: true},
 	}
 	for {
-		resp, err := v.bsClient.ListBlobs(v.ContainerName, params)
+		resp, err := v.container.ListBlobs(params)
 		if err != nil {
 			return err
 		}
 		for _, b := range resp.Blobs {
-			t, err := time.Parse(time.RFC1123, b.Properties.LastModified)
-			if err != nil {
-				return err
-			}
 			if !v.isKeepBlock(b.Name) {
 				continue
 			}
-			if b.Properties.ContentLength == 0 && t.Add(azureWriteRaceInterval).After(time.Now()) {
+			modtime := time.Time(b.Properties.LastModified)
+			if b.Properties.ContentLength == 0 && modtime.Add(azureWriteRaceInterval).After(time.Now()) {
 				// A new zero-length blob is probably
 				// just a new non-empty blob that
 				// hasn't committed its data yet (see
@@ -497,7 +501,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 				// Trashed blob; exclude it from response
 				continue
 			}
-			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.UnixNano())
+			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, modtime.UnixNano())
 		}
 		if resp.NextMarker == "" {
 			return nil
@@ -517,7 +521,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	// we get the Etag before checking Mtime, and use If-Match to
 	// ensure we don't delete data if Put() or Touch() happens
 	// between our calls to Mtime() and DeleteBlob().
-	props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
+	props, err := v.container.GetBlobProperties(loc)
 	if err != nil {
 		return err
 	}
@@ -529,16 +533,16 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 
 	// If TrashLifetime == 0, just delete it
 	if theConfig.TrashLifetime == 0 {
-		return v.bsClient.DeleteBlob(v.ContainerName, loc, map[string]string{
-			"If-Match": props.Etag,
+		return v.container.DeleteBlob(loc, &storage.DeleteBlobOptions{
+			IfMatch: props.Etag,
 		})
 	}
 
 	// Otherwise, mark as trash
-	return v.bsClient.SetBlobMetadata(v.ContainerName, loc, map[string]string{
+	return v.container.SetBlobMetadata(loc, storage.BlobMetadata{
 		"expires_at": fmt.Sprintf("%d", time.Now().Add(theConfig.TrashLifetime.Duration()).Unix()),
-	}, map[string]string{
-		"If-Match": props.Etag,
+	}, &storage.SetBlobMetadataOptions{
+		IfMatch: props.Etag,
 	})
 }
 
@@ -546,7 +550,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 // Delete the expires_at metadata attribute
 func (v *AzureBlobVolume) Untrash(loc string) error {
 	// if expires_at does not exist, return NotFoundError
-	metadata, err := v.bsClient.GetBlobMetadata(v.ContainerName, loc)
+	metadata, err := v.container.GetBlobMetadata(loc)
 	if err != nil {
 		return v.translateError(err)
 	}
@@ -556,7 +560,7 @@ func (v *AzureBlobVolume) Untrash(loc string) error {
 
 	// reset expires_at metadata attribute
 	metadata["expires_at"] = ""
-	err = v.bsClient.SetBlobMetadata(v.ContainerName, loc, metadata, nil)
+	err = v.container.SetBlobMetadata(loc, metadata, nil)
 	return v.translateError(err)
 }
 
@@ -611,10 +615,10 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 func (v *AzureBlobVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int
-	params := storage.ListBlobsParameters{Include: "metadata"}
+	params := storage.ListBlobsParameters{Include: &storage.IncludeBlobDataset{Metadata: true}}
 
 	for {
-		resp, err := v.bsClient.ListBlobs(v.ContainerName, params)
+		resp, err := v.container.ListBlobs(params)
 		if err != nil {
 			log.Printf("EmptyTrash: ListBlobs: %v", err)
 			break
@@ -638,8 +642,8 @@ func (v *AzureBlobVolume) EmptyTrash() {
 				continue
 			}
 
-			err = v.bsClient.DeleteBlob(v.ContainerName, b.Name, map[string]string{
-				"If-Match": b.Properties.Etag,
+			err = v.container.DeleteBlob(b.Name, &storage.DeleteBlobOptions{
+				IfMatch: b.Properties.Etag,
 			})
 			if err != nil {
 				log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
@@ -659,7 +663,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 
 // InternalStats returns bucket I/O and API call counters.
 func (v *AzureBlobVolume) InternalStats() interface{} {
-	return &v.bsClient.stats
+	return &v.container.stats
 }
 
 type azureBlobStats struct {
@@ -687,75 +691,105 @@ func (s *azureBlobStats) TickErr(err error) {
 	s.statsTicker.TickErr(err, errType)
 }
 
-// azureBlobClient wraps storage.BlobStorageClient in order to count
-// I/O and API usage stats.
-type azureBlobClient struct {
-	client *storage.BlobStorageClient
-	stats  azureBlobStats
+// azureContainer wraps storage.Container in order to count I/O and
+// API usage stats.
+type azureContainer struct {
+	ctr   *storage.Container
+	stats azureBlobStats
 }
 
-func (c *azureBlobClient) ContainerExists(cname string) (bool, error) {
+func (c *azureContainer) Exists() (bool, error) {
 	c.stats.Tick(&c.stats.Ops)
-	ok, err := c.client.ContainerExists(cname)
+	ok, err := c.ctr.Exists()
 	c.stats.TickErr(err)
 	return ok, err
 }
 
-func (c *azureBlobClient) GetBlobMetadata(cname, bname string) (map[string]string, error) {
+func (c *azureContainer) GetBlobMetadata(bname string) (storage.BlobMetadata, error) {
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetMetadataOps)
-	m, err := c.client.GetBlobMetadata(cname, bname)
+	b := c.ctr.GetBlobReference(bname)
+	err := b.GetMetadata(nil)
 	c.stats.TickErr(err)
-	return m, err
+	return b.Metadata, err
 }
 
-func (c *azureBlobClient) GetBlobProperties(cname, bname string) (*storage.BlobProperties, error) {
+func (c *azureContainer) GetBlobProperties(bname string) (*storage.BlobProperties, error) {
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetPropertiesOps)
-	p, err := c.client.GetBlobProperties(cname, bname)
+	b := c.ctr.GetBlobReference(bname)
+	err := b.GetProperties(nil)
 	c.stats.TickErr(err)
-	return p, err
+	return &b.Properties, err
 }
 
-func (c *azureBlobClient) GetBlob(cname, bname string) (io.ReadCloser, error) {
+func (c *azureContainer) GetBlob(bname string) (io.ReadCloser, error) {
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetOps)
-	rdr, err := c.client.GetBlob(cname, bname)
+	b := c.ctr.GetBlobReference(bname)
+	rdr, err := b.Get(nil)
 	c.stats.TickErr(err)
 	return NewCountingReader(rdr, c.stats.TickInBytes), err
 }
 
-func (c *azureBlobClient) GetBlobRange(cname, bname, byterange string, hdrs map[string]string) (io.ReadCloser, error) {
+func (c *azureContainer) GetBlobRange(bname string, start, end int, opts *storage.GetBlobOptions) (io.ReadCloser, error) {
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetRangeOps)
-	rdr, err := c.client.GetBlobRange(cname, bname, byterange, hdrs)
+	b := c.ctr.GetBlobReference(bname)
+	rdr, err := b.GetRange(&storage.GetBlobRangeOptions{
+		Range: &storage.BlobRange{
+			Start: uint64(start),
+			End:   uint64(end),
+		},
+		GetBlobOptions: opts,
+	})
 	c.stats.TickErr(err)
 	return NewCountingReader(rdr, c.stats.TickInBytes), err
 }
 
-func (c *azureBlobClient) CreateBlockBlobFromReader(cname, bname string, size uint64, rdr io.Reader, hdrs map[string]string) error {
+// If we give it an io.Reader that doesn't also have a Len() int
+// method, the Azure SDK determines data size by copying the data into
+// a new buffer, which is not a good use of memory.
+type readerWithAzureLen struct {
+	io.Reader
+	len int
+}
+
+// Len satisfies the private lener interface in azure-sdk-for-go.
+func (r *readerWithAzureLen) Len() int {
+	return r.len
+}
+
+func (c *azureContainer) CreateBlockBlobFromReader(bname string, size int, rdr io.Reader, opts *storage.PutBlobOptions) error {
 	c.stats.Tick(&c.stats.Ops, &c.stats.CreateOps)
 	if size != 0 {
-		rdr = NewCountingReader(rdr, c.stats.TickOutBytes)
+		rdr = &readerWithAzureLen{
+			Reader: NewCountingReader(rdr, c.stats.TickOutBytes),
+			len:    size,
+		}
 	}
-	err := c.client.CreateBlockBlobFromReader(cname, bname, size, rdr, hdrs)
+	b := c.ctr.GetBlobReference(bname)
+	err := b.CreateBlockBlobFromReader(rdr, opts)
 	c.stats.TickErr(err)
 	return err
 }
 
-func (c *azureBlobClient) SetBlobMetadata(cname, bname string, m, hdrs map[string]string) error {
+func (c *azureContainer) SetBlobMetadata(bname string, m storage.BlobMetadata, opts *storage.SetBlobMetadataOptions) error {
 	c.stats.Tick(&c.stats.Ops, &c.stats.SetMetadataOps)
-	err := c.client.SetBlobMetadata(cname, bname, m, hdrs)
+	b := c.ctr.GetBlobReference(bname)
+	b.Metadata = m
+	err := b.SetMetadata(opts)
 	c.stats.TickErr(err)
 	return err
 }
 
-func (c *azureBlobClient) ListBlobs(cname string, params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+func (c *azureContainer) ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
 	c.stats.Tick(&c.stats.Ops, &c.stats.ListOps)
-	resp, err := c.client.ListBlobs(cname, params)
+	resp, err := c.ctr.ListBlobs(params)
 	c.stats.TickErr(err)
 	return resp, err
 }
 
-func (c *azureBlobClient) DeleteBlob(cname, bname string, hdrs map[string]string) error {
+func (c *azureContainer) DeleteBlob(bname string, opts *storage.DeleteBlobOptions) error {
 	c.stats.Tick(&c.stats.Ops, &c.stats.DelOps)
-	err := c.client.DeleteBlob(cname, bname, hdrs)
+	b := c.ctr.GetBlobReference(bname)
+	err := b.Delete(opts)
 	c.stats.TickErr(err)
 	return err
 }
