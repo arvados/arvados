@@ -405,6 +405,7 @@ class ArvCwlRunner(object):
                         "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
+        self.eval_timeout = kwargs.get("eval_timeout")
 
         kwargs["make_fs_access"] = make_fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
@@ -413,6 +414,8 @@ class ArvCwlRunner(object):
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
         if self.work_api == "containers":
+            if self.ignore_docker_for_reuse:
+                raise validate.ValidationException("--ignore-docker-for-reuse not supported with containers API.")
             kwargs["outdir"] = "/var/spool/cwl"
             kwargs["docker_outdir"] = "/var/spool/cwl"
             kwargs["tmpdir"] = "/tmp"
