@@ -8,24 +8,28 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-type jobPriority struct {
-	niceness        int
-	currentPriority int
+type slurmJob struct {
+	uuid         string
+	wantPriority int64
+	priority     int64 // current slurm priority (incorporates nice value)
+	nice         int64 // current slurm nice value
 }
 
 // Squeue implements asynchronous polling monitor of the SLURM queue using the
 // command 'squeue'.
 type SqueueChecker struct {
-	Period    time.Duration
-	Slurm     Slurm
-	uuids     map[string]jobPriority
-	startOnce sync.Once
-	done      chan struct{}
+	Period         time.Duration
+	PrioritySpread int64
+	Slurm          Slurm
+	queue          map[string]*slurmJob
+	startOnce      sync.Once
+	done           chan struct{}
 	sync.Cond
 }
 
@@ -40,22 +44,52 @@ func (sqc *SqueueChecker) HasUUID(uuid string) bool {
 
 	// block until next squeue broadcast signaling an update.
 	sqc.Wait()
-	_, exists := sqc.uuids[uuid]
+	_, exists := sqc.queue[uuid]
 	return exists
 }
 
-// GetNiceness returns the niceness of a given uuid, or -1 if it doesn't exist.
-func (sqc *SqueueChecker) GetNiceness(uuid string) int {
-	sqc.startOnce.Do(sqc.start)
+// SetPriority sets or updates the desired (Arvados) priority for a
+// container.
+func (sqc *SqueueChecker) SetPriority(uuid string, want int64) {
+	sqc.L.Lock()
+	defer sqc.L.Unlock()
+	if _, ok := sqc.queue[uuid]; !ok {
+		// Wait in case the slurm job was just submitted and
+		// will appear in the next squeue update.
+		sqc.Wait()
+		if _, ok = sqc.queue[uuid]; !ok {
+			return
+		}
+	}
+	sqc.queue[uuid].wantPriority = want
+}
 
+// adjust slurm job nice values as needed to ensure slurm priority
+// order matches Arvados priority order.
+func (sqc *SqueueChecker) reniceAll() {
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 
-	n, exists := sqc.uuids[uuid]
-	if exists {
-		return n.niceness
-	} else {
-		return -1
+	jobs := make([]*slurmJob, 0, len(sqc.queue))
+	for _, j := range sqc.queue {
+		if j.wantPriority == 0 {
+			// SLURM job with unknown Arvados priority
+			// (perhaps it's not an Arvados job)
+			continue
+		}
+		jobs = append(jobs, j)
+	}
+
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].wantPriority > jobs[j].wantPriority
+	})
+	renice := wantNice(jobs, sqc.PrioritySpread)
+	for i, job := range jobs {
+		if renice[i] == job.nice {
+			continue
+		}
+		log.Printf("updating slurm priority for %q: nice %d => %d", job.uuid, job.nice, renice[i])
+		sqc.Slurm.Renice(job.uuid, renice[i])
 	}
 }
 
@@ -68,7 +102,7 @@ func (sqc *SqueueChecker) Stop() {
 }
 
 // check gets the names of jobs in the SLURM queue (running and
-// queued). If it succeeds, it updates squeue.uuids and wakes up any
+// queued). If it succeeds, it updates sqc.queue and wakes up any
 // goroutines that are waiting in HasUUID() or All().
 func (sqc *SqueueChecker) check() {
 	// Mutex between squeue sync and running sbatch or scancel.  This
@@ -87,16 +121,24 @@ func (sqc *SqueueChecker) check() {
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
-	sqc.uuids = make(map[string]jobPriority, len(lines))
+	newq := make(map[string]*slurmJob, len(lines))
 	for _, line := range lines {
+		if line == "" {
+			continue
+		}
 		var uuid string
-		var nice int
-		var prio int
-		fmt.Sscan(line, &uuid, &nice, &prio)
-		if uuid != "" {
-			sqc.uuids[uuid] = jobPriority{nice, prio}
+		var n, p int64
+		if _, err := fmt.Sscan(line, &uuid, &n, &p); err != nil {
+			log.Printf("warning: ignoring unparsed line in squeue output: %q", line)
+			continue
+		}
+		newq[uuid] = &slurmJob{
+			uuid:     uuid,
+			priority: p,
+			nice:     n,
 		}
 	}
+	sqc.queue = newq
 	sqc.Broadcast()
 }
 
@@ -114,6 +156,7 @@ func (sqc *SqueueChecker) start() {
 				return
 			case <-ticker.C:
 				sqc.check()
+				sqc.reniceAll()
 			}
 		}
 	}()
@@ -127,8 +170,8 @@ func (sqc *SqueueChecker) All() []string {
 	defer sqc.L.Unlock()
 	sqc.Wait()
 	var uuids []string
-	for uuid := range sqc.uuids {
-		uuids = append(uuids, uuid)
+	for u := range sqc.queue {
+		uuids = append(uuids, u)
 	}
 	return uuids
 }

@@ -4,14 +4,6 @@
 
 package main
 
-import "git.curoverse.com/arvados.git/sdk/go/arvados"
-
-type slurmJob struct {
-	ctr      *arvados.Container
-	priority int64 // current slurm priority (incorporates nice value)
-	nice     int64 // current slurm nice value
-}
-
 // wantNice calculates appropriate nice values for a set of SLURM
 // jobs. The returned slice will have len(jobs) elements.
 //
@@ -21,7 +13,7 @@ type slurmJob struct {
 // produces lower nice values, which is useful for old SLURM versions
 // with a limited "nice" range and for sites where SLURM is also
 // running non-Arvados jobs with low nice values.
-func wantNice(jobs []slurmJob, spread int64) []int64 {
+func wantNice(jobs []*slurmJob, spread int64) []int64 {
 	if len(jobs) == 0 {
 		return nil
 	}

@@ -15,7 +15,7 @@ type PrioritySuite struct{}
 func (s *PrioritySuite) TestReniceCorrect(c *C) {
 	for _, test := range []struct {
 		spread int64
-		in     []slurmJob
+		in     []*slurmJob
 		out    []int64
 	}{
 		{
@@ -25,17 +25,17 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{
 			0,
-			[]slurmJob{},
+			[]*slurmJob{},
 			nil,
 		},
 		{
 			10,
-			[]slurmJob{{priority: 4294000111, nice: 10000}},
+			[]*slurmJob{{priority: 4294000111, nice: 10000}},
 			[]int64{0},
 		},
 		{
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4294000111, nice: 10000},
 				{priority: 4294000111, nice: 10000},
 				{priority: 4294000111, nice: 10000},
@@ -45,7 +45,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // smaller spread than necessary, but correctly ordered => leave nice alone
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4294000113, nice: 0},
 				{priority: 4294000112, nice: 1},
 				{priority: 4294000111, nice: 99},
@@ -54,7 +54,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // larger spread than necessary, but less than 10x => leave nice alone
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4294000144, nice: 0},
 				{priority: 4294000122, nice: 22},
 				{priority: 4294000111, nice: 33},
@@ -63,7 +63,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // > 10x spread => reduce nice to achieve spread=10
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4000, nice: 0},    // max pri 4000
 				{priority: 3000, nice: 999},  // max pri 3999
 				{priority: 2000, nice: 1998}, // max pri 3998
@@ -72,7 +72,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // > 10x spread, but spread=10 is impossible without negative nice
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4000, nice: 0},    // max pri 4000
 				{priority: 3000, nice: 500},  // max pri 3500
 				{priority: 2000, nice: 2000}, // max pri 4000
@@ -81,7 +81,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // reorder
 			10,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4000, nice: 0}, // max pri 4000
 				{priority: 5000, nice: 0}, // max pri 5000
 				{priority: 6000, nice: 0}, // max pri 6000
@@ -90,7 +90,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		},
 		{ // zero spread
 			0,
-			[]slurmJob{
+			[]*slurmJob{
 				{priority: 4000, nice: 0}, // max pri 4000
 				{priority: 5000, nice: 0}, // max pri 5000
 				{priority: 6000, nice: 0}, // max pri 6000
@@ -107,10 +107,12 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 		}
 		// After making the adjustments, calling wantNice
 		// again should return the same recommendations.
-		updated := make([]slurmJob, len(test.in))
+		updated := make([]*slurmJob, len(test.in))
 		for i, in := range test.in {
-			updated[i].nice = test.out[i]
-			updated[i].priority = in.priority + in.nice - test.out[i]
+			updated[i] = &slurmJob{
+				nice:     test.out[i],
+				priority: in.priority + in.nice - test.out[i],
+			}
 		}
 		c.Check(wantNice(updated, test.spread), DeepEquals, test.out)
 	}
@@ -118,9 +120,9 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 
 func (s *PrioritySuite) TestReniceChurn(c *C) {
 	const spread = 10
-	jobs := make([]slurmJob, 1000)
+	jobs := make([]*slurmJob, 1000)
 	for i := range jobs {
-		jobs[i] = slurmJob{priority: 4294000000 - int64(i), nice: 10000}
+		jobs[i] = &slurmJob{priority: 4294000000 - int64(i), nice: 10000}
 	}
 	adjustments := 0
 	queue := jobs
