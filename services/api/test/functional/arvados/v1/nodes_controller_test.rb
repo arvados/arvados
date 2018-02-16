@@ -92,6 +92,10 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_operator 0, :<, json_response['slot_number']
     n = json_response['slot_number']
     assert_equal "compute#{n}", json_response['hostname']
+
+    node = Node.where(uuid: json_response['uuid']).first
+    assert_equal n, node.slot_number
+    assert_equal "compute#{n}", node.hostname
   end
 
   test "update node and assign slot" do
@@ -102,6 +106,10 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_operator 0, :<, json_response['slot_number']
     n = json_response['slot_number']
     assert_equal "compute#{n}", json_response['hostname']
+
+    node.reload
+    assert_equal n, node.slot_number
+    assert_equal "compute#{n}", node.hostname
   end
 
   test "update node and assign slot, don't clobber hostname" do
