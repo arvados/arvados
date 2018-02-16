@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/curoverse/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-sdk-for-go/storage"
 	check "gopkg.in/check.v1"
 )
 

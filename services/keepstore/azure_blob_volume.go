@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/curoverse/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-sdk-for-go/storage"
 )
 
 const azureDefaultRequestTimeout = arvados.Duration(10 * time.Minute)
