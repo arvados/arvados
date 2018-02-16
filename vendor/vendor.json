@@ -24,6 +24,12 @@
 			"revisionTime": "2017-07-27T13:52:37Z"
 		},
 		{
+			"checksumSHA1": "xHZe/h/tyrqmS9qiR03bLfRv5FI=",
+			"path": "github.com/Azure/azure-sdk-for-go/storage",
+			"revision": "f8eeb65a1a1f969696b49aada9d24073f2c2acd1",
+			"revisionTime": "2018-02-15T19:19:13Z"
+		},
+		{
 			"checksumSHA1": "PfyfOXsPbGEWmdh54cguqzdwloY=",
 			"path": "github.com/Azure/azure-sdk-for-go/version",
 			"revision": "471256ff7c6c93b96131845cef5309d20edd313d",
@@ -76,12 +82,6 @@
 			"path": "github.com/coreos/go-systemd/daemon",
 			"revision": "cc4f39464dc797b91c8025330de585294c2a6950",
 			"revisionTime": "2018-01-08T08:51:32Z"
-		},
-		{
-			"checksumSHA1": "cvqRUhkzb7TVPfqOBH2shPRfLSY=",
-			"path": "github.com/curoverse/azure-sdk-for-go/storage",
-			"revision": "d07ad83489a4b8049ef4bcafcc622c4b16cc6b9c",
-			"revisionTime": "2016-12-14T20:08:43Z"
 		},
 		{
 			"checksumSHA1": "+TKtBzv23ywvmmqRiGEjUba4YmI=",
