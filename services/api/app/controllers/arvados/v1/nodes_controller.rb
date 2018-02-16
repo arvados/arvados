@@ -39,6 +39,7 @@ class Arvados::V1::NodesController < ApplicationController
     }
     @object.update_attributes!(attrs_to_update)
     @object.assign_slot if params[:assign_slot]
+    @object.save!
     show
   end
 
