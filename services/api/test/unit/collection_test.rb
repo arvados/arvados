@@ -221,6 +221,63 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "storage_classes_desired cannot be empty" do
+    act_as_user users(:active) do
+      c = collections(:collection_owned_by_active)
+      c.update_attributes storage_classes_desired: ["hot"]
+      assert_equal ["hot"], c.storage_classes_desired
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes storage_classes_desired: []
+      end
+    end
+  end
+
+  test "storage_classes_confirmed* can be set by admin user" do
+    c = collections(:storage_classes_desired_default_unconfirmed)
+    act_as_user users(:admin) do
+      assert c.update_attributes(storage_classes_confirmed: ["default"],
+                                 storage_classes_confirmed_at: Time.now)
+    end
+  end
+
+  test "storage_classes_confirmed* cannot be set by non-admin user" do
+    act_as_user users(:active) do
+      c = collections(:storage_classes_desired_default_unconfirmed)
+      # Cannot set just one at a time.
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes storage_classes_confirmed: ["default"]
+      end
+      c.reload
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes storage_classes_confirmed_at: Time.now
+      end
+      # Cannot set bot at once, either.
+      c.reload
+      assert_raise ArvadosModel::PermissionDeniedError do
+        assert c.update_attributes(storage_classes_confirmed: ["default"],
+                                   storage_classes_confirmed_at: Time.now)
+      end
+    end
+  end
+
+  test "storage_classes_confirmed* can be cleared (but only together) by non-admin user" do
+    act_as_user users(:active) do
+      c = collections(:storage_classes_desired_default_confirmed_default)
+      # Cannot clear just one at a time.
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes storage_classes_confirmed: []
+      end
+      c.reload
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes storage_classes_confirmed_at: nil
+      end
+      # Can clear both at once.
+      c.reload
+      assert c.update_attributes(storage_classes_confirmed: [],
+                                 storage_classes_confirmed_at: nil)
+    end
+  end
+
   [0, 2, 4, nil].each do |ask|
     test "set replication_desired to #{ask.inspect}" do
       Rails.configuration.default_collection_replication = 2

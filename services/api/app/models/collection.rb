@@ -15,13 +15,17 @@ class Collection < ArvadosModel
   include Trashable
 
   serialize :properties, Hash
+  serialize :storage_classes_desired, Array
+  serialize :storage_classes_confirmed, Array
 
   before_validation :default_empty_manifest
+  before_validation :default_storage_classes, on: :create
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   validate :ensure_pdh_matches_manifest_text
+  validate :ensure_storage_classes_desired_is_not_empty
   before_save :set_file_names
 
   api_accessible :user, extend: :common do |t|
@@ -34,6 +38,9 @@ class Collection < ArvadosModel
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
+    t.add :storage_classes_desired
+    t.add :storage_classes_confirmed
+    t.add :storage_classes_confirmed_at
     t.add :delete_at
     t.add :trash_at
     t.add :is_trashed
@@ -436,7 +443,7 @@ class Collection < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["manifest_text"]
+    super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed"]
   end
 
   def self.where *args
@@ -445,6 +452,14 @@ class Collection < ArvadosModel
   end
 
   protected
+
+  def default_storage_classes
+    if self.storage_classes_desired.nil? || self.storage_classes_desired.empty?
+      self.storage_classes_desired = ["default"]
+    end
+    self.storage_classes_confirmed ||= []
+  end
+
   def portable_manifest_text
     self.class.munge_manifest_locators(manifest_text) do |match|
       if match[2] # size
@@ -472,12 +487,22 @@ class Collection < ArvadosModel
   end
 
   def ensure_permission_to_save
-    if (not current_user.andand.is_admin and
-        (replication_confirmed_at_changed? or replication_confirmed_changed?) and
-        not (replication_confirmed_at.nil? and replication_confirmed.nil?))
-      raise ArvadosModel::PermissionDeniedError.new("replication_confirmed and replication_confirmed_at attributes cannot be changed, except by setting both to nil")
+    if (not current_user.andand.is_admin)
+      if (replication_confirmed_at_changed? or replication_confirmed_changed?) and
+        not (replication_confirmed_at.nil? and replication_confirmed.nil?)
+        raise ArvadosModel::PermissionDeniedError.new("replication_confirmed and replication_confirmed_at attributes cannot be changed, except by setting both to nil")
+      end
+      if (storage_classes_confirmed_changed? or storage_classes_confirmed_at_changed?) and
+        not (storage_classes_confirmed == [] and storage_classes_confirmed_at.nil?)
+        raise ArvadosModel::PermissionDeniedError.new("storage_classes_confirmed and storage_classes_confirmed_at attributes cannot be changed, except by setting them to [] and nil respectively")
+      end
     end
     super
   end
 
+  def ensure_storage_classes_desired_is_not_empty
+    if self.storage_classes_desired.empty?
+      raise ArvadosModel::PermissionDeniedError.new("storage_classes_desired shouldn't be empty")
+    end
+  end
 end
