@@ -385,6 +385,8 @@ class RunnerContainer(Runner):
         if self.arvrunner.project_uuid:
             command.append("--project-uuid="+self.arvrunner.project_uuid)
 
+        command.append("--eval-timeout=%s" % self.arvrunner.eval_timeout)
+
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command
