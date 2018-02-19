@@ -24,6 +24,23 @@ HttpRequest <- R6::R6Class(
             headers  <- httr::add_headers(unlist(headers))
             urlQuery <- self$createQuery(query, limit, offset)
             url      <- paste0(url, urlQuery)
+            print(url)
+
+            # times = 1 regular call + numberOfRetries
+            response <- httr::RETRY(verb, url = url, body = body,
+                                    config = headers, times = retryTimes + 1)
+        },
+
+        exec = function(verb, url, headers = NULL, body = NULL, queryParams = NULL,
+                        retryTimes = 0)
+        {
+            if(!(verb %in% self$validVerbs))
+                stop("Http verb is not valid.")
+
+            headers  <- httr::add_headers(unlist(headers))
+            urlQuery <- self$genQuery(queryParams)
+            url      <- paste0(url, urlQuery)
+            print(url)
 
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
@@ -45,6 +62,29 @@ HttpRequest <- R6::R6Class(
                 finalQuery <- paste0("/?", finalQuery)
 
             finalQuery
+        },
+
+        genQuery = function(queryParams)
+        {
+            queryParams <- Filter(Negate(is.null), queryParams)
+
+            query <- sapply(queryParams, function(param)
+            {
+                if(is.list(param) || length(param) > 1)
+                    param <- RListToPythonList(param, ",")
+
+                URLencode(as.character(param), reserved = T, repeated = T)
+
+            }, USE.NAMES = TRUE)
+
+            if(length(query) > 0)
+            {
+                query <- paste0(names(query), "=", query, collapse = "&")
+
+                return(paste0("/?", query))
+            }
+
+            return("")
         }
     ),
 
