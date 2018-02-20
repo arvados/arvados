@@ -24,7 +24,6 @@ HttpRequest <- R6::R6Class(
             headers  <- httr::add_headers(unlist(headers))
             urlQuery <- self$createQuery(query, limit, offset)
             url      <- paste0(url, urlQuery)
-            print(url)
 
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
@@ -40,7 +39,6 @@ HttpRequest <- R6::R6Class(
             headers  <- httr::add_headers(unlist(headers))
             urlQuery <- self$genQuery(queryParams)
             url      <- paste0(url, urlQuery)
-            print(url)
 
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,

@@ -1,3 +1,6 @@
+#TODO: Some methods do the same thing like collecion.index and collection.list.
+#      Make one implementation of the method and make other reference to it.
+
 getAPIDocument <- function(){
     url <- "https://4xphq.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
     serverResponse <- httr::RETRY("GET", url = url)
@@ -16,7 +19,7 @@ generateAPI <- function()
 
 generateArvadosAPIClass <- function(discoveryDocument)
 {
-    classMetadata     <- discoveryDocument$schemas
+    classMetaData     <- discoveryDocument$schemas
     functionResources <- discoveryDocument$resources
     resourceNames     <- names(functionResources)
 
@@ -27,10 +30,10 @@ generateArvadosAPIClass <- function(discoveryDocument)
     {
         methodNames <- names(resource$methods)
 
-        functions <- Map(function(methodMetadata, methodName)
+        functions <- Map(function(methodMetaData, methodName)
         {
             methodName <- paste0(resourceName, ".", methodName)
-            createFunction(methodName, methodMetadata, classMetadata)
+            createFunction(methodName, methodMetaData, classMetaData)
 
         }, resource$methods, methodNames)
 
@@ -40,7 +43,7 @@ generateArvadosAPIClass <- function(discoveryDocument)
 
     arvadosClass <- c(arvadosAPIHeader, arvadosMethods, arvadosAPIFooter)
 
-    #TODO: To file or load in memory?
+    #TODO: Save to a file or load in memory?
     fileConn <- file("ArvadosAPI.R", "w")
     writeLines(unlist(arvadosClass), fileConn)
     close(fileConn)
@@ -52,9 +55,21 @@ getFunctionName <- function(functionMetaData)
     stringr::str_replace(functionMetaData$id, "arvados.", "")
 }
 
+#TODO: Make sure that arguments that are required always go first.
+#      This is not the case if request$required is false.
 getFunctionArguments <- function(functionMetaData)
 {
+    request <- functionMetaData$request
+    requestArgument <- NULL
+
+    if(!is.null(request))
+        if(request$required)
+            requestArgument <- names(request$properties)[1]
+        else
+            requestArgument <- paste(names(request$properties)[1], "=", "NULL")
+
     argNames <- names(functionMetaData$parameters)
+
     args <- sapply(argNames, function(argName)
     {
         arg <- functionMetaData$parameters[[argName]]
@@ -70,38 +85,52 @@ getFunctionArguments <- function(functionMetaData)
         argName
     })
 
-    paste0(args, collapse = ", ")
+    paste0(c(requestArgument, args), collapse = ", ")
 }
 
-getFunctionBody <- function(functionMetaData, classMetadata)
+getFunctionBody <- function(functionMetaData, classMetaData)
 {
     url  <- getRequestURL(functionMetaData)
     headers <- getRequestHeaders()
     requestQueryList <- getRequestQueryList(functionMetaData)
-    request <- getRequest()
+    requestQueryList <- getRequestQueryList(functionMetaData)
+    requestBody <- getRequestBody(functionMetaData)
+    request <- getRequest(functionMetaData)
     response <- getResponse(functionMetaData)
-    returnObject <- getReturnObject(functionMetaData, classMetadata)
+    returnObject <- getReturnObject(functionMetaData, classMetaData)
 
-    body <- c(url, headers, requestQueryList, request, response, returnObject)
+    body <- c(url, headers, requestQueryList, requestBody, request, response, returnObject)
     paste0("\t\t\t", body)
+}
+
+getRequestBody <- function(functionMetaData)
+{
+    request <- functionMetaData$request
+
+    if(is.null(request) || !request$required)
+        return("body <- NULL")
+
+    requestParameterName <- names(request$properties)[1]
+    paste0("body <- ", requestParameterName, "$toJSON()")
 }
 
 getRequestHeaders <- function()
 {
-    "headers <- list(Authorization = paste(\"OAuth2\", private$token))"
+    paste0("headers <- list(Authorization = paste(\"OAuth2\", private$token),",
+                            "\"Content-Type\" = \"application/json\")")
 }
 
-getReturnObject <- function(functionMetaData, classMetadata)
+getReturnObject <- function(functionMetaData, classMetaData)
 {
     returnClass <- functionMetaData$response[["$ref"]]
-    classArguments <- getReturnClassArguments(returnClass, classMetadata)
+    classArguments <- getReturnClassArguments(returnClass, classMetaData)
 
     c(paste0(returnClass, "$new(", classArguments, ")"))
 }
 
-getReturnClassArguments <- function(className, classMetadata)
+getReturnClassArguments <- function(className, classMetaData)
 {
-    classArguments <- unique(names(classMetadata[[className]]$properties))
+    classArguments <- unique(names(classMetaData[[className]]$properties))
 
     arguments <- sapply(classArguments, function(arg)
     {
@@ -111,9 +140,10 @@ getReturnClassArguments <- function(className, classMetadata)
     paste0(arguments, collapse = ", ")
 }
 
-getRequest <- function()
+getRequest <- function(functionMetaData)
 {
-    "response <- private$http$exec(\"GET\", url, headers, NULL, queryArgs)"
+    method <- functionMetaData$httpMethod
+    paste0("response <- private$http$exec(\"", method, "\", url, headers, body, queryArgs)")
 }
 
 getResponse <- function(functionMetaData)
@@ -142,13 +172,13 @@ getRequestQueryList <- function(functionMetaData)
     paste0("queryArgs <- list(", paste0(queryListContent, collapse = ', ') , ")")
 }
 
-createFunction <- function(functionName, functionMetaData, classMetadata)
+createFunction <- function(functionName, functionMetaData, classMetaData)
 {
-    name <- functionName
     args <- getFunctionArguments(functionMetaData)
-    body <- getFunctionBody(functionMetaData, classMetadata)
+    aditionalArgs <- 
+    body <- getFunctionBody(functionMetaData, classMetaData)
 
-    functionString <- c(paste0("\t\t", name, " = function(", args, ")"),
+    functionString <- c(paste0("\t\t", functionName, " = function(", args, ")"),
                        "\t\t{",
                            body,
                        "\t\t},\n")
@@ -174,7 +204,7 @@ generateAPIClassHeader <- function()
       "\t\t\t\tSys.setenv(ARVADOS_API_TOKEN = authToken)",
       "",
       "\t\t\tprivate$rawHost <- Sys.getenv(\"ARVADOS_API_HOST\")",
-      "\t\t\tprivate$host <- paste0(\"http://\", private$rawHost, \"/arvados/v1/\")",
+      "\t\t\tprivate$host <- paste0(\"https://\", private$rawHost, \"/arvados/v1/\")",
       "\t\t\tprivate$token <- Sys.getenv(\"ARVADOS_API_TOKEN\")",
       "\t\t\tprivate$numRetries  <- numRetries",
       "\t\t\tprivate$http  <- ArvadosR:::HttpRequest$new()",
@@ -217,7 +247,6 @@ generateArvadosClasses <- function(resources)
 
     unlist(unname(classes))
 
-    #Todo: To file or directley to memory?
     fileConn <- file("ArvadosClasses.R", "w")
     writeLines(unlist(classes), fileConn)
     close(fileConn)
@@ -250,7 +279,7 @@ getArvadosClass <- function(classSchema)
                      "\t\t\t\tself[[field]]",
                      "\t\t\t}, USE.NAMES = TRUE)",
                      "\t\t\t",
-              paste0("\t\t\tlist(\"", name, "\" = Filter(Negate(is.null), fields))"),
+              paste0("\t\t\tjsonlite::toJSON(list(\"", tolower(name), "\" = Filter(Negate(is.null), fields)), auto_unbox = TRUE)"),
                      "\t\t}",
                      "\t),",
                      "",
