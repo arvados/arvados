@@ -46,11 +46,11 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 	resp := s.call("GET", "/mounts", "", nil)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	var mntList []struct {
-		UUID        string
-		DeviceID    string
-		ReadOnly    bool
-		Replication int
-		Tier        int
+		UUID           string
+		DeviceID       string
+		ReadOnly       bool
+		Replication    int
+		StorageClasses []string
 	}
 	err := json.Unmarshal(resp.Body.Bytes(), &mntList)
 	c.Assert(err, check.IsNil)
@@ -61,7 +61,7 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 		c.Check(m.DeviceID, check.Equals, "mock-device-id")
 		c.Check(m.ReadOnly, check.Equals, false)
 		c.Check(m.Replication, check.Equals, 1)
-		c.Check(m.Tier, check.Equals, 1)
+		c.Check(m.StorageClasses, check.DeepEquals, []string{"default"})
 	}
 	c.Check(mntList[0].UUID, check.Not(check.Equals), mntList[1].UUID)
 

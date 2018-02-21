@@ -152,6 +152,7 @@ type S3Volume struct {
 	RaceWindow         arvados.Duration
 	ReadOnly           bool
 	UnsafeDelete       bool
+	StorageClasses     []string
 
 	bucket *s3bucket
 
@@ -684,6 +685,11 @@ func (v *S3Volume) Writable() bool {
 // device. Configured via command line flag.
 func (v *S3Volume) Replication() int {
 	return v.S3Replication
+}
+
+// GetStorageClasses implements Volume
+func (v *S3Volume) GetStorageClasses() []string {
+	return v.StorageClasses
 }
 
 var s3KeepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)

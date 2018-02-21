@@ -105,6 +105,7 @@ type AzureBlobVolume struct {
 	AzureReplication      int
 	ReadOnly              bool
 	RequestTimeout        arvados.Duration
+	StorageClasses        []string
 
 	azClient  storage.Client
 	container *azureContainer
@@ -588,6 +589,11 @@ func (v *AzureBlobVolume) Writable() bool {
 // specified by the -azure-storage-replication argument.
 func (v *AzureBlobVolume) Replication() int {
 	return v.AzureReplication
+}
+
+// GetStorageClasses implements Volume
+func (v *AzureBlobVolume) GetStorageClasses() []string {
+	return v.StorageClasses
 }
 
 // If possible, translate an Azure SDK error to a recognizable error
