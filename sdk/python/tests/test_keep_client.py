@@ -1171,7 +1171,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
         def finished(self):
             return False
-    
+
     def setUp(self):
         self.copies = 3
         self.pool = arvados.KeepClient.KeepWriterThreadPool(
@@ -1215,7 +1215,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies-1)
-    
+
 
 @tutil.skip_sleep
 class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
@@ -1250,3 +1250,18 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 self.keep_client.put('foo', num_retries=1, copies=2)
         self.assertEqual(2, req_mock.call_count)
+
+class KeepClientAPIErrorTest(unittest.TestCase):
+    def test_api_fail(self):
+        class ApiMock(object):
+            def __getattr__(self, r):
+                if r == "api_token":
+                    return "abc"
+                else:
+                    raise arvados.errors.KeepReadError()
+        keep_client = arvados.KeepClient(api_client=ApiMock(),
+                                             proxy='', local_store='')
+        with self.assertRaises(arvados.errors.KeepReadError):
+            keep_client.get("acbd18db4cc2f85cedef654fccc4a4d8+3")
+        with self.assertRaises(arvados.errors.KeepReadError):
+            keep_client.get("acbd18db4cc2f85cedef654fccc4a4d8+3")
