@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -426,4 +427,16 @@ func (s *UnixVolumeSuite) TestStats(c *check.C) {
 	err = s.volume.Trash(loc)
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"FlockOps":2,.*`)
+}
+
+func (s *UnixVolumeSuite) TestConfig(c *check.C) {
+	var cfg Config
+	err := yaml.Unmarshal([]byte(`
+Volumes:
+  - Type: Directory
+    StorageClasses: ["class_a", "class_b"]
+`), &cfg)
+
+	c.Check(err, check.IsNil)
+	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }

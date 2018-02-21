@@ -240,6 +240,9 @@ type Volume interface {
 	// Return a globally unique ID of the underlying storage
 	// device if possible, otherwise "".
 	DeviceID() string
+
+	// Get the storage classes associated with this volume
+	GetStorageClasses() []string
 }
 
 // A VolumeWithExamples provides example configs to display in the
@@ -284,12 +287,12 @@ type VolumeManager interface {
 
 // A VolumeMount is an attachment of a Volume to a VolumeManager.
 type VolumeMount struct {
-	UUID        string
-	DeviceID    string
-	ReadOnly    bool
-	Replication int
-	Tier        int
-	volume      Volume
+	UUID           string
+	DeviceID       string
+	ReadOnly       bool
+	Replication    int
+	StorageClasses []string
+	volume         Volume
 }
 
 // Generate a UUID the way API server would for a "KeepVolumeMount"
@@ -326,13 +329,17 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	}
 	vm.mountMap = make(map[string]*VolumeMount)
 	for _, v := range volumes {
+		sc := v.GetStorageClasses()
+		if len(sc) == 0 {
+			sc = []string{"default"}
+		}
 		mnt := &VolumeMount{
-			UUID:        (*VolumeMount)(nil).generateUUID(),
-			DeviceID:    v.DeviceID(),
-			ReadOnly:    !v.Writable(),
-			Replication: v.Replication(),
-			Tier:        1,
-			volume:      v,
+			UUID:           (*VolumeMount)(nil).generateUUID(),
+			DeviceID:       v.DeviceID(),
+			ReadOnly:       !v.Writable(),
+			Replication:    v.Replication(),
+			StorageClasses: sc,
+			volume:         v,
 		}
 		vm.iostats[v] = &ioStats{}
 		vm.mounts = append(vm.mounts, mnt)
