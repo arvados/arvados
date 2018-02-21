@@ -1261,6 +1261,15 @@ class KeepClientAPIErrorTest(unittest.TestCase):
                     raise arvados.errors.KeepReadError()
         keep_client = arvados.KeepClient(api_client=ApiMock(),
                                              proxy='', local_store='')
+
+        # The bug this is testing for is that if an API (not
+        # keepstore) exception is thrown as part of a get(), the next
+        # attempt to get that same block will result in a deadlock.
+        # This is why there are two get()s in a row.  Unfortunately,
+        # the failure mode for this test is that the test suite
+        # deadlocks, there isn't a good way to avoid that without
+        # adding a special case that has no use except for this test.
+
         with self.assertRaises(arvados.errors.KeepReadError):
             keep_client.get("acbd18db4cc2f85cedef654fccc4a4d8+3")
         with self.assertRaises(arvados.errors.KeepReadError):
