@@ -44,7 +44,7 @@ generateArvadosAPIClass <- function(discoveryDocument)
     arvadosClass <- c(arvadosAPIHeader, arvadosMethods, arvadosAPIFooter)
 
     #TODO: Save to a file or load in memory?
-    fileConn <- file("ArvadosAPI.R", "w")
+    fileConn <- file("./R/Arvados.R", "w")
     writeLines(unlist(arvadosClass), fileConn)
     close(fileConn)
     NULL
@@ -93,7 +93,6 @@ getFunctionBody <- function(functionMetaData, classMetaData)
     url  <- getRequestURL(functionMetaData)
     headers <- getRequestHeaders()
     requestQueryList <- getRequestQueryList(functionMetaData)
-    requestQueryList <- getRequestQueryList(functionMetaData)
     requestBody <- getRequestBody(functionMetaData)
     request <- getRequest(functionMetaData)
     response <- getResponse(functionMetaData)
@@ -116,7 +115,7 @@ getRequestBody <- function(functionMetaData)
 
 getRequestHeaders <- function()
 {
-    paste0("headers <- list(Authorization = paste(\"OAuth2\", private$token),",
+    paste0("headers <- list(Authorization = paste(\"OAuth2\", private$token), ",
                             "\"Content-Type\" = \"application/json\")")
 }
 
@@ -124,6 +123,11 @@ getReturnObject <- function(functionMetaData, classMetaData)
 {
     returnClass <- functionMetaData$response[["$ref"]]
     classArguments <- getReturnClassArguments(returnClass, classMetaData)
+
+    if(returnClass == "Collection")
+        return(c(paste0("collection <- ", returnClass, "$new(", classArguments, ")"),
+                 "collection$setRESTService(private$REST)",
+                 "collection"))
 
     c(paste0(returnClass, "$new(", classArguments, ")"))
 }
@@ -143,12 +147,12 @@ getReturnClassArguments <- function(className, classMetaData)
 getRequest <- function(functionMetaData)
 {
     method <- functionMetaData$httpMethod
-    paste0("response <- private$http$exec(\"", method, "\", url, headers, body, queryArgs)")
+    paste0("response <- private$REST$http$exec(\"", method, "\", url, headers, body, queryArgs)")
 }
 
 getResponse <- function(functionMetaData)
 {
-    "resource <- private$httpParser$parseJSONResponse(response)"
+    "resource <- private$REST$httpParser$parseJSONResponse(response)"
 }
 
 getRequestURL <- function(functionMetaData)
@@ -189,9 +193,9 @@ createFunction <- function(functionName, functionMetaData, classMetaData)
 generateAPIClassHeader <- function()
 {
     c("#' @export",
-      "ArvadosAPI <- R6::R6Class(",
+      "Arvados <- R6::R6Class(",
       "",
-      "\t\"ArvadosAPI\",",
+      "\t\"Arvados\",",
       "",
       "\tpublic = list(",
       "",
@@ -203,33 +207,36 @@ generateAPIClassHeader <- function()
       "\t\t\tif(!is.null(authToken))",
       "\t\t\t\tSys.setenv(ARVADOS_API_TOKEN = authToken)",
       "",
-      "\t\t\tprivate$rawHost <- Sys.getenv(\"ARVADOS_API_HOST\")",
-      "\t\t\tprivate$host <- paste0(\"https://\", private$rawHost, \"/arvados/v1/\")",
-      "\t\t\tprivate$token <- Sys.getenv(\"ARVADOS_API_TOKEN\")",
-      "\t\t\tprivate$numRetries  <- numRetries",
-      "\t\t\tprivate$http  <- ArvadosR:::HttpRequest$new()",
-      "\t\t\tprivate$httpParser  <- ArvadosR:::HttpParser$new()",
+      "\t\t\thostName <- Sys.getenv(\"ARVADOS_API_HOST\")",
+      "\t\t\ttoken    <- Sys.getenv(\"ARVADOS_API_TOKEN\")",
       "",
-      "\t\t\tif(private$rawHost == \"\" | private$token == \"\")",
+      "\t\t\tif(hostName == \"\" | token == \"\")",
       "\t\t\t\tstop(paste(\"Please provide host name and authentification token\",",
       "\t\t\t\t\t\t   \"or set ARVADOS_API_HOST and ARVADOS_API_TOKEN\",",
       "\t\t\t\t\t\t   \"environment variables.\"))",
+      "",
+      "\t\t\tprivate$token <- token",
+      "\t\t\tprivate$host  <- paste0(\"https://\", hostName, \"/arvados/v1/\")",
+      "\t\t\tprivate$numRetries <- numRetries",
+      "\t\t\tprivate$REST <- RESTService$new(token, hostName,",
+      "\t\t\t                                HttpRequest$new(), HttpParser$new(),",
+      "\t\t\t                                numRetries)",
+      "",
       "\t\t},\n")
 }
 
 generateAPIClassFooter <- function()
 {
     c("\t\tgetHostName = function() private$host,",
-      "\t\tgetToken = function() private$token",
+      "\t\tgetToken = function() private$token,",
+      "\t\tsetRESTService = function(newREST) private$REST <- newREST",
       "\t),",
       "",
       "\tprivate = list(",
       "",
       "\t\ttoken = NULL,",
-      "\t\trawHost = NULL,",
       "\t\thost = NULL,",
-      "\t\thttp = NULL,",
-      "\t\thttpParser = NULL,",
+      "\t\tREST = NULL,",
       "\t\tnumRetries = NULL",
       "\t),",
       "",
@@ -241,13 +248,15 @@ generateArvadosClasses <- function(resources)
 {
     classes <- sapply(resources$schemas, function(classSchema)
     {
-        getArvadosClass(classSchema)
+        #NOTE: Collection is implemented manually.
+        if(classSchema$id != "Collection")
+            getArvadosClass(classSchema)
 
     }, USE.NAMES = TRUE)
 
     unlist(unname(classes))
 
-    fileConn <- file("ArvadosClasses.R", "w")
+    fileConn <- file("./R/ArvadosClasses.R", "w")
     writeLines(unlist(classes), fileConn)
     close(fileConn)
     NULL
@@ -260,7 +269,8 @@ getArvadosClass <- function(classSchema)
     fieldsList <- paste0("c(", paste0("\"", fields, "\"", collapse = ", "), ")")
     constructorArgs <- paste0(fields, " = NULL", collapse = ", ")
 
-    classString <- c(paste0(name, " <- R6::R6Class("),
+    classString <- c("#' @export",
+              paste0(name, " <- R6::R6Class("),
                      "",
               paste0("\t\"", name, "\","),
                      "",

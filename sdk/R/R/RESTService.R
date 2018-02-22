@@ -4,27 +4,22 @@ RESTService <- R6::R6Class(
 
     public = list(
 
-        hostName   = NULL,
         token      = NULL,
         http       = NULL,
         httpParser = NULL,
         numRetries = NULL,
 
-        initialize = function(token, hostName,
+        initialize = function(token, rawHost,
                               http, httpParser,
                               numRetries     = 0,
                               webDavHostName = NULL)
         {
-            version <- "v1"
+            self$token      <- token
+            self$http       <- http
+            self$httpParser <- httpParser
+            self$numRetries <- numRetries
 
-            self$token       <- token
-            self$hostName    <- paste0("https://", hostName,
-                                       "/arvados/", version, "/")
-            self$http        <- http
-            self$httpParser  <- httpParser
-            self$numRetries  <- numRetries
-
-            private$rawHostName    <- hostName
+            private$rawHostName    <- rawHost
             private$webDavHostName <- webDavHostName
         },
 
@@ -55,40 +50,7 @@ RESTService <- R6::R6Class(
             private$webDavHostName
         },
 
-        getResource = function(resource, uuid)
-        {
-            resourceURL <- paste0(self$hostName, resource, "/", uuid)
-            headers <- list(Authorization = paste("OAuth2", self$token))
-
-            serverResponse <- self$http$execute("GET", resourceURL, headers,
-                                                retryTimes = self$numRetries)
-
-            resource <- self$httpParser$parseJSONResponse(serverResponse)
-
-            if(!is.null(resource$errors))
-                stop(resource$errors)
-
-            resource
-        },
-
-        listResources = function(resource, filters = NULL, limit = 100, offset = 0)
-        {
-            resourceURL <- paste0(self$hostName, resource)
-            headers <- list(Authorization = paste("OAuth2", self$token))
-            body <- NULL
-
-            serverResponse <- self$http$execute("GET", resourceURL, headers, body,
-                                                filters, limit, offset,
-                                                self$numRetries)
-
-            resources <- self$httpParser$parseJSONResponse(serverResponse)
-
-            if(!is.null(resources$errors))
-                stop(resources$errors)
-
-            resources
-        },
-
+        #Move this to utility 
         fetchAllItems = function(resourceURL, filters)
         {
             headers <- list(Authorization = paste("OAuth2", self$token))
@@ -118,61 +80,6 @@ RESTService <- R6::R6Class(
             }
 
             items
-        },
-
-        deleteResource = function(resource, uuid)
-        {
-            collectionURL <- paste0(self$hostName, resource, "/", uuid)
-            headers <- list("Authorization" = paste("OAuth2", self$token),
-                            "Content-Type"  = "application/json")
-
-            serverResponse <- self$http$execute("DELETE", collectionURL, headers,
-                                                retryTimes = self$numRetries)
-
-            removedResource <- self$httpParser$parseJSONResponse(serverResponse)
-
-            if(!is.null(removedResource$errors))
-                stop(removedResource$errors)
-
-            removedResource
-        },
-
-        updateResource = function(resource, uuid, newContent)
-        {
-            resourceURL <- paste0(self$hostName, resource, "/", uuid)
-            headers <- list("Authorization" = paste("OAuth2", self$token),
-                            "Content-Type"  = "application/json")
-
-            newContent <- jsonlite::toJSON(newContent, auto_unbox = T)
-
-            serverResponse <- self$http$execute("PUT", resourceURL, headers, newContent,
-                                                retryTimes = self$numRetries)
-
-            updatedResource <- self$httpParser$parseJSONResponse(serverResponse)
-
-            if(!is.null(updatedResource$errors))
-                stop(updatedResource$errors)
-
-            updatedResource
-        },
-
-        createResource = function(resource, content)
-        {
-            resourceURL <- paste0(self$hostName, resource)
-            headers <- list("Authorization" = paste("OAuth2", self$token),
-                            "Content-Type"  = "application/json")
-
-            content <- jsonlite::toJSON(content, auto_unbox = T)
-
-            serverResponse <- self$http$execute("POST", resourceURL, headers, content,
-                                                retryTimes = self$numRetries)
-
-            newResource <- self$httpParser$parseJSONResponse(serverResponse)
-
-            if(!is.null(newResource$errors))
-                stop(newResource$errors)
-
-            newResource
         },
 
         create = function(files, uuid)

@@ -117,10 +117,9 @@ test_that(paste("add post content to a REST service",
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
 
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     animal <- collection$get("animal")
     dog <- ArvadosFile$new("dog")
 
@@ -168,9 +167,8 @@ test_that(paste("remove removes content from REST service",
     collectionContent <- c("animal", "animal/fish", "animal/dog")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     animal <- collection$get("animal")
 
     animal$remove("fish")
@@ -278,9 +276,8 @@ test_that("move raises exception if new location contains content with the same 
                            "fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     fish <- collection$get("animal/fish")
 
     expect_that(fish$move("fish"),
@@ -298,10 +295,8 @@ test_that(paste("move raises exception if newLocationInCollection",
                            "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     fish <- collection$get("animal/fish")
 
     expect_that(fish$move("objects/dog"),
@@ -317,9 +312,8 @@ test_that("move moves subcollection inside collection tree", {
                            "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     fish <- collection$get("animal/fish")
 
     fish$move("fish")
@@ -345,9 +339,8 @@ test_that(paste("getSizeInBytes delegates size calculation",
     returnSize <- 100
     fakeREST <- FakeRESTService$new(collectionContent, returnSize)
 
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-    collection <- Collection$new(api, "myUUID")
+    collection <- Collection$new("fakeUUID")
+    collection$setRESTService(fakeREST)
     animal <- collection$get("animal")
 
     resourceSize <- animal$getSizeInBytes()

@@ -53,22 +53,74 @@ Collection <- R6::R6Class(
 
     public = list(
 
-        api  = NULL,
-        uuid = NULL,
+		uuid                     = NULL,
+		etag                     = NULL,
+		owner_uuid               = NULL,
+		created_at               = NULL,
+		modified_by_client_uuid  = NULL,
+		modified_by_user_uuid    = NULL,
+		modified_at              = NULL,
+		portable_data_hash       = NULL,
+		replication_desired      = NULL,
+		replication_confirmed_at = NULL,
+		replication_confirmed    = NULL,
+		updated_at               = NULL,
+		manifest_text            = NULL,
+		name                     = NULL,
+		description              = NULL,
+		properties               = NULL,
+		delete_at                = NULL,
+		file_names               = NULL,
+		trash_at                 = NULL,
+		is_trashed               = NULL,
 
-        initialize = function(api, uuid)
+		initialize = function(uuid = NULL, etag = NULL, owner_uuid = NULL,
+                              created_at = NULL, modified_by_client_uuid = NULL,
+                              modified_by_user_uuid = NULL, modified_at = NULL,
+                              portable_data_hash = NULL, replication_desired = NULL,
+                              replication_confirmed_at = NULL,
+                              replication_confirmed = NULL, updated_at = NULL,
+                              manifest_text = NULL, name = NULL, description = NULL,
+                              properties = NULL, delete_at = NULL, file_names = NULL,
+                              trash_at = NULL, is_trashed = NULL) 
         {
-            self$api <- api
-            private$REST <- api$getRESTService()
-
-            self$uuid <- uuid
-
-            private$fileContent <- private$REST$getCollectionContent(uuid)
-            private$tree <- CollectionTree$new(private$fileContent, self)
+			self$uuid                     <- uuid
+			self$etag                     <- etag
+			self$owner_uuid               <- owner_uuid
+			self$created_at               <- created_at
+			self$modified_by_client_uuid  <- modified_by_client_uuid
+			self$modified_by_user_uuid    <- modified_by_user_uuid
+			self$modified_at              <- modified_at
+			self$portable_data_hash       <- portable_data_hash
+			self$replication_desired      <- replication_desired
+			self$replication_confirmed_at <- replication_confirmed_at
+			self$replication_confirmed    <- replication_confirmed
+			self$updated_at               <- updated_at
+			self$manifest_text            <- manifest_text
+			self$name                     <- name
+			self$description              <- description
+			self$properties               <- properties
+			self$delete_at                <- delete_at
+			self$file_names               <- file_names
+			self$trash_at                 <- trash_at
+			self$is_trashed               <- is_trashed
+			
+			private$classFields <- c("uuid", "etag", "owner_uuid", 
+                                     "created_at", "modified_by_client_uuid",
+                                     "modified_by_user_uuid", "modified_at",
+                                     "portable_data_hash", "replication_desired",
+                                     "replication_confirmed_at",
+                                     "replication_confirmed", "updated_at",
+                                     "manifest_text", "name", "description", 
+                                     "properties", "delete_at", "file_names",
+                                     "trash_at", "is_trashed")
         },
 
         add = function(content, relativePath = "")
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
@@ -87,7 +139,6 @@ Collection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
-
                 if(content$getName() == "")
                     stop("Content has invalid name.")
 
@@ -104,6 +155,9 @@ Collection <- R6::R6Class(
 
         create = function(fileNames, relativePath = "")
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
@@ -149,6 +203,9 @@ Collection <- R6::R6Class(
 
         remove = function(paths)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(is.character(paths))
             {
                 sapply(paths, function(filePath)
@@ -179,6 +236,9 @@ Collection <- R6::R6Class(
 
         move = function(content, newLocation)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             content <- trimFromEnd(content, "/")
 
             elementToMove <- self$get(content)
@@ -191,12 +251,18 @@ Collection <- R6::R6Class(
 
         getFileListing = function()
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             content <- private$REST$getCollectionContent(self$uuid)
             content[order(tolower(content))]
         },
 
         get = function(relativePath)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             private$tree$getElement(relativePath)
         },
 
@@ -208,7 +274,20 @@ Collection <- R6::R6Class(
 
         REST        = NULL,
         tree        = NULL,
-        fileContent = NULL
+        fileContent = NULL,
+        classFields = NULL,
+
+        genereateCollectionTreeStructure = function()
+        {
+            if(is.null(self$uuid))
+                stop("Collection uuid is not defined.")
+
+            if(is.null(private$REST))
+                stop("REST service is not defined.")
+
+            private$fileContent <- private$REST$getCollectionContent(self$uuid)
+            private$tree <- CollectionTree$new(private$fileContent, self)
+        }
     ),
 
     cloneable = FALSE
