@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -705,6 +706,18 @@ func (s *StubbedAzureBlobSuite) TestStats(c *check.C) {
 	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+}
+
+func (s *StubbedAzureBlobSuite) TestConfig(c *check.C) {
+	var cfg Config
+	err := yaml.Unmarshal([]byte(`
+Volumes:
+  - Type: Azure
+    StorageClasses: ["class_a", "class_b"]
+`), &cfg)
+
+	c.Check(err, check.IsNil)
+	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {
