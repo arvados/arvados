@@ -64,9 +64,9 @@ getFunctionArguments <- function(functionMetaData)
 
     if(!is.null(request))
         if(request$required)
-            requestArgument <- names(request$properties)[1]
+            requestArgument <- names(request$properties)
         else
-            requestArgument <- paste(names(request$properties)[1], "=", "NULL")
+            requestArgument <- paste(names(request$properties), "=", "NULL")
 
     argNames <- names(functionMetaData$parameters)
 
@@ -85,7 +85,7 @@ getFunctionArguments <- function(functionMetaData)
         argName
     })
 
-    paste0(c(requestArgument, args), collapse = ", ")
+    paste0(c(requestArgument, args))
 }
 
 getFunctionBody <- function(functionMetaData, classMetaData)
@@ -96,10 +96,23 @@ getFunctionBody <- function(functionMetaData, classMetaData)
     requestBody <- getRequestBody(functionMetaData)
     request <- getRequest(functionMetaData)
     response <- getResponse(functionMetaData)
+    errorCheck <- getErrorCheckingCode()
     returnObject <- getReturnObject(functionMetaData, classMetaData)
 
-    body <- c(url, headers, requestQueryList, requestBody, request, response, returnObject)
+    body <- c(url,
+              headers,
+              requestQueryList,
+              requestBody, "",
+              request, response, "",
+              errorCheck, "",
+              returnObject)
+
     paste0("\t\t\t", body)
+}
+
+getErrorCheckingCode <- function()
+{
+    c("if(!is.null(resource$errors))", "\tstop(resource$errors)")
 }
 
 getRequestBody <- function(functionMetaData)
@@ -115,8 +128,8 @@ getRequestBody <- function(functionMetaData)
 
 getRequestHeaders <- function()
 {
-    paste0("headers <- list(Authorization = paste(\"OAuth2\", private$token), ",
-                            "\"Content-Type\" = \"application/json\")")
+    c("headers <- list(Authorization = paste(\"OAuth2\", private$token), ",
+      "                \"Content-Type\" = \"application/json\")")
 }
 
 getReturnObject <- function(functionMetaData, classMetaData)
@@ -124,12 +137,16 @@ getReturnObject <- function(functionMetaData, classMetaData)
     returnClass <- functionMetaData$response[["$ref"]]
     classArguments <- getReturnClassArguments(returnClass, classMetaData)
 
+
     if(returnClass == "Collection")
-        return(c(paste0("collection <- ", returnClass, "$new(", classArguments, ")"),
+        return(c("collection <- Collection$new(",
+                 paste0("\t", splitArgs(classArguments, 40, ")")),
+                 "",
                  "collection$setRESTService(private$REST)",
                  "collection"))
 
-    c(paste0(returnClass, "$new(", classArguments, ")"))
+    c(paste0(returnClass, "$new("),
+      paste0("\t", splitArgs(classArguments, 40, ")")))
 }
 
 getReturnClassArguments <- function(className, classMetaData)
@@ -141,13 +158,14 @@ getReturnClassArguments <- function(className, classMetaData)
         paste0(arg, " = resource$", arg)
     })
 
-    paste0(arguments, collapse = ", ")
+    arguments
 }
 
 getRequest <- function(functionMetaData)
 {
     method <- functionMetaData$httpMethod
-    paste0("response <- private$REST$http$exec(\"", method, "\", url, headers, body, queryArgs)")
+    c(paste0("response <- private$REST$http$exec(\"", method, "\", url, headers, body,"),
+      "                                   queryArgs, private$numRetries)")
 }
 
 getResponse <- function(functionMetaData)
@@ -166,28 +184,54 @@ getRequestURL <- function(functionMetaData)
 
 getRequestQueryList <- function(functionMetaData)
 {
-    argNames <- names(functionMetaData$parameters)
+    args <- names(functionMetaData$parameters)
 
-    if(length(argNames) == 0)
+    if(length(args) == 0)
         return("queryArgs <- NULL")
 
-    queryListContent <- sapply(argNames, function(arg) paste0(arg, " = ", arg))
+    args <- sapply(args, function(arg) paste0(arg, " = ", arg))
+    collapsedArgs <- paste0(args, collapse = ", ")
 
-    paste0("queryArgs <- list(", paste0(queryListContent, collapse = ', ') , ")")
+    if(nchar(collapsedArgs) > 40)
+    {
+        formatedArgs <- splitArgs(args, 40, ")")
+        return(c(paste0("queryArgs <- list("),
+                 paste0("\t\t", formatedArgs)))
+    }
+    else
+    {
+        return(paste0("queryArgs <- list(", collapsedArgs, ")"))
+    }
 }
 
 createFunction <- function(functionName, functionMetaData, classMetaData)
 {
     args <- getFunctionArguments(functionMetaData)
-    aditionalArgs <- 
     body <- getFunctionBody(functionMetaData, classMetaData)
+    funSignature <- getFunSignature(functionName, args)
 
-    functionString <- c(paste0("\t\t", functionName, " = function(", args, ")"),
-                       "\t\t{",
-                           body,
-                       "\t\t},\n")
+    functionString <- c(funSignature,
+                        "\t\t{",
+                            body,
+                        "\t\t},\n")
 
     functionString
+}
+
+getFunSignature <- function(funName, args)
+{
+    collapsedArgs <- paste0(args, collapse = ", ")
+
+    if(nchar(collapsedArgs) > 40)
+    {
+        formatedArgs <- splitArgs(args, 40, ")")
+        return(c(paste0("\t\t", funName, " = function("),
+                 paste0("\t\t\t\t", formatedArgs)))
+    }
+    else
+    {
+        return(paste0("\t\t", funName, " = function(", collapsedArgs, ")"))
+    }
 }
 
 generateAPIClassHeader <- function()
@@ -266,8 +310,8 @@ getArvadosClass <- function(classSchema)
 {
     name   <- classSchema$id
     fields <- unique(names(classSchema$properties))
-    fieldsList <- paste0("c(", paste0("\"", fields, "\"", collapse = ", "), ")")
-    constructorArgs <- paste0(fields, " = NULL", collapse = ", ")
+    #fieldsList <- paste0("c(", paste0("\"", fields, "\"", collapse = ", "), ")")
+    constructorArgs <- paste(fields, "= NULL")
 
     classString <- c("#' @export",
               paste0(name, " <- R6::R6Class("),
@@ -277,10 +321,14 @@ getArvadosClass <- function(classSchema)
                      "\tpublic = list(",
               paste0("\t\t", fields, " = NULL,"),
                      "",
-              paste0("\t\tinitialize = function(", constructorArgs, ") {"),
+                     "\t\tinitialize = function(",
+                     paste0("\t\t\t\t", splitArgs(constructorArgs, 40, ")")),
+                     "\t\t{", 
               paste0("\t\t\tself$", fields, " <- ", fields),
                      "\t\t\t",
-              paste0("\t\t\tprivate$classFields <- ", fieldsList),
+                     "\t\t\tprivate$classFields <- c(",
+              paste0("\t\t\t\t", splitArgs(fields, 40)),
+                     "\t\t\t)",
                      "\t\t},",
                      "",
                      "\t\ttoJSON = function() {",
@@ -289,7 +337,8 @@ getArvadosClass <- function(classSchema)
                      "\t\t\t\tself[[field]]",
                      "\t\t\t}, USE.NAMES = TRUE)",
                      "\t\t\t",
-              paste0("\t\t\tjsonlite::toJSON(list(\"", tolower(name), "\" = Filter(Negate(is.null), fields)), auto_unbox = TRUE)"),
+              paste0("\t\t\tjsonlite::toJSON(list(\"", tolower(name), "\" = 
+                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)"),
                      "\t\t}",
                      "\t),",
                      "",
@@ -300,4 +349,33 @@ getArvadosClass <- function(classSchema)
                      "\tcloneable = FALSE",
                      ")",
                      "")
+}
+
+splitArgs <- function(args, lineLength, appendAtEnd = "")
+{
+    
+    if(length(args) > 1)
+        args[1:(length(args) - 1)] <- paste0(args[1:(length(args) - 1)], ",") 
+
+    args[length(args)] <- paste0(args[length(args)], appendAtEnd)
+
+    argsLength <- length(args)
+    argLines <- list()
+    index <- 1
+
+    while(index <= argsLength)
+    {
+        line <- args[index]
+        index <- index + 1
+
+        while(nchar(line) < lineLength && index <= argsLength)
+        {
+            line <- paste(line, args[index])
+            index <- index + 1
+        }
+
+        argLines <- c(argLines, line)
+    }
+    
+    unlist(argLines)
 }
