@@ -17,6 +17,9 @@ class WorkUnitsController < ApplicationController
     @limit = 20
     @filters = @filters || []
 
+    pipelines = []
+    jobs = []
+
     # get next page of pipeline_instances
     if PipelineInstance.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
@@ -42,7 +45,8 @@ class WorkUnitsController < ApplicationController
     if @objects.any?
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :all_processes_rows,
-                                filters: @next_page_filters.to_json)
+                                filters: @next_page_filters.to_json,
+                                show_children: params[:show_children])
       preload_links_for_objects(@objects.to_a)
     else
       @next_page_href = nil

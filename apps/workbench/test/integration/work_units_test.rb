@@ -12,20 +12,34 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
-  test "scroll all_processes page" do
-      expected_min, expected_max, expected, not_expected = [
-        25, 100,
-        ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
-         '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
-         '/jobs/zzzzz-8i9sb-grx15v5mjnsyxk7',
-         '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
-         '/container_requests/zzzzz-xvhdp-cr4completedcr2',
-         '/container_requests/zzzzz-xvhdp-cr4requestercn2'],
-        ['/pipeline_instances/zzzzz-d1hrv-scarxiyajtshq3l',
-         '/container_requests/zzzzz-xvhdp-oneof60crs00001']
-      ]
-
+  [[true, 25, 100,
+    ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
+     '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+     '/jobs/zzzzz-8i9sb-grx15v5mjnsyxk7',
+     '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
+     '/container_requests/zzzzz-xvhdp-cr4completedcr2',
+     '/container_requests/zzzzz-xvhdp-cr4requestercn2'],
+    ['/pipeline_instances/zzzzz-d1hrv-scarxiyajtshq3l',
+     '/container_requests/zzzzz-xvhdp-oneof60crs00001']],
+   [false, 25, 100,
+    ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
+     '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+     '/container_requests/zzzzz-xvhdp-cr4completedcr2'],
+    ['/pipeline_instances/zzzzz-d1hrv-scarxiyajtshq3l',
+     '/container_requests/zzzzz-xvhdp-oneof60crs00001',
+     '/jobs/zzzzz-8i9sb-grx15v5mjnsyxk7',
+     '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
+     '/container_requests/zzzzz-xvhdp-cr4requestercn2'
+    ]]
+  ].each do |expects|
+    test "scroll all_processes page with show_children #{expects[0]}" do
+      show_children, expected_min, expected_max, expected, not_expected = expects
       visit page_with_token('active', "/all_processes")
+
+      if show_children
+        find('#IncludeChildProcs').click
+        wait_for_ajax
+      end
 
       page_scrolls = expected_max/20 + 2
       within('.arv-recent-all-processes') do
@@ -43,13 +57,13 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       found_count = found_items.count
       if expected_min == expected_max
         assert_equal(true, found_count == expected_min,
-          "Not found expected number of items. Expected #{expected_min} and found #{found_count}")
+                     "Not found expected number of items. Expected #{expected_min} and found #{found_count}")
         assert page.has_no_text? 'request failed'
       else
         assert_equal(true, found_count>=expected_min,
-          "Found too few items. Expected at least #{expected_min} and found #{found_count}")
+                     "Found too few items. Expected at least #{expected_min} and found #{found_count}")
         assert_equal(true, found_count<=expected_max,
-          "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+                     "Found too many items. Expected at most #{expected_max} and found #{found_count}")
       end
 
       # verify that all expected uuid links are found
@@ -61,6 +75,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       not_expected.each do |link|
         assert_no_selector "a[href=\"#{link}\"]"
       end
+    end
   end
 
   [
