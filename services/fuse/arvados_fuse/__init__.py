@@ -156,6 +156,22 @@ class InodeCache(object):
 
     def _remove(self, obj, clear):
         if clear:
+            # Kernel behavior seems to be that if a file is
+            # referenced, its parents remain referenced too. This
+            # means has_ref() exits early when a collection is not
+            # candidate for eviction.
+            #
+            # By contrast, in_use() doesn't increment references on
+            # parents, so it requires a full tree walk to determine if
+            # a collection is a candidate for eviction.  This takes
+            # .07s for 240000 files, which becomes a major drag when
+            # cap_cache is being called several times a second and
+            # there are multiple non-evictable collections in the
+            # cache.
+            #
+            # So it is important for performance that we do the
+            # has_ref() check first.
+
             if obj.has_ref(True):
                 _logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
                 return
