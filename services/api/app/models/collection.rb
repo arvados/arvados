@@ -19,13 +19,13 @@ class Collection < ArvadosModel
   serialize :storage_classes_confirmed, Array
 
   before_validation :default_empty_manifest
-  before_validation :default_storage_classes, on: :create
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
+  validate :ensure_storage_classes_contain_non_empty_strings
   before_save :set_file_names
 
   api_accessible :user, extend: :common do |t|
@@ -453,13 +453,6 @@ class Collection < ArvadosModel
 
   protected
 
-  def default_storage_classes
-    if self.storage_classes_desired.nil? || self.storage_classes_desired.empty?
-      self.storage_classes_desired = ["default"]
-    end
-    self.storage_classes_confirmed ||= []
-  end
-
   def portable_manifest_text
     self.class.munge_manifest_locators(manifest_text) do |match|
       if match[2] # size
@@ -502,7 +495,15 @@ class Collection < ArvadosModel
 
   def ensure_storage_classes_desired_is_not_empty
     if self.storage_classes_desired.empty?
-      raise ArvadosModel::PermissionDeniedError.new("storage_classes_desired shouldn't be empty")
+      raise ArvadosModel::InvalidStateTransitionError.new("storage_classes_desired shouldn't be empty")
+    end
+  end
+
+  def ensure_storage_classes_contain_non_empty_strings
+    (self.storage_classes_desired + self.storage_classes_confirmed).each do |c|
+      if !c.is_a?(String) || c == ''
+        raise ArvadosModel::InvalidStateTransitionError.new("storage classes should only be non-empty strings")
+      end
     end
   end
 end

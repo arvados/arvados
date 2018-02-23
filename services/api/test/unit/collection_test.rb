@@ -226,8 +226,26 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:collection_owned_by_active)
       c.update_attributes storage_classes_desired: ["hot"]
       assert_equal ["hot"], c.storage_classes_desired
-      assert_raise ArvadosModel::PermissionDeniedError do
+      assert_raise ArvadosModel::InvalidStateTransitionError do
         c.update_attributes storage_classes_desired: []
+      end
+    end
+  end
+
+  test "storage classes lists should only contain non-empty strings" do
+    c = collections(:storage_classes_desired_default_unconfirmed)
+    act_as_user users(:admin) do
+      assert c.update_attributes(storage_classes_desired: ["default", "a_string"],
+                                 storage_classes_confirmed: ["another_string"])
+      [
+        ["storage_classes_desired", ["default", 42]],
+        ["storage_classes_confirmed", [{the_answer: 42}]],
+        ["storage_classes_desired", ["default", ""]],
+        ["storage_classes_confirmed", [""]],
+      ].each do |attr, val|
+        assert_raise ArvadosModel::InvalidStateTransitionError do
+          assert c.update_attributes({attr => val})
+        end
       end
     end
   end
