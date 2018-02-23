@@ -2,19 +2,24 @@
 
 SPDX-License-Identifier: AGPL-3.0 %>
 
-<div class="form-group pull-right">
-  <input type="text" class="form-control filterable-control recent-all-processes-filterable-control"
-         placeholder="Search all processes"
-         data-filterable-target="#all-processes-scroll"
-         value="<%= params[:search] %>" />
-  <label>
-    <input id="ExcludeChildProcs" type="checkbox" class="filterable-control"
-           data-on-value="{&quot;filters&quot;:[[&quot;requesting_container_uuid&quot;,&quot;=&quot;,null]]}"
-           data-off-value="{}"
-           data-filterable-target="#all-processes-scroll" />
-    exclude child processes
-  </label>
+<div class="pull-right">
+  <div class="form-group">
+    <input type="text" class="form-control filterable-control recent-all-processes-filterable-control"
+           placeholder="Search all processes"
+           data-filterable-target="#all-processes-scroll"
+           value="<%= params[:search] %>" size="40" />
+  </div>
+  <div class="checkbox">
+    <label>
+      <input id="ExcludeChildProcs" type="checkbox" class="filterable-control"
+	     data-on-value="{&quot;show_c1hildren&quot;:true}"
+	     data-off-value="{}"
+	     data-filterable-target="#all-processes-scroll" />
+      Show child processes
+    </label>
+  </div>
 </div>
+
 <div>
   <div>
     <div>
