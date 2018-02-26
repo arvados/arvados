@@ -54,15 +54,16 @@ func (sqc *SqueueChecker) SetPriority(uuid string, want int64) {
 	sqc.startOnce.Do(sqc.start)
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
-	if _, ok := sqc.queue[uuid]; !ok {
+	job, ok := sqc.queue[uuid]
+	if !ok {
 		// Wait in case the slurm job was just submitted and
 		// will appear in the next squeue update.
 		sqc.Wait()
-		if _, ok = sqc.queue[uuid]; !ok {
+		if job, ok = sqc.queue[uuid]; !ok {
 			return
 		}
 	}
-	sqc.queue[uuid].wantPriority = want
+	job.wantPriority = want
 }
 
 // adjust slurm job nice values as needed to ensure slurm priority
