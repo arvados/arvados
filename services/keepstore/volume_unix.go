@@ -20,8 +20,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type unixVolumeAdder struct {
@@ -112,6 +110,7 @@ type UnixVolume struct {
 	ReadOnly             bool
 	Serialize            bool
 	DirectoryReplication int
+	StorageClasses       []string
 
 	// something to lock during IO, typically a sync.Mutex (or nil
 	// to skip locking)
@@ -644,6 +643,11 @@ func (v *UnixVolume) Writable() bool {
 // underlying device (as specified in configuration).
 func (v *UnixVolume) Replication() int {
 	return v.DirectoryReplication
+}
+
+// GetStorageClasses implements Volume
+func (v *UnixVolume) GetStorageClasses() []string {
+	return v.StorageClasses
 }
 
 // InternalStats returns I/O and filesystem ops counters.

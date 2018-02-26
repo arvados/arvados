@@ -16,9 +16,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 )
 
@@ -160,9 +158,6 @@ func main() {
 
 	// Middleware/handler stack
 	router := MakeRESTRouter()
-	limiter := httpserver.NewRequestLimiter(theConfig.MaxRequests, router)
-	router.limiter = limiter
-	http.Handle("/", httpserver.AddRequestIDs(httpserver.LogRequests(limiter)))
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", theConfig.Listen)
@@ -204,7 +199,7 @@ func main() {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("listening at", listener.Addr())
-	srv := &http.Server{}
+	srv := &http.Server{Handler: router}
 	srv.Serve(listener)
 }
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/stats"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 type contextKey struct {
@@ -19,13 +19,15 @@ type contextKey struct {
 
 var requestTimeContextKey = contextKey{"requestTime"}
 
+var Logger logrus.FieldLogger = logrus.StandardLogger()
+
 // LogRequests wraps an http.Handler, logging each request and
 // response via logrus.
 func LogRequests(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(wrapped http.ResponseWriter, req *http.Request) {
 		w := &responseTimer{ResponseWriter: WrapResponseWriter(wrapped)}
 		req = req.WithContext(context.WithValue(req.Context(), &requestTimeContextKey, time.Now()))
-		lgr := log.WithFields(log.Fields{
+		lgr := Logger.WithFields(logrus.Fields{
 			"RequestID":       req.Header.Get("X-Request-Id"),
 			"remoteAddr":      req.RemoteAddr,
 			"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
@@ -39,22 +41,26 @@ func LogRequests(h http.Handler) http.Handler {
 	})
 }
 
-func logRequest(w *responseTimer, req *http.Request, lgr *log.Entry) {
+func logRequest(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 	lgr.Info("request")
 }
 
-func logResponse(w *responseTimer, req *http.Request, lgr *log.Entry) {
+func logResponse(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 	if tStart, ok := req.Context().Value(&requestTimeContextKey).(time.Time); ok {
 		tDone := time.Now()
-		lgr = lgr.WithFields(log.Fields{
+		lgr = lgr.WithFields(logrus.Fields{
 			"timeTotal":     stats.Duration(tDone.Sub(tStart)),
 			"timeToStatus":  stats.Duration(w.writeTime.Sub(tStart)),
 			"timeWriteBody": stats.Duration(tDone.Sub(w.writeTime)),
 		})
 	}
-	lgr.WithFields(log.Fields{
-		"respStatusCode": w.WroteStatus(),
-		"respStatus":     http.StatusText(w.WroteStatus()),
+	respCode := w.WroteStatus()
+	if respCode == 0 {
+		respCode = http.StatusOK
+	}
+	lgr.WithFields(logrus.Fields{
+		"respStatusCode": respCode,
+		"respStatus":     http.StatusText(respCode),
 		"respBytes":      w.WroteBodyBytes(),
 	}).Info("response")
 }
@@ -63,6 +69,13 @@ type responseTimer struct {
 	ResponseWriter
 	wrote     bool
 	writeTime time.Time
+}
+
+func (rt *responseTimer) CloseNotify() <-chan bool {
+	if cn, ok := rt.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	return nil
 }
 
 func (rt *responseTimer) WriteHeader(code int) {

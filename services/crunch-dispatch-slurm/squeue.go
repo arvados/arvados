@@ -22,6 +22,7 @@ type jobPriority struct {
 // command 'squeue'.
 type SqueueChecker struct {
 	Period    time.Duration
+	Slurm     Slurm
 	uuids     map[string]jobPriority
 	startOnce sync.Once
 	done      chan struct{}
@@ -77,7 +78,7 @@ func (sqc *SqueueChecker) check() {
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 
-	cmd := theConfig.slurm.QueueCommand([]string{"--all", "--format=%j %y %Q"})
+	cmd := sqc.Slurm.QueueCommand([]string{"--all", "--format=%j %y %Q"})
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Run(); err != nil {

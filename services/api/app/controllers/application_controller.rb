@@ -554,6 +554,10 @@ class ApplicationController < ActionController::Base
     }
   end
 
+  def self._update_requires_parameters
+    {}
+  end
+
   def self._index_requires_parameters
     {
       filters: { type: 'array', required: false },
