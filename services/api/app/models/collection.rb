@@ -19,6 +19,7 @@ class Collection < ArvadosModel
   serialize :storage_classes_confirmed, Array
 
   before_validation :default_empty_manifest
+  before_validation :default_storage_classes, on: :create
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
@@ -452,6 +453,16 @@ class Collection < ArvadosModel
   end
 
   protected
+
+  # Although the defaults for these columns is already set up on the schema,
+  # collection creation from an API client seems to ignore them, making the
+  # validation on empty desired storage classes return an error.
+  def default_storage_classes
+    if self.storage_classes_desired.nil? || self.storage_classes_desired.empty?
+      self.storage_classes_desired = ["default"]
+    end
+    self.storage_classes_confirmed ||= []
+  end
 
   def portable_manifest_text
     self.class.munge_manifest_locators(manifest_text) do |match|
