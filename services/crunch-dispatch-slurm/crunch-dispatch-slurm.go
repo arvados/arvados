@@ -47,6 +47,10 @@ type Dispatcher struct {
 	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
 	CrunchRunCommand []string
 
+	// Extra RAM to reserve (in Bytes) for SLURM job, in addition
+	// to the amount specified in the container's RuntimeConstraints
+	ReserveExtraRAM int64
+
 	// Minimum time between two attempts to run the same container
 	MinRetryPeriod arvados.Duration
 }
@@ -206,7 +210,7 @@ func (disp *Dispatcher) niceness(priority int) int {
 }
 
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM) / float64(1048576)))
+	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM+disp.ReserveExtraRAM) / float64(1048576)))
 
 	var disk int64
 	for _, m := range container.Mounts {
