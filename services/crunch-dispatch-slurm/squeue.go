@@ -51,6 +51,7 @@ func (sqc *SqueueChecker) HasUUID(uuid string) bool {
 // SetPriority sets or updates the desired (Arvados) priority for a
 // container.
 func (sqc *SqueueChecker) SetPriority(uuid string, want int64) {
+	sqc.startOnce.Do(sqc.start)
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 	if _, ok := sqc.queue[uuid]; !ok {
@@ -132,11 +133,13 @@ func (sqc *SqueueChecker) check() {
 			log.Printf("warning: ignoring unparsed line in squeue output: %q", line)
 			continue
 		}
-		newq[uuid] = &slurmJob{
-			uuid:     uuid,
-			priority: p,
-			nice:     n,
+		replacing, ok := sqc.queue[uuid]
+		if !ok {
+			replacing = &slurmJob{uuid: uuid}
 		}
+		replacing.priority = p
+		replacing.nice = n
+		newq[uuid] = replacing
 	}
 	sqc.queue = newq
 	sqc.Broadcast()
