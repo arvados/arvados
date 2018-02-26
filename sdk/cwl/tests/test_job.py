@@ -397,7 +397,7 @@ class TestWorkflow(unittest.TestCase):
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
-    def test_max_resource_singlecontainer(self, list_images_in_arv, mockcollection, mockcollectionreader):
+    def test_overall_resource_singlecontainer(self, list_images_in_arv, mockcollection, mockcollectionreader):
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -455,7 +455,7 @@ class TestWorkflow(unittest.TestCase):
                     'command': [u'cwltool', u'--no-container', u'--move-outputs', u'--preserve-entire-environment', u'workflow.cwl#main', u'cwl.input.yml'],
                     'task.stdout': 'cwl.output.json'}]},
                 'runtime_constraints': {
-                    'min_scratch_mb_per_node': 2048,
+                    'min_scratch_mb_per_node': 4096,
                     'min_cores_per_node': 3,
                     'docker_image': 'arvados/jobs',
                     'min_ram_mb_per_node': 1024
