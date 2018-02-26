@@ -139,14 +139,13 @@ getReturnObject <- function(functionMetaData, classMetaData)
 
 
     if(returnClass == "Collection")
-        return(c("collection <- Collection$new(",
-                 paste0("\t", splitArgs(classArguments, 40, ")")),
+        return(c(formatArgs("collection <- Collection$new(", "\t",
+                            classArguments, ")", 40),
                  "",
                  "collection$setRESTService(private$REST)",
                  "collection"))
 
-    c(paste0(returnClass, "$new("),
-      paste0("\t", splitArgs(classArguments, 40, ")")))
+    formatArgs(paste0(returnClass, "$new("), "\t", classArguments, ")", 40)
 }
 
 getReturnClassArguments <- function(className, classMetaData)
@@ -193,15 +192,9 @@ getRequestQueryList <- function(functionMetaData)
     collapsedArgs <- paste0(args, collapse = ", ")
 
     if(nchar(collapsedArgs) > 40)
-    {
-        formatedArgs <- splitArgs(args, 40, ")")
-        return(c(paste0("queryArgs <- list("),
-                 paste0("\t\t", formatedArgs)))
-    }
+        return(formatArgs("queryArgs <- list(", "\t", args, ")", 40))
     else
-    {
         return(paste0("queryArgs <- list(", collapsedArgs, ")"))
-    }
 }
 
 createFunction <- function(functionName, functionMetaData, classMetaData)
@@ -224,9 +217,9 @@ getFunSignature <- function(funName, args)
 
     if(nchar(collapsedArgs) > 40)
     {
-        formatedArgs <- splitArgs(args, 40, ")")
-        return(c(paste0("\t\t", funName, " = function("),
-                 paste0("\t\t\t\t", formatedArgs)))
+        return(paste0("\t\t",
+                      formatArgs(paste(funName, "= function("),
+                                 "\t", args, ")", 40)))
     }
     else
     {
@@ -310,10 +303,10 @@ getArvadosClass <- function(classSchema)
 {
     name   <- classSchema$id
     fields <- unique(names(classSchema$properties))
-    #fieldsList <- paste0("c(", paste0("\"", fields, "\"", collapse = ", "), ")")
     constructorArgs <- paste(fields, "= NULL")
+    documentation <- getClassDocumentation(classSchema, constructorArgs)
 
-    classString <- c("#' @export",
+    classString <- c(documentation,
               paste0(name, " <- R6::R6Class("),
                      "",
               paste0("\t\"", name, "\","),
@@ -321,14 +314,13 @@ getArvadosClass <- function(classSchema)
                      "\tpublic = list(",
               paste0("\t\t", fields, " = NULL,"),
                      "",
-                     "\t\tinitialize = function(",
-                     paste0("\t\t\t\t", splitArgs(constructorArgs, 40, ")")),
-                     "\t\t{", 
+              paste0("\t\t", formatArgs("initialize = function(", "\t\t",
+                                        constructorArgs, ")", 40)),
+                     "\t\t{",
               paste0("\t\t\tself$", fields, " <- ", fields),
                      "\t\t\t",
-                     "\t\t\tprivate$classFields <- c(",
-              paste0("\t\t\t\t", splitArgs(fields, 40)),
-                     "\t\t\t)",
+              paste0("\t\t\t", formatArgs("private$classFields <- c(", "\t",
+                                         fields, ")", 40)),
                      "\t\t},",
                      "",
                      "\t\ttoJSON = function() {",
@@ -351,12 +343,53 @@ getArvadosClass <- function(classSchema)
                      "")
 }
 
-splitArgs <- function(args, lineLength, appendAtEnd = "")
+getClassDocumentation <- function(classSchema, constructorArgs)
 {
-    
-    if(length(args) > 1)
-        args[1:(length(args) - 1)] <- paste0(args[1:(length(args) - 1)], ",") 
+    name <- classSchema$id
+    description <- classSchema$description
+    nameLowercaseFirstLetter <- paste0(tolower(substr(name, 1, 1)),
+                                       substr(name, 2, nchar(name)))
+    c(paste0("#' ", name),
+             "#' ",
+      paste0("#' ", description),
+             "#' ",
+             "#' @section Usage:",
+             formatArgs(paste0("#' \\preformatted{",
+                               nameLowercaseFirstLetter, " -> ", name, "$new("),
+                        "#' \t", constructorArgs, ")", 50),
 
+             "#' }",
+             "#' ",
+      paste0("#' @section Arguments:"),
+             "#'   \\describe{",
+      paste0("#'     ", getClassArgumentDescription(classSchema)),
+             "#'   }",
+             "#' ",
+      paste0("#' @name ", name),
+             "NULL",
+             "",
+             "#' @export")
+}
+
+getClassArgumentDescription <- function(classSchema)
+{
+    argDoc <- sapply(classSchema$properties, function(arg)
+    {    
+        paste0("{", arg$description, "}")
+    }, USE.NAMES = TRUE)
+
+    paste0("\\item{", names(classSchema$properties), "}", argDoc)
+}
+
+formatArgs <- function(prependAtStart, prependToEachSplit,
+                       args, appendAtEnd, lineLength)
+{
+    if(length(args) > 1)
+    {
+        args[1:(length(args) - 1)] <- paste0(args[1:(length(args) - 1)], ",") 
+    }
+
+    args[1] <- paste0(prependAtStart, args[1])
     args[length(args)] <- paste0(args[length(args)], appendAtEnd)
 
     argsLength <- length(args)
@@ -377,5 +410,11 @@ splitArgs <- function(args, lineLength, appendAtEnd = "")
         argLines <- c(argLines, line)
     }
     
-    unlist(argLines)
+    argLines <- unlist(argLines)
+    argLinesLen <- length(argLines)
+
+    if(argLinesLen > 1)
+        argLines[2:argLinesLen] <- paste0(prependToEachSplit, argLines[2:argLinesLen]) 
+
+    argLines
 }
