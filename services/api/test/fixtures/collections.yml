@@ -536,6 +536,48 @@ replication_desired_2_confirmed_2:
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 3:6:bar\n"
   name: replication want=2 have=2
 
+storage_classes_desired_default_unconfirmed:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:21:35.050333515 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:21:35.050189104 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  storage_classes_desired: ["default"]
+  storage_classes_confirmed_at: ~
+  storage_classes_confirmed: ~
+  updated_at: 2015-02-07 00:21:35.050126576 Z
+  uuid: zzzzz-4zz18-3t236wrz4769tga
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: storage classes want=[default] have=[]
+
+storage_classes_desired_default_confirmed_default:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:21:35.050333515 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:21:35.050189104 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  storage_classes_desired: ["default"]
+  storage_classes_confirmed_at: 2015-02-07 00:21:35.050126576 Z
+  storage_classes_confirmed: ["default"]
+  updated_at: 2015-02-07 00:21:35.050126576 Z
+  uuid: zzzzz-4zz18-3t236wr12769tga
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: storage classes want=[default] have=[default]
+
+storage_classes_desired_archive_confirmed_default:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:21:35.050333515 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:21:35.050189104 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  storage_classes_desired: ["archive"]
+  storage_classes_confirmed_at: ~
+  storage_classes_confirmed: ["default"]
+  updated_at: 2015-02-07 00:21:35.050126576 Z
+  uuid: zzzzz-4zz18-3t236wr12769qqa
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: storage classes want=[archive] have=[default]
+
 collection_with_empty_properties:
   uuid: zzzzz-4zz18-emptyproperties
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45

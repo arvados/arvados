@@ -170,7 +170,10 @@ CREATE TABLE collections (
     delete_at timestamp without time zone,
     file_names character varying(8192),
     trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL
+    is_trashed boolean DEFAULT false NOT NULL,
+    storage_classes_desired jsonb DEFAULT '["default"]'::jsonb,
+    storage_classes_confirmed jsonb DEFAULT '[]'::jsonb,
+    storage_classes_confirmed_at timestamp without time zone
 );
 
 
@@ -3048,4 +3051,6 @@ INSERT INTO schema_migrations (version) VALUES ('20171027183824');
 INSERT INTO schema_migrations (version) VALUES ('20171208203841');
 
 INSERT INTO schema_migrations (version) VALUES ('20171212153352');
+
+INSERT INTO schema_migrations (version) VALUES ('20180216203422');
 
