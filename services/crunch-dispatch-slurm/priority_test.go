@@ -41,7 +41,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 				{priority: 4294000111, nice: 10000},
 				{priority: 4294000111, nice: 10000},
 			},
-			[]int64{0, 11, 22, 33},
+			[]int64{0, 10, 20, 30},
 		},
 		{ // smaller spread than necessary, but correctly ordered => leave nice alone
 			10,
@@ -56,10 +56,10 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 			10,
 			[]*slurmJob{
 				{priority: 4294000144, nice: 0},
-				{priority: 4294000122, nice: 22},
-				{priority: 4294000111, nice: 33},
+				{priority: 4294000122, nice: 20},
+				{priority: 4294000111, nice: 30},
 			},
-			[]int64{0, 22, 33},
+			[]int64{0, 20, 30},
 		},
 		{ // > 10x spread => reduce nice to achieve spread=10
 			10,
@@ -68,7 +68,7 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 				{priority: 3000, nice: 999},  // max pri 3999
 				{priority: 2000, nice: 1998}, // max pri 3998
 			},
-			[]int64{0, 10, 20},
+			[]int64{0, 9, 18},
 		},
 		{ // > 10x spread, but spread=10 is impossible without negative nice
 			10,
@@ -77,19 +77,19 @@ func (s *PrioritySuite) TestReniceCorrect(c *C) {
 				{priority: 3000, nice: 500},  // max pri 3500
 				{priority: 2000, nice: 2000}, // max pri 4000
 			},
-			[]int64{0, 0, 511},
+			[]int64{0, 0, 510},
 		},
-		{ // reorder
-			10,
+		{ // default spread, needs reorder
+			0,
 			[]*slurmJob{
 				{priority: 4000, nice: 0}, // max pri 4000
 				{priority: 5000, nice: 0}, // max pri 5000
 				{priority: 6000, nice: 0}, // max pri 6000
 			},
-			[]int64{0, 1011, 2022},
+			[]int64{0, 1000 + defaultSpread, 2000 + defaultSpread*2},
 		},
-		{ // zero spread
-			0,
+		{ // minimum spread
+			1,
 			[]*slurmJob{
 				{priority: 4000, nice: 0}, // max pri 4000
 				{priority: 5000, nice: 0}, // max pri 5000

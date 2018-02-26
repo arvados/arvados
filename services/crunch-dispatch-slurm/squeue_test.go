@@ -23,24 +23,25 @@ func (s *SqueueSuite) TestReniceAll(c *C) {
 		expect [][]string
 	}{
 		{
-			spread: 0,
+			spread: 1,
 			squeue: uuids[0] + " 10000 4294000000\n",
 			want:   map[string]int64{uuids[0]: 1},
 			expect: [][]string{{uuids[0], "0"}},
 		},
 		{ // fake0 priority is too high
-			spread: 0,
+			spread: 1,
 			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
 			expect: [][]string{{uuids[1], "0"}, {uuids[0], "334"}},
 		},
-		{ // non-zero spread
+		{ // specify spread
 			spread: 100,
 			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
-			expect: [][]string{{uuids[1], "0"}, {uuids[0], "434"}},
+			expect: [][]string{{uuids[1], "0"}, {uuids[0], "433"}},
 		},
 		{ // ignore fake2 because SetPriority() not called
+			spread: 1,
 			squeue: uuids[0] + " 10000 4294000000\n" + uuids[1] + " 10000 4294000111\n" + uuids[2] + " 10000 4294000222\n",
 			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1},
 			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
