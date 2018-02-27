@@ -31,9 +31,8 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
      '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
      '/container_requests/zzzzz-xvhdp-cr4requestercn2'
     ]]
-  ].each do |expects|
-    test "scroll all_processes page with show_children #{expects[0]}" do
-      show_children, expected_min, expected_max, expected, not_expected = expects
+  ].each do |show_children, expected_min, expected_max, expected, not_expected|
+    test "scroll all_processes page with show_children=#{show_children}" do
       visit page_with_token('active', "/all_processes")
 
       if show_children
