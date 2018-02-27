@@ -2,16 +2,25 @@
 
 SPDX-License-Identifier: AGPL-3.0 %>
 
-<div class="container" style="width: 100%">
-  <div class="row">
-    <div class="pull-right">
-      <input type="text" class="form-control filterable-control recent-all-processes-filterable-control"
-             placeholder="Search all processes"
-             data-filterable-target="#all-processes-scroll"
-             value="<%= params[:search] %>">
-      </input>
-    </div>
+<div class="pull-right">
+  <div class="form-group">
+    <input type="text" class="form-control filterable-control recent-all-processes-filterable-control"
+           placeholder="Search all processes"
+           data-filterable-target="#all-processes-scroll"
+           value="<%= params[:search] %>" size="40" />
   </div>
+  <div class="checkbox">
+    <label>
+      <input id="IncludeChildProcs" type="checkbox" class="filterable-control"
+	     data-on-value="{&quot;show_children&quot;:true}"
+	     data-off-value="{}"
+	     data-filterable-target="#all-processes-scroll" />
+      Show child processes
+    </label>
+  </div>
+</div>
+
+<div>
   <div>
     <div>
       <table class="table table-condensed table-fixedlayout arv-recent-all-processes">
@@ -47,6 +56,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
         </thead>
 
         <tbody data-infinite-scroller="#all-processes-scroll" id="all-processes-scroll"
+               data-infinite-content-params-from-exclude-child-procs="{}"
                data-infinite-content-href="<%= url_for partial: :all_processes_rows %>" >
         </tbody>
       </table>
