@@ -69,11 +69,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 // it is no longer offered by any node. So, to make a feature name
 // valid, we can add it to a dummy node ("compute0"), then remove it.
 //
-// (2) when srun is given an invalid --gres argument and an invalid
-// --constraint argument, the error message mentions "Invalid feature
-// specification". So, to test whether a feature name is valid without
-// actually submitting a job, we can call srun with the feature name
-// and an invalid --gres argument.
+// (2) To test whether a set of feature names are valid without
+// actually submitting a job, we can call srun --test-only with the
+// desired features.
 //
 // SlurmNodeTypeFeatureKludge does a test-and-fix operation
 // immediately, and then periodically, in case slurm restarts and
@@ -97,16 +95,14 @@ func SlurmNodeTypeFeatureKludge(cc *arvados.Cluster) {
 var (
 	slurmDummyNode     = "compute0"
 	slurmErrBadFeature = "Invalid feature"
-	slurmErrBadGres    = "Invalid generic resource"
 )
 
 func slurmKludge(features []string) {
-	cmd := exec.Command("srun", "--gres=invalid-gres-specification", "--constraint="+strings.Join(features, "&"), "true")
+	cmd := exec.Command("srun", "--test-only", "--constraint="+strings.Join(features, "&"), "false")
 	out, err := cmd.CombinedOutput()
 	switch {
 	case err == nil:
-		log.Printf("warning: guaranteed-to-fail srun command did not fail: %q %q", cmd.Path, cmd.Args)
-		log.Printf("output was: %q", out)
+		// Evidently our node-type feature names are all valid.
 
 	case bytes.Contains(out, []byte(slurmErrBadFeature)):
 		log.Printf("temporarily configuring node %q with all node type features", slurmDummyNode)
@@ -119,10 +115,7 @@ func slurmKludge(features []string) {
 			}
 		}
 
-	case bytes.Contains(out, []byte(slurmErrBadGres)):
-		// Evidently our node-type feature names are all valid.
-
 	default:
-		log.Printf("warning: expected srun error %q or %q, but output was %q", slurmErrBadFeature, slurmErrBadGres, out)
+		log.Printf("warning: expected srun error %q or success, but output was %q", slurmErrBadFeature, out)
 	}
 }
