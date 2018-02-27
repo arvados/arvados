@@ -95,13 +95,14 @@ func SlurmNodeTypeFeatureKludge(cc *arvados.Cluster) {
 var (
 	slurmDummyNode     = "compute0"
 	slurmErrBadFeature = "Invalid feature"
+	slurmErrNoNodes    = "node configuration is not available"
 )
 
 func slurmKludge(features []string) {
 	cmd := exec.Command("srun", "--test-only", "--constraint="+strings.Join(features, "&"), "false")
 	out, err := cmd.CombinedOutput()
 	switch {
-	case err == nil:
+	case err == nil || bytes.Contains(out, []byte(slurmErrNoNodes)):
 		// Evidently our node-type feature names are all valid.
 
 	case bytes.Contains(out, []byte(slurmErrBadFeature)):
@@ -116,6 +117,6 @@ func slurmKludge(features []string) {
 		}
 
 	default:
-		log.Printf("warning: expected srun error %q or success, but output was %q", slurmErrBadFeature, out)
+		log.Printf("warning: expected srun error %q, %q, or success, but output was %q", slurmErrBadFeature, slurmErrNoNodes, out)
 	}
 }
