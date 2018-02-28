@@ -1,3 +1,2410 @@
+#' users.get is a method defined in Arvados class.
+#' 
+#' @usage arv$users.get(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.get
+NULL
+
+#' users.index is a method defined in Arvados class.
+#' 
+#' @usage arv$users.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserList object.
+#' @name users.index
+NULL
+
+#' users.create is a method defined in Arvados class.
+#' 
+#' @usage arv$users.create(user, ensure_unique_name = "false")
+#' @param user User object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return User object.
+#' @name users.create
+NULL
+
+#' users.update is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update(user, uuid)
+#' @param user User object.
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.update
+NULL
+
+#' users.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$users.delete(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.delete
+NULL
+
+#' users.current is a method defined in Arvados class.
+#' 
+#' @usage arv$users.current(NULL)
+#' @return User object.
+#' @name users.current
+NULL
+
+#' users.system is a method defined in Arvados class.
+#' 
+#' @usage arv$users.system(NULL)
+#' @return User object.
+#' @name users.system
+NULL
+
+#' users.activate is a method defined in Arvados class.
+#' 
+#' @usage arv$users.activate(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.activate
+NULL
+
+#' users.setup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.setup(user = NULL, openid_prefix = NULL,
+#' 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
+#' @param user 
+#' @param openid_prefix 
+#' @param repo_name 
+#' @param vm_uuid 
+#' @param send_notification_email 
+#' @return User object.
+#' @name users.setup
+NULL
+
+#' users.unsetup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.unsetup(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.unsetup
+NULL
+
+#' users.update_uuid is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update_uuid(uuid, new_uuid)
+#' @param uuid 
+#' @param new_uuid 
+#' @return User object.
+#' @name users.update_uuid
+NULL
+
+#' users.list is a method defined in Arvados class.
+#' 
+#' @usage arv$users.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserList object.
+#' @name users.list
+NULL
+
+#' users.show is a method defined in Arvados class.
+#' 
+#' @usage arv$users.show(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.show
+NULL
+
+#' users.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$users.destroy(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.destroy
+NULL
+
+#' api_client_authorizations.get is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.get(uuid)
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.get
+NULL
+
+#' api_client_authorizations.index is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientAuthorizationList object.
+#' @name api_client_authorizations.index
+NULL
+
+#' api_client_authorizations.create is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.create(api_client_authorization,
+#' 	ensure_unique_name = "false")
+#' @param apiClientAuthorization ApiClientAuthorization object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.create
+NULL
+
+#' api_client_authorizations.update is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.update(api_client_authorization,
+#' 	uuid)
+#' @param apiClientAuthorization ApiClientAuthorization object.
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.update
+NULL
+
+#' api_client_authorizations.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.delete(uuid)
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.delete
+NULL
+
+#' api_client_authorizations.create_system_auth is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.create_system_auth(api_client_id = NULL,
+#' 	scopes = NULL)
+#' @param api_client_id 
+#' @param scopes 
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.create_system_auth
+NULL
+
+#' api_client_authorizations.current is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.current(NULL)
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.current
+NULL
+
+#' api_client_authorizations.list is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientAuthorizationList object.
+#' @name api_client_authorizations.list
+NULL
+
+#' api_client_authorizations.show is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.show(uuid)
+#' @param uuid 
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.show
+NULL
+
+#' api_client_authorizations.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.destroy(uuid)
+#' @param uuid 
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.destroy
+NULL
+
+#' api_clients.get is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.get(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.get
+NULL
+
+#' api_clients.index is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientList object.
+#' @name api_clients.index
+NULL
+
+#' api_clients.create is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.create(api_client,
+#' 	ensure_unique_name = "false")
+#' @param apiClient ApiClient object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ApiClient object.
+#' @name api_clients.create
+NULL
+
+#' api_clients.update is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.update(api_client,
+#' 	uuid)
+#' @param apiClient ApiClient object.
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.update
+NULL
+
+#' api_clients.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.delete(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.delete
+NULL
+
+#' api_clients.list is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientList object.
+#' @name api_clients.list
+NULL
+
+#' api_clients.show is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.show(uuid)
+#' @param uuid 
+#' @return ApiClient object.
+#' @name api_clients.show
+NULL
+
+#' api_clients.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.destroy(uuid)
+#' @param uuid 
+#' @return ApiClient object.
+#' @name api_clients.destroy
+NULL
+
+#' container_requests.get is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.get(uuid)
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.get
+NULL
+
+#' container_requests.index is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerRequestList object.
+#' @name container_requests.index
+NULL
+
+#' container_requests.create is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.create(container_request,
+#' 	ensure_unique_name = "false")
+#' @param containerRequest ContainerRequest object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ContainerRequest object.
+#' @name container_requests.create
+NULL
+
+#' container_requests.update is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.update(container_request,
+#' 	uuid)
+#' @param containerRequest ContainerRequest object.
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.update
+NULL
+
+#' container_requests.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.delete(uuid)
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.delete
+NULL
+
+#' container_requests.list is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerRequestList object.
+#' @name container_requests.list
+NULL
+
+#' container_requests.show is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.show(uuid)
+#' @param uuid 
+#' @return ContainerRequest object.
+#' @name container_requests.show
+NULL
+
+#' container_requests.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.destroy(uuid)
+#' @param uuid 
+#' @return ContainerRequest object.
+#' @name container_requests.destroy
+NULL
+
+#' authorized_keys.get is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.get(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.get
+NULL
+
+#' authorized_keys.index is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return AuthorizedKeyList object.
+#' @name authorized_keys.index
+NULL
+
+#' authorized_keys.create is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.create(authorized_key,
+#' 	ensure_unique_name = "false")
+#' @param authorizedKey AuthorizedKey object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.create
+NULL
+
+#' authorized_keys.update is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.update(authorized_key,
+#' 	uuid)
+#' @param authorizedKey AuthorizedKey object.
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.update
+NULL
+
+#' authorized_keys.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.delete(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.delete
+NULL
+
+#' authorized_keys.list is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return AuthorizedKeyList object.
+#' @name authorized_keys.list
+NULL
+
+#' authorized_keys.show is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.show(uuid)
+#' @param uuid 
+#' @return AuthorizedKey object.
+#' @name authorized_keys.show
+NULL
+
+#' authorized_keys.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.destroy(uuid)
+#' @param uuid 
+#' @return AuthorizedKey object.
+#' @name authorized_keys.destroy
+NULL
+
+#' collections.get is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.get(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.get
+NULL
+
+#' collections.index is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include collections whose is_trashed attribute is true.
+#' @return CollectionList object.
+#' @name collections.index
+NULL
+
+#' collections.create is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.create(collection,
+#' 	ensure_unique_name = "false")
+#' @param collection Collection object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Collection object.
+#' @name collections.create
+NULL
+
+#' collections.update is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.update(collection,
+#' 	uuid)
+#' @param collection Collection object.
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.update
+NULL
+
+#' collections.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.delete(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.delete
+NULL
+
+#' collections.provenance is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.provenance(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.provenance
+NULL
+
+#' collections.used_by is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.used_by(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.used_by
+NULL
+
+#' collections.trash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.trash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.trash
+NULL
+
+#' collections.untrash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.untrash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.untrash
+NULL
+
+#' collections.list is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include collections whose is_trashed attribute is true.
+#' @return CollectionList object.
+#' @name collections.list
+NULL
+
+#' collections.show is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.show(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.show
+NULL
+
+#' collections.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.destroy(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.destroy
+NULL
+
+#' containers.get is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.get(uuid)
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.get
+NULL
+
+#' containers.index is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerList object.
+#' @name containers.index
+NULL
+
+#' containers.create is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.create(container,
+#' 	ensure_unique_name = "false")
+#' @param container Container object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Container object.
+#' @name containers.create
+NULL
+
+#' containers.update is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.update(container,
+#' 	uuid)
+#' @param container Container object.
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.update
+NULL
+
+#' containers.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.delete(uuid)
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.delete
+NULL
+
+#' containers.auth is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.auth(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.auth
+NULL
+
+#' containers.lock is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.lock(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.lock
+NULL
+
+#' containers.unlock is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.unlock(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.unlock
+NULL
+
+#' containers.current is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.current(NULL)
+#' @return Container object.
+#' @name containers.current
+NULL
+
+#' containers.list is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerList object.
+#' @name containers.list
+NULL
+
+#' containers.show is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.show(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.show
+NULL
+
+#' containers.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.destroy(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.destroy
+NULL
+
+#' humans.get is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.get(uuid)
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.get
+NULL
+
+#' humans.index is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return HumanList object.
+#' @name humans.index
+NULL
+
+#' humans.create is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.create(human, ensure_unique_name = "false")
+#' @param human Human object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Human object.
+#' @name humans.create
+NULL
+
+#' humans.update is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.update(human, uuid)
+#' @param human Human object.
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.update
+NULL
+
+#' humans.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.delete(uuid)
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.delete
+NULL
+
+#' humans.list is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return HumanList object.
+#' @name humans.list
+NULL
+
+#' humans.show is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.show(uuid)
+#' @param uuid 
+#' @return Human object.
+#' @name humans.show
+NULL
+
+#' humans.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.destroy(uuid)
+#' @param uuid 
+#' @return Human object.
+#' @name humans.destroy
+NULL
+
+#' job_tasks.get is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.get(uuid)
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.get
+NULL
+
+#' job_tasks.index is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobTaskList object.
+#' @name job_tasks.index
+NULL
+
+#' job_tasks.create is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.create(job_task,
+#' 	ensure_unique_name = "false")
+#' @param jobTask JobTask object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return JobTask object.
+#' @name job_tasks.create
+NULL
+
+#' job_tasks.update is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.update(job_task,
+#' 	uuid)
+#' @param jobTask JobTask object.
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.update
+NULL
+
+#' job_tasks.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.delete(uuid)
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.delete
+NULL
+
+#' job_tasks.list is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobTaskList object.
+#' @name job_tasks.list
+NULL
+
+#' job_tasks.show is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.show(uuid)
+#' @param uuid 
+#' @return JobTask object.
+#' @name job_tasks.show
+NULL
+
+#' job_tasks.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.destroy(uuid)
+#' @param uuid 
+#' @return JobTask object.
+#' @name job_tasks.destroy
+NULL
+
+#' links.get is a method defined in Arvados class.
+#' 
+#' @usage arv$links.get(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.get
+NULL
+
+#' links.index is a method defined in Arvados class.
+#' 
+#' @usage arv$links.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LinkList object.
+#' @name links.index
+NULL
+
+#' links.create is a method defined in Arvados class.
+#' 
+#' @usage arv$links.create(link, ensure_unique_name = "false")
+#' @param link Link object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Link object.
+#' @name links.create
+NULL
+
+#' links.update is a method defined in Arvados class.
+#' 
+#' @usage arv$links.update(link, uuid)
+#' @param link Link object.
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.update
+NULL
+
+#' links.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$links.delete(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.delete
+NULL
+
+#' links.list is a method defined in Arvados class.
+#' 
+#' @usage arv$links.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LinkList object.
+#' @name links.list
+NULL
+
+#' links.show is a method defined in Arvados class.
+#' 
+#' @usage arv$links.show(uuid)
+#' @param uuid 
+#' @return Link object.
+#' @name links.show
+NULL
+
+#' links.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$links.destroy(uuid)
+#' @param uuid 
+#' @return Link object.
+#' @name links.destroy
+NULL
+
+#' links.get_permissions is a method defined in Arvados class.
+#' 
+#' @usage arv$links.get_permissions(uuid)
+#' @param uuid 
+#' @return Link object.
+#' @name links.get_permissions
+NULL
+
+#' jobs.get is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.get(uuid)
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.get
+NULL
+
+#' jobs.index is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobList object.
+#' @name jobs.index
+NULL
+
+#' jobs.create is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.create(job, ensure_unique_name = "false",
+#' 	find_or_create = "false", filters = NULL,
+#' 	minimum_script_version = NULL, exclude_script_versions = NULL)
+#' @param job Job object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param find_or_create 
+#' @param filters 
+#' @param minimum_script_version 
+#' @param exclude_script_versions 
+#' @return Job object.
+#' @name jobs.create
+NULL
+
+#' jobs.update is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.update(job, uuid)
+#' @param job Job object.
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.update
+NULL
+
+#' jobs.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.delete(uuid)
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.delete
+NULL
+
+#' jobs.queue is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.queue(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return Job object.
+#' @name jobs.queue
+NULL
+
+#' jobs.queue_size is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.queue_size(NULL)
+#' @return Job object.
+#' @name jobs.queue_size
+NULL
+
+#' jobs.cancel is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.cancel(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.cancel
+NULL
+
+#' jobs.lock is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.lock(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.lock
+NULL
+
+#' jobs.list is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.list(filters = NULL, where = NULL,
+#' 	order = NULL, select = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobList object.
+#' @name jobs.list
+NULL
+
+#' jobs.show is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.show(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.show
+NULL
+
+#' jobs.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.destroy(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.destroy
+NULL
+
+#' keep_disks.get is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.get(uuid)
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.get
+NULL
+
+#' keep_disks.index is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepDiskList object.
+#' @name keep_disks.index
+NULL
+
+#' keep_disks.create is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.create(keep_disk,
+#' 	ensure_unique_name = "false")
+#' @param keepDisk KeepDisk object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return KeepDisk object.
+#' @name keep_disks.create
+NULL
+
+#' keep_disks.update is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.update(keep_disk,
+#' 	uuid)
+#' @param keepDisk KeepDisk object.
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.update
+NULL
+
+#' keep_disks.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.delete(uuid)
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.delete
+NULL
+
+#' keep_disks.ping is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.ping(uuid = NULL,
+#' 	ping_secret, node_uuid = NULL, filesystem_uuid = NULL,
+#' 	service_host = NULL, service_port, service_ssl_flag)
+#' @param uuid 
+#' @param ping_secret 
+#' @param node_uuid 
+#' @param filesystem_uuid 
+#' @param service_host 
+#' @param service_port 
+#' @param service_ssl_flag 
+#' @return KeepDisk object.
+#' @name keep_disks.ping
+NULL
+
+#' keep_disks.list is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepDiskList object.
+#' @name keep_disks.list
+NULL
+
+#' keep_disks.show is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.show(uuid)
+#' @param uuid 
+#' @return KeepDisk object.
+#' @name keep_disks.show
+NULL
+
+#' keep_disks.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.destroy(uuid)
+#' @param uuid 
+#' @return KeepDisk object.
+#' @name keep_disks.destroy
+NULL
+
+#' keep_services.get is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.get(uuid)
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.get
+NULL
+
+#' keep_services.index is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepServiceList object.
+#' @name keep_services.index
+NULL
+
+#' keep_services.create is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.create(keep_service,
+#' 	ensure_unique_name = "false")
+#' @param keepService KeepService object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return KeepService object.
+#' @name keep_services.create
+NULL
+
+#' keep_services.update is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.update(keep_service,
+#' 	uuid)
+#' @param keepService KeepService object.
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.update
+NULL
+
+#' keep_services.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.delete(uuid)
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.delete
+NULL
+
+#' keep_services.accessible is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.accessible(NULL)
+#' @return KeepService object.
+#' @name keep_services.accessible
+NULL
+
+#' keep_services.list is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepServiceList object.
+#' @name keep_services.list
+NULL
+
+#' keep_services.show is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.show(uuid)
+#' @param uuid 
+#' @return KeepService object.
+#' @name keep_services.show
+NULL
+
+#' keep_services.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.destroy(uuid)
+#' @param uuid 
+#' @return KeepService object.
+#' @name keep_services.destroy
+NULL
+
+#' pipeline_templates.get is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.get(uuid)
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.get
+NULL
+
+#' pipeline_templates.index is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineTemplateList object.
+#' @name pipeline_templates.index
+NULL
+
+#' pipeline_templates.create is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.create(pipeline_template,
+#' 	ensure_unique_name = "false")
+#' @param pipelineTemplate PipelineTemplate object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.create
+NULL
+
+#' pipeline_templates.update is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.update(pipeline_template,
+#' 	uuid)
+#' @param pipelineTemplate PipelineTemplate object.
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.update
+NULL
+
+#' pipeline_templates.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.delete(uuid)
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.delete
+NULL
+
+#' pipeline_templates.list is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineTemplateList object.
+#' @name pipeline_templates.list
+NULL
+
+#' pipeline_templates.show is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.show(uuid)
+#' @param uuid 
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.show
+NULL
+
+#' pipeline_templates.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.destroy(uuid)
+#' @param uuid 
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.destroy
+NULL
+
+#' pipeline_instances.get is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.get(uuid)
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.get
+NULL
+
+#' pipeline_instances.index is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineInstanceList object.
+#' @name pipeline_instances.index
+NULL
+
+#' pipeline_instances.create is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.create(pipeline_instance,
+#' 	ensure_unique_name = "false")
+#' @param pipelineInstance PipelineInstance object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.create
+NULL
+
+#' pipeline_instances.update is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.update(pipeline_instance,
+#' 	uuid)
+#' @param pipelineInstance PipelineInstance object.
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.update
+NULL
+
+#' pipeline_instances.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.delete(uuid)
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.delete
+NULL
+
+#' pipeline_instances.cancel is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.cancel(uuid)
+#' @param uuid 
+#' @return PipelineInstance object.
+#' @name pipeline_instances.cancel
+NULL
+
+#' pipeline_instances.list is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineInstanceList object.
+#' @name pipeline_instances.list
+NULL
+
+#' pipeline_instances.show is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.show(uuid)
+#' @param uuid 
+#' @return PipelineInstance object.
+#' @name pipeline_instances.show
+NULL
+
+#' pipeline_instances.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.destroy(uuid)
+#' @param uuid 
+#' @return PipelineInstance object.
+#' @name pipeline_instances.destroy
+NULL
+
+#' nodes.get is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.get(uuid)
+#' @param uuid The UUID of the Node in question.
+#' @return Node object.
+#' @name nodes.get
+NULL
+
+#' nodes.index is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return NodeList object.
+#' @name nodes.index
+NULL
+
+#' nodes.create is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.create(node, ensure_unique_name = "false",
+#' 	assign_slot = NULL)
+#' @param node Node object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param assign_slot assign slot and hostname
+#' @return Node object.
+#' @name nodes.create
+NULL
+
+#' nodes.update is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.update(node, uuid, assign_slot = NULL)
+#' @param node Node object.
+#' @param uuid The UUID of the Node in question.
+#' @param assign_slot assign slot and hostname
+#' @return Node object.
+#' @name nodes.update
+NULL
+
+#' nodes.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.delete(uuid)
+#' @param uuid The UUID of the Node in question.
+#' @return Node object.
+#' @name nodes.delete
+NULL
+
+#' nodes.ping is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.ping(uuid, ping_secret)
+#' @param uuid 
+#' @param ping_secret 
+#' @return Node object.
+#' @name nodes.ping
+NULL
+
+#' nodes.list is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return NodeList object.
+#' @name nodes.list
+NULL
+
+#' nodes.show is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.show(uuid)
+#' @param uuid 
+#' @return Node object.
+#' @name nodes.show
+NULL
+
+#' nodes.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.destroy(uuid)
+#' @param uuid 
+#' @return Node object.
+#' @name nodes.destroy
+NULL
+
+#' repositories.get is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.get(uuid)
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.get
+NULL
+
+#' repositories.index is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return RepositoryList object.
+#' @name repositories.index
+NULL
+
+#' repositories.create is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.create(repository,
+#' 	ensure_unique_name = "false")
+#' @param repository Repository object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Repository object.
+#' @name repositories.create
+NULL
+
+#' repositories.update is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.update(repository,
+#' 	uuid)
+#' @param repository Repository object.
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.update
+NULL
+
+#' repositories.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.delete(uuid)
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.delete
+NULL
+
+#' repositories.get_all_permissions is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.get_all_permissions(NULL)
+#' @return Repository object.
+#' @name repositories.get_all_permissions
+NULL
+
+#' repositories.list is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return RepositoryList object.
+#' @name repositories.list
+NULL
+
+#' repositories.show is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.show(uuid)
+#' @param uuid 
+#' @return Repository object.
+#' @name repositories.show
+NULL
+
+#' repositories.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.destroy(uuid)
+#' @param uuid 
+#' @return Repository object.
+#' @name repositories.destroy
+NULL
+
+#' specimens.get is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.get(uuid)
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.get
+NULL
+
+#' specimens.index is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return SpecimenList object.
+#' @name specimens.index
+NULL
+
+#' specimens.create is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.create(specimen,
+#' 	ensure_unique_name = "false")
+#' @param specimen Specimen object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Specimen object.
+#' @name specimens.create
+NULL
+
+#' specimens.update is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.update(specimen,
+#' 	uuid)
+#' @param specimen Specimen object.
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.update
+NULL
+
+#' specimens.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.delete(uuid)
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.delete
+NULL
+
+#' specimens.list is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return SpecimenList object.
+#' @name specimens.list
+NULL
+
+#' specimens.show is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.show(uuid)
+#' @param uuid 
+#' @return Specimen object.
+#' @name specimens.show
+NULL
+
+#' specimens.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.destroy(uuid)
+#' @param uuid 
+#' @return Specimen object.
+#' @name specimens.destroy
+NULL
+
+#' logs.get is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.get(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.get
+NULL
+
+#' logs.index is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LogList object.
+#' @name logs.index
+NULL
+
+#' logs.create is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.create(log, ensure_unique_name = "false")
+#' @param log Log object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Log object.
+#' @name logs.create
+NULL
+
+#' logs.update is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.update(log, uuid)
+#' @param log Log object.
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.update
+NULL
+
+#' logs.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.delete(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.delete
+NULL
+
+#' logs.list is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.list(filters = NULL, where = NULL,
+#' 	order = NULL, select = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LogList object.
+#' @name logs.list
+NULL
+
+#' logs.show is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.show(uuid)
+#' @param uuid 
+#' @return Log object.
+#' @name logs.show
+NULL
+
+#' logs.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.destroy(uuid)
+#' @param uuid 
+#' @return Log object.
+#' @name logs.destroy
+NULL
+
+#' traits.get is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.get(uuid)
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.get
+NULL
+
+#' traits.index is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return TraitList object.
+#' @name traits.index
+NULL
+
+#' traits.create is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.create(trait, ensure_unique_name = "false")
+#' @param trait Trait object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Trait object.
+#' @name traits.create
+NULL
+
+#' traits.update is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.update(trait, uuid)
+#' @param trait Trait object.
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.update
+NULL
+
+#' traits.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.delete(uuid)
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.delete
+NULL
+
+#' traits.list is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return TraitList object.
+#' @name traits.list
+NULL
+
+#' traits.show is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.show(uuid)
+#' @param uuid 
+#' @return Trait object.
+#' @name traits.show
+NULL
+
+#' traits.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.destroy(uuid)
+#' @param uuid 
+#' @return Trait object.
+#' @name traits.destroy
+NULL
+
+#' virtual_machines.get is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.get(uuid)
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.get
+NULL
+
+#' virtual_machines.index is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return VirtualMachineList object.
+#' @name virtual_machines.index
+NULL
+
+#' virtual_machines.create is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.create(virtual_machine,
+#' 	ensure_unique_name = "false")
+#' @param virtualMachine VirtualMachine object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return VirtualMachine object.
+#' @name virtual_machines.create
+NULL
+
+#' virtual_machines.update is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.update(virtual_machine,
+#' 	uuid)
+#' @param virtualMachine VirtualMachine object.
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.update
+NULL
+
+#' virtual_machines.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.delete(uuid)
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.delete
+NULL
+
+#' virtual_machines.logins is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.logins(uuid)
+#' @param uuid 
+#' @return VirtualMachine object.
+#' @name virtual_machines.logins
+NULL
+
+#' virtual_machines.get_all_logins is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.get_all_logins(NULL)
+#' @return VirtualMachine object.
+#' @name virtual_machines.get_all_logins
+NULL
+
+#' virtual_machines.list is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return VirtualMachineList object.
+#' @name virtual_machines.list
+NULL
+
+#' virtual_machines.show is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.show(uuid)
+#' @param uuid 
+#' @return VirtualMachine object.
+#' @name virtual_machines.show
+NULL
+
+#' virtual_machines.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.destroy(uuid)
+#' @param uuid 
+#' @return VirtualMachine object.
+#' @name virtual_machines.destroy
+NULL
+
+#' workflows.get is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.get(uuid)
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.get
+NULL
+
+#' workflows.index is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return WorkflowList object.
+#' @name workflows.index
+NULL
+
+#' workflows.create is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.create(workflow,
+#' 	ensure_unique_name = "false")
+#' @param workflow Workflow object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Workflow object.
+#' @name workflows.create
+NULL
+
+#' workflows.update is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.update(workflow,
+#' 	uuid)
+#' @param workflow Workflow object.
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.update
+NULL
+
+#' workflows.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.delete(uuid)
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.delete
+NULL
+
+#' workflows.list is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return WorkflowList object.
+#' @name workflows.list
+NULL
+
+#' workflows.show is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.show(uuid)
+#' @param uuid 
+#' @return Workflow object.
+#' @name workflows.show
+NULL
+
+#' workflows.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.destroy(uuid)
+#' @param uuid 
+#' @return Workflow object.
+#' @name workflows.destroy
+NULL
+
+#' groups.get is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.get(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.get
+NULL
+
+#' groups.index is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @return GroupList object.
+#' @name groups.index
+NULL
+
+#' groups.create is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.create(group, ensure_unique_name = "false")
+#' @param group Group object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Group object.
+#' @name groups.create
+NULL
+
+#' groups.update is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.update(group, uuid)
+#' @param group Group object.
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.update
+NULL
+
+#' groups.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.delete(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.delete
+NULL
+
+#' groups.contents is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.contents(filters = NULL,
+#' 	where = NULL, order = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	include_trash = NULL, uuid = NULL, recursive = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param uuid 
+#' @param recursive Include contents from child groups recursively.
+#' @return Group object.
+#' @name groups.contents
+NULL
+
+#' groups.trash is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.trash(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.trash
+NULL
+
+#' groups.untrash is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.untrash(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.untrash
+NULL
+
+#' groups.list is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @return GroupList object.
+#' @name groups.list
+NULL
+
+#' groups.show is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.show(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.show
+NULL
+
+#' groups.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.destroy(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.destroy
+NULL
+
+#' user_agreements.get is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.get(uuid)
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.get
+NULL
+
+#' user_agreements.index is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.index(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserAgreementList object.
+#' @name user_agreements.index
+NULL
+
+#' user_agreements.create is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.create(user_agreement,
+#' 	ensure_unique_name = "false")
+#' @param userAgreement UserAgreement object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return UserAgreement object.
+#' @name user_agreements.create
+NULL
+
+#' user_agreements.update is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.update(user_agreement,
+#' 	uuid)
+#' @param userAgreement UserAgreement object.
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.update
+NULL
+
+#' user_agreements.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.delete(uuid)
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.delete
+NULL
+
+#' user_agreements.signatures is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.signatures(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.signatures
+NULL
+
+#' user_agreements.sign is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.sign(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.sign
+NULL
+
+#' user_agreements.list is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserAgreementList object.
+#' @name user_agreements.list
+NULL
+
+#' user_agreements.new is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.new(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.new
+NULL
+
+#' user_agreements.show is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.show(uuid)
+#' @param uuid 
+#' @return UserAgreement object.
+#' @name user_agreements.show
+NULL
+
+#' user_agreements.destroy is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.destroy(uuid)
+#' @param uuid 
+#' @return UserAgreement object.
+#' @name user_agreements.destroy
+NULL
+
 #' @export
 Arvados <- R6::R6Class(
 

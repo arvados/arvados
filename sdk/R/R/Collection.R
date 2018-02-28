@@ -266,6 +266,17 @@ Collection <- R6::R6Class(
             private$tree$getElement(relativePath)
         },
 
+		toJSON = function() 
+        {
+			fields <- sapply(private$classFields, function(field)
+			{
+				self[[field]]
+			}, USE.NAMES = TRUE)
+			
+			jsonlite::toJSON(list("collection" = 
+                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
         getRESTService = function() private$REST,
         setRESTService = function(newRESTService) private$REST <- newRESTService
     ),

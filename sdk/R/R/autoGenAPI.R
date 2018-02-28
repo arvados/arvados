@@ -11,6 +11,8 @@ getAPIDocument <- function(){
 #' @export
 generateAPI <- function()
 {
+    #TODO: Consider passing discovery document URL as parameter
+    #TODO: Consider passing location where to create new files.
     JSONDocument <- getAPIDocument()
 
     generateArvadosClasses(JSONDocument)
@@ -19,12 +21,27 @@ generateAPI <- function()
 
 generateArvadosAPIClass <- function(discoveryDocument)
 {
-    classMetaData     <- discoveryDocument$schemas
+    classMetaData <- discoveryDocument$schemas
     functionResources <- discoveryDocument$resources
     resourceNames     <- names(functionResources)
 
+    doc <- generateMethodsDocumentation(functionResources, resourceNames)
     arvadosAPIHeader <- generateAPIClassHeader()
+    arvadosClassMethods <- generateClassContent(functionResources, 
+                                                resourceNames, classMetaData)
     arvadosAPIFooter <- generateAPIClassFooter()
+
+    arvadosClass <- c(doc, arvadosAPIHeader, arvadosClassMethods, arvadosAPIFooter)
+
+    #TODO: Save to a file or load in memory?
+    fileConn <- file("./R/Arvados.R", "w")
+    writeLines(unlist(arvadosClass), fileConn)
+    close(fileConn)
+    NULL
+}
+
+generateClassContent <- function(functionResources, resourceNames, classMetaData)
+{
 
     arvadosMethods <- Map(function(resource, resourceName)
     {
@@ -41,13 +58,79 @@ generateArvadosAPIClass <- function(discoveryDocument)
 
     }, functionResources, resourceNames)
 
-    arvadosClass <- c(arvadosAPIHeader, arvadosMethods, arvadosAPIFooter)
+    arvadosMethods
+}
 
-    #TODO: Save to a file or load in memory?
-    fileConn <- file("./R/Arvados.R", "w")
-    writeLines(unlist(arvadosClass), fileConn)
-    close(fileConn)
-    NULL
+generateMethodsDocumentation <- function(functionResources, resourceNames)
+{
+    arvadosMethods <- unlist(unname(Map(function(resource, resourceName)
+    {
+        methodNames <- names(resource$methods)
+
+        functions <- Map(function(methodMetaData, methodName)
+        {
+            methodName <- paste0(resourceName, ".", methodName)
+            getMethodDocumentation(methodName, methodMetaData)
+
+        }, resource$methods, methodNames)
+
+        unlist(unname(functions))
+
+    }, functionResources, resourceNames)))
+    
+    arvadosMethods
+}
+
+getMethodDocumentation <- function(methodName, methodMetaData)
+{
+    name <- paste("#' @name", methodName)
+    usage <- getMethodUsage(methodName, methodMetaData)
+    description <- paste("#'", methodName, "is a method defined in Arvados class.")
+    params <- getMethodDescription(methodMetaData) 
+    returnValue <- paste("#' @return", methodMetaData$response[["$ref"]], "object.")
+
+    c(description,
+      "#' ",
+      usage,
+      params,
+      returnValue,
+      name,
+      "NULL",
+      "")
+}
+
+getMethodUsage <- function(methodName, methodMetaData)
+{
+    args <- getFunctionArguments(methodMetaData)
+    c(formatArgs(paste0("#' @usage arv$", methodName, "("), "#' \t", args, ")", 40))
+}
+
+getMethodDescription <- function(methodMetaData)
+{
+    request <- methodMetaData$request
+    requestDoc <- NULL
+
+    if(!is.null(request))
+    {
+        requestDoc <- unname(unlist(sapply(request$properties, function(prop)
+                             {
+                                 className <- sapply(prop, function(ref) ref)
+                                 objectName <- paste0(tolower(substr(className, 1, 1)),
+                                                      substr(className, 2, nchar(className)))
+                                 paste("#' @param", objectName, className, "object.") 
+                             })))
+    }
+
+    argNames <- names(methodMetaData$parameters)
+
+    argsDoc <- unname(unlist(sapply(argNames, function(argName)
+    {
+        arg <- methodMetaData$parameters[[argName]]
+        argDescription <- arg$description
+        paste("#' @param", argName, argDescription) 
+    })))
+
+    c(requestDoc, argsDoc)
 }
 
 getFunctionName <- function(functionMetaData)
@@ -60,13 +143,15 @@ getFunctionName <- function(functionMetaData)
 getFunctionArguments <- function(functionMetaData)
 {
     request <- functionMetaData$request
-    requestArgument <- NULL
+    requestArgs <- NULL
 
     if(!is.null(request))
+    {
         if(request$required)
-            requestArgument <- names(request$properties)
+            requestArgs <- names(request$properties)
         else
-            requestArgument <- paste(names(request$properties), "=", "NULL")
+            requestArgs <- paste(names(request$properties), "=", "NULL")
+    }
 
     argNames <- names(functionMetaData$parameters)
 
@@ -85,7 +170,7 @@ getFunctionArguments <- function(functionMetaData)
         argName
     })
 
-    paste0(c(requestArgument, args))
+    c(requestArgs, args)
 }
 
 getFunctionBody <- function(functionMetaData, classMetaData)
@@ -203,12 +288,10 @@ createFunction <- function(functionName, functionMetaData, classMetaData)
     body <- getFunctionBody(functionMetaData, classMetaData)
     funSignature <- getFunSignature(functionName, args)
 
-    functionString <- c(funSignature,
-                        "\t\t{",
-                            body,
-                        "\t\t},\n")
-
-    functionString
+    c(funSignature,
+      "\t\t{",
+          body,
+      "\t\t},\n")
 }
 
 getFunSignature <- function(funName, args)
