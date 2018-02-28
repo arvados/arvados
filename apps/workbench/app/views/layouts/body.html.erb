@@ -74,9 +74,12 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> Home project </a></li>
                   <% if Rails.configuration.composer_url %>
                     <li role="menuitem">
-                      <%= link_to Rails.configuration.composer_url, role: 'menu-item' do %>
-                      <i class="fa fa-lg fa-share-alt fa-fw"></i> Workflow Composer
-                  <% end %>
+		      <form action="<%= Rails.configuration.composer_url %>" method="GET">
+		        <input type="hidden" name="api_token" value="<%= Thread.current[:arvados_api_token] %>" />
+			<button role="menuitem" type="submit">
+			  <i class="fa fa-lg fa-share-alt fa-fw"></i> Workflow Composer
+			</button>
+		      </form>
                     </li>
                   <% end %>
                 <li role="menuitem">
