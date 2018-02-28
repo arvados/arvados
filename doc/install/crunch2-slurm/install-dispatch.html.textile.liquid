@@ -87,12 +87,19 @@ crunch-dispatch-slurm polls the API server periodically for new containers to ru
 
 h3. PrioritySpread
 
-crunch-dispatch-slurm adjusts the "nice" values of its SLURM jobs to ensure containers are prioritized correctly relative to one another. If non-Arvados jobs run on your SLURM cluster, a lower @PrioritySpread@ helps Arvados containers compete with them. If you have an older SLURM system that limits nice values to 10000, a smaller @PrioritySpread@ can help avoid reaching that limit. In other cases, a larger value is beneficial because it reduces the total number of adjustments made by executing @scontrol@. The smallest usable value is @1@. The default value of @10@ is used if this option is zero or negative. Example:
+crunch-dispatch-slurm adjusts the "nice" values of its SLURM jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
+* If non-Arvados jobs run on your SLURM cluster, and your Arvados containers are waiting too long in the SLURM queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
+* If you have an older SLURM system that limits nice values to 10000, a smaller @PrioritySpread@ can help avoid reaching that limit.
+* In other cases, a larger value is beneficial because it reduces the total number of adjustments made by executing @scontrol@.
+
+The smallest usable value is @1@. The default value of @10@ is used if this option is zero or negative. Example:
 
 <notextile>
 <pre><code class="userinput">PrioritySpread: <b>1000</b>
 </code></pre>
 </notextile>
+
+
 
 h3. SbatchArguments
 
