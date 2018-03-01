@@ -14,7 +14,7 @@ import (
 
 type Slurm interface {
 	Cancel(name string) error
-	Renice(name string, nice int) error
+	Renice(name string, nice int64) error
 	QueueCommand(args []string) *exec.Cmd
 	Batch(script io.Reader, args []string) error
 }
@@ -54,7 +54,7 @@ func (scli *slurmCLI) QueueCommand(args []string) *exec.Cmd {
 	return exec.Command("squeue", args...)
 }
 
-func (scli *slurmCLI) Renice(name string, nice int) error {
+func (scli *slurmCLI) Renice(name string, nice int64) error {
 	return scli.run(nil, "scontrol", []string{"update", "JobName=" + name, fmt.Sprintf("Nice=%d", nice)})
 }
 
