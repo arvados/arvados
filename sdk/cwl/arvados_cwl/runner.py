@@ -13,8 +13,7 @@ from StringIO import StringIO
 
 from schema_salad.sourceline import SourceLine
 
-import cwltool.draft2tool
-from cwltool.draft2tool import CommandLineTool
+from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
 from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
