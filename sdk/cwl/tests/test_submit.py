@@ -982,7 +982,7 @@ class TestSubmit(unittest.TestCase):
 
 
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
-    @mock.patch("cwltool.docker.get_image")
+    @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")
     def test_arvados_jobs_image(self, api, get_image, find_one_image_hash):
         arvrunner = mock.MagicMock()
