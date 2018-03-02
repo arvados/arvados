@@ -443,7 +443,8 @@ class ArvCwlRunner(object):
                                                 on_error=kwargs.get("on_error"),
                                                 submit_runner_image=kwargs.get("submit_runner_image"),
                                                 intermediate_output_ttl=kwargs.get("intermediate_output_ttl"),
-                                                merged_map=merged_map)
+                                                merged_map=merged_map,
+                                                priority=kwargs.get("priority"))
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
                                       self.output_name,
@@ -662,6 +663,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
                         default=0)
+
+    parser.add_argument("--priority", type=int,
+                        help="Workflow priority (range 1000 - 1, higher has precedence over lower, containers api only)",
+                        default=500)
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",

@@ -311,7 +311,7 @@ class RunnerContainer(Runner):
             "name": self.name,
             "output_path": "/var/spool/cwl",
             "cwd": "/var/spool/cwl",
-            "priority": 1,
+            "priority": self.priority,
             "state": "Committed",
             "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
