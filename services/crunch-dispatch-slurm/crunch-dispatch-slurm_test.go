@@ -115,7 +115,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 
 	s.disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:        arv,
-		PollPeriod: time.Duration(1) * time.Second,
+		PollPeriod: time.Second,
 		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 			go func() {
 				runContainer(disp, ctr)
@@ -260,10 +260,10 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
-		PollPeriod: time.Duration(1) * time.Second,
+		PollPeriod: time.Second,
 		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 			go func() {
-				time.Sleep(1 * time.Second)
+				time.Sleep(time.Second)
 				disp.UpdateState(ctr.UUID, dispatch.Running)
 				disp.UpdateState(ctr.UUID, dispatch.Complete)
 			}()
