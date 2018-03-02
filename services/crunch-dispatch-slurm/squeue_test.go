@@ -99,6 +99,14 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 		case <-tick.C:
 			slurm.queue = uuidGood + " 0 12345\n"
 			sqc.check()
+
+			// Avoid immediately selecting this case again
+			// on the next iteration if check() took
+			// longer than one tick.
+			select {
+			case <-tick.C:
+			default:
+			}
 		case <-timeout.C:
 			c.Fatal("timed out")
 		case <-done:
