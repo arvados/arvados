@@ -55,7 +55,7 @@ class TestContainer(unittest.TestCase):
             arvtool.formatgraph = None
             for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_"+str(enable_reuse),
                                  make_fs_access=make_fs_access, tmpdir="/tmp"):
-                j.run(enable_reuse=enable_reuse)
+                j.run(enable_reuse=enable_reuse, priority=500)
                 runner.api.container_requests().create.assert_called_with(
                     body=JsonDiffMatcher({
                         'environment': {
@@ -68,7 +68,7 @@ class TestContainer(unittest.TestCase):
                             'ram': 1073741824
                         },
                         'use_existing': enable_reuse,
-                        'priority': 1,
+                        'priority': 500,
                         'mounts': {
                             '/tmp': {'kind': 'tmp',
                                      "capacity": 1073741824
@@ -138,7 +138,7 @@ class TestContainer(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run(enable_reuse=True)
+            j.run(enable_reuse=True, priority=500)
 
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
@@ -155,7 +155,7 @@ class TestContainer(unittest.TestCase):
                 'API': True
             },
             'use_existing': False,
-            'priority': 1,
+            'priority': 500,
             'mounts': {
                 '/tmp': {'kind': 'tmp',
                          "capacity": 4194304000 },
@@ -247,7 +247,7 @@ class TestContainer(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_initial_work_dir",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run()
+            j.run(priority=500)
 
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
@@ -267,7 +267,7 @@ class TestContainer(unittest.TestCase):
                 'ram': 1073741824
             },
             'use_existing': True,
-            'priority': 1,
+            'priority': 500,
             'mounts': {
                 '/tmp': {'kind': 'tmp',
                          "capacity": 1073741824 },
@@ -346,7 +346,7 @@ class TestContainer(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_redirect",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run()
+            j.run(priority=500)
             runner.api.container_requests().create.assert_called_with(
                 body=JsonDiffMatcher({
                     'environment': {
@@ -359,7 +359,7 @@ class TestContainer(unittest.TestCase):
                         'ram': 1073741824
                     },
                     'use_existing': True,
-                    'priority': 1,
+                    'priority': 500,
                     'mounts': {
                         '/tmp': {'kind': 'tmp',
                                  "capacity": 1073741824 },
@@ -484,7 +484,7 @@ class TestContainer(unittest.TestCase):
         }
         for j in arvtool.job(job_order, mock.MagicMock(), basedir="", name="test_run_mounts",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run()
+            j.run(priority=500)
             runner.api.container_requests().create.assert_called_with(
                 body=JsonDiffMatcher({
                     'environment': {
@@ -497,7 +497,7 @@ class TestContainer(unittest.TestCase):
                         'ram': 1073741824
                     },
                     'use_existing': True,
-                    'priority': 1,
+                    'priority': 500,
                     'mounts': {
                         "/keep/99999999999999999999999999999994+44": {
                             "kind": "collection",

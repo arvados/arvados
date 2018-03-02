@@ -23,6 +23,7 @@ import cwltool.main
 import cwltool.workflow
 import cwltool.process
 from schema_salad.sourceline import SourceLine
+import schema_salad.validate as validate
 
 import arvados
 import arvados.config
@@ -415,12 +416,14 @@ class ArvCwlRunner(object):
 
         if self.work_api == "containers":
             if self.ignore_docker_for_reuse:
-                raise validate.ValidationException("--ignore-docker-for-reuse not supported with containers API.")
+                raise Exception("--ignore-docker-for-reuse not supported with containers API.")
             kwargs["outdir"] = "/var/spool/cwl"
             kwargs["docker_outdir"] = "/var/spool/cwl"
             kwargs["tmpdir"] = "/tmp"
             kwargs["docker_tmpdir"] = "/tmp"
         elif self.work_api == "jobs":
+            if kwargs["priority"] != 500:
+                raise Exception("--priority not implemented for jobs API.")
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["docker_outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
