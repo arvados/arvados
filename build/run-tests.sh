@@ -540,13 +540,13 @@ setup_virtualenv "$VENVDIR" --python python2.7
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install PyYAML >/dev/null \
+    || pip install --no-cache-dir PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
 # Preinstall forked version of libcloud, because nodemanager "pip install"
 # won't pick it up by default.
 pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
+    || pip install --pre --ignore-installed  --no-cache-dir https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
