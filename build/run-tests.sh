@@ -546,11 +546,7 @@ pip freeze 2>/dev/null | egrep ^PyYAML= \
 # Preinstall libcloud, because nodemanager "pip install"
 # won't pick it up by default.
 pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-<<<<<<< HEAD
-    || pip install --pre --ignore-installed  --no-cache-dir https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
-=======
-    || pip install apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
->>>>>>> 12268-libcloud230-official
+    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
