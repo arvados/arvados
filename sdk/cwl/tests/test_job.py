@@ -53,7 +53,8 @@ class TestJob(unittest.TestCase):
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                "id": "#"
+                "id": "#",
+                "class": "CommandLineTool"
             })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -144,7 +145,8 @@ class TestJob(unittest.TestCase):
                 "enableReuse": False
             }],
             "baseCommand": "ls",
-            "id": "#"
+            "id": "#",
+            "class": "CommandLineTool"
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
