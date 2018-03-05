@@ -529,10 +529,9 @@ pip freeze 2>/dev/null | egrep ^PyYAML= \
     || pip install PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
-# Preinstall forked version of libcloud, because nodemanager "pip install"
+# Preinstall libcloud, because nodemanager "pip install"
 # won't pick it up by default.
 pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || pip install apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
