@@ -887,7 +887,7 @@ class ArvPutUploadJob(object):
         m = self._my_collection().stripped_manifest().encode()
         local_pdh = '{}+{}'.format(hashlib.md5(m).hexdigest(), len(m))
         if pdh != local_pdh:
-            logger.warning("\n".join([
+            self.logger.warning("\n".join([
                 "arv-put: API server provided PDH differs from local manifest.",
                 "         This should not happen; showing API server version."]))
         return pdh
