@@ -486,6 +486,9 @@ if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
 fi
 
+## if libcloud becomes our own fork see
+## https://dev.arvados.org/issues/12268#note-27
+
 # Python 2 dependencies
 declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
 # Add --no-use-wheel if this pip knows it.
