@@ -604,7 +604,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         self.main_stdout = tutil.StringIO()
         self.main_stderr = tutil.StringIO()
         self.loggingHandler = logging.StreamHandler(self.main_stderr)
-        self.loggingHandler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        self.loggingHandler.setFormatter(arv_put.ArvPutLogFormatter('req-testing123'))
         logging.getLogger().addHandler(self.loggingHandler)
 
     def tearDown(self):
@@ -705,6 +705,9 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             self.assertLess(0, exc_test.exception.args[0])
             self.assertLess(0, coll_save_mock.call_count)
             self.assertEqual("", self.main_stdout.getvalue())
+            # Mock request id is added on log formatter at setUp
+            self.assertRegex(
+                self.main_stderr.getvalue(), r'\(X-Request-Id: req-testing123\)\n')
 
     def test_request_id_logging(self):
         matcher = r'INFO: X-Request-Id: req-[a-z0-9]{20}\n'
