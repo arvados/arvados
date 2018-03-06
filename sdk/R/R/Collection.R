@@ -53,26 +53,29 @@ Collection <- R6::R6Class(
 
     public = list(
 
-		uuid                     = NULL,
-		etag                     = NULL,
-		owner_uuid               = NULL,
-		created_at               = NULL,
-		modified_by_client_uuid  = NULL,
-		modified_by_user_uuid    = NULL,
-		modified_at              = NULL,
-		portable_data_hash       = NULL,
-		replication_desired      = NULL,
-		replication_confirmed_at = NULL,
-		replication_confirmed    = NULL,
-		updated_at               = NULL,
-		manifest_text            = NULL,
-		name                     = NULL,
-		description              = NULL,
-		properties               = NULL,
-		delete_at                = NULL,
-		file_names               = NULL,
-		trash_at                 = NULL,
-		is_trashed               = NULL,
+		uuid                         = NULL,
+		etag                         = NULL,
+		owner_uuid                   = NULL,
+		created_at                   = NULL,
+		modified_by_client_uuid      = NULL,
+		modified_by_user_uuid        = NULL,
+		modified_at                  = NULL,
+		portable_data_hash           = NULL,
+		replication_desired          = NULL,
+		replication_confirmed_at     = NULL,
+		replication_confirmed        = NULL,
+		updated_at                   = NULL,
+		manifest_text                = NULL,
+		name                         = NULL,
+		description                  = NULL,
+		properties                   = NULL,
+		delete_at                    = NULL,
+		file_names                   = NULL,
+		trash_at                     = NULL,
+		is_trashed                   = NULL,
+        storage_classes_desired      = NULL,
+        storage_classes_confirmed    = NULL,
+        storage_classes_confirmed_at = NULL,
 
 		initialize = function(uuid = NULL, etag = NULL, owner_uuid = NULL,
                               created_at = NULL, modified_by_client_uuid = NULL,
@@ -82,28 +85,34 @@ Collection <- R6::R6Class(
                               replication_confirmed = NULL, updated_at = NULL,
                               manifest_text = NULL, name = NULL, description = NULL,
                               properties = NULL, delete_at = NULL, file_names = NULL,
-                              trash_at = NULL, is_trashed = NULL) 
+                              trash_at = NULL, is_trashed = NULL,
+                              storage_classes_desired = NULL,
+                              storage_classes_confirmed = NULL,
+                              storage_classes_confirmed_at = NULL) 
         {
-			self$uuid                     <- uuid
-			self$etag                     <- etag
-			self$owner_uuid               <- owner_uuid
-			self$created_at               <- created_at
-			self$modified_by_client_uuid  <- modified_by_client_uuid
-			self$modified_by_user_uuid    <- modified_by_user_uuid
-			self$modified_at              <- modified_at
-			self$portable_data_hash       <- portable_data_hash
-			self$replication_desired      <- replication_desired
-			self$replication_confirmed_at <- replication_confirmed_at
-			self$replication_confirmed    <- replication_confirmed
-			self$updated_at               <- updated_at
-			self$manifest_text            <- manifest_text
-			self$name                     <- name
-			self$description              <- description
-			self$properties               <- properties
-			self$delete_at                <- delete_at
-			self$file_names               <- file_names
-			self$trash_at                 <- trash_at
-			self$is_trashed               <- is_trashed
+			self$uuid                         <- uuid
+			self$etag                         <- etag
+			self$owner_uuid                   <- owner_uuid
+			self$created_at                   <- created_at
+			self$modified_by_client_uuid      <- modified_by_client_uuid
+			self$modified_by_user_uuid        <- modified_by_user_uuid
+			self$modified_at                  <- modified_at
+			self$portable_data_hash           <- portable_data_hash
+			self$replication_desired          <- replication_desired
+			self$replication_confirmed_at     <- replication_confirmed_at
+			self$replication_confirmed        <- replication_confirmed
+			self$updated_at                   <- updated_at
+			self$manifest_text                <- manifest_text
+			self$name                         <- name
+			self$description                  <- description
+			self$properties                   <- properties
+			self$delete_at                    <- delete_at
+			self$file_names                   <- file_names
+			self$trash_at                     <- trash_at
+			self$is_trashed                   <- is_trashed
+            self$storage_classes_desired      <- storage_classes_desired
+            self$storage_classes_confirmed    <- storage_classes_confirmed
+            self$storage_classes_confirmed_at <- storage_classes_confirmed_at
 			
 			private$classFields <- c("uuid", "etag", "owner_uuid", 
                                      "created_at", "modified_by_client_uuid",
@@ -275,6 +284,16 @@ Collection <- R6::R6Class(
 			
 			jsonlite::toJSON(list("collection" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		},
 
         getRESTService = function() private$REST,

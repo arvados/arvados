@@ -45,8 +45,9 @@ UserList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -57,6 +58,16 @@ UserList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("userlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -155,11 +166,12 @@ User <- R6::R6Class(
 			self$is_active <- is_active
 			self$username <- username
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, email, first_name, last_name,
-				identity_url, is_admin, prefs, updated_at,
-				default_owner_uuid, is_active, username)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "email",
+				"first_name", "last_name", "identity_url",
+				"is_admin", "prefs", "updated_at", "default_owner_uuid",
+				"is_active", "username")
 		},
 
 		toJSON = function() {
@@ -170,6 +182,16 @@ User <- R6::R6Class(
 			
 			jsonlite::toJSON(list("user" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -227,8 +249,9 @@ ApiClientAuthorizationList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -239,6 +262,16 @@ ApiClientAuthorizationList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("apiclientauthorizationlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -323,11 +356,11 @@ ApiClientAuthorization <- R6::R6Class(
 			self$default_owner_uuid <- default_owner_uuid
 			self$scopes <- scopes
 			
-			private$classFields <- c(uuid, etag, api_token,
-				api_client_id, user_id, created_by_ip_address,
-				last_used_by_ip_address, last_used_at, expires_at,
-				created_at, updated_at, default_owner_uuid,
-				scopes)
+			private$classFields <- c("uuid", "etag",
+				"api_token", "api_client_id", "user_id",
+				"created_by_ip_address", "last_used_by_ip_address",
+				"last_used_at", "expires_at", "created_at",
+				"updated_at", "default_owner_uuid", "scopes")
 		},
 
 		toJSON = function() {
@@ -338,6 +371,16 @@ ApiClientAuthorization <- R6::R6Class(
 			
 			jsonlite::toJSON(list("apiclientauthorization" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -395,8 +438,9 @@ ApiClientList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -407,6 +451,16 @@ ApiClientList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("apiclientlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -484,10 +538,11 @@ ApiClient <- R6::R6Class(
 			self$updated_at <- updated_at
 			self$is_trusted <- is_trusted
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, url_prefix, created_at,
-				updated_at, is_trusted)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"url_prefix", "created_at", "updated_at",
+				"is_trusted")
 		},
 
 		toJSON = function() {
@@ -498,6 +553,16 @@ ApiClient <- R6::R6Class(
 			
 			jsonlite::toJSON(list("apiclient" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -555,8 +620,9 @@ ContainerRequestList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -567,6 +633,16 @@ ContainerRequestList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("containerrequestlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -723,16 +799,18 @@ ContainerRequest <- R6::R6Class(
 			self$output_name <- output_name
 			self$output_ttl <- output_ttl
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_at, modified_by_client_uuid,
-				modified_by_user_uuid, name, description,
-				properties, state, requesting_container_uuid,
-				container_uuid, container_count_max, mounts,
-				runtime_constraints, container_image, environment,
-				cwd, command, output_path, priority, expires_at,
-				filters, updated_at, container_count, use_existing,
-				scheduling_parameters, output_uuid, log_uuid,
-				output_name, output_ttl)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_at",
+				"modified_by_client_uuid", "modified_by_user_uuid",
+				"name", "description", "properties", "state",
+				"requesting_container_uuid", "container_uuid",
+				"container_count_max", "mounts", "runtime_constraints",
+				"container_image", "environment", "cwd",
+				"command", "output_path", "priority", "expires_at",
+				"filters", "updated_at", "container_count",
+				"use_existing", "scheduling_parameters",
+				"output_uuid", "log_uuid", "output_name",
+				"output_ttl")
 		},
 
 		toJSON = function() {
@@ -743,6 +821,16 @@ ContainerRequest <- R6::R6Class(
 			
 			jsonlite::toJSON(list("containerrequest" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -800,8 +888,9 @@ AuthorizedKeyList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -812,6 +901,16 @@ AuthorizedKeyList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("authorizedkeylist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -896,10 +995,11 @@ AuthorizedKey <- R6::R6Class(
 			self$created_at <- created_at
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, key_type, authorized_user_uuid,
-				public_key, expires_at, created_at, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"key_type", "authorized_user_uuid", "public_key",
+				"expires_at", "created_at", "updated_at")
 		},
 
 		toJSON = function() {
@@ -910,6 +1010,16 @@ AuthorizedKey <- R6::R6Class(
 			
 			jsonlite::toJSON(list("authorizedkey" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -967,8 +1077,9 @@ CollectionList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -979,6 +1090,16 @@ CollectionList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("collectionlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1036,8 +1157,9 @@ ContainerList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -1048,6 +1170,16 @@ ContainerList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("containerlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1181,14 +1313,15 @@ Container <- R6::R6Class(
 			self$locked_by_uuid <- locked_by_uuid
 			self$scheduling_parameters <- scheduling_parameters
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_at, modified_by_client_uuid,
-				modified_by_user_uuid, state, started_at,
-				finished_at, log, environment, cwd, command,
-				output_path, mounts, runtime_constraints,
-				output, container_image, progress, priority,
-				updated_at, exit_code, auth_uuid, locked_by_uuid,
-				scheduling_parameters)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_at",
+				"modified_by_client_uuid", "modified_by_user_uuid",
+				"state", "started_at", "finished_at", "log",
+				"environment", "cwd", "command", "output_path",
+				"mounts", "runtime_constraints", "output",
+				"container_image", "progress", "priority",
+				"updated_at", "exit_code", "auth_uuid", "locked_by_uuid",
+				"scheduling_parameters")
 		},
 
 		toJSON = function() {
@@ -1199,6 +1332,16 @@ Container <- R6::R6Class(
 			
 			jsonlite::toJSON(list("container" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1256,8 +1399,9 @@ HumanList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -1268,6 +1412,16 @@ HumanList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("humanlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1337,9 +1491,10 @@ Human <- R6::R6Class(
 			self$created_at <- created_at
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, properties, created_at, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "properties",
+				"created_at", "updated_at")
 		},
 
 		toJSON = function() {
@@ -1350,6 +1505,16 @@ Human <- R6::R6Class(
 			
 			jsonlite::toJSON(list("human" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1407,8 +1572,9 @@ JobTaskList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -1419,6 +1585,16 @@ JobTaskList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("jobtasklist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1521,12 +1697,12 @@ JobTask <- R6::R6Class(
 			self$started_at <- started_at
 			self$finished_at <- finished_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, job_uuid, sequence, parameters,
-				output, progress, success, created_at, updated_at,
-				created_by_job_task_uuid, qsequence, started_at,
-				finished_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "job_uuid",
+				"sequence", "parameters", "output", "progress",
+				"success", "created_at", "updated_at", "created_by_job_task_uuid",
+				"qsequence", "started_at", "finished_at")
 		},
 
 		toJSON = function() {
@@ -1537,6 +1713,16 @@ JobTask <- R6::R6Class(
 			
 			jsonlite::toJSON(list("jobtask" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1594,8 +1780,9 @@ LinkList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -1606,6 +1793,16 @@ LinkList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("linklist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1689,10 +1886,11 @@ Link <- R6::R6Class(
 			self$properties <- properties
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, tail_uuid, link_class, name,
-				head_uuid, properties, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "tail_uuid",
+				"link_class", "name", "head_uuid", "properties",
+				"updated_at")
 		},
 
 		toJSON = function() {
@@ -1703,6 +1901,16 @@ Link <- R6::R6Class(
 			
 			jsonlite::toJSON(list("link" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1760,8 +1968,9 @@ JobList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -1772,6 +1981,16 @@ JobList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("joblist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -1936,17 +2155,19 @@ Job <- R6::R6Class(
 			self$components <- components
 			self$script_parameters_digest <- script_parameters_digest
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, submit_id, script, script_version,
-				script_parameters, cancelled_by_client_uuid,
-				cancelled_by_user_uuid, cancelled_at, started_at,
-				finished_at, running, success, output, created_at,
-				updated_at, is_locked_by_uuid, log, tasks_summary,
-				runtime_constraints, nondeterministic, repository,
-				supplied_script_version, docker_image_locator,
-				priority, description, state, arvados_sdk_version,
-				components, script_parameters_digest)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "submit_id",
+				"script", "script_version", "script_parameters",
+				"cancelled_by_client_uuid", "cancelled_by_user_uuid",
+				"cancelled_at", "started_at", "finished_at",
+				"running", "success", "output", "created_at",
+				"updated_at", "is_locked_by_uuid", "log",
+				"tasks_summary", "runtime_constraints", "nondeterministic",
+				"repository", "supplied_script_version",
+				"docker_image_locator", "priority", "description",
+				"state", "arvados_sdk_version", "components",
+				"script_parameters_digest")
 		},
 
 		toJSON = function() {
@@ -1957,6 +2178,16 @@ Job <- R6::R6Class(
 			
 			jsonlite::toJSON(list("job" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2014,8 +2245,9 @@ KeepDiskList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2026,6 +2258,16 @@ KeepDiskList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("keepdisklist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2132,12 +2374,13 @@ KeepDisk <- R6::R6Class(
 			self$updated_at <- updated_at
 			self$keep_service_uuid <- keep_service_uuid
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, ping_secret, node_uuid, filesystem_uuid,
-				bytes_total, bytes_free, is_readable, is_writable,
-				last_read_at, last_write_at, last_ping_at,
-				created_at, updated_at, keep_service_uuid)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "ping_secret",
+				"node_uuid", "filesystem_uuid", "bytes_total",
+				"bytes_free", "is_readable", "is_writable",
+				"last_read_at", "last_write_at", "last_ping_at",
+				"created_at", "updated_at", "keep_service_uuid")
 		},
 
 		toJSON = function() {
@@ -2148,6 +2391,16 @@ KeepDisk <- R6::R6Class(
 			
 			jsonlite::toJSON(list("keepdisk" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2205,8 +2458,9 @@ KeepServiceList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2217,6 +2471,16 @@ KeepServiceList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("keepservicelist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2301,11 +2565,11 @@ KeepService <- R6::R6Class(
 			self$updated_at <- updated_at
 			self$read_only <- read_only
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, service_host, service_port,
-				service_ssl_flag, service_type, created_at,
-				updated_at, read_only)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "service_host",
+				"service_port", "service_ssl_flag", "service_type",
+				"created_at", "updated_at", "read_only")
 		},
 
 		toJSON = function() {
@@ -2316,6 +2580,16 @@ KeepService <- R6::R6Class(
 			
 			jsonlite::toJSON(list("keepservice" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2373,8 +2647,9 @@ PipelineTemplateList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2385,6 +2660,16 @@ PipelineTemplateList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("pipelinetemplatelist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2462,10 +2747,10 @@ PipelineTemplate <- R6::R6Class(
 			self$updated_at <- updated_at
 			self$description <- description
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, components, updated_at,
-				description)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"components", "updated_at", "description")
 		},
 
 		toJSON = function() {
@@ -2476,6 +2761,16 @@ PipelineTemplate <- R6::R6Class(
 			
 			jsonlite::toJSON(list("pipelinetemplate" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2533,8 +2828,9 @@ PipelineInstanceList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2545,6 +2841,16 @@ PipelineInstanceList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("pipelineinstancelist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2644,12 +2950,12 @@ PipelineInstance <- R6::R6Class(
 			self$finished_at <- finished_at
 			self$description <- description
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, pipeline_template_uuid, name,
-				components, updated_at, properties, state,
-				components_summary, started_at, finished_at,
-				description)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "pipeline_template_uuid",
+				"name", "components", "updated_at", "properties",
+				"state", "components_summary", "started_at",
+				"finished_at", "description")
 		},
 
 		toJSON = function() {
@@ -2660,6 +2966,16 @@ PipelineInstance <- R6::R6Class(
 			
 			jsonlite::toJSON(list("pipelineinstance" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2717,8 +3033,9 @@ NodeList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2729,6 +3046,16 @@ NodeList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("nodelist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2827,11 +3154,12 @@ Node <- R6::R6Class(
 			self$properties <- properties
 			self$job_uuid <- job_uuid
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, slot_number, hostname, domain,
-				ip_address, first_ping_at, last_ping_at,
-				info, updated_at, properties, job_uuid)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "slot_number",
+				"hostname", "domain", "ip_address", "first_ping_at",
+				"last_ping_at", "info", "updated_at", "properties",
+				"job_uuid")
 		},
 
 		toJSON = function() {
@@ -2842,6 +3170,16 @@ Node <- R6::R6Class(
 			
 			jsonlite::toJSON(list("node" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2899,8 +3237,9 @@ RepositoryList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -2911,6 +3250,16 @@ RepositoryList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("repositorylist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -2980,9 +3329,10 @@ Repository <- R6::R6Class(
 			self$created_at <- created_at
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, created_at, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"created_at", "updated_at")
 		},
 
 		toJSON = function() {
@@ -2993,6 +3343,16 @@ Repository <- R6::R6Class(
 			
 			jsonlite::toJSON(list("repository" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3050,8 +3410,9 @@ SpecimenList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3062,6 +3423,16 @@ SpecimenList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("specimenlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3135,9 +3506,10 @@ Specimen <- R6::R6Class(
 			self$updated_at <- updated_at
 			self$properties <- properties
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, material, updated_at, properties)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "material",
+				"updated_at", "properties")
 		},
 
 		toJSON = function() {
@@ -3148,6 +3520,16 @@ Specimen <- R6::R6Class(
 			
 			jsonlite::toJSON(list("specimen" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3205,8 +3587,9 @@ LogList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3217,6 +3600,16 @@ LogList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("loglist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3305,11 +3698,11 @@ Log <- R6::R6Class(
 			self$modified_at <- modified_at
 			self$object_owner_uuid <- object_owner_uuid
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				object_uuid, event_at, event_type, summary,
-				properties, created_at, updated_at, modified_at,
-				object_owner_uuid)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "object_uuid", "event_at",
+				"event_type", "summary", "properties", "created_at",
+				"updated_at", "modified_at", "object_owner_uuid")
 		},
 
 		toJSON = function() {
@@ -3320,6 +3713,16 @@ Log <- R6::R6Class(
 			
 			jsonlite::toJSON(list("log" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3377,8 +3780,9 @@ TraitList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3389,6 +3793,16 @@ TraitList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("traitlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3462,10 +3876,10 @@ Trait <- R6::R6Class(
 			self$created_at <- created_at
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, properties, created_at,
-				updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"properties", "created_at", "updated_at")
 		},
 
 		toJSON = function() {
@@ -3476,6 +3890,16 @@ Trait <- R6::R6Class(
 			
 			jsonlite::toJSON(list("trait" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3533,8 +3957,9 @@ VirtualMachineList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3545,6 +3970,16 @@ VirtualMachineList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("virtualmachinelist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3614,9 +4049,10 @@ VirtualMachine <- R6::R6Class(
 			self$created_at <- created_at
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, hostname, created_at, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "hostname",
+				"created_at", "updated_at")
 		},
 
 		toJSON = function() {
@@ -3627,6 +4063,16 @@ VirtualMachine <- R6::R6Class(
 			
 			jsonlite::toJSON(list("virtualmachine" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3684,8 +4130,9 @@ WorkflowList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3696,6 +4143,16 @@ WorkflowList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("workflowlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3773,10 +4230,10 @@ Workflow <- R6::R6Class(
 			self$definition <- definition
 			self$updated_at <- updated_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_at, modified_by_client_uuid,
-				modified_by_user_uuid, name, description,
-				definition, updated_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_at",
+				"modified_by_client_uuid", "modified_by_user_uuid",
+				"name", "description", "definition", "updated_at")
 		},
 
 		toJSON = function() {
@@ -3787,6 +4244,16 @@ Workflow <- R6::R6Class(
 			
 			jsonlite::toJSON(list("workflow" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3844,8 +4311,9 @@ GroupList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -3856,6 +4324,16 @@ GroupList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("grouplist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -3943,10 +4421,11 @@ Group <- R6::R6Class(
 			self$is_trashed <- is_trashed
 			self$delete_at <- delete_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, name, description, updated_at,
-				group_class, trash_at, is_trashed, delete_at)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "name",
+				"description", "updated_at", "group_class",
+				"trash_at", "is_trashed", "delete_at")
 		},
 
 		toJSON = function() {
@@ -3957,6 +4436,16 @@ Group <- R6::R6Class(
 			
 			jsonlite::toJSON(list("group" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -4014,8 +4503,9 @@ UserAgreementList <- R6::R6Class(
 			self$next_page_token <- next_page_token
 			self$selfLink <- selfLink
 			
-			private$classFields <- c(kind, etag, items,
-				next_link, next_page_token, selfLink)
+			private$classFields <- c("kind", "etag",
+				"items", "next_link", "next_page_token",
+				"selfLink")
 		},
 
 		toJSON = function() {
@@ -4026,6 +4516,16 @@ UserAgreementList <- R6::R6Class(
 			
 			jsonlite::toJSON(list("useragreementlist" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 
@@ -4048,7 +4548,9 @@ UserAgreementList <- R6::R6Class(
 #' 	replication_confirmed_at = NULL, replication_confirmed = NULL,
 #' 	updated_at = NULL, manifest_text = NULL, name = NULL,
 #' 	description = NULL, properties = NULL, delete_at = NULL,
-#' 	file_names = NULL, trash_at = NULL, is_trashed = NULL)
+#' 	file_names = NULL, trash_at = NULL, is_trashed = NULL,
+#' 	storage_classes_desired = NULL, storage_classes_confirmed = NULL,
+#' 	storage_classes_confirmed_at = NULL)
 #' }
 #' 
 #' @section Arguments:
@@ -4074,6 +4576,9 @@ UserAgreementList <- R6::R6Class(
 #'     \item{file_names}{}
 #'     \item{trash_at}{}
 #'     \item{is_trashed}{}
+#'     \item{storage_classes_desired}{}
+#'     \item{storage_classes_confirmed}{}
+#'     \item{storage_classes_confirmed_at}{}
 #'   }
 #' 
 #' @name UserAgreement
@@ -4105,6 +4610,9 @@ UserAgreement <- R6::R6Class(
 		file_names = NULL,
 		trash_at = NULL,
 		is_trashed = NULL,
+		storage_classes_desired = NULL,
+		storage_classes_confirmed = NULL,
+		storage_classes_confirmed_at = NULL,
 
 		initialize = function(uuid = NULL, etag = NULL,
 				owner_uuid = NULL, created_at = NULL, modified_by_client_uuid = NULL,
@@ -4114,7 +4622,8 @@ UserAgreement <- R6::R6Class(
 				updated_at = NULL, manifest_text = NULL,
 				name = NULL, description = NULL, properties = NULL,
 				delete_at = NULL, file_names = NULL, trash_at = NULL,
-				is_trashed = NULL)
+				is_trashed = NULL, storage_classes_desired = NULL,
+				storage_classes_confirmed = NULL, storage_classes_confirmed_at = NULL)
 		{
 			self$uuid <- uuid
 			self$etag <- etag
@@ -4136,14 +4645,18 @@ UserAgreement <- R6::R6Class(
 			self$file_names <- file_names
 			self$trash_at <- trash_at
 			self$is_trashed <- is_trashed
+			self$storage_classes_desired <- storage_classes_desired
+			self$storage_classes_confirmed <- storage_classes_confirmed
+			self$storage_classes_confirmed_at <- storage_classes_confirmed_at
 			
-			private$classFields <- c(uuid, etag, owner_uuid,
-				created_at, modified_by_client_uuid, modified_by_user_uuid,
-				modified_at, portable_data_hash, replication_desired,
-				replication_confirmed_at, replication_confirmed,
-				updated_at, manifest_text, name, description,
-				properties, delete_at, file_names, trash_at,
-				is_trashed)
+			private$classFields <- c("uuid", "etag",
+				"owner_uuid", "created_at", "modified_by_client_uuid",
+				"modified_by_user_uuid", "modified_at", "portable_data_hash",
+				"replication_desired", "replication_confirmed_at",
+				"replication_confirmed", "updated_at", "manifest_text",
+				"name", "description", "properties", "delete_at",
+				"file_names", "trash_at", "is_trashed", "storage_classes_desired",
+				"storage_classes_confirmed", "storage_classes_confirmed_at")
 		},
 
 		toJSON = function() {
@@ -4154,6 +4667,16 @@ UserAgreement <- R6::R6Class(
 			
 			jsonlite::toJSON(list("useragreement" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
 		}
 	),
 

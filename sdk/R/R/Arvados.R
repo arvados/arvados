@@ -2453,9 +2453,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2463,6 +2463,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.index = function(filters = NULL, where = NULL,
@@ -2485,10 +2490,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- UserList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.create = function(user, ensure_unique_name = "false")
@@ -2507,9 +2517,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2517,6 +2527,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.update = function(user, uuid)
@@ -2535,9 +2550,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2545,6 +2560,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.delete = function(uuid)
@@ -2563,9 +2583,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2573,6 +2593,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.current = function()
@@ -2591,9 +2616,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2601,6 +2626,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.system = function()
@@ -2619,9 +2649,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2629,6 +2659,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.activate = function(uuid)
@@ -2647,9 +2682,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2657,6 +2692,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.setup = function(user = NULL, openid_prefix = NULL,
@@ -2678,9 +2718,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2688,6 +2728,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.unsetup = function(uuid)
@@ -2706,9 +2751,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2716,6 +2761,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.update_uuid = function(uuid, new_uuid)
@@ -2734,9 +2784,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2744,6 +2794,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.list = function(filters = NULL, where = NULL,
@@ -2766,10 +2821,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- UserList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.show = function(uuid)
@@ -2788,9 +2848,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2798,6 +2858,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		users.destroy = function(uuid)
@@ -2816,9 +2881,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			User$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- User$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, email = resource$email,
 				first_name = resource$first_name, last_name = resource$last_name,
@@ -2826,6 +2891,11 @@ Arvados <- R6::R6Class(
 				prefs = resource$prefs, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				is_active = resource$is_active, username = resource$username)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.get = function(uuid)
@@ -2844,7 +2914,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -2853,6 +2923,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.index = function(filters = NULL,
@@ -2876,10 +2951,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorizationList$new(kind = resource$kind,
+			result <- ApiClientAuthorizationList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.create = function(api_client_authorization,
@@ -2899,7 +2979,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -2908,6 +2988,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.update = function(api_client_authorization, uuid)
@@ -2926,7 +3011,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -2935,6 +3020,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.delete = function(uuid)
@@ -2953,7 +3043,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -2962,6 +3052,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.create_system_auth = function(api_client_id = NULL, scopes = NULL)
@@ -2981,7 +3076,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -2990,6 +3085,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.current = function()
@@ -3008,7 +3108,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -3017,6 +3117,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.list = function(filters = NULL,
@@ -3040,10 +3145,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorizationList$new(kind = resource$kind,
+			result <- ApiClientAuthorizationList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.show = function(uuid)
@@ -3062,7 +3172,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -3071,6 +3181,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_client_authorizations.destroy = function(uuid)
@@ -3089,7 +3204,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientAuthorization$new(uuid = resource$uuid,
+			result <- ApiClientAuthorization$new(uuid = resource$uuid,
 				etag = resource$etag, api_token = resource$api_token,
 				api_client_id = resource$api_client_id, user_id = resource$user_id,
 				created_by_ip_address = resource$created_by_ip_address,
@@ -3098,6 +3213,11 @@ Arvados <- R6::R6Class(
 				created_at = resource$created_at, updated_at = resource$updated_at,
 				default_owner_uuid = resource$default_owner_uuid,
 				scopes = resource$scopes)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.get = function(uuid)
@@ -3116,12 +3236,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.index = function(filters = NULL,
@@ -3145,10 +3271,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- ApiClientList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.create = function(api_client, ensure_unique_name = "false")
@@ -3167,12 +3298,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.update = function(api_client, uuid)
@@ -3191,12 +3328,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.delete = function(uuid)
@@ -3215,12 +3358,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.list = function(filters = NULL,
@@ -3244,10 +3393,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClientList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- ApiClientList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.show = function(uuid)
@@ -3266,12 +3420,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		api_clients.destroy = function(uuid)
@@ -3290,12 +3450,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ApiClient$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- ApiClient$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				url_prefix = resource$url_prefix, created_at = resource$created_at,
 				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.get = function(uuid)
@@ -3314,7 +3480,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3334,6 +3500,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.index = function(filters = NULL,
@@ -3357,10 +3528,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequestList$new(kind = resource$kind,
+			result <- ContainerRequestList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.create = function(container_request,
@@ -3380,7 +3556,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3400,6 +3576,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.update = function(container_request, uuid)
@@ -3418,7 +3599,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3438,6 +3619,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.delete = function(uuid)
@@ -3456,7 +3642,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3476,6 +3662,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.list = function(filters = NULL,
@@ -3499,10 +3690,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequestList$new(kind = resource$kind,
+			result <- ContainerRequestList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.show = function(uuid)
@@ -3521,7 +3717,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3541,6 +3737,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		container_requests.destroy = function(uuid)
@@ -3559,7 +3760,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerRequest$new(uuid = resource$uuid,
+			result <- ContainerRequest$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_at = resource$modified_at,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
@@ -3579,6 +3780,11 @@ Arvados <- R6::R6Class(
 				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
 				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
 				output_name = resource$output_name, output_ttl = resource$output_ttl)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.get = function(uuid)
@@ -3597,13 +3803,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.index = function(filters = NULL,
@@ -3627,10 +3839,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKeyList$new(kind = resource$kind,
+			result <- AuthorizedKeyList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.create = function(authorized_key,
@@ -3650,13 +3867,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.update = function(authorized_key, uuid)
@@ -3675,13 +3898,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.delete = function(uuid)
@@ -3700,13 +3929,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.list = function(filters = NULL,
@@ -3730,10 +3965,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKeyList$new(kind = resource$kind,
+			result <- AuthorizedKeyList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.show = function(uuid)
@@ -3752,13 +3992,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		authorized_keys.destroy = function(uuid)
@@ -3777,13 +4023,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			AuthorizedKey$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- AuthorizedKey$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
 				public_key = resource$public_key, expires_at = resource$expires_at,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.get = function(uuid)
@@ -3802,7 +4054,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -3814,10 +4066,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.index = function(filters = NULL,
@@ -3842,10 +4100,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			CollectionList$new(kind = resource$kind,
+			result <- CollectionList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.create = function(collection, ensure_unique_name = "false")
@@ -3864,7 +4127,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -3876,10 +4139,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.update = function(collection, uuid)
@@ -3898,7 +4167,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -3910,10 +4179,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.delete = function(uuid)
@@ -3932,7 +4207,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -3944,10 +4219,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.provenance = function(uuid)
@@ -3966,7 +4247,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -3978,10 +4259,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.used_by = function(uuid)
@@ -4000,7 +4287,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -4012,10 +4299,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.trash = function(uuid)
@@ -4034,7 +4327,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -4046,10 +4339,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.untrash = function(uuid)
@@ -4068,7 +4367,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -4080,10 +4379,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.list = function(filters = NULL,
@@ -4108,10 +4413,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			CollectionList$new(kind = resource$kind,
+			result <- CollectionList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.show = function(uuid)
@@ -4130,7 +4440,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -4142,10 +4452,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		collections.destroy = function(uuid)
@@ -4164,7 +4480,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			collection <- Collection$new(uuid = resource$uuid,
+			result <- Collection$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -4176,10 +4492,16 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
 			
-			collection$setRESTService(private$REST)
-			collection
+			result$setRESTService(private$REST)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.get = function(uuid)
@@ -4198,9 +4520,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4212,6 +4535,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.index = function(filters = NULL,
@@ -4235,10 +4563,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- ContainerList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.create = function(container, ensure_unique_name = "false")
@@ -4257,9 +4590,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4271,6 +4605,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.update = function(container, uuid)
@@ -4289,9 +4628,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4303,6 +4643,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.delete = function(uuid)
@@ -4321,9 +4666,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4335,6 +4681,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.auth = function(uuid)
@@ -4353,9 +4704,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4367,6 +4719,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.lock = function(uuid)
@@ -4385,9 +4742,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4399,6 +4757,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.unlock = function(uuid)
@@ -4417,9 +4780,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4431,6 +4795,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.current = function()
@@ -4449,9 +4818,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4463,6 +4833,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.list = function(filters = NULL,
@@ -4486,10 +4861,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			ContainerList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- ContainerList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.show = function(uuid)
@@ -4508,9 +4888,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4522,6 +4903,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		containers.destroy = function(uuid)
@@ -4540,9 +4926,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Container$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Container$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				state = resource$state, started_at = resource$started_at,
 				finished_at = resource$finished_at, log = resource$log,
@@ -4554,6 +4941,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, exit_code = resource$exit_code,
 				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
 				scheduling_parameters = resource$scheduling_parameters)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.get = function(uuid)
@@ -4572,11 +4964,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.index = function(filters = NULL, where = NULL,
@@ -4599,10 +4997,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			HumanList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- HumanList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.create = function(human, ensure_unique_name = "false")
@@ -4621,11 +5024,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.update = function(human, uuid)
@@ -4644,11 +5053,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.delete = function(uuid)
@@ -4667,11 +5082,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.list = function(filters = NULL, where = NULL,
@@ -4694,10 +5115,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			HumanList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- HumanList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.show = function(uuid)
@@ -4716,11 +5142,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		humans.destroy = function(uuid)
@@ -4739,11 +5171,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Human$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Human$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, properties = resource$properties,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.get = function(uuid)
@@ -4762,8 +5200,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4772,6 +5211,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.index = function(filters = NULL,
@@ -4795,10 +5239,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTaskList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- JobTaskList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.create = function(job_task, ensure_unique_name = "false")
@@ -4817,8 +5266,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4827,6 +5277,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.update = function(job_task, uuid)
@@ -4845,8 +5300,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4855,6 +5311,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.delete = function(uuid)
@@ -4873,8 +5334,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4883,6 +5345,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.list = function(filters = NULL,
@@ -4906,10 +5373,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTaskList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- JobTaskList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.show = function(uuid)
@@ -4928,8 +5400,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4938,6 +5411,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		job_tasks.destroy = function(uuid)
@@ -4956,8 +5434,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobTask$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- JobTask$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
 				sequence = resource$sequence, parameters = resource$parameters,
@@ -4966,6 +5445,11 @@ Arvados <- R6::R6Class(
 				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
 				qsequence = resource$qsequence, started_at = resource$started_at,
 				finished_at = resource$finished_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.get = function(uuid)
@@ -4984,14 +5468,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.index = function(filters = NULL, where = NULL,
@@ -5014,10 +5503,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			LinkList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- LinkList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.create = function(link, ensure_unique_name = "false")
@@ -5036,14 +5530,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.update = function(link, uuid)
@@ -5062,14 +5561,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.delete = function(uuid)
@@ -5088,14 +5592,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.list = function(filters = NULL, where = NULL,
@@ -5118,10 +5627,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			LinkList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- LinkList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.show = function(uuid)
@@ -5140,14 +5654,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.destroy = function(uuid)
@@ -5166,14 +5685,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		links.get_permissions = function(uuid)
@@ -5192,14 +5716,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Link$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Link$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
 				link_class = resource$link_class, name = resource$name,
 				head_uuid = resource$head_uuid, properties = resource$properties,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.get = function(uuid)
@@ -5218,7 +5747,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5239,6 +5768,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.index = function(filters = NULL, where = NULL,
@@ -5261,10 +5795,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- JobList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.create = function(job, ensure_unique_name = "false",
@@ -5288,7 +5827,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5309,6 +5848,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.update = function(job, uuid)
@@ -5327,7 +5871,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5348,6 +5892,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.delete = function(uuid)
@@ -5366,7 +5915,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5387,6 +5936,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.queue = function(filters = NULL, where = NULL,
@@ -5409,7 +5963,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5430,6 +5984,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.queue_size = function()
@@ -5448,7 +6007,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5469,6 +6028,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.cancel = function(uuid)
@@ -5487,7 +6051,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5508,6 +6072,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.lock = function(uuid)
@@ -5526,7 +6095,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5547,6 +6116,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.list = function(filters = NULL, where = NULL,
@@ -5569,10 +6143,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			JobList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- JobList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.show = function(uuid)
@@ -5591,7 +6170,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5612,6 +6191,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		jobs.destroy = function(uuid)
@@ -5630,7 +6214,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Job$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, submit_id = resource$submit_id,
@@ -5651,6 +6235,11 @@ Arvados <- R6::R6Class(
 				priority = resource$priority, description = resource$description,
 				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
 				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.get = function(uuid)
@@ -5669,8 +6258,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5679,6 +6269,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.index = function(filters = NULL,
@@ -5702,10 +6297,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDiskList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- KeepDiskList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.create = function(keep_disk, ensure_unique_name = "false")
@@ -5724,8 +6324,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5734,6 +6335,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.update = function(keep_disk, uuid)
@@ -5752,8 +6358,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5762,6 +6369,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.delete = function(uuid)
@@ -5780,8 +6392,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5790,6 +6403,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.ping = function(uuid = NULL, ping_secret,
@@ -5813,8 +6431,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5823,6 +6442,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.list = function(filters = NULL,
@@ -5846,10 +6470,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDiskList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- KeepDiskList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.show = function(uuid)
@@ -5868,8 +6497,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5878,6 +6508,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_disks.destroy = function(uuid)
@@ -5896,8 +6531,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepDisk$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepDisk$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
 				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
@@ -5906,6 +6542,11 @@ Arvados <- R6::R6Class(
 				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
 				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
 				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.get = function(uuid)
@@ -5924,13 +6565,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.index = function(filters = NULL,
@@ -5954,10 +6601,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepServiceList$new(kind = resource$kind,
+			result <- KeepServiceList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.create = function(keep_service,
@@ -5977,13 +6629,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.update = function(keep_service, uuid)
@@ -6002,13 +6660,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.delete = function(uuid)
@@ -6027,13 +6691,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.accessible = function()
@@ -6052,13 +6722,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.list = function(filters = NULL,
@@ -6082,10 +6758,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepServiceList$new(kind = resource$kind,
+			result <- KeepServiceList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.show = function(uuid)
@@ -6104,13 +6785,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		keep_services.destroy = function(uuid)
@@ -6129,13 +6816,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			KeepService$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- KeepService$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, service_host = resource$service_host,
 				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
 				service_type = resource$service_type, created_at = resource$created_at,
 				updated_at = resource$updated_at, read_only = resource$read_only)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.get = function(uuid)
@@ -6154,13 +6847,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.index = function(filters = NULL,
@@ -6184,10 +6882,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplateList$new(kind = resource$kind,
+			result <- PipelineTemplateList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.create = function(pipeline_template,
@@ -6207,13 +6910,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.update = function(pipeline_template, uuid)
@@ -6232,13 +6940,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.delete = function(uuid)
@@ -6257,13 +6970,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.list = function(filters = NULL,
@@ -6287,10 +7005,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplateList$new(kind = resource$kind,
+			result <- PipelineTemplateList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.show = function(uuid)
@@ -6309,13 +7032,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_templates.destroy = function(uuid)
@@ -6334,13 +7062,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineTemplate$new(uuid = resource$uuid,
+			result <- PipelineTemplate$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				components = resource$components, updated_at = resource$updated_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.get = function(uuid)
@@ -6359,7 +7092,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6369,6 +7102,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.index = function(filters = NULL,
@@ -6392,10 +7130,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstanceList$new(kind = resource$kind,
+			result <- PipelineInstanceList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.create = function(pipeline_instance,
@@ -6415,7 +7158,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6425,6 +7168,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.update = function(pipeline_instance, uuid)
@@ -6443,7 +7191,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6453,6 +7201,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.delete = function(uuid)
@@ -6471,7 +7224,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6481,6 +7234,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.cancel = function(uuid)
@@ -6499,7 +7257,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6509,6 +7267,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.list = function(filters = NULL,
@@ -6532,10 +7295,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstanceList$new(kind = resource$kind,
+			result <- PipelineInstanceList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.show = function(uuid)
@@ -6554,7 +7322,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6564,6 +7332,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		pipeline_instances.destroy = function(uuid)
@@ -6582,7 +7355,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			PipelineInstance$new(uuid = resource$uuid,
+			result <- PipelineInstance$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
@@ -6592,6 +7365,11 @@ Arvados <- R6::R6Class(
 				state = resource$state, components_summary = resource$components_summary,
 				started_at = resource$started_at, finished_at = resource$finished_at,
 				description = resource$description)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.get = function(uuid)
@@ -6610,9 +7388,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6620,6 +7398,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.index = function(filters = NULL, where = NULL,
@@ -6642,10 +7425,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			NodeList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- NodeList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.create = function(node, ensure_unique_name = "false",
@@ -6666,9 +7454,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6676,6 +7464,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.update = function(node, uuid, assign_slot = NULL)
@@ -6694,9 +7487,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6704,6 +7497,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.delete = function(uuid)
@@ -6722,9 +7520,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6732,6 +7530,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.ping = function(uuid, ping_secret)
@@ -6750,9 +7553,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6760,6 +7563,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.list = function(filters = NULL, where = NULL,
@@ -6782,10 +7590,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			NodeList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- NodeList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.show = function(uuid)
@@ -6804,9 +7617,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6814,6 +7627,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		nodes.destroy = function(uuid)
@@ -6832,9 +7650,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Node$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Node$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, slot_number = resource$slot_number,
 				hostname = resource$hostname, domain = resource$domain,
@@ -6842,6 +7660,11 @@ Arvados <- R6::R6Class(
 				last_ping_at = resource$last_ping_at, info = resource$info,
 				updated_at = resource$updated_at, properties = resource$properties,
 				job_uuid = resource$job_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.get = function(uuid)
@@ -6860,11 +7683,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.index = function(filters = NULL,
@@ -6888,10 +7717,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			RepositoryList$new(kind = resource$kind,
+			result <- RepositoryList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.create = function(repository, ensure_unique_name = "false")
@@ -6910,11 +7744,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.update = function(repository, uuid)
@@ -6933,11 +7773,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.delete = function(uuid)
@@ -6956,11 +7802,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.get_all_permissions = function()
@@ -6979,11 +7831,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.list = function(filters = NULL,
@@ -7007,10 +7865,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			RepositoryList$new(kind = resource$kind,
+			result <- RepositoryList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.show = function(uuid)
@@ -7029,11 +7892,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		repositories.destroy = function(uuid)
@@ -7052,11 +7921,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Repository$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Repository$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.get = function(uuid)
@@ -7075,12 +7950,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.index = function(filters = NULL,
@@ -7104,10 +7984,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			SpecimenList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- SpecimenList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.create = function(specimen, ensure_unique_name = "false")
@@ -7126,12 +8011,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.update = function(specimen, uuid)
@@ -7150,12 +8040,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.delete = function(uuid)
@@ -7174,12 +8069,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.list = function(filters = NULL,
@@ -7203,10 +8103,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			SpecimenList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- SpecimenList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.show = function(uuid)
@@ -7225,12 +8130,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		specimens.destroy = function(uuid)
@@ -7249,12 +8159,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Specimen$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Specimen$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, material = resource$material,
 				updated_at = resource$updated_at, properties = resource$properties)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.get = function(uuid)
@@ -7273,7 +8188,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7281,6 +8196,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.index = function(filters = NULL, where = NULL,
@@ -7303,10 +8223,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			LogList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- LogList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.create = function(log, ensure_unique_name = "false")
@@ -7325,7 +8250,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7333,6 +8258,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.update = function(log, uuid)
@@ -7351,7 +8281,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7359,6 +8289,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.delete = function(uuid)
@@ -7377,7 +8312,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7385,6 +8320,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.list = function(filters = NULL, where = NULL,
@@ -7407,10 +8347,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			LogList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- LogList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.show = function(uuid)
@@ -7429,7 +8374,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7437,6 +8382,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		logs.destroy = function(uuid)
@@ -7455,7 +8405,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Log$new(uuid = resource$uuid, etag = resource$etag,
+			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
 				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				object_uuid = resource$object_uuid, event_at = resource$event_at,
@@ -7463,6 +8413,11 @@ Arvados <- R6::R6Class(
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at, modified_at = resource$modified_at,
 				object_owner_uuid = resource$object_owner_uuid)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.get = function(uuid)
@@ -7481,12 +8436,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.index = function(filters = NULL, where = NULL,
@@ -7509,10 +8470,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			TraitList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- TraitList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.create = function(trait, ensure_unique_name = "false")
@@ -7531,12 +8497,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.update = function(trait, uuid)
@@ -7555,12 +8527,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.delete = function(uuid)
@@ -7579,12 +8557,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.list = function(filters = NULL, where = NULL,
@@ -7607,10 +8591,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			TraitList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- TraitList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.show = function(uuid)
@@ -7629,12 +8618,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		traits.destroy = function(uuid)
@@ -7653,12 +8648,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Trait$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Trait$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				properties = resource$properties, created_at = resource$created_at,
 				updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.get = function(uuid)
@@ -7677,12 +8678,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.index = function(filters = NULL,
@@ -7706,10 +8712,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachineList$new(kind = resource$kind,
+			result <- VirtualMachineList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.create = function(virtual_machine,
@@ -7729,12 +8740,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.update = function(virtual_machine, uuid)
@@ -7753,12 +8769,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.delete = function(uuid)
@@ -7777,12 +8798,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.logins = function(uuid)
@@ -7801,12 +8827,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.get_all_logins = function()
@@ -7825,12 +8856,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.list = function(filters = NULL,
@@ -7854,10 +8890,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachineList$new(kind = resource$kind,
+			result <- VirtualMachineList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.show = function(uuid)
@@ -7876,12 +8917,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		virtual_machines.destroy = function(uuid)
@@ -7900,12 +8946,17 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			VirtualMachine$new(uuid = resource$uuid,
+			result <- VirtualMachine$new(uuid = resource$uuid,
 				etag = resource$etag, owner_uuid = resource$owner_uuid,
 				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, hostname = resource$hostname,
 				created_at = resource$created_at, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.get = function(uuid)
@@ -7924,12 +8975,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.index = function(filters = NULL,
@@ -7953,10 +9010,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			WorkflowList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- WorkflowList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.create = function(workflow, ensure_unique_name = "false")
@@ -7975,12 +9037,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.update = function(workflow, uuid)
@@ -7999,12 +9067,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.delete = function(uuid)
@@ -8023,12 +9097,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.list = function(filters = NULL,
@@ -8052,10 +9132,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			WorkflowList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- WorkflowList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.show = function(uuid)
@@ -8074,12 +9159,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		workflows.destroy = function(uuid)
@@ -8098,12 +9189,18 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Workflow$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_at = resource$modified_at, modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Workflow$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_at = resource$modified_at,
+				modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				name = resource$name, description = resource$description,
 				definition = resource$definition, updated_at = resource$updated_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.get = function(uuid)
@@ -8122,14 +9219,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.index = function(filters = NULL, where = NULL,
@@ -8154,10 +9256,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			GroupList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- GroupList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.create = function(group, ensure_unique_name = "false")
@@ -8176,14 +9283,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.update = function(group, uuid)
@@ -8202,14 +9314,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.delete = function(uuid)
@@ -8228,14 +9345,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.contents = function(filters = NULL,
@@ -8260,14 +9382,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.trash = function(uuid)
@@ -8286,14 +9413,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.untrash = function(uuid)
@@ -8312,14 +9444,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.list = function(filters = NULL, where = NULL,
@@ -8344,10 +9481,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			GroupList$new(kind = resource$kind, etag = resource$etag,
-				items = resource$items, next_link = resource$next_link,
-				next_page_token = resource$next_page_token,
+			result <- GroupList$new(kind = resource$kind,
+				etag = resource$etag, items = resource$items,
+				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.show = function(uuid)
@@ -8366,14 +9508,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		groups.destroy = function(uuid)
@@ -8392,14 +9539,19 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			Group$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- Group$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, name = resource$name,
 				description = resource$description, updated_at = resource$updated_at,
 				group_class = resource$group_class, trash_at = resource$trash_at,
 				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.get = function(uuid)
@@ -8418,9 +9570,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8430,7 +9582,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.index = function(filters = NULL,
@@ -8454,10 +9613,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreementList$new(kind = resource$kind,
+			result <- UserAgreementList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.create = function(user_agreement,
@@ -8477,9 +9641,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8489,7 +9653,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.update = function(user_agreement, uuid)
@@ -8508,9 +9679,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8520,7 +9691,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.delete = function(uuid)
@@ -8539,9 +9717,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8551,7 +9729,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.signatures = function()
@@ -8570,9 +9755,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8582,7 +9767,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.sign = function()
@@ -8601,9 +9793,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8613,7 +9805,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.list = function(filters = NULL,
@@ -8637,10 +9836,15 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreementList$new(kind = resource$kind,
+			result <- UserAgreementList$new(kind = resource$kind,
 				etag = resource$etag, items = resource$items,
 				next_link = resource$next_link, next_page_token = resource$next_page_token,
 				selfLink = resource$selfLink)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.new = function()
@@ -8659,9 +9863,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8671,7 +9875,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.show = function(uuid)
@@ -8690,9 +9901,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8702,7 +9913,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		user_agreements.destroy = function(uuid)
@@ -8721,9 +9939,9 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			UserAgreement$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, created_at = resource$created_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
+			result <- UserAgreement$new(uuid = resource$uuid,
+				etag = resource$etag, owner_uuid = resource$owner_uuid,
+				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
 				modified_by_user_uuid = resource$modified_by_user_uuid,
 				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
 				replication_desired = resource$replication_desired,
@@ -8733,7 +9951,14 @@ Arvados <- R6::R6Class(
 				name = resource$name, description = resource$description,
 				properties = resource$properties, delete_at = resource$delete_at,
 				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed)
+				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
+				storage_classes_confirmed = resource$storage_classes_confirmed,
+				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
+			
+			if(result$isEmpty())
+				resource
+			else
+				result
 		},
 
 		getHostName = function() private$host,

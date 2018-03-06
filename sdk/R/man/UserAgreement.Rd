@@ -15,7 +15,9 @@ UserAgreement
 	replication_confirmed_at = NULL, replication_confirmed = NULL,
 	updated_at = NULL, manifest_text = NULL, name = NULL,
 	description = NULL, properties = NULL, delete_at = NULL,
-	file_names = NULL, trash_at = NULL, is_trashed = NULL)
+	file_names = NULL, trash_at = NULL, is_trashed = NULL,
+	storage_classes_desired = NULL, storage_classes_confirmed = NULL,
+	storage_classes_confirmed_at = NULL)
 }
 }
 
@@ -43,6 +45,9 @@ UserAgreement
     \item{file_names}{}
     \item{trash_at}{}
     \item{is_trashed}{}
+    \item{storage_classes_desired}{}
+    \item{storage_classes_confirmed}{}
+    \item{storage_classes_confirmed_at}{}
   }
 }
 

@@ -42,7 +42,6 @@ generateArvadosAPIClass <- function(discoveryDocument)
 
 generateClassContent <- function(functionResources, resourceNames, classMetaData)
 {
-
     arvadosMethods <- Map(function(resource, resourceName)
     {
         methodNames <- names(resource$methods)
@@ -183,6 +182,7 @@ getFunctionBody <- function(functionMetaData, classMetaData)
     response <- getResponse(functionMetaData)
     errorCheck <- getErrorCheckingCode()
     returnObject <- getReturnObject(functionMetaData, classMetaData)
+    returnStatement <- getReturnObjectValidationCode()
 
     body <- c(url,
               headers,
@@ -190,9 +190,18 @@ getFunctionBody <- function(functionMetaData, classMetaData)
               requestBody, "",
               request, response, "",
               errorCheck, "",
-              returnObject)
+              returnObject, "",
+              returnStatement)
 
     paste0("\t\t\t", body)
+}
+
+getReturnObjectValidationCode <- function()
+{
+    c("if(result$isEmpty())",
+      "\tresource",
+      "else",
+      "\tresult")
 }
 
 getErrorCheckingCode <- function()
@@ -222,15 +231,14 @@ getReturnObject <- function(functionMetaData, classMetaData)
     returnClass <- functionMetaData$response[["$ref"]]
     classArguments <- getReturnClassArguments(returnClass, classMetaData)
 
-
     if(returnClass == "Collection")
-        return(c(formatArgs("collection <- Collection$new(", "\t",
+        return(c(formatArgs("result <- Collection$new(", "\t",
                             classArguments, ")", 40),
                  "",
-                 "collection$setRESTService(private$REST)",
-                 "collection"))
+                 "result$setRESTService(private$REST)"))
 
-    formatArgs(paste0(returnClass, "$new("), "\t", classArguments, ")", 40)
+    formatArgs(paste0("result <- ", returnClass, "$new("),
+               "\t", classArguments, ")", 40)
 }
 
 getReturnClassArguments <- function(className, classMetaData)
@@ -403,7 +411,7 @@ getArvadosClass <- function(classSchema)
               paste0("\t\t\tself$", fields, " <- ", fields),
                      "\t\t\t",
               paste0("\t\t\t", formatArgs("private$classFields <- c(", "\t",
-                                         fields, ")", 40)),
+                                         paste0("\"", fields, "\""), ")", 40)),
                      "\t\t},",
                      "",
                      "\t\ttoJSON = function() {",
@@ -414,6 +422,17 @@ getArvadosClass <- function(classSchema)
                      "\t\t\t",
               paste0("\t\t\tjsonlite::toJSON(list(\"", tolower(name), "\" = 
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)"),
+                     "\t\t},",
+                     "",
+                     "\t\tisEmpty = function() {",
+                     "\t\t\tfields <- sapply(private$classFields,",
+                     "\t\t\t                 function(field) self[[field]])",
+                     "",
+              paste0("\t\t\tif(any(sapply(fields, function(field) !is.null(field)",
+                     " && field != \"\")))"),
+                     "\t\t\t\tFALSE",
+                     "\t\t\telse",
+                     "\t\t\t\tTRUE",
                      "\t\t}",
                      "\t),",
                      "",
