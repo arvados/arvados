@@ -90,7 +90,6 @@ func (sqc *SqueueChecker) reniceAll() {
 		if renice[i] == job.nice {
 			continue
 		}
-		log.Printf("updating slurm priority for %q: nice %d => %d", job.uuid, job.nice, renice[i])
 		sqc.Slurm.Renice(job.uuid, renice[i])
 	}
 }
