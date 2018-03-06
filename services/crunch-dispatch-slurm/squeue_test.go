@@ -46,6 +46,12 @@ func (s *SqueueSuite) TestReniceAll(c *C) {
 			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1},
 			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
 		},
+		{ // ignore fake2 because slurm priority=0
+			spread: 1,
+			squeue: uuids[0] + " 10000 4294000000\n" + uuids[1] + " 10000 4294000111\n" + uuids[2] + " 10000 0\n",
+			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1, uuids[2]: 997},
+			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
+		},
 	} {
 		c.Logf("spread=%d squeue=%q want=%v -> expect=%v", test.spread, test.squeue, test.want, test.expect)
 		slurm := &slurmFake{

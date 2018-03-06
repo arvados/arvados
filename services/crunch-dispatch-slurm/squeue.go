@@ -79,6 +79,14 @@ func (sqc *SqueueChecker) reniceAll() {
 			// (perhaps it's not an Arvados job)
 			continue
 		}
+		if j.priority == 0 {
+			// SLURM <= 15.x implements "hold" by setting
+			// priority to 0. If we include held jobs
+			// here, we'll end up trying to push other
+			// jobs below them using negative priority,
+			// which won't help anything.
+			continue
+		}
 		jobs = append(jobs, j)
 	}
 
