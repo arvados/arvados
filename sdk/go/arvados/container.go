@@ -4,9 +4,12 @@
 
 package arvados
 
+import "time"
+
 // Container is an arvados#container resource.
 type Container struct {
 	UUID                 string               `json:"uuid"`
+	CreatedAt            time.Time            `json:"created_at"`
 	Command              []string             `json:"command"`
 	ContainerImage       string               `json:"container_image"`
 	Cwd                  string               `json:"cwd"`

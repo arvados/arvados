@@ -45,7 +45,8 @@ class TestContainer(unittest.TestCase):
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                "id": "#"
+                "id": "#",
+                "class": "CommandLineTool"
             })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -126,7 +127,8 @@ class TestContainer(unittest.TestCase):
                 "enableReuse": False
             }],
             "baseCommand": "ls",
-            "id": "#"
+            "id": "#",
+            "class": "CommandLineTool"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -234,7 +236,8 @@ class TestContainer(unittest.TestCase):
                 }                        ]
             }],
             "baseCommand": "ls",
-            "id": "#"
+            "id": "#",
+            "class": "CommandLineTool"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -333,7 +336,8 @@ class TestContainer(unittest.TestCase):
             "stderr": "stderr.txt",
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#"
+            "id": "#",
+            "class": "CommandLineTool"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -454,7 +458,8 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#"
+            "id": "#",
+            "class": "CommandLineTool"
         })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                      collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))

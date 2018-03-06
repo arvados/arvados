@@ -243,15 +243,17 @@ sanity_checks() {
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
 
-    # R SDK stuff
-    echo -n 'R: '
-    which R || fatal "No R. Try: apt-get install r-base"
-    echo -n 'testthat: '
-    R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
-    # needed for roxygen2, needed for devtools, needed for R sdk
-    pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
-    # needed for pkgdown, builds R SDK doc pages
-    which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
+    if [[ "$NEED_SDK_R" = true ]]; then
+      # R SDK stuff
+      echo -n 'R: '
+      which R || fatal "No R. Try: apt-get install r-base"
+      echo -n 'testthat: '
+      R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
+      # needed for roxygen2, needed for devtools, needed for R sdk
+      pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
+      # needed for pkgdown, builds R SDK doc pages
+      which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
+    fi
 }
 
 rotate_logfile() {
@@ -320,6 +322,18 @@ do
             ;;
     esac
 done
+
+# R SDK installation is very slow (~360s in a clean environment) and only
+# required when testing it. Skip that step if it is not needed.
+NEED_SDK_R=true
+
+if [[ ! -z "${only}" && "${only}" != "sdk/R" ]]; then
+  NEED_SDK_R=false
+fi
+
+if [[ ! -z "${skip}" && "${skip}" == "sdk/R" ]]; then
+  NEED_SDK_R=false
+fi
 
 start_services() {
     echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
@@ -526,13 +540,13 @@ setup_virtualenv "$VENVDIR" --python python2.7
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install PyYAML >/dev/null \
+    || pip install --no-cache-dir PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
-# Preinstall forked version of libcloud, because nodemanager "pip install"
+# Preinstall libcloud, because nodemanager "pip install"
 # won't pick it up by default.
 pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
+    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
@@ -701,11 +715,17 @@ do_test_once() {
 }
 
 do_install() {
-    if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
-        retry do_install_once ${@}
-    else
-        title "Skipping $1 install"
-    fi
+  skipit=false
+
+  if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
+      retry do_install_once ${@}
+  else
+      skipit=true
+  fi
+
+  if [[ "$skipit" = true ]]; then
+    title "Skipping $1 install"
+  fi
 }
 
 do_install_once() {
@@ -780,8 +800,10 @@ install_ruby_sdk() {
 do_install sdk/ruby ruby_sdk
 
 install_R_sdk() {
+  if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
        && R --quiet --vanilla --file=install_deps.R
+  fi
 }
 do_install sdk/R R_sdk
 
@@ -957,9 +979,12 @@ test_ruby_sdk() {
 do_test sdk/ruby ruby_sdk
 
 test_R_sdk() {
+  if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
         && R --quiet --file=run_test.R
+  fi
 }
+
 do_test sdk/R R_sdk
 
 test_cli() {
