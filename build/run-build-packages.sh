@@ -486,24 +486,6 @@ if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
 fi
 
-# Forked libcloud
-if test_package_presence "$PYTHON2_PKG_PREFIX"-apache-libcloud "$LIBCLOUD_PIN" python 2
-then
-  LIBCLOUD_DIR=$(mktemp -d)
-  (
-      cd $LIBCLOUD_DIR
-      git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
-      git checkout $DASHQ_UNLESS_DEBUG apache-libcloud-$LIBCLOUD_PIN
-      # libcloud is absurdly noisy without -q, so force -q here
-      OLD_DASHQ_UNLESS_DEBUG=$DASHQ_UNLESS_DEBUG
-      DASHQ_UNLESS_DEBUG=-q
-      handle_python_package
-      DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
-  )
-  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud "" python "" --iteration 2
-  rm -rf $LIBCLOUD_DIR
-fi
-
 # Python 2 dependencies
 declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
 # Add --no-use-wheel if this pip knows it.
