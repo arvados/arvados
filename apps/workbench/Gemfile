@@ -4,13 +4,16 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.1'
+# Having a dependency '~> 4.1' make rails 4.2.10 to be installed when it's
+# supposed to avoid that.
+gem 'rails', '< 4.2'
 gem 'arvados', '>= 0.1.20150511150219'
 
 gem 'activerecord-nulldb-adapter'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
+gem 'mime-types'
 
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
