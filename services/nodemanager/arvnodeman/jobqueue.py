@@ -163,7 +163,7 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                     continue
                 if '-dz642-' not in jobname:
                     continue
-                if not re.search(r'ReqNodeNotAvail|Resources|Priority', reason):
+                if not re.search(r'BadConstraints|ReqNodeNotAvail|Resources|Priority', reason):
                     continue
 
                 for feature in features.split(','):
