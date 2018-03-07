@@ -153,7 +153,7 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     def _send_request(self):
         queuelist = []
         if self.slurm_queue:
-            # cpus, memory, tempory disk space, reason, job name
+            # cpus, memory, tempory disk space, reason, job name, feature constraints
             squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j|%f"])
             for out in squeue_out.splitlines():
                 try:
