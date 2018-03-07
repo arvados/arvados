@@ -14,6 +14,36 @@ var _ = Suite(&SqueueSuite{})
 
 type SqueueSuite struct{}
 
+func (s *SqueueSuite) TestReleasePending(c *C) {
+	uuids := []string{
+		"zzzzz-dz642-fake0fake0fake0",
+		"zzzzz-dz642-fake1fake1fake1",
+		"zzzzz-dz642-fake2fake2fake2",
+	}
+	slurm := &slurmFake{
+		queue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 0 PENDING BadConstraints\n",
+	}
+	sqc := &SqueueChecker{
+		Slurm:  slurm,
+		Period: time.Hour,
+	}
+	sqc.startOnce.Do(sqc.start)
+	defer sqc.Stop()
+
+	done := make(chan struct{})
+	go func() {
+		for _, u := range uuids {
+			sqc.SetPriority(u, 1)
+		}
+		close(done)
+	}()
+	callUntilReady(sqc.check, done)
+
+	slurm.didRelease = nil
+	sqc.check()
+	c.Check(slurm.didRelease, DeepEquals, []string{uuids[2]})
+}
+
 func (s *SqueueSuite) TestReniceAll(c *C) {
 	uuids := []string{"zzzzz-dz642-fake0fake0fake0", "zzzzz-dz642-fake1fake1fake1", "zzzzz-dz642-fake2fake2fake2"}
 	for _, test := range []struct {
@@ -120,6 +150,19 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 			c.Check(sqc.queue[uuidGood].wantPriority, Equals, int64(123))
 			c.Check(sqc.queue[uuidBad], IsNil)
 			return
+		}
+	}
+}
+
+func callUntilReady(fn func(), done <-chan struct{}) {
+	tick := time.NewTicker(time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-tick.C:
+			fn()
 		}
 	}
 }
