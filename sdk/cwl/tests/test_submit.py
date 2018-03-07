@@ -194,7 +194,7 @@ def stubs(func):
             expect_packed_workflow = yaml.round_trip_load(f)
 
         stubs.expect_container_spec = {
-            'priority': 1,
+            'priority': 500,
             'mounts': {
                 '/var/spool/cwl': {
                     'writable': True,
@@ -709,7 +709,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
         expect_container = {
-            'priority': 1,
+            'priority': 500,
             'mounts': {
                 '/var/spool/cwl': {
                     'writable': True,
@@ -792,7 +792,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
         expect_container = {
-            'priority': 1,
+            'priority': 500,
             'mounts': {
                 '/var/spool/cwl': {
                     'writable': True,
@@ -973,6 +973,26 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         stubs.expect_container_spec["container_image"] = "arvados/jobs:123"
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+    @stubs
+    def test_submit_priority(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug", "--priority=669",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        stubs.expect_container_spec["priority"] = 669
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
