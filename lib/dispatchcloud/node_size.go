@@ -87,7 +87,7 @@ func SlurmNodeTypeFeatureKludge(cc *arvados.Cluster) {
 	}
 	for {
 		slurmKludge(features)
-		time.Sleep(time.Minute)
+		time.Sleep(2 * time.Second)
 	}
 }
 
