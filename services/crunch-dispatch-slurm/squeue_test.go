@@ -24,31 +24,31 @@ func (s *SqueueSuite) TestReniceAll(c *C) {
 	}{
 		{
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000000\n",
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1},
 			expect: [][]string{{uuids[0], "0"}},
 		},
 		{ // fake0 priority is too high
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
+			squeue: uuids[0] + " 10000 4294000777 PENDING Resources\n" + uuids[1] + " 10000 4294000444 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
 			expect: [][]string{{uuids[1], "0"}, {uuids[0], "334"}},
 		},
 		{ // specify spread
 			spread: 100,
-			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
+			squeue: uuids[0] + " 10000 4294000777 PENDING Resources\n" + uuids[1] + " 10000 4294000444 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
 			expect: [][]string{{uuids[1], "0"}, {uuids[0], "433"}},
 		},
 		{ // ignore fake2 because SetPriority() not called
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000000\n" + uuids[1] + " 10000 4294000111\n" + uuids[2] + " 10000 4294000222\n",
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 4294000222 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1},
 			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
 		},
 		{ // ignore fake2 because slurm priority=0
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000000\n" + uuids[1] + " 10000 4294000111\n" + uuids[2] + " 10000 0\n",
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 0 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1, uuids[2]: 997},
 			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
 		},
@@ -103,7 +103,7 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 	for {
 		select {
 		case <-tick.C:
-			slurm.queue = uuidGood + " 0 12345\n"
+			slurm.queue = uuidGood + " 0 12345 PENDING Resources\n"
 			sqc.check()
 
 			// Avoid immediately selecting this case again
