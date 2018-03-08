@@ -1,4 +1,4 @@
-#!/bin/bash
+  #!/bin/bash
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -57,8 +57,8 @@ version_from_git() {
         prefix="0.1"
     fi
 
-    declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-    echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+    declare $(format_last_commit_here "git_ts=%ct")
+    echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
 }
 
 nohash_version_from_git() {
