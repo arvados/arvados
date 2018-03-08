@@ -42,7 +42,7 @@ centos7|pyparsing|2.1.10|2|python|all
 centos7|keepalive|0.5|2|python|all
 debian8,debian9,ubuntu1204,ubuntu1404,ubuntu1604,centos7|lockfile|0.12.2|2|python|all|--epoch 1
 all|ruamel.yaml|0.13.7|2|python|amd64|--python-setup-py-arguments --single-version-externally-managed
-all|cwltest|1.0.20170809112706|3|python|all|--depends 'python-futures >= 3.0.5'
+all|cwltest|1.0.20180209171722|3|python|all|--depends 'python-futures >= 3.0.5'
 all|junit-xml|1.7|3|python|all
 all|rdflib-jsonld|0.4.0|2|python|all
 all|futures|3.0.5|2|python|all
