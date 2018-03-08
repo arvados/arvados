@@ -492,12 +492,12 @@ setup_virtualenv() {
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
-        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7,<8'
+        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7,<8'
     else
-        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7'
+        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
     fi
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
+    "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
 export PERLINSTALLBASE
@@ -751,8 +751,8 @@ do_install_once() {
         cd "$WORKSPACE/$1" \
             && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip" install --no-cache-dir --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --no-cache-dir --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
