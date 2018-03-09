@@ -79,6 +79,14 @@ func (sqc *SqueueChecker) reniceAll() {
 			// (perhaps it's not an Arvados job)
 			continue
 		}
+		if j.priority == 0 {
+			// SLURM <= 15.x implements "hold" by setting
+			// priority to 0. If we include held jobs
+			// here, we'll end up trying to push other
+			// jobs below them using negative priority,
+			// which won't help anything.
+			continue
+		}
 		jobs = append(jobs, j)
 	}
 
@@ -90,7 +98,6 @@ func (sqc *SqueueChecker) reniceAll() {
 		if renice[i] == job.nice {
 			continue
 		}
-		log.Printf("updating slurm priority for %q: nice %d => %d", job.uuid, job.nice, renice[i])
 		sqc.Slurm.Renice(job.uuid, renice[i])
 	}
 }
@@ -114,7 +121,7 @@ func (sqc *SqueueChecker) check() {
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 
-	cmd := sqc.Slurm.QueueCommand([]string{"--all", "--noheader", "--format=%j %y %Q"})
+	cmd := sqc.Slurm.QueueCommand([]string{"--all", "--noheader", "--format=%j %y %Q %T %r"})
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Run(); err != nil {
@@ -128,9 +135,9 @@ func (sqc *SqueueChecker) check() {
 		if line == "" {
 			continue
 		}
-		var uuid string
+		var uuid, state, reason string
 		var n, p int64
-		if _, err := fmt.Sscan(line, &uuid, &n, &p); err != nil {
+		if _, err := fmt.Sscan(line, &uuid, &n, &p, &state, &reason); err != nil {
 			log.Printf("warning: ignoring unparsed line in squeue output: %q", line)
 			continue
 		}
@@ -141,6 +148,23 @@ func (sqc *SqueueChecker) check() {
 		replacing.priority = p
 		replacing.nice = n
 		newq[uuid] = replacing
+
+		if state == "PENDING" && reason == "BadConstraints" && p == 0 && replacing.wantPriority > 0 {
+			// When using SLURM 14.x or 15.x, our queued
+			// jobs land in this state when "scontrol
+			// reconfigure" invalidates their feature
+			// constraints by clearing all node features.
+			// They stay in this state even after the
+			// features reappear, until we run "scontrol
+			// release {jobid}".
+			//
+			// "scontrol release" is silent and successful
+			// regardless of whether the features have
+			// reappeared, so rather than second-guessing
+			// whether SLURM is ready, we just keep trying
+			// this until it works.
+			sqc.Slurm.Release(uuid)
+		}
 	}
 	sqc.queue = newq
 	sqc.Broadcast()
