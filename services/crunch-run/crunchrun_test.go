@@ -1211,6 +1211,35 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
+	for _, test := range []struct {
+		in  interface{}
+		out string
+	}{
+		{in: "foo", out: `foo`},
+		{in: nil, out: "error"},
+		{in: map[string]int64{"foo": 123456789123456789}, out: "error"},
+	} {
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/mnt/test.txt": {Kind: "text", Content: test.in},
+		}
+		err := cr.SetupMounts()
+		if test.out == "error" {
+			c.Check(err.Error(), Equals, "content for mount \"/mnt/test.txt\" must be a string")
+		} else {
+			c.Check(err, IsNil)
+			sort.StringSlice(cr.Binds).Sort()
+			c.Check(cr.Binds, DeepEquals, []string{realTemp + "/text2/mountdata.text:/mnt/test.txt:ro"})
+			content, err := ioutil.ReadFile(realTemp + "/text2/mountdata.text")
+			c.Check(err, IsNil)
+			c.Check(content, DeepEquals, []byte(test.out))
+		}
+		os.RemoveAll(cr.ArvMountPoint)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
 	// Read-only mount points are allowed underneath output_dir mount point
 	{
 		i = 0
@@ -1277,13 +1306,13 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tmp":     {Kind: "tmp"},
-			"/tmp/foo": {Kind: "json"},
+			"/tmp/foo": {Kind: "tmp"},
 		}
 		cr.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Only mount points of kind 'collection' are supported underneath the output_path.*`)
+		c.Check(err, ErrorMatches, `Only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path.*`)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -2034,4 +2063,56 @@ func (s *TestSuite) TestBadCommand3(c *C) {
 
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+}
+
+func (s *TestSuite) TestSecretTextMountPoint(c *C) {
+	// under normal mounts, gets captured in output, oops
+	helperRecord := `{
+		"command": ["true"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"mounts": {
+                    "/tmp": {"kind": "tmp"},
+                    "/tmp/secret.conf": {"kind": "text", "content": "mypassword"}
+                },
+                "secret_mounts": {
+                },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ""), IsNil)
+
+	// under secret mounts, not captured in output
+	helperRecord = `{
+		"command": ["true"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"mounts": {
+                    "/tmp": {"kind": "tmp"}
+                },
+                "secret_mounts": {
+                    "/tmp/secret.conf": {"kind": "text", "content": "mypassword"}
+                },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
+	c.Check(api.CalledWith("collection.manifest_text", ""), NotNil)
 }
