@@ -41,7 +41,9 @@ end
 
 group :test, :diagnostics, :performance do
   gem 'minitest', '~> 5.10.3'
-  gem 'selenium-webdriver'
+  # Selenium-webdriver 3.x is producing problems like the one described here:
+  # https://stackoverflow.com/questions/41310586/ruby-selenium-webdriver-unable-to-find-mozilla-geckodriver
+  gem 'selenium-webdriver', '~> 2.53.1'
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
