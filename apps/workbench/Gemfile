@@ -40,7 +40,7 @@ group :development do
 end
 
 group :test, :diagnostics, :performance do
-  gem 'minitest', '~> 5.0'
+  gem 'minitest', '~> 5.10.3'
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'
@@ -64,7 +64,7 @@ gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
 
-gem 'angularjs-rails'
+gem 'angularjs-rails', '~> 1.3.8'
 
 gem 'less'
 gem 'less-rails'
