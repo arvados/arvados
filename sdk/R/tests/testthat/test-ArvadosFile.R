@@ -45,8 +45,9 @@ test_that(paste("getSizeInBytes delegates size calculation",
     returnSize <- 100
     fakeREST <- FakeRESTService$new(collectionContent, returnSize)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
 
     resourceSize <- fish$getSizeInBytes()
@@ -80,8 +81,9 @@ test_that("read raises exception offset or length is negative number", {
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
 
     expect_that(fish$read(contentType = "text", offset = -1),
@@ -98,8 +100,9 @@ test_that("read delegates reading operation to REST service class", {
     readContent <- "my file"
     fakeREST <- FakeRESTService$new(collectionContent, readContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
     
     fileContent <- fish$read("text")
@@ -115,8 +118,9 @@ test_that(paste("connection delegates connection creation ro RESTService class",
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
 
     connection <- fish$connection("r")
@@ -130,8 +134,9 @@ test_that(paste("connection returns textConnection opened",
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
 
     connection <- fish$connection("w")
@@ -151,8 +156,9 @@ test_that("flush sends data stored in a connection to a REST server", {
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
 
     connection <- fish$connection("w")
@@ -178,8 +184,9 @@ test_that("write delegates writing operation to REST service class", {
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     fish <- collection$get("animal/fish")
     
     fileContent <- fish$write("new file content")
@@ -208,8 +215,10 @@ test_that(paste("move raises exception if newLocationInCollection",
 
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+
+    collection <- Collection$new(api, "myUUID")
     dog <- collection$get("animal/dog")
 
     expect_that(dog$move("objects/dog"),
@@ -227,8 +236,9 @@ test_that("move raises exception if new location contains content with the same 
 
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     dog <- collection$get("animal/dog")
 
     expect_that(dog$move("dog"),
@@ -247,8 +257,9 @@ test_that("move moves arvados file inside collection tree", {
 
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
     dog <- collection$get("animal/dog")
 
     dog$move("dog")
@@ -257,4 +268,4 @@ test_that("move moves arvados file inside collection tree", {
 
     expect_that(dogIsNullOnOldLocation, is_true())
     expect_that(dogExistsOnNewLocation, is_true())
-}) 
+})

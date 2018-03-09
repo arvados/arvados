@@ -8,8 +8,9 @@ test_that(paste("constructor creates file tree from text content",
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     root <- collection$get("")
 
@@ -23,8 +24,9 @@ test_that(paste("add raises exception if passed argumet is not",
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     newNumber <- 10
 
@@ -38,8 +40,9 @@ test_that("add raises exception if relative path is not valid", {
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     newPen <- ArvadosFile$new("pen")
 
@@ -53,8 +56,9 @@ test_that("add raises exception if content name is empty string", {
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     rootFolder <- Subcollection$new("")
 
@@ -68,8 +72,9 @@ test_that(paste("add adds ArvadosFile or Subcollection",
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     newDog <- ArvadosFile$new("dog")
     collection$add(newDog, "animal")
@@ -86,8 +91,9 @@ test_that("create raises exception if passed argumet is not character vector", {
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$create(10),
                 throws_error("Expected character vector, got (numeric).", 
@@ -102,8 +108,9 @@ test_that("create raises exception if relative path is not valid", {
 
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     newPen <- ArvadosFile$new("pen")
 
@@ -118,8 +125,9 @@ test_that(paste("create adds files specified by fileNames",
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     files <- c("dog", "cat")
     collection$create(files, "animal")
@@ -139,8 +147,9 @@ test_that("remove raises exception if passed argumet is not character vector", {
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$remove(10),
                 throws_error("Expected character vector, got (numeric).", 
@@ -152,8 +161,9 @@ test_that("remove raises exception if user tries to remove root folder", {
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$remove(""),
                 throws_error("You can't delete root folder.", fixed = TRUE))
@@ -165,8 +175,9 @@ test_that(paste("remove removes files specified by paths",
     collectionContent <- c("animal", "animal/fish", "animal/dog", "animal/cat", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     collection$remove(c("animal/dog", "animal/cat"))
 
@@ -186,8 +197,9 @@ test_that(paste("move moves content to a new location inside file tree",
     collectionContent <- c("animal", "animal/dog", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     collection$move("animal/dog", "dog")
 
@@ -204,8 +216,9 @@ test_that("move raises exception if new location is not valid", {
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$move("fish", "object"),
                 throws_error("Content you want to move doesn't exist in the collection.",
@@ -217,8 +230,9 @@ test_that("getFileListing returns sorted collection content received from REST s
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     contentMatchExpected <- all(collection$getFileListing() == 
                                 c("animal", "animal/fish", "ball"))
@@ -234,8 +248,9 @@ test_that("get returns arvados file or subcollection from internal tree structur
     collectionContent <- c("animal", "animal/fish", "ball")
     fakeREST <- FakeRESTService$new(collectionContent)
 
-    collection <- Collection$new("fakeUUID")
-    collection$setRESTService(fakeREST)
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
 
     fish <- collection$get("animal/fish")
     fishIsNotNull <- !is.null(fish)

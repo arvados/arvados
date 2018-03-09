@@ -164,7 +164,7 @@ NULL
 
 #' api_client_authorizations.create is a method defined in Arvados class.
 #' 
-#' @usage arv$api_client_authorizations.create(api_client_authorization,
+#' @usage arv$api_client_authorizations.create(apiclientauthorization,
 #' 	ensure_unique_name = "false")
 #' @param apiClientAuthorization ApiClientAuthorization object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -174,7 +174,7 @@ NULL
 
 #' api_client_authorizations.update is a method defined in Arvados class.
 #' 
-#' @usage arv$api_client_authorizations.update(api_client_authorization,
+#' @usage arv$api_client_authorizations.update(apiclientauthorization,
 #' 	uuid)
 #' @param apiClientAuthorization ApiClientAuthorization object.
 #' @param uuid The UUID of the ApiClientAuthorization in question.
@@ -269,7 +269,7 @@ NULL
 
 #' api_clients.create is a method defined in Arvados class.
 #' 
-#' @usage arv$api_clients.create(api_client,
+#' @usage arv$api_clients.create(apiclient,
 #' 	ensure_unique_name = "false")
 #' @param apiClient ApiClient object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -279,7 +279,7 @@ NULL
 
 #' api_clients.update is a method defined in Arvados class.
 #' 
-#' @usage arv$api_clients.update(api_client,
+#' @usage arv$api_clients.update(apiclient,
 #' 	uuid)
 #' @param apiClient ApiClient object.
 #' @param uuid The UUID of the ApiClient in question.
@@ -357,7 +357,7 @@ NULL
 
 #' container_requests.create is a method defined in Arvados class.
 #' 
-#' @usage arv$container_requests.create(container_request,
+#' @usage arv$container_requests.create(containerrequest,
 #' 	ensure_unique_name = "false")
 #' @param containerRequest ContainerRequest object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -367,7 +367,7 @@ NULL
 
 #' container_requests.update is a method defined in Arvados class.
 #' 
-#' @usage arv$container_requests.update(container_request,
+#' @usage arv$container_requests.update(containerrequest,
 #' 	uuid)
 #' @param containerRequest ContainerRequest object.
 #' @param uuid The UUID of the ContainerRequest in question.
@@ -445,7 +445,7 @@ NULL
 
 #' authorized_keys.create is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.create(authorized_key,
+#' @usage arv$authorized_keys.create(authorizedkey,
 #' 	ensure_unique_name = "false")
 #' @param authorizedKey AuthorizedKey object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -455,7 +455,7 @@ NULL
 
 #' authorized_keys.update is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.update(authorized_key,
+#' @usage arv$authorized_keys.update(authorizedkey,
 #' 	uuid)
 #' @param authorizedKey AuthorizedKey object.
 #' @param uuid The UUID of the AuthorizedKey in question.
@@ -860,8 +860,7 @@ NULL
 
 #' job_tasks.create is a method defined in Arvados class.
 #' 
-#' @usage arv$job_tasks.create(job_task,
-#' 	ensure_unique_name = "false")
+#' @usage arv$job_tasks.create(jobtask, ensure_unique_name = "false")
 #' @param jobTask JobTask object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
 #' @return JobTask object.
@@ -870,8 +869,7 @@ NULL
 
 #' job_tasks.update is a method defined in Arvados class.
 #' 
-#' @usage arv$job_tasks.update(job_task,
-#' 	uuid)
+#' @usage arv$job_tasks.update(jobtask, uuid)
 #' @param jobTask JobTask object.
 #' @param uuid The UUID of the JobTask in question.
 #' @return JobTask object.
@@ -1174,7 +1172,7 @@ NULL
 
 #' keep_disks.create is a method defined in Arvados class.
 #' 
-#' @usage arv$keep_disks.create(keep_disk,
+#' @usage arv$keep_disks.create(keepdisk,
 #' 	ensure_unique_name = "false")
 #' @param keepDisk KeepDisk object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -1184,7 +1182,7 @@ NULL
 
 #' keep_disks.update is a method defined in Arvados class.
 #' 
-#' @usage arv$keep_disks.update(keep_disk,
+#' @usage arv$keep_disks.update(keepdisk,
 #' 	uuid)
 #' @param keepDisk KeepDisk object.
 #' @param uuid The UUID of the KeepDisk in question.
@@ -1278,7 +1276,7 @@ NULL
 
 #' keep_services.create is a method defined in Arvados class.
 #' 
-#' @usage arv$keep_services.create(keep_service,
+#' @usage arv$keep_services.create(keepservice,
 #' 	ensure_unique_name = "false")
 #' @param keepService KeepService object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -1288,7 +1286,7 @@ NULL
 
 #' keep_services.update is a method defined in Arvados class.
 #' 
-#' @usage arv$keep_services.update(keep_service,
+#' @usage arv$keep_services.update(keepservice,
 #' 	uuid)
 #' @param keepService KeepService object.
 #' @param uuid The UUID of the KeepService in question.
@@ -1373,7 +1371,7 @@ NULL
 
 #' pipeline_templates.create is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.create(pipeline_template,
+#' @usage arv$pipeline_templates.create(pipelinetemplate,
 #' 	ensure_unique_name = "false")
 #' @param pipelineTemplate PipelineTemplate object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -1383,7 +1381,7 @@ NULL
 
 #' pipeline_templates.update is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.update(pipeline_template,
+#' @usage arv$pipeline_templates.update(pipelinetemplate,
 #' 	uuid)
 #' @param pipelineTemplate PipelineTemplate object.
 #' @param uuid The UUID of the PipelineTemplate in question.
@@ -1461,7 +1459,7 @@ NULL
 
 #' pipeline_instances.create is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_instances.create(pipeline_instance,
+#' @usage arv$pipeline_instances.create(pipelineinstance,
 #' 	ensure_unique_name = "false")
 #' @param pipelineInstance PipelineInstance object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -1471,7 +1469,7 @@ NULL
 
 #' pipeline_instances.update is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_instances.update(pipeline_instance,
+#' @usage arv$pipeline_instances.update(pipelineinstance,
 #' 	uuid)
 #' @param pipelineInstance PipelineInstance object.
 #' @param uuid The UUID of the PipelineInstance in question.
@@ -2009,7 +2007,7 @@ NULL
 
 #' virtual_machines.create is a method defined in Arvados class.
 #' 
-#' @usage arv$virtual_machines.create(virtual_machine,
+#' @usage arv$virtual_machines.create(virtualmachine,
 #' 	ensure_unique_name = "false")
 #' @param virtualMachine VirtualMachine object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -2019,7 +2017,7 @@ NULL
 
 #' virtual_machines.update is a method defined in Arvados class.
 #' 
-#' @usage arv$virtual_machines.update(virtual_machine,
+#' @usage arv$virtual_machines.update(virtualmachine,
 #' 	uuid)
 #' @param virtualMachine VirtualMachine object.
 #' @param uuid The UUID of the VirtualMachine in question.
@@ -2324,7 +2322,7 @@ NULL
 
 #' user_agreements.create is a method defined in Arvados class.
 #' 
-#' @usage arv$user_agreements.create(user_agreement,
+#' @usage arv$user_agreements.create(useragreement,
 #' 	ensure_unique_name = "false")
 #' @param userAgreement UserAgreement object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
@@ -2334,7 +2332,7 @@ NULL
 
 #' user_agreements.update is a method defined in Arvados class.
 #' 
-#' @usage arv$user_agreements.update(user_agreement,
+#' @usage arv$user_agreements.update(useragreement,
 #' 	uuid)
 #' @param userAgreement UserAgreement object.
 #' @param uuid The UUID of the UserAgreement in question.
@@ -2443,7 +2441,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2453,21 +2452,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.index = function(filters = NULL, where = NULL,
@@ -2481,6 +2466,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2490,15 +2476,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.create = function(user, ensure_unique_name = "false")
@@ -2508,7 +2486,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- user$toJSON()
+			
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -2517,21 +2500,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.update = function(user, uuid)
@@ -2540,8 +2509,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- user$toJSON()
+			queryArgs <- NULL
+			
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -2550,21 +2524,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.delete = function(uuid)
@@ -2573,7 +2533,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -2583,21 +2544,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.current = function()
@@ -2607,6 +2554,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2616,21 +2564,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.system = function()
@@ -2640,6 +2574,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2649,21 +2584,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.activate = function(uuid)
@@ -2672,7 +2593,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -2682,21 +2604,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.setup = function(user = NULL, openid_prefix = NULL,
@@ -2709,6 +2617,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(user = user, openid_prefix = openid_prefix,
 				repo_name = repo_name, vm_uuid = vm_uuid,
 				send_notification_email = send_notification_email)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -2718,21 +2627,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.unsetup = function(uuid)
@@ -2741,7 +2636,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -2751,21 +2647,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.update_uuid = function(uuid, new_uuid)
@@ -2774,7 +2656,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid, new_uuid = new_uuid)
+			queryArgs <- list(new_uuid = new_uuid)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -2784,21 +2667,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.list = function(filters = NULL, where = NULL,
@@ -2812,6 +2681,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2821,15 +2691,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.show = function(uuid)
@@ -2838,7 +2700,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2848,21 +2711,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		users.destroy = function(uuid)
@@ -2871,7 +2720,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -2881,21 +2731,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- User$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, email = resource$email,
-				first_name = resource$first_name, last_name = resource$last_name,
-				identity_url = resource$identity_url, is_admin = resource$is_admin,
-				prefs = resource$prefs, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				is_active = resource$is_active, username = resource$username)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.get = function(uuid)
@@ -2904,7 +2740,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2914,20 +2751,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.index = function(filters = NULL,
@@ -2942,6 +2766,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -2951,18 +2776,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorizationList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		api_client_authorizations.create = function(api_client_authorization,
+		api_client_authorizations.create = function(apiclientauthorization,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("api_client_authorizations")
@@ -2970,7 +2787,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- api_client_authorization$toJSON()
+			
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -2979,30 +2801,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		api_client_authorizations.update = function(api_client_authorization, uuid)
+		api_client_authorizations.update = function(apiclientauthorization, uuid)
 		{
 			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- api_client_authorization$toJSON()
+			queryArgs <- NULL
+			
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3011,20 +2825,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.delete = function(uuid)
@@ -3033,7 +2834,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3043,20 +2845,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.create_system_auth = function(api_client_id = NULL, scopes = NULL)
@@ -3067,6 +2856,7 @@ Arvados <- R6::R6Class(
 			                "Content-Type" = "application/json")
 			queryArgs <- list(api_client_id = api_client_id,
 				scopes = scopes)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -3076,20 +2866,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.current = function()
@@ -3099,6 +2876,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3108,20 +2886,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.list = function(filters = NULL,
@@ -3136,6 +2901,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3145,15 +2911,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorizationList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.show = function(uuid)
@@ -3162,7 +2920,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3172,20 +2931,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_client_authorizations.destroy = function(uuid)
@@ -3194,7 +2940,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3204,20 +2951,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientAuthorization$new(uuid = resource$uuid,
-				etag = resource$etag, api_token = resource$api_token,
-				api_client_id = resource$api_client_id, user_id = resource$user_id,
-				created_by_ip_address = resource$created_by_ip_address,
-				last_used_by_ip_address = resource$last_used_by_ip_address,
-				last_used_at = resource$last_used_at, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				default_owner_uuid = resource$default_owner_uuid,
-				scopes = resource$scopes)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.get = function(uuid)
@@ -3226,7 +2960,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3236,18 +2971,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.index = function(filters = NULL,
@@ -3262,6 +2986,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3271,25 +2996,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		api_clients.create = function(api_client, ensure_unique_name = "false")
+		api_clients.create = function(apiclient, ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("api_clients")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- api_client$toJSON()
+			
+			if(length(apiclient) > 0)
+				body <- jsonlite::toJSON(list(apiclient = apiclient), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3298,28 +3020,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		api_clients.update = function(api_client, uuid)
+		api_clients.update = function(apiclient, uuid)
 		{
 			endPoint <- stringr::str_interp("api_clients/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- api_client$toJSON()
+			queryArgs <- NULL
+			
+			if(length(apiclient) > 0)
+				body <- jsonlite::toJSON(list(apiclient = apiclient), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3328,18 +3044,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.delete = function(uuid)
@@ -3348,7 +3053,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3358,18 +3064,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.list = function(filters = NULL,
@@ -3384,6 +3079,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3393,15 +3089,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClientList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.show = function(uuid)
@@ -3410,7 +3098,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3420,18 +3109,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		api_clients.destroy = function(uuid)
@@ -3440,7 +3118,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3450,18 +3129,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ApiClient$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				url_prefix = resource$url_prefix, created_at = resource$created_at,
-				updated_at = resource$updated_at, is_trusted = resource$is_trusted)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.get = function(uuid)
@@ -3470,7 +3138,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3480,31 +3149,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.index = function(filters = NULL,
@@ -3519,6 +3164,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3528,18 +3174,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequestList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		container_requests.create = function(container_request,
+		container_requests.create = function(containerrequest,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("container_requests")
@@ -3547,7 +3185,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- container_request$toJSON()
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3556,41 +3199,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		container_requests.update = function(container_request, uuid)
+		container_requests.update = function(containerrequest, uuid)
 		{
 			endPoint <- stringr::str_interp("container_requests/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- container_request$toJSON()
+			queryArgs <- NULL
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3599,31 +3223,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.delete = function(uuid)
@@ -3632,7 +3232,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3642,31 +3243,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.list = function(filters = NULL,
@@ -3681,6 +3258,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3690,15 +3268,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequestList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.show = function(uuid)
@@ -3707,7 +3277,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3717,31 +3288,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		container_requests.destroy = function(uuid)
@@ -3750,7 +3297,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3760,31 +3308,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerRequest$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, state = resource$state,
-				requesting_container_uuid = resource$requesting_container_uuid,
-				container_uuid = resource$container_uuid,
-				container_count_max = resource$container_count_max,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				container_image = resource$container_image,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				priority = resource$priority, expires_at = resource$expires_at,
-				filters = resource$filters, updated_at = resource$updated_at,
-				container_count = resource$container_count,
-				use_existing = resource$use_existing, scheduling_parameters = resource$scheduling_parameters,
-				output_uuid = resource$output_uuid, log_uuid = resource$log_uuid,
-				output_name = resource$output_name, output_ttl = resource$output_ttl)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.get = function(uuid)
@@ -3793,7 +3317,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3803,19 +3328,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.index = function(filters = NULL,
@@ -3830,6 +3343,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3839,18 +3353,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKeyList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		authorized_keys.create = function(authorized_key,
+		authorized_keys.create = function(authorizedkey,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("authorized_keys")
@@ -3858,7 +3364,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- authorized_key$toJSON()
+			
+			if(length(authorizedkey) > 0)
+				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3867,29 +3378,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		authorized_keys.update = function(authorized_key, uuid)
+		authorized_keys.update = function(authorizedkey, uuid)
 		{
 			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- authorized_key$toJSON()
+			queryArgs <- NULL
+			
+			if(length(authorizedkey) > 0)
+				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -3898,19 +3402,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.delete = function(uuid)
@@ -3919,7 +3411,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -3929,19 +3422,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.list = function(filters = NULL,
@@ -3956,6 +3437,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3965,15 +3447,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKeyList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.show = function(uuid)
@@ -3982,7 +3456,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -3992,19 +3467,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		authorized_keys.destroy = function(uuid)
@@ -4013,7 +3476,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -4023,19 +3487,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- AuthorizedKey$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				key_type = resource$key_type, authorized_user_uuid = resource$authorized_user_uuid,
-				public_key = resource$public_key, expires_at = resource$expires_at,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.get = function(uuid)
@@ -4044,7 +3496,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4054,28 +3507,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.index = function(filters = NULL,
@@ -4091,6 +3523,7 @@ Arvados <- R6::R6Class(
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count,
 				include_trash = include_trash)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4100,15 +3533,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- CollectionList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.create = function(collection, ensure_unique_name = "false")
@@ -4118,7 +3543,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- collection$toJSON()
+			
+			if(length(collection) > 0)
+				body <- jsonlite::toJSON(list(collection = collection), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -4127,28 +3557,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.update = function(collection, uuid)
@@ -4157,8 +3566,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- collection$toJSON()
+			queryArgs <- NULL
+			
+			if(length(collection) > 0)
+				body <- jsonlite::toJSON(list(collection = collection), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -4167,28 +3581,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.delete = function(uuid)
@@ -4197,7 +3590,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -4207,28 +3601,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.provenance = function(uuid)
@@ -4237,7 +3610,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4247,28 +3621,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.used_by = function(uuid)
@@ -4277,7 +3630,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4287,28 +3641,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.trash = function(uuid)
@@ -4317,7 +3650,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -4327,28 +3661,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.untrash = function(uuid)
@@ -4357,7 +3670,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -4367,28 +3681,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.list = function(filters = NULL,
@@ -4404,6 +3697,7 @@ Arvados <- R6::R6Class(
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count,
 				include_trash = include_trash)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4413,15 +3707,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- CollectionList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.show = function(uuid)
@@ -4430,7 +3716,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4440,28 +3727,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		collections.destroy = function(uuid)
@@ -4470,7 +3736,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -4480,28 +3747,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Collection$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			result$setRESTService(private$REST)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.get = function(uuid)
@@ -4510,7 +3756,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4520,26 +3767,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.index = function(filters = NULL,
@@ -4554,6 +3782,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4563,15 +3792,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.create = function(container, ensure_unique_name = "false")
@@ -4581,7 +3802,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- container$toJSON()
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -4590,26 +3816,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.update = function(container, uuid)
@@ -4618,8 +3825,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- container$toJSON()
+			queryArgs <- NULL
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -4628,26 +3840,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.delete = function(uuid)
@@ -4656,7 +3849,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -4666,26 +3860,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.auth = function(uuid)
@@ -4694,7 +3869,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4704,26 +3880,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.lock = function(uuid)
@@ -4732,7 +3889,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -4742,26 +3900,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.unlock = function(uuid)
@@ -4770,7 +3909,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -4780,26 +3920,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.current = function()
@@ -4809,6 +3930,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4818,26 +3940,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.list = function(filters = NULL,
@@ -4852,6 +3955,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4861,15 +3965,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- ContainerList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.show = function(uuid)
@@ -4878,7 +3974,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4888,26 +3985,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		containers.destroy = function(uuid)
@@ -4916,7 +3994,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -4926,26 +4005,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Container$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				state = resource$state, started_at = resource$started_at,
-				finished_at = resource$finished_at, log = resource$log,
-				environment = resource$environment, cwd = resource$cwd,
-				command = resource$command, output_path = resource$output_path,
-				mounts = resource$mounts, runtime_constraints = resource$runtime_constraints,
-				output = resource$output, container_image = resource$container_image,
-				progress = resource$progress, priority = resource$priority,
-				updated_at = resource$updated_at, exit_code = resource$exit_code,
-				auth_uuid = resource$auth_uuid, locked_by_uuid = resource$locked_by_uuid,
-				scheduling_parameters = resource$scheduling_parameters)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.get = function(uuid)
@@ -4954,7 +4014,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4964,17 +4025,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.index = function(filters = NULL, where = NULL,
@@ -4988,6 +4039,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -4997,15 +4049,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- HumanList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.create = function(human, ensure_unique_name = "false")
@@ -5015,7 +4059,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- human$toJSON()
+			
+			if(length(human) > 0)
+				body <- jsonlite::toJSON(list(human = human), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5024,17 +4073,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.update = function(human, uuid)
@@ -5043,8 +4082,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- human$toJSON()
+			queryArgs <- NULL
+			
+			if(length(human) > 0)
+				body <- jsonlite::toJSON(list(human = human), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5053,17 +4097,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.delete = function(uuid)
@@ -5072,7 +4106,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5082,17 +4117,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.list = function(filters = NULL, where = NULL,
@@ -5106,6 +4131,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5115,15 +4141,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- HumanList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.show = function(uuid)
@@ -5132,7 +4150,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5142,17 +4161,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		humans.destroy = function(uuid)
@@ -5161,7 +4170,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5171,17 +4181,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Human$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, properties = resource$properties,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.get = function(uuid)
@@ -5190,7 +4190,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5200,22 +4201,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.index = function(filters = NULL,
@@ -5230,6 +4216,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5239,25 +4226,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTaskList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		job_tasks.create = function(job_task, ensure_unique_name = "false")
+		job_tasks.create = function(jobtask, ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("job_tasks")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- job_task$toJSON()
+			
+			if(length(jobtask) > 0)
+				body <- jsonlite::toJSON(list(jobtask = jobtask), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5266,32 +4250,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		job_tasks.update = function(job_task, uuid)
+		job_tasks.update = function(jobtask, uuid)
 		{
 			endPoint <- stringr::str_interp("job_tasks/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- job_task$toJSON()
+			queryArgs <- NULL
+			
+			if(length(jobtask) > 0)
+				body <- jsonlite::toJSON(list(jobtask = jobtask), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5300,22 +4274,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.delete = function(uuid)
@@ -5324,7 +4283,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5334,22 +4294,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.list = function(filters = NULL,
@@ -5364,6 +4309,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5373,15 +4319,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTaskList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.show = function(uuid)
@@ -5390,7 +4328,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5400,22 +4339,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		job_tasks.destroy = function(uuid)
@@ -5424,7 +4348,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5434,22 +4359,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobTask$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, job_uuid = resource$job_uuid,
-				sequence = resource$sequence, parameters = resource$parameters,
-				output = resource$output, progress = resource$progress,
-				success = resource$success, created_at = resource$created_at,
-				updated_at = resource$updated_at, created_by_job_task_uuid = resource$created_by_job_task_uuid,
-				qsequence = resource$qsequence, started_at = resource$started_at,
-				finished_at = resource$finished_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.get = function(uuid)
@@ -5458,7 +4368,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5468,19 +4379,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.index = function(filters = NULL, where = NULL,
@@ -5494,6 +4393,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5503,15 +4403,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- LinkList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.create = function(link, ensure_unique_name = "false")
@@ -5521,7 +4413,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- link$toJSON()
+			
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5530,19 +4427,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.update = function(link, uuid)
@@ -5551,8 +4436,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- link$toJSON()
+			queryArgs <- NULL
+			
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5561,19 +4451,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.delete = function(uuid)
@@ -5582,7 +4460,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5592,19 +4471,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.list = function(filters = NULL, where = NULL,
@@ -5618,6 +4485,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5627,15 +4495,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- LinkList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.show = function(uuid)
@@ -5644,7 +4504,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5654,19 +4515,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.destroy = function(uuid)
@@ -5675,7 +4524,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5685,19 +4535,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		links.get_permissions = function(uuid)
@@ -5706,7 +4544,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5716,19 +4555,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Link$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, tail_uuid = resource$tail_uuid,
-				link_class = resource$link_class, name = resource$name,
-				head_uuid = resource$head_uuid, properties = resource$properties,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.get = function(uuid)
@@ -5737,7 +4564,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5747,32 +4575,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.index = function(filters = NULL, where = NULL,
@@ -5786,6 +4589,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5795,15 +4599,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.create = function(job, ensure_unique_name = "false",
@@ -5818,7 +4614,12 @@ Arvados <- R6::R6Class(
 				find_or_create = find_or_create, filters = filters,
 				minimum_script_version = minimum_script_version,
 				exclude_script_versions = exclude_script_versions)
-			body <- job$toJSON()
+			
+			if(length(job) > 0)
+				body <- jsonlite::toJSON(list(job = job), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5827,32 +4628,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.update = function(job, uuid)
@@ -5861,8 +4637,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- job$toJSON()
+			queryArgs <- NULL
+			
+			if(length(job) > 0)
+				body <- jsonlite::toJSON(list(job = job), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -5871,32 +4652,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.delete = function(uuid)
@@ -5905,7 +4661,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -5915,32 +4672,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.queue = function(filters = NULL, where = NULL,
@@ -5954,6 +4686,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -5963,32 +4696,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.queue_size = function()
@@ -5998,6 +4706,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6007,32 +4716,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.cancel = function(uuid)
@@ -6041,7 +4725,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -6051,32 +4736,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.lock = function(uuid)
@@ -6085,7 +4745,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -6095,32 +4756,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.list = function(filters = NULL, where = NULL,
@@ -6134,6 +4770,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6143,15 +4780,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- JobList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.show = function(uuid)
@@ -6160,7 +4789,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6170,32 +4800,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		jobs.destroy = function(uuid)
@@ -6204,7 +4809,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6214,32 +4820,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Job$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, submit_id = resource$submit_id,
-				script = resource$script, script_version = resource$script_version,
-				script_parameters = resource$script_parameters,
-				cancelled_by_client_uuid = resource$cancelled_by_client_uuid,
-				cancelled_by_user_uuid = resource$cancelled_by_user_uuid,
-				cancelled_at = resource$cancelled_at, started_at = resource$started_at,
-				finished_at = resource$finished_at, running = resource$running,
-				success = resource$success, output = resource$output,
-				created_at = resource$created_at, updated_at = resource$updated_at,
-				is_locked_by_uuid = resource$is_locked_by_uuid,
-				log = resource$log, tasks_summary = resource$tasks_summary,
-				runtime_constraints = resource$runtime_constraints,
-				nondeterministic = resource$nondeterministic,
-				repository = resource$repository, supplied_script_version = resource$supplied_script_version,
-				docker_image_locator = resource$docker_image_locator,
-				priority = resource$priority, description = resource$description,
-				state = resource$state, arvados_sdk_version = resource$arvados_sdk_version,
-				components = resource$components, script_parameters_digest = resource$script_parameters_digest)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.get = function(uuid)
@@ -6248,7 +4829,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6258,22 +4840,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.index = function(filters = NULL,
@@ -6288,6 +4855,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6297,25 +4865,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDiskList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		keep_disks.create = function(keep_disk, ensure_unique_name = "false")
+		keep_disks.create = function(keepdisk, ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("keep_disks")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- keep_disk$toJSON()
+			
+			if(length(keepdisk) > 0)
+				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6324,32 +4889,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		keep_disks.update = function(keep_disk, uuid)
+		keep_disks.update = function(keepdisk, uuid)
 		{
 			endPoint <- stringr::str_interp("keep_disks/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- keep_disk$toJSON()
+			queryArgs <- NULL
+			
+			if(length(keepdisk) > 0)
+				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6358,22 +4913,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.delete = function(uuid)
@@ -6382,7 +4922,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6392,22 +4933,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.ping = function(uuid = NULL, ping_secret,
@@ -6422,6 +4948,7 @@ Arvados <- R6::R6Class(
 				node_uuid = node_uuid, filesystem_uuid = filesystem_uuid,
 				service_host = service_host, service_port = service_port,
 				service_ssl_flag = service_ssl_flag)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -6431,22 +4958,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.list = function(filters = NULL,
@@ -6461,6 +4973,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6470,15 +4983,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDiskList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.show = function(uuid)
@@ -6487,7 +4992,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6497,22 +5003,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_disks.destroy = function(uuid)
@@ -6521,7 +5012,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6531,22 +5023,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepDisk$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, ping_secret = resource$ping_secret,
-				node_uuid = resource$node_uuid, filesystem_uuid = resource$filesystem_uuid,
-				bytes_total = resource$bytes_total, bytes_free = resource$bytes_free,
-				is_readable = resource$is_readable, is_writable = resource$is_writable,
-				last_read_at = resource$last_read_at, last_write_at = resource$last_write_at,
-				last_ping_at = resource$last_ping_at, created_at = resource$created_at,
-				updated_at = resource$updated_at, keep_service_uuid = resource$keep_service_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.get = function(uuid)
@@ -6555,7 +5032,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6565,19 +5043,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.index = function(filters = NULL,
@@ -6592,6 +5058,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6601,18 +5068,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepServiceList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		keep_services.create = function(keep_service,
+		keep_services.create = function(keepservice,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("keep_services")
@@ -6620,7 +5079,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- keep_service$toJSON()
+			
+			if(length(keepservice) > 0)
+				body <- jsonlite::toJSON(list(keepservice = keepservice), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6629,29 +5093,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		keep_services.update = function(keep_service, uuid)
+		keep_services.update = function(keepservice, uuid)
 		{
 			endPoint <- stringr::str_interp("keep_services/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- keep_service$toJSON()
+			queryArgs <- NULL
+			
+			if(length(keepservice) > 0)
+				body <- jsonlite::toJSON(list(keepservice = keepservice), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6660,19 +5117,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.delete = function(uuid)
@@ -6681,7 +5126,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6691,19 +5137,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.accessible = function()
@@ -6713,6 +5147,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6722,19 +5157,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.list = function(filters = NULL,
@@ -6749,6 +5172,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6758,15 +5182,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepServiceList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.show = function(uuid)
@@ -6775,7 +5191,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6785,19 +5202,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		keep_services.destroy = function(uuid)
@@ -6806,7 +5211,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6816,19 +5222,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- KeepService$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, service_host = resource$service_host,
-				service_port = resource$service_port, service_ssl_flag = resource$service_ssl_flag,
-				service_type = resource$service_type, created_at = resource$created_at,
-				updated_at = resource$updated_at, read_only = resource$read_only)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.get = function(uuid)
@@ -6837,7 +5231,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6847,18 +5242,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.index = function(filters = NULL,
@@ -6873,6 +5257,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -6882,18 +5267,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplateList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		pipeline_templates.create = function(pipeline_template,
+		pipeline_templates.create = function(pipelinetemplate,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("pipeline_templates")
@@ -6901,7 +5278,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- pipeline_template$toJSON()
+			
+			if(length(pipelinetemplate) > 0)
+				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6910,28 +5292,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		pipeline_templates.update = function(pipeline_template, uuid)
+		pipeline_templates.update = function(pipelinetemplate, uuid)
 		{
 			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- pipeline_template$toJSON()
+			queryArgs <- NULL
+			
+			if(length(pipelinetemplate) > 0)
+				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -6940,18 +5316,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.delete = function(uuid)
@@ -6960,7 +5325,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -6970,18 +5336,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.list = function(filters = NULL,
@@ -6996,6 +5351,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7005,15 +5361,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplateList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.show = function(uuid)
@@ -7022,7 +5370,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7032,18 +5381,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_templates.destroy = function(uuid)
@@ -7052,7 +5390,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7062,18 +5401,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineTemplate$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				components = resource$components, updated_at = resource$updated_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.get = function(uuid)
@@ -7082,7 +5410,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7092,21 +5421,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.index = function(filters = NULL,
@@ -7121,6 +5436,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7130,18 +5446,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstanceList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		pipeline_instances.create = function(pipeline_instance,
+		pipeline_instances.create = function(pipelineinstance,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("pipeline_instances")
@@ -7149,7 +5457,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- pipeline_instance$toJSON()
+			
+			if(length(pipelineinstance) > 0)
+				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7158,31 +5471,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		pipeline_instances.update = function(pipeline_instance, uuid)
+		pipeline_instances.update = function(pipelineinstance, uuid)
 		{
 			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- pipeline_instance$toJSON()
+			queryArgs <- NULL
+			
+			if(length(pipelineinstance) > 0)
+				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7191,21 +5495,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.delete = function(uuid)
@@ -7214,7 +5504,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7224,21 +5515,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.cancel = function(uuid)
@@ -7247,7 +5524,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -7257,21 +5535,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.list = function(filters = NULL,
@@ -7286,6 +5550,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7295,15 +5560,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstanceList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.show = function(uuid)
@@ -7312,7 +5569,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7322,21 +5580,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		pipeline_instances.destroy = function(uuid)
@@ -7345,7 +5589,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7355,21 +5600,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- PipelineInstance$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, pipeline_template_uuid = resource$pipeline_template_uuid,
-				name = resource$name, components = resource$components,
-				updated_at = resource$updated_at, properties = resource$properties,
-				state = resource$state, components_summary = resource$components_summary,
-				started_at = resource$started_at, finished_at = resource$finished_at,
-				description = resource$description)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.get = function(uuid)
@@ -7378,7 +5609,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7388,21 +5620,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.index = function(filters = NULL, where = NULL,
@@ -7416,6 +5634,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7425,15 +5644,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- NodeList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.create = function(node, ensure_unique_name = "false",
@@ -7445,7 +5656,12 @@ Arvados <- R6::R6Class(
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name,
 				assign_slot = assign_slot)
-			body <- node$toJSON()
+			
+			if(length(node) > 0)
+				body <- jsonlite::toJSON(list(node = node), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7454,21 +5670,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.update = function(node, uuid, assign_slot = NULL)
@@ -7477,8 +5679,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid, assign_slot = assign_slot)
-			body <- node$toJSON()
+			queryArgs <- list(assign_slot = assign_slot)
+			
+			if(length(node) > 0)
+				body <- jsonlite::toJSON(list(node = node), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7487,21 +5694,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.delete = function(uuid)
@@ -7510,7 +5703,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7520,21 +5714,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.ping = function(uuid, ping_secret)
@@ -7543,7 +5723,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid, ping_secret = ping_secret)
+			queryArgs <- list(ping_secret = ping_secret)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -7553,21 +5734,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.list = function(filters = NULL, where = NULL,
@@ -7581,6 +5748,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7590,15 +5758,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- NodeList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.show = function(uuid)
@@ -7607,7 +5767,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7617,21 +5778,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		nodes.destroy = function(uuid)
@@ -7640,7 +5787,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7650,21 +5798,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Node$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, slot_number = resource$slot_number,
-				hostname = resource$hostname, domain = resource$domain,
-				ip_address = resource$ip_address, first_ping_at = resource$first_ping_at,
-				last_ping_at = resource$last_ping_at, info = resource$info,
-				updated_at = resource$updated_at, properties = resource$properties,
-				job_uuid = resource$job_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.get = function(uuid)
@@ -7673,7 +5807,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7683,17 +5818,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.index = function(filters = NULL,
@@ -7708,6 +5833,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7717,15 +5843,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- RepositoryList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.create = function(repository, ensure_unique_name = "false")
@@ -7735,7 +5853,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- repository$toJSON()
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7744,17 +5867,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.update = function(repository, uuid)
@@ -7763,8 +5876,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- repository$toJSON()
+			queryArgs <- NULL
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -7773,17 +5891,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.delete = function(uuid)
@@ -7792,7 +5900,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7802,17 +5911,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.get_all_permissions = function()
@@ -7822,6 +5921,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7831,17 +5931,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.list = function(filters = NULL,
@@ -7856,6 +5946,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7865,15 +5956,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- RepositoryList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.show = function(uuid)
@@ -7882,7 +5965,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7892,17 +5976,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		repositories.destroy = function(uuid)
@@ -7911,7 +5985,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -7921,17 +5996,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Repository$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.get = function(uuid)
@@ -7940,7 +6005,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7950,17 +6016,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.index = function(filters = NULL,
@@ -7975,6 +6031,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -7984,15 +6041,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- SpecimenList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.create = function(specimen, ensure_unique_name = "false")
@@ -8002,7 +6051,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- specimen$toJSON()
+			
+			if(length(specimen) > 0)
+				body <- jsonlite::toJSON(list(specimen = specimen), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8011,17 +6065,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.update = function(specimen, uuid)
@@ -8030,8 +6074,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- specimen$toJSON()
+			queryArgs <- NULL
+			
+			if(length(specimen) > 0)
+				body <- jsonlite::toJSON(list(specimen = specimen), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8040,17 +6089,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.delete = function(uuid)
@@ -8059,7 +6098,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8069,17 +6109,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.list = function(filters = NULL,
@@ -8094,6 +6124,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8103,15 +6134,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- SpecimenList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.show = function(uuid)
@@ -8120,7 +6143,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8130,17 +6154,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		specimens.destroy = function(uuid)
@@ -8149,7 +6163,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8159,17 +6174,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Specimen$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, material = resource$material,
-				updated_at = resource$updated_at, properties = resource$properties)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.get = function(uuid)
@@ -8178,7 +6183,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8188,19 +6194,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.index = function(filters = NULL, where = NULL,
@@ -8214,6 +6208,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8223,15 +6218,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- LogList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.create = function(log, ensure_unique_name = "false")
@@ -8241,7 +6228,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- log$toJSON()
+			
+			if(length(log) > 0)
+				body <- jsonlite::toJSON(list(log = log), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8250,19 +6242,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.update = function(log, uuid)
@@ -8271,8 +6251,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- log$toJSON()
+			queryArgs <- NULL
+			
+			if(length(log) > 0)
+				body <- jsonlite::toJSON(list(log = log), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8281,19 +6266,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.delete = function(uuid)
@@ -8302,7 +6275,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8312,19 +6286,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.list = function(filters = NULL, where = NULL,
@@ -8338,6 +6300,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8347,15 +6310,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- LogList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.show = function(uuid)
@@ -8364,7 +6319,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8374,19 +6330,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		logs.destroy = function(uuid)
@@ -8395,7 +6339,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8405,19 +6350,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Log$new(uuid = resource$uuid, etag = resource$etag,
-				owner_uuid = resource$owner_uuid, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				object_uuid = resource$object_uuid, event_at = resource$event_at,
-				event_type = resource$event_type, summary = resource$summary,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at, modified_at = resource$modified_at,
-				object_owner_uuid = resource$object_owner_uuid)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.get = function(uuid)
@@ -8426,7 +6359,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8436,18 +6370,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.index = function(filters = NULL, where = NULL,
@@ -8461,6 +6384,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8470,15 +6394,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- TraitList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.create = function(trait, ensure_unique_name = "false")
@@ -8488,7 +6404,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- trait$toJSON()
+			
+			if(length(trait) > 0)
+				body <- jsonlite::toJSON(list(trait = trait), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8497,18 +6418,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.update = function(trait, uuid)
@@ -8517,8 +6427,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- trait$toJSON()
+			queryArgs <- NULL
+			
+			if(length(trait) > 0)
+				body <- jsonlite::toJSON(list(trait = trait), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8527,18 +6442,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.delete = function(uuid)
@@ -8547,7 +6451,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8557,18 +6462,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.list = function(filters = NULL, where = NULL,
@@ -8582,6 +6476,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8591,15 +6486,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- TraitList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.show = function(uuid)
@@ -8608,7 +6495,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8618,18 +6506,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		traits.destroy = function(uuid)
@@ -8638,7 +6515,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8648,18 +6526,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Trait$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				properties = resource$properties, created_at = resource$created_at,
-				updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.get = function(uuid)
@@ -8668,7 +6535,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8678,17 +6546,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.index = function(filters = NULL,
@@ -8703,6 +6561,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8712,18 +6571,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachineList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		virtual_machines.create = function(virtual_machine,
+		virtual_machines.create = function(virtualmachine,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("virtual_machines")
@@ -8731,7 +6582,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- virtual_machine$toJSON()
+			
+			if(length(virtualmachine) > 0)
+				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8740,27 +6596,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		virtual_machines.update = function(virtual_machine, uuid)
+		virtual_machines.update = function(virtualmachine, uuid)
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- virtual_machine$toJSON()
+			queryArgs <- NULL
+			
+			if(length(virtualmachine) > 0)
+				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -8769,17 +6620,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.delete = function(uuid)
@@ -8788,7 +6629,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8798,17 +6640,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.logins = function(uuid)
@@ -8817,7 +6649,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8827,17 +6660,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.get_all_logins = function()
@@ -8847,6 +6670,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8856,17 +6680,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.list = function(filters = NULL,
@@ -8881,6 +6695,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8890,15 +6705,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachineList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.show = function(uuid)
@@ -8907,7 +6714,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8917,17 +6725,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		virtual_machines.destroy = function(uuid)
@@ -8936,7 +6734,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -8946,17 +6745,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- VirtualMachine$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, hostname = resource$hostname,
-				created_at = resource$created_at, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.get = function(uuid)
@@ -8965,7 +6754,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -8975,18 +6765,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.index = function(filters = NULL,
@@ -9001,6 +6780,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9010,15 +6790,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- WorkflowList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.create = function(workflow, ensure_unique_name = "false")
@@ -9028,7 +6800,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- workflow$toJSON()
+			
+			if(length(workflow) > 0)
+				body <- jsonlite::toJSON(list(workflow = workflow), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9037,18 +6814,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.update = function(workflow, uuid)
@@ -9057,8 +6823,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- workflow$toJSON()
+			queryArgs <- NULL
+			
+			if(length(workflow) > 0)
+				body <- jsonlite::toJSON(list(workflow = workflow), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9067,18 +6838,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.delete = function(uuid)
@@ -9087,7 +6847,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9097,18 +6858,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.list = function(filters = NULL,
@@ -9123,6 +6873,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9132,15 +6883,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- WorkflowList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.show = function(uuid)
@@ -9149,7 +6892,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9159,18 +6903,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		workflows.destroy = function(uuid)
@@ -9179,7 +6912,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9189,18 +6923,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Workflow$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_at = resource$modified_at,
-				modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				name = resource$name, description = resource$description,
-				definition = resource$definition, updated_at = resource$updated_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.get = function(uuid)
@@ -9209,7 +6932,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9219,19 +6943,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.index = function(filters = NULL, where = NULL,
@@ -9247,6 +6959,7 @@ Arvados <- R6::R6Class(
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count,
 				include_trash = include_trash)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9256,15 +6969,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- GroupList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.create = function(group, ensure_unique_name = "false")
@@ -9274,7 +6979,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- group$toJSON()
+			
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9283,19 +6993,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.update = function(group, uuid)
@@ -9304,8 +7002,13 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- group$toJSON()
+			queryArgs <- NULL
+			
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9314,19 +7017,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.delete = function(uuid)
@@ -9335,7 +7026,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9345,19 +7037,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.contents = function(filters = NULL,
@@ -9373,6 +7053,7 @@ Arvados <- R6::R6Class(
 				order = order, distinct = distinct, limit = limit,
 				offset = offset, count = count, include_trash = include_trash,
 				uuid = uuid, recursive = recursive)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9382,19 +7063,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.trash = function(uuid)
@@ -9403,7 +7072,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -9413,19 +7083,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.untrash = function(uuid)
@@ -9434,7 +7092,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -9444,19 +7103,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.list = function(filters = NULL, where = NULL,
@@ -9472,6 +7119,7 @@ Arvados <- R6::R6Class(
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count,
 				include_trash = include_trash)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9481,15 +7129,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- GroupList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.show = function(uuid)
@@ -9498,7 +7138,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9508,19 +7149,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		groups.destroy = function(uuid)
@@ -9529,7 +7158,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9539,19 +7169,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- Group$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, name = resource$name,
-				description = resource$description, updated_at = resource$updated_at,
-				group_class = resource$group_class, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, delete_at = resource$delete_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.get = function(uuid)
@@ -9560,7 +7178,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9570,26 +7189,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.index = function(filters = NULL,
@@ -9604,6 +7204,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9613,18 +7214,10 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreementList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		user_agreements.create = function(user_agreement,
+		user_agreements.create = function(useragreement,
 			ensure_unique_name = "false")
 		{
 			endPoint <- stringr::str_interp("user_agreements")
@@ -9632,7 +7225,12 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			body <- user_agreement$toJSON()
+			
+			if(length(useragreement) > 0)
+				body <- jsonlite::toJSON(list(useragreement = useragreement), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9641,36 +7239,22 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
-		user_agreements.update = function(user_agreement, uuid)
+		user_agreements.update = function(useragreement, uuid)
 		{
 			endPoint <- stringr::str_interp("user_agreements/${uuid}")
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
-			body <- user_agreement$toJSON()
+			queryArgs <- NULL
+			
+			if(length(useragreement) > 0)
+				body <- jsonlite::toJSON(list(useragreement = useragreement), 
+			                           auto_unbox = TRUE)
+			else
+				body <- NULL
 			
 			response <- private$REST$http$exec("PUT", url, headers, body,
 			                                   queryArgs, private$numRetries)
@@ -9679,26 +7263,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.delete = function(uuid)
@@ -9707,7 +7272,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9717,26 +7283,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.signatures = function()
@@ -9746,6 +7293,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9755,26 +7303,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.sign = function()
@@ -9784,6 +7313,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("POST", url, headers, body,
@@ -9793,26 +7323,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.list = function(filters = NULL,
@@ -9827,6 +7338,7 @@ Arvados <- R6::R6Class(
 			queryArgs <- list(filters = filters, where = where,
 				order = order, select = select, distinct = distinct,
 				limit = limit, offset = offset, count = count)
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9836,15 +7348,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreementList$new(kind = resource$kind,
-				etag = resource$etag, items = resource$items,
-				next_link = resource$next_link, next_page_token = resource$next_page_token,
-				selfLink = resource$selfLink)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.new = function()
@@ -9854,6 +7358,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9863,26 +7368,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.show = function(uuid)
@@ -9891,7 +7377,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
@@ -9901,26 +7388,7 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		user_agreements.destroy = function(uuid)
@@ -9929,7 +7397,8 @@ Arvados <- R6::R6Class(
 			url <- paste0(private$host, endPoint)
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid)
+			queryArgs <- NULL
+			
 			body <- NULL
 			
 			response <- private$REST$http$exec("DELETE", url, headers, body,
@@ -9939,31 +7408,13 @@ Arvados <- R6::R6Class(
 			if(!is.null(resource$errors))
 				stop(resource$errors)
 			
-			result <- UserAgreement$new(uuid = resource$uuid,
-				etag = resource$etag, owner_uuid = resource$owner_uuid,
-				created_at = resource$created_at, modified_by_client_uuid = resource$modified_by_client_uuid,
-				modified_by_user_uuid = resource$modified_by_user_uuid,
-				modified_at = resource$modified_at, portable_data_hash = resource$portable_data_hash,
-				replication_desired = resource$replication_desired,
-				replication_confirmed_at = resource$replication_confirmed_at,
-				replication_confirmed = resource$replication_confirmed,
-				updated_at = resource$updated_at, manifest_text = resource$manifest_text,
-				name = resource$name, description = resource$description,
-				properties = resource$properties, delete_at = resource$delete_at,
-				file_names = resource$file_names, trash_at = resource$trash_at,
-				is_trashed = resource$is_trashed, storage_classes_desired = resource$storage_classes_desired,
-				storage_classes_confirmed = resource$storage_classes_confirmed,
-				storage_classes_confirmed_at = resource$storage_classes_confirmed_at)
-			
-			if(result$isEmpty())
-				resource
-			else
-				result
+			resource
 		},
 
 		getHostName = function() private$host,
 		getToken = function() private$token,
-		setRESTService = function(newREST) private$REST <- newREST
+		setRESTService = function(newREST) private$REST <- newREST,
+		getRESTService = function() private$REST
 	),
 
 	private = list(

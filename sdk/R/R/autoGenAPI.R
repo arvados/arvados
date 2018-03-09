@@ -10,24 +10,14 @@ generateAPI <- function()
 {
     #TODO: Consider passing discovery document URL as parameter.
     #TODO: Consider passing location where to create new files.
-    JSONDocument <- getAPIDocument()
+    discoveryDocument <- getAPIDocument()
 
-    generateArvadosClasses(JSONDocument)
-    generateArvadosAPIClass(JSONDocument)
-}
-
-#NOTE: Arvados class generation:
-
-generateArvadosAPIClass <- function(discoveryDocument)
-{
-    classMetaData   <- discoveryDocument$schemas
     methodResources <- discoveryDocument$resources
     resourceNames   <- names(methodResources)
 
     doc <- generateMethodsDocumentation(methodResources, resourceNames)
     arvadosAPIHeader <- generateAPIClassHeader()
-    arvadosClassMethods <- generateClassContent(methodResources, 
-                                                resourceNames, classMetaData)
+    arvadosClassMethods <- generateClassContent(methodResources, resourceNames)
     arvadosAPIFooter <- generateAPIClassFooter()
 
     arvadosClass <- c(doc,
@@ -77,7 +67,7 @@ generateAPIClassHeader <- function()
       "\t\t},\n")
 }
 
-generateClassContent <- function(methodResources, resourceNames, classMetaData)
+generateClassContent <- function(methodResources, resourceNames)
 {
     arvadosMethods <- Map(function(resource, resourceName)
     {
@@ -86,7 +76,7 @@ generateClassContent <- function(methodResources, resourceNames, classMetaData)
         functions <- Map(function(methodMetaData, methodName)
         {
             methodName <- paste0(resourceName, ".", methodName)
-            createMethod(methodName, methodMetaData, classMetaData)
+            createMethod(methodName, methodMetaData)
 
         }, resource$methods, methodNames)
 
@@ -101,7 +91,8 @@ generateAPIClassFooter <- function()
 {
     c("\t\tgetHostName = function() private$host,",
       "\t\tgetToken = function() private$token,",
-      "\t\tsetRESTService = function(newREST) private$REST <- newREST",
+      "\t\tsetRESTService = function(newREST) private$REST <- newREST,",
+      "\t\tgetRESTService = function() private$REST",
       "\t),",
       "",
       "\tprivate = list(",
@@ -116,11 +107,11 @@ generateAPIClassFooter <- function()
       ")")
 }
 
-createMethod <- function(name, methodMetaData, classMetaData)
+createMethod <- function(name, methodMetaData)
 {
     args      <- getMethodArguments(methodMetaData)
     signature <- getMethodSignature(name, args)
-    body      <- getMethodBody(methodMetaData, classMetaData)
+    body      <- getMethodBody(methodMetaData)
 
     c(signature,
       "\t\t{",
@@ -137,10 +128,12 @@ getMethodArguments <- function(methodMetaData)
 
     if(!is.null(request))
     {
+        resourceName <- tolower(request$properties[[1]][[1]])
+
         if(request$required)
-            requestArgs <- names(request$properties)
+            requestArgs <- resourceName
         else
-            requestArgs <- paste(names(request$properties), "=", "NULL")
+            requestArgs <- paste(resourceName, "=", "NULL")
     }
 
     argNames <- names(methodMetaData$parameters)
@@ -180,7 +173,7 @@ getMethodSignature <- function(methodName, args)
     }
 }
 
-getMethodBody <- function(methodMetaData, classMetaData)
+getMethodBody <- function(methodMetaData)
 {
     url              <- getRequestURL(methodMetaData)
     headers          <- getRequestHeaders()
@@ -189,16 +182,14 @@ getMethodBody <- function(methodMetaData, classMetaData)
     request          <- getRequest(methodMetaData)
     response         <- getResponse(methodMetaData)
     errorCheck       <- getErrorCheckingCode()
-    returnObject     <- getReturnObject(methodMetaData, classMetaData)
     returnStatement  <- getReturnObjectValidationCode()
 
     body <- c(url,
               headers,
-              requestQueryList,
+              requestQueryList, "",
               requestBody, "",
               request, response, "",
               errorCheck, "",
-              returnObject, "",
               returnStatement)
 
     paste0("\t\t\t", body)
@@ -221,16 +212,19 @@ getRequestHeaders <- function()
 
 getRequestQueryList <- function(methodMetaData)
 {
-    args <- names(methodMetaData$parameters)
+    queryArgs <- names(Filter(function(arg) arg$location == "query",
+                        methodMetaData$parameters))
 
-    if(length(args) == 0)
+    if(length(queryArgs) == 0)
         return("queryArgs <- NULL")
 
-    args <- sapply(args, function(arg) paste0(arg, " = ", arg))
-    collapsedArgs <- paste0(args, collapse = ", ")
+    queryArgs <- sapply(queryArgs, function(arg) paste0(arg, " = ", arg))
+    collapsedArgs <- paste0(queryArgs, collapse = ", ")
 
-    if(nchar(collapsedArgs) > 40)
-        return(formatArgs("queryArgs <- list(", "\t", args, ")", 40))
+    lineLengthLimit <- 40
+
+    if(nchar(collapsedArgs) > lineLengthLimit)
+        return(formatArgs("queryArgs <- list(", "\t", queryArgs, ")", lineLengthLimit))
     else
         return(paste0("queryArgs <- list(", collapsedArgs, ")"))
 }
@@ -242,8 +236,15 @@ getRequestBody <- function(methodMetaData)
     if(is.null(request) || !request$required)
         return("body <- NULL")
 
+    resourceName <- tolower(request$properties[[1]][[1]])
+
     requestParameterName <- names(request$properties)[1]
-    paste0("body <- ", requestParameterName, "$toJSON()")
+
+    c(paste0("if(length(", resourceName, ") > 0)"),
+      paste0("\tbody <- jsonlite::toJSON(list(", resourceName, " = ", resourceName, "), "),
+             "                           auto_unbox = TRUE)",
+      "else",
+      "\tbody <- NULL")
 }
 
 getRequest <- function(methodMetaData)
@@ -264,41 +265,10 @@ getErrorCheckingCode <- function()
       "\tstop(resource$errors)")
 }
 
-getReturnObject <- function(methodMetaData, classMetaData)
-{
-    returnClass <- methodMetaData$response[["$ref"]]
-    classArguments <- getReturnClassArguments(returnClass, classMetaData)
-
-    if(returnClass == "Collection")
-        return(c(formatArgs("result <- Collection$new(", "\t",
-                            classArguments, ")", 40),
-                 "",
-                 "result$setRESTService(private$REST)"))
-
-    formatArgs(paste0("result <- ", returnClass, "$new("),
-               "\t", classArguments, ")", 40)
-}
-
 getReturnObjectValidationCode <- function()
 {
-    c("if(result$isEmpty())",
-      "\tresource",
-      "else",
-      "\tresult")
+    "resource"
 }
-
-getReturnClassArguments <- function(className, classMetaData)
-{
-    classArguments <- unique(names(classMetaData[[className]]$properties))
-
-    arguments <- sapply(classArguments, function(arg)
-    {
-        paste0(arg, " = resource$", arg)
-    })
-
-    arguments
-}
-
 
 #NOTE: Arvados class documentation:
 
@@ -374,118 +344,6 @@ getMethodDescription <- function(methodMetaData)
     })))
 
     c(requestDoc, argsDoc)
-}
-
-#NOTE: API Classes generation:
-
-generateArvadosClasses <- function(resources)
-{
-    classes <- sapply(resources$schemas, function(classSchema)
-    {
-        #NOTE: Collection is implemented manually.
-        if(classSchema$id != "Collection")
-            getArvadosClass(classSchema)
-
-    }, USE.NAMES = TRUE)
-
-    fileConn <- file("./R/ArvadosClasses.R", "w")
-    writeLines(unlist(classes), fileConn)
-    close(fileConn)
-    NULL
-}
-
-getArvadosClass <- function(classSchema)
-{
-    name            <- classSchema$id
-    fields          <- unique(names(classSchema$properties))
-    constructorArgs <- paste(fields, "= NULL")
-    documentation   <- getClassDocumentation(classSchema, constructorArgs)
-
-    classString <- c(documentation,
-              paste0(name, " <- R6::R6Class("),
-                     "",
-              paste0("\t\"", name, "\","),
-                     "",
-                     "\tpublic = list(",
-              paste0("\t\t", fields, " = NULL,"),
-                     "",
-              paste0("\t\t", formatArgs("initialize = function(", "\t\t",
-                                        constructorArgs, ")", 40)),
-                     "\t\t{",
-              paste0("\t\t\tself$", fields, " <- ", fields),
-                     "\t\t\t",
-              paste0("\t\t\t", formatArgs("private$classFields <- c(", "\t",
-                                         paste0("\"", fields, "\""), ")", 40)),
-                     "\t\t},",
-                     "",
-                     "\t\ttoJSON = function() {",
-                     "\t\t\tfields <- sapply(private$classFields, function(field)",
-                     "\t\t\t{",
-                     "\t\t\t\tself[[field]]",
-                     "\t\t\t}, USE.NAMES = TRUE)",
-                     "\t\t\t",
-              paste0("\t\t\tjsonlite::toJSON(list(\"", tolower(name), "\" = 
-                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)"),
-                     "\t\t},",
-                     "",
-                     "\t\tisEmpty = function() {",
-                     "\t\t\tfields <- sapply(private$classFields,",
-                     "\t\t\t                 function(field) self[[field]])",
-                     "",
-              paste0("\t\t\tif(any(sapply(fields, function(field) !is.null(field)",
-                     " && field != \"\")))"),
-                     "\t\t\t\tFALSE",
-                     "\t\t\telse",
-                     "\t\t\t\tTRUE",
-                     "\t\t}",
-                     "\t),",
-                     "",
-                     "\tprivate = list(",
-                     "\t\tclassFields = NULL",
-                     "\t),",
-                     "",
-                     "\tcloneable = FALSE",
-                     ")",
-                     "")
-}
-
-#NOTE: API Classes documentation:
-
-getClassDocumentation <- function(classSchema, constructorArgs)
-{
-    name                     <- classSchema$id
-    description              <- classSchema$description
-    nameLowercaseFirstLetter <- paste0(tolower(substr(name, 1, 1)),
-                                       substr(name, 2, nchar(name)))
-    c(paste0("#' ", name),
-             "#' ",
-      paste0("#' ", description),
-             "#' ",
-             "#' @section Usage:",
-             formatArgs(paste0("#' \\preformatted{",
-                               nameLowercaseFirstLetter, " -> ", name, "$new("),
-                        "#' \t", constructorArgs, ")", 50),
-             "#' }",
-             "#' ",
-      paste0("#' @section Arguments:"),
-             "#'   \\describe{",
-      paste0("#'     ", getClassArgumentDescription(classSchema)),
-             "#'   }",
-             "#' ",
-      paste0("#' @name ", name),
-             "NULL",
-             "",
-             "#' @export")
-}
-
-getClassArgumentDescription <- function(classSchema)
-{
-    argDoc <- sapply(classSchema$properties, function(arg)
-    {    
-        paste0("{", arg$description, "}")
-    }, USE.NAMES = TRUE)
-
-    paste0("\\item{", names(classSchema$properties), "}", argDoc)
 }
 
 #NOTE: Utility functions:
