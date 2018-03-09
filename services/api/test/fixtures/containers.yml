@@ -39,6 +39,11 @@ running:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts:
+    /secret/6x9:
+      kind: text
+      content: "42\n"
+  secret_mounts_md5: <%= Digest::MD5.hexdigest(SafeJSON.dump({'/secret/6x9' => {'kind' => 'text', 'content' => "42\n"}})) %>
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s2
 
 running_older:
@@ -56,6 +61,8 @@ running_older:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 locked:
   uuid: zzzzz-dz642-lockedcontainer
@@ -72,6 +79,8 @@ locked:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 completed:
   uuid: zzzzz-dz642-compltcontainer
@@ -92,6 +101,8 @@ completed:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 completed_older:
   uuid: zzzzz-dz642-compltcontainr2
@@ -111,6 +122,8 @@ completed_older:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 requester:
   uuid: zzzzz-dz642-requestingcntnr
@@ -128,6 +141,8 @@ requester:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 requester_container:
   uuid: zzzzz-dz642-requestercntnr1
@@ -145,6 +160,8 @@ requester_container:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 failed_container:
   uuid: zzzzz-dz642-failedcontainr1
@@ -162,6 +179,8 @@ failed_container:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 ancient_container_with_logs:
   uuid: zzzzz-dz642-logscontainer01
@@ -181,6 +200,8 @@ ancient_container_with_logs:
   finished_at: <%= 2.year.ago.to_s(:db) %>
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: test
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 previous_container_with_logs:
   uuid: zzzzz-dz642-logscontainer02
@@ -200,6 +221,8 @@ previous_container_with_logs:
   finished_at: <%= 1.month.ago.to_s(:db) %>
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: test
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 running_container_with_logs:
   uuid: zzzzz-dz642-logscontainer03
@@ -215,6 +238,8 @@ running_container_with_logs:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
 running_to_be_deleted:
   uuid: zzzzz-dz642-runnincntrtodel
@@ -232,3 +257,5 @@ running_to_be_deleted:
     ram: 12000000000
     vcpus: 4
   auth_uuid: zzzzz-gj3su-ty6lvu9d7u7c2sq
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b

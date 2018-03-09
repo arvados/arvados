@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
+require 'helpers/container_test_helper'
 
 class ContainerTest < ActiveSupport::TestCase
   include DbCurrentTime
+  include ContainerTestHelper
 
   DEFAULT_ATTRS = {
     command: ['echo', 'foo'],
@@ -621,4 +623,12 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    Container::Complete,
+    Container::Cancelled,
+  ].each do |final_state|
+    test "secret_mounts is null after container is #{final_state}" do
+      assert_no_secrets_logged
+    end
+  end
 end

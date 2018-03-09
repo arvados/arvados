@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
+require 'helpers/container_test_helper'
 require 'helpers/docker_migration_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
   include DockerMigrationHelper
   include DbCurrentTime
+  include ContainerTestHelper
 
   def create_minimal_req! attrs={}
     defaults = {
@@ -836,4 +838,70 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  test "reuse container with same secret_mounts" do
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(state: "Committed", priority: 1)
+    cr1.save!
+    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: {})
+    cr2.save!
+    assert_not_nil cr1.container_uuid
+    assert_equal cr1.container_uuid, cr2.container_uuid
+  end
+
+  secrets = {"/foo" => {"kind" => "binary"}}
+  [
+    [true, nil, nil],
+    [true, nil, {}],
+    [true, {}, {}],
+    [true, secrets, secrets],
+    [false, nil, secrets],
+    [false, {}, secrets],
+  ].each do |expect_reuse, sm1, sm2|
+    test "container reuse secret_mounts #{sm1.inspect}, #{sm2.inspect}" do
+      set_user_from_auth :active
+      cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm1)
+      cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm2)
+      assert_not_nil cr1.container_uuid
+      assert_not_nil cr2.container_uuid
+      if expect_reuse
+        assert_equal cr1.container_uuid, cr2.container_uuid
+      else
+        assert_not_equal cr1.container_uuid, cr2.container_uuid
+      end
+    end
+  end
+
+  test "scrub secret_mounts but reuse container for request with identical secret_mounts" do
+    set_user_from_auth :active
+    sm = {'/secret/foo' => {'kind' => 'text', 'content' => secret_string}}
+    cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm.dup)
+    run_container(cr1)
+    cr1.reload
+
+    # secret_mounts scrubbed from db
+    c = Container.where(uuid: cr1.container_uuid).first
+    assert_equal({}, c.secret_mounts)
+    assert_equal({}, cr1.secret_mounts)
+
+    # can reuse container if secret_mounts match
+    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm.dup)
+    assert_equal cr1.container_uuid, cr2.container_uuid
+
+    # don't reuse container if secret_mounts don't match
+    cr3 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: {})
+    assert_not_equal cr1.container_uuid, cr3.container_uuid
+
+    assert_no_secrets_logged
+  end
+
+  test "not reuse container with different secret_mounts" do
+    secrets = {"/foo" => {"kind" => "binary"}}
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: secrets.dup)
+    cr1.save!
+    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: secrets.dup)
+    cr2.save!
+    assert_not_nil cr1.container_uuid
+    assert_equal cr1.container_uuid, cr2.container_uuid
+  end
 end
