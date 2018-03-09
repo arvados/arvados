@@ -27,6 +27,26 @@ $graph:
           name: LoadListingEnum
           symbols: [no_listing, shallow_listing, deep_listing]
 
+- name: Secrets
+  type: record
+  inVocab: false
+  extends: cwl:ProcessRequirement
+  fields:
+    class:
+      type: string
+      doc: "Always 'Secrets'"
+      jsonldPredicate:
+        "_id": "@type"
+        "_type": "@vocab"
+    secrets:
+      type: string[]
+      doc: |
+        List one or more input parameters that are sensitive (such as passwords)
+        which will be deliberately obscured from logging.
+      jsonldPredicate:
+        "_type": "@id"
+        refScope: 0
+
 - name: RunInSingleContainer
   type: record
   extends: cwl:ProcessRequirement

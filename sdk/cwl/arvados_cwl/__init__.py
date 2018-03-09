@@ -452,7 +452,8 @@ class ArvCwlRunner(object):
                                                 submit_runner_image=kwargs.get("submit_runner_image"),
                                                 intermediate_output_ttl=kwargs.get("intermediate_output_ttl"),
                                                 merged_map=merged_map,
-                                                priority=kwargs.get("priority"))
+                                                priority=kwargs.get("priority"),
+                                                secret_store=kwargs.get("secret_store"))
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
                                       self.output_name,

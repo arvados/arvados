@@ -9,6 +9,7 @@ import urllib
 import time
 import datetime
 import ciso8601
+import uuid
 
 import ruamel.yaml as yaml
 
@@ -306,6 +307,16 @@ class RunnerContainer(Runner):
         visit_class(self.job_order, ("File", "Directory"), trim_anonymous_location)
         visit_class(self.job_order, ("File", "Directory"), remove_redundant_fields)
 
+        secret_mounts = {}
+        for param in sorted(self.job_order.keys()):
+            if self.secret_store.has_secret(self.job_order[param]):
+                mnt = "/secrets/s%d" % len(secret_mounts)
+                self.job_order[param] = {"$include": mnt}
+                secret_mounts[mnt] = {
+                    "kind": "text",
+                    "content": self.secret_store.retrieve(self.job_order[param])
+                }
+
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
@@ -328,6 +339,7 @@ class RunnerContainer(Runner):
                     "writable": True
                 }
             },
+            "secret_mounts": secret_mounts,
             "runtime_constraints": {
                 "vcpus": 1,
                 "ram": 1024*1024 * self.submit_runner_ram,
@@ -336,6 +348,9 @@ class RunnerContainer(Runner):
             "use_existing": self.enable_reuse,
             "properties": {}
         }
+
+        # for testing
+        container_req["mounts"].update(secret_mounts)
 
         if self.tool.tool.get("id", "").startswith("keep:"):
             sp = self.tool.tool["id"].split('/')
