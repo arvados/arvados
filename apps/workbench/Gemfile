@@ -44,9 +44,9 @@ group :test, :diagnostics, :performance do
   # Selenium-webdriver 3.x is producing problems like the one described here:
   # https://stackoverflow.com/questions/41310586/ruby-selenium-webdriver-unable-to-find-mozilla-geckodriver
   gem 'selenium-webdriver', '~> 2.53.1'
-  gem 'capybara'
-  gem 'poltergeist'
-  gem 'headless'
+  gem 'capybara', '~> 2.5.0'
+  gem 'poltergeist', '~> 1.5.1'
+  gem 'headless', '~> 1.0.2'
 end
 
 group :test, :performance do
