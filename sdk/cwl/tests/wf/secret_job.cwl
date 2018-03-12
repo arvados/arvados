@@ -16,4 +16,4 @@ inputs:
   pw: string
 outputs:
   out: stdout
-arguments: [cat, example.conf]
+arguments: [md5sum, example.conf]

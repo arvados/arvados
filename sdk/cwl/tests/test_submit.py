@@ -247,7 +247,8 @@ def stubs(func):
                 'ram': 1024*1024*1024
             },
             'use_existing': True,
-            'properties': {}
+            'properties': {},
+            'secret_mounts': {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -745,7 +746,8 @@ class TestSubmit(unittest.TestCase):
                 'ram': 1073741824
             },
             'use_existing': True,
-            'properties': {}
+            'properties': {},
+            'secret_mounts': {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -863,7 +865,8 @@ class TestSubmit(unittest.TestCase):
             'use_existing': True,
             'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
-            }
+            },
+            'secret_mounts': {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -1040,13 +1043,159 @@ class TestSubmit(unittest.TestCase):
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
-                 "tests/wf/secret_wf.cwl", "tests/submit_test_job.json"],
+                 "tests/wf/secret_wf.cwl", "tests/secret_test_job.yml"],
                 capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
             logging.exception("")
 
-        expect_container = copy.deepcopy(stubs.expect_container_spec)
+
+        expect_container = {
+            "command": [
+                "arvados-cwl-runner",
+                "--local",
+                "--api=containers",
+                "--no-log-timestamps",
+                "--enable-reuse",
+                "--on-error=continue",
+                "--eval-timeout=20",
+                "/var/lib/cwl/workflow.json#main",
+                "/var/lib/cwl/cwl.input.json"
+            ],
+            "container_image": "arvados/jobs:"+arvados_cwl.__version__,
+            "cwd": "/var/spool/cwl",
+            "mounts": {
+                "/var/lib/cwl/cwl.input.json": {
+                    "content": {
+                        "pw": {
+                            "$include": "/secrets/s0"
+                        }
+                    },
+                    "kind": "json"
+                },
+                "/var/lib/cwl/workflow.json": {
+                    "content": {
+                        "$graph": [
+                            {
+                                "$namespaces": {
+                                    "cwltool": "http://commonwl.org/cwltool#"
+                                },
+                                "arguments": [
+                                    "md5sum",
+                                    "example.conf"
+                                ],
+                                "class": "CommandLineTool",
+                                "hints": [
+                                    {
+                                        "class": "http://commonwl.org/cwltool#Secrets",
+                                        "secrets": [
+                                            "#secret_job.cwl/pw"
+                                        ]
+                                    }
+                                ],
+                                "id": "#secret_job.cwl",
+                                "inputs": [
+                                    {
+                                        "id": "#secret_job.cwl/pw",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs": [
+                                    {
+                                        "id": "#secret_job.cwl/out",
+                                        "type": "stdout"
+                                    }
+                                ],
+                                "requirements": [
+                                    {
+                                        "class": "InitialWorkDirRequirement",
+                                        "listing": [
+                                            {
+                                                "entry": "username: user\npassword: $(inputs.pw)\n",
+                                                "entryname": "example.conf"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "class": "Workflow",
+                                "hints": [
+                                    {
+                                        "class": "DockerRequirement",
+                                        "dockerPull": "debian:8"
+                                    },
+                                    {
+                                        "class": "http://commonwl.org/cwltool#Secrets",
+                                        "secrets": [
+                                            "#main/pw"
+                                        ]
+                                    }
+                                ],
+                                "id": "#main",
+                                "inputs": [
+                                    {
+                                        "id": "#main/pw",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs": [
+                                    {
+                                        "id": "#main/out",
+                                        "outputSource": "#main/step1/out",
+                                        "type": "File"
+                                    }
+                                ],
+                                "steps": [
+                                    {
+                                        "id": "#main/step1",
+                                        "in": [
+                                            {
+                                                "id": "#main/step1/pw",
+                                                "source": "#main/pw"
+                                            }
+                                        ],
+                                        "out": [
+                                            "#main/step1/out"
+                                        ],
+                                        "run": "#secret_job.cwl"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cwlVersion": "v1.0"
+                    },
+                    "kind": "json"
+                },
+                "/var/spool/cwl": {
+                    "kind": "collection",
+                    "writable": True
+                },
+                "stdout": {
+                    "kind": "file",
+                    "path": "/var/spool/cwl/cwl.output.json"
+                }
+            },
+            "name": "secret_wf.cwl",
+            "output_path": "/var/spool/cwl",
+            "owner_uuid": None,
+            "priority": 500,
+            "properties": {},
+            "runtime_constraints": {
+                "API": True,
+                "ram": 1073741824,
+                "vcpus": 1
+            },
+            "secret_mounts": {
+                "/secrets/s0": {
+                    "content": "blorp",
+                    "kind": "text"
+                }
+            },
+            "state": "Committed",
+            "use_existing": True
+        }
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
