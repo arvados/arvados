@@ -16,4 +16,5 @@ inputs:
   pw: string
 outputs:
   out: stdout
+stdout: hashed_example.txt
 arguments: [md5sum, example.conf]
