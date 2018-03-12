@@ -50,7 +50,7 @@ version_from_git() {
         return
     fi
 
-    $ARVADOS_BUILDING_VERSION=`git describe --abbrev=0`
+    ARVADOS_BUILDING_VERSION=`git describe --abbrev=0`
     local git_ts 
     if [[ -n "$1" ]] ; then
         prefix="$1"
