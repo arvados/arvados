@@ -838,16 +838,24 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  # Note: some of these tests might look redundant because they test
+  # that out-of-order spellings of hashes are still considered equal
+  # regardless of whether the existing (container) or new (container
+  # request) hash needs to be re-ordered.
   secrets = {"/foo" => {"kind" => "text", "content" => "xyzzy"}}
   same_secrets = {"/foo" => {"content" => "xyzzy", "kind" => "text"}}
   different_secrets = {"/foo" => {"kind" => "text", "content" => "something completely different"}}
   [
     [true, nil, nil],
     [true, nil, {}],
+    [true, {}, nil],
     [true, {}, {}],
     [true, secrets, same_secrets],
+    [true, same_secrets, secrets],
     [false, nil, secrets],
     [false, {}, secrets],
+    [false, secrets, {}],
+    [false, secrets, nil],
     [false, secrets, different_secrets],
   ].each do |expect_reuse, sm1, sm2|
     test "container reuse secret_mounts #{sm1.inspect}, #{sm2.inspect}" do

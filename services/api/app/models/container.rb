@@ -233,7 +233,7 @@ class Container < ArvadosModel
     candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
-    candidates = candidates.where('secret_mounts_md5 = ?', Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts] || {}))))
+    candidates = candidates.where('secret_mounts_md5 = ?', Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts]))))
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
