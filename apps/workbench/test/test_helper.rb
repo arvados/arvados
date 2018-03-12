@@ -86,7 +86,7 @@ module ApiFixtureLoader
         trim_index = file.index('# Test Helper trims the rest of the file')
         file = file[0, trim_index] if trim_index
         YAML.load(file).each do |name, ob|
-          ob.reject! { |k, v| k == 'secret_mounts' }
+          ob.reject! { |k, v| k.start_with?('secret_') }
         end
       end
       keys.inject(@@api_fixtures[name]) { |hash, key| hash[key] }.deep_dup
