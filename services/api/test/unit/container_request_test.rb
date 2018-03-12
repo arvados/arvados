@@ -838,24 +838,17 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "reuse container with same secret_mounts" do
-    set_user_from_auth :active
-    cr1 = create_minimal_req!(state: "Committed", priority: 1)
-    cr1.save!
-    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: {})
-    cr2.save!
-    assert_not_nil cr1.container_uuid
-    assert_equal cr1.container_uuid, cr2.container_uuid
-  end
-
-  secrets = {"/foo" => {"kind" => "binary"}}
+  secrets = {"/foo" => {"kind" => "text", "content" => "xyzzy"}}
+  same_secrets = {"/foo" => {"content" => "xyzzy", "kind" => "text"}}
+  different_secrets = {"/foo" => {"kind" => "text", "content" => "something completely different"}}
   [
     [true, nil, nil],
     [true, nil, {}],
     [true, {}, {}],
-    [true, secrets, secrets],
+    [true, secrets, same_secrets],
     [false, nil, secrets],
     [false, {}, secrets],
+    [false, secrets, different_secrets],
   ].each do |expect_reuse, sm1, sm2|
     test "container reuse secret_mounts #{sm1.inspect}, #{sm2.inspect}" do
       set_user_from_auth :active
@@ -892,17 +885,6 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_equal cr1.container_uuid, cr3.container_uuid
 
     assert_no_secrets_logged
-  end
-
-  test "not reuse container with different secret_mounts" do
-    secrets = {"/foo" => {"kind" => "binary"}}
-    set_user_from_auth :active
-    cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: secrets.dup)
-    cr1.save!
-    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: secrets.dup)
-    cr2.save!
-    assert_not_nil cr1.container_uuid
-    assert_equal cr1.container_uuid, cr2.container_uuid
   end
 
   test "conflicting key in mounts and secret_mounts" do
