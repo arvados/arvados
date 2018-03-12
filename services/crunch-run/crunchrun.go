@@ -112,6 +112,7 @@ type ContainerRunner struct {
 	SigChan       chan os.Signal
 	ArvMountExit  chan error
 	SecretMounts  map[string]arvados.Mount
+	MkArvClient   func(token string) (IArvadosClient, error)
 	finalState    string
 	parentTemp    string
 
@@ -1738,7 +1739,17 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
 	}
 
-	err = runner.ArvClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
+	containerToken, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("error getting container token: %v", err)
+	}
+
+	containerClient, err := runner.MkArvClient(containerToken)
+	if err != nil {
+		return fmt.Errorf("error creating container API client: %v", err)
+	}
+
+	err = containerClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
 	if err != nil {
 		if apierr, ok := err.(arvadosclient.APIServerError); !ok || apierr.HttpStatusCode != 404 {
 			return fmt.Errorf("error fetching secret_mounts: %v", err)
@@ -1761,6 +1772,14 @@ func NewContainerRunner(api IArvadosClient,
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		cl, err := arvadosclient.MakeArvadosClient()
+		if err != nil {
+			return nil, err
+		}
+		cl.ApiToken = token
+		return cl, nil
+	}
 	cr.LogCollection = &CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))

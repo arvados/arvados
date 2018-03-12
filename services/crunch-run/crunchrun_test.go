@@ -693,7 +693,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	s.docker.fn = fn
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
-	api = &ArvTestClient{Container: rec, secretMounts: secretMounts}
+	api = &ArvTestClient{Container: rec}
 	s.docker.api = api
 	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
@@ -716,6 +716,9 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 			err = nil
 		}
 		return d, err
+	}
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{secretMounts: secretMounts}, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
@@ -970,6 +973,9 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	api := &ArvTestClient{Container: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{}, nil
+	}
 	setup(cr)
 
 	done := make(chan error)
@@ -1446,6 +1452,9 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{}, nil
+	}
 
 	err = cr.Run()
 	return
