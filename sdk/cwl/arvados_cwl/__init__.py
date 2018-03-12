@@ -237,6 +237,8 @@ class ArvCwlRunner(object):
                     if not obj.get("dockerOutputDirectory").startswith('/'):
                         raise SourceLine(obj, "dockerOutputDirectory", validate.ValidationException).makeError(
                             "Option 'dockerOutputDirectory' must be an absolute path.")
+            if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
+                raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
             for v in obj.itervalues():
                 self.check_features(v)
         elif isinstance(obj, list):
