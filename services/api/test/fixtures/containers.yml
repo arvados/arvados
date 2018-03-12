@@ -43,7 +43,7 @@ running:
     /secret/6x9:
       kind: text
       content: "42\n"
-  secret_mounts_md5: <%= Digest::MD5.hexdigest(SafeJSON.dump({'/secret/6x9' => {'kind' => 'text', 'content' => "42\n"}})) %>
+  secret_mounts_md5: <%= Digest::MD5.hexdigest(SafeJSON.dump({'/secret/6x9' => {'content' => "42\n", 'kind' => 'text'}})) %>
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s2
 
 running_older:
