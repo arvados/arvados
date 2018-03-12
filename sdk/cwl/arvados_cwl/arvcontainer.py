@@ -216,9 +216,6 @@ class ArvadosContainer(object):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
-        # for testing only!
-        mounts.update(secret_mounts)
-
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts
@@ -365,9 +362,6 @@ class RunnerContainer(Runner):
             "use_existing": self.enable_reuse,
             "properties": {}
         }
-
-        # for testing
-        container_req["mounts"].update(secret_mounts)
 
         if self.tool.tool.get("id", "").startswith("keep:"):
             sp = self.tool.tool["id"].split('/')
