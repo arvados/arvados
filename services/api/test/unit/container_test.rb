@@ -624,10 +624,23 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   [
-    Container::Complete,
-    Container::Cancelled,
-  ].each do |final_state|
-    test "secret_mounts is null after container is #{final_state}" do
+    {state: Container::Complete, exit_code: 0, output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'},
+    {state: Container::Cancelled},
+  ].each do |final_attrs|
+    test "secret_mounts is null after container is #{final_attrs[:state]}" do
+      c, cr = minimal_new(secret_mounts: {'/secret' => {'kind' => 'text', 'content' => 'foo'}},
+                          container_count_max: 1)
+      set_user_from_auth :dispatch1
+      c.lock
+      c.update_attributes!(state: Container::Running)
+      c.reload
+      assert c.secret_mounts.has_key?('/secret')
+
+      c.update_attributes!(final_attrs)
+      c.reload
+      assert_equal({}, c.secret_mounts)
+      cr.reload
+      assert_equal({}, cr.secret_mounts)
       assert_no_secrets_logged
     end
   end
