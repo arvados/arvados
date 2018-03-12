@@ -46,12 +46,20 @@ version_from_git() {
     # dev/prerelease, output a version number based on the git log for
     # the current working directory.
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
-      local git_ts git_hash prefix
-      declare $(format_last_commit_here "git_ts=%ct")
-      echo "$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
-      return
+        echo "$ARVADOS_BUILDING_VERSION"
+        return
     fi
 
+    $ARVADOS_BUILDING_VERSION=`git describe --abbrev=0`
+    local git_ts 
+    if [[ -n "$1" ]] ; then
+        prefix="$1"
+    else
+        prefix="0.1"
+    fi
+
+    declare $(format_last_commit_here "git_ts=%ct")
+    echo "$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
 }
 
 nohash_version_from_git() {
