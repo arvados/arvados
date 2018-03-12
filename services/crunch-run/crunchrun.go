@@ -111,6 +111,7 @@ type ContainerRunner struct {
 	OutputPDH     *string
 	SigChan       chan os.Signal
 	ArvMountExit  chan error
+	SecretMounts  map[string]arvados.Mount
 	finalState    string
 	parentTemp    string
 
@@ -396,11 +397,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	for bind := range runner.Container.Mounts {
 		binds = append(binds, bind)
 	}
-	for bind := range runner.Container.SecretMounts {
-		if runner.Container.SecretMounts[bind].Kind != "json" &&
-			runner.Container.SecretMounts[bind].Kind != "text" {
+	for bind := range runner.SecretMounts {
+		if runner.SecretMounts[bind].Kind != "json" &&
+			runner.SecretMounts[bind].Kind != "text" {
 			return fmt.Errorf("Secret mount %q type is %q but only 'json' and 'text' are permitted.",
-				bind, runner.Container.SecretMounts[bind].Kind)
+				bind, runner.SecretMounts[bind].Kind)
 		}
 		binds = append(binds, bind)
 	}
@@ -409,7 +410,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	for _, bind := range binds {
 		mnt, ok := runner.Container.Mounts[bind]
 		if !ok {
-			mnt = runner.Container.SecretMounts[bind]
+			mnt = runner.SecretMounts[bind]
 		}
 		if bind == "stdout" || bind == "stderr" {
 			// Is it a "file" mount kind?
@@ -1280,7 +1281,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	sort.Strings(binds)
 
 	// Delete secret mounts so they don't get saved to the output collection.
-	for bind := range runner.Container.SecretMounts {
+	for bind := range runner.SecretMounts {
 		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
 			err = os.Remove(runner.HostOutputDir + bind[len(runner.Container.OutputPath):])
 			if err != nil {
@@ -1732,6 +1733,21 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 	if err != nil {
 		return fmt.Errorf("error decoding container record: %v", err)
 	}
+
+	var sm struct {
+		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
+	}
+
+	err = runner.ArvClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
+	if err != nil {
+		if apierr, ok := err.(arvadosclient.APIServerError); !ok || apierr.HttpStatusCode != 404 {
+			return fmt.Errorf("error fetching secret_mounts: %v", err)
+		}
+		// ok && apierr.HttpStatusCode == 404, which means
+		// secret_mounts isn't supported by this API server.
+	}
+	runner.SecretMounts = sm.SecretMounts
+
 	return nil
 }
 

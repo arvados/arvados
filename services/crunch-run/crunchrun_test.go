@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -57,7 +58,8 @@ type ArvTestClient struct {
 	Calls   int
 	Content []arvadosclient.Dict
 	arvados.Container
-	Logs map[string]*bytes.Buffer
+	secretMounts []byte
+	Logs         map[string]*bytes.Buffer
 	sync.Mutex
 	WasSetRunning bool
 	callraw       bool
@@ -240,6 +242,12 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 			"uuid": "`+fakeAuthUUID+`",
 			"api_token": "`+fakeAuthToken+`"
 			}`), output)
+	case method == "GET" && resourceType == "containers" && action == "secret_mounts":
+		if client.secretMounts != nil {
+			return json.Unmarshal(client.secretMounts, output)
+		} else {
+			return json.Unmarshal([]byte(`{"secret_mounts":{}}`), output)
+		}
 	default:
 		return fmt.Errorf("Not found")
 	}
@@ -672,11 +680,20 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
+	var sm struct {
+		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
+	}
+	err = json.Unmarshal([]byte(record), &sm)
+	c.Check(err, IsNil)
+	secretMounts, err := json.Marshal(sm)
+	log.Printf("%q %q", sm, secretMounts)
+	c.Check(err, IsNil)
+
 	s.docker.exitCode = exitCode
 	s.docker.fn = fn
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
-	api = &ArvTestClient{Container: rec}
+	api = &ArvTestClient{Container: rec, secretMounts: secretMounts}
 	s.docker.api = api
 	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
@@ -2083,6 +2100,9 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	}`
 
 	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("mypassword"))
 		t.logWriter.Close()
 	})
 
@@ -2108,6 +2128,9 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	}`
 
 	api, _, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("mypassword"))
 		t.logWriter.Close()
 	})
 
