@@ -904,4 +904,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil cr1.container_uuid
     assert_equal cr1.container_uuid, cr2.container_uuid
   end
+
+  test "conflicting key in mounts and secret_mounts" do
+    sm = {'/secret/foo' => {'kind' => 'text', 'content' => secret_string}}
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    assert_equal false, cr.update_attributes(state: "Committed",
+                                             priority: 1,
+                                             mounts: cr.mounts.merge(sm),
+                                             secret_mounts: sm)
+    assert_equal [:secret_mounts], cr.errors.messages.keys
+  end
 end

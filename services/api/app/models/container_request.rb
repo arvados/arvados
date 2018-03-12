@@ -29,6 +29,7 @@ class ContainerRequest < ArvadosModel
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_state_change
   validate :check_update_whitelist
+  validate :secret_mounts_key_conflict
   before_save :scrub_secret_mounts
   after_save :update_priority
   after_save :finalize_if_needed
@@ -257,6 +258,15 @@ class ContainerRequest < ArvadosModel
     end
 
     super(permitted)
+  end
+
+  def secret_mounts_key_conflict
+    secret_mounts.each do |k, v|
+      if mounts.has_key?(k)
+        errors.add(:secret_mounts, 'conflict with non-secret mounts')
+        return false
+      end
+    end
   end
 
   def scrub_secret_mounts
