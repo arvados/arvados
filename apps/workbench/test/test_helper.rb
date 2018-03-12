@@ -89,7 +89,7 @@ module ApiFixtureLoader
           ob.reject! { |k, v| k == 'secret_mounts' }
         end
       end
-      keys.inject(@@api_fixtures[name]) { |hash, key| hash[key].deep_dup }
+      keys.inject(@@api_fixtures[name]) { |hash, key| hash[key] }.deep_dup
     end
   end
   def api_fixture(name, *keys)
