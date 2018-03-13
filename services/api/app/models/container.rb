@@ -20,6 +20,7 @@ class Container < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :secret_mounts, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
@@ -31,6 +32,8 @@ class Container < ArvadosModel
   validate :validate_output
   after_validation :assign_auth
   before_save :sort_serialized_attrs
+  before_save :update_secret_mounts_md5
+  before_save :scrub_secret_mounts
   after_save :handle_completed
   after_save :propagate_priority
 
@@ -79,6 +82,18 @@ class Container < ArvadosModel
     ["mounts"]
   end
 
+  def self.full_text_searchable_columns
+    super - ["secret_mounts", "secret_mounts_md5"]
+  end
+
+  def self.searchable_columns *args
+    super - ["secret_mounts_md5"]
+  end
+
+  def logged_attributes
+    super.except('secret_mounts')
+  end
+
   def state_transitions
     State_transitions
   end
@@ -121,6 +136,7 @@ class Container < ArvadosModel
       mounts: resolve_mounts(req.mounts),
       runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
       scheduling_parameters: req.scheduling_parameters,
+      secret_mounts: req.secret_mounts,
     }
     act_as_system_user do
       if req.use_existing && (reusable = find_reusable(c_attrs))
@@ -215,6 +231,9 @@ class Container < ArvadosModel
     log_reuse_info(candidates) { "after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
 
     candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
+    log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
+
+    candidates = candidates.where('secret_mounts_md5 = ?', Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts]))))
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
@@ -378,7 +397,8 @@ class Container < ArvadosModel
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
                      :environment, :mounts, :output_path, :priority,
-                     :runtime_constraints, :scheduling_parameters)
+                     :runtime_constraints, :scheduling_parameters,
+                     :secret_mounts)
     end
 
     case self.state
@@ -484,6 +504,22 @@ class Container < ArvadosModel
     end
     if self.scheduling_parameters_changed?
       self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
+    end
+  end
+
+  def update_secret_mounts_md5
+    if self.secret_mounts_changed?
+      self.secret_mounts_md5 = Digest::MD5.hexdigest(
+        SafeJSON.dump(self.class.deep_sort_hash(self.secret_mounts)))
+    end
+  end
+
+  def scrub_secret_mounts
+    # this runs after update_secret_mounts_md5, so the
+    # secret_mounts_md5 will still reflect the secrets that are being
+    # scrubbed here.
+    if self.state_changed? && self.final?
+      self.secret_mounts = {}
     end
   end
 

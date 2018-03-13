@@ -299,7 +299,8 @@ CREATE TABLE container_requests (
     output_uuid character varying(255),
     log_uuid character varying(255),
     output_name character varying(255) DEFAULT NULL::character varying,
-    output_ttl integer DEFAULT 0 NOT NULL
+    output_ttl integer DEFAULT 0 NOT NULL,
+    secret_mounts jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -352,7 +353,9 @@ CREATE TABLE containers (
     exit_code integer,
     auth_uuid character varying(255),
     locked_by_uuid character varying(255),
-    scheduling_parameters text
+    scheduling_parameters text,
+    secret_mounts jsonb DEFAULT '{}'::jsonb,
+    secret_mounts_md5 character varying DEFAULT '99914b932bd37a50b983c5e7c90ae93b'::character varying
 );
 
 
@@ -1889,6 +1892,13 @@ CREATE INDEX index_containers_on_owner_uuid ON containers USING btree (owner_uui
 
 
 --
+-- Name: index_containers_on_secret_mounts_md5; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_secret_mounts_md5 ON containers USING btree (secret_mounts_md5);
+
+
+--
 -- Name: index_containers_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3053,4 +3063,6 @@ INSERT INTO schema_migrations (version) VALUES ('20171208203841');
 INSERT INTO schema_migrations (version) VALUES ('20171212153352');
 
 INSERT INTO schema_migrations (version) VALUES ('20180216203422');
+
+INSERT INTO schema_migrations (version) VALUES ('20180228220311');
 

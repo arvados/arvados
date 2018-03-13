@@ -18,6 +18,7 @@ class ContainerRequest < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :secret_mounts, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
@@ -28,6 +29,8 @@ class ContainerRequest < ArvadosModel
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_state_change
   validate :check_update_whitelist
+  validate :secret_mounts_key_conflict
+  before_save :scrub_secret_mounts
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
@@ -79,10 +82,14 @@ class ContainerRequest < ArvadosModel
   :container_image, :cwd, :environment, :filters, :mounts,
   :output_path, :priority, :properties, :requesting_container_uuid,
   :runtime_constraints, :state, :container_uuid, :use_existing,
-  :scheduling_parameters, :output_name, :output_ttl]
+  :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
   def self.limit_index_columns_read
     ["mounts"]
+  end
+
+  def logged_attributes
+    super.except('secret_mounts')
   end
 
   def state_transitions
@@ -145,7 +152,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5"]
   end
 
   protected
@@ -216,7 +223,7 @@ class ContainerRequest < ArvadosModel
 
     if self.new_record? || self.state_was == Uncommitted
       # Allow create-and-commit in a single operation.
-      permitted.push *AttrsPermittedBeforeCommit
+      permitted.push(*AttrsPermittedBeforeCommit)
     end
 
     case self.state
@@ -251,6 +258,21 @@ class ContainerRequest < ArvadosModel
     end
 
     super(permitted)
+  end
+
+  def secret_mounts_key_conflict
+    secret_mounts.each do |k, v|
+      if mounts.has_key?(k)
+        errors.add(:secret_mounts, 'conflict with non-secret mounts')
+        return false
+      end
+    end
+  end
+
+  def scrub_secret_mounts
+    if self.state == Final
+      self.secret_mounts = {}
+    end
   end
 
   def update_priority

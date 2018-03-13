@@ -45,13 +45,14 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_equal 'arvados#apiClientAuthorization', json_response['kind']
   end
 
-  test 'no auth in container response' do
+  test 'no auth or secret_mounts in container response' do
     authorize_with :dispatch1
     c = containers(:queued)
     assert c.lock, show_errors(c)
     get :show, id: c.uuid
     assert_response :success
     assert_nil json_response['auth']
+    assert_nil json_response['secret_mounts']
   end
 
   test "lock container" do
@@ -106,7 +107,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     [:running, :lock, 422, 'Running'],
     [:running, :unlock, 422, 'Running'],
   ].each do |fixture, action, response, state|
-    test "state transitions from #{fixture } to #{action}" do
+    test "state transitions from #{fixture} to #{action}" do
       authorize_with :dispatch1
       uuid = containers(fixture).uuid
       post action, {id: uuid}
@@ -133,4 +134,21 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_response 401
   end
 
+  [
+    [true, :running_container_auth],
+    [false, :dispatch2],
+    [false, :admin],
+    [false, :active],
+  ].each do |expect_success, auth|
+    test "get secret_mounts with #{auth} token" do
+      authorize_with auth
+      get :secret_mounts, {id: containers(:running).uuid}
+      if expect_success
+        assert_response :success
+        assert_equal "42\n", json_response["secret_mounts"]["/secret/6x9"]["content"]
+      else
+        assert_response 403
+      end
+    end
+  end
 end

@@ -23,7 +23,7 @@ class ContainerWorkUnit < ProxyWorkUnit
     items = []
     container_uuid = if @proxied.is_a?(Container) then uuid else get(:container_uuid) end
     if container_uuid
-      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts secret_mounts)
       my_children = @child_proxies || ContainerRequest.select(cols).where(requesting_container_uuid: container_uuid).results if !my_children
       my_child_containers = my_children.map(&:container_uuid).compact.uniq
       grandchildren = {}
