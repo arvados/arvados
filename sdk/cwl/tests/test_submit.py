@@ -1106,6 +1106,7 @@ class TestSubmit(unittest.TestCase):
                                         "type": "stdout"
                                     }
                                 ],
+                                "stdout": "hashed_example.txt",
                                 "requirements": [
                                     {
                                         "class": "InitialWorkDirRequirement",
