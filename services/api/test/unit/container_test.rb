@@ -32,6 +32,7 @@ class ContainerTest < ActiveSupport::TestCase
     environment: {
       "var" => "val",
     },
+    secret_mounts: {},
   }
 
   def minimal_new attrs={}
