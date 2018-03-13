@@ -399,6 +399,9 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		binds = append(binds, bind)
 	}
 	for bind := range runner.SecretMounts {
+		if _, ok := runner.Container.Mounts[bind]; ok {
+			return fmt.Errorf("Secret mount %q conflicts with regular mount", bind)
+		}
 		if runner.SecretMounts[bind].Kind != "json" &&
 			runner.SecretMounts[bind].Kind != "text" {
 			return fmt.Errorf("Secret mount %q type is %q but only 'json' and 'text' are permitted.",
