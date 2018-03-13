@@ -4,7 +4,7 @@
 \alias{keep_disks.update}
 \title{keep_disks.update is a method defined in Arvados class.}
 \usage{
-arv$keep_disks.update(keep_disk,
+arv$keep_disks.update(keepdisk,
 	uuid)
 }
 \arguments{

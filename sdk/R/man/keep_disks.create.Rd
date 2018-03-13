@@ -4,7 +4,7 @@
 \alias{keep_disks.create}
 \title{keep_disks.create is a method defined in Arvados class.}
 \usage{
-arv$keep_disks.create(keep_disk,
+arv$keep_disks.create(keepdisk,
 	ensure_unique_name = "false")
 }
 \arguments{

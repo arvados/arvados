@@ -50,38 +50,6 @@ RESTService <- R6::R6Class(
             private$webDavHostName
         },
 
-        #Move this to utility 
-        fetchAllItems = function(resourceURL, filters)
-        {
-            headers <- list(Authorization = paste("OAuth2", self$token))
-
-            offset <- 0
-            itemsAvailable <- .Machine$integer.max
-            items <- c()
-            while(length(items) < itemsAvailable)
-            {
-                serverResponse <- self$http$execute(verb       = "GET",
-                                                    url        = resourceURL,
-                                                    headers    = headers,
-                                                    body       = NULL,
-                                                    query      = filters,
-                                                    limit      = NULL,
-                                                    offset     = offset,
-                                                    retryTimes = self$numRetries)
-
-                parsedResponse <- self$httpParser$parseJSONResponse(serverResponse)
-
-                if(!is.null(parsedResponse$errors))
-                    stop(parsedResponse$errors)
-
-                items          <- c(items, parsedResponse$items)
-                offset         <- length(items)
-                itemsAvailable <- parsedResponse$items_available
-            }
-
-            items
-        },
-
         create = function(files, uuid)
         {
             sapply(files, function(filePath)

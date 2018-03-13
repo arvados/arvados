@@ -4,7 +4,7 @@
 \alias{virtual_machines.update}
 \title{virtual_machines.update is a method defined in Arvados class.}
 \usage{
-arv$virtual_machines.update(virtual_machine,
+arv$virtual_machines.update(virtualmachine,
 	uuid)
 }
 \arguments{

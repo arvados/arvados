@@ -4,7 +4,7 @@
 \alias{authorized_keys.create}
 \title{authorized_keys.create is a method defined in Arvados class.}
 \usage{
-arv$authorized_keys.create(authorized_key,
+arv$authorized_keys.create(authorizedkey,
 	ensure_unique_name = "false")
 }
 \arguments{

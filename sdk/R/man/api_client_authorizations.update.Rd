@@ -4,7 +4,7 @@
 \alias{api_client_authorizations.update}
 \title{api_client_authorizations.update is a method defined in Arvados class.}
 \usage{
-arv$api_client_authorizations.update(api_client_authorization,
+arv$api_client_authorizations.update(apiclientauthorization,
 	uuid)
 }
 \arguments{

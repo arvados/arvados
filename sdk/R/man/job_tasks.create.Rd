@@ -4,8 +4,7 @@
 \alias{job_tasks.create}
 \title{job_tasks.create is a method defined in Arvados class.}
 \usage{
-arv$job_tasks.create(job_task,
-	ensure_unique_name = "false")
+arv$job_tasks.create(jobtask, ensure_unique_name = "false")
 }
 \arguments{
 \item{jobTask}{JobTask object.}

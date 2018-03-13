@@ -4,7 +4,7 @@
 \alias{virtual_machines.create}
 \title{virtual_machines.create is a method defined in Arvados class.}
 \usage{
-arv$virtual_machines.create(virtual_machine,
+arv$virtual_machines.create(virtualmachine,
 	ensure_unique_name = "false")
 }
 \arguments{

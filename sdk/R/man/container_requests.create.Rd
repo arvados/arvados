@@ -4,7 +4,7 @@
 \alias{container_requests.create}
 \title{container_requests.create is a method defined in Arvados class.}
 \usage{
-arv$container_requests.create(container_request,
+arv$container_requests.create(containerrequest,
 	ensure_unique_name = "false")
 }
 \arguments{

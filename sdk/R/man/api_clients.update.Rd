@@ -4,7 +4,7 @@
 \alias{api_clients.update}
 \title{api_clients.update is a method defined in Arvados class.}
 \usage{
-arv$api_clients.update(api_client,
+arv$api_clients.update(apiclient,
 	uuid)
 }
 \arguments{

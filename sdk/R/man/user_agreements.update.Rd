@@ -4,7 +4,7 @@
 \alias{user_agreements.update}
 \title{user_agreements.update is a method defined in Arvados class.}
 \usage{
-arv$user_agreements.update(user_agreement,
+arv$user_agreements.update(useragreement,
 	uuid)
 }
 \arguments{

@@ -4,7 +4,7 @@
 \alias{user_agreements.create}
 \title{user_agreements.create is a method defined in Arvados class.}
 \usage{
-arv$user_agreements.create(user_agreement,
+arv$user_agreements.create(useragreement,
 	ensure_unique_name = "false")
 }
 \arguments{

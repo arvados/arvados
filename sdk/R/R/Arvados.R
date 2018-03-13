@@ -2464,8 +2464,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2489,7 +2489,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(user) > 0)
 				body <- jsonlite::toJSON(list(user = user), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -2513,7 +2513,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(user) > 0)
 				body <- jsonlite::toJSON(list(user = user), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -2615,8 +2615,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(user = user, openid_prefix = openid_prefix,
-				repo_name = repo_name, vm_uuid = vm_uuid,
-				send_notification_email = send_notification_email)
+							  repo_name = repo_name, vm_uuid = vm_uuid,
+							  send_notification_email = send_notification_email)
 			
 			body <- NULL
 			
@@ -2679,8 +2679,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2764,8 +2764,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2790,7 +2790,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(apiclientauthorization) > 0)
 				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -2814,7 +2814,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(apiclientauthorization) > 0)
 				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -2855,7 +2855,7 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(api_client_id = api_client_id,
-				scopes = scopes)
+							  scopes = scopes)
 			
 			body <- NULL
 			
@@ -2899,8 +2899,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2984,8 +2984,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3009,7 +3009,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(apiclient) > 0)
 				body <- jsonlite::toJSON(list(apiclient = apiclient), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3033,7 +3033,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(apiclient) > 0)
 				body <- jsonlite::toJSON(list(apiclient = apiclient), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3077,8 +3077,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3162,8 +3162,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3188,7 +3188,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(containerrequest) > 0)
 				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3212,7 +3212,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(containerrequest) > 0)
 				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3256,8 +3256,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3341,8 +3341,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3367,7 +3367,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(authorizedkey) > 0)
 				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3391,7 +3391,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(authorizedkey) > 0)
 				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3435,8 +3435,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3520,9 +3520,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count,
-				include_trash = include_trash)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -3546,7 +3546,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(collection) > 0)
 				body <- jsonlite::toJSON(list(collection = collection), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3570,7 +3570,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(collection) > 0)
 				body <- jsonlite::toJSON(list(collection = collection), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3694,9 +3694,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count,
-				include_trash = include_trash)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -3780,8 +3780,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3805,7 +3805,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(container) > 0)
 				body <- jsonlite::toJSON(list(container = container), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3829,7 +3829,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(container) > 0)
 				body <- jsonlite::toJSON(list(container = container), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -3953,8 +3953,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4037,8 +4037,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4062,7 +4062,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(human) > 0)
 				body <- jsonlite::toJSON(list(human = human), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4086,7 +4086,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(human) > 0)
 				body <- jsonlite::toJSON(list(human = human), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4129,8 +4129,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4214,8 +4214,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4239,7 +4239,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(jobtask) > 0)
 				body <- jsonlite::toJSON(list(jobtask = jobtask), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4263,7 +4263,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(jobtask) > 0)
 				body <- jsonlite::toJSON(list(jobtask = jobtask), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4307,8 +4307,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4391,8 +4391,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4416,7 +4416,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(link) > 0)
 				body <- jsonlite::toJSON(list(link = link), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4440,7 +4440,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(link) > 0)
 				body <- jsonlite::toJSON(list(link = link), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4483,8 +4483,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4587,8 +4587,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4611,13 +4611,13 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name,
-				find_or_create = find_or_create, filters = filters,
-				minimum_script_version = minimum_script_version,
-				exclude_script_versions = exclude_script_versions)
+							  find_or_create = find_or_create, filters = filters,
+							  minimum_script_version = minimum_script_version,
+							  exclude_script_versions = exclude_script_versions)
 			
 			if(length(job) > 0)
 				body <- jsonlite::toJSON(list(job = job), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4641,7 +4641,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(job) > 0)
 				body <- jsonlite::toJSON(list(job = job), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4684,8 +4684,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4768,8 +4768,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4853,8 +4853,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4878,7 +4878,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(keepdisk) > 0)
 				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4902,7 +4902,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(keepdisk) > 0)
 				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -4945,9 +4945,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(uuid = uuid, ping_secret = ping_secret,
-				node_uuid = node_uuid, filesystem_uuid = filesystem_uuid,
-				service_host = service_host, service_port = service_port,
-				service_ssl_flag = service_ssl_flag)
+							  node_uuid = node_uuid, filesystem_uuid = filesystem_uuid,
+							  service_host = service_host, service_port = service_port,
+							  service_ssl_flag = service_ssl_flag)
 			
 			body <- NULL
 			
@@ -4971,8 +4971,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5056,8 +5056,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5082,7 +5082,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(keepservice) > 0)
 				body <- jsonlite::toJSON(list(keepservice = keepservice), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5106,7 +5106,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(keepservice) > 0)
 				body <- jsonlite::toJSON(list(keepservice = keepservice), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5170,8 +5170,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5255,8 +5255,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5281,7 +5281,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(pipelinetemplate) > 0)
 				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5305,7 +5305,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(pipelinetemplate) > 0)
 				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5349,8 +5349,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5434,8 +5434,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5460,7 +5460,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(pipelineinstance) > 0)
 				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5484,7 +5484,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(pipelineinstance) > 0)
 				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5548,8 +5548,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5632,8 +5632,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5655,11 +5655,11 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name,
-				assign_slot = assign_slot)
+							  assign_slot = assign_slot)
 			
 			if(length(node) > 0)
 				body <- jsonlite::toJSON(list(node = node), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5683,7 +5683,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(node) > 0)
 				body <- jsonlite::toJSON(list(node = node), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5746,8 +5746,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5831,8 +5831,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5856,7 +5856,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(repository) > 0)
 				body <- jsonlite::toJSON(list(repository = repository), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5880,7 +5880,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(repository) > 0)
 				body <- jsonlite::toJSON(list(repository = repository), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -5944,8 +5944,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6029,8 +6029,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6054,7 +6054,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(specimen) > 0)
 				body <- jsonlite::toJSON(list(specimen = specimen), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6078,7 +6078,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(specimen) > 0)
 				body <- jsonlite::toJSON(list(specimen = specimen), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6122,8 +6122,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6206,8 +6206,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6231,7 +6231,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(log) > 0)
 				body <- jsonlite::toJSON(list(log = log), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6255,7 +6255,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(log) > 0)
 				body <- jsonlite::toJSON(list(log = log), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6298,8 +6298,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6382,8 +6382,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6407,7 +6407,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(trait) > 0)
 				body <- jsonlite::toJSON(list(trait = trait), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6431,7 +6431,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(trait) > 0)
 				body <- jsonlite::toJSON(list(trait = trait), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6474,8 +6474,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6559,8 +6559,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6585,7 +6585,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(virtualmachine) > 0)
 				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6609,7 +6609,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(virtualmachine) > 0)
 				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6693,8 +6693,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6778,8 +6778,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6803,7 +6803,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(workflow) > 0)
 				body <- jsonlite::toJSON(list(workflow = workflow), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6827,7 +6827,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(workflow) > 0)
 				body <- jsonlite::toJSON(list(workflow = workflow), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -6871,8 +6871,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6956,9 +6956,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count,
-				include_trash = include_trash)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -6982,7 +6982,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(group) > 0)
 				body <- jsonlite::toJSON(list(group = group), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -7006,7 +7006,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(group) > 0)
 				body <- jsonlite::toJSON(list(group = group), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -7050,9 +7050,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, distinct = distinct, limit = limit,
-				offset = offset, count = count, include_trash = include_trash,
-				uuid = uuid, recursive = recursive)
+							  order = order, distinct = distinct, limit = limit,
+							  offset = offset, count = count, include_trash = include_trash,
+							  uuid = uuid, recursive = recursive)
 			
 			body <- NULL
 			
@@ -7116,9 +7116,9 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count,
-				include_trash = include_trash)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -7202,8 +7202,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -7228,7 +7228,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(useragreement) > 0)
 				body <- jsonlite::toJSON(list(useragreement = useragreement), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -7252,7 +7252,7 @@ Arvados <- R6::R6Class(
 			
 			if(length(useragreement) > 0)
 				body <- jsonlite::toJSON(list(useragreement = useragreement), 
-			                           auto_unbox = TRUE)
+				                         auto_unbox = TRUE)
 			else
 				body <- NULL
 			
@@ -7336,8 +7336,8 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-				order = order, select = select, distinct = distinct,
-				limit = limit, offset = offset, count = count)
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			

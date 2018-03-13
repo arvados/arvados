@@ -4,7 +4,7 @@
 \alias{api_client_authorizations.create}
 \title{api_client_authorizations.create is a method defined in Arvados class.}
 \usage{
-arv$api_client_authorizations.create(api_client_authorization,
+arv$api_client_authorizations.create(apiclientauthorization,
 	ensure_unique_name = "false")
 }
 \arguments{

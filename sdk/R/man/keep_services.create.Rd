@@ -4,7 +4,7 @@
 \alias{keep_services.create}
 \title{keep_services.create is a method defined in Arvados class.}
 \usage{
-arv$keep_services.create(keep_service,
+arv$keep_services.create(keepservice,
 	ensure_unique_name = "false")
 }
 \arguments{

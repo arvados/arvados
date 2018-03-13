@@ -4,8 +4,7 @@
 \alias{job_tasks.update}
 \title{job_tasks.update is a method defined in Arvados class.}
 \usage{
-arv$job_tasks.update(job_task,
-	uuid)
+arv$job_tasks.update(jobtask, uuid)
 }
 \arguments{
 \item{jobTask}{JobTask object.}

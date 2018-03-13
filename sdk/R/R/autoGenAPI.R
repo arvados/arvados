@@ -25,7 +25,6 @@ generateAPI <- function()
                       arvadosClassMethods,
                       arvadosAPIFooter)
 
-    #TODO: Save to a file or load in memory?
     fileConn <- file("./R/Arvados.R", "w")
     writeLines(unlist(arvadosClass), fileConn)
     close(fileConn)
@@ -224,7 +223,8 @@ getRequestQueryList <- function(methodMetaData)
     lineLengthLimit <- 40
 
     if(nchar(collapsedArgs) > lineLengthLimit)
-        return(formatArgs("queryArgs <- list(", "\t", queryArgs, ")", lineLengthLimit))
+        return(formatArgs("queryArgs <- list(", "\t\t\t\t  ", queryArgs, ")",
+                          lineLengthLimit))
     else
         return(paste0("queryArgs <- list(", collapsedArgs, ")"))
 }
@@ -242,7 +242,7 @@ getRequestBody <- function(methodMetaData)
 
     c(paste0("if(length(", resourceName, ") > 0)"),
       paste0("\tbody <- jsonlite::toJSON(list(", resourceName, " = ", resourceName, "), "),
-             "                           auto_unbox = TRUE)",
+             "\t                         auto_unbox = TRUE)",
       "else",
       "\tbody <- NULL")
 }

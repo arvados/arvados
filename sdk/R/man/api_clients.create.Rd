@@ -4,7 +4,7 @@
 \alias{api_clients.create}
 \title{api_clients.create is a method defined in Arvados class.}
 \usage{
-arv$api_clients.create(api_client,
+arv$api_clients.create(apiclient,
 	ensure_unique_name = "false")
 }
 \arguments{

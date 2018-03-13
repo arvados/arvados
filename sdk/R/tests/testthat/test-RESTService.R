@@ -31,34 +31,6 @@ test_that("getWebDavHostName returns webDAV host name properly", {
     expect_that("https://myWebDavServer.com", equals(REST$getWebDavHostName())) 
 }) 
 
-test_that("fetchAllItems always returns all resource items from server", {
-
-    expectedURL <- NULL
-    serverResponse <- list(items_available = 8,
-                           items = list("collection1",
-                                        "collection2",
-                                        "collection3",
-                                        "collection4",
-                                        "collection5",
-                                        "collection6",
-                                        "collection7",
-                                        "collection8"))
-
-    httpParser <- FakeHttpParser$new()
-    httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
-    httpRequest$serverMaxElementsPerRequest <- 3
-
-    REST <- RESTService$new("token", "host", 
-                            httpRequest, httpParser,
-                            0, "webDavHost")
-
-    result <- REST$fetchAllItems(NULL, NULL)
-
-    expect_that(length(result), equals(8))
-    expect_that(httpRequest$numberOfGETRequests, equals(3))
-    expect_that(httpParser$parserCallCount, equals(3))
-}) 
-
 test_that("create calls REST service properly", {
 
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"

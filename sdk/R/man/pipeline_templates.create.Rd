@@ -4,7 +4,7 @@
 \alias{pipeline_templates.create}
 \title{pipeline_templates.create is a method defined in Arvados class.}
 \usage{
-arv$pipeline_templates.create(pipeline_template,
+arv$pipeline_templates.create(pipelinetemplate,
 	ensure_unique_name = "false")
 }
 \arguments{

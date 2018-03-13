@@ -4,7 +4,7 @@
 \alias{authorized_keys.update}
 \title{authorized_keys.update is a method defined in Arvados class.}
 \usage{
-arv$authorized_keys.update(authorized_key,
+arv$authorized_keys.update(authorizedkey,
 	uuid)
 }
 \arguments{

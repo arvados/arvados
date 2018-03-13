@@ -4,7 +4,7 @@
 \alias{pipeline_instances.update}
 \title{pipeline_instances.update is a method defined in Arvados class.}
 \usage{
-arv$pipeline_instances.update(pipeline_instance,
+arv$pipeline_instances.update(pipelineinstance,
 	uuid)
 }
 \arguments{

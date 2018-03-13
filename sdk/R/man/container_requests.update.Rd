@@ -4,7 +4,7 @@
 \alias{container_requests.update}
 \title{container_requests.update is a method defined in Arvados class.}
 \usage{
-arv$container_requests.update(container_request,
+arv$container_requests.update(containerrequest,
 	uuid)
 }
 \arguments{
