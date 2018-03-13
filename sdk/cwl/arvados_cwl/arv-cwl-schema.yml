@@ -27,7 +27,7 @@ $graph:
           name: LoadListingEnum
           symbols: [no_listing, shallow_listing, deep_listing]
 
-- name: Secrets
+- name: cwltool:Secrets
   type: record
   inVocab: false
   extends: cwl:ProcessRequirement
