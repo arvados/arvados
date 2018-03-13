@@ -91,7 +91,15 @@ func (sqc *SqueueChecker) reniceAll() {
 	}
 
 	sort.Slice(jobs, func(i, j int) bool {
-		return jobs[i].wantPriority > jobs[j].wantPriority
+		if jobs[i].wantPriority != jobs[j].wantPriority {
+			return jobs[i].wantPriority > jobs[j].wantPriority
+		} else {
+			// break ties with container uuid --
+			// otherwise, the ordering would change from
+			// one interval to the next, and we'd do many
+			// pointless slurm queue rearrangements.
+			return jobs[i].uuid > jobs[j].uuid
+		}
 	})
 	renice := wantNice(jobs, sqc.PrioritySpread)
 	for i, job := range jobs {

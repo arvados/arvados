@@ -348,7 +348,7 @@ CREATE TABLE containers (
     output character varying(255),
     container_image character varying(255),
     progress double precision,
-    priority integer,
+    priority bigint,
     updated_at timestamp without time zone NOT NULL,
     exit_code integer,
     auth_uuid character varying(255),
@@ -3065,4 +3065,6 @@ INSERT INTO schema_migrations (version) VALUES ('20171212153352');
 INSERT INTO schema_migrations (version) VALUES ('20180216203422');
 
 INSERT INTO schema_migrations (version) VALUES ('20180228220311');
+
+INSERT INTO schema_migrations (version) VALUES ('20180313180114');
 

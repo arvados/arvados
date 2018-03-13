@@ -24,8 +24,8 @@ class Container < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
-  validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
-  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validates :command, :container_image, :output_path, :cwd, :priority, { presence: true }
+  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
@@ -98,29 +98,40 @@ class Container < ArvadosModel
     State_transitions
   end
 
+  # Container priority is the highest "computed priority" of any
+  # matching request. The computed priority of a container-submitted
+  # request is the priority of the submitting container. The computed
+  # priority of a user-submitted request is a function of
+  # user-assigned priority and request creation time.
   def update_priority!
-    if [Queued, Locked, Running].include? self.state
-      # Update the priority of this container to the maximum priority of any of
-      # its committed container requests and save the record.
-      self.priority = ContainerRequest.
-        where(container_uuid: uuid,
-              state: ContainerRequest::Committed).
-        maximum('priority') || 0
-      self.save!
-    end
+    return if ![Queued, Locked, Running].include?(state)
+    p = ContainerRequest.
+        where('container_uuid=? and priority>0', uuid).
+        includes(:requesting_container).
+        lock(true).
+        map do |cr|
+      if cr.requesting_container
+        cr.requesting_container.priority
+      else
+        (cr.priority << 50) - (cr.created_at.to_time.to_f * 1000).to_i
+      end
+    end.max || 0
+    update_attributes!(priority: p)
   end
 
   def propagate_priority
-    if self.priority_changed?
-      act_as_system_user do
-         # Update the priority of child container requests to match new priority
-         # of the parent container.
-         ContainerRequest.where(requesting_container_uuid: self.uuid,
-                                state: ContainerRequest::Committed).each do |cr|
-           cr.priority = self.priority
-           cr.save
-         end
-       end
+    return true unless priority_changed?
+    act_as_system_user do
+      # Update the priority of child container requests to match new
+      # priority of the parent container (ignoring requests with no
+      # container assigned, because their priority doesn't matter).
+      ContainerRequest.
+        where(requesting_container_uuid: self.uuid,
+              state: ContainerRequest::Committed).
+        where('container_uuid is not null').
+        includes(:container).
+        map(&:container).
+        map(&:update_priority!)
     end
   end
 
