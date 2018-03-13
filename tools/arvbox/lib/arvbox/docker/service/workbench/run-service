@@ -17,7 +17,8 @@ else
 fi
 
 run_bundler --without=development
-bundle exec passenger start --runtime-check-only --runtime-dir=/var/lib/passenger
+bundle exec passenger-config build-native-support
+bundle exec passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
 RAILS_GROUPS=assets bundle exec rake npm:install
 
