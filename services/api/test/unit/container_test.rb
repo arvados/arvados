@@ -126,10 +126,8 @@ class ContainerTest < ActiveSupport::TestCase
       c.priority = 1000
       c.save!
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.priority = 1001
-        c.save!
-      end
+      c.priority = 1000 << 50
+      c.save!
     end
   end
 

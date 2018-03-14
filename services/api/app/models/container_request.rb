@@ -11,6 +11,11 @@ class ContainerRequest < ArvadosModel
   include WhitelistUpdate
 
   belongs_to :container, foreign_key: :container_uuid, primary_key: :uuid
+  belongs_to :requesting_container, {
+               class_name: 'Container',
+               foreign_key: :requesting_container_uuid,
+               primary_key: :uuid,
+             }
 
   serialize :properties, Hash
   serialize :environment, Hash
@@ -276,15 +281,12 @@ class ContainerRequest < ArvadosModel
   end
 
   def update_priority
-    if self.state_changed? or
-        self.priority_changed? or
-        self.container_uuid_changed?
-      act_as_system_user do
-        Container.
-          where('uuid in (?)',
-                [self.container_uuid_was, self.container_uuid].compact).
-          map(&:update_priority!)
-      end
+    return unless state_changed? || priority_changed? || container_uuid_changed?
+    act_as_system_user do
+      Container.
+        where('uuid in (?)', [self.container_uuid_was, self.container_uuid].compact).
+        lock(true).
+        map(&:update_priority!)
     end
   end
 
@@ -299,7 +301,7 @@ class ContainerRequest < ArvadosModel
     container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
     if container
       self.requesting_container_uuid = container.uuid
-      self.priority = container.priority
+      self.priority = container.priority > 0 ? 1 : 0
     end
     true
   end
