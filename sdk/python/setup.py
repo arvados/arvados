@@ -15,7 +15,7 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 tagger = egg_info_cmd.egg_info
 version = os.environ.get("ARVADOS_BUILDING_VERSION")
 if not version:
-    version = "0.1"
+    version = ""
     try:
         import gittaggers
         tagger = gittaggers.EggInfoFromGit
