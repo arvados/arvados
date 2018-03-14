@@ -325,8 +325,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     set_user_from_auth :active
 
     # parents should be prioritized by submit time.
-    assert_operator children[0].priority, :>, children[1].priority
-    assert_operator children[1].priority, :>, children[2].priority
+    assert_operator parents[0].priority, :>, parents[1].priority
+    assert_operator parents[1].priority, :>, parents[2].priority
 
     # children should be prioritized in same order as their respective
     # parents.
