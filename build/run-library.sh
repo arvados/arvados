@@ -52,12 +52,6 @@ version_from_git() {
 
     ARVADOS_BUILDING_VERSION=`git describe --abbrev=0`
     local git_ts 
-    if [[ -n "$1" ]] ; then
-        prefix="$1"
-    else
-        prefix="0.1"
-    fi
-
     declare $(format_last_commit_here "git_ts=%ct")
     ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
@@ -77,7 +71,7 @@ timestamp_from_git() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).tar.gz" -print -quit)" ]; then
+  if [ -n "$(find dist -name "*-$ARVADOS_BUILDING_VERSION.tar.gz" -print -quit)" ]; then
     # This package doesn't need rebuilding.
     return
   fi
