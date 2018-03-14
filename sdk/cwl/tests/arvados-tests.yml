@@ -134,3 +134,15 @@
     out: out
   tool: wf/runin-with-ttl-wf.cwl
   doc: "RunInSingleContainer respects outputTTL"
+
+- job: secret_test_job.yml
+  output: {
+    "out": {
+        "class": "File",
+        "location": "hashed_example.txt",
+        "size": 47,
+        "checksum": "sha1$f45341c7f03b4dd10646c402908d1aea0d580f5d"
+    }
+  }
+  tool: wf/secret_wf.cwl
+  doc: "Test secret input parameters"

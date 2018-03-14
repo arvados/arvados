@@ -237,6 +237,8 @@ class ArvCwlRunner(object):
                     if not obj.get("dockerOutputDirectory").startswith('/'):
                         raise SourceLine(obj, "dockerOutputDirectory", validate.ValidationException).makeError(
                             "Option 'dockerOutputDirectory' must be an absolute path.")
+            if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
+                raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
             for v in obj.itervalues():
                 self.check_features(v)
         elif isinstance(obj, list):
@@ -354,7 +356,7 @@ class ArvCwlRunner(object):
         make_fs_access = kwargs.get("make_fs_access") or partial(CollectionFsAccess,
                                                                  collection_cache=self.collection_cache)
         self.fs_access = make_fs_access(kwargs["basedir"])
-
+        self.secret_store = kwargs.get("secret_store")
 
         self.trash_intermediate = kwargs["trash_intermediate"]
         if self.trash_intermediate and self.work_api != "containers":
@@ -452,7 +454,8 @@ class ArvCwlRunner(object):
                                                 submit_runner_image=kwargs.get("submit_runner_image"),
                                                 intermediate_output_ttl=kwargs.get("intermediate_output_ttl"),
                                                 merged_map=merged_map,
-                                                priority=kwargs.get("priority"))
+                                                priority=kwargs.get("priority"),
+                                                secret_store=self.secret_store)
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
                                       self.output_name,
