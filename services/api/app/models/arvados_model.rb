@@ -5,6 +5,7 @@
 require 'has_uuid'
 require 'record_filters'
 require 'serializers'
+require 'request_error'
 
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
@@ -38,37 +39,37 @@ class ArvadosModel < ActiveRecord::Base
            class_name: 'Link',
            primary_key: :uuid)
 
-  class PermissionDeniedError < StandardError
+  class PermissionDeniedError < RequestError
     def http_status
       403
     end
   end
 
-  class AlreadyLockedError < StandardError
+  class AlreadyLockedError < RequestError
     def http_status
       422
     end
   end
 
-  class LockFailedError < StandardError
+  class LockFailedError < RequestError
     def http_status
       422
     end
   end
 
-  class InvalidStateTransitionError < StandardError
+  class InvalidStateTransitionError < RequestError
     def http_status
       422
     end
   end
 
-  class UnauthorizedError < StandardError
+  class UnauthorizedError < RequestError
     def http_status
       401
     end
   end
 
-  class UnresolvableContainerError < StandardError
+  class UnresolvableContainerError < RequestError
     def http_status
       422
     end
