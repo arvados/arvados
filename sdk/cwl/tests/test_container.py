@@ -10,6 +10,7 @@ import unittest
 import os
 import functools
 import cwltool.process
+import cwltool.secrets
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 
@@ -33,6 +34,7 @@ class TestContainer(unittest.TestCase):
             runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             runner.ignore_docker_for_reuse = False
             runner.intermediate_output_ttl = 0
+            runner.secret_store = cwltool.secrets.SecretStore()
 
             keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
             runner.api.collections().get().execute.return_value = {
@@ -85,6 +87,7 @@ class TestContainer(unittest.TestCase):
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
                         'properties': {},
+                        'secret_mounts': {}
                     }))
 
     # The test passes some fields in builder.resources
@@ -96,6 +99,8 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 3600
+        runner.secret_store = cwltool.secrets.SecretStore()
+
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
@@ -172,7 +177,8 @@ class TestContainer(unittest.TestCase):
             'scheduling_parameters': {
                 'partitions': ['blurb']
             },
-            'properties': {}
+            'properties': {},
+            'secret_mounts': {}
         }
 
         call_body = call_kwargs.get('body', None)
@@ -191,6 +197,8 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
@@ -303,7 +311,8 @@ class TestContainer(unittest.TestCase):
             'cwd': '/var/spool/cwl',
             'scheduling_parameters': {
             },
-            'properties': {}
+            'properties': {},
+            'secret_mounts': {}
         }
 
         call_body = call_kwargs.get('body', None)
@@ -321,6 +330,7 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -388,6 +398,7 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
+                    'secret_mounts': {}
                 }))
 
     @mock.patch("arvados.collection.Collection")
@@ -400,6 +411,7 @@ class TestContainer(unittest.TestCase):
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
 
         runner.api.containers().get().execute.return_value = {"state":"Complete",
                                                               "output": "abc+123",
@@ -443,6 +455,7 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -517,4 +530,102 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
+                    'secret_mounts': {}
+                }))
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_secrets(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        tool = cmap({"arguments": ["md5sum", "example.conf"],
+                     "class": "CommandLineTool",
+                     "hints": [
+                         {
+                             "class": "http://commonwl.org/cwltool#Secrets",
+                             "secrets": [
+                                 "#secret_job.cwl/pw"
+                             ]
+                         }
+                     ],
+                     "id": "#secret_job.cwl",
+                     "inputs": [
+                         {
+                             "id": "#secret_job.cwl/pw",
+                             "type": "string"
+                         }
+                     ],
+                     "outputs": [
+                     ],
+                     "requirements": [
+                         {
+                             "class": "InitialWorkDirRequirement",
+                             "listing": [
+                                 {
+                                     "entry": "username: user\npassword: $(inputs.pw)\n",
+                                     "entryname": "example.conf"
+                                 }
+                             ]
+                         }
+                     ]})
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                     collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+        arvtool.formatgraph = None
+
+        job_order = {"pw": "blorp"}
+        runner.secret_store.store(["pw"], job_order)
+
+        for j in arvtool.job(job_order, mock.MagicMock(), basedir="", name="test_secrets",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
+            j.run(enable_reuse=True, priority=500)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_secrets',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': 'arvados/jobs',
+                    'command': ['md5sum', 'example.conf'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {},
+                    "secret_mounts": {
+                        "/var/spool/cwl/example.conf": {
+                            "content": "username: user\npassword: blorp\n",
+                            "kind": "text"
+                        }
+                    }
                 }))
