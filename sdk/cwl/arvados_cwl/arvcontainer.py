@@ -42,6 +42,13 @@ class ArvadosContainer(object):
         pass
 
     def run(self, dry_run=False, pull_image=True, **kwargs):
+        # ArvadosCommandTool subclasses from cwltool.CommandLineTool,
+        # which calls makeJobRunner() to get a new ArvadosContainer
+        # object.  The fields that define execution such as
+        # command_line, environment, etc are set on the
+        # ArvadosContainer object by CommandLineTool.job() before
+        # run() is called.
+
         container_request = {
             "command": self.command_line,
             "owner_uuid": self.arvrunner.project_uuid,
