@@ -59,7 +59,8 @@ version_from_git() {
     fi
 
     declare $(format_last_commit_here "git_ts=%ct")
-    echo "$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    echo "$ARVADOS_BUILDING_VERSION"
 }
 
 nohash_version_from_git() {
