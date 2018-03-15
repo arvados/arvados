@@ -364,6 +364,10 @@ func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error
 func (*KeepTestClient) ClearBlockCache() {
 }
 
+func (client *KeepTestClient) Close() {
+	client.Content = nil
+}
+
 type FileWrapper struct {
 	io.ReadCloser
 	len int64
@@ -408,6 +412,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
@@ -514,7 +519,9 @@ func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename 
 
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
-	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -585,7 +592,9 @@ func (s *TestSuite) TestRunContainer(c *C) {
 		t.logWriter.Write(dockerLog(1, "Hello world\n"))
 		t.logWriter.Close()
 	}
-	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -610,6 +619,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -630,6 +640,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	err := cr.UpdateContainerRunning()
@@ -641,6 +652,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	cr.LogsPDH = new(string)
@@ -661,6 +673,7 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.cCancelled = true
 	cr.finalState = "Cancelled"
@@ -695,7 +708,9 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 
 	api = &ArvTestClient{Container: rec}
 	s.docker.api = api
-	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -971,7 +986,9 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api := &ArvTestClient{Container: rec}
-	cr := NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
 		return &ArvTestClient{}, nil
@@ -1041,6 +1058,7 @@ func stubCert(temp string) string {
 func (s *TestSuite) TestSetupMounts(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -1449,7 +1467,9 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
-	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
@@ -1888,7 +1908,9 @@ func (s *TestSuite) TestStderrMount(c *C) {
 }
 
 func (s *TestSuite) TestNumberRoundTrip(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.fetchContainerRecord()
 
 	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
@@ -1898,7 +1920,9 @@ func (s *TestSuite) TestNumberRoundTrip(c *C) {
 }
 
 func (s *TestSuite) TestEvalSymlinks(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
 	c.Assert(err, IsNil)
@@ -1928,7 +1952,9 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 }
 
 func (s *TestSuite) TestEvalSymlinkDir(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
 	c.Assert(err, IsNil)

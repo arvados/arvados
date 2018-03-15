@@ -6,11 +6,12 @@ package main
 
 import (
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	. "gopkg.in/check.v1"
 	"strings"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	. "gopkg.in/check.v1"
 )
 
 type LoggingTestSuite struct{}
@@ -34,6 +35,7 @@ var _ = Suite(&LoggingTestSuite{})
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -61,6 +63,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	}
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
@@ -82,6 +85,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
@@ -135,6 +139,7 @@ func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, t
 
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 

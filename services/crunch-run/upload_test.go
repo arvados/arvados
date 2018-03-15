@@ -5,13 +5,14 @@
 package main
 
 import (
-	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"syscall"
+
+	. "gopkg.in/check.v1"
 )
 
 type UploadTestSuite struct{}
@@ -46,7 +47,9 @@ func (s *TestSuite) TestSimpleUpload(c *C) {
 
 	ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte("foo"), 0600)
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 	c.Check(err, IsNil)
 	c.Check(str, Equals, ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:file1.txt\n")
@@ -67,7 +70,9 @@ func (s *TestSuite) TestUploadThreeFiles(c *C) {
 		c.Assert(err, IsNil)
 	}
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
@@ -85,7 +90,9 @@ func (s *TestSuite) TestSimpleUploadSubdir(c *C) {
 	ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte("foo"), 0600)
 	ioutil.WriteFile(tmpdir+"/subdir/file2.txt", []byte("bar"), 0600)
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
@@ -119,7 +126,9 @@ func (s *TestSuite) TestSimpleUploadLarge(c *C) {
 
 	ioutil.WriteFile(tmpdir+"/"+"file2.txt", []byte("bar"), 0600)
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
@@ -136,7 +145,9 @@ func (s *TestSuite) TestUploadEmptySubdir(c *C) {
 
 	ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte("foo"), 0600)
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
@@ -152,7 +163,9 @@ func (s *TestSuite) TestUploadEmptyFile(c *C) {
 
 	ioutil.WriteFile(tmpdir+"/"+"file1.txt", []byte(""), 0600)
 
-	cw := CollectionWriter{0, &KeepTestClient{}, nil, nil, sync.Mutex{}}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cw := CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	str, err := writeTree(&cw, tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
