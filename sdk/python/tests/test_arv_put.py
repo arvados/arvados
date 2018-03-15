@@ -19,6 +19,7 @@ import pwd
 import random
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -856,6 +857,28 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
                       pipe.stdout.read().decode())
+
+    def test_sigint_logs_request_id(self):
+        # Connect 'yes' command output to arv-put, wait for a second and
+        # send SIGINT to arv-put's process, then check if its output includes
+        # the X-Request-Id.
+        input_stream = subprocess.Popen(
+            'yes', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__, '--stream'],
+            stdin=input_stream.stdout, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, env=self.ENVIRON)
+        time.sleep(1)
+        pipe.send_signal(signal.SIGINT)
+        deadline = time.time() + 5
+        while (pipe.poll() is None) and (time.time() < deadline):
+            time.sleep(.1)
+        returncode = pipe.poll()
+        input_stream.terminate()
+        if returncode is None:
+            pipe.terminate()
+            self.fail("arv-put did not exited within 5 seconds")
+        self.assertRegex(pipe.stdout.read().decode(), r'\(X-Request-Id: req-[a-z0-9]{20}\)')
 
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get

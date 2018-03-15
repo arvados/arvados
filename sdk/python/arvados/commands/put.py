@@ -979,6 +979,7 @@ def progress_writer(progress_func, outfile=sys.stderr):
     return write_progress
 
 def exit_signal_handler(sigcode, frame):
+    logging.getLogger('arvados.arv_put').error("Caught signal {}, exiting.".format(sigcode))
     sys.exit(-sigcode)
 
 def desired_project_uuid(api_client, project_uuid, num_retries):
@@ -1010,6 +1011,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if api_client is None:
         api_client = arvados.api('v1', request_id=request_id)
+
+    # Install our signal handler for each code in CAUGHT_SIGNALS, and save
+    # the originals.
+    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
+                            for sigcode in CAUGHT_SIGNALS}
 
     # Determine the name to use
     if args.name:
@@ -1126,11 +1132,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
         sys.exit(1)
-
-    # Install our signal handler for each code in CAUGHT_SIGNALS, and save
-    # the originals.
-    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
-                            for sigcode in CAUGHT_SIGNALS}
 
     if not args.dry_run and not args.update_collection and args.resume and writer.bytes_written > 0:
         logger.warning("\n".join([
