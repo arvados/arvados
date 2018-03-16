@@ -385,7 +385,7 @@ package_go_binary tools/keep-exercise keep-exercise \
 # 2014-05-15
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/python/build"
-arvados_python_client_version="$version_from_git()"
+arvados_python_client_version="$(version_from_git)"
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-python-client "$arvados_python_client_version" python
 if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$arvados_python_client_version" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git
@@ -394,7 +394,7 @@ fi
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
-arvados_cwl_runner_version="$version_from_git()"
+arvados_cwl_runner_version="$(version_from_git)"
 declare -a iterargs=()
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
     arvados_cwl_runner_iteration=3
@@ -451,7 +451,7 @@ fi
 # not omit the python- prefix first.
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/fuse/build"
-arvados_fuse_version="$version_from_git()"
+arvados_fuse_version="$(version_from_git)"
 test_package_presence "${PYTHON2_PKG_PREFIX}-arvados-fuse" "$arvados_fuse_version" python
 if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$arvados_fuse_version" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
@@ -469,7 +469,7 @@ fi
 # The Docker image cleaner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
-dockercleaner_version="$version_from_git()"
+dockercleaner_version="$(version_from_git)"
 iteration="${ARVADOS_BUILDING_ITERATION:-3}"
 test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
@@ -478,7 +478,7 @@ fi
 
 # The Arvados crunchstat-summary tool
 cd $WORKSPACE/packages/$TARGET
-crunchstat_summary_version="$version_from_git()"
+crunchstat_summary_version="$(version_from_git)"
 iteration="${ARVADOS_BUILDING_ITERATION:-2}"
 test_package_presence "$PYTHON2_PKG_PREFIX"-crunchstat-summary "$crunchstat_summary_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
