@@ -58,14 +58,14 @@ def update_script(path, val):
 def set_squeue(g):
     global all_jobs
     update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n" +
-                  "\n".join("echo '1|100|100|%s|%s|(null)'" % (v, k) for k,v in all_jobs.items()))
+                  "\n".join("echo '1|100|100|%s|%s|(null)|1234567890'" % (v, k) for k,v in all_jobs.items()))
     return 0
 
 def set_queue_unsatisfiable(g):
     global all_jobs, unsatisfiable_job_scancelled
     # Simulate a job requesting a 99 core node.
     update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n" +
-                  "\n".join("echo '99|100|100|%s|%s|(null)'" % (v, k) for k,v in all_jobs.items()))
+                  "\n".join("echo '99|100|100|%s|%s|(null)|1234567890'" % (v, k) for k,v in all_jobs.items()))
     update_script(os.path.join(fake_slurm, "scancel"), "#!/bin/sh\n" +
                   "\ntouch %s" % unsatisfiable_job_scancelled)
     return 0
