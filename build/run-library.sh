@@ -1,4 +1,4 @@
-  #!/bin/bash
+#!/bin/bash
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -72,7 +72,7 @@ timestamp_from_git() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).tar.gz" -print -quit)" ]; then
+  if [ -n "$(find dist -name "*-$(version_from_git).$(date -ud "@$git_ts" +%Y%m%d%H%M%S).tar.gz" -print -quit)" ]; then
     # This package doesn't need rebuilding.
     return
   fi
