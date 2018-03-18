@@ -22,6 +22,14 @@ type KeepService struct {
 	ReadOnly       bool   `json:"read_only"`
 }
 
+type KeepMount struct {
+	UUID           string   `json:"uuid"`
+	DeviceID       string   `json:"device_id"`
+	ReadOnly       bool     `json:"read_only"`
+	Replication    int      `json:"replication"`
+	StorageClasses []string `json:"storage_classes"`
+}
+
 // KeepServiceList is an arvados#keepServiceList record
 type KeepServiceList struct {
 	Items          []KeepService `json:"items"`
@@ -77,10 +85,32 @@ func (s *KeepService) String() string {
 	return s.UUID
 }
 
+func (s *KeepService) Mounts(c *Client) ([]KeepMount, error) {
+	url := s.url("mounts")
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	var mounts []KeepMount
+	err = c.DoAndDecode(&mounts, req)
+	if err != nil {
+		return nil, fmt.Errorf("GET %v: %v", url, err)
+	}
+	return mounts, nil
+}
+
+// Index returns an unsorted list of blocks at the given mount point.
+func (s *KeepService) IndexMount(c *Client, mountUUID string, prefix string) ([]KeepServiceIndexEntry, error) {
+	return s.index(c, s.url("mounts/"+mountUUID+"/blocks?prefix="+prefix))
+}
+
 // Index returns an unsorted list of blocks that can be retrieved from
 // this server.
 func (s *KeepService) Index(c *Client, prefix string) ([]KeepServiceIndexEntry, error) {
-	url := s.url("index/" + prefix)
+	return s.index(c, s.url("index/"+prefix))
+}
+
+func (s *KeepService) index(c *Client, url string) ([]KeepServiceIndexEntry, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("NewRequest(%v): %v", url, err)
@@ -89,7 +119,7 @@ func (s *KeepService) Index(c *Client, prefix string) ([]KeepServiceIndexEntry, 
 	if err != nil {
 		return nil, fmt.Errorf("Do(%v): %v", url, err)
 	} else if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("%v: %v", url, resp.Status)
+		return nil, fmt.Errorf("%v: %d %v", url, resp.StatusCode, resp.Status)
 	}
 	defer resp.Body.Close()
 

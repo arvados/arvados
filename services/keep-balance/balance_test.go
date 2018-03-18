@@ -76,6 +76,7 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 				UUID: fmt.Sprintf("zzzzz-bi6l4-%015x", i),
 			},
 		}
+		srv.mounts = []*KeepMount{{KeepMount: arvados.KeepMount{UUID: fmt.Sprintf("mount-%015x", i)}, KeepService: srv}}
 		bal.srvs[i] = srv
 		bal.KeepServices[srv.UUID] = srv
 	}
@@ -246,7 +247,7 @@ func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepSe
 func (bal *balancerSuite) replList(knownBlockID int, order slots) (repls []Replica) {
 	mtime := time.Now().UnixNano() - (bal.signatureTTL+86400)*1e9
 	for _, srv := range bal.srvList(knownBlockID, order) {
-		repls = append(repls, Replica{srv, mtime})
+		repls = append(repls, Replica{srv.mounts[0], mtime})
 		mtime++
 	}
 	return

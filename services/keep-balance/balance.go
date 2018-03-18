@@ -82,6 +82,12 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	if err != nil {
 		return
 	}
+	for _, srv := range bal.KeepServices {
+		err = srv.discoverMounts(&config.Client)
+		if err != nil {
+			return
+		}
+	}
 
 	if err = bal.CheckSanityEarly(&config.Client); err != nil {
 		return
@@ -242,20 +248,24 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		wg.Add(1)
 		go func(srv *KeepService) {
 			defer wg.Done()
-			bal.logf("%s: retrieve index", srv)
-			idx, err := srv.Index(c, "")
-			if err != nil {
-				errs <- fmt.Errorf("%s: %v", srv, err)
-				return
+			bal.logf("%s: retrieve indexes", srv)
+			for _, mount := range srv.mounts {
+				bal.logf("%s: retrieve index", mount)
+				idx, err := srv.IndexMount(c, mount.UUID, "")
+				if err != nil {
+					errs <- fmt.Errorf("%s: retrieve index: %v", mount, err)
+					return
+				}
+				if len(errs) > 0 {
+					// Some other goroutine encountered an
+					// error -- any further effort here
+					// will be wasted.
+					return
+				}
+				bal.logf("%s: add %d replicas to map", mount, len(idx))
+				bal.BlockStateMap.AddReplicas(mount, idx)
+				bal.logf("%s: done", mount)
 			}
-			if len(errs) > 0 {
-				// Some other goroutine encountered an
-				// error -- any further effort here
-				// will be wasted.
-				return
-			}
-			bal.logf("%s: add %d replicas to map", srv, len(idx))
-			bal.BlockStateMap.AddReplicas(srv, idx)
 			bal.logf("%s: done", srv)
 		}(srv)
 	}
@@ -398,7 +408,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 	uuids := keepclient.NewRootSorter(bal.serviceRoots, string(blkid[:32])).GetSortedRoots()
 	hasRepl := make(map[string]Replica, len(bal.serviceRoots))
 	for _, repl := range blk.Replicas {
-		hasRepl[repl.UUID] = repl
+		hasRepl[repl.KeepService.UUID] = repl
 		// TODO: when multiple copies are on one server, use
 		// the oldest one that doesn't have a timestamp
 		// collision with other replicas.
