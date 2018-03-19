@@ -15,6 +15,8 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 class File(FreshBase):
     """Base for file objects."""
 
+    __slots__ = ("inode", "parent_inode", "_mtime")
+
     def __init__(self, parent_inode, _mtime=0):
         super(File, self).__init__()
         self.inode = None
@@ -45,6 +47,8 @@ class File(FreshBase):
 
 class FuseArvadosFile(File):
     """Wraps a ArvadosFile."""
+
+    __slots__ = ('arvfile',)
 
     def __init__(self, parent_inode, arvfile, _mtime):
         super(FuseArvadosFile, self).__init__(parent_inode, _mtime)

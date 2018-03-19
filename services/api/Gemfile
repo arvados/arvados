@@ -4,7 +4,7 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.0'
+gem 'rails', '~> 4.2'
 gem 'responders', '~> 2.0'
 gem 'protected_attributes'
 
@@ -21,8 +21,14 @@ group :test, :development do
   gem 'mocha', require: false
 end
 
+# We'll need to update related code prior to Rails 5.
+# See: https://github.com/rails/activerecord-deprecated_finders
+gem 'activerecord-deprecated_finders', require: 'active_record/deprecated_finders'
+
 # pg is the only supported database driver.
-gem 'pg'
+# Note: Rails 4.2 is not compatible with pg 1.0
+#       (See: https://github.com/rails/rails/pull/31671)
+gem 'pg', '~> 0.18'
 
 gem 'multi_json'
 gem 'oj'

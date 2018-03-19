@@ -476,30 +476,22 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       need_selenium 'to parse timestamps correctly across DST boundaries'
       visit page_with_token(user, "/pipeline_instances/#{uuid}")
 
-      assert page.has_text? 'This pipeline started at'
-      page_text = page.text
-
+      regexp = "This pipeline started at (.+?)\\. "
       if run_time
-        match = /This pipeline started at (.*)\. It failed after (.*) at (.*)\. Check the Log/.match page_text
+        regexp += "It failed after (.+?) at (.+?)\\. Check the Log"
       else
-        match = /This pipeline started at (.*). It has been active for(.*)/.match page_text
+        regexp += "It has been active for \\d"
       end
-      assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
+      assert_match /#{regexp}/, page.text
 
-      start_at = match[1]
-      assert_not_nil(start_at, 'Did not find start_at time')
+      return if !run_time
 
-      start_time = parse_browser_timestamp start_at
-      if run_time
-        finished_at = match[3]
-        assert_not_nil(finished_at, 'Did not find finished_at time')
-        finished_time = parse_browser_timestamp finished_at
-        assert_equal(run_time, finished_time-start_time,
-          "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
-      else
-        match = /\d(.*)/.match match[2]
-        assert_not_nil match, 'Did not find expected match for running component'
-      end
+      # match again to capture (.*)
+      _, started, duration, finished = *(/#{regexp}/.match(page.text))
+      assert_equal(
+        run_time,
+        parse_browser_timestamp(finished) - parse_browser_timestamp(started),
+        "expected: #{run_time}, got: started #{started}, finished #{finished}, duration #{duration}")
     end
   end
 

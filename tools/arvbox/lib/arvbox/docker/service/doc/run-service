@@ -11,6 +11,9 @@ set -ex -o pipefail
 cd /usr/src/arvados/doc
 run_bundler --without=development
 
+cd /usr/src/arvados/sdk/R
+R --quiet --vanilla --file=install_deps.R
+
 if test "$1" = "--only-deps" ; then
     exit
 fi
@@ -42,6 +45,7 @@ http {
 }
 EOF
 
+cd /usr/src/arvados/doc
 bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[api]} arvados_workbench_host=http://$localip
 
 exec nginx -c /var/lib/arvados/doc-nginx.conf

@@ -13,8 +13,7 @@ from StringIO import StringIO
 
 from schema_salad.sourceline import SourceLine
 
-import cwltool.draft2tool
-from cwltool.draft2tool import CommandLineTool
+from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
 from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
@@ -317,7 +316,8 @@ class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
-                 intermediate_output_ttl=0, merged_map=None):
+                 intermediate_output_ttl=0, merged_map=None, priority=None,
+                 secret_store=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -337,6 +337,8 @@ class Runner(object):
         self.on_error = on_error
         self.jobs_image = submit_runner_image or "arvados/jobs:"+__version__
         self.intermediate_output_ttl = intermediate_output_ttl
+        self.priority = priority
+        self.secret_store = secret_store
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram

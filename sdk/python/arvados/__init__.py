@@ -41,10 +41,10 @@ import arvados.util as util
 
 # Set up Arvados logging based on the user's configuration.
 # All Arvados code should log under the arvados hierarchy.
+log_format = '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s'
+log_date_format = '%Y-%m-%d %H:%M:%S'
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
-        '%Y-%m-%d %H:%M:%S'))
+log_handler.setFormatter(logging.Formatter(log_format, log_date_format))
 logger = logging.getLogger('arvados')
 logger.addHandler(log_handler)
 logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')

@@ -241,3 +241,7 @@ func (v *MockVolume) Replication() int {
 
 func (v *MockVolume) EmptyTrash() {
 }
+
+func (v *MockVolume) GetStorageClasses() []string {
+	return nil
+}

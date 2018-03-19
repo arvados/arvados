@@ -19,7 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
-	log "github.com/Sirupsen/logrus"
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -434,6 +434,18 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration,
 	err = v.bucket.PutBucket(s3.ACL("private"))
 	c.Assert(err, check.IsNil)
 	return v
+}
+
+func (s *StubbedS3Suite) TestConfig(c *check.C) {
+	var cfg Config
+	err := yaml.Unmarshal([]byte(`
+Volumes:
+  - Type: S3
+    StorageClasses: ["class_a", "class_b"]
+`), &cfg)
+
+	c.Check(err, check.IsNil)
+	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
 func (v *TestableS3Volume) Start() error {

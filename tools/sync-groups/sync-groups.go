@@ -217,7 +217,7 @@ func SetParentGroup(cfg *ConfigParams) error {
 			return fmt.Errorf("error searching for parent group: %s", err)
 		}
 		if len(gl.Items) == 0 {
-			// Default parent group not existant, create one.
+			// Default parent group does not exist, create it.
 			if cfg.Verbose {
 				log.Println("Default parent group not found, creating...")
 			}

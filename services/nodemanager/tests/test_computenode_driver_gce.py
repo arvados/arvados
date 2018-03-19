@@ -211,7 +211,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         # patches that up in listings.
         size = testutil.MockSize(2)
         node = testutil.cloud_node_mock(size=size)
-        node.size = size.name
+        node.size = size.id
         self.driver_mock().list_sizes.return_value = [size]
         self.driver_mock().list_nodes.return_value = [node]
         driver = self.new_driver()

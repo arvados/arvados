@@ -32,6 +32,7 @@ class CollectionCache(object):
                  min_entries=2):
         self.api_client = api_client
         self.keep_client = keep_client
+        self.num_retries = num_retries
         self.collections = OrderedDict()
         self.lock = threading.Lock()
         self.total = 0
@@ -54,7 +55,8 @@ class CollectionCache(object):
             if pdh not in self.collections:
                 logger.debug("Creating collection reader for %s", pdh)
                 cr = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
-                                                         keep_client=self.keep_client)
+                                                         keep_client=self.keep_client,
+                                                         num_retries=self.num_retries)
                 sz = len(cr.manifest_text()) * 128
                 self.collections[pdh] = (cr, sz)
                 self.total += sz

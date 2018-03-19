@@ -128,6 +128,7 @@ def run():
         args.make_fs_access = make_fs_access
         args.trash_intermediate = False
         args.intermediate_output_ttl = 0
+        args.priority = arvados_cwl.DEFAULT_PRIORITY
 
         runner.arv_executor(t, job_order_object, **vars(args))
     except Exception as e:

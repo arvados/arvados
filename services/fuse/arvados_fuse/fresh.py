@@ -59,6 +59,10 @@ class FreshBase(object):
     * Clear the object contents (invalidates the object)
 
     """
+
+    __slots__ = ("_stale", "_poll", "_last_update", "_atime", "_poll_time", "use_count",
+                 "ref_count", "dead", "cache_size", "cache_uuid", "allow_attr_cache")
+
     def __init__(self):
         self._stale = True
         self._poll = False

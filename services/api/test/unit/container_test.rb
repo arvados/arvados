@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
+require 'helpers/container_test_helper'
 
 class ContainerTest < ActiveSupport::TestCase
   include DbCurrentTime
+  include ContainerTestHelper
 
   DEFAULT_ATTRS = {
     command: ['echo', 'foo'],
@@ -30,6 +32,7 @@ class ContainerTest < ActiveSupport::TestCase
     environment: {
       "var" => "val",
     },
+    secret_mounts: {},
   }
 
   def minimal_new attrs={}
@@ -123,10 +126,8 @@ class ContainerTest < ActiveSupport::TestCase
       c.priority = 1000
       c.save!
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.priority = 1001
-        c.save!
-      end
+      c.priority = 1000 << 50
+      c.save!
     end
   end
 
@@ -621,4 +622,25 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    {state: Container::Complete, exit_code: 0, output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'},
+    {state: Container::Cancelled},
+  ].each do |final_attrs|
+    test "secret_mounts is null after container is #{final_attrs[:state]}" do
+      c, cr = minimal_new(secret_mounts: {'/secret' => {'kind' => 'text', 'content' => 'foo'}},
+                          container_count_max: 1)
+      set_user_from_auth :dispatch1
+      c.lock
+      c.update_attributes!(state: Container::Running)
+      c.reload
+      assert c.secret_mounts.has_key?('/secret')
+
+      c.update_attributes!(final_attrs)
+      c.reload
+      assert_equal({}, c.secret_mounts)
+      cr.reload
+      assert_equal({}, cr.secret_mounts)
+      assert_no_secrets_logged
+    end
+  end
 end

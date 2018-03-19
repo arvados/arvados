@@ -1,10 +1,54 @@
 source("./R/util.R")
 
-#' ArvadosFile Object
+#' ArvadosFile
+#' 
+#' ArvadosFile class represents a file inside Arvados collection.
+#' 
+#' @section Usage:
+#' \preformatted{file = ArvadosFile$new(name)}
 #'
-#' Update description
+#' @section Arguments:
+#' \describe{
+#'   \item{name}{Name of the file.}
+#' }
+#' 
+#' @section Methods:
+#' \describe{
+#'   \item{getName()}{Returns name of the file.}
+#'   \item{getRelativePath()}{Returns file path relative to the root.}
+#'   \item{read(contentType = "raw", offset = 0, length = 0)}{Read file content.}
+#'   \item{write(content, contentType = "text/html")}{Write to file (override current content of the file).}
+#'   \item{connection(rw)}{Get connection opened in "read" or "write" mode.}
+#'   \item{flush()}{Write connections content to a file (override current content of the file).}
+#'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
+#'   \item{getSizeInBytes()}{Returns file size in bytes.}
+#'   \item{move(newLocation)}{Moves file to a new location inside collection.}
+#' }
 #'
-#' @export ArvadosFile
+#' @name ArvadosFile
+#' @examples
+#' \dontrun{
+#' myFile <- ArvadosFile$new("myFile")
+#'
+#' myFile$write("This is new file content")
+#' fileContent <- myFile$read()
+#' fileContent <- myFile$read("text")
+#' fileContent <- myFile$read("raw", offset = 8, length = 4) 
+#'
+#' #Write a table:
+#' arvConnection <- myFile$connection("w")
+#' write.table(mytable, arvConnection)
+#' arvadosFile$flush()
+#'
+#' #Read a table:
+#' arvConnection <- myFile$connection("r")
+#' mytable <- read.table(arvConnection)
+#'
+#' myFile$move("newFolder/myFile")
+#' }
+NULL
+
+#' @export
 ArvadosFile <- R6::R6Class(
 
     "ArvadosFile",
@@ -201,20 +245,26 @@ ArvadosFile <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.ArvadosFile
-print.ArvadosFile = function(arvadosFile)
+#' print.ArvadosFile
+#'
+#' Custom print function for ArvadosFile class
+#'
+#' @param x Instance of ArvadosFile class
+#' @param ... Optional arguments.
+#' @export 
+print.ArvadosFile = function(x, ...)
 {
     collection   <- NULL
-    relativePath <- arvadosFile$getRelativePath()
+    relativePath <- x$getRelativePath()
 
-    if(!is.null(arvadosFile$getCollection()))
+    if(!is.null(x$getCollection()))
     {
-        collection <- arvadosFile$getCollection()$uuid
+        collection <- x$getCollection()$uuid
         relativePath <- paste0("/", relativePath)
     }
 
     cat(paste0("Type:          ", "\"", "ArvadosFile",         "\""), sep = "\n")
-    cat(paste0("Name:          ", "\"", arvadosFile$getName(), "\""), sep = "\n")
+    cat(paste0("Name:          ", "\"", x$getName(),           "\""), sep = "\n")
     cat(paste0("Relative path: ", "\"", relativePath,          "\""), sep = "\n")
     cat(paste0("Collection:    ", "\"", collection,            "\""), sep = "\n")
 }

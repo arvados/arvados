@@ -25,9 +25,13 @@ from functools import partial
 import arvados
 import StringIO
 
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(formatter)
 logger = logging.getLogger("logger")
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stderr))
+logger.addHandler(handler)
 
 detail = logging.getLogger("detail")
 detail.setLevel(logging.INFO)
@@ -35,7 +39,9 @@ if os.environ.get("ANMTEST_LOGLEVEL"):
     detail_content = sys.stderr
 else:
     detail_content = StringIO.StringIO()
-detail.addHandler(logging.StreamHandler(detail_content))
+handler = logging.StreamHandler(detail_content)
+handler.setFormatter(formatter)
+detail.addHandler(handler)
 
 fake_slurm = None
 compute_nodes = None
@@ -52,14 +58,14 @@ def update_script(path, val):
 def set_squeue(g):
     global all_jobs
     update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n" +
-                  "\n".join("echo '1|100|100|%s|%s'" % (v, k) for k,v in all_jobs.items()))
+                  "\n".join("echo '1|100|100|%s|%s|(null)'" % (v, k) for k,v in all_jobs.items()))
     return 0
 
 def set_queue_unsatisfiable(g):
     global all_jobs, unsatisfiable_job_scancelled
     # Simulate a job requesting a 99 core node.
     update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n" +
-                  "\n".join("echo '99|100|100|%s|%s'" % (v, k) for k,v in all_jobs.items()))
+                  "\n".join("echo '99|100|100|%s|%s|(null)'" % (v, k) for k,v in all_jobs.items()))
     update_script(os.path.join(fake_slurm, "scancel"), "#!/bin/sh\n" +
                   "\ntouch %s" % unsatisfiable_job_scancelled)
     return 0
@@ -78,7 +84,7 @@ def job_cancelled(g):
             ['event_type', '=', 'stderr'],
         ]).execute()['items'][0]
     if not re.match(
-            r"Requirements for a single node exceed the available cloud node size",
+            r"Constraints cannot be satisfied",
             log_entry['properties']['text']):
         return 1
     return 0
@@ -88,7 +94,7 @@ def node_paired(g):
     compute_nodes[g.group(1)] = g.group(3)
 
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s alloc'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|alloc|(null)'" % (v) for k,v in compute_nodes.items()))
 
     for k,v in all_jobs.items():
         if v == "ReqNodeNotAvail":
@@ -101,7 +107,7 @@ def node_paired(g):
 
 def remaining_jobs(g):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s alloc'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|alloc|(null)'" % (v) for k,v in compute_nodes.items()))
 
     for k,v in all_jobs.items():
         all_jobs[k] = "Running"
@@ -113,7 +119,7 @@ def remaining_jobs(g):
 
 def node_busy(g):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s idle'" % (v) for k,v in compute_nodes.items()))
+                  "\n".join("echo '%s|idle|(null)'" % (v) for k,v in compute_nodes.items()))
     return 0
 
 def node_shutdown(g):

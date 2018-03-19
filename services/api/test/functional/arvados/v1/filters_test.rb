@@ -193,7 +193,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     end
   end
 
-  test "jsonb 'exists' and '!=' filter" do
+  test "jsonb hash 'exists' and '!=' filter" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
     get :index, {
@@ -208,7 +208,24 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_includes(found, collections(:collection_with_prop1_other1).uuid)
   end
 
-  test "jsonb alternate form 'exists' and '!=' filter" do
+  test "jsonb array 'exists'" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['storage_classes_confirmed.default', 'exists', true] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal 2, found.length
+    assert_not_includes(found,
+      collections(:storage_classes_desired_default_unconfirmed).uuid)
+    assert_includes(found,
+      collections(:storage_classes_desired_default_confirmed_default).uuid)
+    assert_includes(found,
+      collections(:storage_classes_desired_archive_confirmed_default).uuid)
+  end
+
+  test "jsonb hash alternate form 'exists' and '!=' filter" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
     get :index, {
@@ -221,6 +238,23 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_includes(found, collections(:collection_with_prop1_value2).uuid)
     assert_includes(found, collections(:collection_with_prop1_value3).uuid)
     assert_includes(found, collections(:collection_with_prop1_other1).uuid)
+  end
+
+  test "jsonb array alternate form 'exists' filter" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with :admin
+    get :index, {
+      filters: [ ['storage_classes_confirmed', 'exists', 'default'] ]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal 2, found.length
+    assert_not_includes(found,
+      collections(:storage_classes_desired_default_unconfirmed).uuid)
+    assert_includes(found,
+      collections(:storage_classes_desired_default_confirmed_default).uuid)
+    assert_includes(found,
+      collections(:storage_classes_desired_archive_confirmed_default).uuid)
   end
 
   test "jsonb 'exists' must be boolean" do

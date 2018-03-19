@@ -3,28 +3,29 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 $(document).on('ready', function() {
-    var db = new SessionDB()
-    db.checkForNewToken()
-    db.fillMissingUUIDs()
-    db.migrateNonFederatedSessions()
-    db.autoLoadRemoteHosts()
-})
+    var db = new SessionDB();
+    db.checkForNewToken();
+    db.fillMissingUUIDs();
+    db.autoLoadRemoteHosts();
+});
 
 window.SessionsTable = {
     oninit: function(vnode) {
-        vnode.state.db = new SessionDB()
-        vnode.state.hostToAdd = m.stream('')
-        vnode.state.error = m.stream()
-        vnode.state.checking = m.stream()
+        vnode.state.db = new SessionDB();
+        vnode.state.db.autoRedirectToHomeCluster('/sessions');
+        vnode.state.db.migrateNonFederatedSessions();
+        vnode.state.hostToAdd = m.stream('');
+        vnode.state.error = m.stream();
+        vnode.state.checking = m.stream();
     },
     view: function(vnode) {
-        var db = vnode.state.db
-        var sessions = db.loadAll()
+        var db = vnode.state.db;
+        var sessions = db.loadAll();
         return m('.container', [
             m('p', [
                 'You can log in to multiple Arvados sites here, then use the ',
                 m('a[href="/search"]', 'multi-site search'),
-                ' page to search collections and projects on all sites at once.',
+                ' page to search collections and projects on all sites at once.'
             ]),
             m('table.table.table-condensed.table-hover', [
                 m('thead', m('tr', [
@@ -33,27 +34,23 @@ window.SessionsTable = {
                     m('th', 'username'),
                     m('th', 'email'),
                     m('th', 'actions'),
-                    m('th'),
+                    m('th')
                 ])),
                 m('tbody', [
                     Object.keys(sessions).map(function(uuidPrefix) {
-                        var session = sessions[uuidPrefix]
+                        var session = sessions[uuidPrefix];
                         return m('tr', [
                             session.token && session.user ? [
                                 m('td', session.user.is_active ?
                                     m('span.label.label-success', 'logged in') :
                                     m('span.label.label-warning', 'inactive')),
-                                m('td', {title: session.baseURL}, [
-                                    m('a', {
-                                        href: db.workbenchBaseURL(session) + '?api_token=' + session.token
-                                    }, uuidPrefix),
-                                ]),
+                                m('td', {title: session.baseURL}, uuidPrefix),
                                 m('td', session.user.username),
                                 m('td', session.user.email),
                                 m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: m.withAttr('uuidPrefix', db.logout),
-                                }, session.listedHost ? 'Disable ':'Log out ', m('span.glyphicon.glyphicon-log-out'))),
+                                }, session.listedHost ? 'Disable ':'Log out ', m('span.glyphicon.glyphicon-log-out')))
                             ] : [
                                 m('td', m('span.label.label-default', 'logged out')),
                                 m('td', {title: session.baseURL}, uuidPrefix),
@@ -62,12 +59,14 @@ window.SessionsTable = {
                                 m('td', m('a.btn.btn-xs.btn-primary', {
                                     uuidPrefix: uuidPrefix,
                                     onclick: db.login.bind(db, session.baseURL),
-                                }, session.listedHost ? 'Enable ':'Log in ', m('span.glyphicon.glyphicon-log-in'))),
+                                }, session.listedHost ? 'Enable ':'Log in ', m('span.glyphicon.glyphicon-log-in')))
                             ],
-                            m('td', session.isFromRails ? null : m('button.btn.btn-xs.btn-default', {
-                                uuidPrefix: uuidPrefix,
-                                onclick: m.withAttr('uuidPrefix', db.trash),
-                            }, 'Remove ', m('span.glyphicon.glyphicon-trash'))),
+                            m('td', (session.isFromRails || session.listedHost) ? null :
+                                m('button.btn.btn-xs.btn-default', {
+                                    uuidPrefix: uuidPrefix,
+                                    onclick: m.withAttr('uuidPrefix', db.trash),
+                                }, 'Remove ', m('span.glyphicon.glyphicon-trash'))
+                            ),
                         ])
                     }),
                 ]),

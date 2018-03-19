@@ -3,11 +3,30 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
+require 'helpers/container_test_helper'
 require 'helpers/docker_migration_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
   include DockerMigrationHelper
   include DbCurrentTime
+  include ContainerTestHelper
+
+  def with_container_auth(ctr)
+    auth_was = Thread.current[:api_client_authorization]
+    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(ctr.auth_uuid)
+    begin
+      yield
+    ensure
+      Thread.current[:api_client_authorization] = auth_was
+    end
+  end
+
+  def lock_and_run(ctr)
+      act_as_system_user do
+        ctr.update_attributes!(state: Container::Locked)
+        ctr.update_attributes!(state: Container::Running)
+      end
+  end
 
   def create_minimal_req! attrs={}
     defaults = {
@@ -141,7 +160,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
     assert_equal({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}, c.runtime_constraints)
-    assert_equal 1, c.priority
+    assert_operator 0, :<, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
       cr.priority = nil
@@ -157,50 +176,17 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 0, c.priority
   end
 
-
-  test "Container request max priority" do
-    set_user_from_auth :active
-    cr = create_minimal_req!(priority: 5, state: "Committed")
-
-    c = Container.find_by_uuid cr.container_uuid
-    assert_equal 5, c.priority
-
-    cr2 = create_minimal_req!
-    cr2.priority = 10
-    cr2.state = "Committed"
-    cr2.container_uuid = cr.container_uuid
-    act_as_system_user do
-      cr2.save!
-    end
-
-    # cr and cr2 have priority 5 and 10, and are being satisfied by
-    # the same container c, so c's priority should be
-    # max(priority)=10.
-    c.reload
-    assert_equal 10, c.priority
-
-    cr2.update_attributes!(priority: 0)
-
-    c.reload
-    assert_equal 5, c.priority
-
-    cr.update_attributes!(priority: 0)
-
-    c.reload
-    assert_equal 0, c.priority
-  end
-
-
   test "Independent container requests" do
     set_user_from_auth :active
     cr1 = create_minimal_req!(command: ["foo", "1"], priority: 5, state: "Committed")
     cr2 = create_minimal_req!(command: ["foo", "2"], priority: 10, state: "Committed")
 
     c1 = Container.find_by_uuid cr1.container_uuid
-    assert_equal 5, c1.priority
+    assert_operator 0, :<, c1.priority
 
     c2 = Container.find_by_uuid cr2.container_uuid
-    assert_equal 10, c2.priority
+    assert_operator c1.priority, :<, c2.priority
+    c2priority_was = c2.priority
 
     cr1.update_attributes!(priority: 0)
 
@@ -208,7 +194,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 0, c1.priority
 
     c2.reload
-    assert_equal 10, c2.priority
+    assert_equal c2priority_was, c2.priority
   end
 
   test "Request is finalized when its container is cancelled" do
@@ -270,14 +256,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 1)
 
     c = Container.find_by_uuid cr.container_uuid
-    assert_equal 5, c.priority
+    assert_operator 0, :<, c.priority
 
     cr2 = create_minimal_req!
     cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
     cr2.reload
 
     c2 = Container.find_by_uuid cr2.container_uuid
-    assert_equal 10, c2.priority
+    assert_operator 0, :<, c2.priority
 
     act_as_system_user do
       c.state = "Cancelled"
@@ -294,37 +280,94 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 0, c2.priority
   end
 
+  test "child container priority follows same ordering as corresponding top-level ancestors" do
+    findctr = lambda { |cr| Container.find_by_uuid(cr.container_uuid) }
 
-  test "Container makes container request, then changes priority" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 1)
 
-    c = Container.find_by_uuid cr.container_uuid
-    assert_equal 5, c.priority
+    toplevel_crs = [
+      create_minimal_req!(priority: 5, state: "Committed", environment: {"workflow" => "0"}),
+      create_minimal_req!(priority: 5, state: "Committed", environment: {"workflow" => "1"}),
+      create_minimal_req!(priority: 5, state: "Committed", environment: {"workflow" => "2"}),
+    ]
+    parents = toplevel_crs.map(&findctr)
 
-    cr2 = create_minimal_req!
-    cr2.update_attributes!(priority: 5, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
-    cr2.reload
+    children = parents.map do |parent|
+      lock_and_run(parent)
+      with_container_auth(parent) do
+        create_minimal_req!(state: "Committed",
+                            priority: 1,
+                            environment: {"child" => parent.environment["workflow"]})
+      end
+    end.map(&findctr)
 
-    c2 = Container.find_by_uuid cr2.container_uuid
-    assert_equal 5, c2.priority
+    grandchildren = children.reverse.map do |child|
+      lock_and_run(child)
+      with_container_auth(child) do
+        create_minimal_req!(state: "Committed",
+                            priority: 1,
+                            environment: {"grandchild" => child.environment["child"]})
+      end
+    end.reverse.map(&findctr)
 
-    act_as_system_user do
-      c.priority = 10
-      c.save!
-    end
+    shared_grandchildren = children.map do |child|
+      with_container_auth(child) do
+        create_minimal_req!(state: "Committed",
+                            priority: 1,
+                            environment: {"grandchild" => "shared"})
+      end
+    end.map(&findctr)
 
-    cr.reload
+    assert_equal shared_grandchildren[0].uuid, shared_grandchildren[1].uuid
+    assert_equal shared_grandchildren[0].uuid, shared_grandchildren[2].uuid
+    shared_grandchild = shared_grandchildren[0]
 
-    cr2.reload
-    assert_equal 10, cr2.priority
+    set_user_from_auth :active
 
-    c2.reload
-    assert_equal 10, c2.priority
+    # parents should be prioritized by submit time.
+    assert_operator parents[0].priority, :>, parents[1].priority
+    assert_operator parents[1].priority, :>, parents[2].priority
+
+    # children should be prioritized in same order as their respective
+    # parents.
+    assert_operator children[0].priority, :>, children[1].priority
+    assert_operator children[1].priority, :>, children[2].priority
+
+    # grandchildren should also be prioritized in the same order,
+    # despite having been submitted in the opposite order.
+    assert_operator grandchildren[0].priority, :>, grandchildren[1].priority
+    assert_operator grandchildren[1].priority, :>, grandchildren[2].priority
+
+    # shared grandchild container should be prioritized above
+    # everything that isn't needed by parents[0], but not above
+    # earlier-submitted descendants of parents[0]
+    assert_operator shared_grandchild.priority, :>, grandchildren[1].priority
+    assert_operator shared_grandchild.priority, :>, children[1].priority
+    assert_operator shared_grandchild.priority, :>, parents[1].priority
+    assert_operator shared_grandchild.priority, :<=, grandchildren[0].priority
+    assert_operator shared_grandchild.priority, :<=, children[0].priority
+    assert_operator shared_grandchild.priority, :<=, parents[0].priority
+
+    # increasing priority of the most recent toplevel container should
+    # reprioritize all of its descendants (including the shared
+    # grandchild) above everything else.
+    toplevel_crs[2].update_attributes!(priority: 72)
+    (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
+    assert_operator shared_grandchild.priority, :>, grandchildren[0].priority
+    assert_operator shared_grandchild.priority, :>, children[0].priority
+    assert_operator shared_grandchild.priority, :>, parents[0].priority
+    assert_operator shared_grandchild.priority, :>, grandchildren[1].priority
+    assert_operator shared_grandchild.priority, :>, children[1].priority
+    assert_operator shared_grandchild.priority, :>, parents[1].priority
+    # ...but the shared container should not have higher priority than
+    # the earlier-submitted descendants of the high-priority workflow.
+    assert_operator shared_grandchild.priority, :<=, grandchildren[2].priority
+    assert_operator shared_grandchild.priority, :<=, children[2].priority
+    assert_operator shared_grandchild.priority, :<=, parents[2].priority
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 12],
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 1],
     ['active_no_prefs', nil, 0],
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
@@ -790,8 +833,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       c = Container.find_by_uuid(cr.container_uuid)
       assert_equal 1, c.priority
 
-      # destroy the cr
-      assert_nothing_raised {cr.destroy}
+      cr.destroy
 
       # the cr's container now has priority of 0
       c = Container.find_by_uuid(cr.container_uuid)
@@ -836,4 +878,71 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  # Note: some of these tests might look redundant because they test
+  # that out-of-order spellings of hashes are still considered equal
+  # regardless of whether the existing (container) or new (container
+  # request) hash needs to be re-ordered.
+  secrets = {"/foo" => {"kind" => "text", "content" => "xyzzy"}}
+  same_secrets = {"/foo" => {"content" => "xyzzy", "kind" => "text"}}
+  different_secrets = {"/foo" => {"kind" => "text", "content" => "something completely different"}}
+  [
+    [true, nil, nil],
+    [true, nil, {}],
+    [true, {}, nil],
+    [true, {}, {}],
+    [true, secrets, same_secrets],
+    [true, same_secrets, secrets],
+    [false, nil, secrets],
+    [false, {}, secrets],
+    [false, secrets, {}],
+    [false, secrets, nil],
+    [false, secrets, different_secrets],
+  ].each do |expect_reuse, sm1, sm2|
+    test "container reuse secret_mounts #{sm1.inspect}, #{sm2.inspect}" do
+      set_user_from_auth :active
+      cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm1)
+      cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm2)
+      assert_not_nil cr1.container_uuid
+      assert_not_nil cr2.container_uuid
+      if expect_reuse
+        assert_equal cr1.container_uuid, cr2.container_uuid
+      else
+        assert_not_equal cr1.container_uuid, cr2.container_uuid
+      end
+    end
+  end
+
+  test "scrub secret_mounts but reuse container for request with identical secret_mounts" do
+    set_user_from_auth :active
+    sm = {'/secret/foo' => {'kind' => 'text', 'content' => secret_string}}
+    cr1 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm.dup)
+    run_container(cr1)
+    cr1.reload
+
+    # secret_mounts scrubbed from db
+    c = Container.where(uuid: cr1.container_uuid).first
+    assert_equal({}, c.secret_mounts)
+    assert_equal({}, cr1.secret_mounts)
+
+    # can reuse container if secret_mounts match
+    cr2 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: sm.dup)
+    assert_equal cr1.container_uuid, cr2.container_uuid
+
+    # don't reuse container if secret_mounts don't match
+    cr3 = create_minimal_req!(state: "Committed", priority: 1, secret_mounts: {})
+    assert_not_equal cr1.container_uuid, cr3.container_uuid
+
+    assert_no_secrets_logged
+  end
+
+  test "conflicting key in mounts and secret_mounts" do
+    sm = {'/secret/foo' => {'kind' => 'text', 'content' => secret_string}}
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    assert_equal false, cr.update_attributes(state: "Committed",
+                                             priority: 1,
+                                             mounts: cr.mounts.merge(sm),
+                                             secret_mounts: sm)
+    assert_equal [:secret_mounts], cr.errors.messages.keys
+  end
 end

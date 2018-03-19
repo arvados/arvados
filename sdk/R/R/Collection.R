@@ -3,12 +3,50 @@ source("./R/ArvadosFile.R")
 source("./R/RESTService.R")
 source("./R/util.R")
 
-#' Arvados Collection Object
+#' Collection
+#' 
+#' Collection class provides interface for working with Arvados collections.
+#' 
+#' @section Usage:
+#' \preformatted{collection = Collection$new(arv, uuid)}
 #'
-#' Update description
+#' @section Arguments:
+#' \describe{
+#'   \item{arv}{Arvados object.}
+#'   \item{uuid}{UUID of a collection.}
+#' }
+#' 
+#' @section Methods:
+#' \describe{
+#'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
+#'   \item{create(fileNames, relativePath = "")}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
+#'   \item{remove(fileNames)}{Remove one or more files from the collection.}
+#'   \item{move(content, newLocation)}{Moves ArvadosFile or Subcollection to another location in the collection.}
+#'   \item{getFileListing()}{Returns collections file content as character vector.}
+#'   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
+#' }
 #'
-#' @examples arv = Collection$new(api, uuid)
-#' @export Collection
+#' @name Collection
+#' @examples
+#' \dontrun{
+#' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
+#' collection <- Collection$new(arv, "uuid")
+#'
+#' newFile <- ArvadosFile$new("myFile")
+#' collection$add(newFile, "myFolder")
+#'
+#' createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
+#'
+#' collection$remove("location/to/my/file.cpp")
+#'
+#' collection$move("folder/file.cpp", "file.cpp")
+#'
+#' arvadosFile <- collection$get("location/to/my/file.cpp")
+#' arvadosSubcollection <- collection$get("location/to/my/directory/")
+#' }
+NULL
+
+#' @export
 Collection <- R6::R6Class(
 
     "Collection",
@@ -176,9 +214,15 @@ Collection <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.Collection
-print.Collection = function(collection)
+#' print.Collection
+#'
+#' Custom print function for Collection class
+#'
+#' @param x Instance of Collection class
+#' @param ... Optional arguments.
+#' @export 
+print.Collection = function(x, ...)
 {
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
-    cat(paste0("uuid: ", "\"", collection$uuid,      "\""), sep = "\n")
+    cat(paste0("uuid: ", "\"", x$uuid,               "\""), sep = "\n")
 }

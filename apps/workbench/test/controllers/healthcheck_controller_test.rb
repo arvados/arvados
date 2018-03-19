@@ -5,6 +5,9 @@
 require 'test_helper'
 
 class HealthcheckControllerTest < ActionController::TestCase
+  reset_api_fixtures :after_each_test, false
+  reset_api_fixtures :after_suite, false
+
   [
     [false, nil, 404, 'disabled'],
     [true, nil, 401, 'authorization required'],

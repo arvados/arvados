@@ -255,7 +255,9 @@ class ProxyWorkUnit < WorkUnit
       if state_label == 'Complete'
         resp << "completed in "
       elsif state_label == 'Failed'
-         resp << "failed after "
+        resp << "failed after "
+      elsif state_label == 'Cancelled'
+        resp << "was cancelled after "
       else
         resp << "has been active for "
       end

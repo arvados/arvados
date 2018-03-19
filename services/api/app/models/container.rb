@@ -20,17 +20,20 @@ class Container < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :secret_mounts, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
-  validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
-  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validates :command, :container_image, :output_path, :cwd, :priority, { presence: true }
+  validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
   validate :validate_output
   after_validation :assign_auth
   before_save :sort_serialized_attrs
+  before_save :update_secret_mounts_md5
+  before_save :scrub_secret_mounts
   after_save :handle_completed
   after_save :propagate_priority
 
@@ -79,33 +82,56 @@ class Container < ArvadosModel
     ["mounts"]
   end
 
+  def self.full_text_searchable_columns
+    super - ["secret_mounts", "secret_mounts_md5"]
+  end
+
+  def self.searchable_columns *args
+    super - ["secret_mounts_md5"]
+  end
+
+  def logged_attributes
+    super.except('secret_mounts')
+  end
+
   def state_transitions
     State_transitions
   end
 
+  # Container priority is the highest "computed priority" of any
+  # matching request. The computed priority of a container-submitted
+  # request is the priority of the submitting container. The computed
+  # priority of a user-submitted request is a function of
+  # user-assigned priority and request creation time.
   def update_priority!
-    if [Queued, Locked, Running].include? self.state
-      # Update the priority of this container to the maximum priority of any of
-      # its committed container requests and save the record.
-      self.priority = ContainerRequest.
-        where(container_uuid: uuid,
-              state: ContainerRequest::Committed).
-        maximum('priority') || 0
-      self.save!
-    end
+    return if ![Queued, Locked, Running].include?(state)
+    p = ContainerRequest.
+        where('container_uuid=? and priority>0', uuid).
+        includes(:requesting_container).
+        lock(true).
+        map do |cr|
+      if cr.requesting_container
+        cr.requesting_container.priority
+      else
+        (cr.priority << 50) - (cr.created_at.to_time.to_f * 1000).to_i
+      end
+    end.max || 0
+    update_attributes!(priority: p)
   end
 
   def propagate_priority
-    if self.priority_changed?
-      act_as_system_user do
-         # Update the priority of child container requests to match new priority
-         # of the parent container.
-         ContainerRequest.where(requesting_container_uuid: self.uuid,
-                                state: ContainerRequest::Committed).each do |cr|
-           cr.priority = self.priority
-           cr.save
-         end
-       end
+    return true unless priority_changed?
+    act_as_system_user do
+      # Update the priority of child container requests to match new
+      # priority of the parent container (ignoring requests with no
+      # container assigned, because their priority doesn't matter).
+      ContainerRequest.
+        where(requesting_container_uuid: self.uuid,
+              state: ContainerRequest::Committed).
+        where('container_uuid is not null').
+        includes(:container).
+        map(&:container).
+        map(&:update_priority!)
     end
   end
 
@@ -121,6 +147,7 @@ class Container < ArvadosModel
       mounts: resolve_mounts(req.mounts),
       runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
       scheduling_parameters: req.scheduling_parameters,
+      secret_mounts: req.secret_mounts,
     }
     act_as_system_user do
       if req.use_existing && (reusable = find_reusable(c_attrs))
@@ -215,6 +242,9 @@ class Container < ArvadosModel
     log_reuse_info(candidates) { "after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
 
     candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
+    log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
+
+    candidates = candidates.where('secret_mounts_md5 = ?', Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts]))))
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
@@ -378,7 +408,8 @@ class Container < ArvadosModel
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
                      :environment, :mounts, :output_path, :priority,
-                     :runtime_constraints, :scheduling_parameters)
+                     :runtime_constraints, :scheduling_parameters,
+                     :secret_mounts)
     end
 
     case self.state
@@ -484,6 +515,22 @@ class Container < ArvadosModel
     end
     if self.scheduling_parameters_changed?
       self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
+    end
+  end
+
+  def update_secret_mounts_md5
+    if self.secret_mounts_changed?
+      self.secret_mounts_md5 = Digest::MD5.hexdigest(
+        SafeJSON.dump(self.class.deep_sort_hash(self.secret_mounts)))
+    end
+  end
+
+  def scrub_secret_mounts
+    # this runs after update_secret_mounts_md5, so the
+    # secret_mounts_md5 will still reflect the secrets that are being
+    # scrubbed here.
+    if self.state_changed? && self.final?
+      self.secret_mounts = {}
     end
   end
 

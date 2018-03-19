@@ -42,10 +42,15 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
     @mock.patch("subprocess.check_output")
     def test_update_from_sinfo(self, sinfo_mock):
-        sinfo_mock.return_value = "compute99 alloc"
-        node = testutil.arvados_node_mock()
+        sinfo_mock.return_value = """compute1|idle|instancetype=a1.test
+compute2|alloc|(null)
+notarvados12345|idle|(null)
+"""
+        nodeIdle = testutil.arvados_node_mock(node_num=1)
+        nodeBusy = testutil.arvados_node_mock(node_num=2)
+        nodeMissing = testutil.arvados_node_mock(node_num=99)
         self.build_monitor([{
-            'items': [node],
+            'items': [nodeIdle, nodeBusy, nodeMissing],
             'items_available': 1,
             'offset': 0
         }, {
@@ -53,11 +58,18 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             'items_available': 1,
             'offset': 1
         }])
-        self.monitor.subscribe_to(node['uuid'],
+        self.monitor.subscribe_to(nodeMissing['uuid'],
                                   self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
-        self.subscriber.assert_called_with(node)
-        self.assertEqual("busy", node["crunch_worker_state"])
+        self.subscriber.assert_called_with(nodeMissing)
+
+        self.assertEqual("idle", nodeIdle["crunch_worker_state"])
+        self.assertEqual("busy", nodeBusy["crunch_worker_state"])
+        self.assertEqual("down", nodeMissing["crunch_worker_state"])
+
+        self.assertEqual("instancetype=a1.test", nodeIdle["slurm_node_features"])
+        self.assertEqual("", nodeBusy["slurm_node_features"])
+        self.assertEqual("", nodeMissing["slurm_node_features"])
 
 
 class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,

@@ -19,7 +19,7 @@ RUN apt-get update && \
     apt-transport-https ca-certificates slurm-wlm \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
-    libsecret-1-dev r-base r-cran-testthat libxml2-dev && \
+    libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3

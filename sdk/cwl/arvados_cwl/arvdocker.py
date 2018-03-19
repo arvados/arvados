@@ -45,7 +45,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if not images:
             # Fetch Docker image if necessary.
             try:
-                cwltool.docker.get_image(dockerRequirement, pull_image)
+                cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image)
             except OSError as e:
                 raise WorkflowException("While trying to get Docker image '%s', failed to execute 'docker': %s" % (dockerRequirement["dockerImageId"], e))
 

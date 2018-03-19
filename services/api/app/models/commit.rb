@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'request_error'
+
 class Commit < ActiveRecord::Base
   extend CurrentApiClient
 
-  class GitError < StandardError
+  class GitError < RequestError
     def http_status
       422
     end

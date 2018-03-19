@@ -17,6 +17,7 @@ include MIME
   %w(go),
   %w(r),
   %w(sam),
+  %w(python py),
 ].each do |suffixes|
   if (MIME::Types.type_for(suffixes[0]).first.nil?)
     MIME::Types.add(MIME::Type.new(["application/#{suffixes[0]}", suffixes]))

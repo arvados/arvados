@@ -33,7 +33,7 @@ class Job < ArvadosModel
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
 
-  class SubmitIdReused < StandardError
+  class SubmitIdReused < RequestError
   end
 
   api_accessible :user, extend: :common do |t|

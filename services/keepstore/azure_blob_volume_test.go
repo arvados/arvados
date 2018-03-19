@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/curoverse/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -36,7 +36,7 @@ const (
 	// used by Microsoft's Azure emulator: the Azure SDK
 	// recognizes that magic string and changes its behavior to
 	// cater to the Azure SDK's own test suite.
-	fakeAccountName = "fakeAccountName"
+	fakeAccountName = "fakeaccountname"
 	fakeAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
@@ -308,7 +308,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				b := storage.Blob{
 					Name: hash,
 					Properties: storage.BlobProperties{
-						LastModified:  blob.Mtime.Format(time.RFC1123),
+						LastModified:  storage.TimeRFC1123(blob.Mtime),
 						ContentLength: int64(len(blob.Data)),
 						Etag:          blob.Etag,
 					},
@@ -386,7 +386,7 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		ReadOnly:         readonly,
 		AzureReplication: replication,
 		azClient:         azClient,
-		bsClient:         &azureBlobClient{client: &bs},
+		container:        &azureContainer{ctr: bs.GetContainerReference(container)},
 	}
 
 	return &TestableAzureBlobVolume{
@@ -706,6 +706,18 @@ func (s *StubbedAzureBlobSuite) TestStats(c *check.C) {
 	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+}
+
+func (s *StubbedAzureBlobSuite) TestConfig(c *check.C) {
+	var cfg Config
+	err := yaml.Unmarshal([]byte(`
+Volumes:
+  - Type: Azure
+    StorageClasses: ["class_a", "class_b"]
+`), &cfg)
+
+	c.Check(err, check.IsNil)
+	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {

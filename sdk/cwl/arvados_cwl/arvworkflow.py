@@ -14,6 +14,7 @@ from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
+from cwltool.builder import Builder
 
 import ruamel.yaml as yaml
 
@@ -25,6 +26,9 @@ from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
+
+max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdirMax")
+sum_res_pars = ("outdirMin", "outdirMax")
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
                     submit_runner_ram=0, name=None, merged_map=None):
@@ -71,6 +75,37 @@ def dedup_reqs(reqs):
             dedup[r["class"]] = r
     return [dedup[r] for r in sorted(dedup.keys())]
 
+def get_overall_res_req(res_reqs):
+    """Take the overall of a list of ResourceRequirement,
+    i.e., the max of coresMin, coresMax, ramMin, ramMax, tmpdirMin, tmpdirMax
+    and the sum of outdirMin, outdirMax."""
+
+    all_res_req = {}
+    exception_msgs = []
+    for a in max_res_pars + sum_res_pars:
+        all_res_req[a] = []
+        for res_req in res_reqs:
+            if a in res_req:
+                if isinstance(res_req[a], int): # integer check
+                    all_res_req[a].append(res_req[a])
+                else:
+                    msg = SourceLine(res_req).makeError(
+                    "Non-top-level ResourceRequirement in single container cannot have expressions")
+                    exception_msgs.append(msg)
+    if exception_msgs:
+        raise WorkflowException("\n".join(exception_msgs))
+    else:
+        overall_res_req = {}
+        for a in all_res_req:
+            if all_res_req[a]:
+                if a in max_res_pars:
+                    overall_res_req[a] = max(all_res_req[a])
+                elif a in sum_res_pars:
+                    overall_res_req[a] = sum(all_res_req[a])
+        if overall_res_req:
+            overall_res_req["class"] = "ResourceRequirement"
+        return cmap(overall_res_req)
+
 class ArvadosWorkflow(Workflow):
     """Wrap cwltool Workflow to override selected methods."""
 
@@ -104,6 +139,39 @@ class ArvadosWorkflow(Workflow):
                     workflowobj["hints"] = dedup_reqs(self.hints)
 
                     packed = pack(document_loader, workflowobj, uri, self.metadata)
+
+                    builder = Builder()
+                    builder.job = joborder
+                    builder.requirements = workflowobj["requirements"]
+                    builder.hints = workflowobj["hints"]
+                    builder.resources = {}
+
+                    res_reqs = {"requirements": [], "hints": []}
+                    for t in ("requirements", "hints"):
+                        for item in packed["$graph"]:
+                            if t in item:
+                                if item["id"] == "#main": # evaluate potential expressions in the top-level requirements/hints
+                                    for req in item[t]:
+                                        if req["class"] == "ResourceRequirement":
+                                            eval_req = {"class": "ResourceRequirement"}
+                                            for a in max_res_pars + sum_res_pars:
+                                                if a in req:
+                                                    eval_req[a] = builder.do_eval(req[a])
+                                            res_reqs[t].append(eval_req)
+                                else:
+                                    for req in item[t]:
+                                        if req["class"] == "ResourceRequirement":
+                                            res_reqs[t].append(req)
+                    overall_res_req = {"requirements": get_overall_res_req(res_reqs["requirements"]),
+                                       "hints": get_overall_res_req(res_reqs["hints"])}
+
+                    new_spec = {"requirements": self.requirements, "hints": self.hints}
+                    for t in ("requirements", "hints"):
+                        for req in new_spec[t]:
+                            if req["class"] == "ResourceRequirement":
+                                new_spec[t].remove(req)
+                        if overall_res_req[t]:
+                            new_spec[t].append(overall_res_req[t])
 
                     upload_dependencies(self.arvrunner,
                                         kwargs.get("name", ""),

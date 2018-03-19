@@ -4,9 +4,12 @@
 
 package arvados
 
+import "time"
+
 // Container is an arvados#container resource.
 type Container struct {
 	UUID                 string               `json:"uuid"`
+	CreatedAt            time.Time            `json:"created_at"`
 	Command              []string             `json:"command"`
 	ContainerImage       string               `json:"container_image"`
 	Cwd                  string               `json:"cwd"`
@@ -41,9 +44,9 @@ type Mount struct {
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
 	API          *bool
-	RAM          int `json:"ram"`
-	VCPUs        int `json:"vcpus"`
-	KeepCacheRAM int `json:"keep_cache_ram"`
+	RAM          int64 `json:"ram"`
+	VCPUs        int   `json:"vcpus"`
+	KeepCacheRAM int64 `json:"keep_cache_ram"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

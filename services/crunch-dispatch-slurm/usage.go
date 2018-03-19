@@ -20,7 +20,8 @@ var exampleConfigFile = []byte(`
 	},
 	"CrunchRunCommand": ["crunch-run"],
 	"PollPeriod": "10s",
-	"SbatchArguments": ["--partition=foo", "--exclude=node13"]
+	"SbatchArguments": ["--partition=foo", "--exclude=node13"],
+	"ReserveExtraRAM": 268435456,
     }`)
 
 func usage(fs *flag.FlagSet) {

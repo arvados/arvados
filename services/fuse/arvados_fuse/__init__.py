@@ -156,12 +156,30 @@ class InodeCache(object):
 
     def _remove(self, obj, clear):
         if clear:
-            if obj.in_use():
-                _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
-                return
+            # Kernel behavior seems to be that if a file is
+            # referenced, its parents remain referenced too. This
+            # means has_ref() exits early when a collection is not
+            # candidate for eviction.
+            #
+            # By contrast, in_use() doesn't increment references on
+            # parents, so it requires a full tree walk to determine if
+            # a collection is a candidate for eviction.  This takes
+            # .07s for 240000 files, which becomes a major drag when
+            # cap_cache is being called several times a second and
+            # there are multiple non-evictable collections in the
+            # cache.
+            #
+            # So it is important for performance that we do the
+            # has_ref() check first.
+
             if obj.has_ref(True):
                 _logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
                 return
+
+            if obj.in_use():
+                _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
+                return
+
             obj.kernel_invalidate()
             _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
             obj.clear()
@@ -202,7 +220,8 @@ class InodeCache(object):
                     if obj not in self._by_uuid[obj.cache_uuid]:
                         self._by_uuid[obj.cache_uuid].append(obj)
             self._total += obj.objsize()
-            _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
+            _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i (%i entries)",
+                          obj.inode, obj.objsize(), obj.cache_uuid, self._total, len(self._entries))
             self.cap_cache()
 
     def touch(self, obj):

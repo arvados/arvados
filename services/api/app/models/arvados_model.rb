@@ -5,6 +5,7 @@
 require 'has_uuid'
 require 'record_filters'
 require 'serializers'
+require 'request_error'
 
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
@@ -38,37 +39,37 @@ class ArvadosModel < ActiveRecord::Base
            class_name: 'Link',
            primary_key: :uuid)
 
-  class PermissionDeniedError < StandardError
+  class PermissionDeniedError < RequestError
     def http_status
       403
     end
   end
 
-  class AlreadyLockedError < StandardError
+  class AlreadyLockedError < RequestError
     def http_status
       422
     end
   end
 
-  class LockFailedError < StandardError
+  class LockFailedError < RequestError
     def http_status
       422
     end
   end
 
-  class InvalidStateTransitionError < StandardError
+  class InvalidStateTransitionError < RequestError
     def http_status
       422
     end
   end
 
-  class UnauthorizedError < StandardError
+  class UnauthorizedError < RequestError
     def http_status
       401
     end
   end
 
-  class UnresolvableContainerError < StandardError
+  class UnresolvableContainerError < RequestError
     def http_status
       422
     end
@@ -256,56 +257,66 @@ class ArvadosModel < ActiveRecord::Base
     sql_table = kwargs.fetch(:table_name, table_name)
     include_trash = kwargs.fetch(:include_trash, false)
 
-    sql_conds = []
+    sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
 
-    exclude_trashed_records = if !include_trash and (sql_table == "groups" or sql_table == "collections") then
-                                # Only include records that are not explicitly trashed
-                                "AND #{sql_table}.is_trashed = false"
-                              else
-                                ""
-                              end
+    exclude_trashed_records = ""
+    if !include_trash and (sql_table == "groups" or sql_table == "collections") then
+      # Only include records that are not explicitly trashed
+      exclude_trashed_records = "AND #{sql_table}.is_trashed = false"
+    end
 
     if users_list.select { |u| u.is_admin }.any?
+      # Admin skips most permission checks, but still want to filter on trashed items.
       if !include_trash
         if sql_table != "api_client_authorizations"
-          # Exclude rows where the owner is trashed
-          sql_conds.push "NOT EXISTS(SELECT 1 "+
-                  "FROM #{PERMISSION_VIEW} "+
-                  "WHERE trashed = 1 AND "+
-                  "(#{sql_table}.owner_uuid = target_uuid)) "+
-                  exclude_trashed_records
+          # Only include records where the owner is not trashed
+          sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
+                      "WHERE trashed = 1 AND "+
+                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
         end
       end
     else
-      trashed_check = if !include_trash then
-                        "AND trashed = 0"
-                      else
-                        ""
-                      end
+      trashed_check = ""
+      if !include_trash then
+        trashed_check = "AND trashed = 0"
+      end
 
-      owner_check = if sql_table != "api_client_authorizations" and sql_table != "groups" then
-                      "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
-                    else
-                      ""
-                    end
+      # Note: it is possible to combine the direct_check and
+      # owner_check into a single EXISTS() clause, however it turns
+      # out query optimizer doesn't like it and forces a sequential
+      # table scan.  Constructing the query with separate EXISTS()
+      # clauses enables it to use the index.
+      #
+      # see issue 13208 for details.
 
-      sql_conds.push "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check})) "+
-                     exclude_trashed_records
+      # Match a direct read permission link from the user to the record uuid
+      direct_check = "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.uuid)"
 
+      # Match a read permission link from the user to the record's owner_uuid
+      owner_check = ""
+      if sql_table != "api_client_authorizations" and sql_table != "groups" then
+        owner_check = "OR EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
+          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL) "
+      end
+
+      links_cond = ""
       if sql_table == "links"
         # Match any permission link that gives one of the authorized
         # users some permission _or_ gives anyone else permission to
         # view one of the authorized users.
-        sql_conds.push "(#{sql_table}.link_class IN (:permission_link_classes) AND "+
+        links_cond = "OR (#{sql_table}.link_class IN (:permission_link_classes) AND "+
                        "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
       end
+
+      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
+
     end
 
-    self.where(sql_conds.join(' OR '),
-                    user_uuids: user_uuids,
-                    permission_link_classes: ['permission', 'resources'])
+    self.where(sql_conds,
+               user_uuids: user_uuids,
+               permission_link_classes: ['permission', 'resources'])
   end
 
   def save_with_unique_name!

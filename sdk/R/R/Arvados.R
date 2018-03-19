@@ -2,14 +2,61 @@ source("./R/RESTService.R")
 source("./R/HttpRequest.R")
 source("./R/HttpParser.R")
 
-#' Arvados SDK Object
+#' Arvados
+#' 
+#' Arvados class gives users ability to manipulate collections and projects.
+#' 
+#' @section Usage:
+#' \preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
 #'
-#' All Arvados logic is inside this class
+#' @section Arguments:
+#' \describe{
+#'   \item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}
+#'   \item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}
+#'   \item{numRetries}{Number which specifies how many times to retry failed service requests.}
+#' }
+#' 
+#' @section Methods:
+#' \describe{
+#'   \item{getToken()}{Returns authentification token currently in use.}
+#'   \item{getHostName()}{Returns host name currently in use.}
+#'   \item{getNumRetries()}{Returns number which specifies how many times to retry failed service requests.}
+#'   \item{setNumRetries(newNumOfRetries)}{Sets number which specifies how many times to retry failed service requests.}
+#'   \item{getCollection(uuid)}{Get collection with specified UUID.}
+#'   \item{listCollections(filters = NULL, limit = 100, offset = 0)}{Returns list of collections based on filters parameter.}
+#'   \item{listAllCollections(filters = NULL)}{Lists all collections, based on filters parameter, even if the number of items is greater than maximum API limit.}
+#'   \item{deleteCollection(uuid)}{Deletes collection with specified UUID.}
+#'   \item{updateCollection(uuid, newContent)}{Updates collection with specified UUID.}
+#'   \item{createCollection(content)}{Creates new collection.}
+#'   \item{getProject(uuid)}{Get project with specified UUID.}
+#'   \item{listProjects(filters = NULL, limit = 100, offset = 0)}{Returns list of projects based on filters parameter.}
+#'   \item{listAllProjects(filters = NULL)}{Lists all projects, based on filters parameter, even if the number of items is greater than maximum API limit.}
+#'   \item{deleteProject(uuid)}{Deletes project with specified UUID.}
+#'   \item{updateProject(uuid, newContent)}{Updates project with specified UUID.}
+#'   \item{createProject(content)}{Creates new project.}
+#' }
 #'
-#' @field token Token represents user authentification token.
-#' @field host Host represents server name we wish to connect to.
-#' @examples arv = Arvados$new("token", "host_name")
-#' @export Arvados
+#' @name Arvados
+#' @examples
+#' \dontrun{
+#' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
+#'
+#' collection <- arv$getCollection("uuid")
+#'
+#' collectionList <- arv$listCollections(list(list("name", "like", "Test%")))
+#' collectionList <- arv$listAllCollections(list(list("name", "like", "Test%")))
+#'
+#' deletedCollection <- arv$deleteCollection("uuid")
+#'
+#' updatedCollection <- arv$updateCollection("uuid", list(name = "New name",
+#'                                                        description = "New description"))
+#'
+#' createdCollection <- arv$createCollection(list(name = "Example",
+#'                                                description = "This is a test collection"))
+#' }
+NULL
+
+#' @export
 Arvados <- R6::R6Class(
 
     "Arvados",
@@ -174,10 +221,16 @@ Arvados <- R6::R6Class(
     cloneable = FALSE
 )
 
-#' @export print.Arvados
-print.Arvados = function(arvados)
+#' print.Arvados
+#'
+#' Custom print function for Arvados class
+#'
+#' @param x Instance of Arvados class
+#' @param ... Optional arguments.
+#' @export 
+print.Arvados = function(x, ...)
 {
-    cat(paste0("Type:  ", "\"", "Arvados",             "\""), sep = "\n")
-    cat(paste0("Host:  ", "\"", arvados$getHostName(), "\""), sep = "\n")
-    cat(paste0("Token: ", "\"", arvados$getToken(),    "\""), sep = "\n")
+    cat(paste0("Type:  ", "\"", "Arvados",       "\""), sep = "\n")
+    cat(paste0("Host:  ", "\"", x$getHostName(), "\""), sep = "\n")
+    cat(paste0("Token: ", "\"", x$getToken(),    "\""), sep = "\n")
 }

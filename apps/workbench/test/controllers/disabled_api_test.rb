@@ -6,6 +6,9 @@ require 'test_helper'
 require 'helpers/share_object_helper'
 
 class DisabledApiTest < ActionController::TestCase
+  reset_api_fixtures :after_each_test, false
+  reset_api_fixtures :after_suite, false
+
   test "dashboard recent processes when pipeline_instance index API is disabled" do
     @controller = ProjectsController.new
 

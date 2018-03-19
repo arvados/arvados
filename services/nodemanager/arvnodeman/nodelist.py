@@ -15,8 +15,9 @@ import arvados.util
 class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the Arvados node list.
 
-    This actor regularly polls the list of Arvados node records, and
-    sends it to subscribers.
+    This actor regularly polls the list of Arvados node records,
+    augments it with the latest SLURM node info (`sinfo`), and sends
+    it to subscribers.
     """
 
     def is_common_error(self, exception):
@@ -29,28 +30,32 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         nodelist = arvados.util.list_all(self._client.nodes().list)
 
         # node hostname, state
-        sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n %t"])
+        sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n|%t|%f"])
         nodestates = {}
+        nodefeatures = {}
         for out in sinfo_out.splitlines():
             try:
-                nodename, state = out.split(" ", 2)
-                if state in ('alloc', 'alloc*',
-                             'comp',  'comp*',
-                             'mix',   'mix*',
-                             'drng',  'drng*'):
-                    nodestates[nodename] = 'busy'
-                elif state in ('idle', 'fail'):
-                    nodestates[nodename] = state
-                else:
-                    nodestates[nodename] = 'down'
+                nodename, state, features = out.split("|", 3)
             except ValueError:
-                pass
+                continue
+            if state in ('alloc', 'alloc*',
+                         'comp',  'comp*',
+                         'mix',   'mix*',
+                         'drng',  'drng*'):
+                nodestates[nodename] = 'busy'
+            elif state in ('idle', 'fail'):
+                nodestates[nodename] = state
+            else:
+                nodestates[nodename] = 'down'
+            if features != "(null)":
+                nodefeatures[nodename] = features
 
         for n in nodelist:
             if n["slot_number"] and n["hostname"] and n["hostname"] in nodestates:
                 n["crunch_worker_state"] = nodestates[n["hostname"]]
             else:
                 n["crunch_worker_state"] = 'down'
+            n["slurm_node_features"] = nodefeatures.get(n["hostname"], "")
 
         return nodelist
 

@@ -93,6 +93,7 @@ navbar:
       - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+      - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/events.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
     - CLI:
@@ -103,6 +104,8 @@ navbar:
     - Go:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
+    - R:
+      - sdk/R/index.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
       - sdk/perl/example.html.textile.liquid

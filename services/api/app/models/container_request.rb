@@ -11,6 +11,11 @@ class ContainerRequest < ArvadosModel
   include WhitelistUpdate
 
   belongs_to :container, foreign_key: :container_uuid, primary_key: :uuid
+  belongs_to :requesting_container, {
+               class_name: 'Container',
+               foreign_key: :requesting_container_uuid,
+               primary_key: :uuid,
+             }
 
   serialize :properties, Hash
   serialize :environment, Hash
@@ -18,6 +23,7 @@ class ContainerRequest < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :secret_mounts, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
@@ -28,6 +34,8 @@ class ContainerRequest < ArvadosModel
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_state_change
   validate :check_update_whitelist
+  validate :secret_mounts_key_conflict
+  before_save :scrub_secret_mounts
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
@@ -79,10 +87,14 @@ class ContainerRequest < ArvadosModel
   :container_image, :cwd, :environment, :filters, :mounts,
   :output_path, :priority, :properties, :requesting_container_uuid,
   :runtime_constraints, :state, :container_uuid, :use_existing,
-  :scheduling_parameters, :output_name, :output_ttl]
+  :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
   def self.limit_index_columns_read
     ["mounts"]
+  end
+
+  def logged_attributes
+    super.except('secret_mounts')
   end
 
   def state_transitions
@@ -145,7 +157,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5"]
   end
 
   protected
@@ -216,7 +228,7 @@ class ContainerRequest < ArvadosModel
 
     if self.new_record? || self.state_was == Uncommitted
       # Allow create-and-commit in a single operation.
-      permitted.push *AttrsPermittedBeforeCommit
+      permitted.push(*AttrsPermittedBeforeCommit)
     end
 
     case self.state
@@ -253,16 +265,28 @@ class ContainerRequest < ArvadosModel
     super(permitted)
   end
 
-  def update_priority
-    if self.state_changed? or
-        self.priority_changed? or
-        self.container_uuid_changed?
-      act_as_system_user do
-        Container.
-          where('uuid in (?)',
-                [self.container_uuid_was, self.container_uuid].compact).
-          map(&:update_priority!)
+  def secret_mounts_key_conflict
+    secret_mounts.each do |k, v|
+      if mounts.has_key?(k)
+        errors.add(:secret_mounts, 'conflict with non-secret mounts')
+        return false
       end
+    end
+  end
+
+  def scrub_secret_mounts
+    if self.state == Final
+      self.secret_mounts = {}
+    end
+  end
+
+  def update_priority
+    return unless state_changed? || priority_changed? || container_uuid_changed?
+    act_as_system_user do
+      Container.
+        where('uuid in (?)', [self.container_uuid_was, self.container_uuid].compact).
+        lock(true).
+        map(&:update_priority!)
     end
   end
 
@@ -277,7 +301,7 @@ class ContainerRequest < ArvadosModel
     container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
     if container
       self.requesting_container_uuid = container.uuid
-      self.priority = container.priority
+      self.priority = container.priority > 0 ? 1 : 0
     end
     true
   end
