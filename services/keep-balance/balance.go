@@ -405,14 +405,49 @@ var changeName = map[int]string{
 // block, and makes the appropriate ChangeSet calls.
 func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 	debugf("balanceBlock: %v %+v", blkid, blk)
+
+	// A slot is somewhere a replica could potentially be trashed
+	// from, pulled from, or pulled to. Each KeepService gets
+	// either one empty slot, or one or more non-empty slots.
+	type slot struct {
+		srv  *KeepService // never nil
+		repl *Replica     // nil if none found
+	}
+
+	// First, we build an ordered list of all slots worth
+	// considering (including all slots where replicas have been
+	// found, as well as all of the optimal slots for this block).
+	// Then, when we consider each slot in that order, we will
+	// have all of the information we need to make a decision
+	// about that slot.
+
 	uuids := keepclient.NewRootSorter(bal.serviceRoots, string(blkid[:32])).GetSortedRoots()
-	hasRepl := make(map[string]Replica, len(bal.serviceRoots))
-	for _, repl := range blk.Replicas {
-		hasRepl[repl.KeepService.UUID] = repl
+	rendezvousOrder := make(map[*KeepService]int, len(uuids))
+	slots := make([]slot, len(uuids))
+	for i, uuid := range uuids {
+		srv := bal.KeepServices[uuid]
+		rendezvousOrder[srv] = i
+		slots[i].srv = srv
+	}
+	for ri := range blk.Replicas {
 		// TODO: when multiple copies are on one server, use
 		// the oldest one that doesn't have a timestamp
 		// collision with other replicas.
+		repl := &blk.Replicas[ri]
+		srv := repl.KeepService
+		slotIdx := rendezvousOrder[srv]
+		if slots[slotIdx].repl != nil {
+			// Additional replicas on a single server are
+			// considered non-optimal. Within this
+			// category, we don't try to optimize layout:
+			// we just say the optimal order is the order
+			// we encounter them.
+			slotIdx = len(slots)
+			slots = append(slots, slot{srv: srv})
+		}
+		slots[slotIdx].repl = repl
 	}
+
 	// number of replicas already found in positions better than
 	// the position we're contemplating now.
 	reportedBestRepl := 0
@@ -428,12 +463,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 	// requested on rendezvous positions M<N will be successful.)
 	pulls := 0
 	var changes []string
-	for _, uuid := range uuids {
+	for _, slot := range slots {
 		change := changeNone
-		srv := bal.KeepServices[uuid]
+		srv, repl := slot.srv, slot.repl
 		// TODO: request a Touch if Mtime is duplicated.
-		repl, ok := hasRepl[srv.UUID]
-		if ok {
+		if repl != nil {
 			// This service has a replica. We should
 			// delete it if [1] we already have enough
 			// distinct replicas in better rendezvous
@@ -469,7 +503,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 			change = changePull
 		}
 		if bal.Dumper != nil {
-			changes = append(changes, fmt.Sprintf("%s:%d=%s,%d", srv.ServiceHost, srv.ServicePort, changeName[change], repl.Mtime))
+			var mtime int64
+			if repl != nil {
+				mtime = repl.Mtime
+			}
+			changes = append(changes, fmt.Sprintf("%s:%d=%s,%d", srv.ServiceHost, srv.ServicePort, changeName[change], mtime))
 		}
 	}
 	if bal.Dumper != nil {

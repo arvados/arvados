@@ -150,6 +150,47 @@ func (bal *balancerSuite) TestFixUnbalanced(c *check.C) {
 		shouldTrash: slots{7}})
 }
 
+func (bal *balancerSuite) TestMultipleReplicasPerService(c *check.C) {
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{0, 0},
+		shouldPull: slots{1}})
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{2, 2},
+		shouldPull: slots{0, 1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{0, 0, 1},
+		shouldTrash: slots{0}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 0},
+		shouldTrash: slots{1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 0, 1, 0, 2},
+		shouldTrash: slots{0, 1, 2}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 1, 0, 2},
+		shouldTrash: slots{1, 1, 2}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 2},
+		shouldPull:  slots{0},
+		shouldTrash: slots{1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 0},
+		timestamps:  []int64{12345678, 12345678, 12345679},
+		shouldTrash: nil})
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{1, 1},
+		shouldPull: slots{0}})
+}
+
 func (bal *balancerSuite) TestIncreaseReplTimestampCollision(c *check.C) {
 	// For purposes of increasing replication, we assume identical
 	// replicas are distinct.
@@ -232,8 +273,8 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 }
 
 // srvList returns the KeepServices, sorted in rendezvous order and
-// then selected by idx. For example, srvList(3, 0, 1, 4) returns the
-// the first-, second-, and fifth-best servers for storing
+// then selected by idx. For example, srvList(3, slots{0, 1, 4})
+// returns the the first-, second-, and fifth-best servers for storing
 // bal.knownBlkid(3).
 func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepService) {
 	for _, i := range order {
