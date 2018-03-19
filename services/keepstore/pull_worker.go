@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // RunPullWorker receives PullRequests from pullq, invokes

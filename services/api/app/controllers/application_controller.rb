@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'safe_json'
+require 'request_error'
 
 module ApiTemplateOverride
   def allowed_to_render?(fieldset, field, model, options)
@@ -137,7 +138,7 @@ class ApplicationController < ActionController::Base
 
   def render_error(e)
     logger.error e.inspect
-    if e.respond_to? :backtrace and e.backtrace
+    if !e.is_a? RequestError and (e.respond_to? :backtrace and e.backtrace)
       logger.error e.backtrace.collect { |x| x + "\n" }.join('')
     end
     if (@object.respond_to? :errors and
@@ -552,6 +553,10 @@ class ApplicationController < ActionController::Base
         default: false
       }
     }
+  end
+
+  def self._update_requires_parameters
+    {}
   end
 
   def self._index_requires_parameters

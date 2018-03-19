@@ -57,7 +57,7 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
         return;
     }
 
-    wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
+    wasatbottom = (this.scrollTop + this.clientHeight >= this.scrollHeight);
     if (eventData.prepend) {
         $(this).prepend(txt);
     } else {

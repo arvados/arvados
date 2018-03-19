@@ -8,8 +8,8 @@ from __future__ import absolute_import, print_function
 import subprocess
 import time
 
-from . import \
-    ComputeNodeSetupActor, ComputeNodeMonitorActor
+from . import ComputeNodeMonitorActor
+from . import ComputeNodeSetupActor as SetupActorBase
 from . import ComputeNodeShutdownActor as ShutdownActorBase
 from . import ComputeNodeUpdateActor as UpdateActorBase
 from .. import RetryMixin
@@ -20,14 +20,30 @@ class SlurmMixin(object):
                                   'fail\n', 'fail*\n'])
     SLURM_DRAIN_STATES = frozenset(['drain\n', 'drng\n'])
 
-    def _set_node_state(self, nodename, state, *args):
-        cmd = ['scontrol', 'update', 'NodeName=' + nodename,
-               'State=' + state]
-        cmd.extend(args)
-        subprocess.check_output(cmd)
+    def _update_slurm_node(self, nodename, updates):
+        cmd = ['scontrol', 'update', 'NodeName=' + nodename] + updates
+        try:
+            subprocess.check_output(cmd)
+        except:
+            self._logger.error(
+                "SLURM update %r failed", cmd, exc_info=True)
+
+    def _update_slurm_size_attrs(self, nodename, size):
+        self._update_slurm_node(nodename, [
+            'Weight=%i' % int(size.price * 1000),
+            'Features=instancetype=' + size.id,
+        ])
 
     def _get_slurm_state(self, nodename):
         return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', nodename])
+
+
+class ComputeNodeSetupActor(SlurmMixin, SetupActorBase):
+    def create_cloud_node(self):
+        hostname = self.arvados_node.get("hostname")
+        if hostname:
+            self._update_slurm_size_attrs(hostname, self.cloud_size)
+        return super(ComputeNodeSetupActor, self).create_cloud_node()
 
 
 class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
@@ -47,7 +63,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
         if self._nodename:
             if try_resume and self._get_slurm_state(self._nodename) in self.SLURM_DRAIN_STATES:
                 # Resume from "drng" or "drain"
-                self._set_node_state(self._nodename, 'RESUME')
+                self._update_slurm_node(self._nodename, ['State=RESUME'])
             else:
                 # Node is in a state such as 'idle' or 'alloc' so don't
                 # try to resume it because that will just raise an error.
@@ -59,7 +75,8 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
         if self.cancel_reason is not None:
             return
         if self._nodename:
-            self._set_node_state(self._nodename, 'DRAIN', 'Reason=Node Manager shutdown')
+            self._update_slurm_node(self._nodename, [
+                'State=DRAIN', 'Reason=Node Manager shutdown'])
             self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
             self._later.await_slurm_drain()
         else:
@@ -82,15 +99,20 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
 
     def _destroy_node(self):
         if self._nodename:
-            self._set_node_state(self._nodename, 'DOWN', 'Reason=Node Manager shutdown')
+            self._update_slurm_node(self._nodename, [
+                'State=DOWN', 'Reason=Node Manager shutdown'])
         super(ComputeNodeShutdownActor, self)._destroy_node()
 
 
-class ComputeNodeUpdateActor(UpdateActorBase):
+class ComputeNodeUpdateActor(SlurmMixin, UpdateActorBase):
     def sync_node(self, cloud_node, arvados_node):
-        if arvados_node.get("hostname"):
-            try:
-                subprocess.check_output(['scontrol', 'update', 'NodeName=' + arvados_node["hostname"], 'Weight=%i' % int(cloud_node.size.price * 1000)])
-            except:
-                self._logger.error("Unable to set slurm node weight.", exc_info=True)
-        return super(ComputeNodeUpdateActor, self).sync_node(cloud_node, arvados_node)
+        """Keep SLURM's node properties up to date."""
+        hostname = arvados_node.get("hostname")
+        features = arvados_node.get("slurm_node_features", "").split(",")
+        sizefeature = "instancetype=" + cloud_node.size.id
+        if hostname and sizefeature not in features:
+            # This probably means SLURM has restarted and lost our
+            # dynamically configured node weights and features.
+            self._update_slurm_size_attrs(hostname, cloud_node.size)
+        return super(ComputeNodeUpdateActor, self).sync_node(
+            cloud_node, arvados_node)

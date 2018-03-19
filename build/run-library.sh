@@ -129,6 +129,9 @@ package_go_binary() {
     declare -a checkdirs=(vendor)
     if grep -qr git.curoverse.com/arvados .; then
         checkdirs+=(sdk/go)
+        if [[ "$prog" -eq "crunch-dispatch-slurm" ]]; then
+          checkdirs+=(lib/dispatchcloud)
+        fi
     fi
     for dir in ${checkdirs[@]}; do
         cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"

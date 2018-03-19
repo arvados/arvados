@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'request_error'
+
 class Blob
   extend DbCurrentTime
 
@@ -25,8 +27,8 @@ class Blob
   #     locator_hash +A blob_signature @ timestamp
   # where the timestamp is a Unix time expressed as a hexadecimal value,
   # and the blob_signature is the signed locator_hash + API token + timestamp.
-  # 
-  class InvalidSignatureError < StandardError
+  #
+  class InvalidSignatureError < RequestError
   end
 
   # Blob.sign_locator: return a signed and timestamped blob locator.

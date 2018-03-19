@@ -866,6 +866,9 @@ class ArvadosFile(object):
 
     """
 
+    __slots__ = ('parent', 'name', '_writers', '_committed',
+                 '_segments', 'lock', '_current_bblock', 'fuse_entry')
+
     def __init__(self, parent, name, stream=[], segments=[]):
         """
         ArvadosFile constructor.

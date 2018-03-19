@@ -74,6 +74,7 @@ doc
 lib/cli
 lib/cmd
 lib/crunchstat
+lib/dispatchcloud
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -242,13 +243,17 @@ sanity_checks() {
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
 
-    # R SDK stuff
-    echo -n 'R: '
-    which R || fatal "No R. Try: apt-get install r-base"
-    echo -n 'testthat: '
-    R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
-    # needed for roxygen2, needed for devtools, needed for R sdk
-    pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
+    if [[ "$NEED_SDK_R" = true ]]; then
+      # R SDK stuff
+      echo -n 'R: '
+      which R || fatal "No R. Try: apt-get install r-base"
+      echo -n 'testthat: '
+      R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
+      # needed for roxygen2, needed for devtools, needed for R sdk
+      pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
+      # needed for pkgdown, builds R SDK doc pages
+      which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
+    fi
 }
 
 rotate_logfile() {
@@ -317,6 +322,18 @@ do
             ;;
     esac
 done
+
+# R SDK installation is very slow (~360s in a clean environment) and only
+# required when testing it. Skip that step if it is not needed.
+NEED_SDK_R=true
+
+if [[ ! -z "${only}" && "${only}" != "sdk/R" ]]; then
+  NEED_SDK_R=false
+fi
+
+if [[ ! -z "${skip}" && "${skip}" == "sdk/R" ]]; then
+  NEED_SDK_R=false
+fi
 
 start_services() {
     echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
@@ -475,12 +492,12 @@ setup_virtualenv() {
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
-        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7,<8'
+        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7,<8'
     else
-        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7'
+        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
     fi
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
+    "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
 export PERLINSTALLBASE
@@ -523,13 +540,13 @@ setup_virtualenv "$VENVDIR" --python python2.7
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install PyYAML >/dev/null \
+    || pip install --no-cache-dir PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
-# Preinstall forked version of libcloud, because nodemanager "pip install"
+# Preinstall libcloud, because nodemanager "pip install"
 # won't pick it up by default.
 pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
+    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
@@ -698,11 +715,17 @@ do_test_once() {
 }
 
 do_install() {
-    if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
-        retry do_install_once ${@}
-    else
-        title "Skipping $1 install"
-    fi
+  skipit=false
+
+  if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
+      retry do_install_once ${@}
+  else
+      skipit=true
+  fi
+
+  if [[ "$skipit" = true ]]; then
+    title "Skipping $1 install"
+  fi
 }
 
 do_install_once() {
@@ -728,8 +751,8 @@ do_install_once() {
         cd "$WORKSPACE/$1" \
             && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip" install --no-cache-dir --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --no-cache-dir --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -777,17 +800,10 @@ install_ruby_sdk() {
 do_install sdk/ruby ruby_sdk
 
 install_R_sdk() {
+  if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
-       && R --quiet --vanilla <<EOF
-options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
-if (!requireNamespace("devtools")) {
-  install.packages("devtools")
-}
-if (!requireNamespace("roxygen2")) {
-  install.packages("roxygen2")
-}
-devtools::install_dev_deps()
-EOF
+       && R --quiet --vanilla --file=install_deps.R
+  fi
 }
 do_install sdk/R R_sdk
 
@@ -883,6 +899,7 @@ gostuff=(
     lib/cli
     lib/cmd
     lib/crunchstat
+    lib/dispatchcloud
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
@@ -962,9 +979,12 @@ test_ruby_sdk() {
 do_test sdk/ruby ruby_sdk
 
 test_R_sdk() {
+  if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
         && R --quiet --file=run_test.R
+  fi
 }
+
 do_test sdk/R R_sdk
 
 test_cli() {

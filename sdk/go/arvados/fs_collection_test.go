@@ -433,7 +433,7 @@ func (s *CollectionFSSuite) TestMkdir(c *check.C) {
 	err = s.fs.Remove("foo/bar")
 	c.Check(err, check.IsNil)
 
-	// mkdir succeds after the file is deleted
+	// mkdir succeeds after the file is deleted
 	err = s.fs.Mkdir("foo/bar", 0755)
 	c.Check(err, check.IsNil)
 

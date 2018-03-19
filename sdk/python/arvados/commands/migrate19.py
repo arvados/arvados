@@ -168,7 +168,7 @@ def main(arguments=None):
     ln = df_out.splitlines()[1]
     filesystem, blocks, used, available, use_pct, mounted = re.match(r"^([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+)", ln).groups(1)
     if int(available) <= will_need:
-        logger.warn("Temp filesystem mounted at %s does not have enough space for biggest image (has %i MiB, needs %i MiB)", mounted, int(available)>>20, will_need>>20)
+        logger.warn("Temp filesystem mounted at %s does not have enough space for biggest image (has %i MiB, needs %i MiB)", mounted, int(available)>>20, int(will_need)>>20)
         if not args.force:
             exit(1)
         else:

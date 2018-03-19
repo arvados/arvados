@@ -17,27 +17,36 @@ class WorkUnitsController < ApplicationController
     @limit = 20
     @filters = @filters || []
 
+    pipelines = []
+    jobs = []
+
     # get next page of pipeline_instances
     if PipelineInstance.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
       pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
     end
 
-    # get next page of jobs
-    if Job.api_exists?(:index)
-      filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
-      jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+    if params[:show_children]
+      # get next page of jobs
+      if Job.api_exists?(:index)
+        filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
+        jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+      end
     end
 
     # get next page of container_requests
     filters = @filters + [["uuid", "is_a", ["arvados#containerRequest"]]]
+    if !params[:show_children]
+     filters << ["requesting_container_uuid", "=", nil]
+    end
     crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters)
     @objects = (jobs.to_a + pipelines.to_a + crs.to_a).sort_by(&:created_at).reverse.first(@limit)
 
     if @objects.any?
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :all_processes_rows,
-                                filters: @next_page_filters.to_json)
+                                filters: @next_page_filters.to_json,
+                                show_children: params[:show_children])
       preload_links_for_objects(@objects.to_a)
     else
       @next_page_href = nil

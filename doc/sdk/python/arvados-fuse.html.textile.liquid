@@ -1,0 +1,64 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Arvados FUSE driver
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Arvados FUSE driver is a Python utility that allows you to see the Keep service as a normal filesystem, so that data can be accessed using standard tools. This driver requires the Python SDK installed in order to access Arvados services.
+
+h3. Installation
+
+If you are logged in to an Arvados VM, the @arv-mount@ utility should already be installed.
+
+To use the FUSE driver elsewhere, you can install from a distribution package, PyPI, or source.
+
+{% include 'notebox_begin' %}
+The Python SDK requires Python 2.7.
+{% include 'notebox_end' %}
+
+h4. Option 1: Install from distribution packages
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+{% assign rh_version = "6" %}
+{% include 'note_python_sc' %}
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
+~$ <span class="userinput">sudo yum install python-arvados-fuse</code>
+</code></pre>
+</notextile>
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-fuse</code>
+</code></pre>
+</notextile>
+
+h4. Option 2: Install with pip
+
+Run @pip-2.7 install arvados_fuse@ in an appropriate installation environment, such as a virtualenv.
+
+h4. Option 3: Install from source
+
+Install the @python-setuptools@ package from your distribution.  Then run the following:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+~$ <span class="userinput">cd arvados/services/fuse</span>
+~/arvados/services/fuse$ <span class="userinput">python2.7 setup.py install</span>
+</code></pre>
+</notextile>
+
+h3. Usage
+
+Please refer to the "Mounting Keep as a filesystem":{{site.baseurl}}/user/tutorials/tutorial-keep-mount.html tutorial for more information.

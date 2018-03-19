@@ -57,6 +57,7 @@ GEMS="$ARVBOX_DATA/gems"
 PIPCACHE="$ARVBOX_DATA/pip"
 NPMCACHE="$ARVBOX_DATA/npm"
 GOSTUFF="$ARVBOX_DATA/gopath"
+RLIBS="$ARVBOX_DATA/Rlibs"
 
 getip() {
     docker inspect $ARVBOX_CONTAINER | grep \"IPAddress\" | head -n1 | tr -d ' ":,\n' | cut -c10-
@@ -188,7 +189,7 @@ run() {
         updateconf
         wait_for_arvbox
     else
-        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$NPMCACHE" "$GOSTUFF"
+        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$NPMCACHE" "$GOSTUFF" "$RLIBS"
 
 
         if ! test -d "$ARVADOS_ROOT" ; then
@@ -220,6 +221,7 @@ run() {
                        "--volume=$PIPCACHE:/var/lib/pip:rw" \
                        "--volume=$NPMCACHE:/var/lib/npm:rw" \
                        "--volume=$GOSTUFF:/var/lib/gopath:rw" \
+                       "--volume=$RLIBS:/var/lib/Rlibs:rw" \
 		       "--env=SVDIR=/etc/test-service" \
                        arvados/arvbox-dev$TAG
 
@@ -262,6 +264,7 @@ run() {
                    "--volume=$PIPCACHE:/var/lib/pip:rw" \
                    "--volume=$NPMCACHE:/var/lib/npm:rw" \
                    "--volume=$GOSTUFF:/var/lib/gopath:rw" \
+                   "--volume=$RLIBS:/var/lib/Rlibs:rw" \
                    $PUBLIC \
                    arvados/arvbox-dev$TAG
             updateconf
@@ -430,9 +433,9 @@ case "$subcmd" in
 
     log)
         if test -n "$1" ; then
-            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name -R +GF "/etc/service/$1/log/main/current"
+            exec docker exec -ti -e LINES=$(tput lines) -e COLUMNS=$(tput cols) -e TERM=$TERM $ARVBOX_CONTAINER less --follow-name -R +GF "/etc/service/$1/log/main/current"
         else
-            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
+            exec docker exec -ti $ARVBOX_CONTAINER tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
         fi
         ;;
 

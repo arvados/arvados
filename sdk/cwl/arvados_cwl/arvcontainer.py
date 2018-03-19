@@ -9,6 +9,7 @@ import urllib
 import time
 import datetime
 import ciso8601
+import uuid
 
 import ruamel.yaml as yaml
 
@@ -41,17 +42,30 @@ class ArvadosContainer(object):
         pass
 
     def run(self, dry_run=False, pull_image=True, **kwargs):
+        # ArvadosCommandTool subclasses from cwltool.CommandLineTool,
+        # which calls makeJobRunner() to get a new ArvadosContainer
+        # object.  The fields that define execution such as
+        # command_line, environment, etc are set on the
+        # ArvadosContainer object by CommandLineTool.job() before
+        # run() is called.
+
         container_request = {
             "command": self.command_line,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": self.outdir,
             "cwd": self.outdir,
-            "priority": 1,
+            "priority": kwargs.get("priority"),
             "state": "Committed",
             "properties": {},
         }
         runtime_constraints = {}
+
+        if self.arvrunner.secret_store.has_secret(self.command_line):
+            raise WorkflowException("Secret material leaked on command line, only file literals may contain secrets")
+
+        if self.arvrunner.secret_store.has_secret(self.environment):
+            raise WorkflowException("Secret material leaked in environment, only file literals may contain secrets")
 
         resources = self.builder.resources
         if resources is not None:
@@ -68,6 +82,7 @@ class ArvadosContainer(object):
                 "capacity": resources.get("tmpdirSize", 0) * 2**20
             }
         }
+        secret_mounts = {}
         scheduling_parameters = {}
 
         rf = [self.pathmapper.mapper(f) for f in self.pathmapper.referenced_files]
@@ -118,8 +133,14 @@ class ArvadosContainer(object):
                                 source, path = self.arvrunner.fs_access.get_collection(p.resolved)
                                 vwd.copy(path, p.target, source_collection=source)
                         elif p.type == "CreateFile":
-                            with vwd.open(p.target, "w") as n:
-                                n.write(p.resolved.encode("utf-8"))
+                            if self.arvrunner.secret_store.has_secret(p.resolved):
+                                secret_mounts["%s/%s" % (self.outdir, p.target)] = {
+                                    "kind": "text",
+                                    "content": self.arvrunner.secret_store.retrieve(p.resolved)
+                                }
+                            else:
+                                with vwd.open(p.target, "w") as n:
+                                    n.write(p.resolved.encode("utf-8"))
 
                 def keepemptydirs(p):
                     if isinstance(p, arvados.collection.RichCollectionBase):
@@ -135,7 +156,7 @@ class ArvadosContainer(object):
                     vwd.save_new()
 
                 for f, p in generatemapper.items():
-                    if not p.target:
+                    if not p.target or self.arvrunner.secret_store.has_secret(p.resolved):
                         continue
                     mountpoint = "%s/%s" % (self.outdir, p.target)
                     mounts[mountpoint] = {"kind": "collection",
@@ -200,10 +221,11 @@ class ArvadosContainer(object):
             self.output_ttl = self.arvrunner.intermediate_output_ttl
 
         if self.output_ttl < 0:
-            raise WorkflowError("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
+            raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
+        container_request["secret_mounts"] = secret_mounts
         container_request["runtime_constraints"] = runtime_constraints
         container_request["scheduling_parameters"] = scheduling_parameters
 
@@ -306,12 +328,22 @@ class RunnerContainer(Runner):
         visit_class(self.job_order, ("File", "Directory"), trim_anonymous_location)
         visit_class(self.job_order, ("File", "Directory"), remove_redundant_fields)
 
+        secret_mounts = {}
+        for param in sorted(self.job_order.keys()):
+            if self.secret_store.has_secret(self.job_order[param]):
+                mnt = "/secrets/s%d" % len(secret_mounts)
+                secret_mounts[mnt] = {
+                    "kind": "text",
+                    "content": self.secret_store.retrieve(self.job_order[param])
+                }
+                self.job_order[param] = {"$include": mnt}
+
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
             "cwd": "/var/spool/cwl",
-            "priority": 1,
+            "priority": self.priority,
             "state": "Committed",
             "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
@@ -328,6 +360,7 @@ class RunnerContainer(Runner):
                     "writable": True
                 }
             },
+            "secret_mounts": secret_mounts,
             "runtime_constraints": {
                 "vcpus": 1,
                 "ram": 1024*1024 * self.submit_runner_ram,
@@ -384,6 +417,8 @@ class RunnerContainer(Runner):
 
         if self.arvrunner.project_uuid:
             command.append("--project-uuid="+self.arvrunner.project_uuid)
+
+        command.append("--eval-timeout=%s" % self.arvrunner.eval_timeout)
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

@@ -4,13 +4,16 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.1'
+# Having a dependency '~> 4.1' make rails 4.2.10 to be installed when it's
+# supposed to avoid that.
+gem 'rails', '< 4.2'
 gem 'arvados', '>= 0.1.20150511150219'
 
 gem 'activerecord-nulldb-adapter'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
+gem 'mime-types'
 
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
@@ -37,11 +40,13 @@ group :development do
 end
 
 group :test, :diagnostics, :performance do
-  gem 'minitest', '~> 5.0'
-  gem 'selenium-webdriver'
-  gem 'capybara'
-  gem 'poltergeist'
-  gem 'headless'
+  gem 'minitest', '~> 5.10.3'
+  # Selenium-webdriver 3.x is producing problems like the one described here:
+  # https://stackoverflow.com/questions/41310586/ruby-selenium-webdriver-unable-to-find-mozilla-geckodriver
+  gem 'selenium-webdriver', '~> 2.53.1'
+  gem 'capybara', '~> 2.5.0'
+  gem 'poltergeist', '~> 1.5.1'
+  gem 'headless', '~> 1.0.2'
 end
 
 group :test, :performance do
@@ -61,7 +66,7 @@ gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
 
-gem 'angularjs-rails'
+gem 'angularjs-rails', '~> 1.3.8'
 
 gem 'less'
 gem 'less-rails'

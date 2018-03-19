@@ -41,6 +41,11 @@
 // data-example-attr="foo" are shown, and all others are hidden. When
 // the user selects the "Show all" option, all rows are shown.
 //
+// <input type="checkbox" data-on-value="{}" data-off-value="{}" ... />
+//
+// Merges on- or off-value with other params in query. Only works with
+// infinite-scroll.
+//
 // Notes:
 //
 // When multiple filterable-control widgets operate on the same
@@ -91,6 +96,21 @@ $(document).
                 return;
             updateFilterableQueryNow($(this));
         });
+    }).
+    on('change', 'input[type=checkbox].filterable-control', function(e) {
+        if (this != e.target) return;
+        var $target = $($(this).attr('data-filterable-target'));
+        var currentquery = $target.data('filterable-query');
+        if (currentquery === undefined) currentquery = '';
+        if ($target.is('[data-infinite-scroller]')) {
+            var datakey = 'infiniteContentParamsFrom'+this.id;
+            var whichvalue = $(this).is(':checked') ? 'on-value' : 'off-value';
+            if (JSON.stringify($target.data(datakey)) == JSON.stringify($(this).data(whichvalue)))
+                return;
+            $target.data(datakey, $(this).data(whichvalue));
+            updateFilterableQueryNow($target);
+            $target.trigger('refresh-content');
+        }
     }).
     on('paste keyup input', 'input[type=text].filterable-control', function(e) {
         var regexp;

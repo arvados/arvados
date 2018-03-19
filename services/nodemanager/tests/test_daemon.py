@@ -23,12 +23,13 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
 
     def busywait(self, f):
-        n = 0
-        while not f() and n < 200:
+        for n in xrange(200):
+            ok = f()
+            if ok:
+                return
             time.sleep(.1)
             self.daemon.ping().get(self.TIMEOUT)
-            n += 1
-        self.assertTrue(f())
+        self.assertTrue(ok) # always falsy, but not necessarily False
 
     def mock_node_start(self, **kwargs):
         # Make sure that every time the daemon starts a setup actor,

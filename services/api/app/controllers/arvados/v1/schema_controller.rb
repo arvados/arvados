@@ -123,7 +123,7 @@ class Arvados::V1::SchemaController < ApplicationController
         end
         object_properties = {}
         k.columns.
-          select { |col| col.name != 'id' }.
+          select { |col| col.name != 'id' && !col.name.start_with?('secret_') }.
           collect do |col|
           if k.serialized_attributes.has_key? col.name
             object_properties[col.name] = {
