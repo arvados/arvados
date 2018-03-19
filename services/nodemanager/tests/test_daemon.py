@@ -700,7 +700,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         big = testutil.MockSize(2)
         avail_sizes = [(testutil.MockSize(1), {"cores":1}),
                         (testutil.MockSize(2), {"cores":2})]
-        self.make_daemon(want_sizes=[small, small, small, big],
+        self.make_daemon(want_sizes=[small, small, big, small],
                          avail_sizes=avail_sizes, max_nodes=3)
 
         # the daemon runs in another thread, so we need to wait and see
