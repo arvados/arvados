@@ -50,11 +50,10 @@ version_from_git() {
         return
     fi
 
-    ARVADOS_BUILDING_VERSION=`git describe --abbrev=0`
     local git_ts 
 
     declare $(format_last_commit_here "git_ts=%ct")
-    ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION.$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    ARVADOS_BUILDING_VERSION="$(git describe --abbrev=0).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
 
