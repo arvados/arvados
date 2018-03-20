@@ -517,6 +517,12 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 2,
 		},
 		{
+			uri:     "download.example.com/users/active/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			header:  authHeader,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 3,
+		},
+		{
 			uri:     "collections.example.com/collections/download/" + arvadostest.FooAndBarFilesInDirUUID + "/" + arvadostest.ActiveToken + "/",
 			header:  nil,
 			expect:  []string{"dir1/foo", "dir1/bar"},

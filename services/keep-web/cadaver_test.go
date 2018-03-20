@@ -22,24 +22,33 @@ import (
 )
 
 func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
-	s.testCadaver(c, arvadostest.ActiveToken, func(newUUID string) (string, string, string) {
+	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
 		r := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/"
-		w := "/c=" + newUUID + "/"
+		w := "/c=" + newCollection.UUID + "/"
 		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
 		return r, w, pdh
 	})
 }
 
 func (s *IntegrationSuite) TestCadaverPathAuth(c *check.C) {
-	s.testCadaver(c, "", func(newUUID string) (string, string, string) {
+	s.testCadaver(c, "", func(newCollection arvados.Collection) (string, string, string) {
 		r := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/"
-		w := "/c=" + newUUID + "/t=" + arvadostest.ActiveToken + "/"
+		w := "/c=" + newCollection.UUID + "/t=" + arvadostest.ActiveToken + "/"
 		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arvadostest.ActiveToken + "/"
 		return r, w, pdh
 	})
 }
 
-func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(string) (string, string, string)) {
+func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
+	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
+		r := "/users/active/foo_file_in_dir/"
+		w := "/users/active/" + newCollection.Name
+		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
+		return r, w, pdh
+	})
+}
+
+func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string)) {
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
 	tempdir, err := ioutil.TempDir("", "keep-web-test-")
@@ -62,7 +71,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	err = arv.RequestAndDecode(&newCollection, "POST", "/arvados/v1/collections", bytes.NewBufferString(url.Values{"collection": {"{}"}}.Encode()), nil)
 	c.Assert(err, check.IsNil)
 
-	readPath, writePath, pdhPath := pathFunc(newCollection.UUID)
+	readPath, writePath, pdhPath := pathFunc(newCollection)
 
 	matchToday := time.Now().Format("Jan +2")
 
