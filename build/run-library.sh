@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -50,9 +50,14 @@ version_from_git() {
         return
     fi
 
-    local git_ts 
+    local git_ts git_hash prefix
+    if [[ -n "$1" ]] ; then
+        prefix="$1"
+    else
+        prefix="0.1"
+    fi
 
-    declare $(format_last_commit_here "git_ts=%ct")
+    declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
     ARVADOS_BUILDING_VERSION="$(git describe --abbrev=0).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
@@ -71,7 +76,7 @@ timestamp_from_git() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$(version_from_git).$(date -ud "@$git_ts" +%Y%m%d%H%M%S).tar.gz" -print -quit)" ]; then
+  if [ -n "$(find dist -name "*-$(version_from_git).tar.gz" -print -quit)" ]; then
     # This package doesn't need rebuilding.
     return
   fi
