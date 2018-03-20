@@ -67,7 +67,7 @@ nohash_version_from_git() {
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git $1 | cut -d. -f1-3
+    version_from_git $1 | cut -d. -f1-4
 }
 
 timestamp_from_git() {
@@ -76,7 +76,7 @@ timestamp_from_git() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$(version_from_git).tar.gz" -print -quit)" ]; then
+  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
     # This package doesn't need rebuilding.
     return
   fi
