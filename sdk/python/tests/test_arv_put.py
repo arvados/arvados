@@ -18,12 +18,12 @@ import os
 import pwd
 import random
 import re
+import select
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import unittest
 import uuid
@@ -859,16 +859,18 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                       pipe.stdout.read().decode())
 
     def test_sigint_logs_request_id(self):
-        # Connect 'yes' command output to arv-put, wait for a second and
-        # send SIGINT to arv-put's process, then check if its output includes
-        # the X-Request-Id.
+        # Start arv-put, give it a chance to start up, send SIGINT,
+        # and check that its output includes the X-Request-Id.
         input_stream = subprocess.Popen(
-            'yes', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            ['sleep', '10'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=input_stream.stdout, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        time.sleep(1)
+        # Wait for arv-put child process to print something (i.e., a
+        # log message) so we know its signal handler is installed.
+        select.select([pipe.stdout], [], [], 10)
         pipe.send_signal(signal.SIGINT)
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
@@ -877,7 +879,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         input_stream.terminate()
         if returncode is None:
             pipe.terminate()
-            self.fail("arv-put did not exited within 5 seconds")
+            self.fail("arv-put did not exit within 5 seconds")
         self.assertRegex(pipe.stdout.read().decode(), r'\(X-Request-Id: req-[a-z0-9]{20}\)')
 
     def test_ArvPutSignedManifest(self):
