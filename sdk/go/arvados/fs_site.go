@@ -10,22 +10,25 @@ import (
 	"time"
 )
 
-type siteFileSystem struct {
+type CustomFileSystem interface {
+	FileSystem
+	MountByID(mount string)
+	MountProject(mount, uuid string)
+	MountUsers(mount string)
+}
+
+type customFileSystem struct {
 	fileSystem
+	root *vdirnode
 
 	staleThreshold time.Time
 	staleLock      sync.Mutex
 }
 
-// SiteFileSystem returns a FileSystem that maps collections and other
-// Arvados objects onto a filesystem layout.
-//
-// This is experimental: the filesystem layout is not stable, and
-// there are significant known bugs and shortcomings. For example,
-// writes are not persisted until Sync() is called.
-func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
+func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 	root := &vdirnode{}
-	fs := &siteFileSystem{
+	fs := &customFileSystem{
+		root: root,
 		fileSystem: fileSystem{
 			fsBackend: keepBackend{apiClient: c, keepClient: kc},
 			root:      root,
@@ -41,14 +44,18 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 		},
 		inodes: make(map[string]inode),
 	}
-	root.inode.Child("by_id", func(inode) (inode, error) {
+	return fs
+}
+
+func (fs *customFileSystem) MountByID(mount string) {
+	fs.root.inode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
 			inode: &treenode{
 				fs:     fs,
 				parent: fs.root,
 				inodes: make(map[string]inode),
 				fileinfo: fileinfo{
-					name:    "by_id",
+					name:    mount,
 					modTime: time.Now(),
 					mode:    0755 | os.ModeDir,
 				},
@@ -56,13 +63,45 @@ func (c *Client) SiteFileSystem(kc keepClient) FileSystem {
 			create: fs.mountCollection,
 		}, nil
 	})
-	root.inode.Child("home", func(inode) (inode, error) {
-		return fs.newProjectNode(fs.root, "home", ""), nil
+}
+
+func (fs *customFileSystem) MountProject(mount, uuid string) {
+	fs.root.inode.Child(mount, func(inode) (inode, error) {
+		return fs.newProjectNode(fs.root, mount, uuid), nil
 	})
+}
+
+func (fs *customFileSystem) MountUsers(mount string) {
+	fs.root.inode.Child(mount, func(inode) (inode, error) {
+		return &usersnode{
+			inode: &treenode{
+				fs:     fs,
+				parent: fs.root,
+				inodes: make(map[string]inode),
+				fileinfo: fileinfo{
+					name:    mount,
+					modTime: time.Now(),
+					mode:    0755 | os.ModeDir,
+				},
+			},
+		}, nil
+	})
+}
+
+// SiteFileSystem returns a FileSystem that maps collections and other
+// Arvados objects onto a filesystem layout.
+//
+// This is experimental: the filesystem layout is not stable, and
+// there are significant known bugs and shortcomings. For example,
+// writes are not persisted until Sync() is called.
+func (c *Client) SiteFileSystem(kc keepClient) CustomFileSystem {
+	fs := c.CustomFileSystem(kc)
+	fs.MountByID("by_id")
+	fs.MountUsers("users")
 	return fs
 }
 
-func (fs *siteFileSystem) Sync() error {
+func (fs *customFileSystem) Sync() error {
 	fs.staleLock.Lock()
 	defer fs.staleLock.Unlock()
 	fs.staleThreshold = time.Now()
@@ -71,17 +110,17 @@ func (fs *siteFileSystem) Sync() error {
 
 // Stale returns true if information obtained at time t should be
 // considered stale.
-func (fs *siteFileSystem) Stale(t time.Time) bool {
+func (fs *customFileSystem) Stale(t time.Time) bool {
 	fs.staleLock.Lock()
 	defer fs.staleLock.Unlock()
 	return !fs.staleThreshold.Before(t)
 }
 
-func (fs *siteFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
 	return nil, ErrInvalidOperation
 }
 
-func (fs *siteFileSystem) mountCollection(parent inode, id string) inode {
+func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	var coll Collection
 	err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
 	if err != nil {
@@ -96,7 +135,23 @@ func (fs *siteFileSystem) mountCollection(parent inode, id string) inode {
 	return root
 }
 
-func (fs *siteFileSystem) newProjectNode(root inode, name, uuid string) inode {
+func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {
+	return &projectnode{
+		uuid: uuid,
+		inode: &treenode{
+			fs:     fs,
+			parent: root,
+			inodes: make(map[string]inode),
+			fileinfo: fileinfo{
+				name:    name,
+				modTime: time.Now(),
+				mode:    0755 | os.ModeDir,
+			},
+		},
+	}
+}
+
+func (fs *customFileSystem) newUserNode(root inode, name, uuid string) inode {
 	return &projectnode{
 		uuid: uuid,
 		inode: &treenode{

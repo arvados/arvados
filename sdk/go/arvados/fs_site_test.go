@@ -16,7 +16,7 @@ var _ = check.Suite(&SiteFSSuite{})
 
 type SiteFSSuite struct {
 	client *Client
-	fs     FileSystem
+	fs     CustomFileSystem
 	kc     keepClient
 }
 

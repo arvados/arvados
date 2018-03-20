@@ -10,25 +10,31 @@ import (
 	"time"
 )
 
+type staleChecker struct {
+	mtx  sync.Mutex
+	last time.Time
+}
+
+func (sc *staleChecker) DoIfStale(fn func(), staleFunc func(time.Time) bool) {
+	sc.mtx.Lock()
+	defer sc.mtx.Unlock()
+	if !staleFunc(sc.last) {
+		return
+	}
+	sc.last = time.Now()
+	fn()
+}
+
 // projectnode exposes an Arvados project as a filesystem directory.
 type projectnode struct {
 	inode
+	staleChecker
 	uuid string
 	err  error
-
-	loadLock  sync.Mutex
-	loadStart time.Time
 }
 
 func (pn *projectnode) load() {
-	fs := pn.FS().(*siteFileSystem)
-
-	pn.loadLock.Lock()
-	defer pn.loadLock.Unlock()
-	if !fs.Stale(pn.loadStart) {
-		return
-	}
-	pn.loadStart = time.Now()
+	fs := pn.FS().(*customFileSystem)
 
 	if pn.uuid == "" {
 		var resp User
@@ -89,7 +95,7 @@ func (pn *projectnode) load() {
 }
 
 func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
-	pn.load()
+	pn.staleChecker.DoIfStale(pn.load, pn.FS().(*customFileSystem).Stale)
 	if pn.err != nil {
 		return nil, pn.err
 	}
@@ -97,7 +103,7 @@ func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
 }
 
 func (pn *projectnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	pn.load()
+	pn.staleChecker.DoIfStale(pn.load, pn.FS().(*customFileSystem).Stale)
 	if pn.err != nil {
 		return nil, pn.err
 	}

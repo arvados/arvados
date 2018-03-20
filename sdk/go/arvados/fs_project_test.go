@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -38,8 +39,17 @@ func (sc *spyingClient) RequestAndDecode(dst interface{}, method, path string, b
 	return sc.Client.RequestAndDecode(dst, method, path, body, params)
 }
 
-func (s *SiteFSSuite) TestHomeProject(c *check.C) {
-	f, err := s.fs.Open("/home")
+func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {
+	s.fs.MountProject("home", "")
+	s.testHomeProject(c, "/home")
+}
+
+func (s *SiteFSSuite) TestUsersDir(c *check.C) {
+	s.testHomeProject(c, "/users/active")
+}
+
+func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
+	f, err := s.fs.Open(path)
 	c.Assert(err, check.IsNil)
 	fis, err := f.Readdir(-1)
 	c.Check(len(fis), check.Not(check.Equals), 0)
@@ -53,23 +63,24 @@ func (s *SiteFSSuite) TestHomeProject(c *check.C) {
 	}
 	c.Check(ok, check.Equals, true)
 
-	f, err = s.fs.Open("/home/A Project/..")
+	f, err = s.fs.Open(path + "/A Project/..")
 	c.Assert(err, check.IsNil)
 	fi, err := f.Stat()
 	c.Check(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
-	c.Check(fi.Name(), check.Equals, "home")
+	_, basename := filepath.Split(path)
+	c.Check(fi.Name(), check.Equals, basename)
 
-	f, err = s.fs.Open("/home/A Project/A Subproject")
+	f, err = s.fs.Open(path + "/A Project/A Subproject")
 	c.Check(err, check.IsNil)
 	fi, err = f.Stat()
 	c.Check(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
 
 	for _, nx := range []string{
-		"/home/Unrestricted public data",
-		"/home/Unrestricted public data/does not exist",
-		"/home/A Project/does not exist",
+		path + "/Unrestricted public data",
+		path + "/Unrestricted public data/does not exist",
+		path + "/A Project/does not exist",
 	} {
 		c.Log(nx)
 		f, err = s.fs.Open(nx)
@@ -79,6 +90,8 @@ func (s *SiteFSSuite) TestHomeProject(c *check.C) {
 }
 
 func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
+	s.fs.MountProject("home", "")
+
 	project, err := s.fs.OpenFile("/home/A Project", 0, 0)
 	c.Check(err, check.IsNil)
 

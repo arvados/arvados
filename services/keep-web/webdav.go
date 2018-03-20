@@ -36,7 +36,7 @@ var (
 // existence automatically so sequences like "mkcol foo; put foo/bar"
 // work as expected.
 type webdavFS struct {
-	collfs  arvados.CollectionFileSystem
+	collfs  arvados.FileSystem
 	writing bool
 	// webdav PROPFIND reads the first few bytes of each file
 	// whose filename extension isn't recognized, which is

@@ -236,7 +236,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(r.URL.Path[1:], "/")
 
 	var stripParts int
-	var targetID string
+	var collectionID string
 	var tokens []string
 	var reqTokens []string
 	var pathToken bool
@@ -250,7 +250,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		attachment = true
 	}
 
-	if targetID = parseCollectionIDFromDNSName(r.Host); targetID != "" {
+	if collectionID = parseCollectionIDFromDNSName(r.Host); collectionID != "" {
 		// http://ID.collections.example/PATH...
 		credentialsOK = true
 	} else if r.URL.Path == "/status.json" {
@@ -258,26 +258,21 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	} else if len(pathParts) >= 1 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID[/PATH...]
-		targetID = parseCollectionIDFromURL(pathParts[0][2:])
+		collectionID = parseCollectionIDFromURL(pathParts[0][2:])
 		stripParts = 1
 	} else if len(pathParts) >= 2 && pathParts[0] == "collections" {
 		if len(pathParts) >= 4 && pathParts[1] == "download" {
 			// /collections/download/ID/TOKEN/PATH...
-			targetID = parseCollectionIDFromURL(pathParts[2])
+			collectionID = parseCollectionIDFromURL(pathParts[2])
 			tokens = []string{pathParts[3]}
 			stripParts = 4
 			pathToken = true
 		} else {
 			// /collections/ID/PATH...
-			targetID = parseCollectionIDFromURL(pathParts[1])
+			collectionID = parseCollectionIDFromURL(pathParts[1])
 			tokens = h.Config.AnonymousTokens
 			stripParts = 2
 		}
-	}
-
-	if targetID == "" {
-		statusCode = http.StatusNotFound
-		return
 	}
 
 	formToken := r.FormValue("api_token")
@@ -347,7 +342,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	tokenResult := make(map[string]int)
 	for _, arv.ApiToken = range tokens {
 		var err error
-		collection, err = h.Config.Cache.Get(arv, targetID, forceReload)
+		collection, err = h.Config.Cache.Get(arv, collectionID, forceReload)
 		if err == nil {
 			// Success
 			break
@@ -414,14 +409,21 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
 	}
-	fs, err := collection.FileSystem(client, kc)
+
+	var fs arvados.FileSystem
+	if collectionID == "" {
+		fs = client.SiteFileSystem(kc)
+	} else {
+		fs, err = collection.FileSystem(client, kc)
+	}
 	if err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
 
-	targetIsPDH := arvadosclient.PDHMatch(targetID)
-	if targetIsPDH && writeMethod[r.Method] {
+	writefs, writeOK := fs.(arvados.CollectionFileSystem)
+	targetIsPDH := arvadosclient.PDHMatch(collectionID)
+	if (targetIsPDH || !writeOK) && writeMethod[r.Method] {
 		statusCode, statusText = http.StatusMethodNotAllowed, errReadOnly.Error()
 		return
 	}
@@ -435,7 +437,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w = &updateOnSuccess{
 				ResponseWriter: w,
 				update: func() error {
-					return h.Config.Cache.Update(client, *collection, fs)
+					return h.Config.Cache.Update(client, *collection, writefs)
 				}}
 		}
 		h := webdav.Handler{
