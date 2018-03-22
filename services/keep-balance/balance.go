@@ -430,9 +430,10 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 		slots[i].srv = srv
 	}
 	for ri := range blk.Replicas {
-		// TODO: when multiple copies are on one server, use
-		// the oldest one that doesn't have a timestamp
-		// collision with other replicas.
+		// TODO: when multiple copies are on one server,
+		// prefer one on a readonly mount, or the oldest one
+		// that doesn't have a timestamp collision with other
+		// replicas.
 		repl := &blk.Replicas[ri]
 		srv := repl.KeepService
 		slotIdx := rendezvousOrder[srv]
@@ -475,6 +476,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 			// distinct from all of the better replicas'
 			// Mtimes.
 			if !srv.ReadOnly &&
+				!repl.KeepMount.ReadOnly &&
 				repl.Mtime < bal.MinMtime &&
 				len(uniqueBestRepl) >= blk.Desired &&
 				!uniqueBestRepl[repl.Mtime] {
