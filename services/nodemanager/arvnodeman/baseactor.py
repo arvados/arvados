@@ -14,6 +14,8 @@ import traceback
 
 import pykka
 
+from .status import tracker
+
 class _TellCallableProxy(object):
     """Internal helper class for proxying callables."""
 
@@ -90,6 +92,7 @@ class BaseNodeManagerActor(pykka.ThreadingActor):
             exception_type is OSError and exception_value.errno == errno.ENOMEM):
             lg.critical("Unhandled exception is a fatal error, killing Node Manager")
             self._killfunc(os.getpid(), signal.SIGKILL)
+        tracker.counter_add('actor_exceptions')
 
     def ping(self):
         return True

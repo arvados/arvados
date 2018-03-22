@@ -26,6 +26,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
             return
         self._config = config
         self._tracker = tracker
+        self._tracker.update({'config_max_nodes': config.getint('Daemon', 'max_nodes')})
         super(Server, self).__init__(
             (config.get('Manage', 'address'), port), Handler)
         self._thread = threading.Thread(target=self.serve_forever)
@@ -75,7 +76,11 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
 class Tracker(object):
     def __init__(self):
         self._mtx = threading.Lock()
-        self._latest = {}
+        self._latest = {
+            'cloud_errors': 0,
+            'boot_failures': 0,
+            'actor_exceptions': 0
+        }
         self._version = {'Version' : __version__}
 
     def get_json(self):
@@ -90,5 +95,9 @@ class Tracker(object):
         with self._mtx:
             self._latest.update(updates)
 
+    def counter_add(self, counter, value=1):
+        with self._mtx:
+            self._latest.setdefault(counter, 0)
+            self._latest[counter] += value
 
 tracker = Tracker()

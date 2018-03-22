@@ -57,6 +57,20 @@ class StatusServerUpdates(unittest.TestCase):
                 self.assertEqual(n, resp['nodes_'+str(n)])
             self.assertEqual(1, resp['nodes_1'])
             self.assertIn('Version', resp)
+            self.assertIn('config_max_nodes', resp)
+
+    def test_counters(self):
+        with TestServer() as srv:
+            resp = srv.get_status()
+            # Test initial values
+            for counter in ['cloud_errors', 'boot_failures', 'actor_exceptions']:
+                self.assertIn(counter, resp)
+                self.assertEqual(0, resp[counter])
+            # Test counter increment
+            for count in range(1, 3):
+                status.tracker.counter_add('a_counter')
+                resp = srv.get_status()
+                self.assertEqual(count, resp['a_counter'])
 
 
 class StatusServerDisabled(unittest.TestCase):
