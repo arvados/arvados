@@ -288,13 +288,13 @@ test_package_presence() {
         fi
       done
     else
-      centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64"
+      centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
 
       repo_pkg_list=$(curl -o - ${centos_repo})
       echo ${repo_pkg_list} |grep -q ${pkgname}
       if [ $? -eq 0 ]; then
         echo "Package $complete_pkgname exists, not rebuilding!"
-        curl -o ./${pkgname} ${centos_repo}/${pkgname}
+        curl -o ./${pkgname} ${centos_repo}${pkgname}
         return 1
       else
         echo "Package $complete_pkgname not found, building"
