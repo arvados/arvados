@@ -429,11 +429,21 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
 		rendezvousOrder[srv] = i
 		slots[i].srv = srv
 	}
+
+	// Sort readonly replicas ahead of trashable ones. This way,
+	// if a single service has excessive replicas, the ones we
+	// encounter last (and therefore choose to delete) will be on
+	// the writable volumes, where possible.
+	//
+	// TODO: within the trashable set, prefer the oldest replica
+	// that doesn't have a timestamp collision with others.
+	sort.Slice(blk.Replicas, func(i, j int) bool {
+		mnt := blk.Replicas[i].KeepMount
+		return mnt.ReadOnly || mnt.KeepService.ReadOnly
+	})
+
+	// Assign existing replicas to slots.
 	for ri := range blk.Replicas {
-		// TODO: when multiple copies are on one server,
-		// prefer one on a readonly mount, or the oldest one
-		// that doesn't have a timestamp collision with other
-		// replicas.
 		repl := &blk.Replicas[ri]
 		srv := repl.KeepService
 		slotIdx := rendezvousOrder[srv]
