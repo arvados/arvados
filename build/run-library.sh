@@ -280,7 +280,7 @@ test_package_presence() {
         echo ${repo_pkg_list} |grep -q ${pkgname}
         if [ $? -eq 0 ]; then
           echo "Package $complete_pkgname exists, not rebuilding!"
-          curl -o ./${pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${pkgname}
+          curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
           return 1
         else
           echo "Package $complete_pkgname not found, building"
@@ -294,7 +294,7 @@ test_package_presence() {
       echo ${repo_pkg_list} |grep -q ${pkgname}
       if [ $? -eq 0 ]; then
         echo "Package $complete_pkgname exists, not rebuilding!"
-        curl -o ./${pkgname} ${centos_repo}${pkgname}
+        curl -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
         return 1
       else
         echo "Package $complete_pkgname not found, building"
