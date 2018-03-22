@@ -91,6 +91,10 @@ class Tracker(object):
         with self._mtx:
             return self._latest.keys()
 
+    def get(self, key):
+        with self._mtx:
+            return self._latest.get(key)
+
     def update(self, updates):
         with self._mtx:
             self._latest.update(updates)

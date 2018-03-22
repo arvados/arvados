@@ -17,6 +17,7 @@ import pykka
 from . import testutil
 
 import arvnodeman.baseactor
+import arvnodeman.status as status
 
 class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
     def __init__(self, e, killfunc=None):
@@ -45,11 +46,13 @@ class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
             self.assertTrue(kill_mock.called)
 
     def test_nonfatal_error(self):
+        status.tracker.update({'actor_exceptions': 0})
         kill_mock = mock.Mock('os.kill')
         act = BogusActor.start(OSError(errno.ENOENT, ""), killfunc=kill_mock).tell_proxy()
         act.doStuff()
         act.actor_ref.stop(block=True)
         self.assertFalse(kill_mock.called)
+        self.assertEqual(1, status.tracker.get('actor_exceptions'))
 
 class WatchdogActorTest(testutil.ActorTestMixin, unittest.TestCase):
 
