@@ -80,9 +80,9 @@ SPDX-License-Identifier: AGPL-3.0 %>
             <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if pj[:output_uuid] %>
-                <%= link_to_arvados_object_if_readable(pj[:output_uuid], 'Output data not available', friendly_name: true) %>
+                <%= link_to_arvados_object_if_readable(pj[:output_uuid], "#{pj[:output_uuid]} (Unavailable)", friendly_name: true) %>
               <% elsif current_job[:output] %>
-                <%= link_to_arvados_object_if_readable(current_job[:output], 'Output data not available', link_text: "Output of #{pj[:name]}") %>
+                <%= link_to_arvados_object_if_readable(current_job[:output], "#{current_job[:output]} (Unavailable)", link_text: "Output of #{pj[:name]}") %>
               <% else %>
                 No output.
               <% end %>
