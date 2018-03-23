@@ -17,4 +17,4 @@ class VersionInfoFromGit():
         gitinfo = subprocess.check_output(
             ['git', 'log', '--first-parent', '--max-count=1',
              '--format=format:%ct', '.']).strip()
-        return time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo)))
+        return str(time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo))))
