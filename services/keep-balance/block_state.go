@@ -14,7 +14,7 @@ import (
 // Azure storage container, etc.) as reported in a keepstore index
 // response.
 type Replica struct {
-	*KeepService
+	*KeepMount
 	Mtime int64
 }
 
@@ -73,16 +73,16 @@ func (bsm *BlockStateMap) Apply(f func(arvados.SizedDigest, *BlockState)) {
 	}
 }
 
-// AddReplicas updates the map to indicate srv has a replica of each
-// block in idx.
-func (bsm *BlockStateMap) AddReplicas(srv *KeepService, idx []arvados.KeepServiceIndexEntry) {
+// AddReplicas updates the map to indicate that mnt has a replica of
+// each block in idx.
+func (bsm *BlockStateMap) AddReplicas(mnt *KeepMount, idx []arvados.KeepServiceIndexEntry) {
 	bsm.mutex.Lock()
 	defer bsm.mutex.Unlock()
 
 	for _, ent := range idx {
 		bsm.get(ent.SizedDigest).addReplica(Replica{
-			KeepService: srv,
-			Mtime:       ent.Mtime,
+			KeepMount: mnt,
+			Mtime:     ent.Mtime,
 		})
 	}
 }

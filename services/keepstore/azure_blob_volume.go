@@ -452,7 +452,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 		return os.ErrNotExist
 	}
 
-	metadata["touch"] = fmt.Sprintf("%d", time.Now())
+	metadata["touch"] = fmt.Sprintf("%d", time.Now().Unix())
 	return v.container.SetBlobMetadata(loc, metadata, nil)
 }
 

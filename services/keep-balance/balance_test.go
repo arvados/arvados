@@ -76,6 +76,7 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 				UUID: fmt.Sprintf("zzzzz-bi6l4-%015x", i),
 			},
 		}
+		srv.mounts = []*KeepMount{{KeepMount: arvados.KeepMount{UUID: fmt.Sprintf("mount-%015x", i)}, KeepService: srv}}
 		bal.srvs[i] = srv
 		bal.KeepServices[srv.UUID] = srv
 	}
@@ -147,6 +148,47 @@ func (bal *balancerSuite) TestFixUnbalanced(c *check.C) {
 		current:     slots{2, 5, 7},
 		shouldPull:  slots{0, 1},
 		shouldTrash: slots{7}})
+}
+
+func (bal *balancerSuite) TestMultipleReplicasPerService(c *check.C) {
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{0, 0},
+		shouldPull: slots{1}})
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{2, 2},
+		shouldPull: slots{0, 1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{0, 0, 1},
+		shouldTrash: slots{0}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 0},
+		shouldTrash: slots{1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 0, 1, 0, 2},
+		shouldTrash: slots{0, 1, 2}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 1, 0, 2},
+		shouldTrash: slots{1, 1, 2}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 2},
+		shouldPull:  slots{0},
+		shouldTrash: slots{1}})
+	bal.try(c, tester{
+		desired:     2,
+		current:     slots{1, 1, 0},
+		timestamps:  []int64{12345678, 12345678, 12345679},
+		shouldTrash: nil})
+	bal.try(c, tester{
+		desired:    2,
+		current:    slots{1, 1},
+		shouldPull: slots{0}})
 }
 
 func (bal *balancerSuite) TestIncreaseReplTimestampCollision(c *check.C) {
@@ -231,8 +273,8 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 }
 
 // srvList returns the KeepServices, sorted in rendezvous order and
-// then selected by idx. For example, srvList(3, 0, 1, 4) returns the
-// the first-, second-, and fifth-best servers for storing
+// then selected by idx. For example, srvList(3, slots{0, 1, 4})
+// returns the the first-, second-, and fifth-best servers for storing
 // bal.knownBlkid(3).
 func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepService) {
 	for _, i := range order {
@@ -246,7 +288,7 @@ func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepSe
 func (bal *balancerSuite) replList(knownBlockID int, order slots) (repls []Replica) {
 	mtime := time.Now().UnixNano() - (bal.signatureTTL+86400)*1e9
 	for _, srv := range bal.srvList(knownBlockID, order) {
-		repls = append(repls, Replica{srv, mtime})
+		repls = append(repls, Replica{srv.mounts[0], mtime})
 		mtime++
 	}
 	return

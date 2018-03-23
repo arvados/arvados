@@ -514,7 +514,7 @@ type PullRequest struct {
 	Servers []string `json:"servers"`
 
 	// Destination mount, or "" for "anywhere"
-	MountUUID string
+	MountUUID string `json:"mount_uuid"`
 }
 
 // PullHandler processes "PUT /pull" requests for the data manager.
@@ -553,7 +553,7 @@ type TrashRequest struct {
 	BlockMtime int64  `json:"block_mtime"`
 
 	// Target mount, or "" for "everywhere"
-	MountUUID string
+	MountUUID string `json:"mount_uuid"`
 }
 
 // TrashHandler processes /trash requests.
