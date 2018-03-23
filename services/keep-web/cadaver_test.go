@@ -27,7 +27,7 @@ func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
 		w := "/c=" + newCollection.UUID + "/"
 		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
 		return r, w, pdh
-	})
+	}, nil)
 }
 
 func (s *IntegrationSuite) TestCadaverPathAuth(c *check.C) {
@@ -36,19 +36,23 @@ func (s *IntegrationSuite) TestCadaverPathAuth(c *check.C) {
 		w := "/c=" + newCollection.UUID + "/t=" + arvadostest.ActiveToken + "/"
 		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arvadostest.ActiveToken + "/"
 		return r, w, pdh
-	})
+	}, nil)
 }
 
 func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
+	rpath := "/users/active/foo_file_in_dir/"
 	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
-		r := "/users/active/foo_file_in_dir/"
-		w := "/users/active/" + newCollection.Name
+		wpath := "/users/active/" + newCollection.Name
 		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
-		return r, w, pdh
+		return rpath, wpath, pdh
+	}, func(path string) bool {
+		// Skip tests that rely on writes, because /users/
+		// tree is read-only.
+		return !strings.HasPrefix(path, rpath) || strings.HasPrefix(path, rpath+"_/")
 	})
 }
 
-func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string)) {
+func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
 	tempdir, err := ioutil.TempDir("", "keep-web-test-")
@@ -239,6 +243,10 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)
+		if skip != nil && skip(trial.path) {
+			c.Log("(skip)")
+			continue
+		}
 
 		os.Remove(checkfile.Name())
 

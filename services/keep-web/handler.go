@@ -226,13 +226,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
 	}
 
-	arv := h.clientPool.Get()
-	if arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+h.clientPool.Err().Error()
-		return
-	}
-	defer h.clientPool.Put(arv)
-
 	pathParts := strings.Split(r.URL.Path[1:], "/")
 
 	var stripParts int
@@ -241,6 +234,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var reqTokens []string
 	var pathToken bool
 	var attachment bool
+	var useSiteFS bool
 	credentialsOK := h.Config.TrustAllContent
 
 	if r.Host != "" && r.Host == h.Config.AttachmentOnlyHost {
@@ -256,6 +250,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if r.URL.Path == "/status.json" {
 		h.serveStatus(w, r)
 		return
+	} else if len(pathParts) >= 1 && pathParts[0] == "users" {
+		useSiteFS = true
 	} else if len(pathParts) >= 1 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID[/PATH...]
 		collectionID = parseCollectionIDFromURL(pathParts[0][2:])
@@ -273,6 +269,16 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			tokens = h.Config.AnonymousTokens
 			stripParts = 2
 		}
+	}
+
+	if collectionID == "" && !useSiteFS {
+		statusCode = http.StatusNotFound
+		return
+	}
+
+	forceReload := false
+	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
+		forceReload = true
 	}
 
 	formToken := r.FormValue("api_token")
@@ -322,6 +328,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		tokens = append(reqTokens, h.Config.AnonymousTokens...)
 	}
 
+	if useSiteFS {
+		h.serveSiteFS(w, r, tokens)
+		return
+	}
+
 	if len(targetPath) > 0 && targetPath[0] == "_" {
 		// If a collection has a directory called "t=foo" or
 		// "_", it can be served at
@@ -333,10 +344,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		stripParts++
 	}
 
-	forceReload := false
-	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
-		forceReload = true
+	arv := h.clientPool.Get()
+	if arv == nil {
+		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+h.clientPool.Err().Error()
+		return
 	}
+	defer h.clientPool.Put(arv)
 
 	var collection *arvados.Collection
 	tokenResult := make(map[string]int)
@@ -410,12 +423,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		Insecure:  arv.ApiInsecure,
 	}
 
-	var fs arvados.FileSystem
-	if collectionID == "" {
-		fs = client.SiteFileSystem(kc)
-	} else {
-		fs, err = collection.FileSystem(client, kc)
-	}
+	fs, err := collection.FileSystem(client, kc)
 	if err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
@@ -475,7 +483,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// "dirname/fnm".
 		h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 	} else if stat.IsDir() {
-		h.serveDirectory(w, r, collection.Name, fs, openPath, stripParts)
+		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if r.Header.Get("Range") == "" && int64(w.WroteBodyBytes()) != stat.Size() {
@@ -491,10 +499,69 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string) {
+	if len(tokens) == 0 {
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	if writeMethod[r.Method] {
+		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
+		return
+	}
+	arv := h.clientPool.Get()
+	if arv == nil {
+		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
+		return
+	}
+	defer h.clientPool.Put(arv)
+	arv.ApiToken = tokens[0]
+
+	kc, err := keepclient.MakeKeepClient(arv)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	client := &arvados.Client{
+		APIHost:   arv.ApiServer,
+		AuthToken: arv.ApiToken,
+		Insecure:  arv.ApiInsecure,
+	}
+	fs := client.SiteFileSystem(kc)
+	if f, err := fs.Open(r.URL.Path); os.IsNotExist(err) {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if fi, err := f.Stat(); err == nil && fi.IsDir() && r.Method == "GET" {
+
+		h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
+		return
+	} else {
+		f.Close()
+	}
+	wh := webdav.Handler{
+		Prefix: "/",
+		FileSystem: &webdavFS{
+			collfs:        fs,
+			writing:       writeMethod[r.Method],
+			alwaysReadEOF: r.Method == "PROPFIND",
+		},
+		LockSystem: h.webdavLS,
+		Logger: func(_ *http.Request, err error) {
+			if err != nil {
+				log.Printf("error from webdav handler: %q", err)
+			}
+		},
+	}
+	wh.ServeHTTP(w, r)
+}
+
 var dirListingTemplate = `<!DOCTYPE HTML>
 <HTML><HEAD>
   <META name="robots" content="NOINDEX">
-  <TITLE>{{ .Collection.Name }}</TITLE>
+  <TITLE>{{ .CollectionName }}</TITLE>
   <STYLE type="text/css">
     body {
       margin: 1.5em;
@@ -518,19 +585,26 @@ var dirListingTemplate = `<!DOCTYPE HTML>
   </STYLE>
 </HEAD>
 <BODY>
+
 <H1>{{ .CollectionName }}</H1>
 
 <P>This collection of data files is being shared with you through
 Arvados.  You can download individual files listed below.  To download
-the entire collection with wget, try:</P>
+the entire directory tree with wget, try:</P>
 
-<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL }}</PRE>
+<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL.Path }}</PRE>
 
 <H2>File Listing</H2>
 
 {{if .Files}}
 <UL>
-{{range .Files}}  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>{{end}}
+{{range .Files}}
+{{if .IsDir }}
+  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{.Name}}/">{{.Name}}/</A></LI>
+{{else}}
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>
+{{end}}
+{{end}}
 </UL>
 {{else}}
 <P>(No files; this collection is empty.)</P>
@@ -550,11 +624,12 @@ the entire collection with wget, try:</P>
 `
 
 type fileListEnt struct {
-	Name string
-	Size int64
+	Name  string
+	Size  int64
+	IsDir bool
 }
 
-func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, stripParts int) {
+func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, recurse bool) {
 	var files []fileListEnt
 	var walk func(string) error
 	if !strings.HasSuffix(base, "/") {
@@ -574,15 +649,16 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 			return err
 		}
 		for _, ent := range ents {
-			if ent.IsDir() {
+			if recurse && ent.IsDir() {
 				err = walk(path + ent.Name() + "/")
 				if err != nil {
 					return err
 				}
 			} else {
 				files = append(files, fileListEnt{
-					Name: path + ent.Name(),
-					Size: ent.Size(),
+					Name:  path + ent.Name(),
+					Size:  ent.Size(),
+					IsDir: ent.IsDir(),
 				})
 			}
 		}
@@ -611,7 +687,7 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 		"CollectionName": collectionName,
 		"Files":          files,
 		"Request":        r,
-		"StripParts":     stripParts,
+		"StripParts":     strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
 	})
 }
 

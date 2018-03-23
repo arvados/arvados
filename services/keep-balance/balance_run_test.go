@@ -5,7 +5,6 @@
 package main
 
 import (
-	_ "encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"

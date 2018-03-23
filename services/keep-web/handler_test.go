@@ -508,7 +508,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			cutDirs: 1,
 		},
 		{
 			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
@@ -517,10 +517,28 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 2,
 		},
 		{
-			uri:     "download.example.com/users/active/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			uri:     "download.example.com/users/active/foo_file_in_dir/",
 			header:  authHeader,
-			expect:  []string{"dir1/foo", "dir1/bar"},
+			expect:  []string{"dir1/"},
 			cutDirs: 3,
+		},
+		{
+			uri:     "download.example.com/users/active/foo_file_in_dir/dir1/",
+			header:  authHeader,
+			expect:  []string{"bar"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "download.example.com/users/",
+			header:  authHeader,
+			expect:  []string{"active/"},
+			cutDirs: 1,
+		},
+		{
+			uri:     "download.example.com/users/active/",
+			header:  authHeader,
+			expect:  []string{"foo_file_in_dir/"},
+			cutDirs: 2,
 		},
 		{
 			uri:     "collections.example.com/collections/download/" + arvadostest.FooAndBarFilesInDirUUID + "/" + arvadostest.ActiveToken + "/",
@@ -550,19 +568,19 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 1,
+			cutDirs: 2,
 		},
 		{
 			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/_/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 2,
+			cutDirs: 3,
 		},
 		{
 			uri:     arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			cutDirs: 1,
 		},
 		{
 			uri:    "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/theperthcountyconspiracydoesnotexist/",
