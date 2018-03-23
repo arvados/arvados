@@ -50,7 +50,7 @@ version_from_git() {
         return
     fi
 
-    local git_ts git_hash prefix
+    local git_ts git_hash
     if [[ -n "$1" ]] ; then
         prefix="$1"
     else
