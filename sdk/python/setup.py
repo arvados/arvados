@@ -14,16 +14,12 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 tagger = egg_info_cmd.egg_info
 version = os.environ.get("ARVADOS_BUILDING_VERSION")
-
-tagger = gittaggers.EggInfoFromGit
 if not version:
     try:
         import gittaggers
-        vtag = gittaggers.EggInfoFromGit
-        version = vtag.git_latest_tag()+vtag.git_timestamp_tag()
+        tagger = gittaggers.EggInfoFromGit
     except ImportError:
         pass
-
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
