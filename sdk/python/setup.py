@@ -18,7 +18,7 @@ if not version:
     try:
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
-        version = str(vtag.git_latest_tag() + vtag.git_timestamp_tag())
+        version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
     except ImportError:
         pass
 

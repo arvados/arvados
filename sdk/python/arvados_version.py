@@ -11,7 +11,7 @@ class VersionInfoFromGit():
     def git_latest_tag(self):
         gitinfo = subprocess.check_output(
             ['git', 'describe', '--abbrev=0']).strip()
-        return str(gitinfo)
+        return str(gitinfo.decode('utf-8'))
 
     def git_timestamp_tag(self):
         gitinfo = subprocess.check_output(
