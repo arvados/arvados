@@ -9,6 +9,7 @@ if [ "%{name}" != "%\{name\}" ]; then
     # Red Hat ("%{...}" is interpolated at package build time)
     pkg="%{name}"
     pkgtype=rpm
+    prefix="${RPM_INSTALL_PREFIX}"
 else
     # Debian
     script="$(basename "${0}")"

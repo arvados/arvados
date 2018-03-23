@@ -13,12 +13,12 @@ SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
 tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
+
 if not version:
-    version = "0.1"
     try:
         import gittaggers
-        tagger = gittaggers.EggInfoFromGit
+        vtag = gittaggers.EggInfoFromGit
+        version = vtag.git_latest_tag()+vtag.git_timestamp_tag()
     except ImportError:
         pass
 
