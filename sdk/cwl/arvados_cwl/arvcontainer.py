@@ -120,10 +120,12 @@ class ArvadosContainer(object):
                 generatemapper = NoFollowPathMapper([self.generatefiles], "", "",
                                                     separateDirs=False)
 
-                logger.debug("generatemapper is %s", generatemapper._pathmap)
+                sorteditems = sorted(generatemapper.items(), None, key=lambda n: n[1].target)
+
+                logger.debug("generatemapper is %s", sorteditems)
 
                 with Perf(metrics, "createfiles %s" % self.name):
-                    for f, p in generatemapper.items():
+                    for f, p in sorteditems:
                         if not p.target:
                             pass
                         elif p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
@@ -155,8 +157,10 @@ class ArvadosContainer(object):
                 with Perf(metrics, "generatefiles.save_new %s" % self.name):
                     vwd.save_new()
 
-                for f, p in generatemapper.items():
-                    if not p.target or self.arvrunner.secret_store.has_secret(p.resolved):
+                prev = None
+                for f, p in sorteditems:
+                    if (not p.target or self.arvrunner.secret_store.has_secret(p.resolved) or
+                        (prev is not None and p.target.startswith(prev))):
                         continue
                     mountpoint = "%s/%s" % (self.outdir, p.target)
                     mounts[mountpoint] = {"kind": "collection",
@@ -164,6 +168,7 @@ class ArvadosContainer(object):
                                           "path": p.target}
                     if p.type.startswith("Writable"):
                         mounts[mountpoint]["writable"] = True
+                    prev = p.target + "/"
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
