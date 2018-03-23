@@ -277,7 +277,7 @@ test_package_presence() {
         fi
 
         repo_pkg_list=$(curl -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
-        echo ${repo_pkg_list} |grep -q ${pkgname}
+        echo ${repo_pkg_list} |grep -q ${complete_pkgname}
         if [ $? -eq 0 ]; then
           echo "Package $complete_pkgname exists, not rebuilding!"
           curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
