@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                       <%= render_localized_date(val) %>
                     <% elsif k == :outputs and val.any? %>
                       <% if val.size == 1 %>
-                        <%= link_to_arvados_object_if_readable(val[0], 'Output data not available', friendly_name: true) %>
+                        <%= link_to_arvados_object_if_readable(val[0], "#{val[0]} (Unavailable)", friendly_name: true) %>
                       <% else %>
                         <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
                       <% end %>
