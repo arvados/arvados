@@ -21,6 +21,8 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--force-test
+    Test even if there is no new untested package
 --build-version <string>
     Version to build (default:
     \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
@@ -49,7 +51,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,only-build:,build-version: \
+    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -73,6 +75,9 @@ while [ $# -gt 0 ]; do
         --only-test)
             test_packages=1
             packages="$2"; shift
+            ;;
+        --force-test)
+            FORCE_TEST=true
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
@@ -204,6 +209,14 @@ if [[ -n "$test_packages" ]]; then
         if [[ -n "$ONLY_BUILD" ]] && [[ "$p" != "$ONLY_BUILD" ]]; then
             continue
         fi
+        if [[ -e "${WORKSPACE}/packages/.last_test_${TARGET}" ]] && [[ -z "$FORCE_TEST" ]]; then
+          MATCH=`find ${WORKSPACE}/packages/ -newer ${WORKSPACE}/packages/.last_test_${TARGET} -regex .*${TARGET}/$p.*`
+          if [[ "$MATCH" == "" ]]; then
+            # No new package has been built that needs testing
+            echo "Skipping $p test because no new package was built since the last test."
+            continue
+          fi
+        fi
         echo
         echo "START: $p test on $IMAGE" >&2
         if docker run --rm \
@@ -220,6 +233,8 @@ if [[ -n "$test_packages" ]]; then
             echo "ERROR: $p test on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
         fi
     done
+
+    touch ${WORKSPACE}/packages/.last_test_${TARGET}
 else
     echo
     echo "START: build packages on $IMAGE" >&2
