@@ -17,11 +17,13 @@ generateAPI <- function()
 
     doc <- generateMethodsDocumentation(methodResources, resourceNames)
     arvadosAPIHeader <- generateAPIClassHeader()
+    arvadosProjectMethods <- generateProjectMethods()
     arvadosClassMethods <- generateClassContent(methodResources, resourceNames)
     arvadosAPIFooter <- generateAPIClassFooter()
 
     arvadosClass <- c(doc,
                       arvadosAPIHeader,
+                      arvadosProjectMethods,
                       arvadosClassMethods,
                       arvadosAPIFooter)
 
@@ -64,6 +66,42 @@ generateAPIClassHeader <- function()
       "\t\t\t                                numRetries)",
       "",
       "\t\t},\n")
+}
+
+generateProjectMethods <- function()
+{
+    c("\t\tproject.get = function(uuid)",
+      "\t\t{",
+      "\t\t\tself$groups.get(uuid)",
+      "\t\t},",
+      "",
+      "\t\tproject.create = function(group, ensure_unique_name = \"false\")",
+      "\t\t{",
+      "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
+      "\t\t\tself$groups.create(group, ensure_unique_name)",
+      "\t\t},",
+      "",
+      "\t\tproject.update = function(group, uuid)",
+      "\t\t{",
+      "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
+      "\t\t\tself$groups.update(group, uuid)",
+      "\t\t},",
+      "",
+      "\t\tproject.list = function(filters = NULL, where = NULL,",
+      "\t\t\torder = NULL, select = NULL, distinct = NULL,",
+      "\t\t\tlimit = \"100\", offset = \"0\", count = \"exact\",",
+      "\t\t\tinclude_trash = NULL)",
+      "\t\t{",
+      "\t\t\tfilters[[length(filters) + 1]] <- list(\"group_class\", \"=\", \"project\")",
+      "\t\t\tself$groups.list(filters, where, order, select, distinct,",
+      "\t\t\t                 limit, offset, count, include_trash)",
+      "\t\t},",
+      "",
+      "\t\tproject.delete = function(uuid)",
+      "\t\t{",
+      "\t\t\tself$groups.delete(uuid)",
+      "\t\t},",
+      "")
 }
 
 generateClassContent <- function(methodResources, resourceNames)
@@ -118,8 +156,6 @@ createMethod <- function(name, methodMetaData)
       "\t\t},\n")
 }
 
-#TODO: Make sure that arguments that are required always go first.
-#      This is not the case if request$required is false.
 getMethodArguments <- function(methodMetaData)
 {
     request <- methodMetaData$request
@@ -181,7 +217,7 @@ getMethodBody <- function(methodMetaData)
     request          <- getRequest(methodMetaData)
     response         <- getResponse(methodMetaData)
     errorCheck       <- getErrorCheckingCode()
-    returnStatement  <- getReturnObjectValidationCode()
+    returnStatement  <- getReturnObject()
 
     body <- c(url,
               headers,
@@ -265,7 +301,7 @@ getErrorCheckingCode <- function()
       "\tstop(resource$errors)")
 }
 
-getReturnObjectValidationCode <- function()
+getReturnObject <- function()
 {
     "resource"
 }
@@ -348,6 +384,8 @@ getMethodDescription <- function(methodMetaData)
 
 #NOTE: Utility functions:
 
+# This function is used to split very long lines of code into smaller chunks.
+# This is usually the case when we pass a lot of named argumets to a function.
 formatArgs <- function(prependAtStart, prependToEachSplit,
                        args, appendAtEnd, lineLength)
 {
