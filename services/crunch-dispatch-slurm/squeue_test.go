@@ -14,6 +14,36 @@ var _ = Suite(&SqueueSuite{})
 
 type SqueueSuite struct{}
 
+func (s *SqueueSuite) TestReleasePending(c *C) {
+	uuids := []string{
+		"zzzzz-dz642-fake0fake0fake0",
+		"zzzzz-dz642-fake1fake1fake1",
+		"zzzzz-dz642-fake2fake2fake2",
+	}
+	slurm := &slurmFake{
+		queue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 0 PENDING BadConstraints\n",
+	}
+	sqc := &SqueueChecker{
+		Slurm:  slurm,
+		Period: time.Hour,
+	}
+	sqc.startOnce.Do(sqc.start)
+	defer sqc.Stop()
+
+	done := make(chan struct{})
+	go func() {
+		for _, u := range uuids {
+			sqc.SetPriority(u, 1)
+		}
+		close(done)
+	}()
+	callUntilReady(sqc.check, done)
+
+	slurm.didRelease = nil
+	sqc.check()
+	c.Check(slurm.didRelease, DeepEquals, []string{uuids[2]})
+}
+
 func (s *SqueueSuite) TestReniceAll(c *C) {
 	uuids := []string{"zzzzz-dz642-fake0fake0fake0", "zzzzz-dz642-fake1fake1fake1", "zzzzz-dz642-fake2fake2fake2"}
 	for _, test := range []struct {
@@ -24,26 +54,32 @@ func (s *SqueueSuite) TestReniceAll(c *C) {
 	}{
 		{
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000000\n",
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1},
 			expect: [][]string{{uuids[0], "0"}},
 		},
 		{ // fake0 priority is too high
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
+			squeue: uuids[0] + " 10000 4294000777 PENDING Resources\n" + uuids[1] + " 10000 4294000444 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
 			expect: [][]string{{uuids[1], "0"}, {uuids[0], "334"}},
 		},
 		{ // specify spread
 			spread: 100,
-			squeue: uuids[0] + " 10000 4294000777\n" + uuids[1] + " 10000 4294000444\n",
+			squeue: uuids[0] + " 10000 4294000777 PENDING Resources\n" + uuids[1] + " 10000 4294000444 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 1, uuids[1]: 999},
 			expect: [][]string{{uuids[1], "0"}, {uuids[0], "433"}},
 		},
 		{ // ignore fake2 because SetPriority() not called
 			spread: 1,
-			squeue: uuids[0] + " 10000 4294000000\n" + uuids[1] + " 10000 4294000111\n" + uuids[2] + " 10000 4294000222\n",
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 4294000222 PENDING Resources\n",
 			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1},
+			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
+		},
+		{ // ignore fake2 because slurm priority=0
+			spread: 1,
+			squeue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 0 PENDING Resources\n",
+			want:   map[string]int64{uuids[0]: 999, uuids[1]: 1, uuids[2]: 997},
 			expect: [][]string{{uuids[0], "0"}, {uuids[1], "112"}},
 		},
 	} {
@@ -97,7 +133,7 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 	for {
 		select {
 		case <-tick.C:
-			slurm.queue = uuidGood + " 0 12345\n"
+			slurm.queue = uuidGood + " 0 12345 PENDING Resources\n"
 			sqc.check()
 
 			// Avoid immediately selecting this case again
@@ -114,6 +150,19 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 			c.Check(sqc.queue[uuidGood].wantPriority, Equals, int64(123))
 			c.Check(sqc.queue[uuidBad], IsNil)
 			return
+		}
+	}
+}
+
+func callUntilReady(fn func(), done <-chan struct{}) {
+	tick := time.NewTicker(time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-tick.C:
+			fn()
 		}
 	}
 }

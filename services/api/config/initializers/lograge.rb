@@ -15,6 +15,18 @@ Server::Application.configure do
     }
     exceptions = %w(controller action format id)
     params = event.payload[:params].except(*exceptions)
+
+    # Omit secret_mounts field if supplied in create/update request
+    # body.
+    [
+      ['container', 'secret_mounts'],
+      ['container_request', 'secret_mounts'],
+    ].each do |resource, field|
+      if params[resource].is_a? Hash
+        params[resource] = params[resource].except(field)
+      end
+    end
+
     params_s = SafeJSON.dump(params)
     if params_s.length > Rails.configuration.max_request_log_params_size
       payload[:params_truncated] = params_s[0..Rails.configuration.max_request_log_params_size] + "[...]"

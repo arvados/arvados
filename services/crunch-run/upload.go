@@ -191,6 +191,7 @@ func (m *CollectionWriter) Finish() error {
 		}
 		if stream.Block != nil {
 			stream.uploader <- stream.Block
+			stream.Block = nil
 		}
 		close(stream.uploader)
 		stream.uploader = nil

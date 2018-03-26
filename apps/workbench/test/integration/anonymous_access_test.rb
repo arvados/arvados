@@ -259,7 +259,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       if objects_readable
         assert_selector 'a[href="#Log"]', text: 'Log'
         assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
-        assert_no_text 'Output data not available'
+        assert_no_text 'zzzzz-4zz18-bv31uwvy3neko21 (Unavailable)'
         if pipeline_page
           assert_text 'This pipeline was created from'
           job_id = object['components']['foo']['job']['uuid']
@@ -274,7 +274,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         end
       else
         assert_selector 'a[data-toggle="disabled"]', text: 'Log'
-        assert_text 'Output data not available'
+        assert_text 'zzzzz-4zz18-bv31uwvy3neko21 (Unavailable)'
         assert_text object['job']
         if pipeline_page
           assert_no_text 'This pipeline was created from'  # template is not readable
@@ -282,7 +282,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
           assert_text 'Log unavailable'
         end
         find(:xpath, "//a[@href='#Log']").click
-        assert_text 'Output data not available'
+        assert_text 'zzzzz-4zz18-bv31uwvy3neko21 (Unavailable)'
         assert_no_text expect_log_text
       end
     end

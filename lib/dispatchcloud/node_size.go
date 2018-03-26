@@ -5,7 +5,6 @@
 package dispatchcloud
 
 import (
-	"bytes"
 	"errors"
 	"log"
 	"os/exec"
@@ -88,35 +87,31 @@ func SlurmNodeTypeFeatureKludge(cc *arvados.Cluster) {
 	}
 	for {
 		slurmKludge(features)
-		time.Sleep(time.Minute)
+		time.Sleep(2 * time.Second)
 	}
 }
 
-var (
-	slurmDummyNode     = "compute0"
-	slurmErrBadFeature = "Invalid feature"
-	slurmErrNoNodes    = "node configuration is not available"
-)
+const slurmDummyNode = "compute0"
 
 func slurmKludge(features []string) {
-	cmd := exec.Command("srun", "--test-only", "--constraint="+strings.Join(features, "&"), "false")
+	allFeatures := strings.Join(features, ",")
+
+	cmd := exec.Command("sinfo", "--nodes="+slurmDummyNode, "--format=%f", "--noheader")
 	out, err := cmd.CombinedOutput()
-	switch {
-	case err == nil || bytes.Contains(out, []byte(slurmErrNoNodes)):
-		// Evidently our node-type feature names are all valid.
+	if err != nil {
+		log.Printf("running %q %q: %s (output was %q)", cmd.Path, cmd.Args, err, out)
+		return
+	}
+	if string(out) == allFeatures+"\n" {
+		// Already configured correctly, nothing to do.
+		return
+	}
 
-	case bytes.Contains(out, []byte(slurmErrBadFeature)):
-		log.Printf("temporarily configuring node %q with all node type features", slurmDummyNode)
-		for _, nodeFeatures := range []string{strings.Join(features, ","), ""} {
-			cmd = exec.Command("scontrol", "update", "NodeName="+slurmDummyNode, "Features="+nodeFeatures)
-			log.Printf("running: %q %q", cmd.Path, cmd.Args)
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				log.Printf("error: scontrol: %s (output was %q)", err, out)
-			}
-		}
-
-	default:
-		log.Printf("warning: expected srun error %q, %q, or success, but output was %q", slurmErrBadFeature, slurmErrNoNodes, out)
+	log.Printf("configuring node %q with all node type features", slurmDummyNode)
+	cmd = exec.Command("scontrol", "update", "NodeName="+slurmDummyNode, "Features="+allFeatures)
+	log.Printf("running: %q %q", cmd.Path, cmd.Args)
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("error: scontrol: %s (output was %q)", err, out)
 	}
 }

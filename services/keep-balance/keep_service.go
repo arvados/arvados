@@ -17,6 +17,7 @@ import (
 // KeepService represents a keepstore server that is being rebalanced.
 type KeepService struct {
 	arvados.KeepService
+	mounts []*KeepMount
 	*ChangeSet
 }
 
@@ -77,4 +78,29 @@ func (srv *KeepService) put(c *arvados.Client, path string, data interface{}) er
 	}
 
 	return err
+}
+
+func (srv *KeepService) discoverMounts(c *arvados.Client) error {
+	mounts, err := srv.Mounts(c)
+	if err != nil {
+		return fmt.Errorf("%s: error retrieving mounts: %v", srv, err)
+	}
+	srv.mounts = nil
+	for _, m := range mounts {
+		srv.mounts = append(srv.mounts, &KeepMount{
+			KeepMount:   m,
+			KeepService: srv,
+		})
+	}
+	return nil
+}
+
+type KeepMount struct {
+	arvados.KeepMount
+	KeepService *KeepService
+}
+
+// String implements fmt.Stringer.
+func (mnt *KeepMount) String() string {
+	return fmt.Sprintf("%s (%s) on %s", mnt.UUID, mnt.DeviceID, mnt.KeepService)
 }

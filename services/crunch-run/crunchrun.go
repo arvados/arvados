@@ -111,6 +111,8 @@ type ContainerRunner struct {
 	OutputPDH     *string
 	SigChan       chan os.Signal
 	ArvMountExit  chan error
+	SecretMounts  map[string]arvados.Mount
+	MkArvClient   func(token string) (IArvadosClient, error)
 	finalState    string
 	parentTemp    string
 
@@ -396,10 +398,24 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	for bind := range runner.Container.Mounts {
 		binds = append(binds, bind)
 	}
+	for bind := range runner.SecretMounts {
+		if _, ok := runner.Container.Mounts[bind]; ok {
+			return fmt.Errorf("Secret mount %q conflicts with regular mount", bind)
+		}
+		if runner.SecretMounts[bind].Kind != "json" &&
+			runner.SecretMounts[bind].Kind != "text" {
+			return fmt.Errorf("Secret mount %q type is %q but only 'json' and 'text' are permitted.",
+				bind, runner.SecretMounts[bind].Kind)
+		}
+		binds = append(binds, bind)
+	}
 	sort.Strings(binds)
 
 	for _, bind := range binds {
-		mnt := runner.Container.Mounts[bind]
+		mnt, ok := runner.Container.Mounts[bind]
+		if !ok {
+			mnt = runner.SecretMounts[bind]
+		}
 		if bind == "stdout" || bind == "stderr" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
@@ -428,8 +444,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		}
 
 		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") && bind != runner.Container.OutputPath+"/" {
-			if mnt.Kind != "collection" {
-				return fmt.Errorf("Only mount points of kind 'collection' are supported underneath the output_path: %v", bind)
+			if mnt.Kind != "collection" && mnt.Kind != "text" && mnt.Kind != "json" {
+				return fmt.Errorf("Only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path for %q, was %q", bind, mnt.Kind)
 			}
 		}
 
@@ -503,26 +519,35 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				runner.HostOutputDir = tmpdir
 			}
 
-		case mnt.Kind == "json":
-			jsondata, err := json.Marshal(mnt.Content)
-			if err != nil {
-				return fmt.Errorf("encoding json data: %v", err)
+		case mnt.Kind == "json" || mnt.Kind == "text":
+			var filedata []byte
+			if mnt.Kind == "json" {
+				filedata, err = json.Marshal(mnt.Content)
+				if err != nil {
+					return fmt.Errorf("encoding json data: %v", err)
+				}
+			} else {
+				text, ok := mnt.Content.(string)
+				if !ok {
+					return fmt.Errorf("content for mount %q must be a string", bind)
+				}
+				filedata = []byte(text)
 			}
-			// Create a tempdir with a single file
-			// (instead of just a tempfile): this way we
-			// can ensure the file is world-readable
-			// inside the container, without having to
-			// make it world-readable on the docker host.
-			tmpdir, err := runner.MkTempDir(runner.parentTemp, "json")
+
+			tmpdir, err := runner.MkTempDir(runner.parentTemp, mnt.Kind)
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
-			tmpfn := filepath.Join(tmpdir, "mountdata.json")
-			err = ioutil.WriteFile(tmpfn, jsondata, 0644)
+			tmpfn := filepath.Join(tmpdir, "mountdata."+mnt.Kind)
+			err = ioutil.WriteFile(tmpfn, filedata, 0444)
 			if err != nil {
 				return fmt.Errorf("writing temp file: %v", err)
 			}
-			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
+			if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
+				copyFiles = append(copyFiles, copyFile{tmpfn, runner.HostOutputDir + bind[len(runner.Container.OutputPath):]})
+			} else {
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
+			}
 
 		case mnt.Kind == "git_tree":
 			tmpdir, err := runner.MkTempDir(runner.parentTemp, "git_tree")
@@ -1259,6 +1284,16 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	}
 	sort.Strings(binds)
 
+	// Delete secret mounts so they don't get saved to the output collection.
+	for bind := range runner.SecretMounts {
+		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
+			err = os.Remove(runner.HostOutputDir + bind[len(runner.Container.OutputPath):])
+			if err != nil {
+				return fmt.Errorf("Unable to remove secret mount: %v", err)
+			}
+		}
+	}
+
 	var manifestText string
 
 	collectionMetafile := fmt.Sprintf("%s/.arvados#collection", runner.HostOutputDir)
@@ -1702,6 +1737,31 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 	if err != nil {
 		return fmt.Errorf("error decoding container record: %v", err)
 	}
+
+	var sm struct {
+		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
+	}
+
+	containerToken, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("error getting container token: %v", err)
+	}
+
+	containerClient, err := runner.MkArvClient(containerToken)
+	if err != nil {
+		return fmt.Errorf("error creating container API client: %v", err)
+	}
+
+	err = containerClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
+	if err != nil {
+		if apierr, ok := err.(arvadosclient.APIServerError); !ok || apierr.HttpStatusCode != 404 {
+			return fmt.Errorf("error fetching secret_mounts: %v", err)
+		}
+		// ok && apierr.HttpStatusCode == 404, which means
+		// secret_mounts isn't supported by this API server.
+	}
+	runner.SecretMounts = sm.SecretMounts
+
 	return nil
 }
 
@@ -1715,6 +1775,14 @@ func NewContainerRunner(api IArvadosClient,
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		cl, err := arvadosclient.MakeArvadosClient()
+		if err != nil {
+			return nil, err
+		}
+		cl.ApiToken = token
+		return cl, nil
+	}
 	cr.LogCollection = &CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))

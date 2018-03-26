@@ -127,7 +127,7 @@ func (s *PullWorkerTestSuite) TestSpecifyMountUUID(c *C) {
 			requestBody: []byte(`[{
 				"locator":"acbd18db4cc2f85cedef654fccc4a4d8+3",
 				"servers":["server_1","server_2"],
-				"mountuuid":"` + spec.sendUUID + `"}]`),
+				"mount_uuid":"` + spec.sendUUID + `"}]`),
 		})
 		c.Assert(resp.Code, Equals, http.StatusOK)
 		expectEqualWithin(c, time.Second, 0, func() interface{} {

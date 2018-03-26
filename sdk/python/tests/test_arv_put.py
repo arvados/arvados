@@ -18,11 +18,12 @@ import os
 import pwd
 import random
 import re
+import select
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import unittest
 import uuid
@@ -575,6 +576,47 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
                                       arv_put.human_progress(count, None)))
 
 
+class ArvPutLogFormatterTest(ArvadosBaseTestCase):
+    matcher = r'\(X-Request-Id: req-[a-z0-9]{20}\)'
+
+    def setUp(self):
+        super(ArvPutLogFormatterTest, self).setUp()
+        self.stderr = tutil.StringIO()
+        self.loggingHandler = logging.StreamHandler(self.stderr)
+        self.loggingHandler.setFormatter(
+            arv_put.ArvPutLogFormatter(arvados.util.new_request_id()))
+        self.logger = logging.getLogger()
+        self.logger.addHandler(self.loggingHandler)
+        self.logger.setLevel(logging.DEBUG)
+
+    def tearDown(self):
+        self.logger.removeHandler(self.loggingHandler)
+        self.stderr.close()
+        self.stderr = None
+        super(ArvPutLogFormatterTest, self).tearDown()
+
+    def test_request_id_logged_only_once_on_error(self):
+        self.logger.error('Ooops, something bad happened.')
+        self.logger.error('Another bad thing just happened.')
+        log_lines = self.stderr.getvalue().split('\n')[:-1]
+        self.assertEqual(2, len(log_lines))
+        self.assertRegex(log_lines[0], self.matcher)
+        self.assertNotRegex(log_lines[1], self.matcher)
+
+    def test_request_id_logged_only_once_on_debug(self):
+        self.logger.debug('This is just a debug message.')
+        self.logger.debug('Another message, move along.')
+        log_lines = self.stderr.getvalue().split('\n')[:-1]
+        self.assertEqual(2, len(log_lines))
+        self.assertRegex(log_lines[0], self.matcher)
+        self.assertNotRegex(log_lines[1], self.matcher)
+
+    def test_request_id_not_logged_on_info(self):
+        self.logger.info('This should be a useful message')
+        log_lines = self.stderr.getvalue().split('\n')[:-1]
+        self.assertEqual(1, len(log_lines))
+        self.assertNotRegex(log_lines[0], self.matcher)
+
 class ArvadosPutTest(run_test_server.TestCaseWithServers,
                      ArvadosBaseTestCase,
                      tutil.VersionChecker):
@@ -604,7 +646,8 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         self.main_stdout = tutil.StringIO()
         self.main_stderr = tutil.StringIO()
         self.loggingHandler = logging.StreamHandler(self.main_stderr)
-        self.loggingHandler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        self.loggingHandler.setFormatter(
+            arv_put.ArvPutLogFormatter(arvados.util.new_request_id()))
         logging.getLogger().addHandler(self.loggingHandler)
 
     def tearDown(self):
@@ -706,14 +749,17 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             self.assertLess(0, coll_save_mock.call_count)
             self.assertEqual("", self.main_stdout.getvalue())
 
-    def test_request_id_logging(self):
-        matcher = r'INFO: X-Request-Id: req-[a-z0-9]{20}\n'
-
-        self.call_main_on_test_file()
-        self.assertRegex(self.main_stderr.getvalue(), matcher)
-
-        self.call_main_on_test_file(['--silent'])
-        self.assertNotRegex(self.main_stderr.getvalue(), matcher)
+    def test_request_id_logging_on_error(self):
+        matcher = r'\(X-Request-Id: req-[a-z0-9]{20}\)\n'
+        coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
+        coll_save_mock.side_effect = arvados.errors.ApiError(
+            fake_httplib2_response(403), b'{}')
+        with mock.patch('arvados.collection.Collection.save_new',
+                        new=coll_save_mock):
+            with self.assertRaises(SystemExit) as exc_test:
+                self.call_main_with_args(['/dev/null'])
+            self.assertRegex(
+                self.main_stderr.getvalue(), matcher)
 
 
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
@@ -811,6 +857,30 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
                       pipe.stdout.read().decode())
+
+    def test_sigint_logs_request_id(self):
+        # Start arv-put, give it a chance to start up, send SIGINT,
+        # and check that its output includes the X-Request-Id.
+        input_stream = subprocess.Popen(
+            ['sleep', '10'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__, '--stream'],
+            stdin=input_stream.stdout, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, env=self.ENVIRON)
+        # Wait for arv-put child process to print something (i.e., a
+        # log message) so we know its signal handler is installed.
+        select.select([pipe.stdout], [], [], 10)
+        pipe.send_signal(signal.SIGINT)
+        deadline = time.time() + 5
+        while (pipe.poll() is None) and (time.time() < deadline):
+            time.sleep(.1)
+        returncode = pipe.poll()
+        input_stream.terminate()
+        if returncode is None:
+            pipe.terminate()
+            self.fail("arv-put did not exit within 5 seconds")
+        self.assertRegex(pipe.stdout.read().decode(), r'\(X-Request-Id: req-[a-z0-9]{20}\)')
 
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get

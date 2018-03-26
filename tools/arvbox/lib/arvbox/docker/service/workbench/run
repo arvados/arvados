@@ -22,6 +22,6 @@ else
 fi
 
 if test "$1" != "--only-deps" ; then
-    exec bundle exec passenger start --port 80 \
-         --user arvbox --runtime-dir=/var/lib/passenger
+    exec bundle exec passenger start --port=${services[workbench]} \
+         --user arvbox
 fi

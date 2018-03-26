@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -57,7 +58,8 @@ type ArvTestClient struct {
 	Calls   int
 	Content []arvadosclient.Dict
 	arvados.Container
-	Logs map[string]*bytes.Buffer
+	secretMounts []byte
+	Logs         map[string]*bytes.Buffer
 	sync.Mutex
 	WasSetRunning bool
 	callraw       bool
@@ -240,6 +242,12 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 			"uuid": "`+fakeAuthUUID+`",
 			"api_token": "`+fakeAuthToken+`"
 			}`), output)
+	case method == "GET" && resourceType == "containers" && action == "secret_mounts":
+		if client.secretMounts != nil {
+			return json.Unmarshal(client.secretMounts, output)
+		} else {
+			return json.Unmarshal([]byte(`{"secret_mounts":{}}`), output)
+		}
 	default:
 		return fmt.Errorf("Not found")
 	}
@@ -356,6 +364,10 @@ func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error
 func (*KeepTestClient) ClearBlockCache() {
 }
 
+func (client *KeepTestClient) Close() {
+	client.Content = nil
+}
+
 type FileWrapper struct {
 	io.ReadCloser
 	len int64
@@ -400,6 +412,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
@@ -506,7 +519,9 @@ func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename 
 
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
-	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -577,7 +592,9 @@ func (s *TestSuite) TestRunContainer(c *C) {
 		t.logWriter.Write(dockerLog(1, "Hello world\n"))
 		t.logWriter.Close()
 	}
-	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -602,6 +619,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -622,6 +640,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	err := cr.UpdateContainerRunning()
@@ -633,6 +652,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	cr.LogsPDH = new(string)
@@ -653,6 +673,7 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.cCancelled = true
 	cr.finalState = "Cancelled"
@@ -672,13 +693,24 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
+	var sm struct {
+		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
+	}
+	err = json.Unmarshal([]byte(record), &sm)
+	c.Check(err, IsNil)
+	secretMounts, err := json.Marshal(sm)
+	log.Printf("%q %q", sm, secretMounts)
+	c.Check(err, IsNil)
+
 	s.docker.exitCode = exitCode
 	s.docker.fn = fn
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
 	s.docker.api = api
-	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -699,6 +731,9 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 			err = nil
 		}
 		return d, err
+	}
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{secretMounts: secretMounts}, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
@@ -951,8 +986,13 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api := &ArvTestClient{Container: rec}
-	cr := NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{}, nil
+	}
 	setup(cr)
 
 	done := make(chan error)
@@ -1018,6 +1058,7 @@ func stubCert(temp string) string {
 func (s *TestSuite) TestSetupMounts(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
+	defer kc.Close()
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -1211,6 +1252,35 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
+	for _, test := range []struct {
+		in  interface{}
+		out string
+	}{
+		{in: "foo", out: `foo`},
+		{in: nil, out: "error"},
+		{in: map[string]int64{"foo": 123456789123456789}, out: "error"},
+	} {
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/mnt/test.txt": {Kind: "text", Content: test.in},
+		}
+		err := cr.SetupMounts()
+		if test.out == "error" {
+			c.Check(err.Error(), Equals, "content for mount \"/mnt/test.txt\" must be a string")
+		} else {
+			c.Check(err, IsNil)
+			sort.StringSlice(cr.Binds).Sort()
+			c.Check(cr.Binds, DeepEquals, []string{realTemp + "/text2/mountdata.text:/mnt/test.txt:ro"})
+			content, err := ioutil.ReadFile(realTemp + "/text2/mountdata.text")
+			c.Check(err, IsNil)
+			c.Check(content, DeepEquals, []byte(test.out))
+		}
+		os.RemoveAll(cr.ArvMountPoint)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
 	// Read-only mount points are allowed underneath output_dir mount point
 	{
 		i = 0
@@ -1277,13 +1347,13 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tmp":     {Kind: "tmp"},
-			"/tmp/foo": {Kind: "json"},
+			"/tmp/foo": {Kind: "tmp"},
 		}
 		cr.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Only mount points of kind 'collection' are supported underneath the output_path.*`)
+		c.Check(err, ErrorMatches, `Only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path.*`)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1397,9 +1467,14 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
-	cr = NewContainerRunner(api, &KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+		return &ArvTestClient{}, nil
+	}
 
 	err = cr.Run()
 	return
@@ -1833,7 +1908,9 @@ func (s *TestSuite) TestStderrMount(c *C) {
 }
 
 func (s *TestSuite) TestNumberRoundTrip(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.fetchContainerRecord()
 
 	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
@@ -1843,7 +1920,9 @@ func (s *TestSuite) TestNumberRoundTrip(c *C) {
 }
 
 func (s *TestSuite) TestEvalSymlinks(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
 	c.Assert(err, IsNil)
@@ -1873,7 +1952,9 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 }
 
 func (s *TestSuite) TestEvalSymlinkDir(c *C) {
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
 	c.Assert(err, IsNil)
@@ -2034,4 +2115,62 @@ func (s *TestSuite) TestBadCommand3(c *C) {
 
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+}
+
+func (s *TestSuite) TestSecretTextMountPoint(c *C) {
+	// under normal mounts, gets captured in output, oops
+	helperRecord := `{
+		"command": ["true"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"mounts": {
+                    "/tmp": {"kind": "tmp"},
+                    "/tmp/secret.conf": {"kind": "text", "content": "mypassword"}
+                },
+                "secret_mounts": {
+                },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("mypassword"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ""), IsNil)
+
+	// under secret mounts, not captured in output
+	helperRecord = `{
+		"command": ["true"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"mounts": {
+                    "/tmp": {"kind": "tmp"}
+                },
+                "secret_mounts": {
+                    "/tmp/secret.conf": {"kind": "text", "content": "mypassword"}
+                },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("mypassword"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
+	c.Check(api.CalledWith("collection.manifest_text", ""), NotNil)
 }

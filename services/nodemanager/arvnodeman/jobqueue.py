@@ -153,7 +153,7 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     def _send_request(self):
         queuelist = []
         if self.slurm_queue:
-            # cpus, memory, tempory disk space, reason, job name
+            # cpus, memory, tempory disk space, reason, job name, feature constraints
             squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j|%f"])
             for out in squeue_out.splitlines():
                 try:
@@ -163,7 +163,7 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                     continue
                 if '-dz642-' not in jobname:
                     continue
-                if not re.search(r'ReqNodeNotAvail|Resources|Priority', reason):
+                if not re.search(r'BadConstraints|ReqNodeNotAvail|Resources|Priority', reason):
                     continue
 
                 for feature in features.split(','):

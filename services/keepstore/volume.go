@@ -12,6 +12,8 @@ import (
 	"math/big"
 	"sync/atomic"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 type BlockWriter interface {
@@ -287,12 +289,8 @@ type VolumeManager interface {
 
 // A VolumeMount is an attachment of a Volume to a VolumeManager.
 type VolumeMount struct {
-	UUID           string
-	DeviceID       string
-	ReadOnly       bool
-	Replication    int
-	StorageClasses []string
-	volume         Volume
+	arvados.KeepMount
+	volume Volume
 }
 
 // Generate a UUID the way API server would for a "KeepVolumeMount"
@@ -334,12 +332,14 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 			sc = []string{"default"}
 		}
 		mnt := &VolumeMount{
-			UUID:           (*VolumeMount)(nil).generateUUID(),
-			DeviceID:       v.DeviceID(),
-			ReadOnly:       !v.Writable(),
-			Replication:    v.Replication(),
-			StorageClasses: sc,
-			volume:         v,
+			KeepMount: arvados.KeepMount{
+				UUID:           (*VolumeMount)(nil).generateUUID(),
+				DeviceID:       v.DeviceID(),
+				ReadOnly:       !v.Writable(),
+				Replication:    v.Replication(),
+				StorageClasses: sc,
+			},
+			volume: v,
 		}
 		vm.iostats[v] = &ioStats{}
 		vm.mounts = append(vm.mounts, mnt)

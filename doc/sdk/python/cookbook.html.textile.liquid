@@ -164,3 +164,45 @@ for u in collection_uuids:
 newcol = arvados.collection.Collection(combined_manifest)
 newcol.save_new(name="My combined collection", owner_uuid=project_uuid)
 {% endcodeblock %}
+
+h2. Upload a file into a new collection
+
+{% codeblock as python %}
+import arvados
+import arvados.collection
+
+project_uuid = "qr1hi-j7d0g-zzzzzzzzzzzzzzz"
+collection_name = "My collection"
+filename = "file1.txt"
+
+api = arvados.api()
+c = arvados.collection.Collection()
+with open(filename, "rb") as reader:
+    with c.open(filename, "wb") as writer:
+        content = reader.read(128*1024)
+        while content:
+            writer.write(content)
+            content = reader.read(128*1024)
+c.save_new(name=collection_name, owner_uuid=project_uuid)
+print("Saved %s to %s" % (collection_name, c.manifest_locator()))
+{% endcodeblock %}
+
+h2. Download a file from a collection
+
+{% codeblock as python %}
+import arvados
+import arvados.collection
+
+collection_uuid = "qr1hi-4zz18-zzzzzzzzzzzzzzz"
+filename = "file1.txt"
+
+api = arvados.api()
+c = arvados.collection.CollectionReader(collection_uuid)
+with c.open(filename, "rb") as reader:
+    with open(filename, "wb") as writer:
+        content = reader.read(128*1024)
+        while content:
+            writer.write(content)
+            content = reader.read(128*1024)
+print("Finished downloading %s" % filename)
+{% endcodeblock %}

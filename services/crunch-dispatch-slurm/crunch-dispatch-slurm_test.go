@@ -55,10 +55,11 @@ func (s *IntegrationSuite) TearDownTest(c *C) {
 }
 
 type slurmFake struct {
-	didBatch  [][]string
-	didCancel []string
-	didRenice [][]string
-	queue     string
+	didBatch   [][]string
+	didCancel  []string
+	didRelease []string
+	didRenice  [][]string
+	queue      string
 	// If non-nil, run this func during the 2nd+ call to Cancel()
 	onCancel func()
 	// Error returned by Batch()
@@ -72,6 +73,11 @@ func (sf *slurmFake) Batch(script io.Reader, args []string) error {
 
 func (sf *slurmFake) QueueCommand(args []string) *exec.Cmd {
 	return exec.Command("echo", sf.queue)
+}
+
+func (sf *slurmFake) Release(name string) error {
+	sf.didRelease = append(sf.didRelease, name)
+	return nil
 }
 
 func (sf *slurmFake) Renice(name string, nice int64) error {
@@ -151,7 +157,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 }
 
 func (s *IntegrationSuite) TestNormal(c *C) {
-	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100\n"}
+	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100 PENDING Resources\n"}
 	container := s.integrationTest(c,
 		nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
@@ -163,7 +169,7 @@ func (s *IntegrationSuite) TestNormal(c *C) {
 }
 
 func (s *IntegrationSuite) TestCancel(c *C) {
-	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100\n"}
+	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100 PENDING Resources\n"}
 	readyToCancel := make(chan bool)
 	s.slurm.onCancel = func() { <-readyToCancel }
 	container := s.integrationTest(c,
