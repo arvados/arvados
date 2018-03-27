@@ -28,7 +28,6 @@ HttpRequest <- R6::R6Class(
             if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
                config$options = list(ssl_verifypeer = FALSE)
 
-            print(config)
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
                                     config = config, times = retryTimes + 1)

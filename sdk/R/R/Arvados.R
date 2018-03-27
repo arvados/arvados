@@ -1625,24 +1625,24 @@ Arvados <- R6::R6Class(
 
 		},
 
-		project.get = function(uuid)
+		projects.get = function(uuid)
 		{
 			self$groups.get(uuid)
 		},
 
-		project.create = function(group, ensure_unique_name = "false")
+		projects.create = function(group, ensure_unique_name = "false")
 		{
 			group <- c("group_class" = "project", group)
 			self$groups.create(group, ensure_unique_name)
 		},
 
-		project.update = function(group, uuid)
+		projects.update = function(group, uuid)
 		{
 			group <- c("group_class" = "project", group)
 			self$groups.update(group, uuid)
 		},
 
-		project.list = function(filters = NULL, where = NULL,
+		projects.list = function(filters = NULL, where = NULL,
 			order = NULL, select = NULL, distinct = NULL,
 			limit = "100", offset = "0", count = "exact",
 			include_trash = NULL)
@@ -1652,7 +1652,7 @@ Arvados <- R6::R6Class(
 			                 limit, offset, count, include_trash)
 		},
 
-		project.delete = function(uuid)
+		projects.delete = function(uuid)
 		{
 			self$groups.delete(uuid)
 		},

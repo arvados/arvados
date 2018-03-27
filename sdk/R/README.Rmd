@@ -56,16 +56,16 @@ knitr::opts_chunk$set(eval = FALSE)
 * Get a collection:
 
     ```{r}
-    collection <- arv$getCollection("uuid")
+    collection <- arv$collections.get("uuid")
     ```
 
 * List collections:
 
     ```{r}
     # offset of 0 and default limit of 100
-    collectionList <- arv$listCollections(list(list("name", "like", "Test%")))
+    collectionList <- arv$collections.list(list(list("name", "like", "Test%")))
 
-    collectionList <- arv$listCollections(list(list("name", "like", "Test%")), limit = 10, offset = 2)
+    collectionList <- arv$collections.list(list(list("name", "like", "Test%")), limit = 10, offset = 2)
     ```
 
     ```{r}
@@ -79,25 +79,25 @@ knitr::opts_chunk$set(eval = FALSE)
 * List all collections even if the number of items is greater than maximum API limit:
 
     ```{r}
-    collectionList <- arv$listAllCollections(list(list("name", "like", "Test%")))
+    collectionList <- listAll(arv$collections.list, list(list("name", "like", "Test%")))
     ```
 
 * Delete a collection:
 
     ```{r}
-    deletedCollection <- arv$deleteCollection("uuid")
+    deletedCollection <- arv$collections.delete("uuid")
     ```
 
 * Update a collection's metadata:
 
     ```{r}
-    updatedCollection <- arv$updateCollection("uuid", list(name = "New name", description = "New description"))
+    updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"), "uuid")
     ```
 
 * Create collection:
 
     ```{r}
-    createdCollection <- arv$createCollection(list(name = "Example", description = "This is a test collection"))
+    newCollection <- arv$collections.create(list(name = "Example", description = "This is a test collection"))
     ```
 
 
@@ -252,41 +252,50 @@ knitr::opts_chunk$set(eval = FALSE)
 * Get a project:
 
     ```{r}
-    project <- arv$getProject("uuid")
+    project <- arv$projects.get("uuid")
     ```
 
 * List projects:
 
     ```{r}
     # list subprojects of a project
-    projects <- arv$listProjects(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")))
+    projects <- arv$projects.list(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")))
 
     # list projects which have names beginning with Example
-    arv$listProjects(list(list("name","like","Example%")))
+    examples <- arv$projects.list(list(list("name","like","Example%")))
     ```
 
 * List all projects even if the number of items is greater than maximum API limit:
 
     ```{r}
-    collectionList <- arv$listAllProjects(list(list("name","like","Example%")))
+    projects <- listAll(arv$projects.list, list(list("name","like","Example%")))
     ```
 
 * Delete a project:
 
     ```{r}
-    deletedProject <- arv$deleteProject("uuid")
+    deletedProject <- arv$projects.delete("uuid")
     ```
 
 * Update project:
 
     ```{r}
-    updatedProject <- arv$updateProject("uuid", list(name = "new_name", description = "new description"))
+    updatedProject <- arv$projects.update(list(name = "new_name", description = "new description"), "uuid")
     ```
 
 * Create project:
 
     ```{r}
-    createdProject <- arv$createProject(list(name = "project_name", description = "project description"))
+    newProject <- arv$projects.update(list(name = "project_name", description = "project description"))
+    ```
+
+#### Help
+
+* View help page of any method defined in Arvados class by puting ? before method name:
+
+    ```{r}
+    ?collections.update
+    ?jobs.get
     ```
 
 ### Building the ArvadosR package
