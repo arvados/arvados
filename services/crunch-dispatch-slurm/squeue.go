@@ -157,7 +157,7 @@ func (sqc *SqueueChecker) check() {
 		replacing.nice = n
 		newq[uuid] = replacing
 
-		if state == "PENDING" && reason == "BadConstraints" && p == 0 && replacing.wantPriority > 0 {
+		if state == "PENDING" && ((reason == "BadConstraints" && p == 0) || reason == "launch failed requeued held") && replacing.wantPriority > 0 {
 			// When using SLURM 14.x or 15.x, our queued
 			// jobs land in this state when "scontrol
 			// reconfigure" invalidates their feature
@@ -171,6 +171,10 @@ func (sqc *SqueueChecker) check() {
 			// reappeared, so rather than second-guessing
 			// whether SLURM is ready, we just keep trying
 			// this until it works.
+			//
+			// "launch failed requeued held" seems to be
+			// another manifestation of this problem,
+			// resolved the same way.
 			log.Printf("releasing held job %q", uuid)
 			sqc.Slurm.Release(uuid)
 		} else if p < 1<<20 && replacing.wantPriority > 0 {
