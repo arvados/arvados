@@ -112,6 +112,12 @@ generateClassContent <- function(methodResources, resourceNames)
 
         functions <- Map(function(methodMetaData, methodName)
         {
+            #NOTE: Index, show and destroy are aliases for the preferred names
+            # "list", "get" and "delete". Until they are removed from discovery
+            # document we will filter them here.
+            if(methodName %in% c("index", "show", "destroy"))
+               return(NULL)
+
             methodName <- paste0(resourceName, ".", methodName)
             createMethod(methodName, methodMetaData)
 
@@ -316,6 +322,12 @@ generateMethodsDocumentation <- function(methodResources, resourceNames)
 
         methodDoc <- Map(function(methodMetaData, methodName)
         {
+            #NOTE: Index, show and destroy are aliases for the preferred names
+            # "list", "get" and "delete". Until they are removed from discovery
+            # document we will filter them here.
+            if(methodName %in% c("index", "show", "destroy"))
+               return(NULL)
+
             methodName <- paste0(resourceName, ".", methodName)
             getMethodDocumentation(methodName, methodMetaData)
 

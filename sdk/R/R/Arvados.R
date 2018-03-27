@@ -6,24 +6,6 @@
 #' @name users.get
 NULL
 
-#' users.index is a method defined in Arvados class.
-#' 
-#' @usage arv$users.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return UserList object.
-#' @name users.index
-NULL
-
 #' users.create is a method defined in Arvados class.
 #' 
 #' @usage arv$users.create(user, ensure_unique_name = "false")
@@ -120,46 +102,12 @@ NULL
 #' @name users.list
 NULL
 
-#' users.show is a method defined in Arvados class.
-#' 
-#' @usage arv$users.show(uuid)
-#' @param uuid 
-#' @return User object.
-#' @name users.show
-NULL
-
-#' users.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$users.destroy(uuid)
-#' @param uuid 
-#' @return User object.
-#' @name users.destroy
-NULL
-
 #' api_client_authorizations.get is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.get(uuid)
 #' @param uuid The UUID of the ApiClientAuthorization in question.
 #' @return ApiClientAuthorization object.
 #' @name api_client_authorizations.get
-NULL
-
-#' api_client_authorizations.index is a method defined in Arvados class.
-#' 
-#' @usage arv$api_client_authorizations.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return ApiClientAuthorizationList object.
-#' @name api_client_authorizations.index
 NULL
 
 #' api_client_authorizations.create is a method defined in Arvados class.
@@ -225,46 +173,12 @@ NULL
 #' @name api_client_authorizations.list
 NULL
 
-#' api_client_authorizations.show is a method defined in Arvados class.
-#' 
-#' @usage arv$api_client_authorizations.show(uuid)
-#' @param uuid 
-#' @return ApiClientAuthorization object.
-#' @name api_client_authorizations.show
-NULL
-
-#' api_client_authorizations.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$api_client_authorizations.destroy(uuid)
-#' @param uuid 
-#' @return ApiClientAuthorization object.
-#' @name api_client_authorizations.destroy
-NULL
-
 #' containers.get is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.get(uuid)
 #' @param uuid The UUID of the Container in question.
 #' @return Container object.
 #' @name containers.get
-NULL
-
-#' containers.index is a method defined in Arvados class.
-#' 
-#' @usage arv$containers.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return ContainerList object.
-#' @name containers.index
 NULL
 
 #' containers.create is a method defined in Arvados class.
@@ -352,46 +266,12 @@ NULL
 #' @name containers.list
 NULL
 
-#' containers.show is a method defined in Arvados class.
-#' 
-#' @usage arv$containers.show(uuid)
-#' @param uuid 
-#' @return Container object.
-#' @name containers.show
-NULL
-
-#' containers.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$containers.destroy(uuid)
-#' @param uuid 
-#' @return Container object.
-#' @name containers.destroy
-NULL
-
 #' api_clients.get is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.get(uuid)
 #' @param uuid The UUID of the ApiClient in question.
 #' @return ApiClient object.
 #' @name api_clients.get
-NULL
-
-#' api_clients.index is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return ApiClientList object.
-#' @name api_clients.index
 NULL
 
 #' api_clients.create is a method defined in Arvados class.
@@ -440,46 +320,12 @@ NULL
 #' @name api_clients.list
 NULL
 
-#' api_clients.show is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.show(uuid)
-#' @param uuid 
-#' @return ApiClient object.
-#' @name api_clients.show
-NULL
-
-#' api_clients.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.destroy(uuid)
-#' @param uuid 
-#' @return ApiClient object.
-#' @name api_clients.destroy
-NULL
-
 #' authorized_keys.get is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.get(uuid)
 #' @param uuid The UUID of the AuthorizedKey in question.
 #' @return AuthorizedKey object.
 #' @name authorized_keys.get
-NULL
-
-#' authorized_keys.index is a method defined in Arvados class.
-#' 
-#' @usage arv$authorized_keys.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return AuthorizedKeyList object.
-#' @name authorized_keys.index
 NULL
 
 #' authorized_keys.create is a method defined in Arvados class.
@@ -528,46 +374,12 @@ NULL
 #' @name authorized_keys.list
 NULL
 
-#' authorized_keys.show is a method defined in Arvados class.
-#' 
-#' @usage arv$authorized_keys.show(uuid)
-#' @param uuid 
-#' @return AuthorizedKey object.
-#' @name authorized_keys.show
-NULL
-
-#' authorized_keys.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$authorized_keys.destroy(uuid)
-#' @param uuid 
-#' @return AuthorizedKey object.
-#' @name authorized_keys.destroy
-NULL
-
 #' container_requests.get is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.get(uuid)
 #' @param uuid The UUID of the ContainerRequest in question.
 #' @return ContainerRequest object.
 #' @name container_requests.get
-NULL
-
-#' container_requests.index is a method defined in Arvados class.
-#' 
-#' @usage arv$container_requests.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return ContainerRequestList object.
-#' @name container_requests.index
 NULL
 
 #' container_requests.create is a method defined in Arvados class.
@@ -616,47 +428,12 @@ NULL
 #' @name container_requests.list
 NULL
 
-#' container_requests.show is a method defined in Arvados class.
-#' 
-#' @usage arv$container_requests.show(uuid)
-#' @param uuid 
-#' @return ContainerRequest object.
-#' @name container_requests.show
-NULL
-
-#' container_requests.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$container_requests.destroy(uuid)
-#' @param uuid 
-#' @return ContainerRequest object.
-#' @name container_requests.destroy
-NULL
-
 #' collections.get is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.get(uuid)
 #' @param uuid The UUID of the Collection in question.
 #' @return Collection object.
 #' @name collections.get
-NULL
-
-#' collections.index is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact", include_trash = NULL)
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @param include_trash Include collections whose is_trashed attribute is true.
-#' @return CollectionList object.
-#' @name collections.index
 NULL
 
 #' collections.create is a method defined in Arvados class.
@@ -738,46 +515,12 @@ NULL
 #' @name collections.list
 NULL
 
-#' collections.show is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.show(uuid)
-#' @param uuid 
-#' @return Collection object.
-#' @name collections.show
-NULL
-
-#' collections.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.destroy(uuid)
-#' @param uuid 
-#' @return Collection object.
-#' @name collections.destroy
-NULL
-
 #' humans.get is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.get(uuid)
 #' @param uuid The UUID of the Human in question.
 #' @return Human object.
 #' @name humans.get
-NULL
-
-#' humans.index is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return HumanList object.
-#' @name humans.index
 NULL
 
 #' humans.create is a method defined in Arvados class.
@@ -824,46 +567,12 @@ NULL
 #' @name humans.list
 NULL
 
-#' humans.show is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.show(uuid)
-#' @param uuid 
-#' @return Human object.
-#' @name humans.show
-NULL
-
-#' humans.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.destroy(uuid)
-#' @param uuid 
-#' @return Human object.
-#' @name humans.destroy
-NULL
-
 #' job_tasks.get is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.get(uuid)
 #' @param uuid The UUID of the JobTask in question.
 #' @return JobTask object.
 #' @name job_tasks.get
-NULL
-
-#' job_tasks.index is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return JobTaskList object.
-#' @name job_tasks.index
 NULL
 
 #' job_tasks.create is a method defined in Arvados class.
@@ -910,46 +619,12 @@ NULL
 #' @name job_tasks.list
 NULL
 
-#' job_tasks.show is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.show(uuid)
-#' @param uuid 
-#' @return JobTask object.
-#' @name job_tasks.show
-NULL
-
-#' job_tasks.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.destroy(uuid)
-#' @param uuid 
-#' @return JobTask object.
-#' @name job_tasks.destroy
-NULL
-
 #' links.get is a method defined in Arvados class.
 #' 
 #' @usage arv$links.get(uuid)
 #' @param uuid The UUID of the Link in question.
 #' @return Link object.
 #' @name links.get
-NULL
-
-#' links.index is a method defined in Arvados class.
-#' 
-#' @usage arv$links.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return LinkList object.
-#' @name links.index
 NULL
 
 #' links.create is a method defined in Arvados class.
@@ -996,22 +671,6 @@ NULL
 #' @name links.list
 NULL
 
-#' links.show is a method defined in Arvados class.
-#' 
-#' @usage arv$links.show(uuid)
-#' @param uuid 
-#' @return Link object.
-#' @name links.show
-NULL
-
-#' links.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$links.destroy(uuid)
-#' @param uuid 
-#' @return Link object.
-#' @name links.destroy
-NULL
-
 #' links.get_permissions is a method defined in Arvados class.
 #' 
 #' @usage arv$links.get_permissions(uuid)
@@ -1026,24 +685,6 @@ NULL
 #' @param uuid The UUID of the Job in question.
 #' @return Job object.
 #' @name jobs.get
-NULL
-
-#' jobs.index is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return JobList object.
-#' @name jobs.index
 NULL
 
 #' jobs.create is a method defined in Arvados class.
@@ -1136,46 +777,12 @@ NULL
 #' @name jobs.list
 NULL
 
-#' jobs.show is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.show(uuid)
-#' @param uuid 
-#' @return Job object.
-#' @name jobs.show
-NULL
-
-#' jobs.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.destroy(uuid)
-#' @param uuid 
-#' @return Job object.
-#' @name jobs.destroy
-NULL
-
 #' keep_disks.get is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.get(uuid)
 #' @param uuid The UUID of the KeepDisk in question.
 #' @return KeepDisk object.
 #' @name keep_disks.get
-NULL
-
-#' keep_disks.index is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return KeepDiskList object.
-#' @name keep_disks.index
 NULL
 
 #' keep_disks.create is a method defined in Arvados class.
@@ -1240,46 +847,12 @@ NULL
 #' @name keep_disks.list
 NULL
 
-#' keep_disks.show is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.show(uuid)
-#' @param uuid 
-#' @return KeepDisk object.
-#' @name keep_disks.show
-NULL
-
-#' keep_disks.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.destroy(uuid)
-#' @param uuid 
-#' @return KeepDisk object.
-#' @name keep_disks.destroy
-NULL
-
 #' keep_services.get is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.get(uuid)
 #' @param uuid The UUID of the KeepService in question.
 #' @return KeepService object.
 #' @name keep_services.get
-NULL
-
-#' keep_services.index is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_services.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return KeepServiceList object.
-#' @name keep_services.index
 NULL
 
 #' keep_services.create is a method defined in Arvados class.
@@ -1335,46 +908,12 @@ NULL
 #' @name keep_services.list
 NULL
 
-#' keep_services.show is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_services.show(uuid)
-#' @param uuid 
-#' @return KeepService object.
-#' @name keep_services.show
-NULL
-
-#' keep_services.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_services.destroy(uuid)
-#' @param uuid 
-#' @return KeepService object.
-#' @name keep_services.destroy
-NULL
-
 #' pipeline_templates.get is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.get(uuid)
 #' @param uuid The UUID of the PipelineTemplate in question.
 #' @return PipelineTemplate object.
 #' @name pipeline_templates.get
-NULL
-
-#' pipeline_templates.index is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_templates.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return PipelineTemplateList object.
-#' @name pipeline_templates.index
 NULL
 
 #' pipeline_templates.create is a method defined in Arvados class.
@@ -1423,46 +962,12 @@ NULL
 #' @name pipeline_templates.list
 NULL
 
-#' pipeline_templates.show is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_templates.show(uuid)
-#' @param uuid 
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.show
-NULL
-
-#' pipeline_templates.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_templates.destroy(uuid)
-#' @param uuid 
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.destroy
-NULL
-
 #' pipeline_instances.get is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.get(uuid)
 #' @param uuid The UUID of the PipelineInstance in question.
 #' @return PipelineInstance object.
 #' @name pipeline_instances.get
-NULL
-
-#' pipeline_instances.index is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return PipelineInstanceList object.
-#' @name pipeline_instances.index
 NULL
 
 #' pipeline_instances.create is a method defined in Arvados class.
@@ -1519,46 +1024,12 @@ NULL
 #' @name pipeline_instances.list
 NULL
 
-#' pipeline_instances.show is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.show(uuid)
-#' @param uuid 
-#' @return PipelineInstance object.
-#' @name pipeline_instances.show
-NULL
-
-#' pipeline_instances.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.destroy(uuid)
-#' @param uuid 
-#' @return PipelineInstance object.
-#' @name pipeline_instances.destroy
-NULL
-
 #' nodes.get is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.get(uuid)
 #' @param uuid The UUID of the Node in question.
 #' @return Node object.
 #' @name nodes.get
-NULL
-
-#' nodes.index is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return NodeList object.
-#' @name nodes.index
 NULL
 
 #' nodes.create is a method defined in Arvados class.
@@ -1617,46 +1088,12 @@ NULL
 #' @name nodes.list
 NULL
 
-#' nodes.show is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.show(uuid)
-#' @param uuid 
-#' @return Node object.
-#' @name nodes.show
-NULL
-
-#' nodes.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.destroy(uuid)
-#' @param uuid 
-#' @return Node object.
-#' @name nodes.destroy
-NULL
-
 #' repositories.get is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.get(uuid)
 #' @param uuid The UUID of the Repository in question.
 #' @return Repository object.
 #' @name repositories.get
-NULL
-
-#' repositories.index is a method defined in Arvados class.
-#' 
-#' @usage arv$repositories.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return RepositoryList object.
-#' @name repositories.index
 NULL
 
 #' repositories.create is a method defined in Arvados class.
@@ -1712,46 +1149,12 @@ NULL
 #' @name repositories.list
 NULL
 
-#' repositories.show is a method defined in Arvados class.
-#' 
-#' @usage arv$repositories.show(uuid)
-#' @param uuid 
-#' @return Repository object.
-#' @name repositories.show
-NULL
-
-#' repositories.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$repositories.destroy(uuid)
-#' @param uuid 
-#' @return Repository object.
-#' @name repositories.destroy
-NULL
-
 #' specimens.get is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.get(uuid)
 #' @param uuid The UUID of the Specimen in question.
 #' @return Specimen object.
 #' @name specimens.get
-NULL
-
-#' specimens.index is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return SpecimenList object.
-#' @name specimens.index
 NULL
 
 #' specimens.create is a method defined in Arvados class.
@@ -1800,46 +1203,12 @@ NULL
 #' @name specimens.list
 NULL
 
-#' specimens.show is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.show(uuid)
-#' @param uuid 
-#' @return Specimen object.
-#' @name specimens.show
-NULL
-
-#' specimens.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.destroy(uuid)
-#' @param uuid 
-#' @return Specimen object.
-#' @name specimens.destroy
-NULL
-
 #' logs.get is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.get(uuid)
 #' @param uuid The UUID of the Log in question.
 #' @return Log object.
 #' @name logs.get
-NULL
-
-#' logs.index is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return LogList object.
-#' @name logs.index
 NULL
 
 #' logs.create is a method defined in Arvados class.
@@ -1885,46 +1254,12 @@ NULL
 #' @name logs.list
 NULL
 
-#' logs.show is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.show(uuid)
-#' @param uuid 
-#' @return Log object.
-#' @name logs.show
-NULL
-
-#' logs.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.destroy(uuid)
-#' @param uuid 
-#' @return Log object.
-#' @name logs.destroy
-NULL
-
 #' traits.get is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.get(uuid)
 #' @param uuid The UUID of the Trait in question.
 #' @return Trait object.
 #' @name traits.get
-NULL
-
-#' traits.index is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return TraitList object.
-#' @name traits.index
 NULL
 
 #' traits.create is a method defined in Arvados class.
@@ -1971,46 +1306,12 @@ NULL
 #' @name traits.list
 NULL
 
-#' traits.show is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.show(uuid)
-#' @param uuid 
-#' @return Trait object.
-#' @name traits.show
-NULL
-
-#' traits.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.destroy(uuid)
-#' @param uuid 
-#' @return Trait object.
-#' @name traits.destroy
-NULL
-
 #' virtual_machines.get is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.get(uuid)
 #' @param uuid The UUID of the VirtualMachine in question.
 #' @return VirtualMachine object.
 #' @name virtual_machines.get
-NULL
-
-#' virtual_machines.index is a method defined in Arvados class.
-#' 
-#' @usage arv$virtual_machines.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return VirtualMachineList object.
-#' @name virtual_machines.index
 NULL
 
 #' virtual_machines.create is a method defined in Arvados class.
@@ -2074,46 +1375,12 @@ NULL
 #' @name virtual_machines.list
 NULL
 
-#' virtual_machines.show is a method defined in Arvados class.
-#' 
-#' @usage arv$virtual_machines.show(uuid)
-#' @param uuid 
-#' @return VirtualMachine object.
-#' @name virtual_machines.show
-NULL
-
-#' virtual_machines.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$virtual_machines.destroy(uuid)
-#' @param uuid 
-#' @return VirtualMachine object.
-#' @name virtual_machines.destroy
-NULL
-
 #' workflows.get is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.get(uuid)
 #' @param uuid The UUID of the Workflow in question.
 #' @return Workflow object.
 #' @name workflows.get
-NULL
-
-#' workflows.index is a method defined in Arvados class.
-#' 
-#' @usage arv$workflows.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return WorkflowList object.
-#' @name workflows.index
 NULL
 
 #' workflows.create is a method defined in Arvados class.
@@ -2162,47 +1429,12 @@ NULL
 #' @name workflows.list
 NULL
 
-#' workflows.show is a method defined in Arvados class.
-#' 
-#' @usage arv$workflows.show(uuid)
-#' @param uuid 
-#' @return Workflow object.
-#' @name workflows.show
-NULL
-
-#' workflows.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$workflows.destroy(uuid)
-#' @param uuid 
-#' @return Workflow object.
-#' @name workflows.destroy
-NULL
-
 #' groups.get is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.get(uuid)
 #' @param uuid The UUID of the Group in question.
 #' @return Group object.
 #' @name groups.get
-NULL
-
-#' groups.index is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact", include_trash = NULL)
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @param include_trash Include items whose is_trashed attribute is true.
-#' @return GroupList object.
-#' @name groups.index
 NULL
 
 #' groups.create is a method defined in Arvados class.
@@ -2286,46 +1518,12 @@ NULL
 #' @name groups.list
 NULL
 
-#' groups.show is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.show(uuid)
-#' @param uuid 
-#' @return Group object.
-#' @name groups.show
-NULL
-
-#' groups.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.destroy(uuid)
-#' @param uuid 
-#' @return Group object.
-#' @name groups.destroy
-NULL
-
 #' user_agreements.get is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.get(uuid)
 #' @param uuid The UUID of the UserAgreement in question.
 #' @return UserAgreement object.
 #' @name user_agreements.get
-NULL
-
-#' user_agreements.index is a method defined in Arvados class.
-#' 
-#' @usage arv$user_agreements.index(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return UserAgreementList object.
-#' @name user_agreements.index
 NULL
 
 #' user_agreements.create is a method defined in Arvados class.
@@ -2393,22 +1591,6 @@ NULL
 #' @usage arv$user_agreements.new(NULL)
 #' @return UserAgreement object.
 #' @name user_agreements.new
-NULL
-
-#' user_agreements.show is a method defined in Arvados class.
-#' 
-#' @usage arv$user_agreements.show(uuid)
-#' @param uuid 
-#' @return UserAgreement object.
-#' @name user_agreements.show
-NULL
-
-#' user_agreements.destroy is a method defined in Arvados class.
-#' 
-#' @usage arv$user_agreements.destroy(uuid)
-#' @param uuid 
-#' @return UserAgreement object.
-#' @name user_agreements.destroy
 NULL
 
 #' @export
@@ -2482,30 +1664,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("users")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2734,46 +1892,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		users.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		api_client_authorizations.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
@@ -2781,31 +1899,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -2954,46 +2047,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		api_client_authorizations.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		containers.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("containers/${uuid}")
@@ -3001,31 +2054,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("containers")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3232,46 +2260,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		containers.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		api_clients.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("api_clients/${uuid}")
@@ -3279,31 +2267,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_clients.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("api_clients")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3410,46 +2373,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		api_clients.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_clients/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_clients.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_clients/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		authorized_keys.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
@@ -3457,31 +2380,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		authorized_keys.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("authorized_keys")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3589,46 +2487,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		authorized_keys.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		authorized_keys.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		container_requests.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("container_requests/${uuid}")
@@ -3636,31 +2494,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		container_requests.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("container_requests")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -3768,46 +2601,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("container_requests/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		container_requests.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("container_requests/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		collections.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}")
@@ -3815,32 +2608,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		collections.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact", include_trash = NULL)
-		{
-			endPoint <- stringr::str_interp("collections")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count,
-							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -4028,46 +2795,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		collections.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("collections/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		collections.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("collections/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		humans.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("humans/${uuid}")
@@ -4075,30 +2802,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		humans.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("humans")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4204,46 +2907,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		humans.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("humans/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		humans.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("humans/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		job_tasks.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("job_tasks/${uuid}")
@@ -4251,31 +2914,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("job_tasks")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4382,46 +3020,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		job_tasks.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("job_tasks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("job_tasks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		links.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("links/${uuid}")
@@ -4429,30 +3027,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("links")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4558,46 +3132,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		links.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("links/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("links/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		links.get_permissions = function(uuid)
 		{
 			endPoint <- stringr::str_interp("permissions/${uuid}")
@@ -4625,30 +3159,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("jobs")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4843,46 +3353,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		jobs.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("jobs/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("jobs/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		keep_disks.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("keep_disks/${uuid}")
@@ -4890,31 +3360,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("keep_disks")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5046,46 +3491,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		keep_disks.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_disks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_disks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		keep_services.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("keep_services/${uuid}")
@@ -5093,31 +3498,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_services.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("keep_services")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5245,46 +3625,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		keep_services.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_services/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_services.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_services/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		pipeline_templates.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
@@ -5292,31 +3632,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_templates.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("pipeline_templates")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5424,46 +3739,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_templates.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		pipeline_instances.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
@@ -5471,31 +3746,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("pipeline_instances")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5623,46 +3873,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_instances.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		nodes.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("nodes/${uuid}")
@@ -5670,30 +3880,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("nodes")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -5821,46 +4007,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		nodes.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("nodes/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("nodes/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		repositories.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("repositories/${uuid}")
@@ -5868,31 +4014,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("repositories")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6019,46 +4140,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		repositories.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("repositories/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("repositories/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		specimens.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("specimens/${uuid}")
@@ -6066,31 +4147,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("specimens")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6197,46 +4253,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		specimens.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("specimens/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("specimens/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		logs.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("logs/${uuid}")
@@ -6244,30 +4260,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		logs.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("logs")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6373,46 +4365,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		logs.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("logs/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		logs.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("logs/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		traits.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("traits/${uuid}")
@@ -6420,30 +4372,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		traits.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("traits")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6549,46 +4477,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("traits/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		traits.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("traits/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		virtual_machines.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
@@ -6596,31 +4484,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		virtual_machines.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("virtual_machines")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6768,46 +4631,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		virtual_machines.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		virtual_machines.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		workflows.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("workflows/${uuid}")
@@ -6815,31 +4638,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		workflows.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("workflows")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -6946,46 +4744,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		workflows.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("workflows/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		workflows.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("workflows/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		groups.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("groups/${uuid}")
@@ -6993,32 +4751,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.index = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact",
-			include_trash = NULL)
-		{
-			endPoint <- stringr::str_interp("groups")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count,
-							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -7192,46 +4924,6 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		groups.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		user_agreements.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("user_agreements/${uuid}")
@@ -7239,31 +4931,6 @@ Arvados <- R6::R6Class(
 			headers <- list(Authorization = paste("OAuth2", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		user_agreements.index = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("user_agreements")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -7422,46 +5089,6 @@ Arvados <- R6::R6Class(
 			body <- NULL
 			
 			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		user_agreements.show = function(uuid)
-		{
-			endPoint <- stringr::str_interp("user_agreements/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		user_agreements.destroy = function(uuid)
-		{
-			endPoint <- stringr::str_interp("user_agreements/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
 			                                   queryArgs, private$numRetries)
 			resource <- private$REST$httpParser$parseJSONResponse(response)
 			
