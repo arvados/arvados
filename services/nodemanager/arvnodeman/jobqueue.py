@@ -153,11 +153,11 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     def _send_request(self):
         queuelist = []
         if self.slurm_queue:
-            # cpus, memory, tempory disk space, reason, job name, feature constraints
-            squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j|%f"])
+            # cpus, memory, tempory disk space, reason, job name, feature constraints, priority
+            squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j|%f|%Q"])
             for out in squeue_out.splitlines():
                 try:
-                    cpu, ram, disk, reason, jobname, features = out.split("|", 5)
+                    cpu, ram, disk, reason, jobname, features, priority = out.split("|", 6)
                 except ValueError:
                     self._logger.warning("ignored malformed line in squeue output: %r", out)
                     continue
@@ -177,7 +177,8 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                         "uuid": jobname,
                         "runtime_constraints": {
                             "instance_type": instance_type,
-                        }
+                        },
+                        "priority": int(priority)
                     })
                     break
                 else:
@@ -189,8 +190,10 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                             "min_cores_per_node": cpu,
                             "min_ram_mb_per_node": self.coerce_to_mb(ram),
                             "min_scratch_mb_per_node": self.coerce_to_mb(disk)
-                        }
+                        },
+                        "priority": int(priority)
                     })
+            queuelist.sort(key=lambda x: x.get('priority', 1), reverse=True)
 
         if self.jobs_queue:
             queuelist.extend(self._client.jobs().queue().execute()['items'])
