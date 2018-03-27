@@ -327,6 +327,8 @@ def run(leave_running_atexit=False):
         raise Exception(
             "Passenger did not report endpoint: {}".format(start_msg))
     my_api_host = match.group(1)
+    if my_api_host.startswith("0.0.0.0"):
+        my_api_host = "localhost" + my_api_host[7:]
     os.environ['ARVADOS_API_HOST'] = my_api_host
 
     # Make sure the server has written its pid file and started

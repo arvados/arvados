@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -255,6 +256,9 @@ func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
 		return
 	}
 	api.url = api.listener.Addr().String()
+	if strings.HasPrefix(api.url, "[::]") {
+		api.url = "localhost" + api.url[4:]
+	}
 	go http.Serve(api.listener, st)
 	return
 }

@@ -1,0 +1,2 @@
+TESTDEPS=(install_run_test_server)
+TESTS+=(go)
