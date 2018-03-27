@@ -34,6 +34,8 @@ from arvados.retry import retry_method
 _logger = logging.getLogger('arvados.collection')
 
 class CollectionBase(object):
+    """Abstract base class for Collection classes."""
+
     def __enter__(self):
         return self
 
@@ -91,6 +93,8 @@ class _WriterFile(_FileLikeObjectBase):
 
 
 class CollectionWriter(CollectionBase):
+    """Deprecated, use Collection instead."""
+
     def __init__(self, api_client=None, num_retries=0, replication=None):
         """Instantiate a CollectionWriter.
 
@@ -396,6 +400,8 @@ class CollectionWriter(CollectionBase):
 
 
 class ResumableCollectionWriter(CollectionWriter):
+    """Deprecated, use Collection instead."""
+
     STATE_PROPS = ['_current_stream_files', '_current_stream_length',
                    '_current_stream_locators', '_current_stream_name',
                    '_current_file_name', '_current_file_pos', '_close_file',

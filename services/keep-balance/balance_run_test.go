@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -38,6 +39,63 @@ func (rt *reqTracker) Add(req *http.Request) int {
 	defer rt.Unlock()
 	rt.reqs = append(rt.reqs, *req)
 	return len(rt.reqs)
+}
+
+var stubServices = []arvados.KeepService{
+	{
+		UUID:           "zzzzz-bi6l4-000000000000000",
+		ServiceHost:    "keep0.zzzzz.arvadosapi.com",
+		ServicePort:    25107,
+		ServiceSSLFlag: false,
+		ServiceType:    "disk",
+	},
+	{
+		UUID:           "zzzzz-bi6l4-000000000000001",
+		ServiceHost:    "keep1.zzzzz.arvadosapi.com",
+		ServicePort:    25107,
+		ServiceSSLFlag: false,
+		ServiceType:    "disk",
+	},
+	{
+		UUID:           "zzzzz-bi6l4-000000000000002",
+		ServiceHost:    "keep2.zzzzz.arvadosapi.com",
+		ServicePort:    25107,
+		ServiceSSLFlag: false,
+		ServiceType:    "disk",
+	},
+	{
+		UUID:           "zzzzz-bi6l4-000000000000003",
+		ServiceHost:    "keep3.zzzzz.arvadosapi.com",
+		ServicePort:    25107,
+		ServiceSSLFlag: false,
+		ServiceType:    "disk",
+	},
+	{
+		UUID:           "zzzzz-bi6l4-h0a0xwut9qa6g3a",
+		ServiceHost:    "keep.zzzzz.arvadosapi.com",
+		ServicePort:    25333,
+		ServiceSSLFlag: true,
+		ServiceType:    "proxy",
+	},
+}
+
+var stubMounts = map[string][]arvados.KeepMount{
+	"keep0.zzzzz.arvadosapi.com:25107": {{
+		UUID:     "zzzzz-ivpuk-000000000000000",
+		DeviceID: "keep0-vol0",
+	}},
+	"keep1.zzzzz.arvadosapi.com:25107": {{
+		UUID:     "zzzzz-ivpuk-100000000000000",
+		DeviceID: "keep1-vol0",
+	}},
+	"keep2.zzzzz.arvadosapi.com:25107": {{
+		UUID:     "zzzzz-ivpuk-200000000000000",
+		DeviceID: "keep2-vol0",
+	}},
+	"keep3.zzzzz.arvadosapi.com:25107": {{
+		UUID:     "zzzzz-ivpuk-300000000000000",
+		DeviceID: "keep3-vol0",
+	}},
 }
 
 // stubServer is an HTTP transport that intercepts and processes all
@@ -155,17 +213,32 @@ func (s *stubServer) serveCollectionsButSkipOne() *reqTracker {
 }
 
 func (s *stubServer) serveZeroKeepServices() *reqTracker {
-	return s.serveStatic("/arvados/v1/keep_services",
-		`{"items":[],"items_available":0}`)
+	return s.serveJSON("/arvados/v1/keep_services", arvados.KeepServiceList{})
 }
 
-func (s *stubServer) serveFourDiskKeepServices() *reqTracker {
-	return s.serveStatic("/arvados/v1/keep_services", `{"items_available":5,"items":[
-		{"uuid":"zzzzz-bi6l4-000000000000000","service_host":"keep0.zzzzz.arvadosapi.com","service_port":25107,"service_ssl_flag":false,"service_type":"disk"},
-		{"uuid":"zzzzz-bi6l4-000000000000001","service_host":"keep1.zzzzz.arvadosapi.com","service_port":25107,"service_ssl_flag":false,"service_type":"disk"},
-		{"uuid":"zzzzz-bi6l4-000000000000002","service_host":"keep2.zzzzz.arvadosapi.com","service_port":25107,"service_ssl_flag":false,"service_type":"disk"},
-		{"uuid":"zzzzz-bi6l4-000000000000003","service_host":"keep3.zzzzz.arvadosapi.com","service_port":25107,"service_ssl_flag":false,"service_type":"disk"},
-		{"uuid":"zzzzz-bi6l4-h0a0xwut9qa6g3a","service_host":"keep.zzzzz.arvadosapi.com","service_port":25333,"service_ssl_flag":true,"service_type":"proxy"}]}`)
+func (s *stubServer) serveKeepServices(svcs []arvados.KeepService) *reqTracker {
+	return s.serveJSON("/arvados/v1/keep_services", arvados.KeepServiceList{
+		ItemsAvailable: len(svcs),
+		Items:          svcs,
+	})
+}
+
+func (s *stubServer) serveJSON(path string, resp interface{}) *reqTracker {
+	rt := &reqTracker{}
+	s.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		rt.Add(r)
+		json.NewEncoder(w).Encode(resp)
+	})
+	return rt
+}
+
+func (s *stubServer) serveKeepstoreMounts() *reqTracker {
+	rt := &reqTracker{}
+	s.mux.HandleFunc("/mounts", func(w http.ResponseWriter, r *http.Request) {
+		rt.Add(r)
+		json.NewEncoder(w).Encode(stubMounts[r.Host])
+	})
+	return rt
 }
 
 func (s *stubServer) serveKeepstoreIndexFoo4Bar1() *reqTracker {
@@ -177,6 +250,21 @@ func (s *stubServer) serveKeepstoreIndexFoo4Bar1() *reqTracker {
 		}
 		fmt.Fprintf(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 %d\n\n", 12345678+count)
 	})
+	for _, mounts := range stubMounts {
+		for i, mnt := range mounts {
+			i := i
+			s.mux.HandleFunc(fmt.Sprintf("/mounts/%s/blocks", mnt.UUID), func(w http.ResponseWriter, r *http.Request) {
+				count := rt.Add(r)
+				if i == 0 && r.Host == "keep0.zzzzz.arvadosapi.com:25107" {
+					io.WriteString(w, "37b51d194a7513e45b56f6524f2d51f2+3 12345678\n")
+				}
+				if i == 0 {
+					fmt.Fprintf(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 %d\n", 12345678+count)
+				}
+				fmt.Fprintf(w, "\n")
+			})
+		}
+	}
 	return rt
 }
 
@@ -237,7 +325,8 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
@@ -256,7 +345,8 @@ func (s *runSuite) TestServiceTypes(c *check.C) {
 	s.config.KeepServiceTypes = []string{"unlisted-type"}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	indexReqs := s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	_, err := (&Balancer{}).Run(s.config, opts)
@@ -273,7 +363,8 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	}
 	s.stub.serveCurrentUserNotAdmin()
 	s.stub.serveZeroCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	_, err := (&Balancer{}).Run(s.config, opts)
@@ -290,7 +381,8 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveCollectionsButSkipOne()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
@@ -308,7 +400,8 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	}
 	s.stub.serveCurrentUserAdmin()
 	collReqs := s.stub.serveFooBarFileCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
@@ -335,7 +428,8 @@ func (s *runSuite) TestCommit(c *check.C) {
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
@@ -361,7 +455,8 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
-	s.stub.serveFourDiskKeepServices()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
