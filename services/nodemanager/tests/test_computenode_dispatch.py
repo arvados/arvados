@@ -17,6 +17,7 @@ import threading
 from libcloud.common.exceptions import BaseHTTPError
 
 import arvnodeman.computenode.dispatch as dispatch
+import arvnodeman.status as status
 from arvnodeman.computenode.driver import BaseComputeNodeDriver
 from . import testutil
 
@@ -207,12 +208,22 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
     def check_success_flag(self, expected, allow_msg_count=1):
         # allow_msg_count is the number of internal messages that may
         # need to be handled for shutdown to finish.
-        for try_num in range(1 + allow_msg_count):
+        for _ in range(1 + allow_msg_count):
             last_flag = self.shutdown_actor.success.get(self.TIMEOUT)
             if last_flag is expected:
                 break
         else:
             self.fail("success flag {} is not {}".format(last_flag, expected))
+
+    def test_boot_failure_counting(self, *mocks):
+        # A boot failure happens when a node transitions from unpaired to shutdown
+        status.tracker.update({'boot_failures': 0})
+        self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="unpaired"))
+        self.cloud_client.destroy_node.return_value = True
+        self.make_actor(cancellable=False)
+        self.check_success_flag(True, 2)
+        self.assertTrue(self.cloud_client.destroy_node.called)
+        self.assertEqual(1, status.tracker.get('boot_failures'))
 
     def test_cancellable_shutdown(self, *mocks):
         self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="busy"))
@@ -222,11 +233,14 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.assertFalse(self.cloud_client.destroy_node.called)
 
     def test_uncancellable_shutdown(self, *mocks):
+        status.tracker.update({'boot_failures': 0})
         self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="busy"))
         self.cloud_client.destroy_node.return_value = True
         self.make_actor(cancellable=False)
         self.check_success_flag(True, 4)
         self.assertTrue(self.cloud_client.destroy_node.called)
+        # A normal shutdown shouldn't be counted as boot failure
+        self.assertEqual(0, status.tracker.get('boot_failures'))
 
     def test_arvados_node_cleaned_after_shutdown(self, *mocks):
         if len(mocks) == 1:

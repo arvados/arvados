@@ -20,6 +20,7 @@ from .. import \
     arvados_node_missing, RetryMixin
 from ...clientactor import _notify_subscribers
 from ... import config
+from ... import status
 from .transitions import transitions
 
 QuotaExceeded = "QuotaExceeded"
@@ -272,6 +273,9 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 self.cancel_shutdown("No longer eligible for shut down because %s" % reason,
                                      try_resume=True)
                 return
+        # If boot failed, count the event
+        if self._monitor.get_state().get() == 'unpaired':
+            status.tracker.counter_add('boot_failures')
         self._destroy_node()
 
     def _destroy_node(self):
