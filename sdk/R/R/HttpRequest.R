@@ -21,13 +21,17 @@ HttpRequest <- R6::R6Class(
             if(!(verb %in% self$validVerbs))
                 stop("Http verb is not valid.")
 
-            headers  <- httr::add_headers(unlist(headers))
             urlQuery <- self$createQuery(queryParams)
             url      <- paste0(url, urlQuery)
 
+            config <- httr::add_headers(unlist(headers))
+            if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
+               config$options = list(ssl_verifypeer = FALSE)
+
+            print(config)
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
-                                    config = headers, times = retryTimes + 1)
+                                    config = config, times = retryTimes + 1)
         },
 
         createQuery = function(queryParams)
