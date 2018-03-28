@@ -236,9 +236,9 @@ In order to use Google+ authentication, you must use the <a href="https://consol
 # If the authorization origins are not displayed, clicking on *Create Client ID* will take you to *Consent screen* settings.
 ## On consent screen settings, enter the appropriate details and click on *Save*.
 ## This will return you to the *Create Client ID* dialog box.
-# You must set the authorization origins.  Edit @sso.your-site.com@ to the appropriate hostname that you will use to access the SSO service:
-## JavaScript origin should be @https://sso.your-site.com/@
-## Redirect URI should be @https://sso.your-site.com/users/auth/google_oauth2/callback@
+# You must set the authorization origins.  Edit @auth.your.domain@ to the appropriate hostname that you will use to access the SSO service:
+## JavaScript origin should be @https://auth.your.domain/@
+## Redirect URI should be @https://auth.your.domain/users/auth/google_oauth2/callback@
 # Copy the values of *Client ID* and *Client secret* from the Google Developers Console into the Google section of @config/application.yml@, like this:
 
 <notextile>
