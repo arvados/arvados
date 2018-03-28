@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function
 from future import standard_library
 
 import http.server
+import time
 import json
 import logging
 import socketserver
@@ -82,10 +83,16 @@ class Tracker(object):
             'actor_exceptions': 0
         }
         self._version = {'Version' : __version__}
+        self._idle_nodes = {}
 
     def get_json(self):
         with self._mtx:
-            return json.dumps(dict(self._latest, **self._version))
+            times = {'idle_times' : {}}
+            now = time.time()
+            for node, ts in self._idle_nodes.items():
+                times['idle_times'][node] = int(now - ts)
+            return json.dumps(
+                dict(dict(self._latest, **self._version), **times))
 
     def keys(self):
         with self._mtx:
@@ -103,5 +110,18 @@ class Tracker(object):
         with self._mtx:
             self._latest.setdefault(counter, 0)
             self._latest[counter] += value
+
+    def idle_in(self, nodename):
+        with self._mtx:
+            if self._idle_nodes.get(nodename):
+                return
+            self._idle_nodes[nodename] = time.time()
+
+    def idle_out(self, nodename):
+        with self._mtx:
+            try:
+                del self._idle_nodes[nodename]
+            except KeyError:
+                pass
 
 tracker = Tracker()

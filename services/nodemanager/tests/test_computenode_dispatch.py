@@ -376,16 +376,26 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_state('down'))
 
     def test_in_idle_state(self):
+        idle_nodes_before = status.tracker._idle_nodes.keys()
         self.make_actor(2, arv_node=testutil.arvados_node_mock(job_uuid=None))
         self.assertTrue(self.node_state('idle'))
         self.assertFalse(self.node_state('busy'))
         self.assertTrue(self.node_state('idle', 'busy'))
+        idle_nodes_after = status.tracker._idle_nodes.keys()
+        new_idle_nodes = [n for n in idle_nodes_after if n not in idle_nodes_before]
+        # There should be 1 additional idle node
+        self.assertEqual(1, len(new_idle_nodes))
 
     def test_in_busy_state(self):
+        idle_nodes_before = status.tracker._idle_nodes.keys()
         self.make_actor(3, arv_node=testutil.arvados_node_mock(job_uuid=True))
         self.assertFalse(self.node_state('idle'))
         self.assertTrue(self.node_state('busy'))
         self.assertTrue(self.node_state('idle', 'busy'))
+        idle_nodes_after = status.tracker._idle_nodes.keys()
+        new_idle_nodes = [n for n in idle_nodes_after if n not in idle_nodes_before]
+        # There shouldn't be any additional idle node
+        self.assertEqual(0, len(new_idle_nodes))
 
     def test_init_shutdown_scheduling(self):
         self.make_actor()

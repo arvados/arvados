@@ -413,6 +413,12 @@ class ComputeNodeMonitorActor(config.actor_class):
         #if state == 'idle' and self.arvados_node['job_uuid']:
         #    state = 'busy'
 
+        # Update idle node times tracker
+        if state == 'idle':
+            status.tracker.idle_in(self.arvados_node['hostname'])
+        else:
+            status.tracker.idle_out(self.arvados_node['hostname'])
+
         return state
 
     def in_state(self, *states):
