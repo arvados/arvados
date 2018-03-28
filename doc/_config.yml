@@ -17,17 +17,6 @@ arvados_workbench_host: http://localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  #start:
-    #- Getting Started:
-      #- start/index.html.textile.liquid
-    #- Quickstart:
-      #- start/getting_started/publicproject.html.textile.liquid
-      #- start/getting_started/firstpipeline.html.textile.liquid
-    #- Common Use Cases:
-      #- start/getting_started/sharedata.html.textile.liquid
-    #- Next Steps:
-      #- start/getting_started/nextsteps.html.textile.liquid
-
   userguide:
     - Welcome:
       - user/index.html.textile.liquid
@@ -67,17 +56,11 @@ navbar:
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
-    - Develop a web service:
-      - user/topics/arv-web.html.textile.liquid
     - Reference:
       - user/reference/cookbook.html.textile.liquid
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
-    - Admin tools:
-      - user/topics/arvados-sync-groups.html.textile.liquid
-      - admin/change-account-owner.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
     - Query the metadata database:
       - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
@@ -156,6 +139,15 @@ navbar:
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
+  admin:
+    - Overview:
+      - admin/index.html.textile.liquid
+    - Topics:
+      - admin/upgrading.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
+      - user/topics/arvados-sync-groups.html.textile.liquid
+      - install/migrate-docker19.html.textile.liquid
+      - install/cheat_sheet.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
@@ -187,8 +179,3 @@ navbar:
     - Jobs API support (deprecated):
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
-    - Helpful hints:
-      - install/copy_pipeline_from_curoverse.html.textile.liquid
-      - install/cheat_sheet.html.textile.liquid
-    - Migrating from Docker 1.9:
-      - install/migrate-docker19.html.textile.liquid
