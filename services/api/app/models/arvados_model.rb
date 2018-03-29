@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'arvados_model_updates'
 require 'has_uuid'
 require 'record_filters'
 require 'serializers'
@@ -10,6 +11,7 @@ require 'request_error'
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
+  include ArvadosModelUpdates
   include CurrentApiClient      # current_user, current_api_client, etc.
   include DbCurrentTime
   extend RecordFilters
@@ -539,7 +541,9 @@ class ArvadosModel < ActiveRecord::Base
     self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = current_time
-    self.modified_by_user_uuid = current_user ? current_user.uuid : nil
+    if !anonymous_updater
+      self.modified_by_user_uuid = current_user ? current_user.uuid : nil
+    end
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true
   end
