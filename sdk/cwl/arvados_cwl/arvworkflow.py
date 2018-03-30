@@ -148,23 +148,28 @@ class ArvadosWorkflow(Workflow):
                     builder.hints = workflowobj["hints"]
                     builder.resources = {}
 
-                    for item in packed["$graph"]:
+                    def visit(item):
                         for t in ("hints", "requirements"):
+                            if t not in item:
+                                continue
                             for req in item[t]:
                                 if req["class"] == "ResourceRequirement":
                                     dyn = False
                                     for k in max_res_pars + sum_res_pars:
-                                        if isinstance(req[k], basestr):
-                                            if item["id"] == "#main":
-                                                # only the top-level requirements/hints may contain expressions
-                                                self.dynamic_resource_req.append(req)
-                                                dyn = True
-                                                break
-                                            else:
-                                                with SourceLine(req, k, WorkflowException):
-                                                    raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
+                                        if k in req:
+                                            if isinstance(req[k], basestring):
+                                                if item["id"] == "#main":
+                                                    # only the top-level requirements/hints may contain expressions
+                                                    self.dynamic_resource_req.append(req)
+                                                    dyn = True
+                                                    break
+                                                else:
+                                                    with SourceLine(req, k, WorkflowException):
+                                                        raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
                                     if not dyn:
                                         self.static_resource_req.append(req)
+
+                    visit_class(packed["$graph"], ("Workflow", "CommandLineTool"), visit)
 
                     if self.static_resource_req:
                         self.static_resource_req = [get_overall_res_req(self.static_resource_req)]
@@ -177,6 +182,12 @@ class ArvadosWorkflow(Workflow):
                                         False)
 
             if self.dynamic_resource_req:
+                builder = Builder()
+                builder.job = joborder
+                builder.requirements = self.requirements
+                builder.hints = self.hints
+                builder.resources = {}
+
                 # Evaluate dynamic resource requirements using current builder
                 rs = copy.copy(self.static_resource_req)
                 for dyn_rs in self.dynamic_resource_req:
