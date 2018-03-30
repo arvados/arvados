@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'sweep_trashed_collections'
+require 'sweep_trashed_objects'
 
 class CollectionTest < ActiveSupport::TestCase
   include DbCurrentTime
@@ -556,7 +556,7 @@ class CollectionTest < ActiveSupport::TestCase
     assert_includes(coll_uuids, collections(:docker_image).uuid)
   end
 
-  test "move to trash in SweepTrashedCollections" do
+  test "move collections to trash in SweepTrashedObjects" do
     c = collections(:trashed_on_next_sweep)
     refute_empty Collection.where('uuid=? and is_trashed=false', c.uuid)
     assert_raises(ActiveRecord::RecordNotUnique) do
@@ -565,7 +565,7 @@ class CollectionTest < ActiveSupport::TestCase
                            name: c.name)
       end
     end
-    SweepTrashedCollections.sweep_now
+    SweepTrashedObjects.sweep_now
     c = Collection.where('uuid=? and is_trashed=true', c.uuid).first
     assert c
     act_as_user users(:active) do
@@ -574,14 +574,14 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test "delete in SweepTrashedCollections" do
+  test "delete collections in SweepTrashedObjects" do
     uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
     assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedCollections.sweep_now
+    SweepTrashedObjects.sweep_now
     assert_empty Collection.where(uuid: uuid)
   end
 
-  test "delete referring links in SweepTrashedCollections" do
+  test "delete referring links in SweepTrashedObjects" do
     uuid = collections(:trashed_on_next_sweep).uuid
     act_as_system_user do
       Link.create!(head_uuid: uuid,
@@ -593,7 +593,7 @@ class CollectionTest < ActiveSupport::TestCase
     Collection.where(uuid: uuid).
       update_all(is_trashed: true, trash_at: past, delete_at: past)
     assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedCollections.sweep_now
+    SweepTrashedObjects.sweep_now
     assert_empty Collection.where(uuid: uuid)
   end
 end

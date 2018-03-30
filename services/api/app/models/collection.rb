@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'arvados/keep'
-require 'sweep_trashed_collections'
+require 'sweep_trashed_objects'
 require 'trashable'
 
 class Collection < ArvadosModel
@@ -448,7 +448,7 @@ class Collection < ArvadosModel
   end
 
   def self.where *args
-    SweepTrashedCollections.sweep_if_stale
+    SweepTrashedObjects.sweep_if_stale
     super
   end
 
