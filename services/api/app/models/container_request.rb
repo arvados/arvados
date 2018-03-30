@@ -5,6 +5,7 @@
 require 'whitelist_update'
 
 class ContainerRequest < ArvadosModel
+  include ArvadosModelUpdates
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -110,7 +111,9 @@ class ContainerRequest < ArvadosModel
     if state == Committed && Container.find_by_uuid(container_uuid).final?
       reload
       act_as_system_user do
-        finalize!
+        leave_modified_by_user_alone do
+          finalize!
+        end
       end
     end
   end

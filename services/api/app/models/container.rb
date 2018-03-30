@@ -7,6 +7,7 @@ require 'whitelist_update'
 require 'safe_json'
 
 class Container < ArvadosModel
+  include ArvadosModelUpdates
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -560,9 +561,11 @@ class Container < ArvadosModel
           c = Container.create! c_attrs
           retryable_requests.each do |cr|
             cr.with_lock do
-              # Use row locking because this increments container_count
-              cr.container_uuid = c.uuid
-              cr.save!
+              leave_modified_by_user_alone do
+                # Use row locking because this increments container_count
+                cr.container_uuid = c.uuid
+                cr.save!
+              end
             end
           end
         end
@@ -570,7 +573,9 @@ class Container < ArvadosModel
         # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
                                state: ContainerRequest::Committed).each do |cr|
-          cr.finalize!
+          leave_modified_by_user_alone do
+            cr.finalize!
+          end
         end
 
         # Cancel outstanding container requests made by this container.
@@ -578,19 +583,20 @@ class Container < ArvadosModel
           includes(:container).
           where(requesting_container_uuid: uuid,
                 state: ContainerRequest::Committed).each do |cr|
-          cr.update_attributes!(priority: 0)
-          cr.container.reload
-          if cr.container.state == Container::Queued || cr.container.state == Container::Locked
-            # If the child container hasn't started yet, finalize the
-            # child CR now instead of leaving it "on hold", i.e.,
-            # Queued with priority 0.  (OTOH, if the child is already
-            # running, leave it alone so it can get cancelled the
-            # usual way, get a copy of the log collection, etc.)
-            cr.update_attributes!(state: ContainerRequest::Final)
+          leave_modified_by_user_alone do
+            cr.update_attributes!(priority: 0)
+            cr.container.reload
+            if cr.container.state == Container::Queued || cr.container.state == Container::Locked
+              # If the child container hasn't started yet, finalize the
+              # child CR now instead of leaving it "on hold", i.e.,
+              # Queued with priority 0.  (OTOH, if the child is already
+              # running, leave it alone so it can get cancelled the
+              # usual way, get a copy of the log collection, etc.)
+              cr.update_attributes!(state: ContainerRequest::Final)
+            end
           end
         end
       end
     end
   end
-
 end

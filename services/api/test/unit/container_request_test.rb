@@ -200,6 +200,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Request is finalized when its container is cancelled" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 1)
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
 
     act_as_system_user do
       Container.find_by_uuid(cr.container_uuid).
@@ -208,6 +209,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
     assert_equal "Final", cr.state
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
   end
 
   test "Request is finalized when its container is completed" do
@@ -216,6 +218,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(owner_uuid: project.uuid,
                              priority: 1,
                              state: "Committed")
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
@@ -237,6 +240,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
     assert_equal "Final", cr.state
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
     ['output', 'log'].each do |out_type|
       pdh = Container.find_by_uuid(cr.container_uuid).send(out_type)
       assert_equal(1, Collection.where(portable_data_hash: pdh,
@@ -261,6 +265,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr2 = create_minimal_req!
     cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
     cr2.reload
+    assert_equal users(:active).uuid, cr2.modified_by_user_uuid
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_operator 0, :<, c2.priority
@@ -275,6 +280,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr2.reload
     assert_equal 0, cr2.priority
+    assert_equal users(:active).uuid, cr2.modified_by_user_uuid
 
     c2.reload
     assert_equal 0, c2.priority
