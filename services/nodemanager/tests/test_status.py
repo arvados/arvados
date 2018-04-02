@@ -65,7 +65,8 @@ class StatusServerUpdates(unittest.TestCase):
         with TestServer() as srv:
             resp = srv.get_status()
             # Test counters existance
-            for counter in ['cloud_errors', 'boot_failures', 'actor_exceptions']:
+            for counter in ['list_nodes_errors', 'create_node_errors',
+                'destroy_node_errors', 'boot_failures', 'actor_exceptions']:
                 self.assertIn(counter, resp)
             # Test counter increment
             for count in range(1, 3):

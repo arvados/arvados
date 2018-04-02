@@ -72,7 +72,7 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
 
 
     def test_create_node_only_cloud_errors_are_counted(self):
-        status.tracker.update({'cloud_errors': 0})
+        status.tracker.update({'create_node_errors': 0})
         errors = [(config.CLOUD_ERRORS[0], True), (KeyError, False)]
         self.driver_mock().list_images.return_value = []
         driver = self.TestBaseComputeNodeDriver({}, {}, {}, self.driver_mock)
@@ -83,10 +83,10 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
                 driver.create_node('1', 'id_1')
             if is_cloud_error:
                 error_count += 1
-            self.assertEqual(error_count, status.tracker.get('cloud_errors'))
+            self.assertEqual(error_count, status.tracker.get('create_node_errors'))
 
     def test_list_nodes_only_cloud_errors_are_counted(self):
-        status.tracker.update({'cloud_errors': 0})
+        status.tracker.update({'list_nodes_errors': 0})
         errors = [(config.CLOUD_ERRORS[0], True), (KeyError, False)]
         driver = self.TestBaseComputeNodeDriver({}, {}, {}, self.driver_mock)
         error_count = 0
@@ -96,10 +96,10 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
                 driver.list_nodes()
             if is_cloud_error:
                 error_count += 1
-            self.assertEqual(error_count, status.tracker.get('cloud_errors'))
+            self.assertEqual(error_count, status.tracker.get('list_nodes_errors'))
 
     def test_destroy_node_only_cloud_errors_are_counted(self):
-        status.tracker.update({'cloud_errors': 0})
+        status.tracker.update({'destroy_node_errors': 0})
         errors = [(config.CLOUD_ERRORS[0], True), (KeyError, False)]
         self.driver_mock().list_nodes.return_value = [testutil.MockSize(1)]
         driver = self.TestBaseComputeNodeDriver({}, {}, {}, self.driver_mock)
@@ -110,4 +110,4 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
                 driver.destroy_node(testutil.MockSize(1))
             if is_cloud_error:
                 error_count += 1
-            self.assertEqual(error_count, status.tracker.get('cloud_errors'))
+            self.assertEqual(error_count, status.tracker.get('destroy_node_errors'))

@@ -143,6 +143,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         size = testutil.MockSize(1)
         self.make_daemon(want_sizes=[size])
         self.busywait(lambda: self.node_setup.start.called)
+        self.assertIn('node_quota', status.tracker._latest)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
         self.busywait(lambda: len(arv_nodes) == len(self.monitored_arvados_nodes()))

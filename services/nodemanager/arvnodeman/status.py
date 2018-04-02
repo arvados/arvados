@@ -78,7 +78,9 @@ class Tracker(object):
     def __init__(self):
         self._mtx = threading.Lock()
         self._latest = {
-            'cloud_errors': 0,
+            'list_nodes_errors': 0,
+            'create_node_errors': 0,
+            'destroy_node_errors': 0,
             'boot_failures': 0,
             'actor_exceptions': 0
         }

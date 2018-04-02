@@ -127,7 +127,7 @@ class BaseComputeNodeDriver(RetryMixin):
         try:
             return self.real.list_nodes(**l)
         except CLOUD_ERRORS:
-            tracker.counter_add('cloud_errors')
+            tracker.counter_add('list_nodes_errors')
             raise
 
     def create_cloud_name(self, arvados_node):
@@ -186,7 +186,7 @@ class BaseComputeNodeDriver(RetryMixin):
             try:
                 return self.search_for_now(kwargs['name'], 'list_nodes', self._name_key)
             except ValueError:
-                tracker.counter_add('cloud_errors')
+                tracker.counter_add('create_node_errors')
                 raise create_error
 
     def post_create_node(self, cloud_node):
@@ -229,7 +229,7 @@ class BaseComputeNodeDriver(RetryMixin):
                 # it, which means destroy_node actually succeeded.
                 return True
             # The node is still on the list.  Re-raise.
-            tracker.counter_add('cloud_errors')
+            tracker.counter_add('destroy_node_errors')
             raise
 
     # Now that we've defined all our own methods, delegate generic, public
