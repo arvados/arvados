@@ -146,3 +146,28 @@
   }
   tool: wf/secret_wf.cwl
   doc: "Test secret input parameters"
+
+- job: null
+  output:
+    out: null
+  tool: wf/runin-reqs-wf.cwl
+  doc: "RunInSingleContainer handles dynamic resource requests on step"
+
+- job: null
+  output:
+    out: null
+  tool: wf/runin-reqs-wf2.cwl
+  doc: "RunInSingleContainer handles dynamic resource requests on embedded subworkflow"
+
+- job: null
+  output:
+    out: null
+  tool: wf/runin-reqs-wf3.cwl
+  should_fail: true
+  doc: "RunInSingleContainer disallows dynamic resource request on subworkflow steps"
+
+- job: null
+  output:
+    out: null
+  tool: wf/runin-reqs-wf4.cwl
+  doc: "RunInSingleContainer discovers static resource request in subworkflow steps"
