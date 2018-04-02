@@ -20,7 +20,7 @@ module SweepTrashedObjects
     # exceptions, and delete records owned by this project
     skipped_classes = ['Group', 'User']
     ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
-      if !skipped_classes.include?(klass.name) && klass.columns.collect{|c| c.name}.include?('owner_uuid')
+      if !skipped_classes.include?(klass.name) && klass.columns.collect{&:name}.include?('owner_uuid')
         klass.where({owner_uuid: p_uuid}).destroy_all
       end
     end

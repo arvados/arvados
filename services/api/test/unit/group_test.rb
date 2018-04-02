@@ -203,6 +203,13 @@ class GroupTest < ActiveSupport::TestCase
     col = collections(:collection_in_trashed_subproject)
     job = jobs(:job_in_trashed_project)
     cr = container_requests(:cr_in_trashed_project)
+    # Save how many objects were before the sweep
+    user_nr_was = User.all.length
+    coll_nr_was = Collection.all.length
+    group_nr_was = Group.where('group_class != "project"').length
+    project_nr_was = Group.where(group_class: "project").length
+    cr_nr_was = CollectionRequest.all.length
+    job_nr_was = Job.all.length
     assert_not_empty Group.where(uuid: g_foo.uuid)
     assert_not_empty Group.where(uuid: g_bar.uuid)
     assert_not_empty Group.where(uuid: g_baz.uuid)
@@ -216,5 +223,12 @@ class GroupTest < ActiveSupport::TestCase
     assert_empty Collection.where(uuid: col.uuid)
     assert_empty Job.where(uuid: job.uuid)
     assert_empty ContainerRequest.where(uuid: cr.uuid)
+    # No unwanted deletions should have happened
+    assert_equal user_nr_was, User.all.length
+    assert_equal coll_nr_was-1, Collection.all.length
+    assert_equal group_nr_was, Group.where('group_class != "project"').length
+    assert_equal project_nr_was-3, Group.where(group_class: "project").length
+    assert_equal cr_nr_was-1, CollectionRequest.all.length
+    assert_equal job_nr_was-1, Job.all.length
   end
 end
