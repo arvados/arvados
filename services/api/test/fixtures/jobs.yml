@@ -415,6 +415,17 @@ job_in_subproject:
   state: Complete
   script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
 
+job_in_trashed_project:
+  uuid: zzzzz-8i9sb-subprojectjob02
+  created_at: 2014-10-15 12:00:00
+  owner_uuid: zzzzz-j7d0g-trashedproject2
+  log: ~
+  repository: active/foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+
 running_will_be_completed:
   uuid: zzzzz-8i9sb-rshmckwoma9pjh8
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
