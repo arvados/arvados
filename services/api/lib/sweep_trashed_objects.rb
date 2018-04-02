@@ -7,7 +7,7 @@ require 'current_api_client'
 module SweepTrashedObjects
   extend CurrentApiClient
 
-  def delete_project_and_contents(p_uuid)
+  def self.delete_project_and_contents(p_uuid)
     p = Group.find_by_uuid(p_uuid)
     if !p || p.group_class != 'project'
       raise "can't sweep group '#{p_uuid}', it may not exist or not be a project"
