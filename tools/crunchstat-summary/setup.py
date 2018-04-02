@@ -14,12 +14,13 @@ SETUP_DIR = os.path.dirname(__file__) or '.'
 tagger = egg_info_cmd.egg_info
 version = os.environ.get("ARVADOS_BUILDING_VERSION")
 if not version:
-    version = "0.1"
     try:
-        import gittaggers
-        tagger = gittaggers.EggInfoFromGit
+        import arvados_version
+        vtag = arvados_version.VersionInfoFromGit()
+        version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
     except ImportError:
         pass
+
 
 setup(name='crunchstat_summary',
       version=version,

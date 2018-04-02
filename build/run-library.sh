@@ -58,15 +58,16 @@ version_from_git() {
     fi
 
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-    echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
-}
+    ARVADOS_BUILDING_VERSION="$(git describe --abbrev=0).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    echo "$ARVADOS_BUILDING_VERSION"
+} 
 
 nohash_version_from_git() {
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git $1 | cut -d. -f1-3
+    version_from_git $1 | cut -d. -f1-4
 }
 
 timestamp_from_git() {
@@ -263,13 +264,42 @@ test_package_presence() {
     # See if we can skip building the package, only if it already exists in the
     # processed/ directory. If so, move it back to the packages directory to make
     # sure it gets picked up by the test and/or upload steps.
-    if [[ -e "processed/$complete_pkgname" ]]; then
-      echo "Package $complete_pkgname exists, not rebuilding!"
-      mv processed/$complete_pkgname .
-      return 1
+    # Get the list of packages from the repos
+
+    if [[ "$FORMAT" == "deb" ]]; then
+      debian_distros="jessie precise stretch trusty wheezy xenial"
+
+      for D in ${debian_distros}; do
+        if [ ${pkgname:0:3} = "lib" ]; then
+          repo_subdir=${pkgname:0:4}
+        else
+          repo_subdir=${pkgname:0:1}
+        fi
+
+        repo_pkg_list=$(curl -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
+        echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+        if [ $? -eq 0 ]; then
+          echo "Package $complete_pkgname exists, not rebuilding!"
+          curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+          return 1
+        else
+          echo "Package $complete_pkgname not found, building"
+          return 0
+        fi
+      done
     else
-      echo "Package $complete_pkgname not found, building"
-      return 0
+      centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
+
+      repo_pkg_list=$(curl -o - ${centos_repo})
+      echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+      if [ $? -eq 0 ]; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
+        curl -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
+        return 1
+      else
+        echo "Package $complete_pkgname not found, building"
+        return 0
+      fi
     fi
 }
 
