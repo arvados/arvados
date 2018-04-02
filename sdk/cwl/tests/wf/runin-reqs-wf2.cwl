@@ -7,9 +7,14 @@ cwlVersion: v1.0
 $namespaces:
   arv: "http://arvados.org/cwl#"
 inputs:
-  sleeptime:
+  count:
     type: int[]
     default: [1, 2, 3, 4]
+  script:
+    type: File
+    default:
+      class: File
+      location: check_mem.py
 outputs:
   out: []
 requirements:
@@ -20,31 +25,35 @@ requirements:
 steps:
   substep:
     in:
-      sleeptime: sleeptime
+      count: count
+      script: script
     out: []
     hints:
       - class: arv:RunInSingleContainer
-    scatter: sleeptime
+      - class: arv:APIRequirement
+    scatter: count
     run:
       class: Workflow
       id: mysub
       inputs:
-        sleeptime: int
+        count: int
+        script: File
       outputs: []
       hints:
-      - class: ResourceRequirement
-        ramMin: $(inputs.sleeptime*4)
+        - class: ResourceRequirement
+          ramMin: $(inputs.count*4)
       steps:
         sleep1:
           in:
-            sleeptime: sleeptime
+            count: count
+            script: script
           out: []
           run:
             class: CommandLineTool
             id: subtool
             inputs:
-              sleeptime:
+              count:
                 type: int
-                inputBinding: {position: 1}
+              script: File
             outputs: []
-            baseCommand: sleep
+            arguments: [python, $(inputs.script), $(inputs.count * 4)]
