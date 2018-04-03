@@ -47,7 +47,7 @@ type webdavFS struct {
 }
 
 func (fs *webdavFS) makeparents(name string) {
-	dir, name := path.Split(name)
+	dir, _ := path.Split(name)
 	if dir == "" || dir == "/" {
 		return
 	}

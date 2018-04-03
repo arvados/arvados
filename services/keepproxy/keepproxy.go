@@ -522,7 +522,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	// Now try to put the block through
 	if locatorIn == "" {
 		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
-			err = errors.New(fmt.Sprintf("Error reading request body: %s", err))
+			_ = errors.New(fmt.Sprintf("Error reading request body: %s", err))
 			status = http.StatusInternalServerError
 			return
 		} else {

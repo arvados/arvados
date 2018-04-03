@@ -223,6 +223,7 @@ func (s *IntegrationSuite) TestSbatchFail(c *C) {
 		{"object_uuid", "=", container.UUID},
 		{"event_type", "=", "dispatch"},
 	}}, &ll)
+	c.Assert(err, IsNil)
 	c.Assert(len(ll.Items), Equals, 1)
 }
 

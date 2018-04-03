@@ -267,7 +267,9 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 	pos, err = f.Seek(0, io.SeekCurrent)
 	c.Check(pos, check.Equals, int64(18))
+	c.Check(err, check.IsNil)
 	pos, err = f.Seek(-18, io.SeekCurrent)
+	c.Check(pos, check.Equals, int64(0))
 	c.Check(err, check.IsNil)
 	n, err = io.ReadFull(f, buf)
 	c.Check(n, check.Equals, 18)
@@ -280,6 +282,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// truncate to current size
 	err = f.Truncate(18)
+	c.Check(err, check.IsNil)
 	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
@@ -313,6 +316,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// shrink to block/extent boundary
 	err = f.Truncate(32)
+	c.Check(err, check.IsNil)
 	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
@@ -321,6 +325,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 
 	// shrink to partial block/extent
 	err = f.Truncate(15)
+	c.Check(err, check.IsNil)
 	f2.Seek(0, io.SeekStart)
 	buf2, err = ioutil.ReadAll(f2)
 	c.Check(err, check.IsNil)
@@ -359,12 +364,14 @@ func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
 
 	checkSize := func(size int64) {
 		fi, err := f.Stat()
+		c.Assert(err, check.IsNil)
 		c.Check(fi.Size(), check.Equals, size)
 
 		f, err := fs.OpenFile("test", os.O_CREATE|os.O_RDWR, 0755)
 		c.Assert(err, check.IsNil)
 		defer f.Close()
 		fi, err = f.Stat()
+		c.Check(err, check.IsNil)
 		c.Check(fi.Size(), check.Equals, size)
 		pos, err := f.Seek(0, io.SeekEnd)
 		c.Check(err, check.IsNil)
@@ -786,10 +793,10 @@ func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
 
 	expect := map[string][]byte{
 		"0":                nil,
-		"00":               []byte{},
-		"one":              []byte{1},
+		"00":               {},
+		"one":              {1},
 		"dir/0":            nil,
-		"dir/two":          []byte{1, 2},
+		"dir/two":          {1, 2},
 		"dir/zero":         nil,
 		"dir/zerodir/zero": nil,
 		"zero/zero/zero":   nil,
@@ -812,10 +819,10 @@ func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	for name, data := range expect {
-		f, err := persisted.Open("bogus-" + name)
+		_, err = persisted.Open("bogus-" + name)
 		c.Check(err, check.NotNil)
 
-		f, err = persisted.Open(name)
+		f, err := persisted.Open(name)
 		c.Assert(err, check.IsNil)
 
 		if data == nil {
@@ -873,9 +880,11 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	c.Check(n, check.Equals, 1)
 	c.Check(buf[:1], check.DeepEquals, []byte{1})
 	pos, err = f.Seek(0, io.SeekCurrent)
+	c.Assert(err, check.IsNil)
 	c.Check(pos, check.Equals, int64(1))
 	f.Write([]byte{4, 5, 6})
 	pos, err = f.Seek(0, io.SeekCurrent)
+	c.Assert(err, check.IsNil)
 	c.Check(pos, check.Equals, int64(6))
 	f.Seek(0, io.SeekStart)
 	n, err = f.Read(buf)
@@ -893,6 +902,7 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	c.Check(pos, check.Equals, int64(3))
 	f.Write([]byte{7, 8, 9})
 	pos, err = f.Seek(0, io.SeekCurrent)
+	c.Check(err, check.IsNil)
 	c.Check(pos, check.Equals, int64(9))
 	f.Close()
 
