@@ -213,6 +213,7 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 	c.Check(f.Close(), check.IsNil)
 
 	m, err := s.fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
 	c.Check(m, check.Matches, `. 37b51d194a7513e45b56f6524f2d51f2\+3\+\S+ 0:3:new-file\\0401\n./dir1 .* 3:3:bar 0:3:foo\n`)
 }
 
@@ -366,6 +367,7 @@ func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
 		fi, err = f.Stat()
 		c.Check(fi.Size(), check.Equals, size)
 		pos, err := f.Seek(0, io.SeekEnd)
+		c.Check(err, check.IsNil)
 		c.Check(pos, check.Equals, size)
 	}
 

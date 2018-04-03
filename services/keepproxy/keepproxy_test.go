@@ -294,6 +294,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		reader, blocklen, _, err := kc.Get(hash2)
 		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
+		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Get (expected success)")
@@ -313,6 +314,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
 		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
+		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte(""))
 		c.Check(blocklen, Equals, int64(0))
 		c.Log("Finished Get zero block")
@@ -411,6 +413,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 		c.Check(err, Equals, nil)
 		c.Check(resp.StatusCode, Equals, 200)
 		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, IsNil)
 		c.Check(string(body), Equals, "")
 		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, POST, PUT, OPTIONS")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
@@ -487,8 +490,8 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	c.Check(all, DeepEquals, data)
 
 	// Put some more blocks
-	_, rep, err = kc.PutB([]byte("some-more-index-data"))
-	c.Check(err, Equals, nil)
+	_, _, err = kc.PutB([]byte("some-more-index-data"))
+	c.Check(err, IsNil)
 
 	kc.Arvados.ApiToken = arvadostest.DataManagerToken
 
