@@ -16,6 +16,8 @@ tagger = egg_info_cmd.egg_info
 version = os.environ.get("ARVADOS_BUILDING_VERSION")
 if not version:
     try:
+        import gittaggers
+        tagger = gittaggers.EggInfoFromGit
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
         version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
