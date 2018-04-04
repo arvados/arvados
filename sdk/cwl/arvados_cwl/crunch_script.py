@@ -129,6 +129,8 @@ def run():
         args.trash_intermediate = False
         args.intermediate_output_ttl = 0
         args.priority = arvados_cwl.DEFAULT_PRIORITY
+        args.do_validate = True
+        args.disable_js_validation = False
 
         runner.arv_executor(t, job_order_object, **vars(args))
     except Exception as e:

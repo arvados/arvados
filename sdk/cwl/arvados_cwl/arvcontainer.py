@@ -395,7 +395,11 @@ class RunnerContainer(Runner):
                 container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
 
 
-        command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
+        # --local means execute the workflow instead of submitting a container request
+        # --api=containers means use the containers API
+        # --no-log-timestamps means don't add timestamps (the logging infrastructure does this)
+        # --disable-validate because we already validated so don't need to do it again
+        command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps", "--disable-validate"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
             container_req["output_name"] = self.output_name
