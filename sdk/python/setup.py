@@ -13,11 +13,10 @@ SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
 tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
+#version = os.environ.get("ARVADOS_BUILDING_VERSION")
+version = __version__
 if not version:
     try:
-        import gittaggers
-        tagger = gittaggers.EggInfoFromGit
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
         version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
