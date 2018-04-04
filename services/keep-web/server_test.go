@@ -273,7 +273,6 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	// Discard (but measure size of) anything past 128 MiB.
 	var discarded int64
 	if err == io.ErrUnexpectedEOF {
-		err = nil
 		buf = buf[:n]
 	} else {
 		c.Assert(err, check.Equals, nil)

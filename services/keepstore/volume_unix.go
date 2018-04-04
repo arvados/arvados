@@ -482,6 +482,11 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 				"+", fileInfo[0].Size(),
 				" ", fileInfo[0].ModTime().UnixNano(),
 				"\n")
+			if err != nil {
+				log.Print("Error writing : ", err)
+				lastErr = err
+				break
+			}
 		}
 		blockdir.Close()
 	}
