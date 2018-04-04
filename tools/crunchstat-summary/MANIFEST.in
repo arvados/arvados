@@ -5,3 +5,4 @@
 include agpl-3.0.txt
 include crunchstat_summary/dygraphs.js
 include crunchstat_summary/synchronizer.js
+include arvados_version.py
