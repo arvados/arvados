@@ -14,7 +14,7 @@ SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados")
+version = arvados_version.get_version(SETUP_DIR, "arvados_fuse")
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
