@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import absolute_import
 import os
 import sys
 import re
@@ -12,27 +13,8 @@ from setuptools import setup, find_packages
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-env_version = os.environ.get("ARVADOS_BUILDING_VERSION")
-
-def save_version(module, v):
-  with open(os.path.join(SETUP_DIR, module, "_version.py"), 'w') as fp:
-      return fp.write("__version__ = '%s'\n" % v)
-
-def read_version(module):
-  with open(os.path.join(SETUP_DIR, module, "_version.py"), 'r') as fp:
-      return re.match("__version__ = '(.*)'$", fp.read()).groups()[0]
-
-if env_version:
-    save_version("arvados", env_version)
-else:
-    try:
-        import arvados_version
-        vtag = arvados_version.VersionInfoFromGit()
-        save_version("arvados", vtag.git_latest_tag() + vtag.git_timestamp_tag())
-    except ImportError:
-        pass
-
-version = read_version("arvados")
+import arvados_version
+version = arvados_version.get_version(SETUP_DIR, "arvados")
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
