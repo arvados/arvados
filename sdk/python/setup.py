@@ -20,7 +20,7 @@ if not version:
         tagger = gittaggers.EggInfoFromGit
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
-        version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
+        version = vtag.git_latest_tag()
     except ImportError:
         pass
 
