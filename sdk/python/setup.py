@@ -8,7 +8,7 @@ import sys
 import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
-version = ""
+
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
@@ -20,7 +20,7 @@ if not version:
         tagger = gittaggers.EggInfoFromGit
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
-        version = vtag.git_latest_tag()
+        version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
     except ImportError:
         pass
 
