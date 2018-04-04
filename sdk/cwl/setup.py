@@ -5,23 +5,34 @@
 
 import os
 import sys
-import subprocess
-import setuptools.command.egg_info as egg_info_cmd
+import re
 
 from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
-if not version:
+env_version = os.environ.get("ARVADOS_BUILDING_VERSION")
+
+def save_version(module, v):
+  with open(os.path.join(SETUP_DIR, module, "_version.py"), 'w') as fp:
+      return fp.write("__version__ = '%s'\n" % v)
+
+def read_version(module):
+  with open(os.path.join(SETUP_DIR, module, "_version.py"), 'r') as fp:
+      return re.match("__version__ = '(.*)'$", fp.read()).groups()[0]
+
+if env_version:
+    save_version("arvados_cwl", env_version)
+else:
     try:
         import arvados_version
         vtag = arvados_version.VersionInfoFromGit()
-        version = vtag.git_latest_tag() + vtag.git_timestamp_tag()
+        save_version("arvados_cwl", vtag.git_latest_tag() + vtag.git_timestamp_tag())
     except ImportError:
         pass
+
+version = read_version("arvados_cwl")
 
 setup(name='arvados-cwl-runner',
       version=version,
@@ -54,6 +65,5 @@ setup(name='arvados-cwl-runner',
       ],
       test_suite='tests',
       tests_require=['mock>=1.0'],
-      zip_safe=True,
-      cmdclass={'egg_info': tagger},
+      zip_safe=True
       )

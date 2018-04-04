@@ -29,3 +29,4 @@ services/api/config/arvados-clients.yml
 .DS_Store
 .vscode
 .Rproj.user
+_version.py
