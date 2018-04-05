@@ -3,21 +3,23 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import os
 import sys
-import setuptools.command.egg_info as egg_info_cmd
+import re
 
 from setuptools import setup, find_packages
 
-tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
-if not version:
-    version = "0.1"
-    try:
-        import gittaggers
-        tagger = gittaggers.EggInfoFromGit
-    except ImportError:
-        pass
+SETUP_DIR = os.path.dirname(__file__) or '.'
+README = os.path.join(SETUP_DIR, 'README.rst')
+
+import arvados_version
+version = arvados_version.get_version(SETUP_DIR, "arvados_docker")
+
+short_tests_only = False
+if '--short-tests-only' in sys.argv:
+    short_tests_only = True
+    sys.argv.remove('--short-tests-only')
 
 setup(name="arvados-docker-cleaner",
       version=version,
@@ -43,6 +45,5 @@ setup(name="arvados-docker-cleaner",
           'mock',
       ],
       test_suite='tests',
-      zip_safe=False,
-      cmdclass={'egg_info': tagger},
+      zip_safe=False
 )

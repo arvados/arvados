@@ -215,8 +215,11 @@ class NodeManagerDaemonActor(actor_class):
             if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
                 self.cloud_nodes.add(record)
             else:
-                # Node disappeared from the cloud node list.  Stop the monitor
-                # actor if necessary and forget about the node.
+                # Node disappeared from the cloud node list. If it's paired,
+                # remove its idle time counter.
+                if record.arvados_node:
+                    status.tracker.idle_out(record.arvados_node.get('hostname'))
+                # Stop the monitor actor if necessary and forget about the node.
                 if record.actor:
                     try:
                         record.actor.stop()
@@ -270,6 +273,7 @@ class NodeManagerDaemonActor(actor_class):
             updates.setdefault('nodes_'+s, 0)
             updates['nodes_'+s] += 1
         updates['nodes_wish'] = len(self.last_wishlist)
+        updates['node_quota'] = self.node_quota
         status.tracker.update(updates)
 
     def _state_counts(self, size):
@@ -348,7 +352,8 @@ class NodeManagerDaemonActor(actor_class):
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
-        self.last_wishlist = wishlist
+        requestable_nodes = self.node_quota - (self._nodes_booting(None) + len(self.cloud_nodes))
+        self.last_wishlist = wishlist[:requestable_nodes]
         for size in reversed(self.server_calculator.cloud_sizes):
             try:
                 nodes_wanted = self._nodes_wanted(size)
@@ -356,7 +361,7 @@ class NodeManagerDaemonActor(actor_class):
                     self._later.start_node(size)
                 elif (nodes_wanted < 0) and self.booting:
                     self._later.stop_booting_node(size)
-            except Exception as e:
+            except Exception:
                 self._logger.exception("while calculating nodes wanted for size %s", getattr(size, "id", "(id not available)"))
         try:
             self._update_tracker()

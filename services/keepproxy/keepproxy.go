@@ -521,13 +521,13 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	// Now try to put the block through
 	if locatorIn == "" {
-		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
-			err = errors.New(fmt.Sprintf("Error reading request body: %s", err))
+		bytes, err2 := ioutil.ReadAll(req.Body)
+		if err2 != nil {
+			_ = errors.New(fmt.Sprintf("Error reading request body: %s", err2))
 			status = http.StatusInternalServerError
 			return
-		} else {
-			locatorOut, wroteReplicas, err = kc.PutB(bytes)
 		}
+		locatorOut, wroteReplicas, err = kc.PutB(bytes)
 	} else {
 		locatorOut, wroteReplicas, err = kc.PutHR(locatorIn, req.Body, expectLength)
 	}

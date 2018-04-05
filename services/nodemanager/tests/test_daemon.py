@@ -143,6 +143,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         size = testutil.MockSize(1)
         self.make_daemon(want_sizes=[size])
         self.busywait(lambda: self.node_setup.start.called)
+        self.assertIn('node_quota', status.tracker._latest)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
         self.busywait(lambda: len(arv_nodes) == len(self.monitored_arvados_nodes()))
@@ -664,6 +665,27 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.busywait(lambda: 1 == self.last_shutdown.stop.call_count)
 
+    def test_idle_node_disappearing_clears_status_idle_time_counter(self):
+        size = testutil.MockSize(1)
+        status.tracker._idle_nodes = {}
+        cloud_nodes = [testutil.cloud_node_mock(1, size=size)]
+        arv_nodes = [testutil.arvados_node_mock(1, job_uuid=None)]
+        self.make_daemon(cloud_nodes, arv_nodes, [size])
+        self.busywait(lambda: 1 == self.paired_monitor_count())
+        for mon_ref in self.monitor_list():
+            monitor = mon_ref.proxy()
+            if monitor.cloud_node.get(self.TIMEOUT) is cloud_nodes[-1]:
+                break
+        else:
+            self.fail("monitor for idle node not found")
+        self.assertEqual(1, status.tracker.get('nodes_idle'))
+        hostname = monitor.arvados_node.get()['hostname']
+        self.assertIn(hostname, status.tracker._idle_nodes)
+        # Simulate the node disappearing from the cloud node list
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.busywait(lambda: 0 == self.alive_monitor_count())
+        self.assertNotIn(hostname, status.tracker._idle_nodes)
+
     def test_shutdown_actor_cleanup_copes_with_dead_actors(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
         self.assertEqual(1, self.alive_monitor_count())
@@ -700,7 +722,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         big = testutil.MockSize(2)
         avail_sizes = [(testutil.MockSize(1), {"cores":1}),
                         (testutil.MockSize(2), {"cores":2})]
-        self.make_daemon(want_sizes=[small, small, small, big],
+        self.make_daemon(want_sizes=[small, small, big, small],
                          avail_sizes=avail_sizes, max_nodes=3)
 
         # the daemon runs in another thread, so we need to wait and see
@@ -713,6 +735,27 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             sizecounts[b.cloud_size.get().id] += 1
         self.assertEqual(2, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
+
+    def test_wishlist_ordering(self):
+        # Check that big nodes aren't prioritized; since #12199 containers are
+        # scheduled on specific node sizes.
+        small = testutil.MockSize(1)
+        big = testutil.MockSize(2)
+        avail_sizes = [(testutil.MockSize(1), {"cores":1}),
+                        (testutil.MockSize(2), {"cores":2})]
+        self.make_daemon(want_sizes=[small, small, small, big],
+                         avail_sizes=avail_sizes, max_nodes=3)
+
+        # the daemon runs in another thread, so we need to wait and see
+        # if it does all the work we're expecting it to do before stopping it.
+        self.busywait(lambda: self.node_setup.start.call_count == 3)
+        booting = self.daemon.booting.get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in booting.itervalues():
+            sizecounts[b.cloud_size.get().id] += 1
+        self.assertEqual(3, sizecounts[small.id])
+        self.assertEqual(0, sizecounts[big.id])
 
     def test_wishlist_reconfigure(self):
         small = testutil.MockSize(1)

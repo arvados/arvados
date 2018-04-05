@@ -3,24 +3,23 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import os
 import sys
-import setuptools.command.egg_info as egg_info_cmd
+import re
 
 from setuptools import setup, find_packages
 
-SETUP_DIR = os.path.dirname(__file__) or "."
+SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
-if not version:
-    version = "0.1"
-    try:
-        import gittaggers
-        tagger = gittaggers.EggInfoFromGit
-    except ImportError:
-        pass
+import arvados_version
+version = arvados_version.get_version(SETUP_DIR, "arvnodeman")
+
+short_tests_only = False
+if '--short-tests-only' in sys.argv:
+    short_tests_only = True
+    sys.argv.remove('--short-tests-only')
 
 setup(name='arvados-node-manager',
       version=version,
@@ -50,6 +49,5 @@ setup(name='arvados-node-manager',
           'mock>=1.0',
           'apache-libcloud>=2.3',
       ],
-      zip_safe=False,
-      cmdclass={'egg_info': tagger},
+      zip_safe=False
       )

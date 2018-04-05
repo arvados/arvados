@@ -66,6 +66,9 @@ func chdirToPythonTests() {
 	for {
 		if err := os.Chdir("sdk/python/tests"); err == nil {
 			pythonTestDir, err = os.Getwd()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if parent, err := os.Getwd(); err != nil || parent == "/" {

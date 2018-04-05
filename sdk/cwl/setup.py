@@ -3,25 +3,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import absolute_import
 import os
 import sys
-import subprocess
-import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-tagger = egg_info_cmd.egg_info
-version = os.environ.get("ARVADOS_BUILDING_VERSION")
-if not version:
-    version = "1.0"
-    try:
-        import gittaggers
-        tagger = gittaggers.EggInfoFromGit
-    except ImportError:
-        pass
+import arvados_version
+version = arvados_version.get_version(SETUP_DIR, "arvados_cwl")
 
 setup(name='arvados-cwl-runner',
       version=version,
@@ -41,7 +33,7 @@ setup(name='arvados-cwl-runner',
       # Note that arvados/build/run-build-packages.sh looks at this
       # file to determine what version of cwltool and schema-salad to build.
       install_requires=[
-          'cwltool==1.0.20180326152342',
+          'cwltool==1.0.20180403145700',
           'schema-salad==2.6.20171201034858',
           'typing==3.5.3.0',
           'ruamel.yaml==0.13.7',
@@ -54,6 +46,5 @@ setup(name='arvados-cwl-runner',
       ],
       test_suite='tests',
       tests_require=['mock>=1.0'],
-      zip_safe=True,
-      cmdclass={'egg_info': tagger},
+      zip_safe=True
       )

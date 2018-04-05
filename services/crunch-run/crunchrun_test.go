@@ -416,6 +416,7 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	c.Check(err, IsNil)
 
 	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
 	c.Check(err, NotNil)
@@ -1946,6 +1947,7 @@ func (s *TestSuite) TestEvalSymlinks(c *C) {
 
 	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
 		info, err := os.Lstat(realTemp + "/" + v)
+		c.Assert(err, IsNil)
 		_, _, _, err = cr.derefOutputSymlink(realTemp+"/"+v, info)
 		c.Assert(err, NotNil)
 	}

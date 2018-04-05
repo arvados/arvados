@@ -50,7 +50,7 @@ func (fs *webdavFS) makeparents(name string) {
 	if !fs.writing {
 		return
 	}
-	dir, name := path.Split(name)
+	dir, _ := path.Split(name)
 	if dir == "" || dir == "/" {
 		return
 	}

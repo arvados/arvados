@@ -355,7 +355,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		}
 
 		// Call Trash, then check canTrash and canGetAfterTrash
-		loc, blk = setupScenario()
+		loc, _ = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
 		_, err = v.Get(context.Background(), loc, buf)
@@ -365,7 +365,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		}
 
 		// Call Untrash, then check canUntrash
-		loc, blk = setupScenario()
+		loc, _ = setupScenario()
 		err = v.Untrash(loc)
 		c.Check(err == nil, check.Equals, scenario.canUntrash)
 		if scenario.dataT != none || scenario.trashT != none {
@@ -379,7 +379,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 
 		// Call EmptyTrash, then check haveTrashAfterEmpty and
 		// freshAfterEmpty
-		loc, blk = setupScenario()
+		loc, _ = setupScenario()
 		v.EmptyTrash()
 		_, err = v.bucket.Head("trash/"+loc, nil)
 		c.Check(err == nil, check.Equals, scenario.haveTrashAfterEmpty)

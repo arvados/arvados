@@ -125,6 +125,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 	req, err := http.NewRequest("POST",
 		"http://"+listener.Addr().String()+"/",
 		strings.NewReader("TestViaHeader"))
+	c.Assert(err, Equals, nil)
 	req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
 	resp, err := (&http.Client{}).Do(req)
 	c.Assert(err, Equals, nil)
@@ -294,6 +295,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		reader, blocklen, _, err := kc.Get(hash2)
 		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
+		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Get (expected success)")
@@ -313,6 +315,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
 		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
+		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte(""))
 		c.Check(blocklen, Equals, int64(0))
 		c.Log("Finished Get zero block")
@@ -405,12 +408,14 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 		req, err := http.NewRequest("OPTIONS",
 			fmt.Sprintf("http://%s/%x+3", listener.Addr().String(), md5.Sum([]byte("foo"))),
 			nil)
+		c.Assert(err, IsNil)
 		req.Header.Add("Access-Control-Request-Method", "PUT")
 		req.Header.Add("Access-Control-Request-Headers", "Authorization, X-Keep-Desired-Replicas")
 		resp, err := client.Do(req)
 		c.Check(err, Equals, nil)
 		c.Check(resp.StatusCode, Equals, 200)
 		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, IsNil)
 		c.Check(string(body), Equals, "")
 		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, POST, PUT, OPTIONS")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
@@ -434,6 +439,7 @@ func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
 		req, err := http.NewRequest("POST",
 			"http://"+listener.Addr().String()+"/",
 			strings.NewReader("qux"))
+		c.Check(err, IsNil)
 		req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
 		req.Header.Add("Content-Type", "application/octet-stream")
 		resp, err := client.Do(req)
@@ -481,14 +487,15 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	c.Check(err, Equals, nil)
 
 	reader, blocklen, _, err := kc.Get(hash)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 	c.Check(blocklen, Equals, int64(10))
 	all, err := ioutil.ReadAll(reader)
+	c.Assert(err, IsNil)
 	c.Check(all, DeepEquals, data)
 
 	// Put some more blocks
-	_, rep, err = kc.PutB([]byte("some-more-index-data"))
-	c.Check(err, Equals, nil)
+	_, _, err = kc.PutB([]byte("some-more-index-data"))
+	c.Check(err, IsNil)
 
 	kc.Arvados.ApiToken = arvadostest.DataManagerToken
 

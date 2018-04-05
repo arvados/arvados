@@ -88,6 +88,7 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 
 	arv.DiscoveryDoc["defaultCollectionReplication"] = 1.0
 	kc, err = MakeKeepClient(arv)
+	c.Check(err, IsNil)
 	c.Assert(kc.Want_replicas, Equals, 1)
 }
 

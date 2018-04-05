@@ -151,6 +151,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderContent(c *check.C) {
 					c.Check(offset, check.Equals, int64(a))
 					buf := make([]byte, b-a)
 					n, err := io.ReadFull(rdr, buf)
+					c.Check(err, check.IsNil)
 					c.Check(n, check.Equals, b-a)
 					c.Check(string(buf), check.Equals, want[a:b])
 				}
