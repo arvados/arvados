@@ -103,6 +103,9 @@ type inode interface {
 
 	// Child() performs lookups and updates of named child nodes.
 	//
+	// (The term "child" here is used strictly. This means name is
+	// not "." or "..", and name does not contain "/".)
+	//
 	// If replace is non-nil, Child calls replace(x) where x is
 	// the current child inode with the given name. If possible,
 	// the child inode is replaced with the one returned by
