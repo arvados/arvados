@@ -377,11 +377,13 @@ class ArvCwlRunner(object):
 
         # Reload tool object which may have been updated by
         # upload_workflow_deps
+        # Don't validate this time because it will just print redundant errors.
         tool = self.arv_make_tool(tool.doc_loader.idx[tool.tool["id"]],
                                   makeTool=self.arv_make_tool,
                                   loader=tool.doc_loader,
                                   avsc_names=tool.doc_schema,
-                                  metadata=tool.metadata)
+                                  metadata=tool.metadata,
+                                  do_validate=False)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % kwargs["name"],
@@ -678,6 +680,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--priority", type=int,
                         help="Workflow priority (range 1..1000, higher has precedence over lower, containers api only)",
                         default=DEFAULT_PRIORITY)
+
+    parser.add_argument("--disable-validate", dest="do_validate",
+                        action="store_false", default=True,
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument("--disable-js-validation",
+                        action="store_true", default=False,
+                        help=argparse.SUPPRESS)
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",
