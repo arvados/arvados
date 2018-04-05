@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function
 from future import standard_library
 
 import http.server
+import time
 import json
 import logging
 import socketserver
@@ -26,6 +27,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
             return
         self._config = config
         self._tracker = tracker
+        self._tracker.update({'config_max_nodes': config.getint('Daemon', 'max_nodes')})
         super(Server, self).__init__(
             (config.get('Manage', 'address'), port), Handler)
         self._thread = threading.Thread(target=self.serve_forever)
@@ -75,20 +77,53 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
 class Tracker(object):
     def __init__(self):
         self._mtx = threading.Lock()
-        self._latest = {}
+        self._latest = {
+            'list_nodes_errors': 0,
+            'create_node_errors': 0,
+            'destroy_node_errors': 0,
+            'boot_failures': 0,
+            'actor_exceptions': 0
+        }
         self._version = {'Version' : __version__}
+        self._idle_nodes = {}
 
     def get_json(self):
         with self._mtx:
-            return json.dumps(dict(self._latest, **self._version))
+            times = {'idle_times' : {}}
+            now = time.time()
+            for node, ts in self._idle_nodes.items():
+                times['idle_times'][node] = int(now - ts)
+            return json.dumps(
+                dict(dict(self._latest, **self._version), **times))
 
     def keys(self):
         with self._mtx:
             return self._latest.keys()
 
+    def get(self, key):
+        with self._mtx:
+            return self._latest.get(key)
+
     def update(self, updates):
         with self._mtx:
             self._latest.update(updates)
 
+    def counter_add(self, counter, value=1):
+        with self._mtx:
+            self._latest.setdefault(counter, 0)
+            self._latest[counter] += value
+
+    def idle_in(self, nodename):
+        with self._mtx:
+            if self._idle_nodes.get(nodename):
+                return
+            self._idle_nodes[nodename] = time.time()
+
+    def idle_out(self, nodename):
+        with self._mtx:
+            try:
+                del self._idle_nodes[nodename]
+            except KeyError:
+                pass
 
 tracker = Tracker()

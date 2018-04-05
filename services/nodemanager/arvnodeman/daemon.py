@@ -215,8 +215,11 @@ class NodeManagerDaemonActor(actor_class):
             if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
                 self.cloud_nodes.add(record)
             else:
-                # Node disappeared from the cloud node list.  Stop the monitor
-                # actor if necessary and forget about the node.
+                # Node disappeared from the cloud node list. If it's paired,
+                # remove its idle time counter.
+                if record.arvados_node:
+                    status.tracker.idle_out(record.arvados_node.get('hostname'))
+                # Stop the monitor actor if necessary and forget about the node.
                 if record.actor:
                     try:
                         record.actor.stop()
@@ -270,6 +273,7 @@ class NodeManagerDaemonActor(actor_class):
             updates.setdefault('nodes_'+s, 0)
             updates['nodes_'+s] += 1
         updates['nodes_wish'] = len(self.last_wishlist)
+        updates['node_quota'] = self.node_quota
         status.tracker.update(updates)
 
     def _state_counts(self, size):

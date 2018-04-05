@@ -12,6 +12,7 @@ import re
 import time
 
 from ..config import CLOUD_ERRORS
+from ..status import tracker
 from libcloud.common.exceptions import BaseHTTPError, RateLimitReachedError
 
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
@@ -101,6 +102,7 @@ class RetryMixin(object):
                         if error.code == 429 or error.code >= 500:
                             should_retry = True
                     except CLOUD_ERRORS as error:
+                        tracker.counter_add('cloud_errors')
                         should_retry = True
                     except errors as error:
                         should_retry = True
@@ -108,9 +110,11 @@ class RetryMixin(object):
                         # As a libcloud workaround for drivers that don't use
                         # typed exceptions, consider bare Exception() objects
                         # retryable.
-                        should_retry = type(error) is Exception
+                        if type(error) is Exception:
+                            tracker.counter_add('cloud_errors')
+                            should_retry = True
                     else:
-                        # No exception,
+                        # No exception
                         self.retry_wait = self.min_retry_wait
                         return ret
 

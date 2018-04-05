@@ -12,6 +12,7 @@ import libcloud.common.types as cloud_types
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import CLOUD_ERRORS
+from ...status import tracker
 from .. import RetryMixin
 
 class BaseComputeNodeDriver(RetryMixin):
@@ -123,7 +124,11 @@ class BaseComputeNodeDriver(RetryMixin):
     def list_nodes(self, **kwargs):
         l = self.list_kwargs.copy()
         l.update(kwargs)
-        return self.real.list_nodes(**l)
+        try:
+            return self.real.list_nodes(**l)
+        except CLOUD_ERRORS:
+            tracker.counter_add('list_nodes_errors')
+            raise
 
     def create_cloud_name(self, arvados_node):
         """Return a cloud node name for the given Arvados node record.
@@ -181,6 +186,7 @@ class BaseComputeNodeDriver(RetryMixin):
             try:
                 return self.search_for_now(kwargs['name'], 'list_nodes', self._name_key)
             except ValueError:
+                tracker.counter_add('create_node_errors')
                 raise create_error
 
     def post_create_node(self, cloud_node):
@@ -211,7 +217,7 @@ class BaseComputeNodeDriver(RetryMixin):
     def destroy_node(self, cloud_node):
         try:
             return self.real.destroy_node(cloud_node)
-        except CLOUD_ERRORS as destroy_error:
+        except CLOUD_ERRORS:
             # Sometimes the destroy node request succeeds but times out and
             # raises an exception instead of returning success.  If this
             # happens, we get a noisy stack trace.  Check if the node is still
@@ -223,6 +229,7 @@ class BaseComputeNodeDriver(RetryMixin):
                 # it, which means destroy_node actually succeeded.
                 return True
             # The node is still on the list.  Re-raise.
+            tracker.counter_add('destroy_node_errors')
             raise
 
     # Now that we've defined all our own methods, delegate generic, public
