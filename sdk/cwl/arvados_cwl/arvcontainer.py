@@ -254,7 +254,7 @@ class ArvadosContainer(object):
             ).execute(num_retries=self.arvrunner.num_retries)
 
             self.uuid = response["uuid"]
-            self.arvrunner.processes[self.uuid] = self
+            self.arvrunner.process_submitted(self)
 
             if response["state"] == "Final":
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
@@ -315,8 +315,7 @@ class ArvadosContainer(object):
             processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-            if record["uuid"] in self.arvrunner.processes:
-                del self.arvrunner.processes[record["uuid"]]
+            self.arvrunner.process_done(record["uuid"])
 
 
 class RunnerContainer(Runner):
@@ -446,7 +445,7 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.processes[self.uuid] = self
+        self.arvrunner.process_submitted(self)
 
         logger.info("%s submitted container %s", self.arvrunner.label(self), response["uuid"])
 
@@ -464,5 +463,4 @@ class RunnerContainer(Runner):
         else:
             super(RunnerContainer, self).done(container)
         finally:
-            if record["uuid"] in self.arvrunner.processes:
-                del self.arvrunner.processes[record["uuid"]]
+            self.arvrunner.process_done(record["uuid"])
