@@ -215,15 +215,13 @@ class NodeManagerDaemonActor(actor_class):
             if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
                 self.cloud_nodes.add(record)
             else:
-                # Node disappeared from the cloud node list.  Stop the monitor
-                # actor if necessary and forget about the node.
+                # Node disappeared from the cloud node list. If it's paired,
+                # remove its idle time counter.
+                if record.arvados_node:
+                    status.tracker.idle_out(record.arvados_node.get('hostname'))
+                # Stop the monitor actor if necessary and forget about the node.
                 if record.actor:
                     try:
-                        # If it's paired and idle, stop its idle time counter
-                        # before removing the monitor actor.
-                        if record.actor.get_state().get() == 'idle':
-                            status.tracker.idle_out(
-                                record.actor.arvados_node.get()['hostname'])
                         record.actor.stop()
                     except pykka.ActorDeadError:
                         pass
