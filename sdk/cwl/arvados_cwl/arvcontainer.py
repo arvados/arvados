@@ -248,6 +248,8 @@ class ArvadosContainer(object):
                 container_request["name"] = wfrecord["name"]
             container_request["properties"]["template_uuid"] = wfuuid
 
+        self.output_callback = self.arvrunner.get_wrapped_callback(self.output_callback)
+
         try:
             response = self.arvrunner.api.container_requests().create(
                 body=container_request
