@@ -30,7 +30,7 @@ act_as_system_user
 
 def create_api_client_auth(supplied_token=nil)
 
-  # If token is supplied, verify that it indeed is a superuser token
+  # If token is supplied, see if it exists
   if supplied_token
     api_client_auth = ApiClientAuthorization.
       where(api_token: supplied_token).
