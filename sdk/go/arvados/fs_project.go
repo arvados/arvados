@@ -60,7 +60,7 @@ func (pn *projectnode) load() {
 		}
 		for _, i := range resp.Items {
 			coll := i
-			if coll.Name == "" {
+			if coll.Name == "" || coll.Name == "." || coll.Name == ".." {
 				continue
 			}
 			pn.inode.Child(coll.Name, func(inode) (inode, error) {
