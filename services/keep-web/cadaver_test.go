@@ -250,35 +250,8 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 
 		os.Remove(checkfile.Name())
 
-		cmd := exec.Command("cadaver", "http://"+s.testServer.Addr+trial.path)
-		if password != "" {
-			// cadaver won't try username/password
-			// authentication unless the server responds
-			// 401 to an unauthenticated request, which it
-			// only does in AttachmentOnlyHost,
-			// TrustAllContent, and per-collection vhost
-			// cases.
-			s.testServer.Config.AttachmentOnlyHost = s.testServer.Addr
-
-			cmd.Env = append(os.Environ(), "HOME="+tempdir)
-			f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-			c.Assert(err, check.IsNil)
-			_, err = fmt.Fprintf(f, "default login none password %s\n", password)
-			c.Assert(err, check.IsNil)
-			c.Assert(f.Close(), check.IsNil)
-		}
-		cmd.Stdin = bytes.NewBufferString(trial.cmd)
-		stdout, err := cmd.StdoutPipe()
-		c.Assert(err, check.Equals, nil)
-		cmd.Stderr = cmd.Stdout
-		go cmd.Start()
-
-		var buf bytes.Buffer
-		_, err = io.Copy(&buf, stdout)
-		c.Check(err, check.Equals, nil)
-		err = cmd.Wait()
-		c.Check(err, check.Equals, nil)
-		c.Check(buf.String(), check.Matches, trial.match)
+		stdout := s.runCadaver(c, password, trial.path, trial.cmd)
+		c.Check(stdout, check.Matches, trial.match)
 
 		if trial.data == nil {
 			continue
@@ -290,4 +263,55 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		c.Check(got, check.DeepEquals, trial.data)
 		c.Check(err, check.IsNil)
 	}
+}
+
+func (s *IntegrationSuite) TestCadaverUsersDir(c *check.C) {
+	for _, path := range []string{"/users", "/users/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+active.*`)
+	}
+	for _, path := range []string{"/users/active", "/users/active/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+A Project\s+0 .*`)
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+bar_file\s+0 .*`)
+	}
+	for _, path := range []string{"/users/admin", "/users/doesnotexist", "/users/doesnotexist/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*404 Not Found.*`)
+	}
+}
+
+func (s *IntegrationSuite) runCadaver(c *check.C, password, path, stdin string) string {
+	tempdir, err := ioutil.TempDir("", "keep-web-test-")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tempdir)
+
+	cmd := exec.Command("cadaver", "http://"+s.testServer.Addr+path)
+	if password != "" {
+		// cadaver won't try username/password authentication
+		// unless the server responds 401 to an
+		// unauthenticated request, which it only does in
+		// AttachmentOnlyHost, TrustAllContent, and
+		// per-collection vhost cases.
+		s.testServer.Config.AttachmentOnlyHost = s.testServer.Addr
+
+		cmd.Env = append(os.Environ(), "HOME="+tempdir)
+		f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+		c.Assert(err, check.IsNil)
+		_, err = fmt.Fprintf(f, "default login none password %s\n", password)
+		c.Assert(err, check.IsNil)
+		c.Assert(f.Close(), check.IsNil)
+	}
+	cmd.Stdin = bytes.NewBufferString(stdin)
+	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.Equals, nil)
+	cmd.Stderr = cmd.Stdout
+	go cmd.Start()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, stdout)
+	c.Check(err, check.Equals, nil)
+	err = cmd.Wait()
+	c.Check(err, check.Equals, nil)
+	return buf.String()
 }
