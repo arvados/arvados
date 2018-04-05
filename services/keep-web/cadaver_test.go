@@ -266,6 +266,11 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 }
 
 func (s *IntegrationSuite) TestCadaverUsersDir(c *check.C) {
+	for _, path := range []string{"/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+by_id\s+0 .*`)
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+users\s+0 .*`)
+	}
 	for _, path := range []string{"/users", "/users/"} {
 		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
 		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+active.*`)
