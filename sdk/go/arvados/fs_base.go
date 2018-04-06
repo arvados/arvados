@@ -452,7 +452,7 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 	// call nca.FS().Rename() instead of proceeding. Until then
 	// it's awkward for filesystems to implement their own Rename
 	// methods effectively: the only one that runs is the one on
-	// the root filesystem exposed to the caller (webdav, fuse,
+	// the root FileSystem exposed to the caller (webdav, fuse,
 	// etc).
 
 	// When acquiring locks on multiple inodes, avoid deadlock by
