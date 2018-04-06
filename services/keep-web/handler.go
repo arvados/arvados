@@ -329,7 +329,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if useSiteFS {
-		h.serveSiteFS(w, r, tokens)
+		h.serveSiteFS(w, r, tokens, credentialsOK)
 		return
 	}
 
@@ -499,7 +499,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string) {
+func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -528,18 +528,22 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		Insecure:  arv.ApiInsecure,
 	}
 	fs := client.SiteFileSystem(kc)
-	if f, err := fs.Open(r.URL.Path); os.IsNotExist(err) {
+	f, err := fs.Open(r.URL.Path)
+	if os.IsNotExist(err) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else if fi, err := f.Stat(); err == nil && fi.IsDir() && r.Method == "GET" {
-
-		h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
+	}
+	defer f.Close()
+	if fi, err := f.Stat(); err == nil && fi.IsDir() && r.Method == "GET" {
+		if !strings.HasSuffix(r.URL.Path, "/") {
+			h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
+		} else {
+			h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
+		}
 		return
-	} else {
-		f.Close()
 	}
 	wh := webdav.Handler{
 		Prefix: "/",
