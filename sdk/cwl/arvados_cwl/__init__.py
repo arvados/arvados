@@ -66,7 +66,7 @@ class ArvCwlRunner(object):
 
     def __init__(self, api_client, work_api=None, keep_client=None,
                  output_name=None, output_tags=None, num_retries=4,
-                 parallel_submit_count=4):
+                 thread_count=4):
         self.api = api_client
         self.processes = {}
         self.in_flight = 0
@@ -88,7 +88,7 @@ class ArvCwlRunner(object):
         self.trash_intermediate = False
         self.task_queue = Queue.Queue()
         self.task_queue_threads = []
-        self.parallel_submit_count = parallel_submit_count
+        self.thread_count = thread_count
         self.poll_interval = 12
 
         if keep_client is not None:
@@ -153,7 +153,7 @@ class ArvCwlRunner(object):
             task()
 
     def task_queue_add(self, task):
-        if self.parallel_submit_count > 1:
+        if self.thread_count > 1:
             self.task_queue.put(task)
         else:
             task()
@@ -528,14 +528,14 @@ class ArvCwlRunner(object):
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
         if runnerjob and not kwargs.get("wait"):
-            runnerjob.run(wait=kwargs.get("wait"))
+            runnerjob.run(**kwargs)
             return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
         self.polling_thread = threading.Thread(target=self.poll_states)
         self.polling_thread.start()
 
-        for r in xrange(0, self.parallel_submit_count):
+        for r in xrange(0, self.thread_count):
             t = threading.Thread(target=self.task_queue_func)
             self.task_queue_threads.append(t)
             t.start()
@@ -755,8 +755,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_true", default=False,
                         help=argparse.SUPPRESS)
 
-    parser.add_argument("--parallel-submit-count", type=int,
-                        default=4, help="Submit requests in parallel (default 4)")
+    parser.add_argument("--thread-count", type=int,
+                        default=4, help="Number of threads to use for job submit and output collection.")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",

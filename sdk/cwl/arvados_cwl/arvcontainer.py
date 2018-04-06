@@ -400,7 +400,18 @@ class RunnerContainer(Runner):
         # --api=containers means use the containers API
         # --no-log-timestamps means don't add timestamps (the logging infrastructure does this)
         # --disable-validate because we already validated so don't need to do it again
-        command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps", "--disable-validate"]
+        # --eval-timeout is the timeout for javascript invocation
+        # --parallel-task-count is the number of threads to use for job submission
+        # --enable/disable-reuse sets desired job reuse
+        command = ["arvados-cwl-runner",
+                   "--local",
+                   "--api=containers",
+                   "--no-log-timestamps",
+                   "--disable-validate",
+                   "--eval-timeout=%s" % self.arvrunner.eval_timeout,
+                   "--thread-count=%s" % self.arvrunner.thread_count,
+                   "--enable-reuse" if self.enable_reuse else "--disable-reuse"]
+
         if self.output_name:
             command.append("--output-name=" + self.output_name)
             container_req["output_name"] = self.output_name
@@ -410,11 +421,6 @@ class RunnerContainer(Runner):
 
         if kwargs.get("debug"):
             command.append("--debug")
-
-        if self.enable_reuse:
-            command.append("--enable-reuse")
-        else:
-            command.append("--disable-reuse")
 
         if self.on_error:
             command.append("--on-error=" + self.on_error)
@@ -428,8 +434,6 @@ class RunnerContainer(Runner):
         if self.arvrunner.project_uuid:
             command.append("--project-uuid="+self.arvrunner.project_uuid)
 
-        command.append("--eval-timeout=%s" % self.arvrunner.eval_timeout)
-
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command
@@ -437,9 +441,9 @@ class RunnerContainer(Runner):
         return container_req
 
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         kwargs["keepprefix"] = "keep:"
-        job_spec = self.arvados_job_spec(*args, **kwargs)
+        job_spec = self.arvados_job_spec(**kwargs)
         job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
 
         response = self.arvrunner.api.container_requests().create(
