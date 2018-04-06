@@ -44,6 +44,9 @@ func (pn *projectnode) load() {
 		}
 		pn.uuid = resp.UUID
 	}
+	// Note: the "filters" slice's backing array might be reused
+	// by append(filters,...) below. This isn't goroutine safe,
+	// but all accesses are in the same goroutine, so it's OK.
 	filters := []Filter{{"owner_uuid", "=", pn.uuid}}
 	params := ResourceListParams{
 		Filters: filters,
