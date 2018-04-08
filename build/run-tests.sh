@@ -507,7 +507,7 @@ export R_LIBS
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
-rmdir -v --parents --ignore-fail-on-non-empty "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
+rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
 for d in \
     "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
     "$GOPATH/src/git.curoverse.com/arvados.git"; do
