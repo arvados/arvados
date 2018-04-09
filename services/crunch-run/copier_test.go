@@ -172,14 +172,23 @@ func (s *copierSuite) TestUnsupportedMountKindBelow(c *check.C) {
 	c.Check(err, check.NotNil)
 }
 
-func (s *copierSuite) TestUnsupportedWritableMountBelow(c *check.C) {
-	s.cp.mounts["/ctr/outdir/dirk"] = arvados.Mount{
+func (s *copierSuite) TestWritableMountBelow(c *check.C) {
+	s.cp.mounts["/ctr/outdir/mount"] = arvados.Mount{
 		Kind:             "collection",
 		PortableDataHash: arvadostest.FooPdh,
 		Writable:         true,
 	}
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/mount", 0755), check.IsNil)
+	s.writeFileInOutputDir(c, "file", "file")
+	s.writeFileInOutputDir(c, "mount/foo", "foo")
+
 	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
-	c.Check(err, check.NotNil)
+	c.Check(err, check.IsNil)
+	c.Check(s.cp.dirs, check.DeepEquals, []string{"/mount"})
+	c.Check(s.cp.files, check.DeepEquals, []filetodo{
+		{src: s.cp.hostOutputDir + "/file", dst: "/file", size: 4},
+		{src: s.cp.hostOutputDir + "/mount/foo", dst: "/mount/foo", size: 3},
+	})
 }
 
 func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {

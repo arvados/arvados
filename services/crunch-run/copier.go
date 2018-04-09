@@ -185,7 +185,7 @@ func (cp *copier) walkMountsBelow(dest, src string) error {
 		if !strings.HasPrefix(mnt, src+"/") {
 			continue
 		}
-		if mntinfo.Kind == "text" || mntinfo.Kind == "json" {
+		if cp.copyRegularFiles(mntinfo) {
 			// These got copied into the nearest parent
 			// mount as regular files during setup, so
 			// they get copied as regular files when we
@@ -284,15 +284,15 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 			if _, isSecret := cp.secretMounts[src]; isSecret {
 				continue
 			}
-			if mntinfo, isMount := cp.mounts[src]; isMount && mntinfo.Kind != "text" && mntinfo.Kind != "json" {
+			if mntinfo, isMount := cp.mounts[src]; isMount && !cp.copyRegularFiles(mntinfo) {
 				// If a regular file/dir somehow
 				// exists at a path that's also a
 				// mount target, ignore the file --
 				// the mount has already been included
 				// with walkMountsBelow().
 				//
-				// (...except json/text mounts, which
-				// are handled as regular files.)
+				// (...except mount types that are
+				// handled as regular files.)
 				continue
 			}
 			err = cp.walkHostFS(dest, src, maxSymlinks, false)
@@ -314,6 +314,10 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 	}
 
 	return fmt.Errorf("Unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+}
+
+func (cp *copier) copyRegularFiles(m arvados.Mount) bool {
+	return m.Kind == "text" || m.Kind == "json" || (m.Kind == "collection" && m.Writable)
 }
 
 func (cp *copier) getManifest(pdh string) (*manifest.Manifest, error) {
