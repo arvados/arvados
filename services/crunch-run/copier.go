@@ -54,6 +54,7 @@ type copier struct {
 	keepClient    IKeepClient
 	hostOutputDir string
 	ctrOutputDir  string
+	binds         []string
 	mounts        map[string]arvados.Mount
 	secretMounts  map[string]arvados.Mount
 	logger        printfer
@@ -157,8 +158,12 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 			return err
 		}
 		cp.manifest += mft.Extract(srcRelPath, dest).Text
-	case srcRoot == cp.ctrOutputDir:
-		f, err := os.Open(filepath.Join(cp.hostOutputDir, ".arvados#collection"))
+	default:
+		hostRoot, err := cp.hostRoot(srcRoot)
+		if err != nil {
+			return err
+		}
+		f, err := os.Open(filepath.Join(hostRoot, ".arvados#collection"))
 		if err != nil {
 			return err
 		}
@@ -170,8 +175,6 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 		}
 		mft := manifest.Manifest{Text: coll.ManifestText}
 		cp.manifest += mft.Extract(srcRelPath, dest).Text
-	default:
-		return fmt.Errorf("cannot output %q as %q: writable collection mounted at %q", src, dest, srcRoot)
 	}
 	if walkMountsBelow {
 		return cp.walkMountsBelow(dest, src)
@@ -314,6 +317,21 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 	}
 
 	return fmt.Errorf("Unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+}
+
+// Return the host path that was mounted at the given path in the
+// container.
+func (cp *copier) hostRoot(ctrRoot string) (string, error) {
+	if ctrRoot == cp.ctrOutputDir {
+		return cp.hostOutputDir, nil
+	}
+	for _, bind := range cp.binds {
+		tokens := strings.Split(bind, ":")
+		if len(tokens) >= 2 && tokens[1] == ctrRoot {
+			return tokens[0], nil
+		}
+	}
+	return "", fmt.Errorf("not bind-mounted: %q", ctrRoot)
 }
 
 func (cp *copier) copyRegularFiles(m arvados.Mount) bool {

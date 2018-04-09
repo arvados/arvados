@@ -1126,6 +1126,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		keepClient:    runner.Kc,
 		hostOutputDir: runner.HostOutputDir,
 		ctrOutputDir:  runner.Container.OutputPath,
+		binds:         runner.Binds,
 		mounts:        runner.Container.Mounts,
 		secretMounts:  runner.SecretMounts,
 		logger:        runner.CrunchLog,

@@ -108,16 +108,35 @@ func (s *copierSuite) TestSecretInOutputDir(c *check.C) {
 }
 
 func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
+	// simulate mounted read-only collection
 	s.cp.mounts["/mnt"] = arvados.Mount{
 		Kind:             "collection",
 		PortableDataHash: arvadostest.FooPdh,
 	}
+
+	// simulate mounted writable collection
+	bindtmp, err := ioutil.TempDir("", "crunch-run.test.")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(bindtmp)
+	f, err := os.OpenFile(bindtmp+"/.arvados#collection", os.O_CREATE|os.O_WRONLY, 0644)
+	c.Assert(err, check.IsNil)
+	_, err = io.WriteString(f, `{"manifest_text":". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"}`)
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	s.cp.mounts["/mnt-w"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooPdh,
+		Writable:         true,
+	}
+	s.cp.binds = append(s.cp.binds, bindtmp+":/mnt-w")
+
 	c.Assert(os.Symlink("../../mnt", s.cp.hostOutputDir+"/l_dir"), check.IsNil)
 	c.Assert(os.Symlink("/mnt/foo", s.cp.hostOutputDir+"/l_file"), check.IsNil)
+	c.Assert(os.Symlink("/mnt-w/bar", s.cp.hostOutputDir+"/l_file_w"), check.IsNil)
 
-	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
-	c.Check(s.cp.manifest, check.Matches, `(?ms)\./l_dir acbd\S+ 0:3:foo\n\. acbd\S+ 0:3:l_file\n`)
+	c.Check(s.cp.manifest, check.Matches, `(?ms)\./l_dir acbd\S+ 0:3:foo\n\. acbd\S+ 0:3:l_file\n\. 37b5\S+ 0:3:l_file_w\n`)
 }
 
 func (s *copierSuite) TestSymlink(c *check.C) {
