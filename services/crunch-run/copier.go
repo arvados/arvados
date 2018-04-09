@@ -45,11 +45,9 @@ type filetodo struct {
 // Symlinks to other parts of the container's filesystem result in
 // errors.
 //
-// To use a copier: first call walkMount() to inspect the output
-// directory, grab the necessary parts of already-stored collections,
-// and prepare a list of files that need to be copied from the local
-// filesystem; then call commit() to copy the file data and return a
-// complete output manifest.
+// Use:
+//
+//	manifest, err := (&copier{...}).Copy()
 type copier struct {
 	client        *arvados.Client
 	arvClient     IArvadosClient
