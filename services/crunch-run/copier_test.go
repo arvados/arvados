@@ -153,6 +153,8 @@ func (s *copierSuite) TestSymlink(c *check.C) {
 		os.MkdirAll(s.cp.hostOutputDir+"/morelinks", 0755),
 		os.Symlink("../dir1/dir2", s.cp.hostOutputDir+"/morelinks/l_rel_dir2"),
 		os.Symlink("dir1/dir2/dir3", s.cp.hostOutputDir+"/l_rel_dir3"),
+		// rel. symlink -> rel. symlink -> regular file
+		os.Symlink("../dir1/dir2/l_rel_file", s.cp.hostOutputDir+"/morelinks/l_rel_l_rel_file"),
 	} {
 		c.Assert(err, check.IsNil)
 	}
@@ -176,6 +178,7 @@ func (s *copierSuite) TestSymlink(c *check.C) {
 		{dst: "/l_rel_file", src: hostfile, size: 4},
 		{dst: "/morelinks/l_rel_dir2/dir3/.keep", src: os.DevNull},
 		{dst: "/morelinks/l_rel_dir2/l_rel_file", src: hostfile, size: 4},
+		{dst: "/morelinks/l_rel_l_rel_file", src: hostfile, size: 4},
 	})
 }
 
