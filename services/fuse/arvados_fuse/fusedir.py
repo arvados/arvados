@@ -609,12 +609,13 @@ class MagicDirectory(Directory):
     README_TEXT = """
 This directory provides access to Arvados collections as subdirectories listed
 by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
-the form '1234567890abcdef0123456789abcdef+123').
+the form '1234567890abcdef0123456789abcdef+123'), and Arvados projects by uuid
+(in the form 'zzzzz-j7d0g-1234567890abcde').
 
 Note that this directory will appear empty until you attempt to access a
-specific collection subdirectory (such as trying to 'cd' into it), at which
-point the collection will actually be looked up on the server and the directory
-will appear if it exists.
+specific collection or project subdirectory (such as trying to 'cd' into it),
+at which point the collection or project will actually be looked up on the server
+and the directory will appear if it exists.
 
 """.lstrip()
 
@@ -645,8 +646,15 @@ will appear if it exists.
 
         try:
             e = None
-            e = self.inodes.add_entry(CollectionDirectory(
-                    self.inode, self.inodes, self.api, self.num_retries, k))
+
+            if group_uuid_pattern.match(k):
+                project_object = self.api.groups().get(
+                    uuid=k).execute(num_retries=self.num_retries)
+                e = self.inodes.add_entry(ProjectDirectory(
+                    self.inode, self.inodes, self.api, self.num_retries, project_object))
+            else:
+                e = self.inodes.add_entry(CollectionDirectory(
+                        self.inode, self.inodes, self.api, self.num_retries, k))
 
             if e.update():
                 if k not in self._entries:
@@ -829,7 +837,7 @@ class ProjectDirectory(Directory):
             self.inodes.add_entry(self.project_object_file)
 
         if not self._full_listing:
-            return
+            return True
 
         def samefn(a, i):
             if isinstance(a, CollectionDirectory) or isinstance(a, ProjectDirectory):
@@ -865,6 +873,7 @@ class ProjectDirectory(Directory):
                        self.namefn,
                        samefn,
                        self.createDirectory)
+            return True
         finally:
             self._updating_lock.release()
 

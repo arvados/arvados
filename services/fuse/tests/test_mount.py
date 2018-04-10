@@ -121,6 +121,9 @@ class FuseMagicTest(MountTestBase):
     def setUp(self, api=None):
         super(FuseMagicTest, self).setUp(api=api)
 
+        self.test_project = run_test_server.fixture('groups')['aproject']['uuid']
+        self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
+
         cw = arvados.CollectionWriter()
 
         cw.start_new_file('thing1.txt')
@@ -139,14 +142,22 @@ class FuseMagicTest(MountTestBase):
         self.assertFalse(any(arvados.util.keep_locator_pattern.match(fn) or
                              arvados.util.uuid_pattern.match(fn)
                              for fn in mount_ls),
-                         "new FUSE MagicDirectory lists Collection")
+                         "new FUSE MagicDirectory has no collections or projects")
         self.assertDirContents(self.testcollection, ['thing1.txt'])
         self.assertDirContents(os.path.join('by_id', self.testcollection),
                                ['thing1.txt'])
+        self.assertIn(self.collection_in_test_project,
+                      llfuse.listdir(os.path.join(self.mounttmp, self.test_project)))
+        self.assertIn(self.collection_in_test_project,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.test_project)))
+
         mount_ls = llfuse.listdir(self.mounttmp)
         self.assertIn('README', mount_ls)
         self.assertIn(self.testcollection, mount_ls)
         self.assertIn(self.testcollection,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
+        self.assertIn(self.test_project, mount_ls)
+        self.assertIn(self.test_project, 
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
 
         files = {}
