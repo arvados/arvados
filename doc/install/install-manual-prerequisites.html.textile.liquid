@@ -9,6 +9,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+h2. Supported Cloud and HPC platforms
+
+Arvados can run in a variety of configurations.  For compute scheduling, Arvados supports HPC clusters using @slurm@, and supports elastic cloud computing on AWS, Google and Azure.  For storage, Arvados can store blocks on regular file systems such as ext4 or xfs, on network file systems such as GPFS, or object storage such as Azure blob storage, Amazon S3, and other object storage that supports the S3 API including Google Cloud Storage and Ceph.
+
 h2. Hardware (or virtual machines)
 
 This guide assumes you have seven systems available in the same network subnet:
