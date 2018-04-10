@@ -40,8 +40,8 @@ navbar:
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
-      - user/topics/running-pipeline-command-line.html.textile.liquid
-      - user/topics/arv-run.html.textile.liquid
+    #  - user/topics/running-pipeline-command-line.html.textile.liquid
+    #  - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -51,18 +51,18 @@ navbar:
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
-      - user/tutorials/running-external-program.html.textile.liquid
-      - user/topics/crunch-tools-overview.html.textile.liquid
-      - user/tutorials/tutorial-firstscript.html.textile.liquid
-      - user/tutorials/tutorial-submit-job.html.textile.liquid
-      - user/topics/tutorial-parallel.html.textile.liquid
+    #  - user/tutorials/running-external-program.html.textile.liquid
+    #  - user/topics/crunch-tools-overview.html.textile.liquid
+    #  - user/tutorials/tutorial-firstscript.html.textile.liquid
+    #  - user/tutorials/tutorial-submit-job.html.textile.liquid
+    #  - user/topics/tutorial-parallel.html.textile.liquid
     - Reference:
       - user/reference/cookbook.html.textile.liquid
-      - user/topics/run-command.html.textile.liquid
-      - user/reference/job-pipeline-ref.html.textile.liquid
-      - user/examples/crunch-examples.html.textile.liquid
-    - Query the metadata database:
-      - user/topics/tutorial-trait-search.html.textile.liquid
+    #  - user/topics/run-command.html.textile.liquid
+    #  - user/reference/job-pipeline-ref.html.textile.liquid
+    #  - user/examples/crunch-examples.html.textile.liquid
+    #- Query the metadata database:
+    #  - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
       - user/copying/agpl-3.0.html
@@ -106,9 +106,6 @@ navbar:
       - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
-      - api/permission-model.html.textile.liquid
-      - api/storage.html.textile.liquid
-      - api/execution.html.textile.liquid
     - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
@@ -139,15 +136,20 @@ navbar:
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
-  admin:
-    - Overview:
-      - admin/index.html.textile.liquid
+  architecture:
     - Topics:
-      - admin/upgrading.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
-      - user/topics/arvados-sync-groups.html.textile.liquid
-      - install/migrate-docker19.html.textile.liquid
+      - architecture/index.html.textile.liquid
+      - api/storage.html.textile.liquid
+      - api/execution.html.textile.liquid
+      - api/permission-model.html.textile.liquid
+  admin:
+    - Topics:
+      - admin/index.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
+      - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
+      - admin/upgrading.html.textile.liquid
+      - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

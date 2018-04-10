@@ -1,6 +1,6 @@
 ---
 layout: default
-navsection: api
+navsection: architecture
 title: Storage in Keep
 ...
 {% comment %}
@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keep clients are applications such as @arv-get@, @arv-put@ and @arv-mount@ which store and retrieve data from Keep.  In doing so, these programs interact with both the API server (which stores file metadata in form of Collection objects) and individual Keep servers (which store the actual data blocks).
 
-!{{site.baseurl}}/images/Keep_reading_writing_block.svg!
+!(full-width){{site.baseurl}}/images/Keep_reading_writing_block.svg!
 
 h2. Storing a file
 
@@ -23,7 +23,7 @@ h2. Storing a file
 # The client creates a "collection":{{site.baseurl}}/api/methods/collections.html and provides the @manifest_text@
 # The API server accepts the collection after validating the signed tokens (proof of knowledge) for each block.
 
-!{{site.baseurl}}/images/Keep_manifests.svg!
+!(full-width){{site.baseurl}}/images/Keep_manifests.svg!
 
 h2. Fetching a file
 
@@ -34,7 +34,7 @@ h2. Fetching a file
 # The client sends the data block request to the keep server, along with the token signature from the API which proves to Keep servers that the client is permitted to read a given block.
 # The server provides the block data after validating the token signature for the block (if the server does not have the block, it returns a 404 and the client tries the next highest priority server)
 
-!{{site.baseurl}}/images/Keep_rendezvous_hashing.svg!
+!(full-width){{site.baseurl}}/images/Keep_rendezvous_hashing.svg!
 
 Each @keep_service@ resource has an assigned uuid.  To determine priority assignments of blocks to servers, for each keep service compute the MD5 sum of the string concatenation of the block locator (hex-coded hash part only) and service uuid, then sort this list in descending order.  Blocks are preferentially placed on servers with the highest weight.
 

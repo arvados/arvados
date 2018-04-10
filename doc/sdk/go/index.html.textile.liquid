@@ -18,6 +18,11 @@ h3. Installation
 
 Use @go get git.curoverse.com/arvados.git/sdk/go/arvadosclient@.  The go tools will fetch the relevant code and dependencies for you.
 
-<notextile>{% code 'example_sdk_go_imports' as go %}</notextile>
+{% codeblock as go %}
+import (
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+)
+{% endcodeblock %}
 
 If you need pre-release client code, you can use the latest version from the repo by following "these instructions.":https://dev.arvados.org/projects/arvados/wiki/Go#Using-Go-with-Arvados
