@@ -31,7 +31,7 @@ class TaskQueue(object):
                 try:
                     task()
                 except Exception as e:
-                    logger.exception("Unexpected error running task")
+                    logger.exception("Unhandled exception running task")
                     self.error = e
 
                 with self.lock:
@@ -49,7 +49,7 @@ class TaskQueue(object):
         try:
             # Drain queue
             while not self.task_queue.empty():
-                self.task_queue.get()
+                self.task_queue.get(True, .1)
         except Queue.Empty:
             pass
 

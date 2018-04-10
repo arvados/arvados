@@ -422,11 +422,8 @@ def main(arguments=None, stdout=sys.stdout):
             # Check if this image is already in Arvados.
 
             # Project where everything should be owned
-            if args.project_uuid:
-                parent_project_uuid = args.project_uuid
-            else:
-                parent_project_uuid = api.users().current().execute(
-                    num_retries=args.retries)['uuid']
+            parent_project_uuid = args.project_uuid or api.users().current().execute(
+                num_retries=args.retries)['uuid']
 
             # Find image hash tags
             existing_links = _get_docker_links(
