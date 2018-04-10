@@ -94,7 +94,7 @@ window.SessionDB = function() {
             }
             var session = db.loadLocal();
             var apiHostname = new URL(session.baseURL).hostname;
-            db.discoveryDoc({baseURL: session.baseURL}).map(function(localDD) {
+            db.discoveryDoc(session).map(function(localDD) {
                 var uuidPrefix = localDD.uuidPrefix;
                 db.discoveryDoc({baseURL: baseURL}).map(function(dd) {
                     if (uuidPrefix in dd.remoteHosts ||
