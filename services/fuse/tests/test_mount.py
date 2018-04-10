@@ -122,6 +122,7 @@ class FuseMagicTest(MountTestBase):
         super(FuseMagicTest, self).setUp(api=api)
 
         self.test_project = run_test_server.fixture('groups')['aproject']['uuid']
+        self.non_project_group = run_test_server.fixture('groups')['public']['uuid']
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
 
         cw = arvados.CollectionWriter()
@@ -159,6 +160,9 @@ class FuseMagicTest(MountTestBase):
         self.assertIn(self.test_project, mount_ls)
         self.assertIn(self.test_project, 
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
+
+        with self.assertRaises(OSError):
+            llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.non_project_group))
 
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'

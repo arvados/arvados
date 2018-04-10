@@ -650,6 +650,8 @@ and the directory will appear if it exists.
             if group_uuid_pattern.match(k):
                 project_object = self.api.groups().get(
                     uuid=k).execute(num_retries=self.num_retries)
+                if project_object[u'group_class'] != "project":
+                    return False
                 e = self.inodes.add_entry(ProjectDirectory(
                     self.inode, self.inodes, self.api, self.num_retries, project_object))
             else:
