@@ -507,7 +507,9 @@ class ArvCwlRunner(object):
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
         if runnerjob and not kwargs.get("wait"):
-            runnerjob.run(**kwargs)
+            submitargs = kwargs.copy()
+            submitargs['submit'] = False
+            runnerjob.run(**submitargs)
             return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
