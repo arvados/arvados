@@ -821,8 +821,8 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	var node inode = dn
 	names := strings.Split(path, "/")
 	basename := names[len(names)-1]
-	if basename == "" || basename == "." || basename == ".." {
-		err = fmt.Errorf("invalid filename")
+	if !permittedName(basename) {
+		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
 		return
 	}
 	for _, name := range names[:len(names)-1] {

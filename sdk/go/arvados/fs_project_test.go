@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -86,6 +87,34 @@ func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
 		f, err = s.fs.Open(nx)
 		c.Check(err, check.NotNil)
 		c.Check(os.IsNotExist(err), check.Equals, true)
+	}
+}
+
+func (s *SiteFSSuite) TestSlashInName(c *check.C) {
+	badCollection := Collection{
+		Name:      "bad/collection",
+		OwnerUUID: arvadostest.AProjectUUID,
+	}
+	err := s.client.RequestAndDecode(&badCollection, "POST", "arvados/v1/collections", s.client.UpdateBody(&badCollection), nil)
+	c.Assert(err, check.IsNil)
+	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+badCollection.UUID, nil, nil)
+
+	badProject := Group{
+		Name:       "bad/project",
+		GroupClass: "project",
+		OwnerUUID:  arvadostest.AProjectUUID,
+	}
+	err = s.client.RequestAndDecode(&badProject, "POST", "arvados/v1/groups", s.client.UpdateBody(&badProject), nil)
+	c.Assert(err, check.IsNil)
+	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/groups/"+badProject.UUID, nil, nil)
+
+	dir, err := s.fs.Open("/users/active/A Project")
+	c.Check(err, check.IsNil)
+	fis, err := dir.Readdir(-1)
+	c.Check(err, check.IsNil)
+	for _, fi := range fis {
+		c.Logf("fi.Name() == %q", fi.Name())
+		c.Check(strings.Contains(fi.Name(), "/"), check.Equals, false)
 	}
 }
 

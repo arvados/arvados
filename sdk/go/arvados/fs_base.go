@@ -589,3 +589,7 @@ func rlookup(start inode, path string) (node inode, err error) {
 	}
 	return
 }
+
+func permittedName(name string) bool {
+	return name != "" && name != "." && name != ".." && !strings.Contains(name, "/")
+}

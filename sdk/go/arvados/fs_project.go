@@ -63,7 +63,7 @@ func (pn *projectnode) load() {
 		}
 		for _, i := range resp.Items {
 			coll := i
-			if coll.Name == "" || coll.Name == "." || coll.Name == ".." {
+			if !permittedName(coll.Name) {
 				continue
 			}
 			pn.inode.Child(coll.Name, func(inode) (inode, error) {
@@ -85,7 +85,7 @@ func (pn *projectnode) load() {
 			break
 		}
 		for _, group := range resp.Items {
-			if group.Name == "" || group.Name == "." || group.Name == ".." {
+			if !permittedName(group.Name) {
 				continue
 			}
 			pn.inode.Child(group.Name, func(inode) (inode, error) {
