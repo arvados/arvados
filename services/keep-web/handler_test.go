@@ -333,7 +333,20 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 		http.StatusOK,
 		"foo",
 	)
-	c.Check(strings.Split(resp.Header().Get("Content-Disposition"), ";")[0], check.Equals, "attachment")
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
+}
+
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		"download.example.com/by_id/"+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"foo",
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {

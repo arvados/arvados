@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -335,7 +336,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if useSiteFS {
-		h.serveSiteFS(w, r, tokens, credentialsOK)
+		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
 		return
 	}
 
@@ -505,7 +506,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK bool) {
+func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -550,6 +551,10 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 			h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
 		}
 		return
+	}
+	if r.Method == "GET" {
+		_, basename := filepath.Split(r.URL.Path)
+		applyContentDispositionHdr(w, r, basename, attachment)
 	}
 	wh := webdav.Handler{
 		Prefix: "/",
