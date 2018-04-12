@@ -112,11 +112,11 @@ type updateOnSuccess struct {
 }
 
 func (uos *updateOnSuccess) Write(p []byte) (int, error) {
-	if uos.err != nil {
-		return 0, uos.err
-	}
 	if !uos.sentHeader {
 		uos.WriteHeader(http.StatusOK)
+	}
+	if uos.err != nil {
+		return 0, uos.err
 	}
 	return uos.ResponseWriter.Write(p)
 }
