@@ -993,7 +993,8 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
         raise ValueError("Not a valid project UUID: {}".format(project_uuid))
     return query.execute(num_retries=num_retries)['uuid']
 
-def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
+         install_sig_handlers=True):
     global api_client
 
     args = parse_arguments(arguments)
@@ -1014,8 +1015,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
-    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
-                            for sigcode in CAUGHT_SIGNALS}
+    orig_signal_handlers = {}
+    if install_sig_handlers:
+        orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
+                                for sigcode in CAUGHT_SIGNALS}
 
     # Determine the name to use
     if args.name:

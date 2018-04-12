@@ -19,6 +19,8 @@ from functools import partial
 import pkg_resources  # part of setuptools
 import Queue
 import time
+import signal
+import thread
 
 from cwltool.errors import WorkflowException
 import cwltool.main
@@ -564,7 +566,7 @@ class ArvCwlRunner(object):
             raise
         except:
             if sys.exc_info()[0] is KeyboardInterrupt:
-                logger.error("Interrupted, marking pipeline as failed")
+                logger.error("Interrupted, workflow will be cancelled")
             else:
                 logger.error("Execution failed: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
             if self.pipeline:
@@ -761,11 +763,15 @@ def add_arv_hints():
         "http://arvados.org/cwl#ReuseRequirement"
     ])
 
-def main(args, stdout, stderr, api_client=None, keep_client=None):
+def main(args, stdout, stderr, api_client=None, keep_client=None,
+         install_sig_handlers=True):
     parser = arg_parser()
 
     job_order_object = None
     arvargs = parser.parse_args(args)
+
+    if install_sig_handlers:
+        signal.signal(signal.SIGTERM, lambda x, y: thread.interrupt_main())
 
     if arvargs.update_workflow:
         if arvargs.update_workflow.find('-7fd4e-') == 5:
