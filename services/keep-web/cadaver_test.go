@@ -265,6 +265,22 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	}
 }
 
+func (s *IntegrationSuite) TestCadaverByID(c *check.C) {
+	for _, path := range []string{"/by_id", "/by_id/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*collection is empty.*`)
+	}
+	for _, path := range []string{
+		"/by_id/" + arvadostest.FooPdh,
+		"/by_id/" + arvadostest.FooPdh + "/",
+		"/by_id/" + arvadostest.FooCollection,
+		"/by_id/" + arvadostest.FooCollection + "/",
+	} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*\s+foo\s+3 .*`)
+	}
+}
+
 func (s *IntegrationSuite) TestCadaverUsersDir(c *check.C) {
 	for _, path := range []string{"/"} {
 		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")

@@ -163,6 +163,12 @@ var (
 		"HEAD": true,
 		"POST": true,
 	}
+	// top-level dirs to serve with siteFS
+	siteFSDir = map[string]bool{
+		"":      true, // root directory
+		"by_id": true,
+		"users": true,
+	}
 )
 
 // ServeHTTP implements http.Handler.
@@ -250,7 +256,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if r.URL.Path == "/status.json" {
 		h.serveStatus(w, r)
 		return
-	} else if r.URL.Path == "/" || (len(pathParts) >= 1 && pathParts[0] == "users") {
+	} else if siteFSDir[pathParts[0]] {
 		useSiteFS = true
 	} else if len(pathParts) >= 1 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID[/PATH...]
