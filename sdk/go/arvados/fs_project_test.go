@@ -67,15 +67,15 @@ func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
 	f, err = s.fs.Open(path + "/A Project/..")
 	c.Assert(err, check.IsNil)
 	fi, err := f.Stat()
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
 	_, basename := filepath.Split(path)
 	c.Check(fi.Name(), check.Equals, basename)
 
 	f, err = s.fs.Open(path + "/A Project/A Subproject")
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	fi, err = f.Stat()
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
 
 	for _, nx := range []string{
@@ -88,6 +88,34 @@ func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
 		c.Check(err, check.NotNil)
 		c.Check(os.IsNotExist(err), check.Equals, true)
 	}
+}
+
+func (s *SiteFSSuite) TestProjectReaddirAfterLoadOne(c *check.C) {
+	f, err := s.fs.Open("/users/active/A Project/A Subproject")
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+	f, err = s.fs.Open("/users/active/A Project/Project does not exist")
+	c.Assert(err, check.NotNil)
+	f, err = s.fs.Open("/users/active/A Project/A Subproject")
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+	f, err = s.fs.Open("/users/active/A Project")
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+	fis, err := f.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Logf("%#v", fis)
+	var foundSubproject, foundCollection bool
+	for _, fi := range fis {
+		switch fi.Name() {
+		case "A Subproject":
+			foundSubproject = true
+		case "collection_to_move_around":
+			foundCollection = true
+		}
+	}
+	c.Check(foundSubproject, check.Equals, true)
+	c.Check(foundCollection, check.Equals, true)
 }
 
 func (s *SiteFSSuite) TestSlashInName(c *check.C) {
@@ -109,7 +137,7 @@ func (s *SiteFSSuite) TestSlashInName(c *check.C) {
 	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/groups/"+badProject.UUID, nil, nil)
 
 	dir, err := s.fs.Open("/users/active/A Project")
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	fis, err := dir.Readdir(-1)
 	c.Check(err, check.IsNil)
 	for _, fi := range fis {
@@ -122,7 +150,7 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	s.fs.MountProject("home", "")
 
 	project, err := s.fs.OpenFile("/home/A Project", 0, 0)
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 
 	_, err = s.fs.Open("/home/A Project/oob")
 	c.Check(err, check.NotNil)
@@ -140,6 +168,7 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	f, err := s.fs.Open("/home/A Project/oob")
 	c.Assert(err, check.IsNil)
 	fi, err := f.Stat()
+	c.Assert(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
 	f.Close()
 

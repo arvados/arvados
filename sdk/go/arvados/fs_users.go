@@ -8,55 +8,41 @@ import (
 	"os"
 )
 
-// usersnode is a virtual directory with an entry for each visible
-// Arvados username, each showing the respective user's "home
-// projects".
-type usersnode struct {
-	inode
-	staleChecker
-	err error
+func (fs *customFileSystem) usersLoadOne(parent inode, name string) (inode, error) {
+	var resp UserList
+	err := fs.RequestAndDecode(&resp, "GET", "arvados/v1/users", nil, ResourceListParams{
+		Count:   "none",
+		Filters: []Filter{{"username", "=", name}},
+	})
+	if err != nil {
+		return nil, err
+	} else if len(resp.Items) == 0 {
+		return nil, os.ErrNotExist
+	}
+	user := resp.Items[0]
+	return fs.newProjectNode(parent, user.Username, user.UUID), nil
 }
 
-func (un *usersnode) load() {
-	fs := un.FS().(*customFileSystem)
-
+func (fs *customFileSystem) usersLoadAll(parent inode) ([]inode, error) {
 	params := ResourceListParams{
+		Count: "none",
 		Order: "uuid",
 	}
+	var inodes []inode
 	for {
 		var resp UserList
-		un.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/users", nil, params)
-		if un.err != nil {
-			return
-		}
-		if len(resp.Items) == 0 {
-			break
+		err := fs.RequestAndDecode(&resp, "GET", "arvados/v1/users", nil, params)
+		if err != nil {
+			return nil, err
+		} else if len(resp.Items) == 0 {
+			return inodes, nil
 		}
 		for _, user := range resp.Items {
 			if user.Username == "" {
 				continue
 			}
-			un.inode.Child(user.Username, func(inode) (inode, error) {
-				return fs.newProjectNode(un, user.Username, user.UUID), nil
-			})
+			inodes = append(inodes, fs.newProjectNode(parent, user.Username, user.UUID))
 		}
 		params.Filters = []Filter{{"uuid", ">", resp.Items[len(resp.Items)-1].UUID}}
 	}
-	un.err = nil
-}
-
-func (un *usersnode) Readdir() ([]os.FileInfo, error) {
-	un.staleChecker.DoIfStale(un.load, un.FS().(*customFileSystem).Stale)
-	if un.err != nil {
-		return nil, un.err
-	}
-	return un.inode.Readdir()
-}
-
-func (un *usersnode) Child(name string, _ func(inode) (inode, error)) (inode, error) {
-	un.staleChecker.DoIfStale(un.load, un.FS().(*customFileSystem).Stale)
-	if un.err != nil {
-		return nil, un.err
-	}
-	return un.inode.Child(name, nil)
 }

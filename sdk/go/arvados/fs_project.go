@@ -5,58 +5,81 @@
 package arvados
 
 import (
+	"log"
 	"os"
-	"sync"
-	"time"
+	"strings"
 )
 
-type staleChecker struct {
-	mtx  sync.Mutex
-	last time.Time
-}
-
-func (sc *staleChecker) DoIfStale(fn func(), staleFunc func(time.Time) bool) {
-	sc.mtx.Lock()
-	defer sc.mtx.Unlock()
-	if !staleFunc(sc.last) {
-		return
+func (fs *customFileSystem) defaultUUID(uuid string) (string, error) {
+	if uuid != "" {
+		return uuid, nil
 	}
-	sc.last = time.Now()
-	fn()
-}
-
-// projectnode exposes an Arvados project as a filesystem directory.
-type projectnode struct {
-	inode
-	staleChecker
-	uuid string
-	err  error
-}
-
-func (pn *projectnode) load() {
-	fs := pn.FS().(*customFileSystem)
-
-	if pn.uuid == "" {
-		var resp User
-		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/users/current", nil, nil)
-		if pn.err != nil {
-			return
-		}
-		pn.uuid = resp.UUID
+	var resp User
+	err := fs.RequestAndDecode(&resp, "GET", "arvados/v1/users/current", nil, nil)
+	if err != nil {
+		return "", err
 	}
+	return resp.UUID, nil
+}
+
+// loadOneChild loads only the named child, if it exists.
+func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (inode, error) {
+	uuid, err := fs.defaultUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	var contents CollectionList
+	err = fs.RequestAndDecode(&contents, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
+		Count: "none",
+		Filters: []Filter{
+			{"name", "=", name},
+			{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},
+			{"groups.group_class", "=", "project"},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(contents.Items) == 0 {
+		return nil, os.ErrNotExist
+	}
+	coll := contents.Items[0]
+
+	if strings.Contains(coll.UUID, "-j7d0g-") {
+		// Group item was loaded into a Collection var -- but
+		// we only need the Name and UUID anyway, so it's OK.
+		return fs.newProjectNode(parent, coll.Name, coll.UUID), nil
+	} else if strings.Contains(coll.UUID, "-4zz18-") {
+		return deferredCollectionFS(fs, parent, coll), nil
+	} else {
+		log.Printf("projectnode: unrecognized UUID in response: %q", coll.UUID)
+		return nil, ErrInvalidArgument
+	}
+}
+
+func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode, error) {
+	uuid, err := fs.defaultUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	var inodes []inode
+
 	// Note: the "filters" slice's backing array might be reused
 	// by append(filters,...) below. This isn't goroutine safe,
 	// but all accesses are in the same goroutine, so it's OK.
-	filters := []Filter{{"owner_uuid", "=", pn.uuid}}
+	filters := []Filter{{"owner_uuid", "=", uuid}}
 	params := ResourceListParams{
+		Count:   "none",
 		Filters: filters,
 		Order:   "uuid",
 	}
 	for {
 		var resp CollectionList
-		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/collections", nil, params)
-		if pn.err != nil {
-			return
+		err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/collections", nil, params)
+		if err != nil {
+			return nil, err
 		}
 		if len(resp.Items) == 0 {
 			break
@@ -66,9 +89,7 @@ func (pn *projectnode) load() {
 			if !permittedName(coll.Name) {
 				continue
 			}
-			pn.inode.Child(coll.Name, func(inode) (inode, error) {
-				return deferredCollectionFS(fs, pn, coll), nil
-			})
+			inodes = append(inodes, deferredCollectionFS(fs, parent, coll))
 		}
 		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
 	}
@@ -77,9 +98,9 @@ func (pn *projectnode) load() {
 	params.Filters = filters
 	for {
 		var resp GroupList
-		pn.err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups", nil, params)
-		if pn.err != nil {
-			return
+		err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups", nil, params)
+		if err != nil {
+			return nil, err
 		}
 		if len(resp.Items) == 0 {
 			break
@@ -88,52 +109,9 @@ func (pn *projectnode) load() {
 			if !permittedName(group.Name) {
 				continue
 			}
-			pn.inode.Child(group.Name, func(inode) (inode, error) {
-				return fs.newProjectNode(pn, group.Name, group.UUID), nil
-			})
+			inodes = append(inodes, fs.newProjectNode(parent, group.Name, group.UUID))
 		}
 		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
 	}
-	pn.err = nil
-}
-
-func (pn *projectnode) Readdir() ([]os.FileInfo, error) {
-	pn.staleChecker.DoIfStale(pn.load, pn.FS().(*customFileSystem).Stale)
-	if pn.err != nil {
-		return nil, pn.err
-	}
-	return pn.inode.Readdir()
-}
-
-func (pn *projectnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	pn.staleChecker.DoIfStale(pn.load, pn.FS().(*customFileSystem).Stale)
-	if pn.err != nil {
-		return nil, pn.err
-	}
-	if replace == nil {
-		// lookup
-		return pn.inode.Child(name, nil)
-	}
-	return pn.inode.Child(name, func(existing inode) (inode, error) {
-		if repl, err := replace(existing); err != nil {
-			return existing, err
-		} else if repl == nil {
-			if existing == nil {
-				return nil, nil
-			}
-			// rmdir
-			// (TODO)
-			return existing, ErrInvalidArgument
-		} else if existing != nil {
-			// clobber
-			return existing, ErrInvalidArgument
-		} else if repl.FileInfo().IsDir() {
-			// mkdir
-			// TODO: repl.SetParent(pn, name), etc.
-			return existing, ErrInvalidArgument
-		} else {
-			// create file
-			return existing, ErrInvalidArgument
-		}
-	})
+	return inodes, nil
 }

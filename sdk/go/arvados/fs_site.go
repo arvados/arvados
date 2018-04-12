@@ -73,7 +73,10 @@ func (fs *customFileSystem) MountProject(mount, uuid string) {
 
 func (fs *customFileSystem) MountUsers(mount string) {
 	fs.root.inode.Child(mount, func(inode) (inode, error) {
-		return &usersnode{
+		return &lookupnode{
+			stale:   fs.Stale,
+			loadOne: fs.usersLoadOne,
+			loadAll: fs.usersLoadAll,
 			inode: &treenode{
 				fs:     fs,
 				parent: fs.root,
@@ -136,24 +139,10 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 }
 
 func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {
-	return &projectnode{
-		uuid: uuid,
-		inode: &treenode{
-			fs:     fs,
-			parent: root,
-			inodes: make(map[string]inode),
-			fileinfo: fileinfo{
-				name:    name,
-				modTime: time.Now(),
-				mode:    0755 | os.ModeDir,
-			},
-		},
-	}
-}
-
-func (fs *customFileSystem) newUserNode(root inode, name, uuid string) inode {
-	return &projectnode{
-		uuid: uuid,
+	return &lookupnode{
+		stale:   fs.Stale,
+		loadOne: func(parent inode, name string) (inode, error) { return fs.projectsLoadOne(parent, uuid, name) },
+		loadAll: func(parent inode) ([]inode, error) { return fs.projectsLoadAll(parent, uuid) },
 		inode: &treenode{
 			fs:     fs,
 			parent: root,
