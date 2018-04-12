@@ -8,6 +8,7 @@ if not File.exists?('/usr/bin/git') then
 end
 
 git_latest_tag = `git describe --abbrev=0`
+git_latest_tag = git_latest_tag.encode('utf-8').strip
 git_timestamp = `git log -n1 --first-parent --format=%ct`
 git_timestamp = Time.at(git_timestamp.to_i).utc
 
