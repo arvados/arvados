@@ -7,7 +7,7 @@ if not File.exist?('/usr/bin/git') then
   exit
 end
 
-git_latest_tag - `git describe --abbrev=0`
+git_latest_tag = `git describe --abbrev=0`
 git_timestamp = `git log -n1 --first-parent --format=%ct`
 git_timestamp = Time.at(git_timestamp.to_i).utc
 
