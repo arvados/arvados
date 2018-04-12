@@ -648,12 +648,12 @@ and the directory will appear if it exists.
             e = None
 
             if group_uuid_pattern.match(k):
-                project_object = self.api.groups().get(
-                    uuid=k).execute(num_retries=self.num_retries)
-                if project_object[u'group_class'] != "project":
+                project = self.api.groups().list(
+                    filters=[['group_class', '=', 'project'], ["uuid", "=", k]]).execute(num_retries=self.num_retries)
+                if project[u'items_available'] == 0:
                     return False
                 e = self.inodes.add_entry(ProjectDirectory(
-                    self.inode, self.inodes, self.api, self.num_retries, project_object))
+                    self.inode, self.inodes, self.api, self.num_retries, project[u'items'][0]))
             else:
                 e = self.inodes.add_entry(CollectionDirectory(
                         self.inode, self.inodes, self.api, self.num_retries, k))
