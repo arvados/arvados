@@ -345,7 +345,7 @@ def _uuid2pdh(api, uuid):
         select=['portable_data_hash'],
     ).execute()['items'][0]['portable_data_hash']
 
-def main(arguments=None, stdout=sys.stdout):
+def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True):
     args = arg_parser.parse_args(arguments)
     api = arvados.api('v1')
 
@@ -490,7 +490,8 @@ def main(arguments=None, stdout=sys.stdout):
             put_args += ['--name', collection_name]
 
         coll_uuid = arv_put.main(
-            put_args + ['--filename', outfile_name, image_file.name], stdout=stdout).strip()
+            put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
+            install_sig_handlers=install_sig_handlers).strip()
 
         # Read the image metadata and make Arvados links from it.
         image_file.seek(0)

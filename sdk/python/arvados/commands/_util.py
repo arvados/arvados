@@ -5,6 +5,10 @@
 import argparse
 import errno
 import os
+import logging
+import signal
+from future.utils import listitems, listvalues
+import sys
 
 def _pos_int(s):
     num = int(s)
@@ -44,3 +48,18 @@ def make_home_conf_dir(path, mode=None, errors='ignore'):
         if mode is not None:
             os.chmod(abs_path, mode)
     return abs_path
+
+CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
+
+def exit_signal_handler(sigcode, frame):
+    logging.getLogger('arvados').error("Caught signal {}, exiting.".format(sigcode))
+    sys.exit(-sigcode)
+
+def install_signal_handlers():
+    global orig_signal_handlers
+    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
+                            for sigcode in CAUGHT_SIGNALS}
+
+def restore_signal_handlers():
+    for sigcode, orig_handler in listitems(orig_signal_handlers):
+        signal.signal(sigcode, orig_handler)
