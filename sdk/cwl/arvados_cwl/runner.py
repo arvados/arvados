@@ -400,5 +400,4 @@ class Runner(object):
         else:
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
-            if record["uuid"] in self.arvrunner.processes:
-                del self.arvrunner.processes[record["uuid"]]
+            self.arvrunner.process_done(record["uuid"])

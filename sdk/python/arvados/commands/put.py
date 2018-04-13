@@ -34,7 +34,6 @@ from arvados._version import __version__
 
 import arvados.commands._util as arv_cmd
 
-CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
 api_client = None
 
 upload_opts = argparse.ArgumentParser(add_help=False)
@@ -978,10 +977,6 @@ def progress_writer(progress_func, outfile=sys.stderr):
         outfile.write(progress_func(bytes_written, bytes_expected))
     return write_progress
 
-def exit_signal_handler(sigcode, frame):
-    logging.getLogger('arvados.arv_put').error("Caught signal {}, exiting.".format(sigcode))
-    sys.exit(-sigcode)
-
 def desired_project_uuid(api_client, project_uuid, num_retries):
     if not project_uuid:
         query = api_client.users().current()
@@ -993,7 +988,8 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
         raise ValueError("Not a valid project UUID: {}".format(project_uuid))
     return query.execute(num_retries=num_retries)['uuid']
 
-def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
+         install_sig_handlers=True):
     global api_client
 
     args = parse_arguments(arguments)
@@ -1012,10 +1008,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if api_client is None:
         api_client = arvados.api('v1', request_id=request_id)
 
-    # Install our signal handler for each code in CAUGHT_SIGNALS, and save
-    # the originals.
-    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
-                            for sigcode in CAUGHT_SIGNALS}
+    if install_sig_handlers:
+        arv_cmd.install_signal_handlers()
 
     # Determine the name to use
     if args.name:
@@ -1182,8 +1176,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if not output.endswith('\n'):
             stdout.write('\n')
 
-    for sigcode, orig_handler in listitems(orig_signal_handlers):
-        signal.signal(sigcode, orig_handler)
+    arv_cmd.restore_signal_handlers()
 
     if status != 0:
         sys.exit(status)

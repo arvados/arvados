@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -46,10 +45,12 @@ func TestCrunchExec(t *testing.T) {
 var _ = Suite(&TestSuite{})
 
 type TestSuite struct {
+	client *arvados.Client
 	docker *TestDockerClient
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
+	s.client = arvados.NewClientFromEnv()
 	s.docker = NewTestDockerClient()
 }
 
@@ -356,12 +357,16 @@ call:
 	return nil
 }
 
-func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+func (client *KeepTestClient) PutB(buf []byte) (string, int, error) {
 	client.Content = buf
-	return fmt.Sprintf("%s+%d", hash, len(buf)), len(buf), nil
+	return fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf)), len(buf), nil
 }
 
-func (*KeepTestClient) ClearBlockCache() {
+func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
+	return 0, errors.New("not implemented")
+}
+
+func (client *KeepTestClient) ClearBlockCache() {
 }
 
 func (client *KeepTestClient) Close() {
@@ -413,9 +418,10 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 
-	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	_, err = cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 	c.Check(err, IsNil)
 
 	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
@@ -480,26 +486,24 @@ func (ArvErrorTestClient) Discovery(key string) (interface{}, error) {
 	return discoveryMap[key], nil
 }
 
-type KeepErrorTestClient struct{}
-
-func (KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	return "", 0, errors.New("KeepError")
+type KeepErrorTestClient struct {
+	KeepTestClient
 }
 
-func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
+func (*KeepErrorTestClient) ManifestFileReader(manifest.Manifest, string) (arvados.File, error) {
 	return nil, errors.New("KeepError")
 }
 
-func (KeepErrorTestClient) ClearBlockCache() {
+func (*KeepErrorTestClient) PutB(buf []byte) (string, int, error) {
+	return "", 0, errors.New("KeepError")
 }
 
-type KeepReadErrorTestClient struct{}
-
-func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	return "", 0, nil
+type KeepReadErrorTestClient struct {
+	KeepTestClient
 }
 
-func (KeepReadErrorTestClient) ClearBlockCache() {
+func (*KeepReadErrorTestClient) ReadAt(string, []byte, int) (int, error) {
+	return 0, errors.New("KeepError")
 }
 
 type ErrorReader struct {
@@ -522,37 +526,42 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = hwPDH
 
-	err := cr.LoadImage()
+	err = cr.LoadImage()
 	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
 }
 
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, &KeepErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = hwPDH
 
-	err := cr.LoadImage()
+	err = cr.LoadImage()
+	c.Assert(err, NotNil)
 	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
 }
 
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	// (3) Collection doesn't contain image
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, &KeepReadErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = otherPDH
 
-	err := cr.LoadImage()
+	err = cr.LoadImage()
 	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
 }
 
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
-	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, &KeepReadErrorTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = hwPDH
 
-	err := cr.LoadImage()
+	err = cr.LoadImage()
 	c.Check(err, NotNil)
 }
 
@@ -569,14 +578,14 @@ type TestLogs struct {
 	Stderr ClosableBuffer
 }
 
-func (tl *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
+func (tl *TestLogs) NewTestLoggingWriter(logstr string) (io.WriteCloser, error) {
 	if logstr == "stdout" {
-		return &tl.Stdout
+		return &tl.Stdout, nil
 	}
 	if logstr == "stderr" {
-		return &tl.Stderr
+		return &tl.Stderr, nil
 	}
-	return nil
+	return nil, errors.New("???")
 }
 
 func dockerLog(fd byte, msg string) []byte {
@@ -595,13 +604,14 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(&ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
 	cr.Container.ContainerImage = hwPDH
 	cr.Container.Command = []string{"./hw"}
-	err := cr.LoadImage()
+	err = cr.LoadImage()
 	c.Check(err, IsNil)
 
 	err = cr.CreateContainer()
@@ -621,14 +631,15 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
 	cr.CrunchLog.Print("Goodbye")
 	cr.finalState = "Complete"
 
-	err := cr.CommitLogs()
+	err = cr.CommitLogs()
 	c.Check(err, IsNil)
 
 	c.Check(api.Calls, Equals, 2)
@@ -642,9 +653,10 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 
-	err := cr.UpdateContainerRunning()
+	err = cr.UpdateContainerRunning()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
@@ -654,7 +666,8 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 
 	cr.LogsPDH = new(string)
 	*cr.LogsPDH = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
@@ -663,7 +676,7 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	*cr.ExitCode = 42
 	cr.finalState = "Complete"
 
-	err := cr.UpdateContainerFinal()
+	err = cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
@@ -675,11 +688,12 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.cCancelled = true
 	cr.finalState = "Cancelled"
 
-	err := cr.UpdateContainerFinal()
+	err = cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
@@ -700,7 +714,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	err = json.Unmarshal([]byte(record), &sm)
 	c.Check(err, IsNil)
 	secretMounts, err := json.Marshal(sm)
-	log.Printf("%q %q", sm, secretMounts)
+	c.Logf("%s %q", sm, secretMounts)
 	c.Check(err, IsNil)
 
 	s.docker.exitCode = exitCode
@@ -711,7 +725,8 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	s.docker.api = api
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -989,7 +1004,8 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	api := &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
 		return &ArvTestClient{}, nil
@@ -1060,7 +1076,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
@@ -1470,7 +1487,8 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	api = &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr = NewContainerRunner(api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
@@ -1512,8 +1530,8 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 }
 
 func (s *TestSuite) TestFullRunWithAPI(c *C) {
+	defer os.Setenv("ARVADOS_API_HOST", os.Getenv("ARVADOS_API_HOST"))
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
-	defer os.Unsetenv("ARVADOS_API_HOST")
 	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -1535,8 +1553,8 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
+	defer os.Setenv("ARVADOS_API_HOST", os.Getenv("ARVADOS_API_HOST"))
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
-	defer os.Unsetenv("ARVADOS_API_HOST")
 	api, _, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -1634,7 +1652,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 				manifest := collection["manifest_text"].(string)
 
 				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
-./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar 9:18:sub1file2
+./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:bar 36:18:sub1file2
 ./foo/baz 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2
 ./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
 ./foo/sub1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
@@ -1652,7 +1670,7 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
         "/tmp": {"kind": "tmp"},
-        "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt"},
+        "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367", "path": "/subdir1/file2_in_subdir1.txt"},
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
     },
 		"output_path": "/tmp",
@@ -1685,52 +1703,6 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 	}
 }
 
-func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
-	helperRecord := `{
-		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": "/bin",
-		"environment": {"FROBIZ": "bilbo"},
-		"mounts": {
-        "/tmp": {"kind": "tmp"},
-        "/keep/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path": "/subdir1/file2_in_subdir1.txt"},
-        "/keep/foo2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"}
-    },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`
-
-	extraMounts := []string{
-		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
-	}
-
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/tmp2/baz")
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz2")
-		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/tmp2/baz3")
-		os.Mkdir(t.realTemp+"/tmp2/baz4", 0700)
-		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/tmp2/baz4/baz5")
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-				c.Check(manifest, Equals, `. 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:baz 9:18:baz2
-./baz3 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
-./baz3/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
-./baz4 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:baz5
-`)
-			}
-		}
-	}
-}
-
 func (s *TestSuite) TestOutputError(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
@@ -1753,59 +1725,6 @@ func (s *TestSuite) TestOutputError(c *C) {
 	})
 
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-}
-
-func (s *TestSuite) TestOutputSymlinkToOutput(c *C) {
-	helperRecord := `{
-		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": "/bin",
-		"environment": {"FROBIZ": "bilbo"},
-		"mounts": {
-        "/tmp": {"kind": "tmp"}
-    },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`
-
-	extraMounts := []string{}
-
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		rf, _ := os.Create(t.realTemp + "/tmp2/realfile")
-		rf.Write([]byte("foo"))
-		rf.Close()
-
-		os.Mkdir(t.realTemp+"/tmp2/realdir", 0700)
-		rf, _ = os.Create(t.realTemp + "/tmp2/realdir/subfile")
-		rf.Write([]byte("bar"))
-		rf.Close()
-
-		os.Symlink("/tmp/realfile", t.realTemp+"/tmp2/file1")
-		os.Symlink("realfile", t.realTemp+"/tmp2/file2")
-		os.Symlink("/tmp/file1", t.realTemp+"/tmp2/file3")
-		os.Symlink("file2", t.realTemp+"/tmp2/file4")
-		os.Symlink("realdir", t.realTemp+"/tmp2/dir1")
-		os.Symlink("/tmp/realdir", t.realTemp+"/tmp2/dir2")
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-				c.Check(manifest, Equals,
-					`. 7a2c86e102dcc231bd232aad99686dfa+15 0:3:file1 3:3:file2 6:3:file3 9:3:file4 12:3:realfile
-./dir1 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
-./dir2 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
-./realdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:subfile
-`)
-			}
-		}
-	}
 }
 
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
@@ -1911,66 +1830,14 @@ func (s *TestSuite) TestStderrMount(c *C) {
 func (s *TestSuite) TestNumberRoundTrip(c *C) {
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.fetchContainerRecord()
 
 	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
 
 	c.Check(err, IsNil)
 	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
-}
-
-func (s *TestSuite) TestEvalSymlinks(c *C) {
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-
-	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
-	c.Assert(err, IsNil)
-	defer os.RemoveAll(realTemp)
-
-	cr.HostOutputDir = realTemp
-
-	// Absolute path outside output dir
-	os.Symlink("/etc/passwd", realTemp+"/p1")
-
-	// Relative outside output dir
-	os.Symlink("../zip", realTemp+"/p2")
-
-	// Circular references
-	os.Symlink("p4", realTemp+"/p3")
-	os.Symlink("p5", realTemp+"/p4")
-	os.Symlink("p3", realTemp+"/p5")
-
-	// Target doesn't exist
-	os.Symlink("p99", realTemp+"/p6")
-
-	for _, v := range []string{"p1", "p2", "p3", "p4", "p5"} {
-		info, err := os.Lstat(realTemp + "/" + v)
-		c.Assert(err, IsNil)
-		_, _, _, err = cr.derefOutputSymlink(realTemp+"/"+v, info)
-		c.Assert(err, NotNil)
-	}
-}
-
-func (s *TestSuite) TestEvalSymlinkDir(c *C) {
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr := NewContainerRunner(&ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-
-	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
-	c.Assert(err, IsNil)
-	defer os.RemoveAll(realTemp)
-
-	cr.HostOutputDir = realTemp
-
-	// Absolute path outside output dir
-	os.Symlink(".", realTemp+"/loop")
-
-	v := "loop"
-	info, err := os.Lstat(realTemp + "/" + v)
-	_, err = cr.UploadOutputFile(realTemp+"/"+v, info, err, []string{}, nil, "", "", 0)
-	c.Assert(err, NotNil)
 }
 
 func (s *TestSuite) TestFullBrokenDocker1(c *C) {

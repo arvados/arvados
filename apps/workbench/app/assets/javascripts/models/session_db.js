@@ -68,7 +68,7 @@ window.SessionDB = function() {
                 url = 'https://' + url;
             }
             url = new URL(url);
-            return m.request(url.origin + '/discovery/v1/apis/arvados/v1/rest').then(function() {
+            return db.discoveryDoc({baseURL: url.origin}).map(function() {
                 return url.origin + '/';
             }).catch(function(err) {
                 // If url is a Workbench site (and isn't too old),
@@ -94,9 +94,9 @@ window.SessionDB = function() {
             }
             var session = db.loadLocal();
             var apiHostname = new URL(session.baseURL).hostname;
-            m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(localDD) {
+            db.discoveryDoc(session).map(function(localDD) {
                 var uuidPrefix = localDD.uuidPrefix;
-                m.request(baseURL+'discovery/v1/apis/arvados/v1/rest').then(function(dd) {
+                db.discoveryDoc({baseURL: baseURL}).map(function(dd) {
                     if (uuidPrefix in dd.remoteHosts ||
                         (dd.remoteHostsViaDNS && apiHostname.endsWith('.arvadosapi.com'))) {
                         // Federated identity login via salted token
@@ -233,7 +233,16 @@ window.SessionDB = function() {
             var cache = db.discoveryCache[session.baseURL];
             if (!cache) {
                 db.discoveryCache[session.baseURL] = cache = m.stream();
-                m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest').then(cache);
+                m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest')
+                    .then(function (dd) {
+                        // Just in case we're talking with an old API server.
+                        dd.remoteHosts = dd.remoteHosts || {};
+                        if (dd.remoteHostsViaDNS === undefined) {
+                            dd.remoteHostsViaDNS = false;
+                        }
+                        return dd;
+                    })
+                    .then(cache);
             }
             return cache;
         },
@@ -308,8 +317,7 @@ window.SessionDB = function() {
             if (userUUIDPrefix === session.user.owner_uuid.slice(0, 5)) {
                 return;
             }
-            var doc = db.discoveryDoc(session);
-            doc.map(function(d) {
+            db.discoveryDoc(session).map(function (d) {
                 // Guess the remote host from the local discovery doc settings
                 var rHost = null;
                 if (d.remoteHosts[userUUIDPrefix]) {
@@ -323,8 +331,7 @@ window.SessionDB = function() {
                 }
                 // Get the remote cluster workbench url & redirect there.
                 db.findAPI(rHost).then(function (apiUrl) {
-                    var doc = db.discoveryDoc({baseURL: apiUrl});
-                    doc.map(function (d) {
+                    db.discoveryDoc({baseURL: apiUrl}).map(function (d) {
                         document.location = d.workbenchUrl + path;
                     });
                 });

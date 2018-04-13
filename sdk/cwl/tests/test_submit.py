@@ -168,6 +168,7 @@ def stubs(func):
                                   }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
+                        'arv:debug': True,
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -236,7 +237,8 @@ def stubs(func):
             'owner_uuid': None,
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--enable-reuse', '--on-error=continue', '--eval-timeout=20',
+                        '--eval-timeout=20', '--thread-count=4',
+                        '--enable-reuse', '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
@@ -444,7 +446,7 @@ class TestSubmit(unittest.TestCase):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait",
+            ["--submit", "--no-wait", "--debug",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             sys.stdout, sys.stderr, api_client=stubs.api)
@@ -503,7 +505,8 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = [
             'arvados-cwl-runner', '--local', '--api=containers',
             '--no-log-timestamps', '--disable-validate',
-            '--disable-reuse', '--on-error=continue', '--eval-timeout=20',
+            '--eval-timeout=20', '--thread-count=4',
+            '--disable-reuse', '--debug', '--on-error=continue',
             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["use_existing"] = False
 
@@ -527,7 +530,8 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = [
             'arvados-cwl-runner', '--local', '--api=containers',
             '--no-log-timestamps', '--disable-validate',
-            '--disable-reuse', '--on-error=continue', '--eval-timeout=20',
+            '--eval-timeout=20', '--thread-count=4',
+            '--disable-reuse', '--debug', '--on-error=continue',
             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["use_existing"] = False
         expect_container["name"] = "submit_wf_no_reuse.cwl"
@@ -563,7 +567,8 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--enable-reuse', '--on-error=stop', '--eval-timeout=20',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', '--debug', '--on-error=stop',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -588,7 +593,9 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       "--output-name="+output_name, '--enable-reuse', '--on-error=continue', '--eval-timeout=20',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse',
+                                       "--output-name="+output_name, '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["output_name"] = output_name
 
@@ -613,8 +620,9 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--enable-reuse', '--on-error=continue',
-                                       "--intermediate-output-ttl=3600", '--eval-timeout=20',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', '--debug', '--on-error=continue',
+                                       "--intermediate-output-ttl=3600",
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -637,8 +645,9 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--enable-reuse', '--on-error=continue',
-                                       "--trash-intermediate", '--eval-timeout=20',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', '--debug', '--on-error=continue',
+                                       "--trash-intermediate",
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -663,7 +672,9 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       "--output-tags="+output_tags, '--enable-reuse', '--on-error=continue', '--eval-timeout=20',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse',
+                                       "--output-tags="+output_tags, '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -746,7 +757,8 @@ class TestSubmit(unittest.TestCase):
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--enable-reuse', '--on-error=continue', '--eval-timeout=20',
+                        '--eval-timeout=20', '--thread-count=4',
+                        '--enable-reuse', '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow/expect_arvworkflow.cwl#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
@@ -864,7 +876,8 @@ class TestSubmit(unittest.TestCase):
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--enable-reuse', '--on-error=continue', '--eval-timeout=20',
+                        '--eval-timeout=20', '--thread-count=4',
+                        '--enable-reuse', '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
@@ -923,7 +936,9 @@ class TestSubmit(unittest.TestCase):
         expect_container["owner_uuid"] = project_uuid
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--enable-reuse', '--on-error=continue', '--project-uuid='+project_uuid, '--eval-timeout=20',
+                                       "--eval-timeout=20", "--thread-count=4",
+                                       '--enable-reuse', '--debug', '--on-error=continue',
+                                       '--project-uuid='+project_uuid,
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -947,7 +962,34 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--enable-reuse', '--on-error=continue', '--eval-timeout=60.0',
+                                       '--eval-timeout=60.0', '--thread-count=4',
+                                       '--enable-reuse', '--debug', '--on-error=continue',
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_container_thread_count(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug", "--thread-count=20",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate',
+                                       '--eval-timeout=20', '--thread-count=20',
+                                       '--enable-reuse', '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
@@ -1069,9 +1111,11 @@ class TestSubmit(unittest.TestCase):
                 "--api=containers",
                 "--no-log-timestamps",
                 "--disable-validate",
-                "--enable-reuse",
-                "--on-error=continue",
                 "--eval-timeout=20",
+                '--thread-count=4',
+                "--enable-reuse",
+                '--debug',
+                "--on-error=continue",
                 "/var/lib/cwl/workflow.json#main",
                 "/var/lib/cwl/cwl.input.json"
             ],
