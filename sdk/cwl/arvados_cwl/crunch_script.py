@@ -97,7 +97,8 @@ def run():
             debug = job_order_object["arv:debug"]
             del job_order_object["arv:debug"]
 
-        runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
+        runner = arvados_cwl.ArvCwlRunner(api_client=arvados.safeapi.ThreadSafeApiCache(
+            api_params={"model": OrderedJsonModel()}, keep_params={"num_retries": 4}),
                                           output_name=output_name, output_tags=output_tags)
 
         make_fs_access = functools.partial(CollectionFsAccess,
