@@ -33,6 +33,7 @@ import arvados
 import arvados.config
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
+import arvados.commands._util as arv_cmd
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
@@ -253,7 +254,7 @@ class ArvCwlRunner(object):
                 self.api.collections().delete(uuid=i).execute(num_retries=self.num_retries)
             except:
                 logger.warn("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
-            if sys.exc_info()[0] is KeyboardInterrupt:
+            if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
                 break
 
     def check_features(self, obj):
@@ -565,7 +566,7 @@ class ArvCwlRunner(object):
         except UnsupportedRequirement:
             raise
         except:
-            if sys.exc_info()[0] is KeyboardInterrupt:
+            if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
                 logger.error("Interrupted, workflow will be cancelled")
             else:
                 logger.error("Execution failed: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
@@ -763,6 +764,10 @@ def add_arv_hints():
         "http://arvados.org/cwl#ReuseRequirement"
     ])
 
+def exit_signal_handler(sigcode, frame):
+    logger.error("Caught signal {}, exiting.".format(sigcode))
+    sys.exit(-sigcode)
+
 def main(args, stdout, stderr, api_client=None, keep_client=None,
          install_sig_handlers=True):
     parser = arg_parser()
@@ -771,7 +776,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     arvargs = parser.parse_args(args)
 
     if install_sig_handlers:
-        signal.signal(signal.SIGTERM, lambda x, y: thread.interrupt_main())
+        arv_cmd.install_signal_handlers()
 
     if arvargs.update_workflow:
         if arvargs.update_workflow.find('-7fd4e-') == 5:
