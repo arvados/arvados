@@ -1593,9 +1593,63 @@ NULL
 #' @name user_agreements.new
 NULL
 
+#' projects.get is equivalent to groups.get method.
+#' 
+#' @usage arv$projects.get(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.get
+NULL
+
+#' projects.create wrapps groups.create method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.create(group, ensure_unique_name = "false")
+#' @param group Group object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Group object.
+#' @name projects.create
+NULL
+
+#' projects.update wrapps groups.update method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.update(group, uuid)
+#' @param group Group object.
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.update
+NULL
+
+#' projects.delete is equivalent to groups.delete method.
+#' 
+#' @usage arv$project.delete(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.delete
+NULL
+
+#' projects.list wrapps groups.list method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.list(filters = NULL,
+#' 	where = NULL, order = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	include_trash = NULL, uuid = NULL, recursive = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param uuid 
+#' @param recursive Include contents from child groups recursively.
+#' @return Group object.
+#' @name projects.list
+NULL
+
 #' Arvados
 #'
-#' Arvados class gives users ability to manipulate collections and projects.
+#' Arvados class gives users ability to access Arvados REST API.
 #'
 #' @section Usage:
 #' \preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
@@ -1783,8 +1837,8 @@ NULL
 #'
 #' deletedCollection <- arv$collections.delete("uuid")
 #'
-#' updatedCollection <- arv$collections.update(list(name = "New name", description = "New description")
-#'                                            "uuid")
+#' updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"),
+#'                                             "uuid")
 #'
 #' createdCollection <- arv$collections.create(list(name = "Example",
 #'                                                  description = "This is a test collection"))

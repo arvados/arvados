@@ -4,7 +4,7 @@
 \alias{Arvados}
 \title{Arvados}
 \description{
-Arvados class gives users ability to manipulate collections and projects.
+Arvados class gives users ability to access Arvados REST API.
 }
 \section{Usage}{
 
@@ -197,8 +197,8 @@ collectionList <- listAll(arv$collections.list, list(list("name", "like", "Test\
 
 deletedCollection <- arv$collections.delete("uuid")
 
-updatedCollection <- arv$collections.update(list(name = "New name", description = "New description")
-                                           "uuid")
+updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"),
+                                            "uuid")
 
 createdCollection <- arv$collections.create(list(name = "Example",
                                                  description = "This is a test collection"))
