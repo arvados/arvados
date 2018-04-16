@@ -291,6 +291,15 @@ knitr::opts_chunk$set(eval = FALSE)
 
 #### Help
 
+* View help page of Arvados classes by puting ? before class name:
+
+    ```{r}
+    ?Arvados
+    ?Collection
+    ?Subcollection
+    ?ArvadosFile
+    ```
+
 * View help page of any method defined in Arvados class by puting ? before method name:
 
     ```{r}

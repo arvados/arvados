@@ -3,7 +3,7 @@ source("./R/util.R")
 #' Subcollection
 #' 
 #' Subcollection class represents a folder inside Arvados collection.
-#' It is essentially a composite of ArvadosFiles and other Subcollections.
+#' It is essentially a composite of arvadosFiles and other subcollections.
 #' 
 #' @section Usage:
 #' \preformatted{subcollection = Subcollection$new(name)}
