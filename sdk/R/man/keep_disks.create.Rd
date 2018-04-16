@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.create}
 \alias{keep_disks.create}
-\title{keep_disks.create is a method defined in Arvados class.}
+\title{keep_disks.create}
 \usage{
 arv$keep_disks.create(keepdisk,
 	ensure_unique_name = "false")

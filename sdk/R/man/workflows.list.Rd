@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{workflows.list}
 \alias{workflows.list}
-\title{workflows.list is a method defined in Arvados class.}
+\title{workflows.list}
 \usage{
 arv$workflows.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

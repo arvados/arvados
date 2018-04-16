@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{logs.create}
 \alias{logs.create}
-\title{logs.create is a method defined in Arvados class.}
+\title{logs.create}
 \usage{
 arv$logs.create(log, ensure_unique_name = "false")
 }

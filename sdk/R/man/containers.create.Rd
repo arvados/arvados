@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.create}
 \alias{containers.create}
-\title{containers.create is a method defined in Arvados class.}
+\title{containers.create}
 \usage{
 arv$containers.create(container,
 	ensure_unique_name = "false")

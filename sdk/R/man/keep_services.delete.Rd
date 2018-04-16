@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.delete}
 \alias{keep_services.delete}
-\title{keep_services.delete is a method defined in Arvados class.}
+\title{keep_services.delete}
 \usage{
 arv$keep_services.delete(uuid)
 }

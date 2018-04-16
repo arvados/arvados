@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_instances.cancel}
 \alias{pipeline_instances.cancel}
-\title{pipeline_instances.cancel is a method defined in Arvados class.}
+\title{pipeline_instances.cancel}
 \usage{
 arv$pipeline_instances.cancel(uuid)
 }

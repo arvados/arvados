@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{container_requests.update}
 \alias{container_requests.update}
-\title{container_requests.update is a method defined in Arvados class.}
+\title{container_requests.update}
 \usage{
 arv$container_requests.update(containerrequest,
 	uuid)

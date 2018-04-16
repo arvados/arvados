@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{traits.delete}
 \alias{traits.delete}
-\title{traits.delete is a method defined in Arvados class.}
+\title{traits.delete}
 \usage{
 arv$traits.delete(uuid)
 }

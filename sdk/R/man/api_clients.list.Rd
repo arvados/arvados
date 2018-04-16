@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_clients.list}
 \alias{api_clients.list}
-\title{api_clients.list is a method defined in Arvados class.}
+\title{api_clients.list}
 \usage{
 arv$api_clients.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

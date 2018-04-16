@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.unsetup}
 \alias{users.unsetup}
-\title{users.unsetup is a method defined in Arvados class.}
+\title{users.unsetup}
 \usage{
 arv$users.unsetup(uuid)
 }

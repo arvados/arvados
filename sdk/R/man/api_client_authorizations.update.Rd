@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.update}
 \alias{api_client_authorizations.update}
-\title{api_client_authorizations.update is a method defined in Arvados class.}
+\title{api_client_authorizations.update}
 \usage{
 arv$api_client_authorizations.update(apiclientauthorization,
 	uuid)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{specimens.get}
 \alias{specimens.get}
-\title{specimens.get is a method defined in Arvados class.}
+\title{specimens.get}
 \usage{
 arv$specimens.get(uuid)
 }

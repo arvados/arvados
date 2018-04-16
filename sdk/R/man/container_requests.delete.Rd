@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{container_requests.delete}
 \alias{container_requests.delete}
-\title{container_requests.delete is a method defined in Arvados class.}
+\title{container_requests.delete}
 \usage{
 arv$container_requests.delete(uuid)
 }

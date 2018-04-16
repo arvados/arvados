@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.provenance}
 \alias{collections.provenance}
-\title{collections.provenance is a method defined in Arvados class.}
+\title{collections.provenance}
 \usage{
 arv$collections.provenance(uuid)
 }

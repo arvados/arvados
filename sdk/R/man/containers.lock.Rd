@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.lock}
 \alias{containers.lock}
-\title{containers.lock is a method defined in Arvados class.}
+\title{containers.lock}
 \usage{
 arv$containers.lock(uuid)
 }

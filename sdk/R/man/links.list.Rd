@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.list}
 \alias{links.list}
-\title{links.list is a method defined in Arvados class.}
+\title{links.list}
 \usage{
 arv$links.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{projects.delete}
 \alias{projects.delete}
-\title{projects.delete is equivalent to groups.delete method.}
+\title{project.delete}
 \usage{
 arv$project.delete(uuid)
 }

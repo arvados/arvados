@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.unlock}
 \alias{containers.unlock}
-\title{containers.unlock is a method defined in Arvados class.}
+\title{containers.unlock}
 \usage{
 arv$containers.unlock(uuid)
 }

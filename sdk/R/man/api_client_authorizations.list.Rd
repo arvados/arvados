@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.list}
 \alias{api_client_authorizations.list}
-\title{api_client_authorizations.list is a method defined in Arvados class.}
+\title{api_client_authorizations.list}
 \usage{
 arv$api_client_authorizations.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

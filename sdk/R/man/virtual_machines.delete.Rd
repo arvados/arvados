@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.delete}
 \alias{virtual_machines.delete}
-\title{virtual_machines.delete is a method defined in Arvados class.}
+\title{virtual_machines.delete}
 \usage{
 arv$virtual_machines.delete(uuid)
 }

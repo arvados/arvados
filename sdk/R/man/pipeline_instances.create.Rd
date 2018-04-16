@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_instances.create}
 \alias{pipeline_instances.create}
-\title{pipeline_instances.create is a method defined in Arvados class.}
+\title{pipeline_instances.create}
 \usage{
 arv$pipeline_instances.create(pipelineinstance,
 	ensure_unique_name = "false")

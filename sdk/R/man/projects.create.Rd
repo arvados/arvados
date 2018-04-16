@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{projects.create}
 \alias{projects.create}
-\title{projects.create wrapps groups.create method by setting group_class attribute to "project".}
+\title{project.create}
 \usage{
 arv$projects.create(group, ensure_unique_name = "false")
 }

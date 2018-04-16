@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{container_requests.list}
 \alias{container_requests.list}
-\title{container_requests.list is a method defined in Arvados class.}
+\title{container_requests.list}
 \usage{
 arv$container_requests.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

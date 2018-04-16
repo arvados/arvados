@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{specimens.list}
 \alias{specimens.list}
-\title{specimens.list is a method defined in Arvados class.}
+\title{specimens.list}
 \usage{
 arv$specimens.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

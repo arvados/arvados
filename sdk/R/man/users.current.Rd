@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.current}
 \alias{users.current}
-\title{users.current is a method defined in Arvados class.}
+\title{users.current}
 \usage{
 arv$users.current(NULL)
 }

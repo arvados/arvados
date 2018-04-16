@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{authorized_keys.list}
 \alias{authorized_keys.list}
-\title{authorized_keys.list is a method defined in Arvados class.}
+\title{authorized_keys.list}
 \usage{
 arv$authorized_keys.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

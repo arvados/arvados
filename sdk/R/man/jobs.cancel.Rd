@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.cancel}
 \alias{jobs.cancel}
-\title{jobs.cancel is a method defined in Arvados class.}
+\title{jobs.cancel}
 \usage{
 arv$jobs.cancel(uuid)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.create}
 \alias{collections.create}
-\title{collections.create is a method defined in Arvados class.}
+\title{collections.create}
 \usage{
 arv$collections.create(collection,
 	ensure_unique_name = "false")

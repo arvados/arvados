@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.list}
 \alias{containers.list}
-\title{containers.list is a method defined in Arvados class.}
+\title{containers.list}
 \usage{
 arv$containers.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

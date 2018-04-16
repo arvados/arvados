@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.used_by}
 \alias{collections.used_by}
-\title{collections.used_by is a method defined in Arvados class.}
+\title{collections.used_by}
 \usage{
 arv$collections.used_by(uuid)
 }

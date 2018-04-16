@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_instances.delete}
 \alias{pipeline_instances.delete}
-\title{pipeline_instances.delete is a method defined in Arvados class.}
+\title{pipeline_instances.delete}
 \usage{
 arv$pipeline_instances.delete(uuid)
 }

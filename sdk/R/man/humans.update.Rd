@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{humans.update}
 \alias{humans.update}
-\title{humans.update is a method defined in Arvados class.}
+\title{humans.update}
 \usage{
 arv$humans.update(human, uuid)
 }

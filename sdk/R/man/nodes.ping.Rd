@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.ping}
 \alias{nodes.ping}
-\title{nodes.ping is a method defined in Arvados class.}
+\title{nodes.ping}
 \usage{
 arv$nodes.ping(uuid, ping_secret)
 }

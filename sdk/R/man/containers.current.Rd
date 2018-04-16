@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.current}
 \alias{containers.current}
-\title{containers.current is a method defined in Arvados class.}
+\title{containers.current}
 \usage{
 arv$containers.current(NULL)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.get}
 \alias{links.get}
-\title{links.get is a method defined in Arvados class.}
+\title{links.get}
 \usage{
 arv$links.get(uuid)
 }

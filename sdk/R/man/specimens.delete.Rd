@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{specimens.delete}
 \alias{specimens.delete}
-\title{specimens.delete is a method defined in Arvados class.}
+\title{specimens.delete}
 \usage{
 arv$specimens.delete(uuid)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.list}
 \alias{user_agreements.list}
-\title{user_agreements.list is a method defined in Arvados class.}
+\title{user_agreements.list}
 \usage{
 arv$user_agreements.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

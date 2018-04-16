@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.delete}
 \alias{user_agreements.delete}
-\title{user_agreements.delete is a method defined in Arvados class.}
+\title{user_agreements.delete}
 \usage{
 arv$user_agreements.delete(uuid)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.activate}
 \alias{users.activate}
-\title{users.activate is a method defined in Arvados class.}
+\title{users.activate}
 \usage{
 arv$users.activate(uuid)
 }

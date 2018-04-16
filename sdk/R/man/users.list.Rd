@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.list}
 \alias{users.list}
-\title{users.list is a method defined in Arvados class.}
+\title{users.list}
 \usage{
 arv$users.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

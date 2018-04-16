@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.list}
 \alias{virtual_machines.list}
-\title{virtual_machines.list is a method defined in Arvados class.}
+\title{virtual_machines.list}
 \usage{
 arv$virtual_machines.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

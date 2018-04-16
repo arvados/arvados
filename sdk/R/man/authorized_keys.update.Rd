@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{authorized_keys.update}
 \alias{authorized_keys.update}
-\title{authorized_keys.update is a method defined in Arvados class.}
+\title{authorized_keys.update}
 \usage{
 arv$authorized_keys.update(authorizedkey,
 	uuid)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{repositories.get_all_permissions}
 \alias{repositories.get_all_permissions}
-\title{repositories.get_all_permissions is a method defined in Arvados class.}
+\title{repositories.get_all_permissions}
 \usage{
 arv$repositories.get_all_permissions(NULL)
 }

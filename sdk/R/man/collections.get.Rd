@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.get}
 \alias{collections.get}
-\title{collections.get is a method defined in Arvados class.}
+\title{collections.get}
 \usage{
 arv$collections.get(uuid)
 }

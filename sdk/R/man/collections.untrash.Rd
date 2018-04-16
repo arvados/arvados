@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.untrash}
 \alias{collections.untrash}
-\title{collections.untrash is a method defined in Arvados class.}
+\title{collections.untrash}
 \usage{
 arv$collections.untrash(uuid)
 }

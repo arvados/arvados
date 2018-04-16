@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.delete}
 \alias{collections.delete}
-\title{collections.delete is a method defined in Arvados class.}
+\title{collections.delete}
 \usage{
 arv$collections.delete(uuid)
 }

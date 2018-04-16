@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{logs.get}
 \alias{logs.get}
-\title{logs.get is a method defined in Arvados class.}
+\title{logs.get}
 \usage{
 arv$logs.get(uuid)
 }

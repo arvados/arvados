@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{traits.create}
 \alias{traits.create}
-\title{traits.create is a method defined in Arvados class.}
+\title{traits.create}
 \usage{
 arv$traits.create(trait, ensure_unique_name = "false")
 }

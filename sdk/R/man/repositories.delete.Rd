@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{repositories.delete}
 \alias{repositories.delete}
-\title{repositories.delete is a method defined in Arvados class.}
+\title{repositories.delete}
 \usage{
 arv$repositories.delete(uuid)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.update}
 \alias{users.update}
-\title{users.update is a method defined in Arvados class.}
+\title{users.update}
 \usage{
 arv$users.update(user, uuid)
 }

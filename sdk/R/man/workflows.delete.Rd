@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{workflows.delete}
 \alias{workflows.delete}
-\title{workflows.delete is a method defined in Arvados class.}
+\title{workflows.delete}
 \usage{
 arv$workflows.delete(uuid)
 }

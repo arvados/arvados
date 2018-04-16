@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.new}
 \alias{user_agreements.new}
-\title{user_agreements.new is a method defined in Arvados class.}
+\title{user_agreements.new}
 \usage{
 arv$user_agreements.new(NULL)
 }

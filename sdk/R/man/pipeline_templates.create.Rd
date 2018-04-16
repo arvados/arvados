@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_templates.create}
 \alias{pipeline_templates.create}
-\title{pipeline_templates.create is a method defined in Arvados class.}
+\title{pipeline_templates.create}
 \usage{
 arv$pipeline_templates.create(pipelinetemplate,
 	ensure_unique_name = "false")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_templates.list}
 \alias{pipeline_templates.list}
-\title{pipeline_templates.list is a method defined in Arvados class.}
+\title{pipeline_templates.list}
 \usage{
 arv$pipeline_templates.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

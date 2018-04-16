@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.create}
 \alias{links.create}
-\title{links.create is a method defined in Arvados class.}
+\title{links.create}
 \usage{
 arv$links.create(link, ensure_unique_name = "false")
 }

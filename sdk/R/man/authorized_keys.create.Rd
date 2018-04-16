@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{authorized_keys.create}
 \alias{authorized_keys.create}
-\title{authorized_keys.create is a method defined in Arvados class.}
+\title{authorized_keys.create}
 \usage{
 arv$authorized_keys.create(authorizedkey,
 	ensure_unique_name = "false")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.contents}
 \alias{groups.contents}
-\title{groups.contents is a method defined in Arvados class.}
+\title{groups.contents}
 \usage{
 arv$groups.contents(filters = NULL,
 	where = NULL, order = NULL, distinct = NULL,

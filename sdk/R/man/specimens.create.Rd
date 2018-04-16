@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{specimens.create}
 \alias{specimens.create}
-\title{specimens.create is a method defined in Arvados class.}
+\title{specimens.create}
 \usage{
 arv$specimens.create(specimen,
 	ensure_unique_name = "false")

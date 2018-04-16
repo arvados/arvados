@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.get}
 \alias{virtual_machines.get}
-\title{virtual_machines.get is a method defined in Arvados class.}
+\title{virtual_machines.get}
 \usage{
 arv$virtual_machines.get(uuid)
 }

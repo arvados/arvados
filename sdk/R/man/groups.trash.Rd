@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.trash}
 \alias{groups.trash}
-\title{groups.trash is a method defined in Arvados class.}
+\title{groups.trash}
 \usage{
 arv$groups.trash(uuid)
 }

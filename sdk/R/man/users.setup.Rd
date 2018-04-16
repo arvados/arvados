@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.setup}
 \alias{users.setup}
-\title{users.setup is a method defined in Arvados class.}
+\title{users.setup}
 \usage{
 arv$users.setup(user = NULL, openid_prefix = NULL,
 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")

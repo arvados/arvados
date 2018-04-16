@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{logs.delete}
 \alias{logs.delete}
-\title{logs.delete is a method defined in Arvados class.}
+\title{logs.delete}
 \usage{
 arv$logs.delete(uuid)
 }

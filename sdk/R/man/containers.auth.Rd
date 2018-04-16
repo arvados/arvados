@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.auth}
 \alias{containers.auth}
-\title{containers.auth is a method defined in Arvados class.}
+\title{containers.auth}
 \usage{
 arv$containers.auth(uuid)
 }

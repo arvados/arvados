@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.untrash}
 \alias{groups.untrash}
-\title{groups.untrash is a method defined in Arvados class.}
+\title{groups.untrash}
 \usage{
 arv$groups.untrash(uuid)
 }

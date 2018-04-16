@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.get}
 \alias{nodes.get}
-\title{nodes.get is a method defined in Arvados class.}
+\title{nodes.get}
 \usage{
 arv$nodes.get(uuid)
 }

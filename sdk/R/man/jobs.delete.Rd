@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.delete}
 \alias{jobs.delete}
-\title{jobs.delete is a method defined in Arvados class.}
+\title{jobs.delete}
 \usage{
 arv$jobs.delete(uuid)
 }

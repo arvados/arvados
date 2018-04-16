@@ -411,7 +411,9 @@ getMethodDoc <- function(methodName, methodMetaData)
     params      <- getMethodDescription(methodMetaData)
     returnValue <- paste("#' @return", methodMetaData$response[["$ref"]], "object.")
 
-    c(description,
+    c(paste("#'", methodName),
+      "#' ",
+      description,
       "#' ",
       usage,
       params,
@@ -460,7 +462,9 @@ getMethodDescription <- function(methodMetaData)
 genProjectMethodsDoc <- function()
 {
     #TODO: Manually update this documentation to reflect changes in discovery document.
-    c("#' projects.get is equivalent to groups.get method.",
+    c("#' project.get",
+    "#' ",
+    "#' projects.get is equivalent to groups.get method.",
     "#' ",
     "#' @usage arv$projects.get(uuid)",
     "#' @param uuid The UUID of the Group in question.",
@@ -468,6 +472,8 @@ genProjectMethodsDoc <- function()
     "#' @name projects.get",
     "NULL",
     "",
+    "#' project.create",
+    "#' ",
     "#' projects.create wrapps groups.create method by setting group_class attribute to \"project\".",
     "#' ",
     "#' @usage arv$projects.create(group, ensure_unique_name = \"false\")",
@@ -477,6 +483,8 @@ genProjectMethodsDoc <- function()
     "#' @name projects.create",
     "NULL",
     "",
+    "#' project.update",
+    "#' ",
     "#' projects.update wrapps groups.update method by setting group_class attribute to \"project\".",
     "#' ",
     "#' @usage arv$projects.update(group, uuid)",
@@ -486,6 +494,8 @@ genProjectMethodsDoc <- function()
     "#' @name projects.update",
     "NULL",
     "",
+    "#' project.delete",
+    "#' ",
     "#' projects.delete is equivalent to groups.delete method.",
     "#' ",
     "#' @usage arv$project.delete(uuid)",
@@ -494,6 +504,8 @@ genProjectMethodsDoc <- function()
     "#' @name projects.delete",
     "NULL",
     "",
+    "#' project.list",
+    "#' ",
     "#' projects.list wrapps groups.list method by setting group_class attribute to \"project\".",
     "#' ",
     "#' @usage arv$projects.list(filters = NULL,",

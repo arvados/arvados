@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.update}
 \alias{nodes.update}
-\title{nodes.update is a method defined in Arvados class.}
+\title{nodes.update}
 \usage{
 arv$nodes.update(node, uuid, assign_slot = NULL)
 }

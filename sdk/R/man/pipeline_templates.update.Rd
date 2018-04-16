@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_templates.update}
 \alias{pipeline_templates.update}
-\title{pipeline_templates.update is a method defined in Arvados class.}
+\title{pipeline_templates.update}
 \usage{
 arv$pipeline_templates.update(pipelinetemplate,
 	uuid)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.update}
 \alias{keep_disks.update}
-\title{keep_disks.update is a method defined in Arvados class.}
+\title{keep_disks.update}
 \usage{
 arv$keep_disks.update(keepdisk,
 	uuid)

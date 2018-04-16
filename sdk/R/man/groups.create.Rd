@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.create}
 \alias{groups.create}
-\title{groups.create is a method defined in Arvados class.}
+\title{groups.create}
 \usage{
 arv$groups.create(group, ensure_unique_name = "false")
 }

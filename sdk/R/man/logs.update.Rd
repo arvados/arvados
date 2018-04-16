@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{logs.update}
 \alias{logs.update}
-\title{logs.update is a method defined in Arvados class.}
+\title{logs.update}
 \usage{
 arv$logs.update(log, uuid)
 }

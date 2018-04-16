@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.get_all_logins}
 \alias{virtual_machines.get_all_logins}
-\title{virtual_machines.get_all_logins is a method defined in Arvados class.}
+\title{virtual_machines.get_all_logins}
 \usage{
 arv$virtual_machines.get_all_logins(NULL)
 }

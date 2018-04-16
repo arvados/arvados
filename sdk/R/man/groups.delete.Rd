@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.delete}
 \alias{groups.delete}
-\title{groups.delete is a method defined in Arvados class.}
+\title{groups.delete}
 \usage{
 arv$groups.delete(uuid)
 }

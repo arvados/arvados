@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.sign}
 \alias{user_agreements.sign}
-\title{user_agreements.sign is a method defined in Arvados class.}
+\title{user_agreements.sign}
 \usage{
 arv$user_agreements.sign(NULL)
 }

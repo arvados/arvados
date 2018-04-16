@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.delete}
 \alias{nodes.delete}
-\title{nodes.delete is a method defined in Arvados class.}
+\title{nodes.delete}
 \usage{
 arv$nodes.delete(uuid)
 }

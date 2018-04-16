@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.delete}
 \alias{api_client_authorizations.delete}
-\title{api_client_authorizations.delete is a method defined in Arvados class.}
+\title{api_client_authorizations.delete}
 \usage{
 arv$api_client_authorizations.delete(uuid)
 }

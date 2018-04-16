@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_clients.delete}
 \alias{api_clients.delete}
-\title{api_clients.delete is a method defined in Arvados class.}
+\title{api_clients.delete}
 \usage{
 arv$api_clients.delete(uuid)
 }

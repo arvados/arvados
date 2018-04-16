@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{workflows.get}
 \alias{workflows.get}
-\title{workflows.get is a method defined in Arvados class.}
+\title{workflows.get}
 \usage{
 arv$workflows.get(uuid)
 }

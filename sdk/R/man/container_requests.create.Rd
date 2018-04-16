@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{container_requests.create}
 \alias{container_requests.create}
-\title{container_requests.create is a method defined in Arvados class.}
+\title{container_requests.create}
 \usage{
 arv$container_requests.create(containerrequest,
 	ensure_unique_name = "false")

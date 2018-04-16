@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.queue_size}
 \alias{jobs.queue_size}
-\title{jobs.queue_size is a method defined in Arvados class.}
+\title{jobs.queue_size}
 \usage{
 arv$jobs.queue_size(NULL)
 }

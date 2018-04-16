@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.update}
 \alias{groups.update}
-\title{groups.update is a method defined in Arvados class.}
+\title{groups.update}
 \usage{
 arv$groups.update(group, uuid)
 }

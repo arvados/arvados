@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{traits.update}
 \alias{traits.update}
-\title{traits.update is a method defined in Arvados class.}
+\title{traits.update}
 \usage{
 arv$traits.update(trait, uuid)
 }

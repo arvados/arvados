@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.delete}
 \alias{links.delete}
-\title{links.delete is a method defined in Arvados class.}
+\title{links.delete}
 \usage{
 arv$links.delete(uuid)
 }

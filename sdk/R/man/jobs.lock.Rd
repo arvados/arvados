@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.lock}
 \alias{jobs.lock}
-\title{jobs.lock is a method defined in Arvados class.}
+\title{jobs.lock}
 \usage{
 arv$jobs.lock(uuid)
 }

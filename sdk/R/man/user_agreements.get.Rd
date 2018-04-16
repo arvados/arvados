@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.get}
 \alias{user_agreements.get}
-\title{user_agreements.get is a method defined in Arvados class.}
+\title{user_agreements.get}
 \usage{
 arv$user_agreements.get(uuid)
 }

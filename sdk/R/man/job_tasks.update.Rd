@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{job_tasks.update}
 \alias{job_tasks.update}
-\title{job_tasks.update is a method defined in Arvados class.}
+\title{job_tasks.update}
 \usage{
 arv$job_tasks.update(jobtask, uuid)
 }

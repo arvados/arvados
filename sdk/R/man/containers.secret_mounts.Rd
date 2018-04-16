@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.secret_mounts}
 \alias{containers.secret_mounts}
-\title{containers.secret_mounts is a method defined in Arvados class.}
+\title{containers.secret_mounts}
 \usage{
 arv$containers.secret_mounts(uuid)
 }

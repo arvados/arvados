@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.update}
 \alias{links.update}
-\title{links.update is a method defined in Arvados class.}
+\title{links.update}
 \usage{
 arv$links.update(link, uuid)
 }

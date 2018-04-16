@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.get}
 \alias{keep_services.get}
-\title{keep_services.get is a method defined in Arvados class.}
+\title{keep_services.get}
 \usage{
 arv$keep_services.get(uuid)
 }

@@ -1,3 +1,5 @@
+#' users.get
+#' 
 #' users.get is a method defined in Arvados class.
 #' 
 #' @usage arv$users.get(uuid)
@@ -6,6 +8,8 @@
 #' @name users.get
 NULL
 
+#' users.create
+#' 
 #' users.create is a method defined in Arvados class.
 #' 
 #' @usage arv$users.create(user, ensure_unique_name = "false")
@@ -15,6 +19,8 @@ NULL
 #' @name users.create
 NULL
 
+#' users.update
+#' 
 #' users.update is a method defined in Arvados class.
 #' 
 #' @usage arv$users.update(user, uuid)
@@ -24,6 +30,8 @@ NULL
 #' @name users.update
 NULL
 
+#' users.delete
+#' 
 #' users.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$users.delete(uuid)
@@ -32,6 +40,8 @@ NULL
 #' @name users.delete
 NULL
 
+#' users.current
+#' 
 #' users.current is a method defined in Arvados class.
 #' 
 #' @usage arv$users.current(NULL)
@@ -39,6 +49,8 @@ NULL
 #' @name users.current
 NULL
 
+#' users.system
+#' 
 #' users.system is a method defined in Arvados class.
 #' 
 #' @usage arv$users.system(NULL)
@@ -46,6 +58,8 @@ NULL
 #' @name users.system
 NULL
 
+#' users.activate
+#' 
 #' users.activate is a method defined in Arvados class.
 #' 
 #' @usage arv$users.activate(uuid)
@@ -54,6 +68,8 @@ NULL
 #' @name users.activate
 NULL
 
+#' users.setup
+#' 
 #' users.setup is a method defined in Arvados class.
 #' 
 #' @usage arv$users.setup(user = NULL, openid_prefix = NULL,
@@ -67,6 +83,8 @@ NULL
 #' @name users.setup
 NULL
 
+#' users.unsetup
+#' 
 #' users.unsetup is a method defined in Arvados class.
 #' 
 #' @usage arv$users.unsetup(uuid)
@@ -75,6 +93,8 @@ NULL
 #' @name users.unsetup
 NULL
 
+#' users.update_uuid
+#' 
 #' users.update_uuid is a method defined in Arvados class.
 #' 
 #' @usage arv$users.update_uuid(uuid, new_uuid)
@@ -84,6 +104,8 @@ NULL
 #' @name users.update_uuid
 NULL
 
+#' users.list
+#' 
 #' users.list is a method defined in Arvados class.
 #' 
 #' @usage arv$users.list(filters = NULL,
@@ -102,6 +124,8 @@ NULL
 #' @name users.list
 NULL
 
+#' api_client_authorizations.get
+#' 
 #' api_client_authorizations.get is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.get(uuid)
@@ -110,6 +134,8 @@ NULL
 #' @name api_client_authorizations.get
 NULL
 
+#' api_client_authorizations.create
+#' 
 #' api_client_authorizations.create is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.create(apiclientauthorization,
@@ -120,6 +146,8 @@ NULL
 #' @name api_client_authorizations.create
 NULL
 
+#' api_client_authorizations.update
+#' 
 #' api_client_authorizations.update is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.update(apiclientauthorization,
@@ -130,6 +158,8 @@ NULL
 #' @name api_client_authorizations.update
 NULL
 
+#' api_client_authorizations.delete
+#' 
 #' api_client_authorizations.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.delete(uuid)
@@ -138,6 +168,8 @@ NULL
 #' @name api_client_authorizations.delete
 NULL
 
+#' api_client_authorizations.create_system_auth
+#' 
 #' api_client_authorizations.create_system_auth is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.create_system_auth(api_client_id = NULL,
@@ -148,6 +180,8 @@ NULL
 #' @name api_client_authorizations.create_system_auth
 NULL
 
+#' api_client_authorizations.current
+#' 
 #' api_client_authorizations.current is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.current(NULL)
@@ -155,6 +189,8 @@ NULL
 #' @name api_client_authorizations.current
 NULL
 
+#' api_client_authorizations.list
+#' 
 #' api_client_authorizations.list is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.list(filters = NULL,
@@ -173,6 +209,8 @@ NULL
 #' @name api_client_authorizations.list
 NULL
 
+#' containers.get
+#' 
 #' containers.get is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.get(uuid)
@@ -181,6 +219,8 @@ NULL
 #' @name containers.get
 NULL
 
+#' containers.create
+#' 
 #' containers.create is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.create(container,
@@ -191,6 +231,8 @@ NULL
 #' @name containers.create
 NULL
 
+#' containers.update
+#' 
 #' containers.update is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.update(container,
@@ -201,6 +243,8 @@ NULL
 #' @name containers.update
 NULL
 
+#' containers.delete
+#' 
 #' containers.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.delete(uuid)
@@ -209,6 +253,8 @@ NULL
 #' @name containers.delete
 NULL
 
+#' containers.auth
+#' 
 #' containers.auth is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.auth(uuid)
@@ -217,6 +263,8 @@ NULL
 #' @name containers.auth
 NULL
 
+#' containers.lock
+#' 
 #' containers.lock is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.lock(uuid)
@@ -225,6 +273,8 @@ NULL
 #' @name containers.lock
 NULL
 
+#' containers.unlock
+#' 
 #' containers.unlock is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.unlock(uuid)
@@ -233,6 +283,8 @@ NULL
 #' @name containers.unlock
 NULL
 
+#' containers.secret_mounts
+#' 
 #' containers.secret_mounts is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.secret_mounts(uuid)
@@ -241,6 +293,8 @@ NULL
 #' @name containers.secret_mounts
 NULL
 
+#' containers.current
+#' 
 #' containers.current is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.current(NULL)
@@ -248,6 +302,8 @@ NULL
 #' @name containers.current
 NULL
 
+#' containers.list
+#' 
 #' containers.list is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.list(filters = NULL,
@@ -266,6 +322,8 @@ NULL
 #' @name containers.list
 NULL
 
+#' api_clients.get
+#' 
 #' api_clients.get is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.get(uuid)
@@ -274,6 +332,8 @@ NULL
 #' @name api_clients.get
 NULL
 
+#' api_clients.create
+#' 
 #' api_clients.create is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.create(apiclient,
@@ -284,6 +344,8 @@ NULL
 #' @name api_clients.create
 NULL
 
+#' api_clients.update
+#' 
 #' api_clients.update is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.update(apiclient,
@@ -294,6 +356,8 @@ NULL
 #' @name api_clients.update
 NULL
 
+#' api_clients.delete
+#' 
 #' api_clients.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.delete(uuid)
@@ -302,6 +366,8 @@ NULL
 #' @name api_clients.delete
 NULL
 
+#' api_clients.list
+#' 
 #' api_clients.list is a method defined in Arvados class.
 #' 
 #' @usage arv$api_clients.list(filters = NULL,
@@ -320,6 +386,8 @@ NULL
 #' @name api_clients.list
 NULL
 
+#' authorized_keys.get
+#' 
 #' authorized_keys.get is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.get(uuid)
@@ -328,6 +396,8 @@ NULL
 #' @name authorized_keys.get
 NULL
 
+#' authorized_keys.create
+#' 
 #' authorized_keys.create is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.create(authorizedkey,
@@ -338,6 +408,8 @@ NULL
 #' @name authorized_keys.create
 NULL
 
+#' authorized_keys.update
+#' 
 #' authorized_keys.update is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.update(authorizedkey,
@@ -348,6 +420,8 @@ NULL
 #' @name authorized_keys.update
 NULL
 
+#' authorized_keys.delete
+#' 
 #' authorized_keys.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.delete(uuid)
@@ -356,6 +430,8 @@ NULL
 #' @name authorized_keys.delete
 NULL
 
+#' authorized_keys.list
+#' 
 #' authorized_keys.list is a method defined in Arvados class.
 #' 
 #' @usage arv$authorized_keys.list(filters = NULL,
@@ -374,6 +450,8 @@ NULL
 #' @name authorized_keys.list
 NULL
 
+#' container_requests.get
+#' 
 #' container_requests.get is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.get(uuid)
@@ -382,6 +460,8 @@ NULL
 #' @name container_requests.get
 NULL
 
+#' container_requests.create
+#' 
 #' container_requests.create is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.create(containerrequest,
@@ -392,6 +472,8 @@ NULL
 #' @name container_requests.create
 NULL
 
+#' container_requests.update
+#' 
 #' container_requests.update is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.update(containerrequest,
@@ -402,6 +484,8 @@ NULL
 #' @name container_requests.update
 NULL
 
+#' container_requests.delete
+#' 
 #' container_requests.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.delete(uuid)
@@ -410,6 +494,8 @@ NULL
 #' @name container_requests.delete
 NULL
 
+#' container_requests.list
+#' 
 #' container_requests.list is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.list(filters = NULL,
@@ -428,6 +514,8 @@ NULL
 #' @name container_requests.list
 NULL
 
+#' collections.get
+#' 
 #' collections.get is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.get(uuid)
@@ -436,6 +524,8 @@ NULL
 #' @name collections.get
 NULL
 
+#' collections.create
+#' 
 #' collections.create is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.create(collection,
@@ -446,6 +536,8 @@ NULL
 #' @name collections.create
 NULL
 
+#' collections.update
+#' 
 #' collections.update is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.update(collection,
@@ -456,6 +548,8 @@ NULL
 #' @name collections.update
 NULL
 
+#' collections.delete
+#' 
 #' collections.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.delete(uuid)
@@ -464,6 +558,8 @@ NULL
 #' @name collections.delete
 NULL
 
+#' collections.provenance
+#' 
 #' collections.provenance is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.provenance(uuid)
@@ -472,6 +568,8 @@ NULL
 #' @name collections.provenance
 NULL
 
+#' collections.used_by
+#' 
 #' collections.used_by is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.used_by(uuid)
@@ -480,6 +578,8 @@ NULL
 #' @name collections.used_by
 NULL
 
+#' collections.trash
+#' 
 #' collections.trash is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.trash(uuid)
@@ -488,6 +588,8 @@ NULL
 #' @name collections.trash
 NULL
 
+#' collections.untrash
+#' 
 #' collections.untrash is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.untrash(uuid)
@@ -496,6 +598,8 @@ NULL
 #' @name collections.untrash
 NULL
 
+#' collections.list
+#' 
 #' collections.list is a method defined in Arvados class.
 #' 
 #' @usage arv$collections.list(filters = NULL,
@@ -515,6 +619,8 @@ NULL
 #' @name collections.list
 NULL
 
+#' humans.get
+#' 
 #' humans.get is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.get(uuid)
@@ -523,6 +629,8 @@ NULL
 #' @name humans.get
 NULL
 
+#' humans.create
+#' 
 #' humans.create is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.create(human, ensure_unique_name = "false")
@@ -532,6 +640,8 @@ NULL
 #' @name humans.create
 NULL
 
+#' humans.update
+#' 
 #' humans.update is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.update(human, uuid)
@@ -541,6 +651,8 @@ NULL
 #' @name humans.update
 NULL
 
+#' humans.delete
+#' 
 #' humans.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.delete(uuid)
@@ -549,6 +661,8 @@ NULL
 #' @name humans.delete
 NULL
 
+#' humans.list
+#' 
 #' humans.list is a method defined in Arvados class.
 #' 
 #' @usage arv$humans.list(filters = NULL,
@@ -567,6 +681,8 @@ NULL
 #' @name humans.list
 NULL
 
+#' job_tasks.get
+#' 
 #' job_tasks.get is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.get(uuid)
@@ -575,6 +691,8 @@ NULL
 #' @name job_tasks.get
 NULL
 
+#' job_tasks.create
+#' 
 #' job_tasks.create is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.create(jobtask, ensure_unique_name = "false")
@@ -584,6 +702,8 @@ NULL
 #' @name job_tasks.create
 NULL
 
+#' job_tasks.update
+#' 
 #' job_tasks.update is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.update(jobtask, uuid)
@@ -593,6 +713,8 @@ NULL
 #' @name job_tasks.update
 NULL
 
+#' job_tasks.delete
+#' 
 #' job_tasks.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.delete(uuid)
@@ -601,6 +723,8 @@ NULL
 #' @name job_tasks.delete
 NULL
 
+#' job_tasks.list
+#' 
 #' job_tasks.list is a method defined in Arvados class.
 #' 
 #' @usage arv$job_tasks.list(filters = NULL,
@@ -619,6 +743,8 @@ NULL
 #' @name job_tasks.list
 NULL
 
+#' links.get
+#' 
 #' links.get is a method defined in Arvados class.
 #' 
 #' @usage arv$links.get(uuid)
@@ -627,6 +753,8 @@ NULL
 #' @name links.get
 NULL
 
+#' links.create
+#' 
 #' links.create is a method defined in Arvados class.
 #' 
 #' @usage arv$links.create(link, ensure_unique_name = "false")
@@ -636,6 +764,8 @@ NULL
 #' @name links.create
 NULL
 
+#' links.update
+#' 
 #' links.update is a method defined in Arvados class.
 #' 
 #' @usage arv$links.update(link, uuid)
@@ -645,6 +775,8 @@ NULL
 #' @name links.update
 NULL
 
+#' links.delete
+#' 
 #' links.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$links.delete(uuid)
@@ -653,6 +785,8 @@ NULL
 #' @name links.delete
 NULL
 
+#' links.list
+#' 
 #' links.list is a method defined in Arvados class.
 #' 
 #' @usage arv$links.list(filters = NULL,
@@ -671,6 +805,8 @@ NULL
 #' @name links.list
 NULL
 
+#' links.get_permissions
+#' 
 #' links.get_permissions is a method defined in Arvados class.
 #' 
 #' @usage arv$links.get_permissions(uuid)
@@ -679,6 +815,8 @@ NULL
 #' @name links.get_permissions
 NULL
 
+#' jobs.get
+#' 
 #' jobs.get is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.get(uuid)
@@ -687,6 +825,8 @@ NULL
 #' @name jobs.get
 NULL
 
+#' jobs.create
+#' 
 #' jobs.create is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.create(job, ensure_unique_name = "false",
@@ -702,6 +842,8 @@ NULL
 #' @name jobs.create
 NULL
 
+#' jobs.update
+#' 
 #' jobs.update is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.update(job, uuid)
@@ -711,6 +853,8 @@ NULL
 #' @name jobs.update
 NULL
 
+#' jobs.delete
+#' 
 #' jobs.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.delete(uuid)
@@ -719,6 +863,8 @@ NULL
 #' @name jobs.delete
 NULL
 
+#' jobs.queue
+#' 
 #' jobs.queue is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.queue(filters = NULL,
@@ -737,6 +883,8 @@ NULL
 #' @name jobs.queue
 NULL
 
+#' jobs.queue_size
+#' 
 #' jobs.queue_size is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.queue_size(NULL)
@@ -744,6 +892,8 @@ NULL
 #' @name jobs.queue_size
 NULL
 
+#' jobs.cancel
+#' 
 #' jobs.cancel is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.cancel(uuid)
@@ -752,6 +902,8 @@ NULL
 #' @name jobs.cancel
 NULL
 
+#' jobs.lock
+#' 
 #' jobs.lock is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.lock(uuid)
@@ -760,6 +912,8 @@ NULL
 #' @name jobs.lock
 NULL
 
+#' jobs.list
+#' 
 #' jobs.list is a method defined in Arvados class.
 #' 
 #' @usage arv$jobs.list(filters = NULL, where = NULL,
@@ -777,6 +931,8 @@ NULL
 #' @name jobs.list
 NULL
 
+#' keep_disks.get
+#' 
 #' keep_disks.get is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.get(uuid)
@@ -785,6 +941,8 @@ NULL
 #' @name keep_disks.get
 NULL
 
+#' keep_disks.create
+#' 
 #' keep_disks.create is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.create(keepdisk,
@@ -795,6 +953,8 @@ NULL
 #' @name keep_disks.create
 NULL
 
+#' keep_disks.update
+#' 
 #' keep_disks.update is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.update(keepdisk,
@@ -805,6 +965,8 @@ NULL
 #' @name keep_disks.update
 NULL
 
+#' keep_disks.delete
+#' 
 #' keep_disks.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.delete(uuid)
@@ -813,6 +975,8 @@ NULL
 #' @name keep_disks.delete
 NULL
 
+#' keep_disks.ping
+#' 
 #' keep_disks.ping is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.ping(uuid = NULL,
@@ -829,6 +993,8 @@ NULL
 #' @name keep_disks.ping
 NULL
 
+#' keep_disks.list
+#' 
 #' keep_disks.list is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_disks.list(filters = NULL,
@@ -847,6 +1013,8 @@ NULL
 #' @name keep_disks.list
 NULL
 
+#' keep_services.get
+#' 
 #' keep_services.get is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.get(uuid)
@@ -855,6 +1023,8 @@ NULL
 #' @name keep_services.get
 NULL
 
+#' keep_services.create
+#' 
 #' keep_services.create is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.create(keepservice,
@@ -865,6 +1035,8 @@ NULL
 #' @name keep_services.create
 NULL
 
+#' keep_services.update
+#' 
 #' keep_services.update is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.update(keepservice,
@@ -875,6 +1047,8 @@ NULL
 #' @name keep_services.update
 NULL
 
+#' keep_services.delete
+#' 
 #' keep_services.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.delete(uuid)
@@ -883,6 +1057,8 @@ NULL
 #' @name keep_services.delete
 NULL
 
+#' keep_services.accessible
+#' 
 #' keep_services.accessible is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.accessible(NULL)
@@ -890,6 +1066,8 @@ NULL
 #' @name keep_services.accessible
 NULL
 
+#' keep_services.list
+#' 
 #' keep_services.list is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.list(filters = NULL,
@@ -908,6 +1086,8 @@ NULL
 #' @name keep_services.list
 NULL
 
+#' pipeline_templates.get
+#' 
 #' pipeline_templates.get is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.get(uuid)
@@ -916,6 +1096,8 @@ NULL
 #' @name pipeline_templates.get
 NULL
 
+#' pipeline_templates.create
+#' 
 #' pipeline_templates.create is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.create(pipelinetemplate,
@@ -926,6 +1108,8 @@ NULL
 #' @name pipeline_templates.create
 NULL
 
+#' pipeline_templates.update
+#' 
 #' pipeline_templates.update is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.update(pipelinetemplate,
@@ -936,6 +1120,8 @@ NULL
 #' @name pipeline_templates.update
 NULL
 
+#' pipeline_templates.delete
+#' 
 #' pipeline_templates.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.delete(uuid)
@@ -944,6 +1130,8 @@ NULL
 #' @name pipeline_templates.delete
 NULL
 
+#' pipeline_templates.list
+#' 
 #' pipeline_templates.list is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_templates.list(filters = NULL,
@@ -962,6 +1150,8 @@ NULL
 #' @name pipeline_templates.list
 NULL
 
+#' pipeline_instances.get
+#' 
 #' pipeline_instances.get is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.get(uuid)
@@ -970,6 +1160,8 @@ NULL
 #' @name pipeline_instances.get
 NULL
 
+#' pipeline_instances.create
+#' 
 #' pipeline_instances.create is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.create(pipelineinstance,
@@ -980,6 +1172,8 @@ NULL
 #' @name pipeline_instances.create
 NULL
 
+#' pipeline_instances.update
+#' 
 #' pipeline_instances.update is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.update(pipelineinstance,
@@ -990,6 +1184,8 @@ NULL
 #' @name pipeline_instances.update
 NULL
 
+#' pipeline_instances.delete
+#' 
 #' pipeline_instances.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.delete(uuid)
@@ -998,6 +1194,8 @@ NULL
 #' @name pipeline_instances.delete
 NULL
 
+#' pipeline_instances.cancel
+#' 
 #' pipeline_instances.cancel is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.cancel(uuid)
@@ -1006,6 +1204,8 @@ NULL
 #' @name pipeline_instances.cancel
 NULL
 
+#' pipeline_instances.list
+#' 
 #' pipeline_instances.list is a method defined in Arvados class.
 #' 
 #' @usage arv$pipeline_instances.list(filters = NULL,
@@ -1024,6 +1224,8 @@ NULL
 #' @name pipeline_instances.list
 NULL
 
+#' nodes.get
+#' 
 #' nodes.get is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.get(uuid)
@@ -1032,6 +1234,8 @@ NULL
 #' @name nodes.get
 NULL
 
+#' nodes.create
+#' 
 #' nodes.create is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.create(node, ensure_unique_name = "false",
@@ -1043,6 +1247,8 @@ NULL
 #' @name nodes.create
 NULL
 
+#' nodes.update
+#' 
 #' nodes.update is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.update(node, uuid, assign_slot = NULL)
@@ -1053,6 +1259,8 @@ NULL
 #' @name nodes.update
 NULL
 
+#' nodes.delete
+#' 
 #' nodes.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.delete(uuid)
@@ -1061,6 +1269,8 @@ NULL
 #' @name nodes.delete
 NULL
 
+#' nodes.ping
+#' 
 #' nodes.ping is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.ping(uuid, ping_secret)
@@ -1070,6 +1280,8 @@ NULL
 #' @name nodes.ping
 NULL
 
+#' nodes.list
+#' 
 #' nodes.list is a method defined in Arvados class.
 #' 
 #' @usage arv$nodes.list(filters = NULL,
@@ -1088,6 +1300,8 @@ NULL
 #' @name nodes.list
 NULL
 
+#' repositories.get
+#' 
 #' repositories.get is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.get(uuid)
@@ -1096,6 +1310,8 @@ NULL
 #' @name repositories.get
 NULL
 
+#' repositories.create
+#' 
 #' repositories.create is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.create(repository,
@@ -1106,6 +1322,8 @@ NULL
 #' @name repositories.create
 NULL
 
+#' repositories.update
+#' 
 #' repositories.update is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.update(repository,
@@ -1116,6 +1334,8 @@ NULL
 #' @name repositories.update
 NULL
 
+#' repositories.delete
+#' 
 #' repositories.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.delete(uuid)
@@ -1124,6 +1344,8 @@ NULL
 #' @name repositories.delete
 NULL
 
+#' repositories.get_all_permissions
+#' 
 #' repositories.get_all_permissions is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.get_all_permissions(NULL)
@@ -1131,6 +1353,8 @@ NULL
 #' @name repositories.get_all_permissions
 NULL
 
+#' repositories.list
+#' 
 #' repositories.list is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.list(filters = NULL,
@@ -1149,6 +1373,8 @@ NULL
 #' @name repositories.list
 NULL
 
+#' specimens.get
+#' 
 #' specimens.get is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.get(uuid)
@@ -1157,6 +1383,8 @@ NULL
 #' @name specimens.get
 NULL
 
+#' specimens.create
+#' 
 #' specimens.create is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.create(specimen,
@@ -1167,6 +1395,8 @@ NULL
 #' @name specimens.create
 NULL
 
+#' specimens.update
+#' 
 #' specimens.update is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.update(specimen,
@@ -1177,6 +1407,8 @@ NULL
 #' @name specimens.update
 NULL
 
+#' specimens.delete
+#' 
 #' specimens.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.delete(uuid)
@@ -1185,6 +1417,8 @@ NULL
 #' @name specimens.delete
 NULL
 
+#' specimens.list
+#' 
 #' specimens.list is a method defined in Arvados class.
 #' 
 #' @usage arv$specimens.list(filters = NULL,
@@ -1203,6 +1437,8 @@ NULL
 #' @name specimens.list
 NULL
 
+#' logs.get
+#' 
 #' logs.get is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.get(uuid)
@@ -1211,6 +1447,8 @@ NULL
 #' @name logs.get
 NULL
 
+#' logs.create
+#' 
 #' logs.create is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.create(log, ensure_unique_name = "false")
@@ -1220,6 +1458,8 @@ NULL
 #' @name logs.create
 NULL
 
+#' logs.update
+#' 
 #' logs.update is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.update(log, uuid)
@@ -1229,6 +1469,8 @@ NULL
 #' @name logs.update
 NULL
 
+#' logs.delete
+#' 
 #' logs.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.delete(uuid)
@@ -1237,6 +1479,8 @@ NULL
 #' @name logs.delete
 NULL
 
+#' logs.list
+#' 
 #' logs.list is a method defined in Arvados class.
 #' 
 #' @usage arv$logs.list(filters = NULL, where = NULL,
@@ -1254,6 +1498,8 @@ NULL
 #' @name logs.list
 NULL
 
+#' traits.get
+#' 
 #' traits.get is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.get(uuid)
@@ -1262,6 +1508,8 @@ NULL
 #' @name traits.get
 NULL
 
+#' traits.create
+#' 
 #' traits.create is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.create(trait, ensure_unique_name = "false")
@@ -1271,6 +1519,8 @@ NULL
 #' @name traits.create
 NULL
 
+#' traits.update
+#' 
 #' traits.update is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.update(trait, uuid)
@@ -1280,6 +1530,8 @@ NULL
 #' @name traits.update
 NULL
 
+#' traits.delete
+#' 
 #' traits.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.delete(uuid)
@@ -1288,6 +1540,8 @@ NULL
 #' @name traits.delete
 NULL
 
+#' traits.list
+#' 
 #' traits.list is a method defined in Arvados class.
 #' 
 #' @usage arv$traits.list(filters = NULL,
@@ -1306,6 +1560,8 @@ NULL
 #' @name traits.list
 NULL
 
+#' virtual_machines.get
+#' 
 #' virtual_machines.get is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.get(uuid)
@@ -1314,6 +1570,8 @@ NULL
 #' @name virtual_machines.get
 NULL
 
+#' virtual_machines.create
+#' 
 #' virtual_machines.create is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.create(virtualmachine,
@@ -1324,6 +1582,8 @@ NULL
 #' @name virtual_machines.create
 NULL
 
+#' virtual_machines.update
+#' 
 #' virtual_machines.update is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.update(virtualmachine,
@@ -1334,6 +1594,8 @@ NULL
 #' @name virtual_machines.update
 NULL
 
+#' virtual_machines.delete
+#' 
 #' virtual_machines.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.delete(uuid)
@@ -1342,6 +1604,8 @@ NULL
 #' @name virtual_machines.delete
 NULL
 
+#' virtual_machines.logins
+#' 
 #' virtual_machines.logins is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.logins(uuid)
@@ -1350,6 +1614,8 @@ NULL
 #' @name virtual_machines.logins
 NULL
 
+#' virtual_machines.get_all_logins
+#' 
 #' virtual_machines.get_all_logins is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.get_all_logins(NULL)
@@ -1357,6 +1623,8 @@ NULL
 #' @name virtual_machines.get_all_logins
 NULL
 
+#' virtual_machines.list
+#' 
 #' virtual_machines.list is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.list(filters = NULL,
@@ -1375,6 +1643,8 @@ NULL
 #' @name virtual_machines.list
 NULL
 
+#' workflows.get
+#' 
 #' workflows.get is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.get(uuid)
@@ -1383,6 +1653,8 @@ NULL
 #' @name workflows.get
 NULL
 
+#' workflows.create
+#' 
 #' workflows.create is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.create(workflow,
@@ -1393,6 +1665,8 @@ NULL
 #' @name workflows.create
 NULL
 
+#' workflows.update
+#' 
 #' workflows.update is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.update(workflow,
@@ -1403,6 +1677,8 @@ NULL
 #' @name workflows.update
 NULL
 
+#' workflows.delete
+#' 
 #' workflows.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.delete(uuid)
@@ -1411,6 +1687,8 @@ NULL
 #' @name workflows.delete
 NULL
 
+#' workflows.list
+#' 
 #' workflows.list is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.list(filters = NULL,
@@ -1429,6 +1707,8 @@ NULL
 #' @name workflows.list
 NULL
 
+#' groups.get
+#' 
 #' groups.get is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.get(uuid)
@@ -1437,6 +1717,8 @@ NULL
 #' @name groups.get
 NULL
 
+#' groups.create
+#' 
 #' groups.create is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.create(group, ensure_unique_name = "false")
@@ -1446,6 +1728,8 @@ NULL
 #' @name groups.create
 NULL
 
+#' groups.update
+#' 
 #' groups.update is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.update(group, uuid)
@@ -1455,6 +1739,8 @@ NULL
 #' @name groups.update
 NULL
 
+#' groups.delete
+#' 
 #' groups.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.delete(uuid)
@@ -1463,6 +1749,8 @@ NULL
 #' @name groups.delete
 NULL
 
+#' groups.contents
+#' 
 #' groups.contents is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.contents(filters = NULL,
@@ -1483,6 +1771,8 @@ NULL
 #' @name groups.contents
 NULL
 
+#' groups.trash
+#' 
 #' groups.trash is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.trash(uuid)
@@ -1491,6 +1781,8 @@ NULL
 #' @name groups.trash
 NULL
 
+#' groups.untrash
+#' 
 #' groups.untrash is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.untrash(uuid)
@@ -1499,6 +1791,8 @@ NULL
 #' @name groups.untrash
 NULL
 
+#' groups.list
+#' 
 #' groups.list is a method defined in Arvados class.
 #' 
 #' @usage arv$groups.list(filters = NULL,
@@ -1518,6 +1812,8 @@ NULL
 #' @name groups.list
 NULL
 
+#' user_agreements.get
+#' 
 #' user_agreements.get is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.get(uuid)
@@ -1526,6 +1822,8 @@ NULL
 #' @name user_agreements.get
 NULL
 
+#' user_agreements.create
+#' 
 #' user_agreements.create is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.create(useragreement,
@@ -1536,6 +1834,8 @@ NULL
 #' @name user_agreements.create
 NULL
 
+#' user_agreements.update
+#' 
 #' user_agreements.update is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.update(useragreement,
@@ -1546,6 +1846,8 @@ NULL
 #' @name user_agreements.update
 NULL
 
+#' user_agreements.delete
+#' 
 #' user_agreements.delete is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.delete(uuid)
@@ -1554,6 +1856,8 @@ NULL
 #' @name user_agreements.delete
 NULL
 
+#' user_agreements.signatures
+#' 
 #' user_agreements.signatures is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.signatures(NULL)
@@ -1561,6 +1865,8 @@ NULL
 #' @name user_agreements.signatures
 NULL
 
+#' user_agreements.sign
+#' 
 #' user_agreements.sign is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.sign(NULL)
@@ -1568,6 +1874,8 @@ NULL
 #' @name user_agreements.sign
 NULL
 
+#' user_agreements.list
+#' 
 #' user_agreements.list is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.list(filters = NULL,
@@ -1586,6 +1894,8 @@ NULL
 #' @name user_agreements.list
 NULL
 
+#' user_agreements.new
+#' 
 #' user_agreements.new is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.new(NULL)
@@ -1593,6 +1903,8 @@ NULL
 #' @name user_agreements.new
 NULL
 
+#' project.get
+#' 
 #' projects.get is equivalent to groups.get method.
 #' 
 #' @usage arv$projects.get(uuid)
@@ -1601,6 +1913,8 @@ NULL
 #' @name projects.get
 NULL
 
+#' project.create
+#' 
 #' projects.create wrapps groups.create method by setting group_class attribute to "project".
 #' 
 #' @usage arv$projects.create(group, ensure_unique_name = "false")
@@ -1610,6 +1924,8 @@ NULL
 #' @name projects.create
 NULL
 
+#' project.update
+#' 
 #' projects.update wrapps groups.update method by setting group_class attribute to "project".
 #' 
 #' @usage arv$projects.update(group, uuid)
@@ -1619,6 +1935,8 @@ NULL
 #' @name projects.update
 NULL
 
+#' project.delete
+#' 
 #' projects.delete is equivalent to groups.delete method.
 #' 
 #' @usage arv$project.delete(uuid)
@@ -1627,6 +1945,8 @@ NULL
 #' @name projects.delete
 NULL
 
+#' project.list
+#' 
 #' projects.list wrapps groups.list method by setting group_class attribute to "project".
 #' 
 #' @usage arv$projects.list(filters = NULL,

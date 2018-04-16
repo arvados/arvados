@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{projects.update}
 \alias{projects.update}
-\title{projects.update wrapps groups.update method by setting group_class attribute to "project".}
+\title{project.update}
 \usage{
 arv$projects.update(group, uuid)
 }

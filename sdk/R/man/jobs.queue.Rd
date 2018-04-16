@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.queue}
 \alias{jobs.queue}
-\title{jobs.queue is a method defined in Arvados class.}
+\title{jobs.queue}
 \usage{
 arv$jobs.queue(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

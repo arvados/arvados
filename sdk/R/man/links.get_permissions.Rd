@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{links.get_permissions}
 \alias{links.get_permissions}
-\title{links.get_permissions is a method defined in Arvados class.}
+\title{links.get_permissions}
 \usage{
 arv$links.get_permissions(uuid)
 }

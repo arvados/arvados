@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.list}
 \alias{keep_services.list}
-\title{keep_services.list is a method defined in Arvados class.}
+\title{keep_services.list}
 \usage{
 arv$keep_services.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

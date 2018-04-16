@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.create}
 \alias{api_client_authorizations.create}
-\title{api_client_authorizations.create is a method defined in Arvados class.}
+\title{api_client_authorizations.create}
 \usage{
 arv$api_client_authorizations.create(apiclientauthorization,
 	ensure_unique_name = "false")

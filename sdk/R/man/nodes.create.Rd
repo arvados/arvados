@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.create}
 \alias{nodes.create}
-\title{nodes.create is a method defined in Arvados class.}
+\title{nodes.create}
 \usage{
 arv$nodes.create(node, ensure_unique_name = "false",
 	assign_slot = NULL)

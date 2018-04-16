@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{containers.get}
 \alias{containers.get}
-\title{containers.get is a method defined in Arvados class.}
+\title{containers.get}
 \usage{
 arv$containers.get(uuid)
 }

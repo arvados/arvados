@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{specimens.update}
 \alias{specimens.update}
-\title{specimens.update is a method defined in Arvados class.}
+\title{specimens.update}
 \usage{
 arv$specimens.update(specimen,
 	uuid)

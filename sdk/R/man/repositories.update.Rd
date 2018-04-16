@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{repositories.update}
 \alias{repositories.update}
-\title{repositories.update is a method defined in Arvados class.}
+\title{repositories.update}
 \usage{
 arv$repositories.update(repository,
 	uuid)

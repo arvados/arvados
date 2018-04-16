@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{user_agreements.create}
 \alias{user_agreements.create}
-\title{user_agreements.create is a method defined in Arvados class.}
+\title{user_agreements.create}
 \usage{
 arv$user_agreements.create(useragreement,
 	ensure_unique_name = "false")

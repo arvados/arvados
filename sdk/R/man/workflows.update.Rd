@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{workflows.update}
 \alias{workflows.update}
-\title{workflows.update is a method defined in Arvados class.}
+\title{workflows.update}
 \usage{
 arv$workflows.update(workflow,
 	uuid)

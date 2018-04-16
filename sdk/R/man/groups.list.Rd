@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.list}
 \alias{groups.list}
-\title{groups.list is a method defined in Arvados class.}
+\title{groups.list}
 \usage{
 arv$groups.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.update}
 \alias{keep_services.update}
-\title{keep_services.update is a method defined in Arvados class.}
+\title{keep_services.update}
 \usage{
 arv$keep_services.update(keepservice,
 	uuid)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.trash}
 \alias{collections.trash}
-\title{collections.trash is a method defined in Arvados class.}
+\title{collections.trash}
 \usage{
 arv$collections.trash(uuid)
 }

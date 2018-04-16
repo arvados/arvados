@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{repositories.create}
 \alias{repositories.create}
-\title{repositories.create is a method defined in Arvados class.}
+\title{repositories.create}
 \usage{
 arv$repositories.create(repository,
 	ensure_unique_name = "false")

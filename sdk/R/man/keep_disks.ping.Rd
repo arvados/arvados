@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.ping}
 \alias{keep_disks.ping}
-\title{keep_disks.ping is a method defined in Arvados class.}
+\title{keep_disks.ping}
 \usage{
 arv$keep_disks.ping(uuid = NULL,
 	ping_secret, node_uuid = NULL, filesystem_uuid = NULL,

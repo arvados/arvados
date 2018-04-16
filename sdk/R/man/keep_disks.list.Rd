@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.list}
 \alias{keep_disks.list}
-\title{keep_disks.list is a method defined in Arvados class.}
+\title{keep_disks.list}
 \usage{
 arv$keep_disks.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

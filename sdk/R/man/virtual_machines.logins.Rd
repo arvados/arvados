@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.logins}
 \alias{virtual_machines.logins}
-\title{virtual_machines.logins is a method defined in Arvados class.}
+\title{virtual_machines.logins}
 \usage{
 arv$virtual_machines.logins(uuid)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.current}
 \alias{api_client_authorizations.current}
-\title{api_client_authorizations.current is a method defined in Arvados class.}
+\title{api_client_authorizations.current}
 \usage{
 arv$api_client_authorizations.current(NULL)
 }

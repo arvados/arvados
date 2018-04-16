@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.create}
 \alias{keep_services.create}
-\title{keep_services.create is a method defined in Arvados class.}
+\title{keep_services.create}
 \usage{
 arv$keep_services.create(keepservice,
 	ensure_unique_name = "false")

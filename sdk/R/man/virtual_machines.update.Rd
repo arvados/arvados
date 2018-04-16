@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.update}
 \alias{virtual_machines.update}
-\title{virtual_machines.update is a method defined in Arvados class.}
+\title{virtual_machines.update}
 \usage{
 arv$virtual_machines.update(virtualmachine,
 	uuid)

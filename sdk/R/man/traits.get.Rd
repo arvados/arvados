@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{traits.get}
 \alias{traits.get}
-\title{traits.get is a method defined in Arvados class.}
+\title{traits.get}
 \usage{
 arv$traits.get(uuid)
 }

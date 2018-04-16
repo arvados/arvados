@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.get}
 \alias{keep_disks.get}
-\title{keep_disks.get is a method defined in Arvados class.}
+\title{keep_disks.get}
 \usage{
 arv$keep_disks.get(uuid)
 }

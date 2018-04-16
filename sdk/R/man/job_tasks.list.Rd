@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{job_tasks.list}
 \alias{job_tasks.list}
-\title{job_tasks.list is a method defined in Arvados class.}
+\title{job_tasks.list}
 \usage{
 arv$job_tasks.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

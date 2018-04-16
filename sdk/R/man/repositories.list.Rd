@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{repositories.list}
 \alias{repositories.list}
-\title{repositories.list is a method defined in Arvados class.}
+\title{repositories.list}
 \usage{
 arv$repositories.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

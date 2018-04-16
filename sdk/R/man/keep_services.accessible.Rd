@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_services.accessible}
 \alias{keep_services.accessible}
-\title{keep_services.accessible is a method defined in Arvados class.}
+\title{keep_services.accessible}
 \usage{
 arv$keep_services.accessible(NULL)
 }

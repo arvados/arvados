@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{logs.list}
 \alias{logs.list}
-\title{logs.list is a method defined in Arvados class.}
+\title{logs.list}
 \usage{
 arv$logs.list(filters = NULL, where = NULL,
 	order = NULL, select = NULL, distinct = NULL,

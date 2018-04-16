@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{projects.get}
 \alias{projects.get}
-\title{projects.get is equivalent to groups.get method.}
+\title{project.get}
 \usage{
 arv$projects.get(uuid)
 }

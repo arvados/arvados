@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.system}
 \alias{users.system}
-\title{users.system is a method defined in Arvados class.}
+\title{users.system}
 \usage{
 arv$users.system(NULL)
 }

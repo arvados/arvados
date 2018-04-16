@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{virtual_machines.create}
 \alias{virtual_machines.create}
-\title{virtual_machines.create is a method defined in Arvados class.}
+\title{virtual_machines.create}
 \usage{
 arv$virtual_machines.create(virtualmachine,
 	ensure_unique_name = "false")

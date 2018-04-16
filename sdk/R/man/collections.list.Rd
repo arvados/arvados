@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.list}
 \alias{collections.list}
-\title{collections.list is a method defined in Arvados class.}
+\title{collections.list}
 \usage{
 arv$collections.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

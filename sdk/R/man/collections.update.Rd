@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{collections.update}
 \alias{collections.update}
-\title{collections.update is a method defined in Arvados class.}
+\title{collections.update}
 \usage{
 arv$collections.update(collection,
 	uuid)

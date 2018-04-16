@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{workflows.create}
 \alias{workflows.create}
-\title{workflows.create is a method defined in Arvados class.}
+\title{workflows.create}
 \usage{
 arv$workflows.create(workflow,
 	ensure_unique_name = "false")

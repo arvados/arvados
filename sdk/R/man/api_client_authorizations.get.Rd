@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_client_authorizations.get}
 \alias{api_client_authorizations.get}
-\title{api_client_authorizations.get is a method defined in Arvados class.}
+\title{api_client_authorizations.get}
 \usage{
 arv$api_client_authorizations.get(uuid)
 }

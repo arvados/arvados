@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{authorized_keys.delete}
 \alias{authorized_keys.delete}
-\title{authorized_keys.delete is a method defined in Arvados class.}
+\title{authorized_keys.delete}
 \usage{
 arv$authorized_keys.delete(uuid)
 }

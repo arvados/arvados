@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{traits.list}
 \alias{traits.list}
-\title{traits.list is a method defined in Arvados class.}
+\title{traits.list}
 \usage{
 arv$traits.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

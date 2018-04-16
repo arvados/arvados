@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{keep_disks.delete}
 \alias{keep_disks.delete}
-\title{keep_disks.delete is a method defined in Arvados class.}
+\title{keep_disks.delete}
 \usage{
 arv$keep_disks.delete(uuid)
 }

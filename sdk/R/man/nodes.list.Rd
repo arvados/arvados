@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{nodes.list}
 \alias{nodes.list}
-\title{nodes.list is a method defined in Arvados class.}
+\title{nodes.list}
 \usage{
 arv$nodes.list(filters = NULL,
 	where = NULL, order = NULL, select = NULL,

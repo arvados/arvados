@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.get}
 \alias{users.get}
-\title{users.get is a method defined in Arvados class.}
+\title{users.get}
 \usage{
 arv$users.get(uuid)
 }

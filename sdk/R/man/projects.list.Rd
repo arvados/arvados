@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{projects.list}
 \alias{projects.list}
-\title{projects.list wrapps groups.list method by setting group_class attribute to "project".}
+\title{project.list}
 \usage{
 arv$projects.list(filters = NULL,
 	where = NULL, order = NULL, distinct = NULL,

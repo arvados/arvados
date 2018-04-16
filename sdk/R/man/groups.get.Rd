@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{groups.get}
 \alias{groups.get}
-\title{groups.get is a method defined in Arvados class.}
+\title{groups.get}
 \usage{
 arv$groups.get(uuid)
 }

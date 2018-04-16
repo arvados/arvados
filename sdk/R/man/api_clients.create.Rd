@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{api_clients.create}
 \alias{api_clients.create}
-\title{api_clients.create is a method defined in Arvados class.}
+\title{api_clients.create}
 \usage{
 arv$api_clients.create(apiclient,
 	ensure_unique_name = "false")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{authorized_keys.get}
 \alias{authorized_keys.get}
-\title{authorized_keys.get is a method defined in Arvados class.}
+\title{authorized_keys.get}
 \usage{
 arv$authorized_keys.get(uuid)
 }

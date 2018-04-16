@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{pipeline_templates.get}
 \alias{pipeline_templates.get}
-\title{pipeline_templates.get is a method defined in Arvados class.}
+\title{pipeline_templates.get}
 \usage{
 arv$pipeline_templates.get(uuid)
 }

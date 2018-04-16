@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{jobs.create}
 \alias{jobs.create}
-\title{jobs.create is a method defined in Arvados class.}
+\title{jobs.create}
 \usage{
 arv$jobs.create(job, ensure_unique_name = "false",
 	find_or_create = "false", filters = NULL,

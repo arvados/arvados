@@ -2,7 +2,7 @@
 % Please edit documentation in R/Arvados.R
 \name{users.create}
 \alias{users.create}
-\title{users.create is a method defined in Arvados class.}
+\title{users.create}
 \usage{
 arv$users.create(user, ensure_unique_name = "false")
 }
