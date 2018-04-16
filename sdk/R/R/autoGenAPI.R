@@ -15,13 +15,15 @@ generateAPI <- function()
     methodResources <- discoveryDocument$resources
     resourceNames   <- names(methodResources)
 
-    doc <- generateMethodsDocumentation(methodResources, resourceNames)
+    methodDoc <- generateMethodsDocumentation(methodResources, resourceNames)
+    classDoc <- generateAPIClassDocumentation(methodResources, resourceNames)
     arvadosAPIHeader <- generateAPIClassHeader()
     arvadosProjectMethods <- generateProjectMethods()
     arvadosClassMethods <- generateClassContent(methodResources, resourceNames)
     arvadosAPIFooter <- generateAPIClassFooter()
 
-    arvadosClass <- c(doc,
+    arvadosClass <- c(methodDoc,
+                      classDoc,
                       arvadosAPIHeader,
                       arvadosProjectMethods,
                       arvadosClassMethods,
@@ -35,8 +37,7 @@ generateAPI <- function()
 
 generateAPIClassHeader <- function()
 {
-    c("#' @export",
-      "Arvados <- R6::R6Class(",
+    c("Arvados <- R6::R6Class(",
       "",
       "\t\"Arvados\",",
       "",
@@ -314,6 +315,7 @@ getReturnObject <- function()
 
 #NOTE: Arvados class documentation:
 
+
 generateMethodsDocumentation <- function(methodResources, resourceNames)
 {
     methodsDoc <- unlist(unname(Map(function(resource, resourceName)
@@ -338,6 +340,66 @@ generateMethodsDocumentation <- function(methodResources, resourceNames)
     }, methodResources, resourceNames)))
     
     methodsDoc
+}
+
+generateAPIClassDocumentation <- function(methodResources, resourceNames)
+{
+    c("#' Arvados",
+      "#'",
+      "#' Arvados class gives users ability to manipulate collections and projects.",
+      "#'" ,
+      "#' @section Usage:",
+      "#' \\preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}",
+      "#'",
+      "#' @section Arguments:",
+      "#' \\describe{",
+      "#' \t\\item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}",
+      "#' \t\\item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}",
+      "#' \t\\item{numRetries}{Number which specifies how many times to retry failed service requests.}",
+      "#' }",
+      "#'",
+      "#' @section Methods:",
+      "#' \\describe{",
+      getAPIClassMethodList(methodResources, resourceNames),
+      "#' }",
+      "#'",
+      "#' @name Arvados",
+      "#' @examples",
+      "#' \\dontrun{",
+      "#' arv <- Arvados$new(\"your Arvados token\", \"example.arvadosapi.com\")",
+      "#'",
+      "#' collection <- arv$collections.get(\"uuid\")",
+      "#'",
+      "#' collectionList <- arv$collections.list(list(list(\"name\", \"like\", \"Test%\")))",
+      "#' collectionList <- listAll(arv$collections.list, list(list(\"name\", \"like\", \"Test%\")))",
+      "#'",
+      "#' deletedCollection <- arv$collections.delete(\"uuid\")",
+      "#'",
+      "#' updatedCollection <- arv$collections.update(list(name = \"New name\", description = \"New description\"),",
+      "#'                                             \"uuid\")",
+      "#'",
+      "#' createdCollection <- arv$collections.create(list(name = \"Example\",",
+      "#'                                                  description = \"This is a test collection\"))",
+      "#' }",
+      "NULL",
+      "",
+      "#' @export")
+}
+
+getAPIClassMethodList <- function(methodResources, resourceNames)
+{
+    methodList <- unlist(unname(Map(function(resource, resourceName)
+    {
+        methodNames <- names(resource$methods)
+        paste0(resourceName,
+               ".",
+               methodNames[!(methodNames %in% c("index", "show", "destroy"))])
+
+    }, methodResources, resourceNames)))
+    
+    hardcodedMethods <- c("projects.create", "projects.get",
+                          "projects.list", "projects.update", "projects.delete")
+    paste0("#' \t\\item{}{\\code{\\link{", sort(c(methodList, hardcodedMethods)), "}}}") 
 }
 
 getMethodDocumentation <- function(methodName, methodMetaData)
