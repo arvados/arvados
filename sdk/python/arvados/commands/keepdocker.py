@@ -345,9 +345,10 @@ def _uuid2pdh(api, uuid):
         select=['portable_data_hash'],
     ).execute()['items'][0]['portable_data_hash']
 
-def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True):
+def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None):
     args = arg_parser.parse_args(arguments)
-    api = arvados.api('v1')
+    if api is None:
+        api = arvados.api('v1')
 
     if args.image is None or args.image == 'images':
         fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"

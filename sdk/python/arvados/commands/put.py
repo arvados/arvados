@@ -1176,7 +1176,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         if not output.endswith('\n'):
             stdout.write('\n')
 
-    arv_cmd.restore_signal_handlers()
+    if install_sig_handlers:
+        arv_cmd.restore_signal_handlers()
 
     if status != 0:
         sys.exit(status)
