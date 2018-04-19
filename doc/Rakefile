@@ -29,10 +29,10 @@ file "sdk/R/arvados/index.html" do |t|
   `which R`
   if $? == 0
     Dir.chdir("../sdk/R/") do
-      STDERR.puts `R --quiet --vanilla -e 'pkgdown::build_site()' 2>&1`
+      STDERR.puts `Rscript createDoc.R README.Rmd index.html 2>&1`
     end
     raise if $? != 0
-    cp_r("../sdk/R/docs", "sdk/R/arvados")
+    cp_r("../sdk/R/README.html", "sdk/R/")
   else
     puts "Warning: R not found, R documentation will not be generated".colorize(:light_red)
   end
