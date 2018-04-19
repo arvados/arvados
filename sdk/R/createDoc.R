@@ -12,8 +12,9 @@ inputFile <- args[[1]] # .Rmd file
 outputFile <- args[[2]] # .html file
 
 # Create and fill temp .md file from existing .Rmd file
-tempMdFile <- tempfile("tempREADME", fileext = "md")
-knitr::knit(inputFile, tempMdFile) 
+#tempMdFile <- tempfile("tempREADME", fileext = "md")
+knitr::knit(inputFile, outputFile)
+#knitr::knit(inputFile, tempMdFile)
 
 # Generate HTML from temporary .md file
-markdown::markdownToHTML(tempMdFile, outputFile) 
+#markdown::markdownToHTML(tempMdFile, outputFile)
