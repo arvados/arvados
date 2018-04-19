@@ -102,6 +102,8 @@ func main() {
 		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
 			log.Printf("DEPRECATED: Using ARVADOS_API_HOST environment variable. Use config file instead.")
 			cfg.Client.APIHost = h
+		} else if *dumpConfig {
+			log.Printf("WARNING: Ignoring error reading config file: %s", err)
 		} else {
 			log.Fatal(err)
 		}
