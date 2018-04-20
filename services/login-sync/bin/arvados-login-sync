@@ -57,9 +57,7 @@ begin
 
   pwnam = Hash.new()
   logins.reject! do |l|
-    if pwnam[l[:username]]
-      false
-    else
+    if not pwnam[l[:username]]
       begin
         pwnam[l[:username]] = Etc.getpwnam(l[:username])
       rescue
