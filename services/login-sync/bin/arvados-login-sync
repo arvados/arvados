@@ -57,18 +57,19 @@ begin
 
   pwnam = Hash.new()
   logins.reject! do |l|
-    return false if pwnam[l[:username]]
-    begin
-      pwnam[l[:username]] = Etc.getpwnam(l[:username])
-    rescue
-      if skip_missing_users
-        STDERR.puts "Account #{l[:username]} not found. Skipping"
-        true
-      end
-    else
-      if pwnam[l[:username]].uid < uid_min
-        STDERR.puts "Account #{l[:username]} uid #{pwnam[l[:username]].uid} < uid_min #{uid_min}. Skipping"
-        true
+    if not pwnam[l[:username]]
+      begin
+        pwnam[l[:username]] = Etc.getpwnam(l[:username])
+      rescue
+        if skip_missing_users
+          STDERR.puts "Account #{l[:username]} not found. Skipping"
+          true
+        end
+      else
+        if pwnam[l[:username]].uid < uid_min
+          STDERR.puts "Account #{l[:username]} uid #{pwnam[l[:username]].uid} < uid_min #{uid_min}. Skipping"
+          true
+        end
       end
     end
   end
