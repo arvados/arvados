@@ -333,7 +333,20 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 		http.StatusOK,
 		"foo",
 	)
-	c.Check(strings.Split(resp.Header().Get("Content-Disposition"), ";")[0], check.Equals, "attachment")
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
+}
+
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		"download.example.com/by_id/"+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"foo",
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
@@ -493,10 +506,11 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
 	}
 	for _, trial := range []struct {
-		uri     string
-		header  http.Header
-		expect  []string
-		cutDirs int
+		uri      string
+		header   http.Header
+		expect   []string
+		redirect string
+		cutDirs  int
 	}{
 		{
 			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/",
@@ -508,12 +522,56 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			cutDirs: 1,
 		},
 		{
 			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
 			header:  authHeader,
 			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/users/active/foo_file_in_dir/",
+			header:  authHeader,
+			expect:  []string{"dir1/"},
+			cutDirs: 3,
+		},
+		{
+			uri:     "download.example.com/users/active/foo_file_in_dir/dir1/",
+			header:  authHeader,
+			expect:  []string{"bar"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "download.example.com/",
+			header:  authHeader,
+			expect:  []string{"users/"},
+			cutDirs: 0,
+		},
+		{
+			uri:      "download.example.com/users",
+			header:   authHeader,
+			redirect: "/users/",
+			expect:   []string{"active/"},
+			cutDirs:  1,
+		},
+		{
+			uri:     "download.example.com/users/",
+			header:  authHeader,
+			expect:  []string{"active/"},
+			cutDirs: 1,
+		},
+		{
+			uri:      "download.example.com/users/active",
+			header:   authHeader,
+			redirect: "/users/active/",
+			expect:   []string{"foo_file_in_dir/"},
+			cutDirs:  2,
+		},
+		{
+			uri:     "download.example.com/users/active/",
+			header:  authHeader,
+			expect:  []string{"foo_file_in_dir/"},
 			cutDirs: 2,
 		},
 		{
@@ -541,22 +599,24 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 1,
 		},
 		{
-			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
-			header:  authHeader,
-			expect:  []string{"foo", "bar"},
-			cutDirs: 1,
+			uri:      "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1",
+			header:   authHeader,
+			redirect: "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
+			expect:   []string{"foo", "bar"},
+			cutDirs:  2,
 		},
 		{
 			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/_/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 2,
+			cutDirs: 3,
 		},
 		{
-			uri:     arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
-			header:  authHeader,
-			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			uri:      arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
+			header:   authHeader,
+			redirect: "/dir1/",
+			expect:   []string{"foo", "bar"},
+			cutDirs:  1,
 		},
 		{
 			uri:    "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/theperthcountyconspiracydoesnotexist/",
@@ -591,6 +651,9 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			}
 			resp = httptest.NewRecorder()
 			s.testServer.Handler.ServeHTTP(resp, req)
+		}
+		if trial.redirect != "" {
+			c.Check(req.URL.Path, check.Equals, trial.redirect)
 		}
 		if trial.expect == nil {
 			c.Check(resp.Code, check.Equals, http.StatusNotFound)

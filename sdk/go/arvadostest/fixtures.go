@@ -25,6 +25,9 @@ const (
 	FooPdh                  = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
+	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
+	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
+
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
 	FooAndBarFilesInDirPDH  = "6bbac24198d09a93975f60098caf0bdf+62"
 

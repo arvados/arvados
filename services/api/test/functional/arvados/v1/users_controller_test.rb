@@ -817,7 +817,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
-                         "last_name"].sort
+                         "last_name", "username"].sort
 
   def check_non_admin_index
     assert_response :success
