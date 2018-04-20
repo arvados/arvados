@@ -28,11 +28,59 @@ end
 file "sdk/R/arvados/index.html" do |t|
   `which R`
   if $? == 0
+    tgt = Dir.pwd
+    Dir.mkdir("sdk/R/arvados")
+    docfiles = []
     Dir.chdir("../sdk/R/") do
-      STDERR.puts `R --quiet --vanilla -e 'pkgdown::build_site()' 2>&1`
+      STDERR.puts `Rscript createDoc.R README.Rmd #{tgt}/sdk/R/README.md 2>&1`
+      Dir.entries("man").each do |rd|
+        if rd[-3..-1] == ".Rd"
+          htmlfile = "#{rd[0..-4]}.html"
+          `R CMD Rdconv -t html man/#{rd} > #{tgt}/sdk/R/arvados/#{htmlfile}`
+          docfiles << htmlfile
+        end
+      end
     end
     raise if $? != 0
-    cp_r("../sdk/R/docs", "sdk/R/arvados")
+
+    File.open("sdk/R/README.md", "r") do |rd|
+    File.open("sdk/R/index.html.md", "w") do |fn|
+      fn.write(<<-EOF
+---
+layout: default
+navsection: sdk
+navmenu: R
+title: "R SDK Overview"
+...
+
+#{rd.read.gsub("```", "\n~~~\n").gsub(/^[ ]+/, "")}
+EOF
+              )
+      end
+    end
+
+    File.open("sdk/R/arvados/index.html.textile.liquid", "w") do |fn|
+      fn.write(<<-EOF
+---
+layout: default
+navsection: sdk
+navmenu: R
+title: "R Reference"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+EOF
+              )
+
+      docfiles.sort.each do |d|
+        fn.write("* \"#{d[0..-6]}\":#{d}\n")
+      end
+
+    end
   else
     puts "Warning: R not found, R documentation will not be generated".colorize(:light_red)
   end
