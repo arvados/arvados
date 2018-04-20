@@ -142,12 +142,12 @@
 //   http://collections.example.com/by_id/1f4b0bc7583c2a7f9102c395f4ffc5e3%2B45/foo/bar.txt
 //   http://collections.example.com/by_id/zzzzz-4zz18-znfnqtbbv4spc3w/foo/bar.txt
 //
-// If the collection is named "My Collection" and located in a project
-// called "My Project" which is in the home project of a user with
+// If the collection is named "MyCollection" and located in a project
+// called "MyProject" which is in the home project of a user with
 // username is "bob", the following read-only URL is also available
 // when authenticating as bob:
 //
-//   http://collections.example.com/users/bob/My+Project/My+Collection/foo/bar.txt
+//   http://collections.example.com/users/bob/MyProject/MyCollection/foo/bar.txt
 //
 // An additional form is supported specifically to make it more
 // convenient to maintain support for existing Workbench download
