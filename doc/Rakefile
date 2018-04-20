@@ -29,6 +29,7 @@ file "sdk/R/arvados/index.html" do |t|
   `which R`
   if $? == 0
     tgt = Dir.pwd
+    Dir.mkdir("sdk/R")
     Dir.mkdir("sdk/R/arvados")
     docfiles = []
     Dir.chdir("../sdk/R/") do
@@ -99,8 +100,7 @@ end
 
 task :clean do
   rm_rf "sdk/python/arvados"
-  rm_rf "sdk/R/arvados"
-  rm_rf "../sdk/R/docs"
+  rm_rf "sdk/R"
 end
 
 require "zenweb/tasks"
