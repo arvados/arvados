@@ -31,7 +31,7 @@ steps:
     hints:
       - class: arv:RunInSingleContainer
       - class: ResourceRequirement
-        ramMin: $(inputs.count*4)
+        ramMin: $(inputs.count*128)
       - class: arv:APIRequirement
     scatter: count
     run:
@@ -55,4 +55,4 @@ steps:
                 type: int
               script: File
             outputs: []
-            arguments: [python, $(inputs.script), $(inputs.count * 4)]
+            arguments: [python, $(inputs.script), $(inputs.count * 128)]

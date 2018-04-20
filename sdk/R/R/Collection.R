@@ -53,12 +53,12 @@ Collection <- R6::R6Class(
 
     public = list(
 
-        api  = NULL,
-        uuid = NULL,
+		uuid = NULL,
+        # api  = NULL,
 
-        initialize = function(api, uuid)
+		initialize = function(api, uuid) 
         {
-            self$api <- api
+            # self$api <- api
             private$REST <- api$getRESTService()
 
             self$uuid <- uuid
@@ -69,6 +69,9 @@ Collection <- R6::R6Class(
 
         add = function(content, relativePath = "")
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
@@ -87,7 +90,6 @@ Collection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
-
                 if(content$getName() == "")
                     stop("Content has invalid name.")
 
@@ -104,6 +106,9 @@ Collection <- R6::R6Class(
 
         create = function(fileNames, relativePath = "")
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(relativePath == ""  ||
                relativePath == "." ||
                relativePath == "./")
@@ -149,6 +154,9 @@ Collection <- R6::R6Class(
 
         remove = function(paths)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             if(is.character(paths))
             {
                 sapply(paths, function(filePath)
@@ -179,6 +187,9 @@ Collection <- R6::R6Class(
 
         move = function(content, newLocation)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             content <- trimFromEnd(content, "/")
 
             elementToMove <- self$get(content)
@@ -191,14 +202,41 @@ Collection <- R6::R6Class(
 
         getFileListing = function()
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             content <- private$REST$getCollectionContent(self$uuid)
             content[order(tolower(content))]
         },
 
         get = function(relativePath)
         {
+            if(is.null(private$tree))
+                private$genereateCollectionTreeStructure()
+
             private$tree$getElement(relativePath)
         },
+
+		toJSON = function() 
+        {
+			fields <- sapply(private$classFields, function(field)
+			{
+				self[[field]]
+			}, USE.NAMES = TRUE)
+			
+			jsonlite::toJSON(list("collection" = 
+                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)
+		},
+
+		isEmpty = function() {
+			fields <- sapply(private$classFields,
+			                 function(field) self[[field]])
+
+			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
+				FALSE
+			else
+				TRUE
+		},
 
         getRESTService = function() private$REST,
         setRESTService = function(newRESTService) private$REST <- newRESTService
@@ -208,7 +246,20 @@ Collection <- R6::R6Class(
 
         REST        = NULL,
         tree        = NULL,
-        fileContent = NULL
+        fileContent = NULL,
+        classFields = NULL,
+
+        genereateCollectionTreeStructure = function()
+        {
+            if(is.null(self$uuid))
+                stop("Collection uuid is not defined.")
+
+            if(is.null(private$REST))
+                stop("REST service is not defined.")
+
+            private$fileContent <- private$REST$getCollectionContent(self$uuid)
+            private$tree <- CollectionTree$new(private$fileContent, self)
+        }
     ),
 
     cloneable = FALSE
