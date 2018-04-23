@@ -59,7 +59,6 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 func (s *IntegrationSuite) Test404(c *check.C) {
 	for _, uri := range []string{
 		// Routing errors (always 404 regardless of what's stored in Keep)
-		"/",
 		"/foo",
 		"/download",
 		"/collections",

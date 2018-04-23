@@ -5,10 +5,10 @@
 package arvados
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
+	"log"
 	"os"
 	"path"
 	"regexp"
@@ -19,107 +19,12 @@ import (
 	"time"
 )
 
-var (
-	ErrReadOnlyFile      = errors.New("read-only file")
-	ErrNegativeOffset    = errors.New("cannot seek to negative offset")
-	ErrFileExists        = errors.New("file exists")
-	ErrInvalidOperation  = errors.New("invalid operation")
-	ErrInvalidArgument   = errors.New("invalid argument")
-	ErrDirectoryNotEmpty = errors.New("directory not empty")
-	ErrWriteOnlyMode     = errors.New("file is O_WRONLY")
-	ErrSyncNotSupported  = errors.New("O_SYNC flag is not supported")
-	ErrIsDirectory       = errors.New("cannot rename file to overwrite existing directory")
-	ErrPermission        = os.ErrPermission
+var maxBlockSize = 1 << 26
 
-	maxBlockSize = 1 << 26
-)
-
-// A File is an *os.File-like interface for reading and writing files
-// in a CollectionFileSystem.
-type File interface {
-	io.Reader
-	io.Writer
-	io.Closer
-	io.Seeker
-	Size() int64
-	Readdir(int) ([]os.FileInfo, error)
-	Stat() (os.FileInfo, error)
-	Truncate(int64) error
-}
-
-type keepClient interface {
-	ReadAt(locator string, p []byte, off int) (int, error)
-	PutB(p []byte) (string, int, error)
-}
-
-type fileinfo struct {
-	name    string
-	mode    os.FileMode
-	size    int64
-	modTime time.Time
-}
-
-// Name implements os.FileInfo.
-func (fi fileinfo) Name() string {
-	return fi.name
-}
-
-// ModTime implements os.FileInfo.
-func (fi fileinfo) ModTime() time.Time {
-	return fi.modTime
-}
-
-// Mode implements os.FileInfo.
-func (fi fileinfo) Mode() os.FileMode {
-	return fi.mode
-}
-
-// IsDir implements os.FileInfo.
-func (fi fileinfo) IsDir() bool {
-	return fi.mode&os.ModeDir != 0
-}
-
-// Size implements os.FileInfo.
-func (fi fileinfo) Size() int64 {
-	return fi.size
-}
-
-// Sys implements os.FileInfo.
-func (fi fileinfo) Sys() interface{} {
-	return nil
-}
-
-// A CollectionFileSystem is an http.Filesystem plus Stat() and
-// support for opening writable files. All methods are safe to call
-// from multiple goroutines.
+// A CollectionFileSystem is a FileSystem that can be serialized as a
+// manifest and stored as a collection.
 type CollectionFileSystem interface {
-	http.FileSystem
-
-	// analogous to os.Stat()
-	Stat(name string) (os.FileInfo, error)
-
-	// analogous to os.Create(): create/truncate a file and open it O_RDWR.
-	Create(name string) (File, error)
-
-	// Like os.OpenFile(): create or open a file or directory.
-	//
-	// If flag&os.O_EXCL==0, it opens an existing file or
-	// directory if one exists. If flag&os.O_CREATE!=0, it creates
-	// a new empty file or directory if one does not already
-	// exist.
-	//
-	// When creating a new item, perm&os.ModeDir determines
-	// whether it is a file or a directory.
-	//
-	// A file can be opened multiple times and used concurrently
-	// from multiple goroutines. However, each File object should
-	// be used by only one goroutine at a time.
-	OpenFile(name string, flag int, perm os.FileMode) (File, error)
-
-	Mkdir(name string, perm os.FileMode) error
-	Remove(name string) error
-	RemoveAll(name string) error
-	Rename(oldname, newname string) error
+	FileSystem
 
 	// Flush all file data to Keep and return a snapshot of the
 	// filesystem suitable for saving as (Collection)ManifestText.
@@ -128,55 +33,110 @@ type CollectionFileSystem interface {
 	MarshalManifest(prefix string) (string, error)
 }
 
-type fileSystem struct {
-	dirnode
+type collectionFileSystem struct {
+	fileSystem
+	uuid string
 }
 
-func (fs *fileSystem) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	return fs.dirnode.OpenFile(name, flag, perm)
-}
-
-func (fs *fileSystem) Open(name string) (http.File, error) {
-	return fs.dirnode.OpenFile(name, os.O_RDONLY, 0)
-}
-
-func (fs *fileSystem) Create(name string) (File, error) {
-	return fs.dirnode.OpenFile(name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0)
-}
-
-func (fs *fileSystem) Stat(name string) (fi os.FileInfo, err error) {
-	node := fs.dirnode.lookupPath(name)
-	if node == nil {
-		err = os.ErrNotExist
+// FileSystem returns a CollectionFileSystem for the collection.
+func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFileSystem, error) {
+	var modTime time.Time
+	if c.ModifiedAt == nil {
+		modTime = time.Now()
 	} else {
-		fi = node.Stat()
+		modTime = *c.ModifiedAt
 	}
-	return
+	fs := &collectionFileSystem{
+		uuid: c.UUID,
+		fileSystem: fileSystem{
+			fsBackend: keepBackend{apiClient: client, keepClient: kc},
+		},
+	}
+	root := &dirnode{
+		fs: fs,
+		treenode: treenode{
+			fileinfo: fileinfo{
+				name:    ".",
+				mode:    os.ModeDir | 0755,
+				modTime: modTime,
+			},
+			inodes: make(map[string]inode),
+		},
+	}
+	root.SetParent(root, ".")
+	if err := root.loadManifest(c.ManifestText); err != nil {
+		return nil, err
+	}
+	backdateTree(root, modTime)
+	fs.root = root
+	return fs, nil
 }
 
-type inode interface {
-	Parent() inode
-	Read([]byte, filenodePtr) (int, filenodePtr, error)
-	Write([]byte, filenodePtr) (int, filenodePtr, error)
-	Truncate(int64) error
-	Readdir() []os.FileInfo
-	Size() int64
-	Stat() os.FileInfo
-	sync.Locker
-	RLock()
-	RUnlock()
+func backdateTree(n inode, modTime time.Time) {
+	switch n := n.(type) {
+	case *filenode:
+		n.fileinfo.modTime = modTime
+	case *dirnode:
+		n.fileinfo.modTime = modTime
+		for _, n := range n.inodes {
+			backdateTree(n, modTime)
+		}
+	}
 }
 
-// filenode implements inode.
-type filenode struct {
-	fileinfo fileinfo
-	parent   *dirnode
-	segments []segment
-	// number of times `segments` has changed in a
-	// way that might invalidate a filenodePtr
-	repacked int64
-	memsize  int64 // bytes in memSegments
-	sync.RWMutex
+func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
+	if name == "" || name == "." || name == ".." {
+		return nil, ErrInvalidArgument
+	}
+	if perm.IsDir() {
+		return &dirnode{
+			fs: fs,
+			treenode: treenode{
+				fileinfo: fileinfo{
+					name:    name,
+					mode:    perm | os.ModeDir,
+					modTime: modTime,
+				},
+				inodes: make(map[string]inode),
+			},
+		}, nil
+	} else {
+		return &filenode{
+			fs: fs,
+			fileinfo: fileinfo{
+				name:    name,
+				mode:    perm & ^os.ModeDir,
+				modTime: modTime,
+			},
+		}, nil
+	}
+}
+
+func (fs *collectionFileSystem) Sync() error {
+	log.Printf("cfs.Sync()")
+	if fs.uuid == "" {
+		return nil
+	}
+	txt, err := fs.MarshalManifest(".")
+	if err != nil {
+		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
+		return err
+	}
+	coll := &Collection{
+		UUID:         fs.uuid,
+		ManifestText: txt,
+	}
+	err = fs.RequestAndDecode(nil, "PUT", "arvados/v1/collections/"+fs.uuid, fs.UpdateBody(coll), map[string]interface{}{"select": []string{"uuid"}})
+	if err != nil {
+		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
+	}
+	return err
+}
+
+func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
+	fs.fileSystem.root.Lock()
+	defer fs.fileSystem.root.Unlock()
+	return fs.fileSystem.root.(*dirnode).marshalManifest(prefix)
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
@@ -252,10 +212,31 @@ func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 	return
 }
 
+// filenode implements inode.
+type filenode struct {
+	parent   inode
+	fs       FileSystem
+	fileinfo fileinfo
+	segments []segment
+	// number of times `segments` has changed in a
+	// way that might invalidate a filenodePtr
+	repacked int64
+	memsize  int64 // bytes in memSegments
+	sync.RWMutex
+	nullnode
+}
+
 // caller must have lock
 func (fn *filenode) appendSegment(e segment) {
 	fn.segments = append(fn.segments, e)
 	fn.fileinfo.size += int64(e.Len())
+}
+
+func (fn *filenode) SetParent(p inode, name string) {
+	fn.Lock()
+	defer fn.Unlock()
+	fn.parent = p
+	fn.fileinfo.name = name
 }
 
 func (fn *filenode) Parent() inode {
@@ -264,8 +245,8 @@ func (fn *filenode) Parent() inode {
 	return fn.parent
 }
 
-func (fn *filenode) Readdir() []os.FileInfo {
-	return nil
+func (fn *filenode) FS() FileSystem {
+	return fn.fs
 }
 
 // Read reads file data from a single segment, starting at startPtr,
@@ -302,7 +283,7 @@ func (fn *filenode) Size() int64 {
 	return fn.fileinfo.Size()
 }
 
-func (fn *filenode) Stat() os.FileInfo {
+func (fn *filenode) FileInfo() os.FileInfo {
 	fn.RLock()
 	defer fn.RUnlock()
 	return fn.fileinfo
@@ -513,7 +494,7 @@ func (fn *filenode) pruneMemSegments() {
 		if !ok || seg.Len() < maxBlockSize {
 			continue
 		}
-		locator, _, err := fn.parent.kc.PutB(seg.buf)
+		locator, _, err := fn.FS().PutB(seg.buf)
 		if err != nil {
 			// TODO: stall (or return errors from)
 			// subsequent writes until flushing
@@ -522,7 +503,7 @@ func (fn *filenode) pruneMemSegments() {
 		}
 		fn.memsize -= int64(seg.Len())
 		fn.segments[idx] = storedSegment{
-			kc:      fn.parent.kc,
+			kc:      fn.FS(),
 			locator: locator,
 			size:    seg.Len(),
 			offset:  0,
@@ -531,132 +512,34 @@ func (fn *filenode) pruneMemSegments() {
 	}
 }
 
-// FileSystem returns a CollectionFileSystem for the collection.
-func (c *Collection) FileSystem(client *Client, kc keepClient) (CollectionFileSystem, error) {
-	var modTime time.Time
-	if c.ModifiedAt == nil {
-		modTime = time.Now()
-	} else {
-		modTime = *c.ModifiedAt
-	}
-	fs := &fileSystem{dirnode: dirnode{
-		client: client,
-		kc:     kc,
-		fileinfo: fileinfo{
-			name:    ".",
-			mode:    os.ModeDir | 0755,
-			modTime: modTime,
-		},
-		parent: nil,
-		inodes: make(map[string]inode),
-	}}
-	fs.dirnode.parent = &fs.dirnode
-	if err := fs.dirnode.loadManifest(c.ManifestText); err != nil {
-		return nil, err
-	}
-	return fs, nil
-}
-
-type filehandle struct {
-	inode
-	ptr        filenodePtr
-	append     bool
-	readable   bool
-	writable   bool
-	unreaddirs []os.FileInfo
-}
-
-func (f *filehandle) Read(p []byte) (n int, err error) {
-	if !f.readable {
-		return 0, ErrWriteOnlyMode
-	}
-	f.inode.RLock()
-	defer f.inode.RUnlock()
-	n, f.ptr, err = f.inode.Read(p, f.ptr)
-	return
-}
-
-func (f *filehandle) Seek(off int64, whence int) (pos int64, err error) {
-	size := f.inode.Size()
-	ptr := f.ptr
-	switch whence {
-	case io.SeekStart:
-		ptr.off = off
-	case io.SeekCurrent:
-		ptr.off += off
-	case io.SeekEnd:
-		ptr.off = size + off
-	}
-	if ptr.off < 0 {
-		return f.ptr.off, ErrNegativeOffset
-	}
-	if ptr.off != f.ptr.off {
-		f.ptr = ptr
-		// force filenode to recompute f.ptr fields on next
-		// use
-		f.ptr.repacked = -1
-	}
-	return f.ptr.off, nil
-}
-
-func (f *filehandle) Truncate(size int64) error {
-	return f.inode.Truncate(size)
-}
-
-func (f *filehandle) Write(p []byte) (n int, err error) {
-	if !f.writable {
-		return 0, ErrReadOnlyFile
-	}
-	f.inode.Lock()
-	defer f.inode.Unlock()
-	if fn, ok := f.inode.(*filenode); ok && f.append {
-		f.ptr = filenodePtr{
-			off:        fn.fileinfo.size,
-			segmentIdx: len(fn.segments),
-			segmentOff: 0,
-			repacked:   fn.repacked,
-		}
-	}
-	n, f.ptr, err = f.inode.Write(p, f.ptr)
-	return
-}
-
-func (f *filehandle) Readdir(count int) ([]os.FileInfo, error) {
-	if !f.inode.Stat().IsDir() {
-		return nil, ErrInvalidOperation
-	}
-	if count <= 0 {
-		return f.inode.Readdir(), nil
-	}
-	if f.unreaddirs == nil {
-		f.unreaddirs = f.inode.Readdir()
-	}
-	if len(f.unreaddirs) == 0 {
-		return nil, io.EOF
-	}
-	if count > len(f.unreaddirs) {
-		count = len(f.unreaddirs)
-	}
-	ret := f.unreaddirs[:count]
-	f.unreaddirs = f.unreaddirs[count:]
-	return ret, nil
-}
-
-func (f *filehandle) Stat() (os.FileInfo, error) {
-	return f.inode.Stat(), nil
-}
-
-func (f *filehandle) Close() error {
-	return nil
-}
-
 type dirnode struct {
-	fileinfo fileinfo
-	parent   *dirnode
-	client   *Client
-	kc       keepClient
-	inodes   map[string]inode
-	sync.RWMutex
+	fs *collectionFileSystem
+	treenode
+}
+
+func (dn *dirnode) FS() FileSystem {
+	return dn.fs
+}
+
+func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
+	if dn == dn.fs.rootnode() && name == ".arvados#collection" {
+		gn := &getternode{Getter: func() ([]byte, error) {
+			var coll Collection
+			var err error
+			coll.ManifestText, err = dn.fs.MarshalManifest(".")
+			if err != nil {
+				return nil, err
+			}
+			data, err := json.Marshal(&coll)
+			if err == nil {
+				data = append(data, '\n')
+			}
+			return data, err
+		}}
+		gn.SetParent(dn, name)
+		return gn, nil
+	}
+	return dn.treenode.Child(name, replace)
 }
 
 // sync flushes in-memory data (for all files in the tree rooted at
@@ -677,7 +560,7 @@ func (dn *dirnode) sync() error {
 		for _, sb := range sbs {
 			block = append(block, sb.fn.segments[sb.idx].(*memSegment).buf...)
 		}
-		locator, _, err := dn.kc.PutB(block)
+		locator, _, err := dn.fs.PutB(block)
 		if err != nil {
 			return err
 		}
@@ -685,7 +568,7 @@ func (dn *dirnode) sync() error {
 		for _, sb := range sbs {
 			data := sb.fn.segments[sb.idx].(*memSegment).buf
 			sb.fn.segments[sb.idx] = storedSegment{
-				kc:      dn.kc,
+				kc:      dn.fs,
 				locator: locator,
 				size:    len(block),
 				offset:  off,
@@ -733,12 +616,6 @@ func (dn *dirnode) sync() error {
 		}
 	}
 	return flush(pending)
-}
-
-func (dn *dirnode) MarshalManifest(prefix string) (string, error) {
-	dn.Lock()
-	defer dn.Unlock()
-	return dn.marshalManifest(prefix)
 }
 
 // caller must have read lock.
@@ -912,7 +789,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 					blkLen = int(offset + length - pos - int64(blkOff))
 				}
 				fnode.appendSegment(storedSegment{
-					kc:      dn.kc,
+					kc:      dn.fs,
 					locator: seg.locator,
 					size:    seg.size,
 					offset:  blkOff,
@@ -941,346 +818,63 @@ func (dn *dirnode) loadManifest(txt string) error {
 
 // only safe to call from loadManifest -- no locking
 func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
+	var node inode = dn
 	names := strings.Split(path, "/")
 	basename := names[len(names)-1]
-	if basename == "" || basename == "." || basename == ".." {
-		err = fmt.Errorf("invalid filename")
+	if !permittedName(basename) {
+		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
 		return
 	}
 	for _, name := range names[:len(names)-1] {
 		switch name {
 		case "", ".":
+			continue
 		case "..":
-			dn = dn.parent
+			if node == dn {
+				// can't be sure parent will be a *dirnode
+				return nil, ErrInvalidArgument
+			}
+			node = node.Parent()
+			continue
+		}
+		node, err = node.Child(name, func(child inode) (inode, error) {
+			if child == nil {
+				child, err := node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				if err != nil {
+					return nil, err
+				}
+				child.SetParent(node, name)
+				return child, nil
+			} else if !child.IsDir() {
+				return child, ErrFileExists
+			} else {
+				return child, nil
+			}
+		})
+		if err != nil {
+			return
+		}
+	}
+	_, err = node.Child(basename, func(child inode) (inode, error) {
+		switch child := child.(type) {
+		case nil:
+			child, err = node.FS().newNode(basename, 0755, node.FileInfo().ModTime())
+			if err != nil {
+				return nil, err
+			}
+			child.SetParent(node, basename)
+			fn = child.(*filenode)
+			return child, nil
+		case *filenode:
+			fn = child
+			return child, nil
+		case *dirnode:
+			return child, ErrIsDirectory
 		default:
-			switch node := dn.inodes[name].(type) {
-			case nil:
-				dn = dn.newDirnode(name, 0755, dn.fileinfo.modTime)
-			case *dirnode:
-				dn = node
-			case *filenode:
-				err = ErrFileExists
-				return
-			}
+			return child, ErrInvalidArgument
 		}
-	}
-	switch node := dn.inodes[basename].(type) {
-	case nil:
-		fn = dn.newFilenode(basename, 0755, dn.fileinfo.modTime)
-	case *filenode:
-		fn = node
-	case *dirnode:
-		err = ErrIsDirectory
-	}
+	})
 	return
-}
-
-func (dn *dirnode) mkdir(name string) (*filehandle, error) {
-	return dn.OpenFile(name, os.O_CREATE|os.O_EXCL, os.ModeDir|0755)
-}
-
-func (dn *dirnode) Mkdir(name string, perm os.FileMode) error {
-	f, err := dn.mkdir(name)
-	if err == nil {
-		err = f.Close()
-	}
-	return err
-}
-
-func (dn *dirnode) Remove(name string) error {
-	return dn.remove(strings.TrimRight(name, "/"), false)
-}
-
-func (dn *dirnode) RemoveAll(name string) error {
-	err := dn.remove(strings.TrimRight(name, "/"), true)
-	if os.IsNotExist(err) {
-		// "If the path does not exist, RemoveAll returns
-		// nil." (see "os" pkg)
-		err = nil
-	}
-	return err
-}
-
-func (dn *dirnode) remove(name string, recursive bool) error {
-	dirname, name := path.Split(name)
-	if name == "" || name == "." || name == ".." {
-		return ErrInvalidArgument
-	}
-	dn, ok := dn.lookupPath(dirname).(*dirnode)
-	if !ok {
-		return os.ErrNotExist
-	}
-	dn.Lock()
-	defer dn.Unlock()
-	switch node := dn.inodes[name].(type) {
-	case nil:
-		return os.ErrNotExist
-	case *dirnode:
-		node.RLock()
-		defer node.RUnlock()
-		if !recursive && len(node.inodes) > 0 {
-			return ErrDirectoryNotEmpty
-		}
-	}
-	delete(dn.inodes, name)
-	return nil
-}
-
-func (dn *dirnode) Rename(oldname, newname string) error {
-	olddir, oldname := path.Split(oldname)
-	if oldname == "" || oldname == "." || oldname == ".." {
-		return ErrInvalidArgument
-	}
-	olddirf, err := dn.OpenFile(olddir+".", os.O_RDONLY, 0)
-	if err != nil {
-		return fmt.Errorf("%q: %s", olddir, err)
-	}
-	defer olddirf.Close()
-	newdir, newname := path.Split(newname)
-	if newname == "." || newname == ".." {
-		return ErrInvalidArgument
-	} else if newname == "" {
-		// Rename("a/b", "c/") means Rename("a/b", "c/b")
-		newname = oldname
-	}
-	newdirf, err := dn.OpenFile(newdir+".", os.O_RDONLY, 0)
-	if err != nil {
-		return fmt.Errorf("%q: %s", newdir, err)
-	}
-	defer newdirf.Close()
-
-	// When acquiring locks on multiple nodes, all common
-	// ancestors must be locked first in order to avoid
-	// deadlock. This is assured by locking the path from root to
-	// newdir, then locking the path from root to olddir, skipping
-	// any already-locked nodes.
-	needLock := []sync.Locker{}
-	for _, f := range []*filehandle{olddirf, newdirf} {
-		node := f.inode
-		needLock = append(needLock, node)
-		for node.Parent() != node {
-			node = node.Parent()
-			needLock = append(needLock, node)
-		}
-	}
-	locked := map[sync.Locker]bool{}
-	for i := len(needLock) - 1; i >= 0; i-- {
-		if n := needLock[i]; !locked[n] {
-			n.Lock()
-			defer n.Unlock()
-			locked[n] = true
-		}
-	}
-
-	olddn := olddirf.inode.(*dirnode)
-	newdn := newdirf.inode.(*dirnode)
-	oldinode, ok := olddn.inodes[oldname]
-	if !ok {
-		return os.ErrNotExist
-	}
-	if locked[oldinode] {
-		// oldinode cannot become a descendant of itself.
-		return ErrInvalidArgument
-	}
-	if existing, ok := newdn.inodes[newname]; ok {
-		// overwriting an existing file or dir
-		if dn, ok := existing.(*dirnode); ok {
-			if !oldinode.Stat().IsDir() {
-				return ErrIsDirectory
-			}
-			dn.RLock()
-			defer dn.RUnlock()
-			if len(dn.inodes) > 0 {
-				return ErrDirectoryNotEmpty
-			}
-		}
-	} else {
-		if newdn.inodes == nil {
-			newdn.inodes = make(map[string]inode)
-		}
-		newdn.fileinfo.size++
-	}
-	newdn.inodes[newname] = oldinode
-	switch n := oldinode.(type) {
-	case *dirnode:
-		n.parent = newdn
-	case *filenode:
-		n.parent = newdn
-	default:
-		panic(fmt.Sprintf("bad inode type %T", n))
-	}
-	delete(olddn.inodes, oldname)
-	olddn.fileinfo.size--
-	return nil
-}
-
-func (dn *dirnode) Parent() inode {
-	dn.RLock()
-	defer dn.RUnlock()
-	return dn.parent
-}
-
-func (dn *dirnode) Readdir() (fi []os.FileInfo) {
-	dn.RLock()
-	defer dn.RUnlock()
-	fi = make([]os.FileInfo, 0, len(dn.inodes))
-	for _, inode := range dn.inodes {
-		fi = append(fi, inode.Stat())
-	}
-	return
-}
-
-func (dn *dirnode) Read(p []byte, ptr filenodePtr) (int, filenodePtr, error) {
-	return 0, ptr, ErrInvalidOperation
-}
-
-func (dn *dirnode) Write(p []byte, ptr filenodePtr) (int, filenodePtr, error) {
-	return 0, ptr, ErrInvalidOperation
-}
-
-func (dn *dirnode) Size() int64 {
-	dn.RLock()
-	defer dn.RUnlock()
-	return dn.fileinfo.Size()
-}
-
-func (dn *dirnode) Stat() os.FileInfo {
-	dn.RLock()
-	defer dn.RUnlock()
-	return dn.fileinfo
-}
-
-func (dn *dirnode) Truncate(int64) error {
-	return ErrInvalidOperation
-}
-
-// lookupPath returns the inode for the file/directory with the given
-// name (which may contain "/" separators), along with its parent
-// node. If no such file/directory exists, the returned node is nil.
-func (dn *dirnode) lookupPath(path string) (node inode) {
-	node = dn
-	for _, name := range strings.Split(path, "/") {
-		dn, ok := node.(*dirnode)
-		if !ok {
-			return nil
-		}
-		if name == "." || name == "" {
-			continue
-		}
-		if name == ".." {
-			node = node.Parent()
-			continue
-		}
-		dn.RLock()
-		node = dn.inodes[name]
-		dn.RUnlock()
-	}
-	return
-}
-
-func (dn *dirnode) newDirnode(name string, perm os.FileMode, modTime time.Time) *dirnode {
-	child := &dirnode{
-		parent: dn,
-		client: dn.client,
-		kc:     dn.kc,
-		fileinfo: fileinfo{
-			name:    name,
-			mode:    os.ModeDir | perm,
-			modTime: modTime,
-		},
-	}
-	if dn.inodes == nil {
-		dn.inodes = make(map[string]inode)
-	}
-	dn.inodes[name] = child
-	dn.fileinfo.size++
-	return child
-}
-
-func (dn *dirnode) newFilenode(name string, perm os.FileMode, modTime time.Time) *filenode {
-	child := &filenode{
-		parent: dn,
-		fileinfo: fileinfo{
-			name:    name,
-			mode:    perm,
-			modTime: modTime,
-		},
-	}
-	if dn.inodes == nil {
-		dn.inodes = make(map[string]inode)
-	}
-	dn.inodes[name] = child
-	dn.fileinfo.size++
-	return child
-}
-
-// OpenFile is analogous to os.OpenFile().
-func (dn *dirnode) OpenFile(name string, flag int, perm os.FileMode) (*filehandle, error) {
-	if flag&os.O_SYNC != 0 {
-		return nil, ErrSyncNotSupported
-	}
-	dirname, name := path.Split(name)
-	dn, ok := dn.lookupPath(dirname).(*dirnode)
-	if !ok {
-		return nil, os.ErrNotExist
-	}
-	var readable, writable bool
-	switch flag & (os.O_RDWR | os.O_RDONLY | os.O_WRONLY) {
-	case os.O_RDWR:
-		readable = true
-		writable = true
-	case os.O_RDONLY:
-		readable = true
-	case os.O_WRONLY:
-		writable = true
-	default:
-		return nil, fmt.Errorf("invalid flags 0x%x", flag)
-	}
-	if !writable {
-		// A directory can be opened via "foo/", "foo/.", or
-		// "foo/..".
-		switch name {
-		case ".", "":
-			return &filehandle{inode: dn}, nil
-		case "..":
-			return &filehandle{inode: dn.Parent()}, nil
-		}
-	}
-	createMode := flag&os.O_CREATE != 0
-	if createMode {
-		dn.Lock()
-		defer dn.Unlock()
-	} else {
-		dn.RLock()
-		defer dn.RUnlock()
-	}
-	n, ok := dn.inodes[name]
-	if !ok {
-		if !createMode {
-			return nil, os.ErrNotExist
-		}
-		if perm.IsDir() {
-			n = dn.newDirnode(name, 0755, time.Now())
-		} else {
-			n = dn.newFilenode(name, 0755, time.Now())
-		}
-	} else if flag&os.O_EXCL != 0 {
-		return nil, ErrFileExists
-	} else if flag&os.O_TRUNC != 0 {
-		if !writable {
-			return nil, fmt.Errorf("invalid flag O_TRUNC in read-only mode")
-		} else if fn, ok := n.(*filenode); !ok {
-			return nil, fmt.Errorf("invalid flag O_TRUNC when opening directory")
-		} else {
-			fn.Truncate(0)
-		}
-	}
-	return &filehandle{
-		inode:    n,
-		append:   flag&os.O_APPEND != 0,
-		readable: readable,
-		writable: writable,
-	}, nil
 }
 
 type segment interface {
@@ -1347,7 +941,7 @@ func (me *memSegment) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 type storedSegment struct {
-	kc      keepClient
+	kc      fsBackend
 	locator string
 	size    int // size of stored block (also encoded in locator)
 	offset  int // position of segment within the stored block

@@ -141,3 +141,15 @@ class SLURMComputeNodeSetupActorTestCase(ComputeNodeSetupActorTestCase):
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
         check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=1000', 'Features=instancetype=z1.test'])
+
+    @mock.patch('subprocess.check_output')
+    def test_failed_arvados_calls_retried(self, check_output):
+        super(SLURMComputeNodeSetupActorTestCase, self).test_failed_arvados_calls_retried()
+
+    @mock.patch('subprocess.check_output')
+    def test_subscribe(self, check_output):
+        super(SLURMComputeNodeSetupActorTestCase, self).test_subscribe()
+
+    @mock.patch('subprocess.check_output')
+    def test_creation_with_arvados_node(self, check_output):
+        super(SLURMComputeNodeSetupActorTestCase, self).test_creation_with_arvados_node()

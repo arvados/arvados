@@ -474,6 +474,10 @@ func (s *CollectionFSSuite) TestMkdir(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+
 	maxBlockSize = 8
 	defer func() { maxBlockSize = 2 << 26 }()
 
@@ -693,13 +697,13 @@ func (s *CollectionFSSuite) TestRename(c *check.C) {
 				err = fs.Rename(
 					fmt.Sprintf("dir%d/file%d/patherror", i, j),
 					fmt.Sprintf("dir%d/irrelevant", i))
-				c.Check(err, check.ErrorMatches, `.*does not exist`)
+				c.Check(err, check.ErrorMatches, `.*not a directory`)
 
 				// newname parent dir is a file
 				err = fs.Rename(
 					fmt.Sprintf("dir%d/dir%d/file%d", i, j, j),
 					fmt.Sprintf("dir%d/file%d/patherror", i, inner-j-1))
-				c.Check(err, check.ErrorMatches, `.*does not exist`)
+				c.Check(err, check.ErrorMatches, `.*not a directory`)
 			}(i, j)
 		}
 	}
@@ -1026,6 +1030,10 @@ var _ = check.Suite(&CollectionFSUnitSuite{})
 
 // expect ~2 seconds to load a manifest with 256K files
 func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+
 	const (
 		dirCount  = 512
 		fileCount = 512
