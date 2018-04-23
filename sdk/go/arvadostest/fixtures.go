@@ -16,6 +16,7 @@ const (
 	FederatedActiveUserUUID = "zbbbb-tpzed-xurymjxw79nv3jz"
 	SpectatorUserUUID       = "zzzzz-tpzed-l1s2piq4t4mps8r"
 	UserAgreementCollection = "zzzzz-4zz18-uukreo9rbgwsujr" // user_agreement_in_anonymously_accessible_project
+	FooCollectionName       = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
 	FooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
 	FooCollectionPDH        = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	NonexistentCollection   = "zzzzz-4zz18-totallynotexist"

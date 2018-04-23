@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -60,7 +61,7 @@ func (fs *customFileSystem) MountByID(mount string) {
 					mode:    0755 | os.ModeDir,
 				},
 			},
-			create: fs.mountCollection,
+			create: fs.mountByID,
 		}, nil
 	})
 }
@@ -121,6 +122,16 @@ func (fs *customFileSystem) Stale(t time.Time) bool {
 
 func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
 	return nil, ErrInvalidOperation
+}
+
+func (fs *customFileSystem) mountByID(parent inode, id string) inode {
+	if strings.Contains(id, "-4zz18-") || pdhRegexp.MatchString(id) {
+		return fs.mountCollection(parent, id)
+	} else if strings.Contains(id, "-j7d0g-") {
+		return fs.newProjectNode(fs.root, id, id)
+	} else {
+		return nil
+	}
 }
 
 func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
