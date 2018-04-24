@@ -835,13 +835,17 @@ func (v *S3Volume) EmptyTrash() {
 		atomic.AddInt64(&blocksDeleted, 1)
 
 		_, err = v.bucket.Head(loc, nil)
-		if os.IsNotExist(err) {
-			err = v.bucket.Del("recent/" + loc)
-			if err != nil {
-				log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
-			}
-		} else if err != nil {
-			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, "recent/"+loc, err)
+		if err == nil {
+			log.Printf("warning: %s: EmptyTrash: HEAD %q succeeded immediately after deleting %q", v, loc, loc)
+			return
+		}
+		if !os.IsNotExist(v.translateError(err)) {
+			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
+			return
+		}
+		err = v.bucket.Del("recent/" + loc)
+		if err != nil {
+			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
 		}
 	}
 
