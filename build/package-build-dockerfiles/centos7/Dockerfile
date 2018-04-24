@@ -17,7 +17,7 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
 
 # Install golang binary
-ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.9.5.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm
