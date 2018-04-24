@@ -424,11 +424,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	client := &arvados.Client{
+	client := (&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
 
 	fs, err := collection.FileSystem(client, kc)
 	if err != nil {
@@ -529,11 +529,11 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client := &arvados.Client{
+	client := (&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	fs := client.SiteFileSystem(kc)
 	f, err := fs.Open(r.URL.Path)
 	if os.IsNotExist(err) {

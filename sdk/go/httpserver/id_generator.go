@@ -45,6 +45,9 @@ func AddRequestIDs(h http.Handler) http.Handler {
 	gen := &IDGenerator{Prefix: "req-"}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Header.Get("X-Request-Id") == "" {
+			if req.Header == nil {
+				req.Header = http.Header{}
+			}
 			req.Header.Set("X-Request-Id", gen.Next())
 		}
 		h.ServeHTTP(w, req)
