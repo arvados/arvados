@@ -20,7 +20,7 @@ class TestAddUser < Minitest::Test
     # exist on the host, but is insensitive to the admin group (groups
     # are quietly ignored by login-sync if they don't exist on the
     # current host).
-    assert_match %r{useradd -m -c adminroot -s /bin/bash -G docker(,admin)?(,fuse)? adminroot}, spied
+    assert_match %r{useradd -m -c adminroot -s /bin/bash -G (docker)?(,admin)?(,fuse)? adminroot}, spied
   end
 
   def test_useradd_success
