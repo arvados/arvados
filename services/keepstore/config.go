@@ -40,6 +40,9 @@ type Config struct {
 	EnableDelete        bool
 	TrashLifetime       arvados.Duration
 	TrashCheckInterval  arvados.Duration
+	PullWorkers         int
+	TrashWorkers        int
+	EmptyTrashWorkers   int
 
 	Volumes VolumeList
 
