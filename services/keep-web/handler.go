@@ -10,7 +10,6 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
 
@@ -191,13 +191,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		} else if w.WroteStatus() == 0 {
 			w.WriteHeader(statusCode)
 		} else if w.WroteStatus() != statusCode {
-			httpserver.Log(r.RemoteAddr, "WARNING",
+			log.WithField("RequestID", r.Header.Get("X-Request-Id")).Warn(
 				fmt.Sprintf("Our status changed from %d to %d after we sent headers", w.WroteStatus(), statusCode))
 		}
 		if statusText == "" {
 			statusText = http.StatusText(statusCode)
 		}
-		httpserver.Log(remoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
 	}()
 
 	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {

@@ -32,7 +32,9 @@ func LogRequests(h http.Handler) http.Handler {
 			"remoteAddr":      req.RemoteAddr,
 			"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
 			"reqMethod":       req.Method,
+			"reqHost":         req.Host,
 			"reqPath":         req.URL.Path[1:],
+			"reqQuery":        req.URL.RawQuery,
 			"reqBytes":        req.ContentLength,
 		})
 		logRequest(w, req, lgr)
