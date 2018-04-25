@@ -110,9 +110,6 @@ case "$TARGET" in
     debian9)
         FORMAT=deb
         ;;
-    ubuntu1204)
-        FORMAT=deb
-        ;;
     ubuntu1404)
         FORMAT=deb
         ;;
@@ -287,55 +284,6 @@ handle_python_package
 
     fi
 )
-
-# On older platforms we need to publish a backport of libfuse >=2.9.2,
-# and we need to build and install it here in order to even build an
-# llfuse package.
-cd $WORKSPACE/packages/$TARGET
-if [[ $TARGET =~ ubuntu1204 ]]; then
-    # port libfuse 2.9.2 to Ubuntu 12.04
-    LIBFUSE_DIR=$(mktemp -d)
-    (
-        cd $LIBFUSE_DIR
-        # download fuse 2.9.2 ubuntu 14.04 source package
-        file="fuse_2.9.2.orig.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-        file="fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-        file="fuse_2.9.2-4ubuntu4.14.04.1.dsc" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-
-        # install dpkg-source and dpkg-buildpackage commands
-        apt-get install -y --no-install-recommends dpkg-dev
-
-        # extract source and apply patches
-        dpkg-source -x fuse_2.9.2-4ubuntu4.14.04.1.dsc
-        rm -f fuse_2.9.2.orig.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.dsc
-
-        # add new version to changelog
-        cd fuse-2.9.2
-        (
-            echo "fuse (2.9.2-5) precise; urgency=low"
-            echo
-            echo "  * Backported from trusty-security to precise"
-            echo
-            echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000"
-            echo
-            cat debian/changelog
-        ) > debian/changelog.new
-        mv debian/changelog.new debian/changelog
-
-        # install build-deps and build
-        apt-get install -y --no-install-recommends debhelper dh-autoreconf libselinux-dev
-        dpkg-buildpackage -rfakeroot -b
-    )
-    fpm_build "$LIBFUSE_DIR/fuse_2.9.2-5_amd64.deb" fuse "Ubuntu Developers" deb "2.9.2" --iteration 5
-    fpm_build "$LIBFUSE_DIR/libfuse2_2.9.2-5_amd64.deb" libfuse2 "Ubuntu Developers" deb "2.9.2" --iteration 5
-    fpm_build "$LIBFUSE_DIR/libfuse-dev_2.9.2-5_amd64.deb" libfuse-dev "Ubuntu Developers" deb "2.9.2" --iteration 5
-    dpkg -i \
-        "$WORKSPACE/packages/$TARGET/fuse_2.9.2-5_amd64.deb" \
-        "$WORKSPACE/packages/$TARGET/libfuse2_2.9.2-5_amd64.deb" \
-        "$WORKSPACE/packages/$TARGET/libfuse-dev_2.9.2-5_amd64.deb"
-    apt-get -y --no-install-recommends -f install
-    rm -rf $LIBFUSE_DIR
-fi
 
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
