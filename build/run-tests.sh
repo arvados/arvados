@@ -543,11 +543,13 @@ pip freeze 2>/dev/null | egrep ^PyYAML= \
     || pip install --no-cache-dir PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
-# Preinstall libcloud, because nodemanager "pip install"
-# won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
-    || fatal "pip install apache-libcloud failed"
+# Preinstall libcloud if using a fork; otherwise nodemanager "pip
+# install" won't pick it up by default.
+if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
+    pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
+        || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
+        || fatal "pip install apache-libcloud failed"
+fi
 
 # Deactivate Python 2 virtualenv
 deactivate
