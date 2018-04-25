@@ -77,7 +77,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 		// to be empty, so don't set req.Body.
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
+	this.setRequestHeaders(req)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 

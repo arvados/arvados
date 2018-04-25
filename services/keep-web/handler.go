@@ -416,6 +416,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
+	kc.RequestID = r.Header.Get("X-Request-Id")
 
 	var basename string
 	if len(targetPath) > 0 {
@@ -528,6 +529,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	kc.RequestID = r.Header.Get("X-Request-Id")
 	client := (&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
