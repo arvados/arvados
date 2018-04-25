@@ -257,6 +257,7 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	var err error
 	arv := *kc.Arvados
 	arv.ApiToken = tok
+	arv.RequestID = req.Header.Get("X-Request-Id")
 	if op == "read" {
 		err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
 	} else {
