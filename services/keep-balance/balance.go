@@ -5,6 +5,8 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
 	"log"
 	"math"
@@ -48,10 +50,14 @@ type Balancer struct {
 	Dumper             *log.Logger
 	MinMtime           int64
 
-	collScanned  int
-	serviceRoots map[string]string
-	errors       []error
-	mutex        sync.Mutex
+	classes       []string
+	mounts        int
+	mountsByClass map[string]map[*KeepMount]bool
+	collScanned   int
+	serviceRoots  map[string]string
+	errors        []error
+	stats         balancerStats
+	mutex         sync.Mutex
 }
 
 // Run performs a balance operation using the given config and
@@ -82,6 +88,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	if err != nil {
 		return
 	}
+
 	for _, srv := range bal.KeepServices {
 		err = srv.discoverMounts(&config.Client)
 		if err != nil {
@@ -338,7 +345,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 		repl = *coll.ReplicationDesired
 	}
 	debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
-	bal.BlockStateMap.IncreaseDesired(repl, blkids)
+	bal.BlockStateMap.IncreaseDesired(coll.StorageClassesDesired, repl, blkids)
 	return nil
 }
 
@@ -352,7 +359,7 @@ func (bal *Balancer) ComputeChangeSets() {
 	// This just calls balanceBlock() once for each block, using a
 	// pool of worker goroutines.
 	defer timeMe(bal.Logger, "ComputeChangeSets")()
-	bal.setupServiceRoots()
+	bal.setupLookupTables()
 
 	type balanceTask struct {
 		blkid arvados.SizedDigest
@@ -360,12 +367,13 @@ func (bal *Balancer) ComputeChangeSets() {
 	}
 	nWorkers := 1 + runtime.NumCPU()
 	todo := make(chan balanceTask, nWorkers)
+	results := make(chan balanceResult, 16)
 	var wg sync.WaitGroup
 	for i := 0; i < nWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			for work := range todo {
-				bal.balanceBlock(work.blkid, work.blk)
+				results <- bal.balanceBlock(work.blkid, work.blk)
 			}
 			wg.Done()
 		}()
@@ -377,14 +385,47 @@ func (bal *Balancer) ComputeChangeSets() {
 		}
 	})
 	close(todo)
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+	bal.collectStatistics(results)
 }
 
-func (bal *Balancer) setupServiceRoots() {
+func (bal *Balancer) setupLookupTables() {
 	bal.serviceRoots = make(map[string]string)
+	bal.classes = []string{"default"}
+	bal.mountsByClass = map[string]map[*KeepMount]bool{"default": {}}
+	bal.mounts = 0
 	for _, srv := range bal.KeepServices {
 		bal.serviceRoots[srv.UUID] = srv.UUID
+		for _, mnt := range srv.mounts {
+			bal.mounts++
+
+			// All mounts on a read-only service are
+			// effectively read-only.
+			mnt.ReadOnly = mnt.ReadOnly || srv.ReadOnly
+
+			if len(mnt.StorageClasses) == 0 {
+				bal.mountsByClass["default"][mnt] = true
+				continue
+			}
+			for _, class := range mnt.StorageClasses {
+				if mbc := bal.mountsByClass[class]; mbc == nil {
+					bal.classes = append(bal.classes, class)
+					bal.mountsByClass[class] = map[*KeepMount]bool{mnt: true}
+				} else {
+					mbc[mnt] = true
+				}
+			}
+		}
 	}
+	// Consider classes in lexicographic order to avoid flapping
+	// between balancing runs.  The outcome of the "prefer a mount
+	// we're already planning to use for a different storage
+	// class" case in balanceBlock depends on the order classes
+	// are considered.
+	sort.Strings(bal.classes)
 }
 
 const (
@@ -401,129 +442,213 @@ var changeName = map[int]string{
 	changeNone:  "none",
 }
 
+type balanceResult struct {
+	blk   *BlockState
+	blkid arvados.SizedDigest
+	have  int
+	want  int
+}
+
 // balanceBlock compares current state to desired state for a single
 // block, and makes the appropriate ChangeSet calls.
-func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) {
+func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) balanceResult {
 	debugf("balanceBlock: %v %+v", blkid, blk)
 
-	// A slot is somewhere a replica could potentially be trashed
-	// from, pulled from, or pulled to. Each KeepService gets
-	// either one empty slot, or one or more non-empty slots.
 	type slot struct {
-		srv  *KeepService // never nil
-		repl *Replica     // nil if none found
+		mnt  *KeepMount // never nil
+		repl *Replica   // replica already stored here (or nil)
+		want bool       // we should pull/leave a replica here
 	}
 
-	// First, we build an ordered list of all slots worth
-	// considering (including all slots where replicas have been
-	// found, as well as all of the optimal slots for this block).
-	// Then, when we consider each slot in that order, we will
-	// have all of the information we need to make a decision
-	// about that slot.
+	// Build a list of all slots (one per mounted volume).
+	slots := make([]slot, 0, bal.mounts)
+	for _, srv := range bal.KeepServices {
+		for _, mnt := range srv.mounts {
+			var repl *Replica
+			for r := range blk.Replicas {
+				if blk.Replicas[r].KeepMount == mnt {
+					repl = &blk.Replicas[r]
+				}
+			}
+			// Initial value of "want" is "have, and can't
+			// delete". These untrashable replicas get
+			// prioritized when sorting slots: otherwise,
+			// non-optimal readonly copies would cause us
+			// to overreplicate.
+			slots = append(slots, slot{
+				mnt:  mnt,
+				repl: repl,
+				want: repl != nil && (mnt.ReadOnly || repl.Mtime >= bal.MinMtime),
+			})
+		}
+	}
 
 	uuids := keepclient.NewRootSorter(bal.serviceRoots, string(blkid[:32])).GetSortedRoots()
-	rendezvousOrder := make(map[*KeepService]int, len(uuids))
-	slots := make([]slot, len(uuids))
+	srvRendezvous := make(map[*KeepService]int, len(uuids))
 	for i, uuid := range uuids {
 		srv := bal.KeepServices[uuid]
-		rendezvousOrder[srv] = i
-		slots[i].srv = srv
+		srvRendezvous[srv] = i
 	}
 
-	// Sort readonly replicas ahead of trashable ones. This way,
-	// if a single service has excessive replicas, the ones we
-	// encounter last (and therefore choose to delete) will be on
-	// the writable volumes, where possible.
-	//
-	// TODO: within the trashable set, prefer the oldest replica
-	// that doesn't have a timestamp collision with others.
-	sort.Slice(blk.Replicas, func(i, j int) bool {
-		mnt := blk.Replicas[i].KeepMount
-		return mnt.ReadOnly || mnt.KeepService.ReadOnly
-	})
+	// Below we set underreplicated=true if we find any storage
+	// class that's currently underreplicated -- in that case we
+	// won't want to trash any replicas.
+	underreplicated := false
 
-	// Assign existing replicas to slots.
-	for ri := range blk.Replicas {
-		repl := &blk.Replicas[ri]
-		srv := repl.KeepService
-		slotIdx := rendezvousOrder[srv]
-		if slots[slotIdx].repl != nil {
-			// Additional replicas on a single server are
-			// considered non-optimal. Within this
-			// category, we don't try to optimize layout:
-			// we just say the optimal order is the order
-			// we encounter them.
-			slotIdx = len(slots)
-			slots = append(slots, slot{srv: srv})
+	unsafeToDelete := make(map[int64]bool, len(slots))
+	for _, class := range bal.classes {
+		desired := blk.Desired[class]
+		if desired == 0 {
+			continue
 		}
-		slots[slotIdx].repl = repl
+		// Sort the slots by desirability.
+		sort.Slice(slots, func(i, j int) bool {
+			si, sj := slots[i], slots[j]
+			if classi, classj := bal.mountsByClass[class][si.mnt], bal.mountsByClass[class][sj.mnt]; classi != classj {
+				// Prefer a mount that satisfies the
+				// desired class.
+				return bal.mountsByClass[class][si.mnt]
+			} else if wanti, wantj := si.want, si.want; wanti != wantj {
+				// Prefer a mount that will have a
+				// replica no matter what we do here
+				// -- either because it already has an
+				// untrashable replica, or because we
+				// already need it to satisfy a
+				// different storage class.
+				return slots[i].want
+			} else if orderi, orderj := srvRendezvous[si.mnt.KeepService], srvRendezvous[sj.mnt.KeepService]; orderi != orderj {
+				// Prefer a better rendezvous
+				// position.
+				return orderi < orderj
+			} else if repli, replj := si.repl != nil, sj.repl != nil; repli != replj {
+				// Prefer a mount that already has a
+				// replica.
+				return repli
+			} else {
+				// If pull/trash turns out to be
+				// needed, distribute the
+				// new/remaining replicas uniformly
+				// across qualifying mounts on a given
+				// server.
+				return rendezvousLess(si.mnt.DeviceID, sj.mnt.DeviceID, blkid)
+			}
+		})
+
+		// Servers and mounts (with or without existing
+		// replicas) that are part of the best achievable
+		// layout for this storage class.
+		wantSrv := map[*KeepService]bool{}
+		wantMnt := map[*KeepMount]bool{}
+		// Positions (with existing replicas) that have been
+		// protected (via unsafeToDelete) to ensure we don't
+		// reduce replication below desired level when
+		// trashing replicas that aren't optimal positions for
+		// any storage class.
+		protMnt := map[*KeepMount]bool{}
+
+		// trySlot tries using a slot to meet requirements,
+		// and returns true if all requirements are met.
+		trySlot := func(i int) bool {
+			slot := slots[i]
+			if len(protMnt) < desired && slot.repl != nil {
+				unsafeToDelete[slot.repl.Mtime] = true
+				protMnt[slot.mnt] = true
+			}
+			if len(wantMnt) < desired && (slot.repl != nil || !slot.mnt.ReadOnly) {
+				slots[i].want = true
+				wantSrv[slot.mnt.KeepService] = true
+				wantMnt[slot.mnt] = true
+			}
+			return len(protMnt) >= desired && len(wantMnt) >= desired
+		}
+
+		// First try to achieve desired replication without
+		// using the same server twice.
+		done := false
+		for i := 0; i < len(slots) && !done; i++ {
+			if !wantSrv[slots[i].mnt.KeepService] {
+				done = trySlot(i)
+			}
+		}
+
+		// If that didn't suffice, do another pass without the
+		// "distinct services" restriction. (Achieving the
+		// desired volume replication on fewer than the
+		// desired number of services is better than
+		// underreplicating.)
+		for i := 0; i < len(slots) && !done; i++ {
+			done = trySlot(i)
+		}
+
+		if !underreplicated {
+			safe := 0
+			for _, slot := range slots {
+				if slot.repl == nil || !bal.mountsByClass[class][slot.mnt] {
+					continue
+				}
+				if safe++; safe >= desired {
+					break
+				}
+			}
+			underreplicated = safe < desired
+		}
 	}
 
-	// number of replicas already found in positions better than
-	// the position we're contemplating now.
-	reportedBestRepl := 0
-	// To be safe we assume two replicas with the same Mtime are
-	// in fact the same replica being reported more than
-	// once. len(uniqueBestRepl) is the number of distinct
-	// replicas in the best rendezvous positions we've considered
-	// so far.
-	uniqueBestRepl := make(map[int64]bool, len(bal.serviceRoots))
-	// pulls is the number of Pull changes we have already
-	// requested. (For purposes of deciding whether to Pull to
-	// rendezvous position N, we should assume all pulls we have
-	// requested on rendezvous positions M<N will be successful.)
-	pulls := 0
+	// TODO: If multiple replicas are trashable, prefer the oldest
+	// replica that doesn't have a timestamp collision with
+	// others.
+
+	var have, want int
+	for _, slot := range slots {
+		if slot.want {
+			want++
+		}
+		if slot.repl != nil {
+			have++
+		}
+	}
+
 	var changes []string
 	for _, slot := range slots {
-		change := changeNone
-		srv, repl := slot.srv, slot.repl
 		// TODO: request a Touch if Mtime is duplicated.
-		if repl != nil {
-			// This service has a replica. We should
-			// delete it if [1] we already have enough
-			// distinct replicas in better rendezvous
-			// positions and [2] this replica's Mtime is
-			// distinct from all of the better replicas'
-			// Mtimes.
-			if !srv.ReadOnly &&
-				!repl.KeepMount.ReadOnly &&
-				repl.Mtime < bal.MinMtime &&
-				len(uniqueBestRepl) >= blk.Desired &&
-				!uniqueBestRepl[repl.Mtime] {
-				srv.AddTrash(Trash{
-					SizedDigest: blkid,
-					Mtime:       repl.Mtime,
-				})
-				change = changeTrash
-			} else {
-				change = changeStay
-			}
-			uniqueBestRepl[repl.Mtime] = true
-			reportedBestRepl++
-		} else if pulls+reportedBestRepl < blk.Desired &&
-			len(blk.Replicas) > 0 &&
-			!srv.ReadOnly {
-			// This service doesn't have a replica. We
-			// should pull one to this server if we don't
-			// already have enough (existing+requested)
-			// replicas in better rendezvous positions.
-			srv.AddPull(Pull{
+		var change int
+		switch {
+		case !underreplicated && slot.repl != nil && !slot.want && !unsafeToDelete[slot.repl.Mtime]:
+			slot.mnt.KeepService.AddTrash(Trash{
 				SizedDigest: blkid,
-				Source:      blk.Replicas[0].KeepService,
+				Mtime:       slot.repl.Mtime,
+				From:        slot.mnt,
 			})
-			pulls++
+			change = changeTrash
+		case len(blk.Replicas) == 0:
+			change = changeNone
+		case slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
+			slot.mnt.KeepService.AddPull(Pull{
+				SizedDigest: blkid,
+				From:        blk.Replicas[0].KeepMount.KeepService,
+				To:          slot.mnt,
+			})
 			change = changePull
+		default:
+			change = changeStay
 		}
 		if bal.Dumper != nil {
 			var mtime int64
-			if repl != nil {
-				mtime = repl.Mtime
+			if slot.repl != nil {
+				mtime = slot.repl.Mtime
 			}
-			changes = append(changes, fmt.Sprintf("%s:%d=%s,%d", srv.ServiceHost, srv.ServicePort, changeName[change], mtime))
+			srv := slot.mnt.KeepService
+			changes = append(changes, fmt.Sprintf("%s:%d/%s=%s,%d", srv.ServiceHost, srv.ServicePort, slot.mnt.UUID, changeName[change], mtime))
 		}
 	}
 	if bal.Dumper != nil {
-		bal.Dumper.Printf("%s have=%d want=%d %s", blkid, len(blk.Replicas), blk.Desired, strings.Join(changes, " "))
+		bal.Dumper.Printf("%s have=%d want=%v %s", blkid, have, want, strings.Join(changes, " "))
+	}
+	return balanceResult{
+		blk:   blk,
+		blkid: blkid,
+		have:  have,
+		want:  want,
 	}
 }
 
@@ -544,23 +669,24 @@ type balancerStats struct {
 	replHistogram                                      []int
 }
 
-func (bal *Balancer) getStatistics() (s balancerStats) {
+func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
+	var s balancerStats
 	s.replHistogram = make([]int, 2)
-	bal.BlockStateMap.Apply(func(blkid arvados.SizedDigest, blk *BlockState) {
-		surplus := len(blk.Replicas) - blk.Desired
-		bytes := blkid.Size()
+	for result := range results {
+		surplus := result.have - result.want
+		bytes := result.blkid.Size()
 		switch {
-		case len(blk.Replicas) == 0 && blk.Desired > 0:
+		case result.have == 0 && result.want > 0:
 			s.lost.replicas -= surplus
 			s.lost.blocks++
 			s.lost.bytes += bytes * int64(-surplus)
-		case len(blk.Replicas) < blk.Desired:
+		case surplus < 0:
 			s.underrep.replicas -= surplus
 			s.underrep.blocks++
 			s.underrep.bytes += bytes * int64(-surplus)
-		case len(blk.Replicas) > 0 && blk.Desired == 0:
+		case surplus > 0 && result.want == 0:
 			counter := &s.garbage
-			for _, r := range blk.Replicas {
+			for _, r := range result.blk.Replicas {
 				if r.Mtime >= bal.MinMtime {
 					counter = &s.unref
 					break
@@ -569,67 +695,66 @@ func (bal *Balancer) getStatistics() (s balancerStats) {
 			counter.replicas += surplus
 			counter.blocks++
 			counter.bytes += bytes * int64(surplus)
-		case len(blk.Replicas) > blk.Desired:
+		case surplus > 0:
 			s.overrep.replicas += surplus
 			s.overrep.blocks++
-			s.overrep.bytes += bytes * int64(len(blk.Replicas)-blk.Desired)
+			s.overrep.bytes += bytes * int64(len(result.blk.Replicas)-result.want)
 		default:
-			s.justright.replicas += blk.Desired
+			s.justright.replicas += result.want
 			s.justright.blocks++
-			s.justright.bytes += bytes * int64(blk.Desired)
+			s.justright.bytes += bytes * int64(result.want)
 		}
 
-		if blk.Desired > 0 {
-			s.desired.replicas += blk.Desired
+		if result.want > 0 {
+			s.desired.replicas += result.want
 			s.desired.blocks++
-			s.desired.bytes += bytes * int64(blk.Desired)
+			s.desired.bytes += bytes * int64(result.want)
 		}
-		if len(blk.Replicas) > 0 {
-			s.current.replicas += len(blk.Replicas)
+		if len(result.blk.Replicas) > 0 {
+			s.current.replicas += len(result.blk.Replicas)
 			s.current.blocks++
-			s.current.bytes += bytes * int64(len(blk.Replicas))
+			s.current.bytes += bytes * int64(len(result.blk.Replicas))
 		}
 
-		for len(s.replHistogram) <= len(blk.Replicas) {
+		for len(s.replHistogram) <= len(result.blk.Replicas) {
 			s.replHistogram = append(s.replHistogram, 0)
 		}
-		s.replHistogram[len(blk.Replicas)]++
-	})
+		s.replHistogram[len(result.blk.Replicas)]++
+	}
 	for _, srv := range bal.KeepServices {
 		s.pulls += len(srv.ChangeSet.Pulls)
 		s.trashes += len(srv.ChangeSet.Trashes)
 	}
-	return
+	bal.stats = s
 }
 
 // PrintStatistics writes statistics about the computed changes to
 // bal.Logger. It should not be called until ComputeChangeSets has
 // finished.
 func (bal *Balancer) PrintStatistics() {
-	s := bal.getStatistics()
 	bal.logf("===")
-	bal.logf("%s lost (0=have<want)", s.lost)
-	bal.logf("%s underreplicated (0<have<want)", s.underrep)
-	bal.logf("%s just right (have=want)", s.justright)
-	bal.logf("%s overreplicated (have>want>0)", s.overrep)
-	bal.logf("%s unreferenced (have>want=0, new)", s.unref)
-	bal.logf("%s garbage (have>want=0, old)", s.garbage)
+	bal.logf("%s lost (0=have<want)", bal.stats.lost)
+	bal.logf("%s underreplicated (0<have<want)", bal.stats.underrep)
+	bal.logf("%s just right (have=want)", bal.stats.justright)
+	bal.logf("%s overreplicated (have>want>0)", bal.stats.overrep)
+	bal.logf("%s unreferenced (have>want=0, new)", bal.stats.unref)
+	bal.logf("%s garbage (have>want=0, old)", bal.stats.garbage)
 	bal.logf("===")
-	bal.logf("%s total commitment (excluding unreferenced)", s.desired)
-	bal.logf("%s total usage", s.current)
+	bal.logf("%s total commitment (excluding unreferenced)", bal.stats.desired)
+	bal.logf("%s total usage", bal.stats.current)
 	bal.logf("===")
 	for _, srv := range bal.KeepServices {
 		bal.logf("%s: %v\n", srv, srv.ChangeSet)
 	}
 	bal.logf("===")
-	bal.printHistogram(s, 60)
+	bal.printHistogram(60)
 	bal.logf("===")
 }
 
-func (bal *Balancer) printHistogram(s balancerStats, hashColumns int) {
+func (bal *Balancer) printHistogram(hashColumns int) {
 	bal.logf("Replication level distribution (counting N replicas on a single server as N):")
 	maxCount := 0
-	for _, count := range s.replHistogram {
+	for _, count := range bal.stats.replHistogram {
 		if maxCount < count {
 			maxCount = count
 		}
@@ -637,7 +762,7 @@ func (bal *Balancer) printHistogram(s balancerStats, hashColumns int) {
 	hashes := strings.Repeat("#", hashColumns)
 	countWidth := 1 + int(math.Log10(float64(maxCount+1)))
 	scaleCount := 10 * float64(hashColumns) / math.Floor(1+10*math.Log10(float64(maxCount+1)))
-	for repl, count := range s.replHistogram {
+	for repl, count := range bal.stats.replHistogram {
 		nHashes := int(scaleCount * math.Log10(float64(count+1)))
 		bal.logf("%2d: %*d %s", repl, countWidth, count, hashes[:nHashes])
 	}
@@ -661,8 +786,11 @@ func (bal *Balancer) CheckSanityLate() error {
 
 	anyDesired := false
 	bal.BlockStateMap.Apply(func(_ arvados.SizedDigest, blk *BlockState) {
-		if blk.Desired > 0 {
-			anyDesired = true
+		for _, desired := range blk.Desired {
+			if desired > 0 {
+				anyDesired = true
+				break
+			}
 		}
 	})
 	if !anyDesired {
@@ -728,4 +856,12 @@ func (bal *Balancer) logf(f string, args ...interface{}) {
 	if bal.Logger != nil {
 		bal.Logger.Printf(f, args...)
 	}
+}
+
+// Rendezvous hash sort function. Less efficient than sorting on
+// precomputed rendezvous hashes, but also rarely used.
+func rendezvousLess(i, j string, blkid arvados.SizedDigest) bool {
+	a := md5.Sum([]byte(string(blkid[:32]) + i))
+	b := md5.Sum([]byte(string(blkid[:32]) + j))
+	return bytes.Compare(a[:], b[:]) < 0
 }

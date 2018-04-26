@@ -413,10 +413,9 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	}
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
-	stats := bal.getStatistics()
-	c.Check(stats.pulls, check.Not(check.Equals), 0)
-	c.Check(stats.underrep.replicas, check.Not(check.Equals), 0)
-	c.Check(stats.overrep.replicas, check.Not(check.Equals), 0)
+	c.Check(bal.stats.pulls, check.Not(check.Equals), 0)
+	c.Check(bal.stats.underrep.replicas, check.Not(check.Equals), 0)
+	c.Check(bal.stats.overrep.replicas, check.Not(check.Equals), 0)
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
@@ -438,12 +437,11 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
-	stats := bal.getStatistics()
 	// "foo" block is overreplicated by 2
-	c.Check(stats.trashes, check.Equals, 2)
+	c.Check(bal.stats.trashes, check.Equals, 2)
 	// "bar" block is underreplicated by 1, and its only copy is
 	// in a poor rendezvous position
-	c.Check(stats.pulls, check.Equals, 2)
+	c.Check(bal.stats.pulls, check.Equals, 2)
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
