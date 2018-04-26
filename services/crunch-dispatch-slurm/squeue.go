@@ -171,7 +171,10 @@ func (sqc *SqueueChecker) check() {
 			// reappeared, so rather than second-guessing
 			// whether SLURM is ready, we just keep trying
 			// this until it works.
+			log.Printf("releasing held job %q", uuid)
 			sqc.Slurm.Release(uuid)
+		} else if p < 1<<20 && replacing.wantPriority > 0 {
+			log.Printf("warning: job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
 		}
 	}
 	sqc.queue = newq
