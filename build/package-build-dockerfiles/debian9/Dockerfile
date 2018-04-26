@@ -21,7 +21,7 @@ RUN gpg --import /tmp/D39DC0E3.asc && \
     /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
 
 # Install golang binary
-ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.10.1.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm
