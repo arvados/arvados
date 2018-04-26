@@ -40,8 +40,6 @@ navbar:
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
-    #  - user/topics/running-pipeline-command-line.html.textile.liquid
-    #  - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -51,23 +49,25 @@ navbar:
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
-    #  - user/tutorials/running-external-program.html.textile.liquid
-    #  - user/topics/crunch-tools-overview.html.textile.liquid
-    #  - user/tutorials/tutorial-firstscript.html.textile.liquid
-    #  - user/tutorials/tutorial-submit-job.html.textile.liquid
-    #  - user/topics/tutorial-parallel.html.textile.liquid
     - Reference:
       - user/reference/cookbook.html.textile.liquid
-    #  - user/topics/run-command.html.textile.liquid
-    #  - user/reference/job-pipeline-ref.html.textile.liquid
-    #  - user/examples/crunch-examples.html.textile.liquid
-    #- Query the metadata database:
-    #  - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
       - user/copying/agpl-3.0.html
       - user/copying/LICENSE-2.0.html
       - user/copying/by-sa-3.0.html
+    - Obsolete documentation:
+      - user/topics/running-pipeline-command-line.html.textile.liquid
+      - user/topics/arv-run.html.textile.liquid
+      - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
+      - user/tutorials/tutorial-firstscript.html.textile.liquid
+      - user/tutorials/tutorial-submit-job.html.textile.liquid
+      - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/run-command.html.textile.liquid
+      - user/reference/job-pipeline-ref.html.textile.liquid
+      - user/examples/crunch-examples.html.textile.liquid
+      - user/topics/tutorial-trait-search.html.textile.liquid
   sdk:
     - Overview:
       - sdk/index.html.textile.liquid
@@ -75,10 +75,10 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
-    #  - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/events.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
+      - sdk/python/crunch-utility-libraries.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
