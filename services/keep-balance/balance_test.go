@@ -362,7 +362,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 // the appropriate changes for that block have been added to the
 // changesets.
 func (bal *balancerSuite) try(c *check.C, t tester) {
-	bal.setupCaches()
+	bal.setupLookupTables()
 	blk := &BlockState{
 		Replicas: bal.replList(t.known, t.current),
 		Desired:  t.desired,

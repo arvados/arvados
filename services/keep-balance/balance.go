@@ -51,6 +51,7 @@ type Balancer struct {
 	MinMtime           int64
 
 	classes       []string
+	mounts        int
 	mountsByClass map[string]map[*KeepMount]bool
 	collScanned   int
 	serviceRoots  map[string]string
@@ -358,7 +359,7 @@ func (bal *Balancer) ComputeChangeSets() {
 	// This just calls balanceBlock() once for each block, using a
 	// pool of worker goroutines.
 	defer timeMe(bal.Logger, "ComputeChangeSets")()
-	bal.setupCaches()
+	bal.setupLookupTables()
 
 	type balanceTask struct {
 		blkid arvados.SizedDigest
@@ -391,13 +392,16 @@ func (bal *Balancer) ComputeChangeSets() {
 	bal.collectStatistics(results)
 }
 
-func (bal *Balancer) setupCaches() {
+func (bal *Balancer) setupLookupTables() {
 	bal.serviceRoots = make(map[string]string)
 	bal.classes = []string{"default"}
 	bal.mountsByClass = map[string]map[*KeepMount]bool{"default": {}}
+	bal.mounts = 0
 	for _, srv := range bal.KeepServices {
 		bal.serviceRoots[srv.UUID] = srv.UUID
 		for _, mnt := range srv.mounts {
+			bal.mounts++
+
 			// All mounts on a read-only service are
 			// effectively read-only.
 			mnt.ReadOnly = mnt.ReadOnly || srv.ReadOnly
@@ -457,7 +461,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	}
 
 	// Build a list of all slots (one per mounted volume).
-	var slots []slot
+	slots := make([]slot, 0, bal.mounts)
 	for _, srv := range bal.KeepServices {
 		for _, mnt := range srv.mounts {
 			var repl *Replica
