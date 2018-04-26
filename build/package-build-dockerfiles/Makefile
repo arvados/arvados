@@ -28,7 +28,7 @@ ubuntu1604/generated: common-generated-all
 	test -d ubuntu1604/generated || mkdir ubuntu1604/generated
 	cp -rlt ubuntu1604/generated common-generated/*
 
-GOTARBALL=go1.9.5.linux-amd64.tar.gz
+GOTARBALL=go1.10.1.linux-amd64.tar.gz
 NODETARBALL=node-v6.11.2-linux-x64.tar.xz
 
 common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
