@@ -25,6 +25,14 @@ type Replica struct {
 type BlockState struct {
 	Replicas []Replica
 	Desired  map[string]int
+	// TODO: Support combinations of classes ("private + durable")
+	// by replacing the map[string]int with a map[*[]string]int
+	// here, where the map keys come from a pool of semantically
+	// distinct class combinations.
+	//
+	// TODO: Use a pool of semantically distinct Desired maps to
+	// conserve memory (typically there are far more BlockState
+	// objects in memory than distinct Desired profiles).
 }
 
 var defaultClasses = []string{"default"}
