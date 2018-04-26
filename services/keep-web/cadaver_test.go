@@ -6,11 +6,13 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,34 +21,64 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
+func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
+	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
+		r := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/"
+		w := "/c=" + newCollection.UUID + "/"
+		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
+		return r, w, pdh
+	}, nil)
+}
+
+func (s *IntegrationSuite) TestCadaverPathAuth(c *check.C) {
+	s.testCadaver(c, "", func(newCollection arvados.Collection) (string, string, string) {
+		r := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/"
+		w := "/c=" + newCollection.UUID + "/t=" + arvadostest.ActiveToken + "/"
+		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arvadostest.ActiveToken + "/"
+		return r, w, pdh
+	}, nil)
+}
+
+func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
+	rpath := "/users/active/foo_file_in_dir/"
+	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
+		wpath := "/users/active/" + newCollection.Name
+		pdh := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/"
+		return rpath, wpath, pdh
+	}, func(path string) bool {
+		// Skip tests that rely on writes, because /users/
+		// tree is read-only.
+		return !strings.HasPrefix(path, rpath) || strings.HasPrefix(path, rpath+"_/")
+	})
+}
+
+func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
-	localfile, err := ioutil.TempFile("", "localfile")
+	tempdir, err := ioutil.TempDir("", "keep-web-test-")
 	c.Assert(err, check.IsNil)
-	defer os.Remove(localfile.Name())
+	defer os.RemoveAll(tempdir)
+
+	localfile, err := ioutil.TempFile(tempdir, "localfile")
+	c.Assert(err, check.IsNil)
 	localfile.Write(testdata)
 
-	emptyfile, err := ioutil.TempFile("", "emptyfile")
+	emptyfile, err := ioutil.TempFile(tempdir, "emptyfile")
 	c.Assert(err, check.IsNil)
-	defer os.Remove(emptyfile.Name())
 
-	checkfile, err := ioutil.TempFile("", "checkfile")
+	checkfile, err := ioutil.TempFile(tempdir, "checkfile")
 	c.Assert(err, check.IsNil)
-	defer os.Remove(checkfile.Name())
 
 	var newCollection arvados.Collection
 	arv := arvados.NewClientFromEnv()
 	arv.AuthToken = arvadostest.ActiveToken
 	err = arv.RequestAndDecode(&newCollection, "POST", "/arvados/v1/collections", bytes.NewBufferString(url.Values{"collection": {"{}"}}.Encode()), nil)
 	c.Assert(err, check.IsNil)
-	writePath := "/c=" + newCollection.UUID + "/t=" + arv.AuthToken + "/"
 
-	pdhPath := "/c=" + strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + "/t=" + arv.AuthToken + "/"
+	readPath, writePath, pdhPath := pathFunc(newCollection)
 
 	matchToday := time.Now().Format("Jan +2")
 
-	readPath := "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/"
 	type testcase struct {
 		path  string
 		cmd   string
@@ -211,22 +243,15 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)
+		if skip != nil && skip(trial.path) {
+			c.Log("(skip)")
+			continue
+		}
 
 		os.Remove(checkfile.Name())
 
-		cmd := exec.Command("cadaver", "http://"+s.testServer.Addr+trial.path)
-		cmd.Stdin = bytes.NewBufferString(trial.cmd)
-		stdout, err := cmd.StdoutPipe()
-		c.Assert(err, check.Equals, nil)
-		cmd.Stderr = cmd.Stdout
-		go cmd.Start()
-
-		var buf bytes.Buffer
-		_, err = io.Copy(&buf, stdout)
-		c.Check(err, check.Equals, nil)
-		err = cmd.Wait()
-		c.Check(err, check.Equals, nil)
-		c.Check(buf.String(), check.Matches, trial.match)
+		stdout := s.runCadaver(c, password, trial.path, trial.cmd)
+		c.Check(stdout, check.Matches, trial.match)
 
 		if trial.data == nil {
 			continue
@@ -238,4 +263,76 @@ func (s *IntegrationSuite) TestWebdavWithCadaver(c *check.C) {
 		c.Check(got, check.DeepEquals, trial.data)
 		c.Check(err, check.IsNil)
 	}
+}
+
+func (s *IntegrationSuite) TestCadaverByID(c *check.C) {
+	for _, path := range []string{"/by_id", "/by_id/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*collection is empty.*`)
+	}
+	for _, path := range []string{
+		"/by_id/" + arvadostest.FooPdh,
+		"/by_id/" + arvadostest.FooPdh + "/",
+		"/by_id/" + arvadostest.FooCollection,
+		"/by_id/" + arvadostest.FooCollection + "/",
+	} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*\s+foo\s+3 .*`)
+	}
+}
+
+func (s *IntegrationSuite) TestCadaverUsersDir(c *check.C) {
+	for _, path := range []string{"/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+by_id\s+0 .*`)
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+users\s+0 .*`)
+	}
+	for _, path := range []string{"/users", "/users/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+active.*`)
+	}
+	for _, path := range []string{"/users/active", "/users/active/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+A Project\s+0 .*`)
+		c.Check(stdout, check.Matches, `(?ms).*Coll:\s+bar_file\s+0 .*`)
+	}
+	for _, path := range []string{"/users/admin", "/users/doesnotexist", "/users/doesnotexist/"} {
+		stdout := s.runCadaver(c, arvadostest.ActiveToken, path, "ls")
+		c.Check(stdout, check.Matches, `(?ms).*404 Not Found.*`)
+	}
+}
+
+func (s *IntegrationSuite) runCadaver(c *check.C, password, path, stdin string) string {
+	tempdir, err := ioutil.TempDir("", "keep-web-test-")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tempdir)
+
+	cmd := exec.Command("cadaver", "http://"+s.testServer.Addr+path)
+	if password != "" {
+		// cadaver won't try username/password authentication
+		// unless the server responds 401 to an
+		// unauthenticated request, which it only does in
+		// AttachmentOnlyHost, TrustAllContent, and
+		// per-collection vhost cases.
+		s.testServer.Config.AttachmentOnlyHost = s.testServer.Addr
+
+		cmd.Env = append(os.Environ(), "HOME="+tempdir)
+		f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+		c.Assert(err, check.IsNil)
+		_, err = fmt.Fprintf(f, "default login none password %s\n", password)
+		c.Assert(err, check.IsNil)
+		c.Assert(f.Close(), check.IsNil)
+	}
+	cmd.Stdin = bytes.NewBufferString(stdin)
+	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.Equals, nil)
+	cmd.Stderr = cmd.Stdout
+	go cmd.Start()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, stdout)
+	c.Check(err, check.Equals, nil)
+	err = cmd.Wait()
+	c.Check(err, check.Equals, nil)
+	return buf.String()
 }

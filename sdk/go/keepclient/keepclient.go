@@ -200,6 +200,15 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil
 	}
 
+	var expectLength int64
+	if parts := strings.SplitN(locator, "+", 3); len(parts) < 2 {
+		expectLength = -1
+	} else if n, err := strconv.ParseInt(parts[1], 10, 64); err != nil {
+		expectLength = -1
+	} else {
+		expectLength = n
+	}
+
 	var errs []string
 
 	tries_remaining := 1 + kc.Retries
@@ -230,7 +239,9 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				// can try again.
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				retryList = append(retryList, host)
-			} else if resp.StatusCode != http.StatusOK {
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
 				var respbody []byte
 				respbody, _ = ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 				resp.Body.Close()
@@ -247,24 +258,29 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				} else if resp.StatusCode == 404 {
 					count404++
 				}
-			} else if resp.ContentLength < 0 {
-				// Missing Content-Length
-				resp.Body.Close()
-				return nil, 0, "", fmt.Errorf("Missing Content-Length of block")
-			} else {
-				// Success.
-				if method == "GET" {
-					return HashCheckingReader{
-						Reader: resp.Body,
-						Hash:   md5.New(),
-						Check:  locator[0:32],
-					}, resp.ContentLength, url, nil
-				} else {
-					resp.Body.Close()
-					return nil, resp.ContentLength, url, nil
-				}
+				continue
 			}
-
+			if expectLength < 0 {
+				if resp.ContentLength < 0 {
+					resp.Body.Close()
+					return nil, 0, "", fmt.Errorf("error reading %q: no size hint, no Content-Length header in response", locator)
+				}
+				expectLength = resp.ContentLength
+			} else if resp.ContentLength >= 0 && expectLength != resp.ContentLength {
+				resp.Body.Close()
+				return nil, 0, "", fmt.Errorf("error reading %q: size hint %d != Content-Length %d", locator, expectLength, resp.ContentLength)
+			}
+			// Success
+			if method == "GET" {
+				return HashCheckingReader{
+					Reader: resp.Body,
+					Hash:   md5.New(),
+					Check:  locator[0:32],
+				}, expectLength, url, nil
+			} else {
+				resp.Body.Close()
+				return nil, expectLength, url, nil
+			}
 		}
 		serversToTry = retryList
 	}

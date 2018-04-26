@@ -1,39 +1,2148 @@
-source("./R/RESTService.R")
-source("./R/HttpRequest.R")
-source("./R/HttpParser.R")
+#' users.get
+#' 
+#' users.get is a method defined in Arvados class.
+#' 
+#' @usage arv$users.get(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.get
+NULL
+
+#' users.create
+#' 
+#' users.create is a method defined in Arvados class.
+#' 
+#' @usage arv$users.create(user, ensure_unique_name = "false")
+#' @param user User object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return User object.
+#' @name users.create
+NULL
+
+#' users.update
+#' 
+#' users.update is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update(user, uuid)
+#' @param user User object.
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.update
+NULL
+
+#' users.delete
+#' 
+#' users.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$users.delete(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.delete
+NULL
+
+#' users.current
+#' 
+#' users.current is a method defined in Arvados class.
+#' 
+#' @usage arv$users.current(NULL)
+#' @return User object.
+#' @name users.current
+NULL
+
+#' users.system
+#' 
+#' users.system is a method defined in Arvados class.
+#' 
+#' @usage arv$users.system(NULL)
+#' @return User object.
+#' @name users.system
+NULL
+
+#' users.activate
+#' 
+#' users.activate is a method defined in Arvados class.
+#' 
+#' @usage arv$users.activate(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.activate
+NULL
+
+#' users.setup
+#' 
+#' users.setup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.setup(user = NULL, openid_prefix = NULL,
+#' 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
+#' @param user 
+#' @param openid_prefix 
+#' @param repo_name 
+#' @param vm_uuid 
+#' @param send_notification_email 
+#' @return User object.
+#' @name users.setup
+NULL
+
+#' users.unsetup
+#' 
+#' users.unsetup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.unsetup(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.unsetup
+NULL
+
+#' users.update_uuid
+#' 
+#' users.update_uuid is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update_uuid(uuid, new_uuid)
+#' @param uuid 
+#' @param new_uuid 
+#' @return User object.
+#' @name users.update_uuid
+NULL
+
+#' users.list
+#' 
+#' users.list is a method defined in Arvados class.
+#' 
+#' @usage arv$users.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserList object.
+#' @name users.list
+NULL
+
+#' api_client_authorizations.get
+#' 
+#' api_client_authorizations.get is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.get(uuid)
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.get
+NULL
+
+#' api_client_authorizations.create
+#' 
+#' api_client_authorizations.create is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.create(apiclientauthorization,
+#' 	ensure_unique_name = "false")
+#' @param apiClientAuthorization ApiClientAuthorization object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.create
+NULL
+
+#' api_client_authorizations.update
+#' 
+#' api_client_authorizations.update is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.update(apiclientauthorization,
+#' 	uuid)
+#' @param apiClientAuthorization ApiClientAuthorization object.
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.update
+NULL
+
+#' api_client_authorizations.delete
+#' 
+#' api_client_authorizations.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.delete(uuid)
+#' @param uuid The UUID of the ApiClientAuthorization in question.
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.delete
+NULL
+
+#' api_client_authorizations.create_system_auth
+#' 
+#' api_client_authorizations.create_system_auth is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.create_system_auth(api_client_id = NULL,
+#' 	scopes = NULL)
+#' @param api_client_id 
+#' @param scopes 
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.create_system_auth
+NULL
+
+#' api_client_authorizations.current
+#' 
+#' api_client_authorizations.current is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.current(NULL)
+#' @return ApiClientAuthorization object.
+#' @name api_client_authorizations.current
+NULL
+
+#' api_client_authorizations.list
+#' 
+#' api_client_authorizations.list is a method defined in Arvados class.
+#' 
+#' @usage arv$api_client_authorizations.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientAuthorizationList object.
+#' @name api_client_authorizations.list
+NULL
+
+#' containers.get
+#' 
+#' containers.get is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.get(uuid)
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.get
+NULL
+
+#' containers.create
+#' 
+#' containers.create is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.create(container,
+#' 	ensure_unique_name = "false")
+#' @param container Container object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Container object.
+#' @name containers.create
+NULL
+
+#' containers.update
+#' 
+#' containers.update is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.update(container,
+#' 	uuid)
+#' @param container Container object.
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.update
+NULL
+
+#' containers.delete
+#' 
+#' containers.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.delete(uuid)
+#' @param uuid The UUID of the Container in question.
+#' @return Container object.
+#' @name containers.delete
+NULL
+
+#' containers.auth
+#' 
+#' containers.auth is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.auth(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.auth
+NULL
+
+#' containers.lock
+#' 
+#' containers.lock is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.lock(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.lock
+NULL
+
+#' containers.unlock
+#' 
+#' containers.unlock is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.unlock(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.unlock
+NULL
+
+#' containers.secret_mounts
+#' 
+#' containers.secret_mounts is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.secret_mounts(uuid)
+#' @param uuid 
+#' @return Container object.
+#' @name containers.secret_mounts
+NULL
+
+#' containers.current
+#' 
+#' containers.current is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.current(NULL)
+#' @return Container object.
+#' @name containers.current
+NULL
+
+#' containers.list
+#' 
+#' containers.list is a method defined in Arvados class.
+#' 
+#' @usage arv$containers.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerList object.
+#' @name containers.list
+NULL
+
+#' api_clients.get
+#' 
+#' api_clients.get is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.get(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.get
+NULL
+
+#' api_clients.create
+#' 
+#' api_clients.create is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.create(apiclient,
+#' 	ensure_unique_name = "false")
+#' @param apiClient ApiClient object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ApiClient object.
+#' @name api_clients.create
+NULL
+
+#' api_clients.update
+#' 
+#' api_clients.update is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.update(apiclient,
+#' 	uuid)
+#' @param apiClient ApiClient object.
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.update
+NULL
+
+#' api_clients.delete
+#' 
+#' api_clients.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.delete(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.delete
+NULL
+
+#' api_clients.list
+#' 
+#' api_clients.list is a method defined in Arvados class.
+#' 
+#' @usage arv$api_clients.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ApiClientList object.
+#' @name api_clients.list
+NULL
+
+#' authorized_keys.get
+#' 
+#' authorized_keys.get is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.get(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.get
+NULL
+
+#' authorized_keys.create
+#' 
+#' authorized_keys.create is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.create(authorizedkey,
+#' 	ensure_unique_name = "false")
+#' @param authorizedKey AuthorizedKey object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.create
+NULL
+
+#' authorized_keys.update
+#' 
+#' authorized_keys.update is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.update(authorizedkey,
+#' 	uuid)
+#' @param authorizedKey AuthorizedKey object.
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.update
+NULL
+
+#' authorized_keys.delete
+#' 
+#' authorized_keys.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.delete(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.delete
+NULL
+
+#' authorized_keys.list
+#' 
+#' authorized_keys.list is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return AuthorizedKeyList object.
+#' @name authorized_keys.list
+NULL
+
+#' container_requests.get
+#' 
+#' container_requests.get is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.get(uuid)
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.get
+NULL
+
+#' container_requests.create
+#' 
+#' container_requests.create is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.create(containerrequest,
+#' 	ensure_unique_name = "false")
+#' @param containerRequest ContainerRequest object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return ContainerRequest object.
+#' @name container_requests.create
+NULL
+
+#' container_requests.update
+#' 
+#' container_requests.update is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.update(containerrequest,
+#' 	uuid)
+#' @param containerRequest ContainerRequest object.
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.update
+NULL
+
+#' container_requests.delete
+#' 
+#' container_requests.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.delete(uuid)
+#' @param uuid The UUID of the ContainerRequest in question.
+#' @return ContainerRequest object.
+#' @name container_requests.delete
+NULL
+
+#' container_requests.list
+#' 
+#' container_requests.list is a method defined in Arvados class.
+#' 
+#' @usage arv$container_requests.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return ContainerRequestList object.
+#' @name container_requests.list
+NULL
+
+#' collections.get
+#' 
+#' collections.get is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.get(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.get
+NULL
+
+#' collections.create
+#' 
+#' collections.create is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.create(collection,
+#' 	ensure_unique_name = "false")
+#' @param collection Collection object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Collection object.
+#' @name collections.create
+NULL
+
+#' collections.update
+#' 
+#' collections.update is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.update(collection,
+#' 	uuid)
+#' @param collection Collection object.
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.update
+NULL
+
+#' collections.delete
+#' 
+#' collections.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.delete(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.delete
+NULL
+
+#' collections.provenance
+#' 
+#' collections.provenance is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.provenance(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.provenance
+NULL
+
+#' collections.used_by
+#' 
+#' collections.used_by is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.used_by(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.used_by
+NULL
+
+#' collections.trash
+#' 
+#' collections.trash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.trash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.trash
+NULL
+
+#' collections.untrash
+#' 
+#' collections.untrash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.untrash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.untrash
+NULL
+
+#' collections.list
+#' 
+#' collections.list is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include collections whose is_trashed attribute is true.
+#' @return CollectionList object.
+#' @name collections.list
+NULL
+
+#' humans.get
+#' 
+#' humans.get is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.get(uuid)
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.get
+NULL
+
+#' humans.create
+#' 
+#' humans.create is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.create(human, ensure_unique_name = "false")
+#' @param human Human object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Human object.
+#' @name humans.create
+NULL
+
+#' humans.update
+#' 
+#' humans.update is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.update(human, uuid)
+#' @param human Human object.
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.update
+NULL
+
+#' humans.delete
+#' 
+#' humans.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.delete(uuid)
+#' @param uuid The UUID of the Human in question.
+#' @return Human object.
+#' @name humans.delete
+NULL
+
+#' humans.list
+#' 
+#' humans.list is a method defined in Arvados class.
+#' 
+#' @usage arv$humans.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return HumanList object.
+#' @name humans.list
+NULL
+
+#' job_tasks.get
+#' 
+#' job_tasks.get is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.get(uuid)
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.get
+NULL
+
+#' job_tasks.create
+#' 
+#' job_tasks.create is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.create(jobtask, ensure_unique_name = "false")
+#' @param jobTask JobTask object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return JobTask object.
+#' @name job_tasks.create
+NULL
+
+#' job_tasks.update
+#' 
+#' job_tasks.update is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.update(jobtask, uuid)
+#' @param jobTask JobTask object.
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.update
+NULL
+
+#' job_tasks.delete
+#' 
+#' job_tasks.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.delete(uuid)
+#' @param uuid The UUID of the JobTask in question.
+#' @return JobTask object.
+#' @name job_tasks.delete
+NULL
+
+#' job_tasks.list
+#' 
+#' job_tasks.list is a method defined in Arvados class.
+#' 
+#' @usage arv$job_tasks.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobTaskList object.
+#' @name job_tasks.list
+NULL
+
+#' links.get
+#' 
+#' links.get is a method defined in Arvados class.
+#' 
+#' @usage arv$links.get(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.get
+NULL
+
+#' links.create
+#' 
+#' links.create is a method defined in Arvados class.
+#' 
+#' @usage arv$links.create(link, ensure_unique_name = "false")
+#' @param link Link object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Link object.
+#' @name links.create
+NULL
+
+#' links.update
+#' 
+#' links.update is a method defined in Arvados class.
+#' 
+#' @usage arv$links.update(link, uuid)
+#' @param link Link object.
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.update
+NULL
+
+#' links.delete
+#' 
+#' links.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$links.delete(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.delete
+NULL
+
+#' links.list
+#' 
+#' links.list is a method defined in Arvados class.
+#' 
+#' @usage arv$links.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LinkList object.
+#' @name links.list
+NULL
+
+#' links.get_permissions
+#' 
+#' links.get_permissions is a method defined in Arvados class.
+#' 
+#' @usage arv$links.get_permissions(uuid)
+#' @param uuid 
+#' @return Link object.
+#' @name links.get_permissions
+NULL
+
+#' jobs.get
+#' 
+#' jobs.get is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.get(uuid)
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.get
+NULL
+
+#' jobs.create
+#' 
+#' jobs.create is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.create(job, ensure_unique_name = "false",
+#' 	find_or_create = "false", filters = NULL,
+#' 	minimum_script_version = NULL, exclude_script_versions = NULL)
+#' @param job Job object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param find_or_create 
+#' @param filters 
+#' @param minimum_script_version 
+#' @param exclude_script_versions 
+#' @return Job object.
+#' @name jobs.create
+NULL
+
+#' jobs.update
+#' 
+#' jobs.update is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.update(job, uuid)
+#' @param job Job object.
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.update
+NULL
+
+#' jobs.delete
+#' 
+#' jobs.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.delete(uuid)
+#' @param uuid The UUID of the Job in question.
+#' @return Job object.
+#' @name jobs.delete
+NULL
+
+#' jobs.queue
+#' 
+#' jobs.queue is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.queue(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return Job object.
+#' @name jobs.queue
+NULL
+
+#' jobs.queue_size
+#' 
+#' jobs.queue_size is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.queue_size(NULL)
+#' @return Job object.
+#' @name jobs.queue_size
+NULL
+
+#' jobs.cancel
+#' 
+#' jobs.cancel is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.cancel(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.cancel
+NULL
+
+#' jobs.lock
+#' 
+#' jobs.lock is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.lock(uuid)
+#' @param uuid 
+#' @return Job object.
+#' @name jobs.lock
+NULL
+
+#' jobs.list
+#' 
+#' jobs.list is a method defined in Arvados class.
+#' 
+#' @usage arv$jobs.list(filters = NULL, where = NULL,
+#' 	order = NULL, select = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return JobList object.
+#' @name jobs.list
+NULL
+
+#' keep_disks.get
+#' 
+#' keep_disks.get is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.get(uuid)
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.get
+NULL
+
+#' keep_disks.create
+#' 
+#' keep_disks.create is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.create(keepdisk,
+#' 	ensure_unique_name = "false")
+#' @param keepDisk KeepDisk object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return KeepDisk object.
+#' @name keep_disks.create
+NULL
+
+#' keep_disks.update
+#' 
+#' keep_disks.update is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.update(keepdisk,
+#' 	uuid)
+#' @param keepDisk KeepDisk object.
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.update
+NULL
+
+#' keep_disks.delete
+#' 
+#' keep_disks.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.delete(uuid)
+#' @param uuid The UUID of the KeepDisk in question.
+#' @return KeepDisk object.
+#' @name keep_disks.delete
+NULL
+
+#' keep_disks.ping
+#' 
+#' keep_disks.ping is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.ping(uuid = NULL,
+#' 	ping_secret, node_uuid = NULL, filesystem_uuid = NULL,
+#' 	service_host = NULL, service_port, service_ssl_flag)
+#' @param uuid 
+#' @param ping_secret 
+#' @param node_uuid 
+#' @param filesystem_uuid 
+#' @param service_host 
+#' @param service_port 
+#' @param service_ssl_flag 
+#' @return KeepDisk object.
+#' @name keep_disks.ping
+NULL
+
+#' keep_disks.list
+#' 
+#' keep_disks.list is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_disks.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepDiskList object.
+#' @name keep_disks.list
+NULL
+
+#' keep_services.get
+#' 
+#' keep_services.get is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.get(uuid)
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.get
+NULL
+
+#' keep_services.create
+#' 
+#' keep_services.create is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.create(keepservice,
+#' 	ensure_unique_name = "false")
+#' @param keepService KeepService object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return KeepService object.
+#' @name keep_services.create
+NULL
+
+#' keep_services.update
+#' 
+#' keep_services.update is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.update(keepservice,
+#' 	uuid)
+#' @param keepService KeepService object.
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.update
+NULL
+
+#' keep_services.delete
+#' 
+#' keep_services.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.delete(uuid)
+#' @param uuid The UUID of the KeepService in question.
+#' @return KeepService object.
+#' @name keep_services.delete
+NULL
+
+#' keep_services.accessible
+#' 
+#' keep_services.accessible is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.accessible(NULL)
+#' @return KeepService object.
+#' @name keep_services.accessible
+NULL
+
+#' keep_services.list
+#' 
+#' keep_services.list is a method defined in Arvados class.
+#' 
+#' @usage arv$keep_services.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return KeepServiceList object.
+#' @name keep_services.list
+NULL
+
+#' pipeline_templates.get
+#' 
+#' pipeline_templates.get is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.get(uuid)
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.get
+NULL
+
+#' pipeline_templates.create
+#' 
+#' pipeline_templates.create is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.create(pipelinetemplate,
+#' 	ensure_unique_name = "false")
+#' @param pipelineTemplate PipelineTemplate object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.create
+NULL
+
+#' pipeline_templates.update
+#' 
+#' pipeline_templates.update is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.update(pipelinetemplate,
+#' 	uuid)
+#' @param pipelineTemplate PipelineTemplate object.
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.update
+NULL
+
+#' pipeline_templates.delete
+#' 
+#' pipeline_templates.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.delete(uuid)
+#' @param uuid The UUID of the PipelineTemplate in question.
+#' @return PipelineTemplate object.
+#' @name pipeline_templates.delete
+NULL
+
+#' pipeline_templates.list
+#' 
+#' pipeline_templates.list is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_templates.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineTemplateList object.
+#' @name pipeline_templates.list
+NULL
+
+#' pipeline_instances.get
+#' 
+#' pipeline_instances.get is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.get(uuid)
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.get
+NULL
+
+#' pipeline_instances.create
+#' 
+#' pipeline_instances.create is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.create(pipelineinstance,
+#' 	ensure_unique_name = "false")
+#' @param pipelineInstance PipelineInstance object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.create
+NULL
+
+#' pipeline_instances.update
+#' 
+#' pipeline_instances.update is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.update(pipelineinstance,
+#' 	uuid)
+#' @param pipelineInstance PipelineInstance object.
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.update
+NULL
+
+#' pipeline_instances.delete
+#' 
+#' pipeline_instances.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.delete(uuid)
+#' @param uuid The UUID of the PipelineInstance in question.
+#' @return PipelineInstance object.
+#' @name pipeline_instances.delete
+NULL
+
+#' pipeline_instances.cancel
+#' 
+#' pipeline_instances.cancel is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.cancel(uuid)
+#' @param uuid 
+#' @return PipelineInstance object.
+#' @name pipeline_instances.cancel
+NULL
+
+#' pipeline_instances.list
+#' 
+#' pipeline_instances.list is a method defined in Arvados class.
+#' 
+#' @usage arv$pipeline_instances.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return PipelineInstanceList object.
+#' @name pipeline_instances.list
+NULL
+
+#' nodes.get
+#' 
+#' nodes.get is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.get(uuid)
+#' @param uuid The UUID of the Node in question.
+#' @return Node object.
+#' @name nodes.get
+NULL
+
+#' nodes.create
+#' 
+#' nodes.create is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.create(node, ensure_unique_name = "false",
+#' 	assign_slot = NULL)
+#' @param node Node object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param assign_slot assign slot and hostname
+#' @return Node object.
+#' @name nodes.create
+NULL
+
+#' nodes.update
+#' 
+#' nodes.update is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.update(node, uuid, assign_slot = NULL)
+#' @param node Node object.
+#' @param uuid The UUID of the Node in question.
+#' @param assign_slot assign slot and hostname
+#' @return Node object.
+#' @name nodes.update
+NULL
+
+#' nodes.delete
+#' 
+#' nodes.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.delete(uuid)
+#' @param uuid The UUID of the Node in question.
+#' @return Node object.
+#' @name nodes.delete
+NULL
+
+#' nodes.ping
+#' 
+#' nodes.ping is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.ping(uuid, ping_secret)
+#' @param uuid 
+#' @param ping_secret 
+#' @return Node object.
+#' @name nodes.ping
+NULL
+
+#' nodes.list
+#' 
+#' nodes.list is a method defined in Arvados class.
+#' 
+#' @usage arv$nodes.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return NodeList object.
+#' @name nodes.list
+NULL
+
+#' repositories.get
+#' 
+#' repositories.get is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.get(uuid)
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.get
+NULL
+
+#' repositories.create
+#' 
+#' repositories.create is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.create(repository,
+#' 	ensure_unique_name = "false")
+#' @param repository Repository object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Repository object.
+#' @name repositories.create
+NULL
+
+#' repositories.update
+#' 
+#' repositories.update is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.update(repository,
+#' 	uuid)
+#' @param repository Repository object.
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.update
+NULL
+
+#' repositories.delete
+#' 
+#' repositories.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.delete(uuid)
+#' @param uuid The UUID of the Repository in question.
+#' @return Repository object.
+#' @name repositories.delete
+NULL
+
+#' repositories.get_all_permissions
+#' 
+#' repositories.get_all_permissions is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.get_all_permissions(NULL)
+#' @return Repository object.
+#' @name repositories.get_all_permissions
+NULL
+
+#' repositories.list
+#' 
+#' repositories.list is a method defined in Arvados class.
+#' 
+#' @usage arv$repositories.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return RepositoryList object.
+#' @name repositories.list
+NULL
+
+#' specimens.get
+#' 
+#' specimens.get is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.get(uuid)
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.get
+NULL
+
+#' specimens.create
+#' 
+#' specimens.create is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.create(specimen,
+#' 	ensure_unique_name = "false")
+#' @param specimen Specimen object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Specimen object.
+#' @name specimens.create
+NULL
+
+#' specimens.update
+#' 
+#' specimens.update is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.update(specimen,
+#' 	uuid)
+#' @param specimen Specimen object.
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.update
+NULL
+
+#' specimens.delete
+#' 
+#' specimens.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.delete(uuid)
+#' @param uuid The UUID of the Specimen in question.
+#' @return Specimen object.
+#' @name specimens.delete
+NULL
+
+#' specimens.list
+#' 
+#' specimens.list is a method defined in Arvados class.
+#' 
+#' @usage arv$specimens.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return SpecimenList object.
+#' @name specimens.list
+NULL
+
+#' logs.get
+#' 
+#' logs.get is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.get(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.get
+NULL
+
+#' logs.create
+#' 
+#' logs.create is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.create(log, ensure_unique_name = "false")
+#' @param log Log object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Log object.
+#' @name logs.create
+NULL
+
+#' logs.update
+#' 
+#' logs.update is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.update(log, uuid)
+#' @param log Log object.
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.update
+NULL
+
+#' logs.delete
+#' 
+#' logs.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.delete(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.delete
+NULL
+
+#' logs.list
+#' 
+#' logs.list is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.list(filters = NULL, where = NULL,
+#' 	order = NULL, select = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return LogList object.
+#' @name logs.list
+NULL
+
+#' traits.get
+#' 
+#' traits.get is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.get(uuid)
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.get
+NULL
+
+#' traits.create
+#' 
+#' traits.create is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.create(trait, ensure_unique_name = "false")
+#' @param trait Trait object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Trait object.
+#' @name traits.create
+NULL
+
+#' traits.update
+#' 
+#' traits.update is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.update(trait, uuid)
+#' @param trait Trait object.
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.update
+NULL
+
+#' traits.delete
+#' 
+#' traits.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.delete(uuid)
+#' @param uuid The UUID of the Trait in question.
+#' @return Trait object.
+#' @name traits.delete
+NULL
+
+#' traits.list
+#' 
+#' traits.list is a method defined in Arvados class.
+#' 
+#' @usage arv$traits.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return TraitList object.
+#' @name traits.list
+NULL
+
+#' virtual_machines.get
+#' 
+#' virtual_machines.get is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.get(uuid)
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.get
+NULL
+
+#' virtual_machines.create
+#' 
+#' virtual_machines.create is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.create(virtualmachine,
+#' 	ensure_unique_name = "false")
+#' @param virtualMachine VirtualMachine object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return VirtualMachine object.
+#' @name virtual_machines.create
+NULL
+
+#' virtual_machines.update
+#' 
+#' virtual_machines.update is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.update(virtualmachine,
+#' 	uuid)
+#' @param virtualMachine VirtualMachine object.
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.update
+NULL
+
+#' virtual_machines.delete
+#' 
+#' virtual_machines.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.delete(uuid)
+#' @param uuid The UUID of the VirtualMachine in question.
+#' @return VirtualMachine object.
+#' @name virtual_machines.delete
+NULL
+
+#' virtual_machines.logins
+#' 
+#' virtual_machines.logins is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.logins(uuid)
+#' @param uuid 
+#' @return VirtualMachine object.
+#' @name virtual_machines.logins
+NULL
+
+#' virtual_machines.get_all_logins
+#' 
+#' virtual_machines.get_all_logins is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.get_all_logins(NULL)
+#' @return VirtualMachine object.
+#' @name virtual_machines.get_all_logins
+NULL
+
+#' virtual_machines.list
+#' 
+#' virtual_machines.list is a method defined in Arvados class.
+#' 
+#' @usage arv$virtual_machines.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return VirtualMachineList object.
+#' @name virtual_machines.list
+NULL
+
+#' workflows.get
+#' 
+#' workflows.get is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.get(uuid)
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.get
+NULL
+
+#' workflows.create
+#' 
+#' workflows.create is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.create(workflow,
+#' 	ensure_unique_name = "false")
+#' @param workflow Workflow object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Workflow object.
+#' @name workflows.create
+NULL
+
+#' workflows.update
+#' 
+#' workflows.update is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.update(workflow,
+#' 	uuid)
+#' @param workflow Workflow object.
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.update
+NULL
+
+#' workflows.delete
+#' 
+#' workflows.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.delete(uuid)
+#' @param uuid The UUID of the Workflow in question.
+#' @return Workflow object.
+#' @name workflows.delete
+NULL
+
+#' workflows.list
+#' 
+#' workflows.list is a method defined in Arvados class.
+#' 
+#' @usage arv$workflows.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return WorkflowList object.
+#' @name workflows.list
+NULL
+
+#' groups.get
+#' 
+#' groups.get is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.get(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.get
+NULL
+
+#' groups.create
+#' 
+#' groups.create is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.create(group, ensure_unique_name = "false")
+#' @param group Group object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Group object.
+#' @name groups.create
+NULL
+
+#' groups.update
+#' 
+#' groups.update is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.update(group, uuid)
+#' @param group Group object.
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.update
+NULL
+
+#' groups.delete
+#' 
+#' groups.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.delete(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.delete
+NULL
+
+#' groups.contents
+#' 
+#' groups.contents is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.contents(filters = NULL,
+#' 	where = NULL, order = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	include_trash = NULL, uuid = NULL, recursive = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param uuid 
+#' @param recursive Include contents from child groups recursively.
+#' @return Group object.
+#' @name groups.contents
+NULL
+
+#' groups.trash
+#' 
+#' groups.trash is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.trash(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.trash
+NULL
+
+#' groups.untrash
+#' 
+#' groups.untrash is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.untrash(uuid)
+#' @param uuid 
+#' @return Group object.
+#' @name groups.untrash
+NULL
+
+#' groups.list
+#' 
+#' groups.list is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", include_trash = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @return GroupList object.
+#' @name groups.list
+NULL
+
+#' user_agreements.get
+#' 
+#' user_agreements.get is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.get(uuid)
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.get
+NULL
+
+#' user_agreements.create
+#' 
+#' user_agreements.create is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.create(useragreement,
+#' 	ensure_unique_name = "false")
+#' @param userAgreement UserAgreement object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return UserAgreement object.
+#' @name user_agreements.create
+NULL
+
+#' user_agreements.update
+#' 
+#' user_agreements.update is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.update(useragreement,
+#' 	uuid)
+#' @param userAgreement UserAgreement object.
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.update
+NULL
+
+#' user_agreements.delete
+#' 
+#' user_agreements.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.delete(uuid)
+#' @param uuid The UUID of the UserAgreement in question.
+#' @return UserAgreement object.
+#' @name user_agreements.delete
+NULL
+
+#' user_agreements.signatures
+#' 
+#' user_agreements.signatures is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.signatures(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.signatures
+NULL
+
+#' user_agreements.sign
+#' 
+#' user_agreements.sign is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.sign(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.sign
+NULL
+
+#' user_agreements.list
+#' 
+#' user_agreements.list is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact")
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @return UserAgreementList object.
+#' @name user_agreements.list
+NULL
+
+#' user_agreements.new
+#' 
+#' user_agreements.new is a method defined in Arvados class.
+#' 
+#' @usage arv$user_agreements.new(NULL)
+#' @return UserAgreement object.
+#' @name user_agreements.new
+NULL
+
+#' project.get
+#' 
+#' projects.get is equivalent to groups.get method.
+#' 
+#' @usage arv$projects.get(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.get
+NULL
+
+#' project.create
+#' 
+#' projects.create wrapps groups.create method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.create(group, ensure_unique_name = "false")
+#' @param group Group object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @return Group object.
+#' @name projects.create
+NULL
+
+#' project.update
+#' 
+#' projects.update wrapps groups.update method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.update(group, uuid)
+#' @param group Group object.
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.update
+NULL
+
+#' project.delete
+#' 
+#' projects.delete is equivalent to groups.delete method.
+#' 
+#' @usage arv$project.delete(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name projects.delete
+NULL
+
+#' project.list
+#' 
+#' projects.list wrapps groups.list method by setting group_class attribute to "project".
+#' 
+#' @usage arv$projects.list(filters = NULL,
+#' 	where = NULL, order = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	include_trash = NULL, uuid = NULL, recursive = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param uuid 
+#' @param recursive Include contents from child groups recursively.
+#' @return Group object.
+#' @name projects.list
+NULL
 
 #' Arvados
-#' 
-#' Arvados class gives users ability to manipulate collections and projects.
-#' 
+#'
+#' Arvados class gives users ability to access Arvados REST API.
+#'
 #' @section Usage:
 #' \preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
 #'
 #' @section Arguments:
 #' \describe{
-#'   \item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}
-#'   \item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}
-#'   \item{numRetries}{Number which specifies how many times to retry failed service requests.}
+#' 	\item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}
+#' 	\item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}
+#' 	\item{numRetries}{Number which specifies how many times to retry failed service requests.}
 #' }
-#' 
+#'
 #' @section Methods:
 #' \describe{
-#'   \item{getToken()}{Returns authentification token currently in use.}
-#'   \item{getHostName()}{Returns host name currently in use.}
-#'   \item{getNumRetries()}{Returns number which specifies how many times to retry failed service requests.}
-#'   \item{setNumRetries(newNumOfRetries)}{Sets number which specifies how many times to retry failed service requests.}
-#'   \item{getCollection(uuid)}{Get collection with specified UUID.}
-#'   \item{listCollections(filters = NULL, limit = 100, offset = 0)}{Returns list of collections based on filters parameter.}
-#'   \item{listAllCollections(filters = NULL)}{Lists all collections, based on filters parameter, even if the number of items is greater than maximum API limit.}
-#'   \item{deleteCollection(uuid)}{Deletes collection with specified UUID.}
-#'   \item{updateCollection(uuid, newContent)}{Updates collection with specified UUID.}
-#'   \item{createCollection(content)}{Creates new collection.}
-#'   \item{getProject(uuid)}{Get project with specified UUID.}
-#'   \item{listProjects(filters = NULL, limit = 100, offset = 0)}{Returns list of projects based on filters parameter.}
-#'   \item{listAllProjects(filters = NULL)}{Lists all projects, based on filters parameter, even if the number of items is greater than maximum API limit.}
-#'   \item{deleteProject(uuid)}{Deletes project with specified UUID.}
-#'   \item{updateProject(uuid, newContent)}{Updates project with specified UUID.}
-#'   \item{createProject(content)}{Creates new project.}
+#' 	\item{}{\code{\link{api_client_authorizations.create}}}
+#' 	\item{}{\code{\link{api_client_authorizations.create_system_auth}}}
+#' 	\item{}{\code{\link{api_client_authorizations.current}}}
+#' 	\item{}{\code{\link{api_client_authorizations.delete}}}
+#' 	\item{}{\code{\link{api_client_authorizations.get}}}
+#' 	\item{}{\code{\link{api_client_authorizations.list}}}
+#' 	\item{}{\code{\link{api_client_authorizations.update}}}
+#' 	\item{}{\code{\link{api_clients.create}}}
+#' 	\item{}{\code{\link{api_clients.delete}}}
+#' 	\item{}{\code{\link{api_clients.get}}}
+#' 	\item{}{\code{\link{api_clients.list}}}
+#' 	\item{}{\code{\link{api_clients.update}}}
+#' 	\item{}{\code{\link{authorized_keys.create}}}
+#' 	\item{}{\code{\link{authorized_keys.delete}}}
+#' 	\item{}{\code{\link{authorized_keys.get}}}
+#' 	\item{}{\code{\link{authorized_keys.list}}}
+#' 	\item{}{\code{\link{authorized_keys.update}}}
+#' 	\item{}{\code{\link{collections.create}}}
+#' 	\item{}{\code{\link{collections.delete}}}
+#' 	\item{}{\code{\link{collections.get}}}
+#' 	\item{}{\code{\link{collections.list}}}
+#' 	\item{}{\code{\link{collections.provenance}}}
+#' 	\item{}{\code{\link{collections.trash}}}
+#' 	\item{}{\code{\link{collections.untrash}}}
+#' 	\item{}{\code{\link{collections.update}}}
+#' 	\item{}{\code{\link{collections.used_by}}}
+#' 	\item{}{\code{\link{container_requests.create}}}
+#' 	\item{}{\code{\link{container_requests.delete}}}
+#' 	\item{}{\code{\link{container_requests.get}}}
+#' 	\item{}{\code{\link{container_requests.list}}}
+#' 	\item{}{\code{\link{container_requests.update}}}
+#' 	\item{}{\code{\link{containers.auth}}}
+#' 	\item{}{\code{\link{containers.create}}}
+#' 	\item{}{\code{\link{containers.current}}}
+#' 	\item{}{\code{\link{containers.delete}}}
+#' 	\item{}{\code{\link{containers.get}}}
+#' 	\item{}{\code{\link{containers.list}}}
+#' 	\item{}{\code{\link{containers.lock}}}
+#' 	\item{}{\code{\link{containers.secret_mounts}}}
+#' 	\item{}{\code{\link{containers.unlock}}}
+#' 	\item{}{\code{\link{containers.update}}}
+#' 	\item{}{\code{\link{groups.contents}}}
+#' 	\item{}{\code{\link{groups.create}}}
+#' 	\item{}{\code{\link{groups.delete}}}
+#' 	\item{}{\code{\link{groups.get}}}
+#' 	\item{}{\code{\link{groups.list}}}
+#' 	\item{}{\code{\link{groups.trash}}}
+#' 	\item{}{\code{\link{groups.untrash}}}
+#' 	\item{}{\code{\link{groups.update}}}
+#' 	\item{}{\code{\link{humans.create}}}
+#' 	\item{}{\code{\link{humans.delete}}}
+#' 	\item{}{\code{\link{humans.get}}}
+#' 	\item{}{\code{\link{humans.list}}}
+#' 	\item{}{\code{\link{humans.update}}}
+#' 	\item{}{\code{\link{jobs.cancel}}}
+#' 	\item{}{\code{\link{jobs.create}}}
+#' 	\item{}{\code{\link{jobs.delete}}}
+#' 	\item{}{\code{\link{jobs.get}}}
+#' 	\item{}{\code{\link{jobs.list}}}
+#' 	\item{}{\code{\link{jobs.lock}}}
+#' 	\item{}{\code{\link{jobs.queue}}}
+#' 	\item{}{\code{\link{jobs.queue_size}}}
+#' 	\item{}{\code{\link{jobs.update}}}
+#' 	\item{}{\code{\link{job_tasks.create}}}
+#' 	\item{}{\code{\link{job_tasks.delete}}}
+#' 	\item{}{\code{\link{job_tasks.get}}}
+#' 	\item{}{\code{\link{job_tasks.list}}}
+#' 	\item{}{\code{\link{job_tasks.update}}}
+#' 	\item{}{\code{\link{keep_disks.create}}}
+#' 	\item{}{\code{\link{keep_disks.delete}}}
+#' 	\item{}{\code{\link{keep_disks.get}}}
+#' 	\item{}{\code{\link{keep_disks.list}}}
+#' 	\item{}{\code{\link{keep_disks.ping}}}
+#' 	\item{}{\code{\link{keep_disks.update}}}
+#' 	\item{}{\code{\link{keep_services.accessible}}}
+#' 	\item{}{\code{\link{keep_services.create}}}
+#' 	\item{}{\code{\link{keep_services.delete}}}
+#' 	\item{}{\code{\link{keep_services.get}}}
+#' 	\item{}{\code{\link{keep_services.list}}}
+#' 	\item{}{\code{\link{keep_services.update}}}
+#' 	\item{}{\code{\link{links.create}}}
+#' 	\item{}{\code{\link{links.delete}}}
+#' 	\item{}{\code{\link{links.get}}}
+#' 	\item{}{\code{\link{links.get_permissions}}}
+#' 	\item{}{\code{\link{links.list}}}
+#' 	\item{}{\code{\link{links.update}}}
+#' 	\item{}{\code{\link{logs.create}}}
+#' 	\item{}{\code{\link{logs.delete}}}
+#' 	\item{}{\code{\link{logs.get}}}
+#' 	\item{}{\code{\link{logs.list}}}
+#' 	\item{}{\code{\link{logs.update}}}
+#' 	\item{}{\code{\link{nodes.create}}}
+#' 	\item{}{\code{\link{nodes.delete}}}
+#' 	\item{}{\code{\link{nodes.get}}}
+#' 	\item{}{\code{\link{nodes.list}}}
+#' 	\item{}{\code{\link{nodes.ping}}}
+#' 	\item{}{\code{\link{nodes.update}}}
+#' 	\item{}{\code{\link{pipeline_instances.cancel}}}
+#' 	\item{}{\code{\link{pipeline_instances.create}}}
+#' 	\item{}{\code{\link{pipeline_instances.delete}}}
+#' 	\item{}{\code{\link{pipeline_instances.get}}}
+#' 	\item{}{\code{\link{pipeline_instances.list}}}
+#' 	\item{}{\code{\link{pipeline_instances.update}}}
+#' 	\item{}{\code{\link{pipeline_templates.create}}}
+#' 	\item{}{\code{\link{pipeline_templates.delete}}}
+#' 	\item{}{\code{\link{pipeline_templates.get}}}
+#' 	\item{}{\code{\link{pipeline_templates.list}}}
+#' 	\item{}{\code{\link{pipeline_templates.update}}}
+#' 	\item{}{\code{\link{projects.create}}}
+#' 	\item{}{\code{\link{projects.delete}}}
+#' 	\item{}{\code{\link{projects.get}}}
+#' 	\item{}{\code{\link{projects.list}}}
+#' 	\item{}{\code{\link{projects.update}}}
+#' 	\item{}{\code{\link{repositories.create}}}
+#' 	\item{}{\code{\link{repositories.delete}}}
+#' 	\item{}{\code{\link{repositories.get}}}
+#' 	\item{}{\code{\link{repositories.get_all_permissions}}}
+#' 	\item{}{\code{\link{repositories.list}}}
+#' 	\item{}{\code{\link{repositories.update}}}
+#' 	\item{}{\code{\link{specimens.create}}}
+#' 	\item{}{\code{\link{specimens.delete}}}
+#' 	\item{}{\code{\link{specimens.get}}}
+#' 	\item{}{\code{\link{specimens.list}}}
+#' 	\item{}{\code{\link{specimens.update}}}
+#' 	\item{}{\code{\link{traits.create}}}
+#' 	\item{}{\code{\link{traits.delete}}}
+#' 	\item{}{\code{\link{traits.get}}}
+#' 	\item{}{\code{\link{traits.list}}}
+#' 	\item{}{\code{\link{traits.update}}}
+#' 	\item{}{\code{\link{user_agreements.create}}}
+#' 	\item{}{\code{\link{user_agreements.delete}}}
+#' 	\item{}{\code{\link{user_agreements.get}}}
+#' 	\item{}{\code{\link{user_agreements.list}}}
+#' 	\item{}{\code{\link{user_agreements.new}}}
+#' 	\item{}{\code{\link{user_agreements.sign}}}
+#' 	\item{}{\code{\link{user_agreements.signatures}}}
+#' 	\item{}{\code{\link{user_agreements.update}}}
+#' 	\item{}{\code{\link{users.activate}}}
+#' 	\item{}{\code{\link{users.create}}}
+#' 	\item{}{\code{\link{users.current}}}
+#' 	\item{}{\code{\link{users.delete}}}
+#' 	\item{}{\code{\link{users.get}}}
+#' 	\item{}{\code{\link{users.list}}}
+#' 	\item{}{\code{\link{users.setup}}}
+#' 	\item{}{\code{\link{users.system}}}
+#' 	\item{}{\code{\link{users.unsetup}}}
+#' 	\item{}{\code{\link{users.update}}}
+#' 	\item{}{\code{\link{users.update_uuid}}}
+#' 	\item{}{\code{\link{virtual_machines.create}}}
+#' 	\item{}{\code{\link{virtual_machines.delete}}}
+#' 	\item{}{\code{\link{virtual_machines.get}}}
+#' 	\item{}{\code{\link{virtual_machines.get_all_logins}}}
+#' 	\item{}{\code{\link{virtual_machines.list}}}
+#' 	\item{}{\code{\link{virtual_machines.logins}}}
+#' 	\item{}{\code{\link{virtual_machines.update}}}
+#' 	\item{}{\code{\link{workflows.create}}}
+#' 	\item{}{\code{\link{workflows.delete}}}
+#' 	\item{}{\code{\link{workflows.get}}}
+#' 	\item{}{\code{\link{workflows.list}}}
+#' 	\item{}{\code{\link{workflows.update}}}
 #' }
 #'
 #' @name Arvados
@@ -41,196 +2150,3539 @@ source("./R/HttpParser.R")
 #' \dontrun{
 #' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 #'
-#' collection <- arv$getCollection("uuid")
+#' collection <- arv$collections.get("uuid")
 #'
-#' collectionList <- arv$listCollections(list(list("name", "like", "Test%")))
-#' collectionList <- arv$listAllCollections(list(list("name", "like", "Test%")))
+#' collectionList <- arv$collections.list(list(list("name", "like", "Test%")))
+#' collectionList <- listAll(arv$collections.list, list(list("name", "like", "Test%")))
 #'
-#' deletedCollection <- arv$deleteCollection("uuid")
+#' deletedCollection <- arv$collections.delete("uuid")
 #'
-#' updatedCollection <- arv$updateCollection("uuid", list(name = "New name",
-#'                                                        description = "New description"))
+#' updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"),
+#'                                             "uuid")
 #'
-#' createdCollection <- arv$createCollection(list(name = "Example",
-#'                                                description = "This is a test collection"))
+#' createdCollection <- arv$collections.create(list(name = "Example",
+#'                                                  description = "This is a test collection"))
 #' }
 NULL
 
 #' @export
 Arvados <- R6::R6Class(
 
-    "Arvados",
+	"Arvados",
 
-    public = list(
+	public = list(
 
-        initialize = function(authToken = NULL, hostName = NULL, numRetries = 0)
-        {
-            if(!is.null(hostName))
-               Sys.setenv(ARVADOS_API_HOST = hostName)
+		initialize = function(authToken = NULL, hostName = NULL, numRetries = 0)
+		{
+			if(!is.null(hostName))
+				Sys.setenv(ARVADOS_API_HOST = hostName)
 
-            if(!is.null(authToken))
-                Sys.setenv(ARVADOS_API_TOKEN = authToken)
+			if(!is.null(authToken))
+				Sys.setenv(ARVADOS_API_TOKEN = authToken)
 
-            hostName  <- Sys.getenv("ARVADOS_API_HOST");
-            token     <- Sys.getenv("ARVADOS_API_TOKEN");
+			hostName <- Sys.getenv("ARVADOS_API_HOST")
+			token    <- Sys.getenv("ARVADOS_API_TOKEN")
 
-            if(hostName == "" | token == "")
-                stop(paste("Please provide host name and authentification token",
-                           "or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
-                           "environment variables."))
+			if(hostName == "" | token == "")
+				stop(paste("Please provide host name and authentification token",
+						   "or set ARVADOS_API_HOST and ARVADOS_API_TOKEN",
+						   "environment variables."))
 
-            private$numRetries  <- numRetries
-            private$REST  <- RESTService$new(token, hostName,
-                                             HttpRequest$new(), HttpParser$new(),
-                                             numRetries)
+			private$token <- token
+			private$host  <- paste0("https://", hostName, "/arvados/v1/")
+			private$numRetries <- numRetries
+			private$REST <- RESTService$new(token, hostName,
+			                                HttpRequest$new(), HttpParser$new(),
+			                                numRetries)
 
-            private$token <- private$REST$token
-            private$host  <- private$REST$hostName
-        },
+		},
 
-        getToken          = function() private$REST$token,
-        getHostName       = function() private$REST$hostName,
-        getWebDavHostName = function() private$REST$getWebDavHostName(),
-        getRESTService    = function() private$REST,
-        setRESTService    = function(newRESTService) private$REST <- newRESTService,
+		projects.get = function(uuid)
+		{
+			self$groups.get(uuid)
+		},
 
-        getNumRetries = function() private$REST$numRetries,
-        setNumRetries = function(newNumOfRetries)
-        {
-            private$REST$setNumRetries(newNumOfRetries)
-        },
+		projects.create = function(group, ensure_unique_name = "false")
+		{
+			group <- c("group_class" = "project", group)
+			self$groups.create(group, ensure_unique_name)
+		},
 
-        getCollection = function(uuid)
-        {
-            collection <- private$REST$getResource("collections", uuid)
-            collection
-        },
+		projects.update = function(group, uuid)
+		{
+			group <- c("group_class" = "project", group)
+			self$groups.update(group, uuid)
+		},
 
-        listCollections = function(filters = NULL, limit = 100, offset = 0)
-        {
-            if(!is.null(filters))
-                names(filters) <- c("collection")
+		projects.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			include_trash = NULL)
+		{
+			filters[[length(filters) + 1]] <- list("group_class", "=", "project")
+			self$groups.list(filters, where, order, select, distinct,
+			                 limit, offset, count, include_trash)
+		},
 
-            collections <- private$REST$listResources("collections", filters,
-                                                      limit, offset)
-            collections
-        },
+		projects.delete = function(uuid)
+		{
+			self$groups.delete(uuid)
+		},
 
-        listAllCollections = function(filters = NULL)
-        {
-            if(!is.null(filters))
-                names(filters) <- c("collection")
+		users.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            collectionURL <- paste0(private$host, "collections")
-            allCollection <- private$REST$fetchAllItems(collectionURL, filters)
-            allCollection
-        },
+		users.create = function(user, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("users")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        deleteCollection = function(uuid)
-        {
-            removedCollection <- private$REST$deleteResource("collections", uuid)
-            removedCollection
-        },
+		users.update = function(user, uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        updateCollection = function(uuid, newContent)
-        {
-            body <- list(list())
-            names(body) <- c("collection")
-            body$collection <- newContent
+		users.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            updatedCollection <- private$REST$updateResource("collections",
-                                                             uuid, body)
-            updatedCollection
-        },
+		users.current = function()
+		{
+			endPoint <- stringr::str_interp("users/current")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        createCollection = function(content)
-        {
-            body <- list(list())
-            names(body) <- c("collection")
-            body$collection <- content
+		users.system = function()
+		{
+			endPoint <- stringr::str_interp("users/system")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            newCollection <- private$REST$createResource("collections", body)
-            newCollection
-        },
+		users.activate = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/activate")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        getProject = function(uuid)
-        {
-            project <- private$REST$getResource("groups", uuid)
-            project
-        },
+		users.setup = function(user = NULL, openid_prefix = NULL,
+			repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
+		{
+			endPoint <- stringr::str_interp("users/setup")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(user = user, openid_prefix = openid_prefix,
+							  repo_name = repo_name, vm_uuid = vm_uuid,
+							  send_notification_email = send_notification_email)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        createProject = function(content)
-        {
-            body <- list(list())
-            names(body) <- c("group")
-            body$group <- c("group_class" = "project", content)
+		users.unsetup = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/unsetup")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            newProject <- private$REST$createResource("groups", body)
-            newProject
-        },
+		users.update_uuid = function(uuid, new_uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/update_uuid")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(new_uuid = new_uuid)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        updateProject = function(uuid, newContent)
-        {
-            body <- list(list())
-            names(body) <- c("group")
-            body$group <- newContent
+		users.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("users")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            updatedProject <- private$REST$updateResource("groups", uuid, body)
-            updatedProject
-        },
+		api_client_authorizations.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        listProjects = function(filters = NULL, limit = 100, offset = 0)
-        {
-            if(!is.null(filters))
-                names(filters) <- c("groups")
+		api_client_authorizations.create = function(apiclientauthorization,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            filters[[length(filters) + 1]] <- list("group_class", "=", "project")
+		api_client_authorizations.update = function(apiclientauthorization, uuid)
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            projects <- private$REST$listResources("groups", filters, limit, offset)
-            projects
-        },
+		api_client_authorizations.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        listAllProjects = function(filters = NULL)
-        {
-            if(!is.null(filters))
-                names(filters) <- c("groups")
+		api_client_authorizations.create_system_auth = function(api_client_id = NULL, scopes = NULL)
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/create_system_auth")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(api_client_id = api_client_id,
+							  scopes = scopes)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            filters[[length(filters) + 1]] <- list("group_class", "=", "project")
+		api_client_authorizations.current = function()
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/current")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            projectURL <- paste0(private$host, "groups")
+		api_client_authorizations.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-            result <- private$REST$fetchAllItems(projectURL, filters)
-            result
-        },
+		containers.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        deleteProject = function(uuid)
-        {
-            removedProject <- private$REST$deleteResource("groups", uuid)
-            removedProject
-        }
-    ),
+		containers.create = function(container, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("containers")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-    private = list(
+		containers.update = function(container, uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-        token      = NULL,
-        host       = NULL,
-        REST       = NULL,
-        numRetries = NULL
-    ),
+		containers.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
 
-    cloneable = FALSE
+		containers.auth = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/auth")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.lock = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/lock")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.unlock = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/unlock")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.secret_mounts = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/secret_mounts")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.current = function()
+		{
+			endPoint <- stringr::str_interp("containers/current")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("containers")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_clients.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("api_clients/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_clients.create = function(apiclient, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("api_clients")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(apiclient) > 0)
+				body <- jsonlite::toJSON(list(apiclient = apiclient), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_clients.update = function(apiclient, uuid)
+		{
+			endPoint <- stringr::str_interp("api_clients/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(apiclient) > 0)
+				body <- jsonlite::toJSON(list(apiclient = apiclient), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_clients.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("api_clients/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_clients.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("api_clients")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		authorized_keys.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		authorized_keys.create = function(authorizedkey,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("authorized_keys")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(authorizedkey) > 0)
+				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		authorized_keys.update = function(authorizedkey, uuid)
+		{
+			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(authorizedkey) > 0)
+				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		authorized_keys.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		authorized_keys.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("authorized_keys")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.create = function(containerrequest,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("container_requests")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.update = function(containerrequest, uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("container_requests")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.create = function(collection, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("collections")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(collection) > 0)
+				body <- jsonlite::toJSON(list(collection = collection), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.update = function(collection, uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(collection) > 0)
+				body <- jsonlite::toJSON(list(collection = collection), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.provenance = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}/provenance")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.used_by = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}/used_by")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.trash = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}/trash")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.untrash = function(uuid)
+		{
+			endPoint <- stringr::str_interp("collections/${uuid}/untrash")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		collections.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact", include_trash = NULL)
+		{
+			endPoint <- stringr::str_interp("collections")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		humans.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("humans/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		humans.create = function(human, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("humans")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(human) > 0)
+				body <- jsonlite::toJSON(list(human = human), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		humans.update = function(human, uuid)
+		{
+			endPoint <- stringr::str_interp("humans/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(human) > 0)
+				body <- jsonlite::toJSON(list(human = human), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		humans.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("humans/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		humans.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("humans")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		job_tasks.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("job_tasks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		job_tasks.create = function(jobtask, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("job_tasks")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(jobtask) > 0)
+				body <- jsonlite::toJSON(list(jobtask = jobtask), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		job_tasks.update = function(jobtask, uuid)
+		{
+			endPoint <- stringr::str_interp("job_tasks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(jobtask) > 0)
+				body <- jsonlite::toJSON(list(jobtask = jobtask), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		job_tasks.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("job_tasks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		job_tasks.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("job_tasks")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("links/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.create = function(link, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("links")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.update = function(link, uuid)
+		{
+			endPoint <- stringr::str_interp("links/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("links/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("links")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		links.get_permissions = function(uuid)
+		{
+			endPoint <- stringr::str_interp("permissions/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("jobs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.create = function(job, ensure_unique_name = "false",
+			find_or_create = "false", filters = NULL,
+			minimum_script_version = NULL, exclude_script_versions = NULL)
+		{
+			endPoint <- stringr::str_interp("jobs")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  find_or_create = find_or_create, filters = filters,
+							  minimum_script_version = minimum_script_version,
+							  exclude_script_versions = exclude_script_versions)
+			
+			if(length(job) > 0)
+				body <- jsonlite::toJSON(list(job = job), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.update = function(job, uuid)
+		{
+			endPoint <- stringr::str_interp("jobs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(job) > 0)
+				body <- jsonlite::toJSON(list(job = job), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("jobs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.queue = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("jobs/queue")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.queue_size = function()
+		{
+			endPoint <- stringr::str_interp("jobs/queue_size")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.cancel = function(uuid)
+		{
+			endPoint <- stringr::str_interp("jobs/${uuid}/cancel")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.lock = function(uuid)
+		{
+			endPoint <- stringr::str_interp("jobs/${uuid}/lock")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		jobs.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("jobs")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("keep_disks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.create = function(keepdisk, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("keep_disks")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(keepdisk) > 0)
+				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.update = function(keepdisk, uuid)
+		{
+			endPoint <- stringr::str_interp("keep_disks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(keepdisk) > 0)
+				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("keep_disks/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.ping = function(uuid = NULL, ping_secret,
+			node_uuid = NULL, filesystem_uuid = NULL,
+			service_host = NULL, service_port, service_ssl_flag)
+		{
+			endPoint <- stringr::str_interp("keep_disks/ping")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(uuid = uuid, ping_secret = ping_secret,
+							  node_uuid = node_uuid, filesystem_uuid = filesystem_uuid,
+							  service_host = service_host, service_port = service_port,
+							  service_ssl_flag = service_ssl_flag)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_disks.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("keep_disks")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("keep_services/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.create = function(keepservice,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("keep_services")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(keepservice) > 0)
+				body <- jsonlite::toJSON(list(keepservice = keepservice), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.update = function(keepservice, uuid)
+		{
+			endPoint <- stringr::str_interp("keep_services/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(keepservice) > 0)
+				body <- jsonlite::toJSON(list(keepservice = keepservice), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("keep_services/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.accessible = function()
+		{
+			endPoint <- stringr::str_interp("keep_services/accessible")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		keep_services.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("keep_services")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_templates.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_templates.create = function(pipelinetemplate,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("pipeline_templates")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(pipelinetemplate) > 0)
+				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_templates.update = function(pipelinetemplate, uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(pipelinetemplate) > 0)
+				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_templates.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_templates.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("pipeline_templates")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.create = function(pipelineinstance,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("pipeline_instances")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(pipelineinstance) > 0)
+				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.update = function(pipelineinstance, uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(pipelineinstance) > 0)
+				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.cancel = function(uuid)
+		{
+			endPoint <- stringr::str_interp("pipeline_instances/${uuid}/cancel")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		pipeline_instances.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("pipeline_instances")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("nodes/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.create = function(node, ensure_unique_name = "false",
+			assign_slot = NULL)
+		{
+			endPoint <- stringr::str_interp("nodes")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  assign_slot = assign_slot)
+			
+			if(length(node) > 0)
+				body <- jsonlite::toJSON(list(node = node), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.update = function(node, uuid, assign_slot = NULL)
+		{
+			endPoint <- stringr::str_interp("nodes/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(assign_slot = assign_slot)
+			
+			if(length(node) > 0)
+				body <- jsonlite::toJSON(list(node = node), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("nodes/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.ping = function(uuid, ping_secret)
+		{
+			endPoint <- stringr::str_interp("nodes/${uuid}/ping")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ping_secret = ping_secret)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		nodes.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("nodes")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.create = function(repository, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("repositories")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.update = function(repository, uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.get_all_permissions = function()
+		{
+			endPoint <- stringr::str_interp("repositories/get_all_permissions")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("repositories")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		specimens.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("specimens/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		specimens.create = function(specimen, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("specimens")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(specimen) > 0)
+				body <- jsonlite::toJSON(list(specimen = specimen), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		specimens.update = function(specimen, uuid)
+		{
+			endPoint <- stringr::str_interp("specimens/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(specimen) > 0)
+				body <- jsonlite::toJSON(list(specimen = specimen), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		specimens.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("specimens/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		specimens.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("specimens")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		logs.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("logs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		logs.create = function(log, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("logs")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(log) > 0)
+				body <- jsonlite::toJSON(list(log = log), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		logs.update = function(log, uuid)
+		{
+			endPoint <- stringr::str_interp("logs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(log) > 0)
+				body <- jsonlite::toJSON(list(log = log), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		logs.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("logs/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		logs.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("logs")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		traits.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("traits/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		traits.create = function(trait, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("traits")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(trait) > 0)
+				body <- jsonlite::toJSON(list(trait = trait), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		traits.update = function(trait, uuid)
+		{
+			endPoint <- stringr::str_interp("traits/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(trait) > 0)
+				body <- jsonlite::toJSON(list(trait = trait), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		traits.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("traits/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		traits.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact")
+		{
+			endPoint <- stringr::str_interp("traits")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.create = function(virtualmachine,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("virtual_machines")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(virtualmachine) > 0)
+				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.update = function(virtualmachine, uuid)
+		{
+			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(virtualmachine) > 0)
+				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.logins = function(uuid)
+		{
+			endPoint <- stringr::str_interp("virtual_machines/${uuid}/logins")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.get_all_logins = function()
+		{
+			endPoint <- stringr::str_interp("virtual_machines/get_all_logins")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		virtual_machines.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("virtual_machines")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		workflows.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("workflows/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		workflows.create = function(workflow, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("workflows")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(workflow) > 0)
+				body <- jsonlite::toJSON(list(workflow = workflow), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		workflows.update = function(workflow, uuid)
+		{
+			endPoint <- stringr::str_interp("workflows/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(workflow) > 0)
+				body <- jsonlite::toJSON(list(workflow = workflow), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		workflows.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("workflows/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		workflows.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("workflows")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.create = function(group, ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("groups")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.update = function(group, uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.contents = function(filters = NULL,
+			where = NULL, order = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			include_trash = NULL, uuid = NULL, recursive = NULL)
+		{
+			endPoint <- stringr::str_interp("groups/contents")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, distinct = distinct, limit = limit,
+							  offset = offset, count = count, include_trash = include_trash,
+							  uuid = uuid, recursive = recursive)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.trash = function(uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}/trash")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.untrash = function(uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}/untrash")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			include_trash = NULL)
+		{
+			endPoint <- stringr::str_interp("groups")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  include_trash = include_trash)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("user_agreements/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.create = function(useragreement,
+			ensure_unique_name = "false")
+		{
+			endPoint <- stringr::str_interp("user_agreements")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			
+			if(length(useragreement) > 0)
+				body <- jsonlite::toJSON(list(useragreement = useragreement), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.update = function(useragreement, uuid)
+		{
+			endPoint <- stringr::str_interp("user_agreements/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(useragreement) > 0)
+				body <- jsonlite::toJSON(list(useragreement = useragreement), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("user_agreements/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.signatures = function()
+		{
+			endPoint <- stringr::str_interp("user_agreements/signatures")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.sign = function()
+		{
+			endPoint <- stringr::str_interp("user_agreements/sign")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact")
+		{
+			endPoint <- stringr::str_interp("user_agreements")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		user_agreements.new = function()
+		{
+			endPoint <- stringr::str_interp("user_agreements/new")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("OAuth2", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		getHostName = function() private$host,
+		getToken = function() private$token,
+		setRESTService = function(newREST) private$REST <- newREST,
+		getRESTService = function() private$REST
+	),
+
+	private = list(
+
+		token = NULL,
+		host = NULL,
+		REST = NULL,
+		numRetries = NULL
+	),
+
+	cloneable = FALSE
 )
-
-#' print.Arvados
-#'
-#' Custom print function for Arvados class
-#'
-#' @param x Instance of Arvados class
-#' @param ... Optional arguments.
-#' @export 
-print.Arvados = function(x, ...)
-{
-    cat(paste0("Type:  ", "\"", "Arvados",       "\""), sep = "\n")
-    cat(paste0("Host:  ", "\"", x$getHostName(), "\""), sep = "\n")
-    cat(paste0("Token: ", "\"", x$getToken(),    "\""), sep = "\n")
-}

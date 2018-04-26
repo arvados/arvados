@@ -133,8 +133,21 @@
 //   http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/foo/bar.txt
 //   http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/_/foo/bar.txt
 //   http://zzzzz-4zz18-znfnqtbbv4spc3w--collections.example.com/_/foo/bar.txt
+//
+// The following URLs are read-only, but otherwise interchangeable
+// with the above:
+//
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo/bar.txt
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo/bar.txt
+//   http://collections.example.com/by_id/1f4b0bc7583c2a7f9102c395f4ffc5e3%2B45/foo/bar.txt
+//   http://collections.example.com/by_id/zzzzz-4zz18-znfnqtbbv4spc3w/foo/bar.txt
+//
+// If the collection is named "MyCollection" and located in a project
+// called "MyProject" which is in the home project of a user with
+// username is "bob", the following read-only URL is also available
+// when authenticating as bob:
+//
+//   http://collections.example.com/users/bob/MyProject/MyCollection/foo/bar.txt
 //
 // An additional form is supported specifically to make it more
 // convenient to maintain support for existing Workbench download
@@ -147,6 +160,9 @@
 // public data can be served this way:
 //
 //   http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
+//
+// Collections can also be accessed (read-only) via "/by_id/X" where X
+// is a UUID or portable data hash.
 //
 // Authorization mechanisms
 //
@@ -178,11 +194,10 @@
 //
 // Indexes
 //
-// Currently, keep-web does not generate HTML index listings, nor does
-// it serve a default file like "index.html" when a directory is
-// requested. These features are likely to be added in future
-// versions. Until then, keep-web responds with 404 if a directory
-// name (or any path ending with "/") is requested.
+// Keep-web returns a generic HTML index listing when a directory is
+// requested with the GET method. It does not serve a default file
+// like "index.html". Directory listings are also returned for WebDAV
+// PROPFIND requests.
 //
 // Compatibility
 //

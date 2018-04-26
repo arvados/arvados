@@ -182,8 +182,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
-    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 8 ]] \
-        || fatal "Go >= 1.8 required. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 10 ]] \
+        || fatal "Go >= 1.10 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -246,9 +246,9 @@ sanity_checks() {
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
       echo -n 'R: '
-      which R || fatal "No R. Try: apt-get install r-base"
+      which Rscript || fatal "No Rscript. Try: apt-get install r-base"
       echo -n 'testthat: '
-      R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
+      Rscript -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
       # needed for roxygen2, needed for devtools, needed for R sdk
       pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
       # needed for pkgdown, builds R SDK doc pages
@@ -802,7 +802,7 @@ do_install sdk/ruby ruby_sdk
 install_R_sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
-       && R --quiet --vanilla --file=install_deps.R
+       && Rscript --vanilla install_deps.R
   fi
 }
 do_install sdk/R R_sdk
@@ -981,7 +981,7 @@ do_test sdk/ruby ruby_sdk
 test_R_sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
-        && R --quiet --file=run_test.R
+        && Rscript --vanilla run_test.R
   fi
 }
 

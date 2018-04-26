@@ -16,6 +16,7 @@ import tarfile
 import tempfile
 import shutil
 import _strptime
+import fcntl
 
 from operator import itemgetter
 from stat import *
@@ -185,12 +186,15 @@ def save_image(image_hash, image_file):
     except STAT_CACHE_ERRORS:
         pass  # We won't resume from this cache.  No big deal.
 
+def get_cache_dir():
+    return arv_cmd.make_home_conf_dir(
+        os.path.join('.cache', 'arvados', 'docker'), 0o700)
+
 def prep_image_file(filename):
     # Return a file object ready to save a Docker image,
     # and a boolean indicating whether or not we need to actually save the
     # image (False if a cached save is available).
-    cache_dir = arv_cmd.make_home_conf_dir(
-        os.path.join('.cache', 'arvados', 'docker'), 0o700)
+    cache_dir = get_cache_dir()
     if cache_dir is None:
         image_file = tempfile.NamedTemporaryFile(suffix='.tar')
         need_save = True
@@ -341,9 +345,10 @@ def _uuid2pdh(api, uuid):
         select=['portable_data_hash'],
     ).execute()['items'][0]['portable_data_hash']
 
-def main(arguments=None, stdout=sys.stdout):
+def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None):
     args = arg_parser.parse_args(arguments)
-    api = arvados.api('v1')
+    if api is None:
+        api = arvados.api('v1')
 
     if args.image is None or args.image == 'images':
         fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"
@@ -399,115 +404,131 @@ def main(arguments=None, stdout=sys.stdout):
     else:
         collection_name = args.name
 
-    if not args.force:
-        # Check if this image is already in Arvados.
+    # Acquire a lock so that only one arv-keepdocker process will
+    # dump/upload a particular docker image at a time.  Do this before
+    # checking if the image already exists in Arvados so that if there
+    # is an upload already underway, when that upload completes and
+    # this process gets a turn, it will discover the Docker image is
+    # already available and exit quickly.
+    outfile_name = '{}.tar'.format(image_hash)
+    lockfile_name = '{}.lock'.format(outfile_name)
+    lockfile = None
+    cache_dir = get_cache_dir()
+    if cache_dir:
+        lockfile = open(os.path.join(cache_dir, lockfile_name), 'w+')
+        fcntl.flock(lockfile, fcntl.LOCK_EX)
 
-        # Project where everything should be owned
-        if args.project_uuid:
-            parent_project_uuid = args.project_uuid
-        else:
-            parent_project_uuid = api.users().current().execute(
+    try:
+        if not args.force:
+            # Check if this image is already in Arvados.
+
+            # Project where everything should be owned
+            parent_project_uuid = args.project_uuid or api.users().current().execute(
                 num_retries=args.retries)['uuid']
 
-        # Find image hash tags
-        existing_links = _get_docker_links(
-            api, args.retries,
-            filters=[['link_class', '=', 'docker_image_hash'],
-                     ['name', '=', image_hash]])
-        if existing_links:
-            # get readable collections
-            collections = api.collections().list(
-                filters=[['uuid', 'in', [link['head_uuid'] for link in existing_links]]],
-                select=["uuid", "owner_uuid", "name", "manifest_text"]
-                ).execute(num_retries=args.retries)['items']
+            # Find image hash tags
+            existing_links = _get_docker_links(
+                api, args.retries,
+                filters=[['link_class', '=', 'docker_image_hash'],
+                         ['name', '=', image_hash]])
+            if existing_links:
+                # get readable collections
+                collections = api.collections().list(
+                    filters=[['uuid', 'in', [link['head_uuid'] for link in existing_links]]],
+                    select=["uuid", "owner_uuid", "name", "manifest_text"]
+                    ).execute(num_retries=args.retries)['items']
 
-            if collections:
-                # check for repo+tag links on these collections
-                if image_repo_tag:
-                    existing_repo_tag = _get_docker_links(
-                        api, args.retries,
-                        filters=[['link_class', '=', 'docker_image_repo+tag'],
-                                 ['name', '=', image_repo_tag],
-                                 ['head_uuid', 'in', [c["uuid"] for c in collections]]])
-                else:
-                    existing_repo_tag = []
+                if collections:
+                    # check for repo+tag links on these collections
+                    if image_repo_tag:
+                        existing_repo_tag = _get_docker_links(
+                            api, args.retries,
+                            filters=[['link_class', '=', 'docker_image_repo+tag'],
+                                     ['name', '=', image_repo_tag],
+                                     ['head_uuid', 'in', [c["uuid"] for c in collections]]])
+                    else:
+                        existing_repo_tag = []
 
-                try:
-                    coll_uuid = next(items_owned_by(parent_project_uuid, collections))['uuid']
-                except StopIteration:
-                    # create new collection owned by the project
-                    coll_uuid = api.collections().create(
-                        body={"manifest_text": collections[0]['manifest_text'],
-                              "name": collection_name,
-                              "owner_uuid": parent_project_uuid},
-                        ensure_unique_name=True
-                        ).execute(num_retries=args.retries)['uuid']
+                    try:
+                        coll_uuid = next(items_owned_by(parent_project_uuid, collections))['uuid']
+                    except StopIteration:
+                        # create new collection owned by the project
+                        coll_uuid = api.collections().create(
+                            body={"manifest_text": collections[0]['manifest_text'],
+                                  "name": collection_name,
+                                  "owner_uuid": parent_project_uuid},
+                            ensure_unique_name=True
+                            ).execute(num_retries=args.retries)['uuid']
 
-                link_base = {'owner_uuid': parent_project_uuid,
-                             'head_uuid':  coll_uuid,
-                             'properties': existing_links[0]['properties']}
+                    link_base = {'owner_uuid': parent_project_uuid,
+                                 'head_uuid':  coll_uuid,
+                                 'properties': existing_links[0]['properties']}
 
-                if not any(items_owned_by(parent_project_uuid, existing_links)):
-                    # create image link owned by the project
-                    make_link(api, args.retries,
-                              'docker_image_hash', image_hash, **link_base)
+                    if not any(items_owned_by(parent_project_uuid, existing_links)):
+                        # create image link owned by the project
+                        make_link(api, args.retries,
+                                  'docker_image_hash', image_hash, **link_base)
 
-                if image_repo_tag and not any(items_owned_by(parent_project_uuid, existing_repo_tag)):
-                    # create repo+tag link owned by the project
-                    make_link(api, args.retries, 'docker_image_repo+tag',
-                              image_repo_tag, **link_base)
+                    if image_repo_tag and not any(items_owned_by(parent_project_uuid, existing_repo_tag)):
+                        # create repo+tag link owned by the project
+                        make_link(api, args.retries, 'docker_image_repo+tag',
+                                  image_repo_tag, **link_base)
 
-                stdout.write(coll_uuid + "\n")
+                    stdout.write(coll_uuid + "\n")
 
-                sys.exit(0)
+                    sys.exit(0)
 
-    # Open a file for the saved image, and write it if needed.
-    outfile_name = '{}.tar'.format(image_hash)
-    image_file, need_save = prep_image_file(outfile_name)
-    if need_save:
-        save_image(image_hash, image_file)
+        # Open a file for the saved image, and write it if needed.
+        image_file, need_save = prep_image_file(outfile_name)
+        if need_save:
+            save_image(image_hash, image_file)
 
-    # Call arv-put with switches we inherited from it
-    # (a.k.a., switches that aren't our own).
-    put_args = keepdocker_parser.parse_known_args(arguments)[1]
+        # Call arv-put with switches we inherited from it
+        # (a.k.a., switches that aren't our own).
+        put_args = keepdocker_parser.parse_known_args(arguments)[1]
 
-    if args.name is None:
-        put_args += ['--name', collection_name]
+        if args.name is None:
+            put_args += ['--name', collection_name]
 
-    coll_uuid = arv_put.main(
-        put_args + ['--filename', outfile_name, image_file.name], stdout=stdout).strip()
+        coll_uuid = arv_put.main(
+            put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
+            install_sig_handlers=install_sig_handlers).strip()
 
-    # Read the image metadata and make Arvados links from it.
-    image_file.seek(0)
-    image_tar = tarfile.open(fileobj=image_file)
-    image_hash_type, _, raw_image_hash = image_hash.rpartition(':')
-    if image_hash_type:
-        json_filename = raw_image_hash + '.json'
-    else:
-        json_filename = raw_image_hash + '/json'
-    json_file = image_tar.extractfile(image_tar.getmember(json_filename))
-    image_metadata = json.load(json_file)
-    json_file.close()
-    image_tar.close()
-    link_base = {'head_uuid': coll_uuid, 'properties': {}}
-    if 'created' in image_metadata:
-        link_base['properties']['image_timestamp'] = image_metadata['created']
-    if args.project_uuid is not None:
-        link_base['owner_uuid'] = args.project_uuid
+        # Read the image metadata and make Arvados links from it.
+        image_file.seek(0)
+        image_tar = tarfile.open(fileobj=image_file)
+        image_hash_type, _, raw_image_hash = image_hash.rpartition(':')
+        if image_hash_type:
+            json_filename = raw_image_hash + '.json'
+        else:
+            json_filename = raw_image_hash + '/json'
+        json_file = image_tar.extractfile(image_tar.getmember(json_filename))
+        image_metadata = json.load(json_file)
+        json_file.close()
+        image_tar.close()
+        link_base = {'head_uuid': coll_uuid, 'properties': {}}
+        if 'created' in image_metadata:
+            link_base['properties']['image_timestamp'] = image_metadata['created']
+        if args.project_uuid is not None:
+            link_base['owner_uuid'] = args.project_uuid
 
-    make_link(api, args.retries, 'docker_image_hash', image_hash, **link_base)
-    if image_repo_tag:
-        make_link(api, args.retries,
-                  'docker_image_repo+tag', image_repo_tag, **link_base)
+        make_link(api, args.retries, 'docker_image_hash', image_hash, **link_base)
+        if image_repo_tag:
+            make_link(api, args.retries,
+                      'docker_image_repo+tag', image_repo_tag, **link_base)
 
-    # Clean up.
-    image_file.close()
-    for filename in [stat_cache_name(image_file), image_file.name]:
-        try:
-            os.unlink(filename)
-        except OSError as error:
-            if error.errno != errno.ENOENT:
-                raise
+        # Clean up.
+        image_file.close()
+        for filename in [stat_cache_name(image_file), image_file.name]:
+            try:
+                os.unlink(filename)
+            except OSError as error:
+                if error.errno != errno.ENOENT:
+                    raise
+    finally:
+        if lockfile is not None:
+            # Closing the lockfile unlocks it.
+            lockfile.close()
 
 if __name__ == '__main__':
     main()

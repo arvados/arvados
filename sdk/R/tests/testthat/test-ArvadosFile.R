@@ -268,4 +268,4 @@ test_that("move moves arvados file inside collection tree", {
 
     expect_that(dogIsNullOnOldLocation, is_true())
     expect_that(dogExistsOnNewLocation, is_true())
-}) 
+})
