@@ -54,7 +54,7 @@ navmenu: R
 title: "R SDK Overview"
 ...
 
-#{rd.read.gsub("```", "\n~~~\n").gsub(/^[ ]+/, "")}
+#{rd.read.gsub(/^```$/, "~~~").gsub(/^```(\w)$/, "~~~\\1")}
 EOF
               )
       end

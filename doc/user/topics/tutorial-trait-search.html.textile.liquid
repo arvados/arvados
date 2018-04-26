@@ -9,23 +9,27 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+The humans, specimens and traits tables are deprecated and will be removed in a future release.  The recommended way to store and search on user-defined metadata is using the "properties" field of Arvados resources.
+{% include 'notebox_end' %}
+
 This tutorial introduces the Arvados Metadata Database.  The Metadata Database stores information about files in Keep.  This example will use the Python SDK to find public WGS (Whole Genome Sequencing) data for people who have reported a certain medical condition.
 
 {% include 'tutorial_expectations' %}
 
 In the tutorial examples, three angle brackets (&gt;&gt;&gt;) will be used to denote code to enter at the interactive Python prompt.
 
-Start by running Python.  
+Start by running Python.
 
 <notextile>
 <pre><code>~$ <span class="userinput">python</span>
-Python 2.7.3 (default, Jan  2 2013, 13:56:14) 
+Python 2.7.3 (default, Jan  2 2013, 13:56:14)
 [GCC 4.7.2] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
 &gt;&gt;&gt;
 </code></pre>
 </notextile>
-      
+
 If everything is set up correctly, you will be able to import the arvados SDK.
 
 notextile. <pre><code>&gt;&gt;&gt; <span class="userinput">import arvados</span></pre></code>
@@ -248,7 +252,7 @@ After the jobs have completed, check output file sizes.
   job_uuid = job[collection_uuid]['uuid']
   job_output = arvados.api('v1').jobs().get(uuid=job_uuid).execute()['output']
   output_files = arvados.api('v1').collections().get(uuid=job_output).execute()['files']
-  # Test the output size.  If greater than zero, that means 'grep' found the variant 
+  # Test the output size.  If greater than zero, that means 'grep' found the variant
   if output_files[0][2] > 0:
     print("%s has variant rs1126809" % (pgpid[collection_uuid]))
   else:
