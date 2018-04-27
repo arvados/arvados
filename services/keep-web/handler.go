@@ -314,6 +314,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if useSiteFS {
+		if tokens == nil {
+			tokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
+		}
+		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
+		return
+	}
+
 	targetPath := pathParts[stripParts:]
 	if tokens == nil && len(targetPath) > 0 && strings.HasPrefix(targetPath[0], "t=") {
 		// http://ID.example/t=TOKEN/PATH...
@@ -333,11 +341,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			reqTokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
 		}
 		tokens = append(reqTokens, h.Config.AnonymousTokens...)
-	}
-
-	if useSiteFS {
-		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
-		return
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {

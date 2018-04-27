@@ -53,6 +53,8 @@ func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
 }
 
 func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
+	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
+
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
 	tempdir, err := ioutil.TempDir("", "keep-web-test-")
