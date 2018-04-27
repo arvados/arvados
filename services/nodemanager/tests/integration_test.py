@@ -21,6 +21,7 @@ import logging
 import stat
 import tempfile
 import shutil
+import errno
 from functools import partial
 import arvados
 import StringIO
@@ -256,7 +257,18 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
         logger.info("%s passed", name)
     else:
         if isinstance(detail_content, StringIO.StringIO):
-            sys.stderr.write(detail_content.getvalue())
+            detail_content.seek(0)
+            chunk = detail_content.read(4096)
+            while chunk:
+                try:
+                    sys.stderr.write(chunk)
+                    chunk = detail_content.read(4096)
+                except IOError as e:
+                    if e.errno == errno.EAGAIN:
+                        # try again (probably pipe buffer full)
+                        pass
+                    else:
+                        raise
         logger.info("%s failed", name)
 
     return code
