@@ -34,9 +34,9 @@ h3. 2018-04-05: v1.1.4 regression in arvados-cwl-runner for workflows that rely 
 
 h4. Secondary files missing from toplevel workflow inputs
 
-If a workflow input does not declare "secondaryFiles" corresponding to the "secondaryFiles" of workflow steps which use the input, the workflow would inconsistently succeed or fail depending on whether the input values were specified as local files or referenced an existing collection (and whether the existing collection contained the secondary files or not).  To ensure consistent behavior, the workflow is now required to declare in the top level workflow inputs any secondaryFiles that are expected by workflow steps.
+If a workflow input does not declare @secondaryFiles@ corresponding to the @secondaryFiles@ of workflow steps which use the input, the workflow would inconsistently succeed or fail depending on whether the input values were specified as local files or referenced an existing collection (and whether the existing collection contained the secondary files or not).  To ensure consistent behavior, the workflow is now required to declare in the top level workflow inputs any secondaryFiles that are expected by workflow steps.
 
-As an example, the following workflow will fail because the @toplevel_input@ does not declare the secondaryFiles that will be expected by @step_input@:
+As an example, the following workflow will fail because the @toplevel_input@ does not declare the @secondaryFiles@ that are expected by @step_input@:
 
 <pre>
 class: Workflow
@@ -91,7 +91,7 @@ steps:
 
 h4. Secondary files on default file inputs
 
-Due to a bug in Arvados v1.1.4, @File@ inputs that have default values and also expect @secondaryFiles@ and will fail to upload default secondaryFiles.  As an example, the following case will fail:
+Due to a bug in Arvados v1.1.4, @File@ inputs that have default values and also expect @secondaryFiles@ and will fail to upload default @secondaryFiles@.  As an example, the following case will fail:
 
 <pre>
 class: CommandLineTool
