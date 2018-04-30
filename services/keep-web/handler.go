@@ -615,9 +615,9 @@ the entire directory tree with wget, try:</P>
 <UL>
 {{range .Files}}
 {{if .IsDir }}
-  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{.Name}}/">{{.Name}}/</A></LI>
+  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{print "./" .Name}}/">{{.Name}}/</A></LI>
 {{else}}
-  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{print "./" .Name}}">{{.Name}}</A></LI>
 {{end}}
 {{end}}
 </UL>
