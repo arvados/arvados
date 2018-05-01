@@ -622,13 +622,13 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 
 func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient {
 	kc := *h.KeepClient
+	kc.RequestID = req.Header.Get("X-Request-Id")
 	kc.HTTPClient = &proxyClient{
 		client: &http.Client{
 			Timeout:   h.timeout,
 			Transport: h.transport,
 		},
-		proto:     req.Proto,
-		requestID: req.Header.Get("X-Request-Id"),
+		proto: req.Proto,
 	}
 	return &kc
 }
