@@ -35,6 +35,13 @@ class ArvadosCommandTool(CommandLineTool):
                                  **kwargs)
 
     def job(self, joborder, output_callback, **kwargs):
+
+        # Workaround for #13365
+        builderargs = kwargs.copy()
+        builderargs["toplevel"] = True
+        builder = self._init_job(joborder, **builderargs)
+        joborder = builder.job
+
         if self.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
             if dockerReq and dockerReq.get("dockerOutputDirectory"):
