@@ -128,6 +128,8 @@ class Arvados::V1::UsersController < ApplicationController
   def merge
     if !Thread.current[:api_client].andand.is_trusted
       return send_error("supplied API token is not from a trusted client", status: 403)
+    elsif Thread.current[:api_client_authorization].scopes != ['all']
+      return send_error("cannot merge with a scoped token", status: 403)
     end
 
     dst_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
@@ -136,6 +138,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
     if !dst_auth.api_client.andand.is_trusted
       return send_error("supplied new_user_token is not from a trusted client", status: 403)
+    elsif dst_auth.scopes != ['all']
+      return send_error("supplied new_user_token has restricted scope", status: 403)
     end
     dst_user = dst_auth.user
 

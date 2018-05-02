@@ -861,6 +861,22 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
   end
 
+  [['src', :active_trustedclient],
+   ['dst', :project_viewer_trustedclient]].each do |which_scoped, auth|
+    test "refuse to merge with scoped #{which_scoped} token" do
+      act_as_system_user do
+        api_client_authorizations(auth).update_attributes(scopes: ["GET /", "POST /", "PUT /"])
+      end
+      authorize_with(:active_trustedclient)
+      post(:merge, {
+             new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
+             new_owner_uuid: users(:project_viewer).uuid,
+             redirect_to_new_user: true,
+           })
+      assert_response(403)
+    end
+  end
+
   test "refuse to merge if new_owner_uuid is not writable" do
     authorize_with(:project_viewer_trustedclient)
     post(:merge, {
