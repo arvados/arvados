@@ -815,6 +815,88 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
   end
 
+  test "refuse to merge with redirect_to_user_uuid=false (not yet supported)" do
+    authorize_with :project_viewer_trustedclient
+    post :merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: false,
+         }
+    assert_response(422)
+  end
+
+  test "refuse to merge user into self" do
+    authorize_with(:active_trustedclient)
+    post(:merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+  end
+
+  [[:active, :project_viewer_trustedclient],
+   [:active_trustedclient, :project_viewer]].each do |src, dst|
+    test "refuse to merge with untrusted token (#{src} -> #{dst})" do
+      authorize_with(src)
+      post(:merge, {
+             new_user_token: api_client_authorizations(dst).api_token,
+             new_owner_uuid: api_client_authorizations(dst).user.uuid,
+             redirect_to_new_user: true,
+           })
+      assert_response(403)
+    end
+  end
+
+  [[:expired_trustedclient, :project_viewer_trustedclient],
+   [:project_viewer_trustedclient, :expired_trustedclient]].each do |src, dst|
+    test "refuse to merge with expired token (#{src} -> #{dst})" do
+      authorize_with(src)
+      post(:merge, {
+             new_user_token: api_client_authorizations(dst).api_token,
+             new_owner_uuid: api_client_authorizations(dst).user.uuid,
+             redirect_to_new_user: true,
+           })
+      assert_response(401)
+    end
+  end
+
+  test "refuse to merge if new_owner_uuid is not writable" do
+    authorize_with(:project_viewer_trustedclient)
+    post(:merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           new_owner_uuid: groups(:anonymously_accessible_project).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(403)
+  end
+
+  test "refuse to update redirect_to_user_uuid directly" do
+    authorize_with(:active_trustedclient)
+    patch(:update, {
+            id: users(:active).uuid,
+            user: {
+              redirect_to_user_uuid: users(:active).uuid,
+            },
+          })
+    assert_response(403)
+  end
+
+  test "merge 'project_viewer' account into 'active' account" do
+    authorize_with(:project_viewer_trustedclient)
+    post(:merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(:success)
+    assert_equal(users(:project_viewer).redirect_to_user_uuid, users(:active).uuid)
+
+    auth = ApiClientAuthorization.validate(token: api_client_authorizations(:project_viewer).api_token)
+    assert_not_nil(auth)
+    assert_not_nil(auth.user)
+    assert_equal(users(:active).uuid, auth.user.uuid)
+  end
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name", "username"].sort

@@ -6,9 +6,9 @@ class Arvados::V1::UsersController < ApplicationController
   accept_attribute_as_json :prefs, Hash
 
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :current, :system, :setup]
+    [:activate, :current, :system, :setup, :merge]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :current, :system, :setup]
+    [:activate, :current, :system, :setup, :merge]
   before_filter :admin_required, only: [:setup, :unsetup, :update_uuid]
 
   def current
@@ -122,6 +122,40 @@ class Arvados::V1::UsersController < ApplicationController
   # objects accordingly.
   def update_uuid
     @object.update_uuid(new_uuid: params[:new_uuid])
+    show
+  end
+
+  def merge
+    if !Thread.current[:api_client].andand.is_trusted
+      return send_error("supplied API token is not from a trusted client", status: 403)
+    end
+
+    dst_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
+    if !dst_auth
+      return send_error("invalid new_user_token", status: 401)
+    end
+    if !dst_auth.api_client.andand.is_trusted
+      return send_error("supplied new_user_token is not from a trusted client", status: 403)
+    end
+    dst_user = dst_auth.user
+
+    if current_user.uuid == dst_user.uuid
+      return send_error("cannot merge user to self", status: 422)
+    end
+
+    if !dst_user.can?(write: params[:new_owner_uuid])
+      return send_error("new_owner_uuid is not writable", status: 403)
+    end
+
+    redirect = params[:redirect_to_new_user]
+    if !redirect
+      return send_error("merge with redirect_to_new_user=false is not yet supported", status: 422)
+    end
+
+    @object = current_user
+    act_as_system_user do
+      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && dst_user.uuid)
+    end
     show
   end
 

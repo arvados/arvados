@@ -48,6 +48,8 @@ class User < ArvadosModel
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
   has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
 
+  default_scope { where('redirect_to_user_uuid is null') }
+
   api_accessible :user, extend: :common do |t|
     t.add :email
     t.add :username
@@ -269,25 +271,58 @@ class User < ArvadosModel
       old_uuid = self.uuid
       self.uuid = new_uuid
       save!(validate: false)
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
-        klass.columns.each do |col|
-          if col.name.end_with?('_uuid')
-            column = col.name.to_sym
-            klass.where(column => old_uuid).update_all(column => new_uuid)
-          end
-        end
+      change_all_uuid_refs(old_uuid: old_uuid, new_uuid: new_uuid)
+    end
+  end
+
+  # Merge this user's owned items into dst_user.
+  def merge(new_owner_uuid:, redirect_to_user_uuid:)
+    raise PermissionDeniedError if !current_user.andand.is_admin
+    raise "not implemented" if !redirect_to_user_uuid
+    transaction(requires_new: true) do
+      reload
+      new_user = User.where(uuid: redirect_to_user_uuid).first
+      raise "user does not exist" if !new_user
+      if User.where('uuid in (?) and redirect_to_user_uuid is not null',
+                    [new_owner_uuid, redirect_to_user_uuid]).any?
+        raise "cannot merge to/from an already merged user"
       end
+      ApiClientAuthorization.
+        where(user_id: id).
+        update_all(user_id: new_user.id)
+      [
+        [AuthorizedKey, :owner_uuid],
+        [AuthorizedKey, :authorized_user_uuid],
+        [Repository, :owner_uuid],
+        [Link, :tail_uuid],
+        [Link, :head_uuid],
+      ].each do |klass, column|
+        klass.where(column => uuid).update_all(column => new_user.uuid)
+      end
+      change_all_uuid_refs(old_uuid: uuid, new_uuid: new_owner_uuid)
+      update_attributes!(redirect_to_user_uuid: new_user.uuid)
     end
   end
 
   protected
+
+  def change_all_uuid_refs(old_uuid:, new_uuid:)
+    ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
+      klass.columns.each do |col|
+        if col.name.end_with?('_uuid')
+          column = col.name.to_sym
+          klass.where(column => old_uuid).update_all(column => new_uuid)
+        end
+      end
+    end
+  end
 
   def ensure_ownership_path_leads_to_user
     true
   end
 
   def permission_to_update
-    if username_changed?
+    if username_changed? || redirect_to_user_uuid_changed?
       current_user.andand.is_admin
     else
       # users must be able to update themselves (even if they are
@@ -298,7 +333,8 @@ class User < ArvadosModel
 
   def permission_to_create
     current_user.andand.is_admin or
-      (self == current_user and
+      (self == current_user &&
+       self.redirect_to_user_uuid.nil? &&
        self.is_active == Rails.configuration.new_users_are_active)
   end
 

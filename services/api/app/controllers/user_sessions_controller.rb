@@ -26,9 +26,9 @@ class UserSessionsController < ApplicationController
 
     # Only local users can create sessions, hence uuid_like_pattern
     # here.
-    user = User.where('identity_url = ? and uuid like ?',
-                      omniauth['info']['identity_url'],
-                      User.uuid_like_pattern).first
+    user = User.unscoped.where('identity_url = ? and uuid like ?',
+                               omniauth['info']['identity_url'],
+                               User.uuid_like_pattern).first
     if not user
       # Check for permission to log in to an existing User record with
       # a different identity_url
@@ -45,6 +45,14 @@ class UserSessionsController < ApplicationController
         end
       end
     end
+
+    while (uuid = user.andand.redirect_to_user_uuid)
+      user = User.where(uuid: uuid).first
+      if !user
+        raise Exception.new("identity_url #{omniauth['info']['identity_url']} redirects to nonexistent uuid #{uuid}")
+      end
+    end
+
     if not user
       # New user registration
       user = User.new(:email => omniauth['info']['email'],
