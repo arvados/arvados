@@ -106,15 +106,16 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
-	reqid, ok := c.context().Value(contextKeyRequestID).(string)
-	if !ok {
-		reqid = reqIDGen.Next()
-	}
 	if req.Header.Get("X-Request-Id") == "" {
-		if req.Header == nil {
-			req.Header = http.Header{}
+		reqid, _ := c.context().Value(contextKeyRequestID).(string)
+		if reqid == "" {
+			reqid = reqIDGen.Next()
 		}
-		req.Header.Set("X-Request-Id", reqid)
+		if req.Header == nil {
+			req.Header = http.Header{"X-Request-Id": {reqid}}
+		} else {
+			req.Header.Set("X-Request-Id", reqid)
+		}
 	}
 	return c.httpClient().Do(req)
 }
