@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: "Upgrading Arvados"
+title: "Upgrading Arvados and Release notes"
 ...
 
 {% comment %}
@@ -61,16 +61,30 @@ steps:
       baseCommand: echo
 </pre>
 
-To fix this, add the appropriate @secondaryFiles@ section to @toplevel_input@
+When run, this produces an error like this:
 
 <pre>
-class: Workflow
+cwltool ERROR: [step step1] Cannot make job: Missing required secondary file 'hello.txt.idx' from file object: {
+    "basename": "hello.txt",
+    "class": "File",
+    "location": "keep:ade9d0e032044bd7f58daaecc0d06bc6+51/hello.txt",
+    "size": 0,
+    "nameroot": "hello",
+    "nameext": ".txt",
+    "secondaryFiles": []
+}
+</pre>
+
+To fix this error, add the appropriate @secondaryFiles@ section to @toplevel_input@
+
+<notextile>
+<pre><code>class: Workflow
 cwlVersion: v1.0
 inputs:
-  toplevel_input:
+  <span class="userinput">toplevel_input:
     type: File
     secondaryFiles:
-      - .idx
+      - .idx</span>
 outputs: []
 steps:
   step1:
@@ -87,7 +101,8 @@ steps:
             - .idx
       outputs: []
       baseCommand: echo
-</pre>
+</code></pre>
+</notextile>
 
 h4. Secondary files on default file inputs
 
@@ -107,24 +122,32 @@ outputs: []
 baseCommand: echo
 </pre>
 
-To fix this, manually upload the primary and secondary files to keep and explicitly declare @secondaryFiles@ on the default primary file:
+When run, this produces an error like this:
 
 <pre>
-class: CommandLineTool
+2018-05-03 10:58:47 cwltool ERROR: Unhandled error, try again with --debug for more information:
+  [Errno 2] File not found: u'hello.txt.idx'
+</pre>
+
+To fix this, manually upload the primary and secondary files to keep and explicitly declare @secondaryFiles@ on the default primary file:
+
+<notextile>
+<pre><code>class: CommandLineTool
 inputs:
   step_input:
     type: File
     secondaryFiles:
       - .idx
-    default:
+    <span class="userinput">default:
       class: File
       location: keep:4d8a70b1e63b2aad6984e40e338e2373+69/hello.txt
       secondaryFiles:
        - class: File
-         location: keep:4d8a70b1e63b2aad6984e40e338e2373+69/hello.txt.idx
+         location: keep:4d8a70b1e63b2aad6984e40e338e2373+69/hello.txt.idx</span>
 outputs: []
 baseCommand: echo
-</pre>
+</code></pre>
+</notextile>
 
 This bug will be fixed in an upcoming release of Arvados.
 
