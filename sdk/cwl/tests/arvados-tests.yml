@@ -182,3 +182,46 @@
   output: {}
   tool: secondaryFiles/example3.cwl
   doc: Discover secondaryFiles on default values
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf1.cwl
+  doc: "Can have separate default parameters including directory and file inside same directory"
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf2.cwl
+  doc: "Can have a parameter default value that is a directory literal with a file literal"
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf3.cwl
+  doc: "Do not accept a directory literal without a basename
+  should_fail: true
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf4.cwl
+  doc: default in embedded subworkflow
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf5.cwl
+  doc: default in embedded subworkflow
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf6.cwl
+  doc: default in RunInSingleContainer step
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf7.cwl
+  doc: workflow level default in RunInSingleContainer
