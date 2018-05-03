@@ -141,7 +141,6 @@ func TestBlockDigestGetsPrettyPrintedByPrintfInNestedStructs(t *testing.T) {
 
 func TestLocatorPatternBasic(t *testing.T) {
 	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345")
-	expectLocatorPatternMatch(t, "A2345678901234abcdefababdeffdfdf+12345")
 	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345+A1")
 	expectLocatorPatternMatch(t,
 		"12345678901234567890123456789012+12345+A1+B123wxyz@_-")
@@ -153,6 +152,7 @@ func TestLocatorPatternBasic(t *testing.T) {
 
 	expectLocatorPatternFail(t, "12345678901234567890123456789012")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+")
+	expectLocatorPatternFail(t, "A2345678901234abcdefababdeffdfdf+12345")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+")
 	expectLocatorPatternFail(t, "1234567890123456789012345678901+12345")
 	expectLocatorPatternFail(t, "123456789012345678901234567890123+12345")
