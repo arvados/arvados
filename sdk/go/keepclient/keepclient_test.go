@@ -195,10 +195,12 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 type FailThenSucceedHandler struct {
 	handled        chan string
 	count          int
-	successhandler StubGetHandler
+	successhandler http.Handler
+	reqIDs         []string
 }
 
 func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
 	if fh.count == 0 {
 		resp.WriteHeader(500)
 		fh.count += 1
@@ -560,8 +562,9 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := &FailThenSucceedHandler{make(chan string, 1), 0,
-		StubGetHandler{
+	st := &FailThenSucceedHandler{
+		handled: make(chan string, 1),
+		successhandler: StubGetHandler{
 			c,
 			hash,
 			"abc123",
@@ -585,6 +588,13 @@ func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, []byte("foo"))
+
+	c.Logf("%q", st.reqIDs)
+	c.Assert(len(st.reqIDs) > 1, Equals, true)
+	for _, reqid := range st.reqIDs {
+		c.Check(reqid, Not(Equals), "")
+		c.Check(reqid, Equals, st.reqIDs[0])
+	}
 }
 
 func (s *StandaloneSuite) TestGetNetError(c *C) {
@@ -1180,25 +1190,10 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
-type FailThenSucceedPutHandler struct {
-	handled        chan string
-	count          int
-	successhandler StubPutHandler
-}
-
-func (h *FailThenSucceedPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if h.count == 0 {
-		resp.WriteHeader(500)
-		h.count += 1
-		h.handled <- fmt.Sprintf("http://%s", req.Host)
-	} else {
-		h.successhandler.ServeHTTP(resp, req)
-	}
-}
-
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
-	st := &FailThenSucceedPutHandler{make(chan string, 1), 0,
-		StubPutHandler{
+	st := &FailThenSucceedHandler{
+		handled: make(chan string, 1),
+		successhandler: StubPutHandler{
 			c,
 			Md5String("foo"),
 			"abc123",
