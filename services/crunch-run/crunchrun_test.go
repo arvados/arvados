@@ -402,6 +402,10 @@ func (fw FileWrapper) Write([]byte) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
+func (fw FileWrapper) Sync() error {
+	return errors.New("not implemented")
+}
+
 func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	if filename == hwImageId+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})

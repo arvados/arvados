@@ -146,6 +146,7 @@
   }
   tool: wf/secret_wf.cwl
   doc: "Test secret input parameters"
+  tags: [ secrets ]
 
 - job: null
   output:

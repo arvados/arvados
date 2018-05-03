@@ -547,7 +547,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	pullq.ReplaceQueue(plist)
 }
 
-// TrashRequest consists of a block locator and it's Mtime
+// TrashRequest consists of a block locator and its Mtime
 type TrashRequest struct {
 	Locator    string `json:"locator"`
 	BlockMtime int64  `json:"block_mtime"`

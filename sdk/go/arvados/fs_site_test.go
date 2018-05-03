@@ -45,7 +45,7 @@ func (s *SiteFSSuite) TestByIDEmpty(c *check.C) {
 	c.Check(len(fis), check.Equals, 0)
 }
 
-func (s *SiteFSSuite) TestByUUID(c *check.C) {
+func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	f, err := s.fs.Open("/by_id")
 	c.Assert(err, check.IsNil)
 	fis, err := f.Readdir(-1)
@@ -58,14 +58,29 @@ func (s *SiteFSSuite) TestByUUID(c *check.C) {
 	f, err = s.fs.Open("/by_id/" + arvadostest.NonexistentCollection)
 	c.Assert(err, check.Equals, os.ErrNotExist)
 
-	f, err = s.fs.Open("/by_id/" + arvadostest.FooCollection)
+	for _, path := range []string{
+		arvadostest.FooCollection,
+		arvadostest.FooPdh,
+		arvadostest.AProjectUUID + "/" + arvadostest.FooCollectionName,
+	} {
+		f, err = s.fs.Open("/by_id/" + path)
+		c.Assert(err, check.IsNil)
+		fis, err = f.Readdir(-1)
+		var names []string
+		for _, fi := range fis {
+			names = append(names, fi.Name())
+		}
+		c.Check(names, check.DeepEquals, []string{"foo"})
+	}
+
+	f, err = s.fs.Open("/by_id/" + arvadostest.AProjectUUID + "/A Subproject/baz_file")
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(-1)
 	var names []string
 	for _, fi := range fis {
 		names = append(names, fi.Name())
 	}
-	c.Check(names, check.DeepEquals, []string{"foo"})
+	c.Check(names, check.DeepEquals, []string{"baz"})
 
 	_, err = s.fs.OpenFile("/by_id/"+arvadostest.NonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
 	c.Check(err, check.Equals, ErrInvalidOperation)

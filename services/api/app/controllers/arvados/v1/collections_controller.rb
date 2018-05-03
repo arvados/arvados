@@ -36,7 +36,19 @@ class Arvados::V1::CollectionsController < ApplicationController
   def find_object_by_uuid
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
-      if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).limit(1).first
+
+      # It matters which Collection object we pick because we use it to get signed_manifest_text,
+      # the value of which is affected by the value of trash_at.
+      #
+      # From postgres doc: "By default, null values sort as if larger than any non-null
+      # value; that is, NULLS FIRST is the default for DESC order, and
+      # NULLS LAST otherwise."
+      #
+      # "trash_at desc" sorts null first, then latest to earliest, so
+      # it will select the Collection object with the longest
+      # available lifetime.
+
+      if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,

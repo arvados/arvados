@@ -12,6 +12,18 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados applications can subscribe to a live event stream from the database.  Events are described in the "Log resource.":{{site.baseurl}}/api/methods/logs.html
 
-<notextile>
-{% code 'events_py' as python %}
-</notextile>
+{% codeblock as python %}
+#!/usr/bin/env python
+
+import arvados
+import arvados.events
+
+# 'ev' is a dict containing the log table record describing the change.
+def on_message(ev):
+    if ev.get("event_type") == "create" and ev.get("object_kind") == "arvados#collection":
+        print "A new collection was created: %s" % ev["object_uuid"]
+
+api = arvados.api("v1")
+ws = arvados.events.subscribe(api, [], on_message)
+ws.run_forever()
+{% endcodeblock %}

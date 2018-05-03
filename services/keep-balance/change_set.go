@@ -16,25 +16,30 @@ import (
 // store it locally.
 type Pull struct {
 	arvados.SizedDigest
-	Source *KeepService
+	From *KeepService
+	To   *KeepMount
 }
 
 // MarshalJSON formats a pull request the way keepstore wants to see
 // it.
 func (p Pull) MarshalJSON() ([]byte, error) {
 	type KeepstorePullRequest struct {
-		Locator string   `json:"locator"`
-		Servers []string `json:"servers"`
+		Locator   string   `json:"locator"`
+		Servers   []string `json:"servers"`
+		MountUUID string   `json:"mount_uuid"`
 	}
 	return json.Marshal(KeepstorePullRequest{
-		Locator: string(p.SizedDigest[:32]),
-		Servers: []string{p.Source.URLBase()}})
+		Locator:   string(p.SizedDigest[:32]),
+		Servers:   []string{p.From.URLBase()},
+		MountUUID: p.To.KeepMount.UUID,
+	})
 }
 
 // Trash is a request to delete a block.
 type Trash struct {
 	arvados.SizedDigest
 	Mtime int64
+	From  *KeepMount
 }
 
 // MarshalJSON formats a trash request the way keepstore wants to see
@@ -43,10 +48,13 @@ func (t Trash) MarshalJSON() ([]byte, error) {
 	type KeepstoreTrashRequest struct {
 		Locator    string `json:"locator"`
 		BlockMtime int64  `json:"block_mtime"`
+		MountUUID  string `json:"mount_uuid"`
 	}
 	return json.Marshal(KeepstoreTrashRequest{
 		Locator:    string(t.SizedDigest[:32]),
-		BlockMtime: t.Mtime})
+		BlockMtime: t.Mtime,
+		MountUUID:  t.From.KeepMount.UUID,
+	})
 }
 
 // ChangeSet is a set of change requests that will be sent to a
