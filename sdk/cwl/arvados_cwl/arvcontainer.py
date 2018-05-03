@@ -260,7 +260,6 @@ class ArvadosContainer(object):
 
             if response["state"] == "Final":
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
-                self.done(response)
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
@@ -454,9 +453,6 @@ class RunnerContainer(Runner):
         self.arvrunner.process_submitted(self)
 
         logger.info("%s submitted container %s", self.arvrunner.label(self), response["uuid"])
-
-        if response["state"] == "Final":
-            self.done(response)
 
     def done(self, record):
         try:
