@@ -160,6 +160,7 @@ class ArvCwlRunner(object):
     def process_done(self, uuid, record):
         with self.workflow_eval_lock:
             j = self.processes[uuid]
+            logger.info("%s %s is %s", self.label(j), uuid, record["state"])
             self.task_queue.add(partial(j.done, record))
             del self.processes[uuid]
 
@@ -182,7 +183,6 @@ class ArvCwlRunner(object):
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                         logger.info("%s %s is Running", self.label(j), uuid)
             elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
-                logger.info("%s %s is %s", self.label(j), uuid, event["properties"]["new_attributes"]["state"])
                 self.process_done(uuid, event["properties"]["new_attributes"])
 
     def label(self, obj):
