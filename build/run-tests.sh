@@ -489,6 +489,8 @@ setup_virtualenv() {
     local venvdest="$1"; shift
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    elif [[ -n "$short" ]]; then
+        return
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
@@ -542,8 +544,7 @@ setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install --no-cache-dir PyYAML >/dev/null \
+pip install --no-cache-dir PyYAML \
     || fatal "pip install PyYAML failed"
 
 # Preinstall libcloud if using a fork; otherwise nodemanager "pip
