@@ -202,6 +202,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil
 	}
 
+	reqid := kc.getRequestID()
+
 	var expectLength int64
 	if parts := strings.SplitN(locator, "+", 3); len(parts) < 2 {
 		expectLength = -1
@@ -234,7 +236,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				continue
 			}
-			kc.setRequestHeaders(req)
+			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+			req.Header.Add("X-Request-Id", reqid)
 			resp, err := kc.httpClient().Do(req)
 			if err != nil {
 				// Probably a network error, may be transient,
@@ -352,7 +355,8 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 		return nil, err
 	}
 
-	kc.setRequestHeaders(req)
+	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+	req.Header.Set("X-Request-Id", kc.getRequestID())
 	resp, err := kc.httpClient().Do(req)
 	if err != nil {
 		return nil, err
@@ -543,12 +547,11 @@ func (kc *KeepClient) httpClient() HTTPClient {
 
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
-func (kc *KeepClient) setRequestHeaders(req *http.Request) {
-	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+func (kc *KeepClient) getRequestID() string {
 	if kc.RequestID != "" {
-		req.Header.Set("X-Request-Id", kc.RequestID)
+		return kc.RequestID
 	} else {
-		req.Header.Set("X-Request-Id", reqIDGen.Next())
+		return reqIDGen.Next()
 	}
 }
 

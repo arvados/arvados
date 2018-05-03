@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -57,13 +56,13 @@ type uploadStatus struct {
 }
 
 func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Reader,
-	upload_status chan<- uploadStatus, expectedLength int64, requestID int32) {
+	upload_status chan<- uploadStatus, expectedLength int64, reqid string) {
 
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		DebugPrintf("DEBUG: [%08x] Error creating request PUT %v error: %v", requestID, url, err.Error())
+		DebugPrintf("DEBUG: [%s] Error creating request PUT %v error: %v", reqid, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return
 	}
@@ -77,13 +76,14 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 		// to be empty, so don't set req.Body.
 	}
 
-	this.setRequestHeaders(req)
+	req.Header.Add("X-Request-Id", reqid)
+	req.Header.Add("Authorization", "OAuth2 "+this.Arvados.ApiToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 
 	var resp *http.Response
 	if resp, err = this.httpClient().Do(req); err != nil {
-		DebugPrintf("DEBUG: [%08x] Upload failed %v error: %v", requestID, url, err.Error())
+		DebugPrintf("DEBUG: [%s] Upload failed %v error: %v", reqid, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return
 	}
@@ -99,16 +99,16 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		DebugPrintf("DEBUG: [%08x] Upload %v error: %v response: %v", requestID, url, err2.Error(), response)
+		DebugPrintf("DEBUG: [%s] Upload %v error: %v response: %v", reqid, url, err2.Error(), response)
 		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
 	} else if resp.StatusCode == http.StatusOK {
-		DebugPrintf("DEBUG: [%08x] Upload %v success", requestID, url)
+		DebugPrintf("DEBUG: [%s] Upload %v success", reqid, url)
 		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
 		if resp.StatusCode >= 300 && response == "" {
 			response = resp.Status
 		}
-		DebugPrintf("DEBUG: [%08x] Upload %v error: %v response: %v", requestID, url, resp.StatusCode, response)
+		DebugPrintf("DEBUG: [%s] Upload %v error: %v response: %v", reqid, url, resp.StatusCode, response)
 		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
@@ -118,9 +118,7 @@ func (this *KeepClient) putReplicas(
 	getReader func() io.Reader,
 	expectedLength int64) (locator string, replicas int, err error) {
 
-	// Generate an arbitrary ID to identify this specific
-	// transaction in debug logs.
-	requestID := rand.Int31()
+	reqid := this.getRequestID()
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
@@ -167,8 +165,8 @@ func (this *KeepClient) putReplicas(
 			for active*replicasPerThread < replicasTodo {
 				// Start some upload requests
 				if next_server < len(sv) {
-					DebugPrintf("DEBUG: [%08x] Begin upload %s to %s", requestID, hash, sv[next_server])
-					go this.uploadToKeepServer(sv[next_server], hash, getReader(), upload_status, expectedLength, requestID)
+					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[next_server])
+					go this.uploadToKeepServer(sv[next_server], hash, getReader(), upload_status, expectedLength, reqid)
 					next_server += 1
 					active += 1
 				} else {
@@ -184,8 +182,8 @@ func (this *KeepClient) putReplicas(
 					}
 				}
 			}
-			DebugPrintf("DEBUG: [%08x] Replicas remaining to write: %v active uploads: %v",
-				requestID, replicasTodo, active)
+			DebugPrintf("DEBUG: [%s] Replicas remaining to write: %v active uploads: %v",
+				reqid, replicasTodo, active)
 
 			// Now wait for something to happen.
 			if active > 0 {
