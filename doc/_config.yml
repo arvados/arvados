@@ -145,10 +145,10 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
+      - admin/upgrading.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
-      - admin/upgrading.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:
