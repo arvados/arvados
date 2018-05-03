@@ -431,5 +431,3 @@ class Runner(object):
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             self.arvrunner.output_callback(outputs, processStatus)
-        finally:
-            self.arvrunner.process_done(record["uuid"])

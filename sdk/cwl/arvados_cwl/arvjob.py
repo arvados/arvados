@@ -264,7 +264,6 @@ class ArvadosJob(object):
                 processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-            self.arvrunner.process_done(record["uuid"])
 
 
 class RunnerJob(Runner):

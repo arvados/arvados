@@ -316,7 +316,6 @@ class ArvadosContainer(object):
             processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-            self.arvrunner.process_done(record["uuid"])
 
 
 class RunnerContainer(Runner):
@@ -464,5 +463,3 @@ class RunnerContainer(Runner):
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             super(RunnerContainer, self).done(container)
-        finally:
-            self.arvrunner.process_done(record["uuid"])

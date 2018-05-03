@@ -157,10 +157,11 @@ class ArvCwlRunner(object):
         with self.workflow_eval_lock:
             self.processes[container.uuid] = container
 
-    def process_done(self, uuid):
+    def process_done(self, uuid, record):
         with self.workflow_eval_lock:
-            if uuid in self.processes:
-                del self.processes[uuid]
+            j = self.processes[uuid]
+            self.task_queue.add(partial(j.done, record))
+            del self.processes[uuid]
 
     def wrapped_callback(self, cb, obj, st):
         with self.workflow_eval_lock:
@@ -181,10 +182,8 @@ class ArvCwlRunner(object):
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                         logger.info("%s %s is Running", self.label(j), uuid)
             elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
-                with self.workflow_eval_lock:
-                    j = self.processes[uuid]
-                self.task_queue.add(partial(j.done, event["properties"]["new_attributes"]))
                 logger.info("%s %s is %s", self.label(j), uuid, event["properties"]["new_attributes"]["state"])
+                self.process_done(uuid, event["properties"]["new_attributes"])
 
     def label(self, obj):
         return "[%s %s]" % (self.work_api[0:-1], obj.name)
