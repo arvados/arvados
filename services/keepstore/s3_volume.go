@@ -850,7 +850,7 @@ func (v *S3Volume) EmptyTrash() {
 	}
 
 	var wg sync.WaitGroup
-	todo := make(chan *s3.Key)
+	todo := make(chan *s3.Key, theConfig.EmptyTrashWorkers)
 	for i := 0; i < 1 || i < theConfig.EmptyTrashWorkers; i++ {
 		wg.Add(1)
 		go func() {

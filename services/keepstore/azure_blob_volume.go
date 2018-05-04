@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -620,9 +621,51 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
-	var blocksDeleted, blocksInTrash int
-	params := storage.ListBlobsParameters{Include: &storage.IncludeBlobDataset{Metadata: true}}
+	var blocksDeleted, blocksInTrash int64
 
+	doBlob := func(b storage.Blob) {
+		// Check whether the block is flagged as trash
+		if b.Metadata["expires_at"] == "" {
+			return
+		}
+
+		atomic.AddInt64(&blocksInTrash, 1)
+		atomic.AddInt64(&bytesInTrash, b.Properties.ContentLength)
+
+		expiresAt, err := strconv.ParseInt(b.Metadata["expires_at"], 10, 64)
+		if err != nil {
+			log.Printf("EmptyTrash: ParseInt(%v): %v", b.Metadata["expires_at"], err)
+			return
+		}
+
+		if expiresAt > time.Now().Unix() {
+			return
+		}
+
+		err = v.container.DeleteBlob(b.Name, &storage.DeleteBlobOptions{
+			IfMatch: b.Properties.Etag,
+		})
+		if err != nil {
+			log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
+			return
+		}
+		atomic.AddInt64(&blocksDeleted, 1)
+		atomic.AddInt64(&bytesDeleted, b.Properties.ContentLength)
+	}
+
+	var wg sync.WaitGroup
+	todo := make(chan storage.Blob, theConfig.EmptyTrashWorkers)
+	for i := 0; i < 1 || i < theConfig.EmptyTrashWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for b := range todo {
+				doBlob(b)
+			}
+		}()
+	}
+
+	params := storage.ListBlobsParameters{Include: &storage.IncludeBlobDataset{Metadata: true}}
 	for {
 		resp, err := v.container.ListBlobs(params)
 		if err != nil {
@@ -630,39 +673,15 @@ func (v *AzureBlobVolume) EmptyTrash() {
 			break
 		}
 		for _, b := range resp.Blobs {
-			// Check if the block is expired
-			if b.Metadata["expires_at"] == "" {
-				continue
-			}
-
-			blocksInTrash++
-			bytesInTrash += b.Properties.ContentLength
-
-			expiresAt, err := strconv.ParseInt(b.Metadata["expires_at"], 10, 64)
-			if err != nil {
-				log.Printf("EmptyTrash: ParseInt(%v): %v", b.Metadata["expires_at"], err)
-				continue
-			}
-
-			if expiresAt > time.Now().Unix() {
-				continue
-			}
-
-			err = v.container.DeleteBlob(b.Name, &storage.DeleteBlobOptions{
-				IfMatch: b.Properties.Etag,
-			})
-			if err != nil {
-				log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
-				continue
-			}
-			blocksDeleted++
-			bytesDeleted += b.Properties.ContentLength
+			todo <- b
 		}
 		if resp.NextMarker == "" {
 			break
 		}
 		params.Marker = resp.NextMarker
 	}
+	close(todo)
+	wg.Wait()
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
