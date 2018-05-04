@@ -148,7 +148,7 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     if !new_user.can?(write: params[:new_owner_uuid])
-      return send_error("new_owner_uuid is not writable", status: 403)
+      return send_error("cannot move objects into supplied new_owner_uuid: new user does not have write permission", status: 403)
     end
 
     redirect = params[:redirect_to_new_user]
