@@ -275,31 +275,57 @@ class User < ArvadosModel
     end
   end
 
-  # Merge this user's owned items into dst_user.
+  # Move this user's (i.e., self's) owned items into new_owner_uuid.
+  # Also redirect future uses of this account to
+  # redirect_to_user_uuid, i.e., when a caller authenticates to this
+  # account in the future, the account redirect_to_user_uuid account
+  # will be used instead.
+  #
+  # current_user must have admin privileges, i.e., the caller is
+  # responsible for checking permission to do this.
   def merge(new_owner_uuid:, redirect_to_user_uuid:)
     raise PermissionDeniedError if !current_user.andand.is_admin
     raise "not implemented" if !redirect_to_user_uuid
     transaction(requires_new: true) do
       reload
+      raise "cannot merge an already merged user" if self.redirect_to_user_uuid
+
       new_user = User.where(uuid: redirect_to_user_uuid).first
       raise "user does not exist" if !new_user
-      if User.where('uuid in (?) and redirect_to_user_uuid is not null',
-                    [new_owner_uuid, redirect_to_user_uuid]).any?
-        raise "cannot merge to/from an already merged user"
-      end
+      raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
+
+      # Existing API tokens are updated to authenticate to the new
+      # user.
       ApiClientAuthorization.
         where(user_id: id).
         update_all(user_id: new_user.id)
+
+      # References to the old user UUID in the context of a user ID
+      # (rather than a "home project" in the project hierarchy) are
+      # updated to point to the new user.
       [
         [AuthorizedKey, :owner_uuid],
         [AuthorizedKey, :authorized_user_uuid],
         [Repository, :owner_uuid],
+        [Link, :owner_uuid],
         [Link, :tail_uuid],
         [Link, :head_uuid],
       ].each do |klass, column|
         klass.where(column => uuid).update_all(column => new_user.uuid)
       end
-      change_all_uuid_refs(old_uuid: uuid, new_uuid: new_owner_uuid)
+
+      # References to the merged user's "home project" are updated to
+      # point to new_owner_uuid.
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
+        next if [ApiClientAuthorization,
+                 AuthorizedKey,
+                 Link,
+                 Log,
+                 Repository].include?(klass)
+        next if !klass.columns.collect(&:name).include?('owner_uuid')
+        klass.where(owner_uuid: uuid).update_all(owner_uuid: new_owner_uuid)
+      end
+
       update_attributes!(redirect_to_user_uuid: new_user.uuid)
     end
   end
