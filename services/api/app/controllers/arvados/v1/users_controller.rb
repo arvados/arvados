@@ -165,6 +165,20 @@ class Arvados::V1::UsersController < ApplicationController
 
   protected
 
+  def self._merge_requires_parameters
+    {
+      new_owner_uuid: {
+        type: 'string', required: true,
+      },
+      new_user_token: {
+        type: 'string', required: true,
+      },
+      redirect_to_new_user: {
+        type: 'boolean', required: false,
+      },
+    }
+  end
+
   def self._setup_requires_parameters
     {
       user: {
