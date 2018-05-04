@@ -7,12 +7,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 )
 
@@ -65,6 +65,10 @@ func init() {
 	if os.Getenv("ARVADOS_API_TOKEN") == "" {
 		os.Setenv("ARVADOS_API_TOKEN", "xxx")
 	}
+
+	log.SetFormatter(&log.JSONFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
+	})
 }
 
 func main() {

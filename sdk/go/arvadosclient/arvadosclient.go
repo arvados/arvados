@@ -122,6 +122,9 @@ type ArvadosClient struct {
 
 	// Number of retries
 	Retries int
+
+	// X-Request-Id for outgoing requests
+	RequestID string
 }
 
 var CertFiles = []string{
@@ -266,6 +269,9 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 
 		// Add api token header
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
+		if c.RequestID != "" {
+			req.Header.Add("X-Request-Id", c.RequestID)
+		}
 		if c.External {
 			req.Header.Add("X-External-Client", "1")
 		}
