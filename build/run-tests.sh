@@ -863,7 +863,7 @@ install_apiserver() {
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
         && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
-        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
