@@ -132,22 +132,22 @@ class Arvados::V1::UsersController < ApplicationController
       return send_error("cannot merge with a scoped token", status: 403)
     end
 
-    dst_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
-    if !dst_auth
+    new_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
+    if !new_auth
       return send_error("invalid new_user_token", status: 401)
     end
-    if !dst_auth.api_client.andand.is_trusted
+    if !new_auth.api_client.andand.is_trusted
       return send_error("supplied new_user_token is not from a trusted client", status: 403)
-    elsif dst_auth.scopes != ['all']
+    elsif new_auth.scopes != ['all']
       return send_error("supplied new_user_token has restricted scope", status: 403)
     end
-    dst_user = dst_auth.user
+    new_user = new_auth.user
 
-    if current_user.uuid == dst_user.uuid
+    if current_user.uuid == new_user.uuid
       return send_error("cannot merge user to self", status: 422)
     end
 
-    if !dst_user.can?(write: params[:new_owner_uuid])
+    if !new_user.can?(write: params[:new_owner_uuid])
       return send_error("new_owner_uuid is not writable", status: 403)
     end
 
@@ -158,7 +158,7 @@ class Arvados::V1::UsersController < ApplicationController
 
     @object = current_user
     act_as_system_user do
-      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && dst_user.uuid)
+      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && new_user.uuid)
     end
     show
   end
