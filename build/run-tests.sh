@@ -489,6 +489,8 @@ setup_virtualenv() {
     local venvdest="$1"; shift
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    elif [[ -n "$short" ]]; then
+        return
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
@@ -506,64 +508,52 @@ export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 export R_LIBS
 
 export GOPATH
-mkdir -p "$GOPATH/src/git.curoverse.com"
-rmdir -v --parents --ignore-fail-on-non-empty "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
-for d in \
-    "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
-    "$GOPATH/src/git.curoverse.com/arvados.git"; do
-    [[ -d "$d" ]] && rmdir "$d"
-    [[ -h "$d" ]] && rm "$d"
-done
-ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
-    || fatal "symlink failed"
-go get -v github.com/kardianos/govendor \
-    || fatal "govendor install failed"
-cd "$GOPATH/src/git.curoverse.com/arvados.git" \
-    || fatal
-# Remove cached source dirs in workdir. Otherwise, they won't qualify
-# as +missing or +external below, and we won't be able to detect that
-# they're missing from vendor/vendor.json.
-rm -r vendor/*/
-go get -v -d ...
-"$GOPATH/bin/govendor" sync \
-    || fatal "govendor sync failed"
-[[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
-    || fatal "vendor/vendor.json has unused or missing dependencies -- try:
-* govendor remove +unused
-* govendor add +missing +external
-"
-cd "$WORKSPACE"
+(
+    set -e
+    mkdir -p "$GOPATH/src/git.curoverse.com"
+    rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
+    for d in \
+        "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
+            "$GOPATH/src/git.curoverse.com/arvados.git"; do
+        [[ -d "$d" ]] && rmdir "$d"
+        [[ -h "$d" ]] && rm "$d"
+    done
+    ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    go get -v github.com/kardianos/govendor
+    cd "$GOPATH/src/git.curoverse.com/arvados.git"
+    if [[ -n "$short" ]]; then
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+    else
+        # Remove cached source dirs in workdir. Otherwise, they will
+        # not qualify as +missing or +external below, and we won't be
+        # able to detect that they're missing from vendor/vendor.json.
+        rm -rf vendor/*/
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+        [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
+            || fatal "vendor/vendor.json has unused or missing dependencies -- try:
 
+(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
+
+";
+    fi
+) || fatal "Go setup failed"
 
 setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install --no-cache-dir PyYAML >/dev/null \
+pip install --no-cache-dir PyYAML \
     || fatal "pip install PyYAML failed"
 
-# Preinstall libcloud, because nodemanager "pip install"
-# won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
-    || fatal "pip install apache-libcloud failed"
-
-# We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
-pip freeze | grep -x llfuse==1.2.0 || (
-    set -e
-    yes | pip uninstall llfuse || true
-    cython --version || fatal "no cython; try sudo apt-get install cython"
-    cd "$temp"
-    (cd python-llfuse 2>/dev/null || git clone https://github.com/curoverse/python-llfuse)
-    cd python-llfuse
-    git checkout 620722fd990ea642ddb8e7412676af482c090c0c
-    git checkout setup.py
-    sed -i -e "s:'1\\.2':'1.2.0':" setup.py
-    python setup.py build_cython
-    python setup.py install --force
-) || fatal "llfuse fork failed"
-pip freeze | grep -x llfuse==1.2.0 || fatal "error: installed llfuse 1.2.0 but '$(pip freeze | grep llfuse)' ???"
+# Preinstall libcloud if using a fork; otherwise nodemanager "pip
+# install" won't pick it up by default.
+if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
+    pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
+        || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
+        || fatal "pip install apache-libcloud failed"
+fi
 
 # Deactivate Python 2 virtualenv
 deactivate
