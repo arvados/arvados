@@ -887,6 +887,25 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response(403)
   end
 
+  test "refuse to merge if new_owner_uuid is empty" do
+    authorize_with(:project_viewer_trustedclient)
+    post(:merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           new_owner_uuid: "",
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+  end
+
+  test "refuse to merge if new_owner_uuid is not provided" do
+    authorize_with(:project_viewer_trustedclient)
+    post(:merge, {
+           new_user_token: api_client_authorizations(:active_trustedclient).api_token,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+  end
+
   test "refuse to update redirect_to_user_uuid directly" do
     authorize_with(:active_trustedclient)
     patch(:update, {
