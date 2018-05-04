@@ -205,12 +205,16 @@ class ArvadosWorkflow(Workflow):
                 joborder_keepmount = copy.deepcopy(joborder)
 
                 reffiles = []
-                visit_class(joborder_keepmount, ("File", "Directory"), lambda x: reffiles.append(x))
+                visit_class(joborder_keepmount, ("File", "Directory"), reffiles.append)
+                reffiles2 = []
+                visit_class(packed, ("File", "Directory"), reffiles2.append)
 
-                mapper = ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+                mapper = ArvPathMapper(self.arvrunner, reffiles+reffiles2, kwargs["basedir"],
                                  "/keep/%s",
                                  "/keep/%s/%s",
                                  **kwargs)
+
+                kwargs["extra_reffiles"] = copy.deepcopy(reffiles2)
 
                 def keepmount(obj):
                     remove_redundant_fields(obj)

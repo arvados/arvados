@@ -199,7 +199,7 @@
   output:
     out: null
   tool: wf-defaults/wf3.cwl
-  doc: "Do not accept a directory literal without a basename
+  doc: "Do not accept a directory literal without a basename"
   should_fail: true
 
 - job: null
