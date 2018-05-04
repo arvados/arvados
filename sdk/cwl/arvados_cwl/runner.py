@@ -64,22 +64,20 @@ def find_defaults(d, op):
             for i in d.itervalues():
                 find_defaults(i, op)
 
+def setSecondary(t, fileobj, discovered):
+    if isinstance(fileobj, dict) and fileobj.get("class") == "File":
+        if "secondaryFiles" not in fileobj:
+            fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]])
+            if discovered is not None:
+                discovered[fileobj["location"]] = fileobj["secondaryFiles"]
+    elif isinstance(fileobj, list):
+        for e in fileobj:
+            setSecondary(t, e, discovered)
 
 def discover_secondary_files(inputs, job_order, discovered=None):
     for t in inputs:
-        def setSecondary(fileobj):
-            if isinstance(fileobj, dict) and fileobj.get("class") == "File":
-                if "secondaryFiles" not in fileobj:
-                    fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]])
-                    if discovered is not None:
-                        discovered[fileobj["location"]] = fileobj["secondaryFiles"]
-
-            if isinstance(fileobj, list):
-                for e in fileobj:
-                    setSecondary(e)
-
         if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
-            setSecondary(job_order[shortname(t["id"])])
+            setSecondary(t, job_order[shortname(t["id"])], discovered)
 
 
 def upload_dependencies(arvrunner, name, document_loader,
