@@ -118,6 +118,21 @@ TrashCheckInterval:
     How often to check for (and delete) trashed blocks whose
     TrashLifetime has expired.
 
+TrashWorkers:
+
+    Maximum number of concurrent trash operations. Default is 1, i.e.,
+    trash lists are processed serially.
+
+EmptyTrashWorkers:
+
+    Maximum number of concurrent block deletion operations (per
+    volume) when emptying trash. Default is 1.
+
+PullWorkers:
+
+    Maximum number of concurrent pull operations. Default is 1, i.e.,
+    pull lists are processed serially.
+
 Volumes:
 
     List of storage volumes. If omitted or empty, the default is to
