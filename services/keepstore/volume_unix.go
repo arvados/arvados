@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -725,39 +726,61 @@ var unixTrashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
 // and deletes those with deadline < now.
 func (v *UnixVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
-	var blocksDeleted, blocksInTrash int
+	var blocksDeleted, blocksInTrash int64
+
+	doFile := func(path string, info os.FileInfo) {
+		if info.Mode().IsDir() {
+			return
+		}
+		matches := unixTrashLocRegexp.FindStringSubmatch(path)
+		if len(matches) != 3 {
+			return
+		}
+		deadline, err := strconv.ParseInt(matches[2], 10, 64)
+		if err != nil {
+			log.Printf("EmptyTrash: %v: ParseInt(%v): %v", path, matches[2], err)
+			return
+		}
+		atomic.AddInt64(&bytesInTrash, info.Size())
+		atomic.AddInt64(&blocksInTrash, 1)
+		if deadline > time.Now().Unix() {
+			return
+		}
+		err = v.os.Remove(path)
+		if err != nil {
+			log.Printf("EmptyTrash: Remove %v: %v", path, err)
+			return
+		}
+		atomic.AddInt64(&bytesDeleted, info.Size())
+		atomic.AddInt64(&blocksDeleted, 1)
+	}
+
+	type dirent struct {
+		path string
+		info os.FileInfo
+	}
+	var wg sync.WaitGroup
+	todo := make(chan dirent, theConfig.EmptyTrashWorkers)
+	for i := 0; i < 1 || i < theConfig.EmptyTrashWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for e := range todo {
+				doFile(e.path, e.info)
+			}
+		}()
+	}
 
 	err := filepath.Walk(v.Root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("EmptyTrash: filepath.Walk: %v: %v", path, err)
 			return nil
 		}
-		if info.Mode().IsDir() {
-			return nil
-		}
-		matches := unixTrashLocRegexp.FindStringSubmatch(path)
-		if len(matches) != 3 {
-			return nil
-		}
-		deadline, err := strconv.ParseInt(matches[2], 10, 64)
-		if err != nil {
-			log.Printf("EmptyTrash: %v: ParseInt(%v): %v", path, matches[2], err)
-			return nil
-		}
-		bytesInTrash += info.Size()
-		blocksInTrash++
-		if deadline > time.Now().Unix() {
-			return nil
-		}
-		err = v.os.Remove(path)
-		if err != nil {
-			log.Printf("EmptyTrash: Remove %v: %v", path, err)
-			return nil
-		}
-		bytesDeleted += info.Size()
-		blocksDeleted++
+		todo <- dirent{path, info}
 		return nil
 	})
+	close(todo)
+	wg.Wait()
 
 	if err != nil {
 		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
