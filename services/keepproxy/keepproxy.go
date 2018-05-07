@@ -257,6 +257,7 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	var err error
 	arv := *kc.Arvados
 	arv.ApiToken = tok
+	arv.RequestID = req.Header.Get("X-Request-Id")
 	if op == "read" {
 		err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
 	} else {
@@ -621,13 +622,13 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 
 func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient {
 	kc := *h.KeepClient
+	kc.RequestID = req.Header.Get("X-Request-Id")
 	kc.HTTPClient = &proxyClient{
 		client: &http.Client{
 			Timeout:   h.timeout,
 			Transport: h.transport,
 		},
-		proto:     req.Proto,
-		requestID: req.Header.Get("X-Request-Id"),
+		proto: req.Proto,
 	}
 	return &kc
 }

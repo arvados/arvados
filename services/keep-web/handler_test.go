@@ -666,7 +666,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 		}
 		s.testServer.Handler.ServeHTTP(resp, req)
 		var cookies []*http.Cookie
@@ -677,7 +677,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 				Host:       u.Host,
 				URL:        u,
 				RequestURI: u.RequestURI(),
-				Header:     trial.header,
+				Header:     copyHeader(trial.header),
 			}
 			cookies = append(cookies, (&http.Response{Header: resp.Header()}).Cookies()...)
 			for _, c := range cookies {
@@ -705,7 +705,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -721,7 +721,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -756,4 +756,12 @@ func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
+
+func copyHeader(h http.Header) http.Header {
+	hc := http.Header{}
+	for k, v := range h {
+		hc[k] = append([]string(nil), v...)
+	}
+	return hc
 }
