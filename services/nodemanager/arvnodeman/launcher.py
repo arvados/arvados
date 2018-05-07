@@ -58,7 +58,14 @@ def load_config(path):
     return config
 
 def setup_logging(path, level, **sublevels):
-    handler = logging.FileHandler(path)
+    if path == '/dev/stdout':
+        # Opening /dev/stdout does not work in systemd:
+        # https://github.com/systemd/systemd/issues/2473
+        handler = logging.StreamHandler(stream=sys.stdout)
+    elif path == '/dev/stderr':
+        handler = logging.StreamHandler(stream=sys.stderr)
+    else:
+        handler = logging.FileHandler(path)
     handler.setFormatter(logging.Formatter(
             '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
             '%Y-%m-%d %H:%M:%S'))
