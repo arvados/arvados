@@ -327,6 +327,7 @@ class User < ArvadosModel
       end
 
       update_attributes!(redirect_to_user_uuid: new_user.uuid)
+      invalidate_permissions_cache
     end
   end
 
