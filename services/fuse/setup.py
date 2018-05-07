@@ -42,7 +42,7 @@ setup(name='arvados_fuse',
         # llfuse 1.3.4 fails to install via pip
         'llfuse >=1.2, <1.3.4',
         'python-daemon',
-        'ciso8601',
+        'ciso8601 >=1.0.6',
         'setuptools'
         ],
       test_suite='tests',
