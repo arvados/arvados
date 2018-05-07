@@ -33,8 +33,8 @@ setup(name='arvados-cwl-runner',
       # Note that arvados/build/run-build-packages.sh looks at this
       # file to determine what version of cwltool and schema-salad to build.
       install_requires=[
-          'cwltool==1.0.20180403145700',
-          'schema-salad==2.6.20171201034858',
+          'cwltool==1.0.20180502225535',
+          'schema-salad==2.7.20180501211602',
           'typing==3.5.3.0',
           'ruamel.yaml==0.13.7',
           'arvados-python-client>=1.1.4.20180418202329',

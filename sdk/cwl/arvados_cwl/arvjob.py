@@ -174,9 +174,6 @@ class ArvadosJob(object):
                         logger.info("Creating read permission on job %s: %s",
                                     response["uuid"],
                                     e)
-
-                with Perf(metrics, "done %s" % self.name):
-                    self.done(response)
             else:
                 logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
@@ -267,7 +264,6 @@ class ArvadosJob(object):
                 processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-            self.arvrunner.process_done(record["uuid"])
 
 
 class RunnerJob(Runner):
@@ -356,9 +352,6 @@ class RunnerJob(Runner):
 
         self.uuid = job["uuid"]
         self.arvrunner.process_submitted(self)
-
-        if job["state"] in ("Complete", "Failed", "Cancelled"):
-            self.done(job)
 
 
 class RunnerTemplate(object):
