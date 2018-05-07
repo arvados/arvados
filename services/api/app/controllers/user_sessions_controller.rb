@@ -46,13 +46,6 @@ class UserSessionsController < ApplicationController
       end
     end
 
-    while (uuid = user.andand.redirect_to_user_uuid)
-      user = User.where(uuid: uuid).first
-      if !user
-        raise Exception.new("identity_url #{omniauth['info']['identity_url']} redirects to nonexistent uuid #{uuid}")
-      end
-    end
-
     if not user
       # New user registration
       user = User.new(:email => omniauth['info']['email'],
@@ -74,6 +67,13 @@ class UserSessionsController < ApplicationController
       if user.identity_url.nil?
         # First login to a pre-activated account
         user.identity_url = omniauth['info']['identity_url']
+      end
+
+      while (uuid = user.redirect_to_user_uuid)
+        user = User.where(uuid: uuid).first
+        if !user
+          raise Exception.new("identity_url #{omniauth['info']['identity_url']} redirects to nonexistent uuid #{uuid}")
+        end
       end
     end
 
