@@ -768,7 +768,8 @@ CREATE TABLE users (
     updated_at timestamp without time zone NOT NULL,
     default_owner_uuid character varying(255),
     is_active boolean DEFAULT false,
-    username character varying(255)
+    username character varying(255),
+    redirect_to_user_uuid character varying
 );
 
 
@@ -2714,7 +2715,7 @@ CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (v
 -- Name: users_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid, username);
+CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid, username, redirect_to_user_uuid);
 
 
 --
@@ -3067,4 +3068,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180216203422');
 INSERT INTO schema_migrations (version) VALUES ('20180228220311');
 
 INSERT INTO schema_migrations (version) VALUES ('20180313180114');
+
+INSERT INTO schema_migrations (version) VALUES ('20180501182859');
 

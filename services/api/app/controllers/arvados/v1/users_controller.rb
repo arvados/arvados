@@ -6,9 +6,9 @@ class Arvados::V1::UsersController < ApplicationController
   accept_attribute_as_json :prefs, Hash
 
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :current, :system, :setup]
+    [:activate, :current, :system, :setup, :merge]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :current, :system, :setup]
+    [:activate, :current, :system, :setup, :merge]
   before_filter :admin_required, only: [:setup, :unsetup, :update_uuid]
 
   def current
@@ -125,7 +125,59 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
+  def merge
+    if !Thread.current[:api_client].andand.is_trusted
+      return send_error("supplied API token is not from a trusted client", status: 403)
+    elsif Thread.current[:api_client_authorization].scopes != ['all']
+      return send_error("cannot merge with a scoped token", status: 403)
+    end
+
+    new_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
+    if !new_auth
+      return send_error("invalid new_user_token", status: 401)
+    end
+    if !new_auth.api_client.andand.is_trusted
+      return send_error("supplied new_user_token is not from a trusted client", status: 403)
+    elsif new_auth.scopes != ['all']
+      return send_error("supplied new_user_token has restricted scope", status: 403)
+    end
+    new_user = new_auth.user
+
+    if current_user.uuid == new_user.uuid
+      return send_error("cannot merge user to self", status: 422)
+    end
+
+    if !new_user.can?(write: params[:new_owner_uuid])
+      return send_error("cannot move objects into supplied new_owner_uuid: new user does not have write permission", status: 403)
+    end
+
+    redirect = params[:redirect_to_new_user]
+    if !redirect
+      return send_error("merge with redirect_to_new_user=false is not yet supported", status: 422)
+    end
+
+    @object = current_user
+    act_as_system_user do
+      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && new_user.uuid)
+    end
+    show
+  end
+
   protected
+
+  def self._merge_requires_parameters
+    {
+      new_owner_uuid: {
+        type: 'string', required: true,
+      },
+      new_user_token: {
+        type: 'string', required: true,
+      },
+      redirect_to_new_user: {
+        type: 'boolean', required: false,
+      },
+    }
+  end
 
   def self._setup_requires_parameters
     {
