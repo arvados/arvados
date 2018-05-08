@@ -66,8 +66,34 @@ class ArvadosJob(object):
                                 n.write(p.resolved.encode("utf-8"))
 
                 if vwd:
+                    trash_time = None
+                    if self.arvrunner.intermediate_output_ttl > 0:
+                        t = datetime.now() + timedelta(seconds=self.arvrunner.intermediate_output_ttl)
+                        trash_time = t.strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
+
+                    current_container_uuid = None
+                    try:
+                        current_container = self.arvrunner.api.containers().current().execute(num_retries=self.arvrunner.num_retries)
+                        current_container_uuid = current_container['uuid']
+                    except ApiError as e:
+                        # Status code 404 just means we're not running in a container.
+                        if e.resp.status != 404:
+                            logger.info("Getting current container: %s", e)
+
+                    props = {"type": "Intermediate",
+                             "container": current_container_uuid}
+
                     with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                        vwd.save_new()
+                        vwd.save_new(name="Intermediate collection",
+                                     ensure_unique_name=True,
+                                     trash_at=trash_time,
+                                     properties=props)
+
+                    logger.debug("Intermediate: arvjob")
+                    logger.debug("Intermediate: uuid = %s" % vwd._api_response["uuid"])
+                    logger.debug("Intermediate: name = %s" % vwd._api_response["name"])
+                    logger.debug("Intermediate: trash_at = %s" % vwd._api_response["trash_at"])
+                    logger.debug("Intermediate: props = " + str(vwd._api_response["properties"]))
 
                 for f, p in generatemapper.items():
                     if p.type == "File":
