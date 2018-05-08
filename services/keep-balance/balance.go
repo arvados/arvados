@@ -443,10 +443,11 @@ var changeName = map[int]string{
 }
 
 type balanceResult struct {
-	blk   *BlockState
-	blkid arvados.SizedDigest
-	have  int
-	want  int
+	blk        *BlockState
+	blkid      arvados.SizedDigest
+	have       int
+	want       int
+	classState map[string]balancedBlockState
 }
 
 // balanceBlock compares current state to desired state for a single
@@ -495,12 +496,26 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	// won't want to trash any replicas.
 	underreplicated := false
 
+	classState := make(map[string]balancedBlockState, len(bal.classes))
 	unsafeToDelete := make(map[int64]bool, len(slots))
 	for _, class := range bal.classes {
 		desired := blk.Desired[class]
+
+		have := 0
+		for _, slot := range slots {
+			if slot.repl != nil && bal.mountsByClass[class][slot.mnt] {
+				have++
+			}
+		}
+		classState[class] = balancedBlockState{
+			desired: desired,
+			surplus: have - desired,
+		}
+
 		if desired == 0 {
 			continue
 		}
+
 		// Sort the slots by desirability.
 		sort.Slice(slots, func(i, j int) bool {
 			si, sj := slots[i], slots[j]
@@ -592,6 +607,16 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			}
 			underreplicated = safe < desired
 		}
+
+		// set the unachievable flag if there aren't enough
+		// slots offering the relevant storage class. (This is
+		// as easy as checking slots[desired] because we
+		// already sorted the qualifying slots to the front.)
+		if desired >= len(slots) || !bal.mountsByClass[class][slots[desired].mnt] {
+			cs := classState[class]
+			cs.unachievable = true
+			classState[class] = cs
+		}
 	}
 
 	// TODO: If multiple replicas are trashable, prefer the oldest
@@ -645,10 +670,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		bal.Dumper.Printf("%s have=%d want=%v %s", blkid, have, want, strings.Join(changes, " "))
 	}
 	return balanceResult{
-		blk:   blk,
-		blkid: blkid,
-		have:  have,
-		want:  want,
+		blk:        blk,
+		blkid:      blkid,
+		have:       have,
+		want:       want,
+		classState: classState,
 	}
 }
 
@@ -663,18 +689,65 @@ func (bb blocksNBytes) String() string {
 }
 
 type balancerStats struct {
-	lost, overrep, unref, garbage, underrep, justright blocksNBytes
-	desired, current                                   blocksNBytes
-	pulls, trashes                                     int
-	replHistogram                                      []int
+	lost          blocksNBytes
+	overrep       blocksNBytes
+	unref         blocksNBytes
+	garbage       blocksNBytes
+	underrep      blocksNBytes
+	unachievable  blocksNBytes
+	justright     blocksNBytes
+	desired       blocksNBytes
+	current       blocksNBytes
+	pulls         int
+	trashes       int
+	replHistogram []int
+	classStats    map[string]replicationStats
+}
+
+type replicationStats struct {
+	desired      blocksNBytes
+	surplus      blocksNBytes
+	short        blocksNBytes
+	unachievable blocksNBytes
+}
+
+type balancedBlockState struct {
+	desired      int
+	surplus      int
+	unachievable bool
 }
 
 func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 	var s balancerStats
 	s.replHistogram = make([]int, 2)
+	s.classStats = make(map[string]replicationStats, len(bal.classes))
 	for result := range results {
 		surplus := result.have - result.want
 		bytes := result.blkid.Size()
+
+		for class, state := range result.classState {
+			cs := s.classStats[class]
+			if state.unachievable {
+				cs.unachievable.blocks++
+				cs.unachievable.bytes += bytes
+			}
+			if state.desired > 0 {
+				cs.desired.replicas += state.desired
+				cs.desired.blocks++
+				cs.desired.bytes += bytes * int64(state.desired)
+			}
+			if state.surplus > 0 {
+				cs.surplus.replicas += state.surplus
+				cs.surplus.blocks++
+				cs.surplus.bytes += bytes * int64(state.surplus)
+			} else if state.surplus < 0 {
+				cs.short.replicas += -state.surplus
+				cs.short.blocks++
+				cs.short.bytes += bytes * int64(-state.surplus)
+			}
+			s.classStats[class] = cs
+		}
+
 		switch {
 		case result.have == 0 && result.want > 0:
 			s.lost.replicas -= surplus
@@ -739,6 +812,14 @@ func (bal *Balancer) PrintStatistics() {
 	bal.logf("%s overreplicated (have>want>0)", bal.stats.overrep)
 	bal.logf("%s unreferenced (have>want=0, new)", bal.stats.unref)
 	bal.logf("%s garbage (have>want=0, old)", bal.stats.garbage)
+	for _, class := range bal.classes {
+		cs := bal.stats.classStats[class]
+		bal.logf("===")
+		bal.logf("storage class %q: %s desired", class, cs.desired)
+		bal.logf("storage class %q: %s short", class, cs.short)
+		bal.logf("storage class %q: %s surplus", class, cs.surplus)
+		bal.logf("storage class %q: %s unachievable", class, cs.unachievable)
+	}
 	bal.logf("===")
 	bal.logf("%s total commitment (excluding unreferenced)", bal.stats.desired)
 	bal.logf("%s total usage", bal.stats.current)
