@@ -7,6 +7,7 @@ import re
 import copy
 import json
 import time
+import datetime
 
 from cwltool.process import get_feature, shortname, UnsupportedRequirement
 from cwltool.errors import WorkflowException
@@ -68,7 +69,7 @@ class ArvadosJob(object):
                 if vwd:
                     trash_time = None
                     if self.arvrunner.intermediate_output_ttl > 0:
-                        t = datetime.now() + timedelta(seconds=self.arvrunner.intermediate_output_ttl)
+                        t = datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl)
                         trash_time = t.strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
 
                     current_container_uuid = None
