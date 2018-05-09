@@ -274,6 +274,14 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	return true, tok
 }
 
+// We need to make a private copy of the default http transport early
+// in initialization, then make copies of our private copy later. It
+// won't be safe to copy http.DefaultTransport itself later, because
+// its private mutexes might have already been used. (Without this,
+// the test suite sometimes panics "concurrent map writes" in
+// net/http.(*Transport).removeIdleConnLocked().)
+var defaultTransport = *(http.DefaultTransport.(*http.Transport))
+
 type proxyHandler struct {
 	http.Handler
 	*keepclient.KeepClient
@@ -287,7 +295,7 @@ type proxyHandler struct {
 func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration, mgmtToken string) http.Handler {
 	rest := mux.NewRouter()
 
-	transport := *(http.DefaultTransport.(*http.Transport))
+	transport := defaultTransport
 	transport.DialContext = (&net.Dialer{
 		Timeout:   keepclient.DefaultConnectTimeout,
 		KeepAlive: keepclient.DefaultKeepAlive,
