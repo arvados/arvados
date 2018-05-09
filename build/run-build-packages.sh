@@ -345,14 +345,14 @@ rm -rf "$WORKSPACE/sdk/cwl/build"
 arvados_cwl_runner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)}
 declare -a iterargs=()
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    arvados_cwl_runner_iteration=3
+    arvados_cwl_runner_iteration=4
     iterargs+=(--iteration $arvados_cwl_runner_iteration)
 else
     arvados_cwl_runner_iteration=
 fi
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" "${iterargs[@]}"
+  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0rc1" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" "${iterargs[@]}"
 fi
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
