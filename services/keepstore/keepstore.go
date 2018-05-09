@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -203,7 +202,8 @@ func main() {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("listening at", listener.Addr())
-	srv := &http.Server{Handler: router}
+	srv := &server{}
+	srv.Handler = router
 	srv.Serve(listener)
 }
 

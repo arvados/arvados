@@ -43,6 +43,8 @@ type Config struct {
 	PullWorkers         int
 	TrashWorkers        int
 	EmptyTrashWorkers   int
+	TLSCertificateFile  string
+	TLSKeyFile          string
 
 	Volumes VolumeList
 

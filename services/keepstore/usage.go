@@ -133,6 +133,21 @@ PullWorkers:
     Maximum number of concurrent pull operations. Default is 1, i.e.,
     pull lists are processed serially.
 
+TLSCertificateFile:
+
+    Path to server certificate file in X509 format. Enables TLS mode.
+
+    Example: /var/lib/acme/live/keep0.example.com/fullchain
+
+TLSKeyFile:
+
+    Path to server key file in X509 format. Enables TLS mode.
+
+    The key pair is read from disk during startup, and whenever SIGHUP
+    is received.
+
+    Example: /var/lib/acme/live/keep0.example.com/privkey
+
 Volumes:
 
     List of storage volumes. If omitted or empty, the default is to
