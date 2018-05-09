@@ -116,6 +116,7 @@ class ArvadosWorkflow(Workflow):
         self.wf_pdh = None
         self.dynamic_resource_req = []
         self.static_resource_req = []
+        self.wf_reffiles = []
 
     def job(self, joborder, output_callback, **kwargs):
         kwargs["work_api"] = self.work_api
@@ -181,6 +182,9 @@ class ArvadosWorkflow(Workflow):
                                         uri,
                                         False)
 
+                    visit_class(packed, ("File", "Directory"), self.wf_reffiles.append)
+
+
             if self.dynamic_resource_req:
                 builder = Builder()
                 builder.job = joborder
@@ -206,15 +210,13 @@ class ArvadosWorkflow(Workflow):
 
                 reffiles = []
                 visit_class(joborder_keepmount, ("File", "Directory"), reffiles.append)
-                reffiles2 = []
-                visit_class(packed, ("File", "Directory"), reffiles2.append)
 
-                mapper = ArvPathMapper(self.arvrunner, reffiles+reffiles2, kwargs["basedir"],
+                mapper = ArvPathMapper(self.arvrunner, reffiles+self.wf_reffiles, kwargs["basedir"],
                                  "/keep/%s",
                                  "/keep/%s/%s",
                                  **kwargs)
 
-                kwargs["extra_reffiles"] = copy.deepcopy(reffiles2)
+                kwargs["extra_reffiles"] = copy.deepcopy(self.wf_reffiles)
 
                 def keepmount(obj):
                     remove_redundant_fields(obj)
