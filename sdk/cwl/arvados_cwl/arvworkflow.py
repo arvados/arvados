@@ -182,6 +182,8 @@ class ArvadosWorkflow(Workflow):
                                         uri,
                                         False)
 
+                    # Discover files/directories referenced by the
+                    # workflow (mainly "default" values)
                     visit_class(packed, ("File", "Directory"), self.wf_reffiles.append)
 
 
@@ -216,6 +218,9 @@ class ArvadosWorkflow(Workflow):
                                  "/keep/%s/%s",
                                  **kwargs)
 
+                # For containers API, we need to make sure any extra
+                # referenced files (ie referenced by the workflow but
+                # not in the inputs) are included in the mounts.
                 kwargs["extra_reffiles"] = copy.deepcopy(self.wf_reffiles)
 
                 def keepmount(obj):
