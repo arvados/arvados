@@ -24,7 +24,7 @@ class ArvadosCommandTool(CommandLineTool):
     def makePathMapper(self, reffiles, stagedir, **kwargs):
         # type: (List[Any], unicode, **Any) -> PathMapper
         if self.work_api == "containers":
-            return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+            return ArvPathMapper(self.arvrunner, reffiles+kwargs.get("extra_reffiles", []), kwargs["basedir"],
                                  "/keep/%s",
                                  "/keep/%s/%s",
                                  **kwargs)

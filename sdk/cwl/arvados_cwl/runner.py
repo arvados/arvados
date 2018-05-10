@@ -217,13 +217,13 @@ def packed_workflow(arvrunner, tool, merged_map):
     packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
                   tool.tool["id"], tool.metadata, rewrite_out=rewrites)
 
-    rewrite_to_orig = {}
-    for k,v in rewrites.items():
-        rewrite_to_orig[v] = k
+    rewrite_to_orig = {v: k for k,v in rewrites.items()}
 
     def visit(v, cur_id):
         if isinstance(v, dict):
             if v.get("class") in ("CommandLineTool", "Workflow"):
+                if "id" not in v:
+                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field")
                 cur_id = rewrite_to_orig.get(v["id"], v["id"])
             if "location" in v and not v["location"].startswith("keep:"):
                 v["location"] = merged_map[cur_id].resolved[v["location"]]

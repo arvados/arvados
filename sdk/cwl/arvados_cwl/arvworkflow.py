@@ -116,6 +116,7 @@ class ArvadosWorkflow(Workflow):
         self.wf_pdh = None
         self.dynamic_resource_req = []
         self.static_resource_req = []
+        self.wf_reffiles = []
 
     def job(self, joborder, output_callback, **kwargs):
         kwargs["work_api"] = self.work_api
@@ -181,6 +182,11 @@ class ArvadosWorkflow(Workflow):
                                         uri,
                                         False)
 
+                    # Discover files/directories referenced by the
+                    # workflow (mainly "default" values)
+                    visit_class(packed, ("File", "Directory"), self.wf_reffiles.append)
+
+
             if self.dynamic_resource_req:
                 builder = Builder()
                 builder.job = joborder
@@ -205,12 +211,17 @@ class ArvadosWorkflow(Workflow):
                 joborder_keepmount = copy.deepcopy(joborder)
 
                 reffiles = []
-                visit_class(joborder_keepmount, ("File", "Directory"), lambda x: reffiles.append(x))
+                visit_class(joborder_keepmount, ("File", "Directory"), reffiles.append)
 
-                mapper = ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+                mapper = ArvPathMapper(self.arvrunner, reffiles+self.wf_reffiles, kwargs["basedir"],
                                  "/keep/%s",
                                  "/keep/%s/%s",
                                  **kwargs)
+
+                # For containers API, we need to make sure any extra
+                # referenced files (ie referenced by the workflow but
+                # not in the inputs) are included in the mounts.
+                kwargs["extra_reffiles"] = copy.deepcopy(self.wf_reffiles)
 
                 def keepmount(obj):
                     remove_redundant_fields(obj)
