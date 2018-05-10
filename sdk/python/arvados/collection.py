@@ -1484,6 +1484,8 @@ class Collection(RichCollectionBase):
                  create_collection_record=True,
                  owner_uuid=None,
                  ensure_unique_name=False,
+                 trash_at=None,
+                 properties=None,
                  num_retries=None):
         """Save collection to a new collection record.
 
@@ -1508,6 +1510,14 @@ class Collection(RichCollectionBase):
           if it conflicts with a collection with the same name and owner.  If
           False, a name conflict will result in an error.
 
+        :trash_at:
+          A collection is *expiring* when it has a *trash_at* time in the future.
+          An expiring collection can be accessed as normal,
+          but is scheduled to be trashed automatically at the *trash_at* time.
+
+        :properties:
+          Additional properties of collection.
+
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
@@ -1525,6 +1535,10 @@ class Collection(RichCollectionBase):
                     "replication_desired": self.replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
+            if trash_at:
+                body["trash_at"] = trash_at
+            if properties:
+                body["properties"] = properties
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
