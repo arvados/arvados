@@ -133,7 +133,7 @@ echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_versi
 cd docker/jobs
 docker build $NOCACHE \
        --build-arg python_sdk_version=${python_sdk_version}-2 \
-       --build-arg cwl_runner_version=${cwl_runner_version}-3 \
+       --build-arg cwl_runner_version=${cwl_runner_version}-4 \
        -t arvados/jobs:$cwl_runner_version .
 
 ECODE=$?
