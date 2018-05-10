@@ -22,6 +22,8 @@ import arvados.collection
 import arvados.arvfile
 import arvados.errors
 
+from googleapiclient.errors import HttpError
+
 from schema_salad.ref_resolver import DefaultFetcher
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -122,7 +124,13 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
     def exists(self, fn):
-        collection, rest = self.get_collection(fn)
+        try:
+            collection, rest = self.get_collection(fn)
+        except HttpError as err:
+            if err.resp.status == 404:
+                return False
+            else:
+                raise
         if collection is not None:
             if rest:
                 return collection.exists(rest)

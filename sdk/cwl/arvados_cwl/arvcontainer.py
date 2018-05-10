@@ -287,7 +287,6 @@ class ArvadosContainer(object):
 
             if response["state"] == "Final":
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
-                self.done(response)
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
@@ -344,7 +343,6 @@ class ArvadosContainer(object):
             processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-            self.arvrunner.process_done(record["uuid"])
 
 
 class RunnerContainer(Runner):
@@ -482,9 +480,6 @@ class RunnerContainer(Runner):
 
         logger.info("%s submitted container %s", self.arvrunner.label(self), response["uuid"])
 
-        if response["state"] == "Final":
-            self.done(response)
-
     def done(self, record):
         try:
             container = self.arvrunner.api.containers().get(
@@ -495,5 +490,3 @@ class RunnerContainer(Runner):
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             super(RunnerContainer, self).done(container)
-        finally:
-            self.arvrunner.process_done(record["uuid"])

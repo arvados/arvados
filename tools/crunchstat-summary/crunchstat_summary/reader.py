@@ -46,8 +46,9 @@ class LiveLogReader(object):
     EOF = None
 
     def __init__(self, job_uuid):
-        logger.debug('load stderr events for job %s', job_uuid)
         self.job_uuid = job_uuid
+        self.event_types = (['stderr'] if '-8i9sb-' in job_uuid else ['crunchstat', 'arv-mount'])
+        logger.debug('load %s events for job %s', self.event_types, self.job_uuid)
 
     def __str__(self):
         return self.job_uuid
@@ -57,7 +58,7 @@ class LiveLogReader(object):
         last_id = 0
         filters = [
             ['object_uuid', '=', self.job_uuid],
-            ['event_type', '=', 'stderr']]
+            ['event_type', 'in', self.event_types]]
         try:
             while True:
                 page = arvados.api().logs().index(

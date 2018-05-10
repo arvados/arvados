@@ -10,7 +10,6 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
 
@@ -191,13 +191,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		} else if w.WroteStatus() == 0 {
 			w.WriteHeader(statusCode)
 		} else if w.WroteStatus() != statusCode {
-			httpserver.Log(r.RemoteAddr, "WARNING",
+			log.WithField("RequestID", r.Header.Get("X-Request-Id")).Warn(
 				fmt.Sprintf("Our status changed from %d to %d after we sent headers", w.WroteStatus(), statusCode))
 		}
 		if statusText == "" {
 			statusText = http.StatusText(statusCode)
 		}
-		httpserver.Log(remoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
 	}()
 
 	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {
@@ -314,6 +313,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if useSiteFS {
+		if tokens == nil {
+			tokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
+		}
+		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
+		return
+	}
+
 	targetPath := pathParts[stripParts:]
 	if tokens == nil && len(targetPath) > 0 && strings.HasPrefix(targetPath[0], "t=") {
 		// http://ID.example/t=TOKEN/PATH...
@@ -333,11 +340,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			reqTokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
 		}
 		tokens = append(reqTokens, h.Config.AnonymousTokens...)
-	}
-
-	if useSiteFS {
-		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
-		return
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {
@@ -417,6 +419,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
+	kc.RequestID = r.Header.Get("X-Request-Id")
 
 	var basename string
 	if len(targetPath) > 0 {
@@ -424,11 +427,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	client := &arvados.Client{
+	client := (&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
 
 	fs, err := collection.FileSystem(client, kc)
 	if err != nil {
@@ -529,11 +532,12 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client := &arvados.Client{
+	kc.RequestID = r.Header.Get("X-Request-Id")
+	client := (&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
-	}
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	fs := client.SiteFileSystem(kc)
 	f, err := fs.Open(r.URL.Path)
 	if os.IsNotExist(err) {
@@ -615,9 +619,9 @@ the entire directory tree with wget, try:</P>
 <UL>
 {{range .Files}}
 {{if .IsDir }}
-  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{.Name}}/">{{.Name}}/</A></LI>
+  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{print "./" .Name}}/">{{.Name}}/</A></LI>
 {{else}}
-  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{print "./" .Name}}">{{.Name}}</A></LI>
 {{end}}
 {{end}}
 </UL>

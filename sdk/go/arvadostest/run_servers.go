@@ -104,7 +104,10 @@ func StopAPI() {
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	bgRun(exec.Command("python", "run_test_server.py", "stop"))
+	cmd := exec.Command("python", "run_test_server.py", "stop")
+	bgRun(cmd)
+	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
+	cmd.Wait()
 }
 
 // StartKeep starts the given number of keep servers,
@@ -132,12 +135,9 @@ func StopKeep(numKeepServers int) {
 	chdirToPythonTests()
 
 	cmd := exec.Command("python", "run_test_server.py", "stop_keep", "--num-keep-servers", strconv.Itoa(numKeepServers))
-	cmd.Stdin = nil
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stderr
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("%+v: %s", cmd.Args, err)
-	}
+	bgRun(cmd)
+	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
+	cmd.Wait()
 }
 
 // Start cmd, with stderr and stdout redirected to our own

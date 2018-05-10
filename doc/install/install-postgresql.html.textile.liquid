@@ -9,16 +9,18 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, and the API server.  The API server requires at least version *9.3* of PostgreSQL.  Beyond that, you have the flexibility to deploy PostgreSQL any way that the Rails servers will be able to connect to it.  Our recommended deployment strategy is:
+Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, and the API server.  The API server requires at least version *9.4* of PostgreSQL.  Beyond that, you have the flexibility to deploy PostgreSQL any way that the Rails servers will be able to connect to it.  Our recommended deployment strategy is:
 
 * Install PostgreSQL on the the same host as the SSO server, and dedicate that install to hosting the SSO database.  This provides the best security for the SSO server, because the database does not have to accept any client connections over the network.  Typical load on the SSO server is light enough that deploying both it and its database on the same host does not compromise performance.
 * If you want to provide the most scalability for your Arvados cluster, install PostgreSQL for the API server on a dedicated host.  This gives you the most flexibility to avoid resource contention, and tune performance separately for the API server and its database.  If performance is less of a concern for your installation, you can install PostgreSQL on the API server host directly, as with the SSO server.
 
 Find the section for your distribution below, and follow it to install PostgreSQL on each host where you will deploy it.  Then follow the steps in the later section(s) to set up PostgreSQL for the Arvados service(s) that need it.
 
-h2. Install PostgreSQL 9.3+
+It is important to make sure that autovacuum is enabled for the PostgreSQL database that backs the API server. Autovacuum is enabled by default since PostgreSQL 8.3.
 
-The API server requires at least version *9.3* of PostgreSQL.
+h2. Install PostgreSQL 9.4+
+
+The API server requires at least version *9.4* of PostgreSQL.
 
 h3(#centos7). CentOS 7
 {% assign rh_version = "7" %}
@@ -39,7 +41,9 @@ h3(#centos7). CentOS 7
 
 h3(#debian). Debian or Ubuntu
 
-Debian 8 (Jessie) and Ubuntu 14.04 (Trusty) and later versions include a sufficiently recent version of Postgres.
+Debian 8 (Jessie) and Ubuntu 16.04 (Xenial) and later versions include a sufficiently recent version of Postgres.
+
+Ubuntu 14.04 (Trusty) requires an updated PostgreSQL version, see "the PostgreSQL ubuntu repository":https://www.postgresql.org/download/linux/ubuntu/
 
 # Install PostgreSQL:
   <notextile><pre>~$ <span class="userinput">sudo apt-get install postgresql</span></pre></notextile>

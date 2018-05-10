@@ -22,6 +22,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/asyncbuf"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 // A Keep "block" is 64MB.
@@ -99,6 +100,7 @@ type KeepClient struct {
 	HTTPClient         HTTPClient
 	Retries            int
 	BlockCache         *BlockCache
+	RequestID          string
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -200,6 +202,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil
 	}
 
+	reqid := kc.getRequestID()
+
 	var expectLength int64
 	if parts := strings.SplitN(locator, "+", 3); len(parts) < 2 {
 		expectLength = -1
@@ -232,7 +236,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				continue
 			}
-			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+			req.Header.Add("X-Request-Id", reqid)
 			resp, err := kc.httpClient().Do(req)
 			if err != nil {
 				// Probably a network error, may be transient,
@@ -350,7 +355,8 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+	req.Header.Set("X-Request-Id", kc.getRequestID())
 	resp, err := kc.httpClient().Do(req)
 	if err != nil {
 		return nil, err
@@ -537,6 +543,16 @@ func (kc *KeepClient) httpClient() HTTPClient {
 	}
 	defaultClient[kc.Arvados.ApiInsecure][kc.foundNonDiskSvc] = c
 	return c
+}
+
+var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
+
+func (kc *KeepClient) getRequestID() string {
+	if kc.RequestID != "" {
+		return kc.RequestID
+	} else {
+		return reqIDGen.Next()
+	}
 }
 
 type Locator struct {

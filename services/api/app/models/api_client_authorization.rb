@@ -92,7 +92,7 @@ class ApiClientAuthorization < ArvadosModel
        uuid_prefix+".arvadosapi.com")
   end
 
-  def self.validate(token:, remote:)
+  def self.validate(token:, remote: nil)
     return nil if !token
     remote ||= Rails.configuration.uuid_prefix
 

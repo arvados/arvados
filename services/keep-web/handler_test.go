@@ -12,10 +12,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
@@ -430,6 +432,38 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	)
 }
 
+func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("https:\\\"odd' path chars", os.O_CREATE, 0777)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	coll := arvados.Collection{ManifestText: mtxt}
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", client.UpdateBody(coll), nil)
+	c.Assert(err, check.IsNil)
+
+	u, _ := url.Parse("http://download.example.com/c=" + coll.UUID + "/")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + client.AuthToken},
+		},
+	}
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
+}
+
 // XHRs can't follow redirect-with-cookie so they rely on method=POST
 // and disposition=attachment (telling us it's acceptable to respond
 // with content instead of a redirect) and an Origin header that gets
@@ -632,7 +666,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 		}
 		s.testServer.Handler.ServeHTTP(resp, req)
 		var cookies []*http.Cookie
@@ -643,7 +677,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 				Host:       u.Host,
 				URL:        u,
 				RequestURI: u.RequestURI(),
-				Header:     trial.header,
+				Header:     copyHeader(trial.header),
 			}
 			cookies = append(cookies, (&http.Response{Header: resp.Header()}).Cookies()...)
 			for _, c := range cookies {
@@ -660,7 +694,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK)
 			for _, e := range trial.expect {
-				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="`+e+`".*`)
+				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./`+e+`".*`)
 			}
 			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`)
 		}
@@ -671,7 +705,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -687,7 +721,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -722,4 +756,12 @@ func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
+
+func copyHeader(h http.Header) http.Header {
+	hc := http.Header{}
+	for k, v := range h {
+		hc[k] = append([]string(nil), v...)
+	}
+	return hc
 }

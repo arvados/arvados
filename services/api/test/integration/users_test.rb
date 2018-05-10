@@ -216,4 +216,39 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
     nil
   end
+
+  test 'merge active into project_viewer account' do
+    post('/arvados/v1/groups', {
+           group: {
+             group_class: 'project',
+             name: "active user's stuff",
+           },
+         }, auth(:project_viewer))
+    assert_response(:success)
+    project_uuid = json_response['uuid']
+
+    post('/arvados/v1/users/merge', {
+           new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
+           new_owner_uuid: project_uuid,
+           redirect_to_new_user: true,
+         }, auth(:active_trustedclient))
+    assert_response(:success)
+
+    get('/arvados/v1/users/current', {}, auth(:active))
+    assert_response(:success)
+    assert_equal(users(:project_viewer).uuid, json_response['uuid'])
+
+    get('/arvados/v1/authorized_keys/' + authorized_keys(:active).uuid, {}, auth(:active))
+    assert_response(:success)
+    assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
+    assert_equal(users(:project_viewer).uuid, json_response['authorized_user_uuid'])
+
+    get('/arvados/v1/repositories/' + repositories(:foo).uuid, {}, auth(:active))
+    assert_response(:success)
+    assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
+
+    get('/arvados/v1/groups/' + groups(:aproject).uuid, {}, auth(:active))
+    assert_response(:success)
+    assert_equal(project_uuid, json_response['owner_uuid'])
+  end
 end

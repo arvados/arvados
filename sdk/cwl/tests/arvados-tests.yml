@@ -172,3 +172,13 @@
     out: null
   tool: wf/runin-reqs-wf4.cwl
   doc: "RunInSingleContainer discovers static resource request in subworkflow steps"
+
+- job: secondaryFiles/inp3.yml
+  output: {}
+  tool: secondaryFiles/example1.cwl
+  doc: Discover secondaryFiles at runtime if they are in keep
+
+- job: null
+  output: {}
+  tool: secondaryFiles/example3.cwl
+  doc: Discover secondaryFiles on default values

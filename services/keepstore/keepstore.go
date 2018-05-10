@@ -165,19 +165,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Initialize Pull queue and worker
+	// Initialize keepclient for pull workers
 	keepClient := &keepclient.KeepClient{
 		Arvados:       &arvadosclient.ArvadosClient{},
 		Want_replicas: 1,
 	}
 
-	// Initialize the pullq and worker
+	// Initialize the pullq and workers
 	pullq = NewWorkQueue()
-	go RunPullWorker(pullq, keepClient)
+	for i := 0; i < 1 || i < theConfig.PullWorkers; i++ {
+		go RunPullWorker(pullq, keepClient)
+	}
 
-	// Initialize the trashq and worker
+	// Initialize the trashq and workers
 	trashq = NewWorkQueue()
-	go RunTrashWorker(trashq)
+	for i := 0; i < 1 || i < theConfig.TrashWorkers; i++ {
+		go RunTrashWorker(trashq)
+	}
 
 	// Start emptyTrash goroutine
 	doneEmptyingTrash := make(chan bool)

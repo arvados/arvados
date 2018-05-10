@@ -147,7 +147,7 @@ Install this script as the run script for the keepstore service, modifying it as
 <pre><code>#!/bin/sh
 
 exec 2>&1
-exec GOGC=10 keepstore \
+GOGC=10 exec keepstore \
  -enforce-permissions=true \
  -blob-signing-key-file=<span class="userinput">/etc/keepstore/blob-signing.key</span> \
  -max-buffers=<span class="userinput">100</span> \

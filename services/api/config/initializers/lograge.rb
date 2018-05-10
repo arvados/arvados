@@ -27,6 +27,16 @@ Server::Application.configure do
       end
     end
 
+    # Redact new_user_token param in /arvados/v1/users/merge
+    # request. Log the auth UUID instead, if the token exists.
+    if params['new_user_token'].is_a? String
+      params['new_user_token_uuid'] =
+        ApiClientAuthorization.
+          where('api_token = ?', params['new_user_token']).
+          first.andand.uuid
+      params['new_user_token'] = '[...]'
+    end
+
     params_s = SafeJSON.dump(params)
     if params_s.length > Rails.configuration.max_request_log_params_size
       payload[:params_truncated] = params_s[0..Rails.configuration.max_request_log_params_size] + "[...]"

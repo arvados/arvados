@@ -105,7 +105,6 @@ class TestJob(unittest.TestCase):
                         mock.MagicMock(return_value={'status': 403}),
                         'Permission denied')
                     j.run(enable_reuse=enable_reuse)
-                    j.output_callback.assert_called_with({}, 'success')
                 else:
                     assert not runner.api.links().create.called
 
