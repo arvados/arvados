@@ -127,6 +127,13 @@ func (s *KeepService) index(c *Client, url string) ([]KeepServiceIndexEntry, err
 	scanner := bufio.NewScanner(resp.Body)
 	sawEOF := false
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			// If we encounter a read error (timeout,
+			// connection failure), stop now and return it
+			// below, so it doesn't get masked by the
+			// ensuing "badly formatted response" error.
+			break
+		}
 		if sawEOF {
 			return nil, fmt.Errorf("Index response contained non-terminal blank line")
 		}
