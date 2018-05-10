@@ -185,9 +185,12 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
         logger.info("$(input) is %s", pathprefix.rstrip('/'))
         pdh = "$(input)"
     else:
-        files = sorted(files, key=lambda x: x.fn)
+        files.sort(key=lambda f: f.fn)
+
         if collection is None:
             collection = arvados.collection.Collection(api_client=api, num_retries=num_retries)
+
+        filtered = []
         prev = ""
         for f in files:
             localpath = os.path.join(pathprefix, f.fn)
@@ -198,10 +201,26 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
                 # skip it because it starts with "/tmp/foo/"
                 continue
             prev = localpath
+            filtered.append(f)
+
+        # Sort such that for each directory, files are uploaded
+        # first, then subdirectories.
+        def keyfunc(f):
+            localpath = os.path.join(pathprefix, f.fn)
+            dn, fn = os.path.split(localpath)
+            return (dn, os.path.isdir(localpath), fn)
+
+        filtered.sort(key=keyfunc)
+
+        for f in filtered:
+            localpath = os.path.join(pathprefix, f.fn)
             if os.path.isfile(localpath):
                 write_file(collection, pathprefix, f.fn)
             elif os.path.isdir(localpath):
                 for root, dirs, iterfiles in os.walk(localpath):
+                    # Make the directory traversal deterministic
+                    dirs.sort()
+                    iterfiles.sort()
                     root = root[len(pathprefix):]
                     for src in iterfiles:
                         write_file(collection, pathprefix, os.path.join(root, src))
