@@ -213,17 +213,17 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 	}
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 
-	var sbatchArgs []string
-	sbatchArgs = append(sbatchArgs, disp.SbatchArguments...)
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem=%d", mem))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--tmp=%d", disk))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--nice=%d", initialNiceValue))
-	if len(container.SchedulingParameters.Partitions) > 0 {
-		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
-	}
+	var args []string
+	args = append(args, disp.SbatchArguments...)
+	args = append(args,
+		fmt.Sprintf("--job-name=%s", container.UUID),
+		fmt.Sprintf("--nice=%d", initialNiceValue))
 
+	constraintArgs := []string{
+		fmt.Sprintf("--mem=%d", mem),
+		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
+		fmt.Sprintf("--tmp=%d", disk),
+	}
 	if disp.cluster == nil {
 		// no instance types configured
 	} else if it, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
@@ -231,10 +231,16 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 	} else if err != nil {
 		return nil, err
 	} else {
-		sbatchArgs = append(sbatchArgs, "--constraint=instancetype="+it.Name)
+		// use instancetype constraint instead of slurm mem/cpu/tmp specs
+		constraintArgs = []string{"--constraint=instancetype=" + it.Name}
+	}
+	args = append(args, constraintArgs...)
+
+	if len(container.SchedulingParameters.Partitions) > 0 {
+		args = append(args, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
-	return sbatchArgs, nil
+	return args, nil
 }
 
 func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []string) error {
