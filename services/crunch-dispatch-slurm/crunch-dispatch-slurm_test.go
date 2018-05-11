@@ -193,10 +193,11 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 	container := s.integrationTest(c,
 		[][]string{{
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
+			fmt.Sprintf("--nice=%d", 10000),
 			fmt.Sprintf("--mem=%d", 11445),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
 			fmt.Sprintf("--tmp=%d", 45777),
-			fmt.Sprintf("--nice=%d", 10000)}},
+		}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -208,7 +209,7 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 func (s *IntegrationSuite) TestSbatchFail(c *C) {
 	s.slurm = slurmFake{errBatch: errors.New("something terrible happened")}
 	container := s.integrationTest(c,
-		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--mem=11445", "--cpus-per-task=4", "--tmp=45777", "--nice=10000"}},
+		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--nice=10000", "--mem=11445", "--cpus-per-task=4", "--tmp=45777"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
@@ -353,7 +354,7 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 		s.disp.SbatchArguments = defaults
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=10000"))
+		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--nice=10000", "--mem=239", "--cpus-per-task=2", "--tmp=0"))
 		c.Check(err, IsNil)
 	}
 }
@@ -383,7 +384,7 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 		// No node types configured => no slurm constraint
 		{
 			types:      nil,
-			sbatchArgs: nil,
+			sbatchArgs: []string{"--mem=239", "--cpus-per-task=2", "--tmp=0"},
 		},
 		// No node type is big enough => error
 		{
@@ -399,7 +400,7 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 		args, err := s.disp.sbatchArgs(container)
 		c.Check(err, Equals, trial.err)
 		if trial.err == nil {
-			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=10000"}, trial.sbatchArgs...))
+			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--nice=10000"}, trial.sbatchArgs...))
 		}
 	}
 }
@@ -414,7 +415,8 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 
 	args, err := s.disp.sbatchArgs(container)
 	c.Check(args, DeepEquals, []string{
-		"--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=10000",
+		"--job-name=123", "--nice=10000",
+		"--mem=239", "--cpus-per-task=1", "--tmp=0",
 		"--partition=blurb,b2",
 	})
 	c.Check(err, IsNil)

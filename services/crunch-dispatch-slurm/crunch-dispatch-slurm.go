@@ -202,7 +202,7 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 	}
 }
 
-func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
+func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []string {
 	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM+disp.ReserveExtraRAM) / float64(1048576)))
 
 	var disk int64
@@ -212,29 +212,36 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 		}
 	}
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
-
-	var sbatchArgs []string
-	sbatchArgs = append(sbatchArgs, disp.SbatchArguments...)
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem=%d", mem))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--tmp=%d", disk))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--nice=%d", initialNiceValue))
-	if len(container.SchedulingParameters.Partitions) > 0 {
-		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
+	return []string{
+		fmt.Sprintf("--mem=%d", mem),
+		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
+		fmt.Sprintf("--tmp=%d", disk),
 	}
+}
+
+func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
+	var args []string
+	args = append(args, disp.SbatchArguments...)
+	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue))
 
 	if disp.cluster == nil {
 		// no instance types configured
+		args = append(args, disp.slurmConstraintArgs(container)...)
 	} else if it, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
 		// ditto
+		args = append(args, disp.slurmConstraintArgs(container)...)
 	} else if err != nil {
 		return nil, err
 	} else {
-		sbatchArgs = append(sbatchArgs, "--constraint=instancetype="+it.Name)
+		// use instancetype constraint instead of slurm mem/cpu/tmp specs
+		args = append(args, "--constraint=instancetype="+it.Name)
 	}
 
-	return sbatchArgs, nil
+	if len(container.SchedulingParameters.Partitions) > 0 {
+		args = append(args, "--partition="+strings.Join(container.SchedulingParameters.Partitions, ","))
+	}
+
+	return args, nil
 }
 
 func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []string) error {
