@@ -61,11 +61,11 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def self.columns
-    return @columns if @columns.andand.any?
-    columns = []
+    return @discovered_columns if @discovered_columns.andand.any?
+    @discovered_columns = []
     @attribute_info ||= {}
     schema = arvados_api_client.discovery[:schemas][self.to_s.to_sym]
-    return columns if schema.nil?
+    return @discovered_columns if schema.nil?
     schema[:properties].each do |k, coldef|
       case k
       when :etag, :kind
@@ -73,10 +73,10 @@ class ArvadosBase < ActiveRecord::Base
       else
         if coldef[:type] == coldef[:type].downcase
           # boolean, integer, etc.
-          columns << column(k, coldef[:type].to_sym)
+          @discovered_columns << column(k, coldef[:type])
         else
           # Hash, Array
-          columns << column(k, :text)
+          @discovered_columns << column(k, coldef[:type])
           serialize k, coldef[:type].constantize
         end
         define_method k do
@@ -90,14 +90,14 @@ class ArvadosBase < ActiveRecord::Base
         @attribute_info[k] = coldef
       end
     end
-    @columns = columns
+    @discovered_columns
   end
 
   def self.column(name, sql_type = nil, default = nil, null = true)
-    if sql_type == :datetime
+    if sql_type == 'datetime'
       cast_type = "ActiveRecord::Type::DateTime".constantize.new
     else
-      cast_type = "ActiveRecord::Type::#{sql_type.to_s.camelize}".constantize.new
+      cast_type = ActiveRecord::Base.connection.lookup_cast_type(sql_type)
     end
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, cast_type, sql_type.to_s, null)
   end
