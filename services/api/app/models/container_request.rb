@@ -37,10 +37,10 @@ class ContainerRequest < ArvadosModel
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
   before_save :scrub_secret_mounts
-  after_save :update_priority
-  after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
   before_destroy :set_priority_zero
+  after_save :update_priority
+  after_save :finalize_if_needed
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -86,7 +86,7 @@ class ContainerRequest < ArvadosModel
   AttrsPermittedAlways = [:owner_uuid, :state, :name, :description]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority, :properties, :requesting_container_uuid,
+  :output_path, :priority, :properties,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
@@ -286,9 +286,9 @@ class ContainerRequest < ArvadosModel
   def update_priority
     return unless state_changed? || priority_changed? || container_uuid_changed?
     act_as_system_user do
+      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       Container.
         where('uuid in (?)', [self.container_uuid_was, self.container_uuid].compact).
-        lock(true).
         map(&:update_priority!)
     end
   end
@@ -298,14 +298,11 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    return !new_record? if self.requesting_container_uuid   # already set
-
-    token_uuid = current_api_client_authorization.andand.uuid
-    container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
-    if container
-      self.requesting_container_uuid = container.uuid
-      self.priority = container.priority > 0 ? 1 : 0
+    return if !current_api_client_authorization
+    ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
+    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
+      self.requesting_container_uuid = c.uuid
+      self.priority = c.priority>0 ? 1 : 0
     end
-    true
   end
 end

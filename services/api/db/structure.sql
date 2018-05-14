@@ -1879,6 +1879,13 @@ CREATE UNIQUE INDEX index_container_requests_on_uuid ON container_requests USING
 
 
 --
+-- Name: index_containers_on_auth_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_auth_uuid ON containers USING btree (auth_uuid);
+
+
+--
 -- Name: index_containers_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3070,4 +3077,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180228220311');
 INSERT INTO schema_migrations (version) VALUES ('20180313180114');
 
 INSERT INTO schema_migrations (version) VALUES ('20180501182859');
+
+INSERT INTO schema_migrations (version) VALUES ('20180514135529');
 
