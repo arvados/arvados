@@ -76,7 +76,7 @@ class ArvadosBase < ActiveRecord::Base
           columns << column(k, coldef[:type].to_sym)
         else
           # Hash, Array
-          columns << column(k, :text, default)
+          columns << column(k, :text)
           serialize k, coldef[:type].constantize
         end
         define_method k do
