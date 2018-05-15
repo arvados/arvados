@@ -261,10 +261,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = Container.find_by_uuid cr.container_uuid
     assert_operator 0, :<, c.priority
+    lock_and_run(c)
 
-    cr2 = create_minimal_req!
-    cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
-    cr2.reload
+    cr2 = with_container_auth(c) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 1, command: ["echo", "foo2"])
+    end
+    assert_not_nil cr2.requesting_container_uuid
     assert_equal users(:active).uuid, cr2.modified_by_user_uuid
 
     c2 = Container.find_by_uuid cr2.container_uuid
@@ -613,7 +615,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "requesting_container_uuid at create is not allowed" do
     set_user_from_auth :active
-    assert_raises(ActiveRecord::RecordNotSaved) do
+    assert_raises(ActiveRecord::RecordInvalid) do
       create_minimal_req!(state: "Uncommitted", priority: 1, requesting_container_uuid: 'youcantdothat')
     end
   end

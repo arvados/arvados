@@ -126,6 +126,7 @@ class Container < ArvadosModel
       # Update the priority of child container requests to match new
       # priority of the parent container (ignoring requests with no
       # container assigned, because their priority doesn't matter).
+      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       ContainerRequest.
         where(requesting_container_uuid: self.uuid,
               state: ContainerRequest::Committed).
@@ -541,6 +542,7 @@ class Container < ArvadosModel
     if self.state_changed? and self.final?
       act_as_system_user do
 
+        ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
         if self.state == Cancelled
           retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
         else
