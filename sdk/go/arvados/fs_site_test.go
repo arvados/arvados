@@ -42,6 +42,7 @@ func (s *SiteFSSuite) TestByIDEmpty(c *check.C) {
 	f, err := s.fs.Open("/by_id")
 	c.Assert(err, check.IsNil)
 	fis, err := f.Readdir(-1)
+	c.Check(err, check.IsNil)
 	c.Check(len(fis), check.Equals, 0)
 }
 
