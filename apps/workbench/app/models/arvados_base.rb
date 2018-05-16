@@ -207,7 +207,7 @@ class ArvadosBase < ActiveRecord::Base
       # old value in the update/create command) or has been added to
       # #changed by ActiveRecord's #attr= method.
       if changed.include? col.name or
-          (self.class.serialized_attributes.include? col.name and
+          ([Hash, Array].include?(attributes[col.name].class) and
            @loaded_attributes[col.name])
         obdata[col.name.to_sym] = self.send col.name
       end
