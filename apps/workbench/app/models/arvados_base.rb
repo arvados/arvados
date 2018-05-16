@@ -76,7 +76,7 @@ class ArvadosBase < ActiveRecord::Base
           @discovered_columns << column(k, coldef[:type])
         else
           # Hash, Array
-          @discovered_columns << column(k, coldef[:type])
+          @discovered_columns << column(k, coldef[:type], coldef[:type].constantize.new)
           serialize k, coldef[:type].constantize
         end
         define_method k do
