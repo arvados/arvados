@@ -8,6 +8,11 @@ class LinkAccountController < ApplicationController
   def index
   end
 
+  def merge
+    User.merge params[:new_user_token]
+    redirect_to "/"
+  end
+
   def model_class
     "User"
   end

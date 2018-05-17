@@ -14,6 +14,19 @@ class User < ArvadosBase
     arvados_api_client.unpack_api_response(res)
   end
 
+  def self.merge new_user_token
+    res = arvados_api_client.api Group, nil, {:group => {
+                                                     :name => "Migrated from #{Thread.current[:user].email} (#{Thread.current[:user].uuid})",
+                                                     :group_class => "project"}},
+                                 {:arvados_api_token => new_user_token}, false
+    target = arvados_api_client.unpack_api_response(res)
+
+    res = arvados_api_client.api self, '/merge', {:new_user_token => new_user_token,
+                                                  :new_owner_uuid => target[:uuid],
+                                                  :redirect_to_new_user => true}, {}, false
+    arvados_api_client.unpack_api_response(res)
+  end
+
   def self.system
     @@arvados_system_user ||= begin
                                 res = arvados_api_client.api self, '/system'

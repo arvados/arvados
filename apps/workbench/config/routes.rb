@@ -126,6 +126,7 @@ ArvadosWorkbench::Application.routes.draw do
   get 'websockets' => 'websocket#index'
   post "combine_selected" => 'actions#combine_selected_files_into_collection'
   get 'link_account' => 'link_account#index'
+  post 'link_account' => 'link_account#merge'
 
   root :to => 'projects#index'
 
