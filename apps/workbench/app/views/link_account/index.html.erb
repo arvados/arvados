@@ -1,0 +1,54 @@
+<%= javascript_tag do %>
+  function update_visibility() {
+  if (sessionStorage.getItem('link_account_api_token') &&
+    sessionStorage.getItem('link_account_api_token') != '<%= Thread.current[:arvados_api_token] %>')
+  {
+    $("#ready-to-link").css({"height": "auto", "visibility": "visible"});
+  $("#need-login").css({"height": "0px", "visibility": "hidden"});
+
+  var user_a = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_uuid')+")";
+  var user_b = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>)";
+
+    $("#will-link-to").html("<p>Clicking 'Link accounts' will link this account to "+
+      user_a+" created at <b>"+sessionStorage.getItem('link_account_created_at')+"</b>.</p>"+
+      "<p>After linking, logging in as "+user_b+" will put you in the account "+user_a+
+      ".</p>  <p>Any objects owned by "+user_b+" will be transferred to "+user_a+".</p>");
+  } else {
+    sessionStorage.setItem('link_account_api_token', '<%= Thread.current[:arvados_api_token] %>');
+    sessionStorage.setItem('link_account_email', '<%= Thread.current[:user].email %>');
+    sessionStorage.setItem('link_account_uuid', '<%= Thread.current[:user].uuid%>');
+    sessionStorage.setItem('link_account_created_at', '<%= Thread.current[:user].created_at%>');
+    $("#ready-to-link").css({"height": "0px", "visibility": "hidden"});
+    $("#need-login").css({"height": "auto", "visibility": "visible"});
+  }
+  };
+
+  $(window).on("load", function() {
+    update_visibility();
+  });
+
+  $(document).on("click", "#cancel-link-accounts", function() {
+    sessionStorage.removeItem('link_account_api_token');
+    update_visibility();
+  });
+<% end %>
+
+<p>You are currently logged in as <b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>) created at <b><%= Thread.current[:user].created_at%></b></p>
+
+<div id="need-login" style="height: 0px; visibility: hidden">
+<p>If you would like to link another login to this Arvados account, please click the button below.</p>
+<p>
+<%= link_to(arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url)),
+        {class: "btn btn-primary", id: "#link_account_button"}) do %>
+  <i class="fa fa-fw fa-sign-in"></i> Login with alternate account
+<% end %>
+</p>
+</div>
+
+<div id="ready-to-link" style="height: 0px; visibility: hidden">
+
+  <div id="will-link-to"></div>
+
+  <button class="btn btn-cancel" id="cancel-link-accounts">Cancel</button>
+  <button class="btn btn-primary">Link accounts</button>
+</div>
