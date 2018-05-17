@@ -9,7 +9,7 @@ class LinkAccountController < ApplicationController
   end
 
   def merge
-    User.merge params[:new_user_token]
+    User.merge params[:new_user_token], params[:direction]
     redirect_to "/"
   end
 
