@@ -36,4 +36,7 @@ ArvadosWorkbench::Application.configure do
   # Log timing data for API transactions
   config.profiling_enabled = false
 
+  # Can be :random or :sorted. Rails 5 will use :random by default
+  config.active_support.test_order = :sorted
+
 end
