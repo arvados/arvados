@@ -414,7 +414,7 @@ class User < ArvadosModel
     end
     if self.is_active_changed?
       if self.is_active != self.is_active_was
-        logger.warn "User #{current_user.uuid} tried to change is_active from #{self.is_admin_was} to #{self.is_admin} for #{self.uuid}"
+        logger.warn "User #{current_user.uuid} tried to change is_active from #{self.is_active_was} to #{self.is_active} for #{self.uuid}"
         self.is_active = self.is_active_was
       end
     end

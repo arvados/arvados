@@ -65,6 +65,8 @@ ArvadosWorkbench::Application.routes.draw do
     get 'virtual_machines', :on => :member
     get 'repositories', :on => :member
     get 'ssh_keys', :on => :member
+    get 'link_account', :on => :collection
+    post 'link_account', :on => :collection, :action => :merge
   end
   get '/current_token' => 'users#current_token'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
@@ -125,8 +127,6 @@ ArvadosWorkbench::Application.routes.draw do
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
   post "combine_selected" => 'actions#combine_selected_files_into_collection'
-  get 'link_account' => 'link_account#index'
-  post 'link_account' => 'link_account#merge'
 
   root :to => 'projects#index'
 
