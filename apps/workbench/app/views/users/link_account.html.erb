@@ -58,7 +58,7 @@
     sessionStorage.setItem('link_account_created_at', '<%= Thread.current[:user].created_at %>');
     sessionStorage.setItem('link_account_is_active', <%= if Thread.current[:user].is_active then "true" else "false" end %>);
     sessionStorage.setItem('link_account_is_admin', <%= if Thread.current[:user].is_admin then "true" else "false" end %>);
-    window.location.replace('<%=arvados_api_client.arvados_login_url(return_to: "#{strip_token_from_path(request.url)}?direction=")%>'+dir);
+    window.location.replace('<%=arvados_api_client.arvados_logout_url(return_to: arvados_api_client.arvados_login_url(return_to: "#{strip_token_from_path(request.url)}?direction="))%>'+dir);
   }
 
   $(document).on("click", "#link-account-in", function(e) { do_login("in"); });
