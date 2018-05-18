@@ -9,32 +9,30 @@
       <% if params[:direction] == "in" %>
       var user_a = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_uuid')+")";
       var user_b = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>)";
-      var user_a_is_active = sessionStorage.getItem('link_account_is_active');
-      var user_a_is_admin = sessionStorage.getItem('link_account_is_admin');
-      var user_b_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false"%>;
+      var user_a_is_active = (sessionStorage.getItem('link_account_is_active') == "true");
+      var user_a_is_admin = (sessionStorage.getItem('link_account_is_admin') == "true");
+      var user_b_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false" end %>;
       <% else %>
       var user_a = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>)";
       var user_b = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_uuid')+")";
       var user_a_is_active = <%= Thread.current[:user].is_active %>;
-      var user_a_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false"%>;
-      var user_b_is_admin = sessionStorage.getItem('link_account_is_admin');
+      var user_a_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false" end %>;
+      var user_b_is_admin = (sessionStorage.getItem('link_account_is_admin') == "true");
       <% end %>
 
       $("#new-user-token-input").val(sessionStorage.getItem('link_account_api_token'));
 
-      if (user_b_is_admin && !user_a_is_admin) {
+      if (!user_a_is_active) {
+        $("#will-link-to").html("<p>Cannot link "+user_b+" to inactive account "+user_a+".</p>");
+        $("#link-account-submit").prop("disabled", true);
+      } else if (user_b_is_admin && !user_a_is_admin) {
         $("#will-link-to").html("<p>Cannot link admin account "+user_b+" to non-admin account "+user_a+".</p>");
         $("#link-account-submit").prop("disabled", true);
       } else {
-        if (user_a_is_active) {
-          $("#will-link-to").html("<p>Clicking 'Link accounts' will link "+user_b+" created on <%=Thread.current[:user].created_at%> to "+
-            user_a+" created at <b>"+sessionStorage.getItem('link_account_created_at')+"</b>.</p>"+
-            "<p>After linking, logging in as "+user_b+" will log you into the same account as "+user_a+
-            ".</p>  <p>Any objects owned by "+user_b+" will be transferred to "+user_a+".</p>");
-        } else {
-          $("#will-link-to").html("<p>Cannot link "+user_b+" to inactive account "+user_a+".</p>");
-          $("#link-account-submit").prop("disabled", true);
-	}
+        $("#will-link-to").html("<p>Clicking 'Link accounts' will link "+user_b+" created on <%=Thread.current[:user].created_at%> to "+
+          user_a+" created at <b>"+sessionStorage.getItem('link_account_created_at')+"</b>.</p>"+
+          "<p>After linking, logging in as "+user_b+" will log you into the same account as "+user_a+
+          ".</p>  <p>Any objects owned by "+user_b+" will be transferred to "+user_a+".</p>");
       }
     } else {
       $("#ready-to-link").css({"display": "none"});
@@ -46,6 +44,7 @@
     sessionStorage.removeItem('link_account_email');
     sessionStorage.removeItem('link_account_created_at');
     sessionStorage.removeItem('link_account_is_active');
+    sessionStorage.removeItem('link_account_is_admin');
   };
 
   $(window).on("load", function() {

@@ -108,6 +108,8 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
 
     assert_text "Cannot link active-user@arvados.local"
 
+    assert find("#link-account-submit")['disabled']
+
     find("button", text: "Cancel").click
 
     find("#notifications-menu").click
@@ -137,6 +139,30 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
 
     find("#notifications-menu").click
     assert_text "active-user@arvados.local"
+  end
+
+  test "Admin cannot link to non-admin" do
+    visit page_with_token('admin_trustedclient')
+    stub = start_sso_stub(api_fixture('api_client_authorizations')['active_trustedclient']['api_token'])
+    Rails.configuration.arvados_login_base = stub + "login"
+
+    find("#notifications-menu").click
+    assert_text "admin@arvados.local"
+
+    find("a", text: "Link account").click
+    find("button", text: "Use this login to access another account").click
+
+    find("#notifications-menu").click
+    assert_text "active-user@arvados.local"
+
+    assert_text "Cannot link admin account admin@arvados.local"
+
+    assert find("#link-account-submit")['disabled']
+
+    find("button", text: "Cancel").click
+
+    find("#notifications-menu").click
+    assert_text "admin@arvados.local"
   end
 
 end
