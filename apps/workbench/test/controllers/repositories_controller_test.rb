@@ -63,7 +63,7 @@ class RepositoriesControllerTest < ActionController::TestCase
       assert_response :success
 
       panes = css_select('[data-toggle=tab]').each do |pane|
-        pane_name = pane.attributes['href']
+        pane_name = pane.attributes['href'].value
         assert_includes expected_panes, pane_name
       end
     end
@@ -96,7 +96,7 @@ class RepositoriesControllerTest < ActionController::TestCase
         commit: sha1,
       }, session_for(user)
       assert_response :success
-      assert_select 'pre', h(commit)
+      assert_select 'pre', commit
     end
 
     test "show blob to #{user}" do
@@ -108,7 +108,7 @@ class RepositoriesControllerTest < ActionController::TestCase
         path: 'COPYING',
       }, session_for(user)
       assert_response :success
-      assert_select 'pre', h(filedata)
+      assert_select 'pre', filedata
     end
   end
 
