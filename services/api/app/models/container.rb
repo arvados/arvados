@@ -316,11 +316,11 @@ class Container < ArvadosModel
     # (because state might have changed while acquiring the lock).
     check_lock_fail
     transaction do
-      begin
-        reload(lock: 'FOR UPDATE NOWAIT')
-      rescue
-        raise LockFailedError.new("cannot lock: other transaction in progress")
-      end
+      # Locking involves assigning auth_uuid, which involves looking
+      # up container requests, so we must lock both tables in the
+      # proper order to avoid deadlock.
+      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
+      reload
       check_lock_fail
       update_attributes!(state: Locked)
     end
