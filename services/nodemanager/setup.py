@@ -42,12 +42,15 @@ setup(name='arvados-node-manager',
           'python-daemon',
           'setuptools'
       ],
+      dependency_links=[
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.3.1.dev1.zip"
+      ],
       test_suite='tests',
       tests_require=[
           'requests',
           'pbr<1.7.0',
           'mock>=1.0',
-          'apache-libcloud>=2.3',
+          'apache-libcloud>=2.3.1.dev1',
       ],
       zip_safe=False
       )
