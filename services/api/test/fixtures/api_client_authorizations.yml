@@ -183,6 +183,13 @@ inactive_uninvited:
   api_token: 62mhllc0otp78v08e3rpa3nsmf8q8ogk47f7u5z4erp5gpj9al
   expires_at: 2038-01-01 00:00:00
 
+inactive_uninvited_trustedclient:
+  uuid: zzzzz-gj3su-228z32aux8dg2s1
+  api_client: trusted_workbench
+  user: inactive_uninvited
+  api_token: 7s29oj2hzmcmpq80hx9cta0rl5wuf3xfd6r7disusaptz7h9m0
+  expires_at: 2038-01-01 00:00:00
+
 inactive_but_signed_user_agreement:
   uuid: zzzzz-gj3su-247z32aux8dg2s1
   api_client: untrusted

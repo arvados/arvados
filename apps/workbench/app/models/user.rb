@@ -40,7 +40,8 @@ class User < ArvadosBase
     # Create a project owned by user_a to accept everything owned by user_b
     res = arvados_api_client.api Group, nil, {:group => {
                                                 :name => new_group_name,
-                                                :group_class => "project"}},
+                                                :group_class => "project"},
+                                              :ensure_unique_name => true},
                                  {:arvados_api_token => user_a}, false
     target = arvados_api_client.unpack_api_response(res)
 
