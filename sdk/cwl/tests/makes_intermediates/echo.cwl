@@ -9,5 +9,6 @@ requirements:
 inputs:
   inp1: File
   inp2: [File, Directory]
+  inp3: Directory
 outputs: []
 arguments: [echo, $(inputs.inp1), $(inputs.inp2), $(inputs.inp3)]
