@@ -7,14 +7,14 @@
       $("#need-login").css({"display": "none"});
 
       <% if params[:direction] == "in" %>
-      var user_a = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_uuid')+")";
-      var user_b = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>)";
+      var user_a = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_username')+", "+sessionStorage.getItem('link_account_uuid')+")";
+      var user_b = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].username%>, <%= Thread.current[:user].uuid%>)";
       var user_a_is_active = (sessionStorage.getItem('link_account_is_active') == "true");
       var user_a_is_admin = (sessionStorage.getItem('link_account_is_admin') == "true");
       var user_b_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false" end %>;
       <% else %>
-      var user_a = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>)";
-      var user_b = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_uuid')+")";
+      var user_a = "<b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].username%>, <%= Thread.current[:user].uuid%>)";
+      var user_b = "<b>"+sessionStorage.getItem('link_account_email')+"</b> ("+sessionStorage.getItem('link_account_username')+", "+sessionStorage.getItem('link_account_uuid')+")";
       var user_a_is_active = <%= Thread.current[:user].is_active %>;
       var user_a_is_admin = <%=if Thread.current[:user].is_admin then "true" else "false" end %>;
       var user_b_is_admin = (sessionStorage.getItem('link_account_is_admin') == "true");
@@ -42,6 +42,7 @@
     sessionStorage.removeItem('link_account_api_token');
     sessionStorage.removeItem('link_account_uuid');
     sessionStorage.removeItem('link_account_email');
+    sessionStorage.removeItem('link_account_username');
     sessionStorage.removeItem('link_account_created_at');
     sessionStorage.removeItem('link_account_is_active');
     sessionStorage.removeItem('link_account_is_admin');
@@ -54,6 +55,7 @@
   function do_login(dir) {
     sessionStorage.setItem('link_account_api_token', '<%= Thread.current[:arvados_api_token] %>');
     sessionStorage.setItem('link_account_email', '<%= Thread.current[:user].email %>');
+    sessionStorage.setItem('link_account_username', '<%= Thread.current[:user].username %>');
     sessionStorage.setItem('link_account_uuid', '<%= Thread.current[:user].uuid %>');
     sessionStorage.setItem('link_account_created_at', '<%= Thread.current[:user].created_at %>');
     sessionStorage.setItem('link_account_is_active', <%= if Thread.current[:user].is_active then "true" else "false" end %>);
@@ -71,7 +73,7 @@
 
 <div id="need-login" style="display: none">
 
-  <p>You are currently logged in as <b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].uuid%>) created at <b><%= Thread.current[:user].created_at%></b></p>
+  <p>You are currently logged in as <b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].username%>, <%= Thread.current[:user].uuid %>) created at <b><%= Thread.current[:user].created_at%></b></p>
 
 <p>You can link Arvados accounts.  After linking, either login will take you to the same account.</p>
 
