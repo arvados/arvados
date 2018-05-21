@@ -14,6 +14,47 @@ class User < ArvadosBase
     arvados_api_client.unpack_api_response(res)
   end
 
+  def self.merge new_user_token, direction
+    # Merge user accounts.
+    #
+    # If the direction is "in", the current user is merged into the
+    # user represented by new_user_token
+    #
+    # If the direction is "out", the user represented by new_user_token
+    # is merged into the current user.
+
+    if direction == "in"
+      user_a = new_user_token
+      user_b = Thread.current[:arvados_api_token]
+      new_group_name = "Migrated from #{Thread.current[:user].email} (#{Thread.current[:user].uuid})"
+    elsif direction == "out"
+      user_a = Thread.current[:arvados_api_token]
+      user_b = new_user_token
+      res = arvados_api_client.api self, '/current', nil, {:arvados_api_token => user_b}, false
+      user_b_info = arvados_api_client.unpack_api_response(res)
+      new_group_name = "Migrated from #{user_b_info.email} (#{user_b_info.uuid})"
+    else
+      raise "Invalid merge direction, expected 'in' or 'out'"
+    end
+
+    # Create a project owned by user_a to accept everything owned by user_b
+    res = arvados_api_client.api Group, nil, {:group => {
+                                                :name => new_group_name,
+                                                :group_class => "project"},
+                                              :ensure_unique_name => true},
+                                 {:arvados_api_token => user_a}, false
+    target = arvados_api_client.unpack_api_response(res)
+
+    # The merge API merges the "current" user (user_b) into the user
+    # represented by "new_user_token" (user_a).
+    # After merging, the user_b redirects to user_a.
+    res = arvados_api_client.api self, '/merge', {:new_user_token => user_a,
+                                                  :new_owner_uuid => target[:uuid],
+                                                  :redirect_to_new_user => true},
+                                 {:arvados_api_token => user_b}, false
+    arvados_api_client.unpack_api_response(res)
+  end
+
   def self.system
     @@arvados_system_user ||= begin
                                 res = arvados_api_client.api self, '/system'

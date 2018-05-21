@@ -65,6 +65,8 @@ ArvadosWorkbench::Application.routes.draw do
     get 'virtual_machines', :on => :member
     get 'repositories', :on => :member
     get 'ssh_keys', :on => :member
+    get 'link_account', :on => :collection
+    post 'link_account', :on => :collection, :action => :merge
   end
   get '/current_token' => 'users#current_token'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
@@ -109,7 +111,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'tab_counts', on: :member
     get 'public', on: :collection
   end
-  
+
   resources :search do
     get 'choose', :on => :collection
   end
@@ -131,9 +133,9 @@ ArvadosWorkbench::Application.routes.draw do
   match '/_health/ping', to: 'healthcheck#ping', via: [:get]
 
   get '/tests/mithril', to: 'tests#mithril'
-  
+
   get '/status', to: 'status#status'
-  
+
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
   match '*a', to: 'links#render_not_found', via: [:get, :post]

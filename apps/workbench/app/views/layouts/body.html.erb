@@ -93,7 +93,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
                   <%= link_to ssh_keys_user_path(current_user), role: 'menu-item' do %>
                     <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
                   <% end %>
-                </li>
+</li>
+                <li role="menuitem"><a href="/users/link_account" role="menuitem"><i class="fa fa-lg fa-link fa-fw"></i> Link account </a></li>
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>
