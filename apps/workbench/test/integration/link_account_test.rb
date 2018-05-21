@@ -25,6 +25,10 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
       s.shutdown
     }
 
+    s.mount_proc("/logout"){|req, res|
+      res.set_redirect(WEBrick::HTTPStatus::TemporaryRedirect, req.query["return_to"])
+    }
+
     Thread.new do
       s.start
     end
