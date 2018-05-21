@@ -1,0 +1,38 @@
+---
+layout: default
+navsection: userguide
+title: "Linking alternate login accounts"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page describes how to link additional login accounts to the same Arvados account.  This can be used to migrate login accounts, for example, from one Google account to another.  It can also be used to migrate login providers, for example from LDAP to Google.  In order to do this, you must be able to log into both the "old" and "new" accounts.
+
+h2. Link accounts
+
+Follow this process to link the "new" login to the "old" login.
+
+# Log in using the "old" account
+# Under the users menu, choose *Link account*
+# On the link accounts page, press the button *Add another login to this account*
+# Follow login instructions from the login provider (eg Google)
+# You will be returned to the *Link accounts* confirmation page.
+# Press the *Link account* button to confirm.
+# After the accounts are linked, you will be returned to the dashboard.
+# Both the "old" and "new" logins will now log in to the same Arvados account.
+
+h2. Link accounts (alternate flow)
+
+You can also link accounts starting with logging into the "new" account first.
+
+# Log in using the "new" account
+# Under the users menu, choose *Link account* (if the user is inactive, there will be a link on the inactive user page)
+# On the link accounts page, press the button *Use this login to access another account*
+# Follow login instructions from the login provider (eg Google)
+# You will be returned to the *Link accounts* confirmation page.
+# Press the *Link account* button to confirm.
+# After the accounts are linked, you will be returned to the dashboard.
+# Both the "old" and "new" logins will now log in to the same Arvados account.
