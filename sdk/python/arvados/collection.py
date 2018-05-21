@@ -1436,7 +1436,7 @@ class Collection(RichCollectionBase):
     @must_be_writable
     @synchronized
     @retry_method
-    def save(self, merge=True, num_retries=None):
+    def save(self, storage_classes=None, merge=True, num_retries=None):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
@@ -1465,9 +1465,13 @@ class Collection(RichCollectionBase):
                 self.update()
 
             text = self.manifest_text(strip=False)
+            body={'manifest_text': text}
+            if storage_classes:
+                body["storage_classes_desired"] = storage_classes
+
             self._remember_api_response(self._my_api().collections().update(
                 uuid=self._manifest_locator,
-                body={'manifest_text': text}
+                body=body
                 ).execute(
                     num_retries=num_retries))
             self._manifest_text = self._api_response["manifest_text"]
@@ -1483,6 +1487,7 @@ class Collection(RichCollectionBase):
     def save_new(self, name=None,
                  create_collection_record=True,
                  owner_uuid=None,
+                 storage_classes=None,
                  ensure_unique_name=False,
                  num_retries=None):
         """Save collection to a new collection record.
@@ -1525,6 +1530,8 @@ class Collection(RichCollectionBase):
                     "replication_desired": self.replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
+            if storage_classes:
+                body["storage_classes_desired"] = storage_classes
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
