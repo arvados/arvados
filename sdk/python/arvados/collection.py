@@ -1447,6 +1447,9 @@ class Collection(RichCollectionBase):
         the API server.  If you want to save a manifest to Keep only, see
         `save_new()`.
 
+        :storage_classes:
+          Specify desirable storage classes to be used when writing data to Keep.
+
         :merge:
           Update and merge remote changes before saving.  Otherwise, any
           remote changes will be ignored and overwritten.
@@ -1467,6 +1470,8 @@ class Collection(RichCollectionBase):
             text = self.manifest_text(strip=False)
             body={'manifest_text': text}
             if storage_classes:
+                if type(storage_classes) is not list:
+                    raise errors.ArgumentError("storage_classes must be list type.")
                 body["storage_classes_desired"] = storage_classes
 
             self._remember_api_response(self._my_api().collections().update(
@@ -1508,6 +1513,9 @@ class Collection(RichCollectionBase):
           the user, or project uuid that will own this collection.
           If None, defaults to the current user.
 
+        :storage_classes:
+          Specify desirable storage classes to be used when writing data to Keep.
+
         :ensure_unique_name:
           If True, ask the API server to rename the collection
           if it conflicts with a collection with the same name and owner.  If
@@ -1531,6 +1539,8 @@ class Collection(RichCollectionBase):
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
             if storage_classes:
+                if type(storage_classes) is not list:
+                    raise errors.ArgumentError("storage_classes must be list type.")
                 body["storage_classes_desired"] = storage_classes
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
