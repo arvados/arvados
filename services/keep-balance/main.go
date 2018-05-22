@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -45,6 +46,9 @@ type Config struct {
 	// more memory, but can reduce store-and-forward latency when
 	// fetching pages)
 	CollectionBuffers int
+
+	// Timeout for outgoing http request/response cycle.
+	RequestTimeout arvados.Duration
 }
 
 // RunOptions controls runtime behavior. The flags/options that belong
@@ -106,6 +110,14 @@ func main() {
 	if *dumpConfig {
 		log.Fatal(config.DumpAndExit(cfg))
 	}
+
+	to := time.Duration(cfg.RequestTimeout)
+	if to == 0 {
+		to = 30 * time.Minute
+	}
+	arvados.DefaultSecureClient.Timeout = to
+	arvados.InsecureHTTPClient.Timeout = to
+	http.DefaultClient.Timeout = to
 
 	log.Printf("keep-balance %s started", version)
 
