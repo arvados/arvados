@@ -1458,6 +1458,7 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
+
         if not self.committed():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
@@ -1482,6 +1483,14 @@ class Collection(RichCollectionBase):
             self._manifest_text = self._api_response["manifest_text"]
             self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
+        elif storage_classes:
+            if type(storage_classes) is not list:
+                raise errors.ArgumentError("storage_classes must be list type.")
+            self._remember_api_response(self._my_api().collections().update(
+                uuid=self._manifest_locator,
+                body={"storage_classes_desired": storage_classes}
+                ).execute(
+                    num_retries=num_retries))
 
         return self._manifest_text
 
