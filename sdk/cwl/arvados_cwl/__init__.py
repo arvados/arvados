@@ -401,6 +401,9 @@ class ArvCwlRunner(object):
         if self.intermediate_output_ttl < 0:
             raise Exception("Invalid value %d for --intermediate-output-ttl, cannot be less than zero" % self.intermediate_output_ttl)
 
+        if kwargs.get("submit_request_uuid") and self.work_api != "containers":
+            raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
+
         if not kwargs.get("name"):
             kwargs["name"] = self.name = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
 
@@ -705,6 +708,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--submit-runner-image", type=str,
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
                         default=None)
+
+    parser.add_argument("--submit-request-uuid", type=str,
+                        default=None,
+                        help="Update and commit supplied container request instead of creating a new one (containers API only).")
 
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
