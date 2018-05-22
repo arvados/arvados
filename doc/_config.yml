@@ -50,6 +50,7 @@ navbar:
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
     - Reference:
+      - user/topics/link-accounts.html.textile.liquid
       - user/reference/cookbook.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
@@ -148,6 +149,7 @@ navbar:
       - admin/upgrading.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/migrating-providers.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
   installguide:
