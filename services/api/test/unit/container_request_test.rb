@@ -758,6 +758,75 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
+    [{"preemptable" => true}, nil, ActiveRecord::RecordInvalid],
+    [{"preemptable" => false}, nil, nil],
+    [{"preemptable" => true}, 'zzzzz-dz642-runningcontainr', nil],
+    [{"preemptable" => false}, 'zzzzz-dz642-runningcontainr', nil],
+  ].each do |sp, requesting_c, expected|
+    test "create container request with scheduling_parameters #{sp} with requesting_container_uuid=#{requesting_c} and verify #{expected}" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      scheduling_parameters: sp,
+                      mounts: {"test" => {"kind" => "json"}}}
+
+      set_user_from_auth :active
+
+      if requesting_c
+        cr = with_container_auth(Container.find_by_uuid requesting_c) do
+          create_minimal_req!(common_attrs)
+        end
+        assert_not_nil cr.requesting_container_uuid
+      else
+        cr = create_minimal_req!(common_attrs)
+      end
+
+      cr.state = ContainerRequest::Committed
+      if !expected.nil?
+        assert_raises(expected) do
+          cr.save!
+        end
+      else
+        cr.save!
+        assert_equal sp, cr.scheduling_parameters
+      end
+    end
+  end
+
+  [
+    [true, 'zzzzz-dz642-runningcontainr', true],
+    [true, nil, nil],
+    [false, 'zzzzz-dz642-runningcontainr', nil],
+    [false, nil, nil],
+  ].each do |preemptable_conf, requesting_c, schedule_preemptable|
+    test "having Rails.configuration.preemptable_instances=#{preemptable_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptable ? '':'not'} ask for preemptable instance by default" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      mounts: {"test" => {"kind" => "json"}}}
+
+      Rails.configuration.preemptable_instances = preemptable_conf
+      set_user_from_auth :active
+
+      if requesting_c
+        cr = with_container_auth(Container.find_by_uuid requesting_c) do
+          create_minimal_req!(common_attrs)
+        end
+        assert_not_nil cr.requesting_container_uuid
+      else
+        cr = create_minimal_req!(common_attrs)
+      end
+
+      cr.state = ContainerRequest::Committed
+      cr.save!
+
+      assert_equal schedule_preemptable, cr.scheduling_parameters['preemptable']
+    end
+  end
+
+  [
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
     [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],

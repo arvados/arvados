@@ -223,6 +223,13 @@ class ContainerRequest < ArvadosModel
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"
       end
+      if !self.scheduling_parameters.include?('preemptable')
+        if !self.requesting_container_uuid.nil? and Rails.configuration.preemptable_instances
+          self.scheduling_parameters['preemptable'] = true
+        end
+      elsif scheduling_parameters['preemptable'] and self.requesting_container_uuid.nil?
+        errors.add :scheduling_parameters, "only child containers can be preemptable"
+      end
     end
   end
 
