@@ -346,7 +346,7 @@ class TestWorkflow(unittest.TestCase):
                                               basedir="", make_fs_access=make_fs_access, loader=document_loader,
                                               makeTool=runner.arv_make_tool, metadata=metadata)
         arvtool.formatgraph = None
-        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
+        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access, tmp_outdir_prefix="")
         it.next().run()
         it.next().run()
 
@@ -432,7 +432,7 @@ class TestWorkflow(unittest.TestCase):
                                               basedir="", make_fs_access=make_fs_access, loader=document_loader,
                                               makeTool=runner.arv_make_tool, metadata=metadata)
         arvtool.formatgraph = None
-        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
+        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access, tmp_outdir_prefix="")
         it.next().run()
         it.next().run()
 

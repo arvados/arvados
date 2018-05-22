@@ -39,6 +39,7 @@ class ArvadosCommandTool(CommandLineTool):
         # Workaround for #13365
         builderargs = kwargs.copy()
         builderargs["toplevel"] = True
+        builderargs["tmp_outdir_prefix"] = ""
         builder = self._init_job(joborder, **builderargs)
         joborder = builder.job
 
