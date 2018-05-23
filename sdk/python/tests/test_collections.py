@@ -1317,6 +1317,13 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
             r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
         self.assertEqual(c.api_response()["storage_classes_desired"], ['archive'])
 
+    def test_update_storage_classes_desired_if_collection_is_commited(self):
+        c = self.create_count_txt()
+        c.save(storage_classes=['hot'])
+        c.save(storage_classes=['cold'])
+
+        self.assertEqual(c.api_response()["storage_classes_desired"], ['cold'])
+
     def test_create_diff_apply(self):
         c1 = self.create_count_txt()
         c1.save()

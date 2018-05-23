@@ -1458,6 +1458,8 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
+        if storage_classes and type(storage_classes) is not list:
+            raise errors.ArgumentError("storage_classes must be list type.")
 
         if not self.committed():
             if not self._has_collection_uuid():
@@ -1471,8 +1473,6 @@ class Collection(RichCollectionBase):
             text = self.manifest_text(strip=False)
             body={'manifest_text': text}
             if storage_classes:
-                if type(storage_classes) is not list:
-                    raise errors.ArgumentError("storage_classes must be list type.")
                 body["storage_classes_desired"] = storage_classes
 
             self._remember_api_response(self._my_api().collections().update(
@@ -1484,8 +1484,6 @@ class Collection(RichCollectionBase):
             self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
         elif storage_classes:
-            if type(storage_classes) is not list:
-                raise errors.ArgumentError("storage_classes must be list type.")
             self._remember_api_response(self._my_api().collections().update(
                 uuid=self._manifest_locator,
                 body={"storage_classes_desired": storage_classes}
