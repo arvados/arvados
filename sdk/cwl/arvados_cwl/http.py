@@ -20,6 +20,8 @@ def fresh_cache(url, properties):
     pr = properties[url]
     expires = None
 
+    logger.debug("Checking cache freshness for %s using %s", url, pr)
+
     if "Cache-Control" in pr:
         if re.match(r"immutable", pr["Cache-Control"]):
             return True
