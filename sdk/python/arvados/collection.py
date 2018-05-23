@@ -1436,7 +1436,7 @@ class Collection(RichCollectionBase):
     @must_be_writable
     @synchronized
     @retry_method
-    def save(self, merge=True, num_retries=None):
+    def save(self, storage_classes=None, merge=True, num_retries=None):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
@@ -1447,6 +1447,9 @@ class Collection(RichCollectionBase):
         the API server.  If you want to save a manifest to Keep only, see
         `save_new()`.
 
+        :storage_classes:
+          Specify desirable storage classes to be used when writing data to Keep.
+
         :merge:
           Update and merge remote changes before saving.  Otherwise, any
           remote changes will be ignored and overwritten.
@@ -1455,6 +1458,9 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
+        if storage_classes and type(storage_classes) is not list:
+            raise errors.ArgumentError("storage_classes must be list type.")
+
         if not self.committed():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
@@ -1465,14 +1471,24 @@ class Collection(RichCollectionBase):
                 self.update()
 
             text = self.manifest_text(strip=False)
+            body={'manifest_text': text}
+            if storage_classes:
+                body["storage_classes_desired"] = storage_classes
+
             self._remember_api_response(self._my_api().collections().update(
                 uuid=self._manifest_locator,
-                body={'manifest_text': text}
+                body=body
                 ).execute(
                     num_retries=num_retries))
             self._manifest_text = self._api_response["manifest_text"]
             self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
+        elif storage_classes:
+            self._remember_api_response(self._my_api().collections().update(
+                uuid=self._manifest_locator,
+                body={"storage_classes_desired": storage_classes}
+                ).execute(
+                    num_retries=num_retries))
 
         return self._manifest_text
 
@@ -1483,6 +1499,7 @@ class Collection(RichCollectionBase):
     def save_new(self, name=None,
                  create_collection_record=True,
                  owner_uuid=None,
+                 storage_classes=None,
                  ensure_unique_name=False,
                  num_retries=None):
         """Save collection to a new collection record.
@@ -1502,6 +1519,9 @@ class Collection(RichCollectionBase):
         :owner_uuid:
           the user, or project uuid that will own this collection.
           If None, defaults to the current user.
+
+        :storage_classes:
+          Specify desirable storage classes to be used when writing data to Keep.
 
         :ensure_unique_name:
           If True, ask the API server to rename the collection
@@ -1525,6 +1545,10 @@ class Collection(RichCollectionBase):
                     "replication_desired": self.replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
+            if storage_classes:
+                if type(storage_classes) is not list:
+                    raise errors.ArgumentError("storage_classes must be list type.")
+                body["storage_classes_desired"] = storage_classes
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
