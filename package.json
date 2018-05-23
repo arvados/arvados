@@ -1,0 +1,36 @@
+{
+  "name": "arvados-workbench-2",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "1.0.0",
+    "react": "16.3.2",
+    "react-dom": "16.3.2",
+    "react-redux": "5.0.7",
+    "react-router": "4.2.0",
+    "react-scripts-ts": "2.16.0",
+    "redux": "4.0.0",
+    "redux-devtools": "3.4.1",
+    "typesafe-actions": "2.0.3"
+  },
+  "scripts": {
+    "start": "react-scripts-ts start",
+    "build": "react-scripts-ts build",
+    "test": "react-scripts-ts test --env=jsdom",
+    "eject": "react-scripts-ts eject",
+    "lint": "tslint src/** -t verbose"
+  },
+  "devDependencies": {
+    "@types/jest": "22.2.3",
+    "@types/node": "10.1.2",
+    "@types/react": "16.3.14",
+    "@types/react-dom": "16.0.5",
+    "@types/react-redux": "6.0.0",
+    "@types/react-router": "4.0.25",
+    "@types/redux-devtools": "3.0.44",
+    "typescript": "2.8.3"
+  },
+  "moduleNameMapper": {
+    "^~/(.*)$": "<rootDir>/src/$1"
+  }
+}
