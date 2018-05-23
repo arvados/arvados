@@ -6,6 +6,9 @@ import re
 import arvados
 import arvados.collection
 import urlparse
+import logging
+
+logger = logging.getLogger('arvados.cwl-runner')
 
 def my_formatdate(dt):
     return email.utils.formatdate(timeval=time.mktime(now.timetuple()), localtime=False, usegmt=True)
@@ -35,7 +38,7 @@ def fresh_cache(url, properties):
 
 def remember_headers(url, properties, headers):
     properties.setdefault(url, {})
-    for h in ("Cache-Control", "ETag", "Expires", "Date"):
+    for h in ("Cache-Control", "ETag", "Expires", "Date", "Content-Length"):
         if h in headers:
             properties[url][h] = headers[h]
     if "Date" not in headers:
@@ -74,17 +77,31 @@ def http_to_keep(api, project_uuid, url):
     req = requests.get(url, stream=True)
 
     if req.status_code != 200:
-        raise Exception("Got status %s" % req.status_code)
+        raise Exception("Failed to download '%s' got status %s " % (req.status_code, url))
 
     remember_headers(url, properties, req.headers)
 
+    logger.info("Downloading %s (%s bytes)", url, properties[url]["Content-Length"])
+
     c = arvados.collection.Collection()
 
+    count = 0
+    start = time.time()
+    checkpoint = start
     with c.open(name, "w") as f:
-        for chunk in req.iter_content(chunk_size=128):
+        for chunk in req.iter_content(chunk_size=1024):
+            count += len(chunk)
             f.write(chunk)
+            now = time.time()
+            if (now - checkpoint) > 20:
+                bps = (float(count)/float(now - start))
+                logger.info("%2.1f%% complete, %3.2f MiB/s, %1.0f seconds left",
+                            float(count * 100) / float(properties[url]["Content-Length"]),
+                            bps/(1024*1024),
+                            (int(properties[url]["Content-Length"])-count)/bps)
+                checkpoint = now
 
-    c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid)
+    c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid, ensure_unique_name=True)
 
     api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
 
