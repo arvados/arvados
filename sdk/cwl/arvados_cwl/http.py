@@ -31,6 +31,11 @@ def fresh_cache(url, properties):
     if expires is None and "Expires" in pr:
         expires = my_parsedate(pr["Expires"])
 
+    if expires is None:
+        # Use a default cache time of 24 hours if upstream didn't set
+        # any cache headers, to reduce redundant downloads.
+        expires = my_parsedate(pr["Date"]) + datetime.timedelta(hours=24)
+
     if not expires:
         return False
 
