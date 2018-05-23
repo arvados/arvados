@@ -14,7 +14,11 @@ def my_formatdate(dt):
     return email.utils.formatdate(timeval=time.mktime(now.timetuple()), localtime=False, usegmt=True)
 
 def my_parsedate(text):
-    return datetime.datetime(*email.utils.parsedate(text)[:6])
+    parsed = email.utils.parsedate(text)
+    if parsed:
+        return datetime.datetime(*parsed[:6])
+    else:
+        datetime.datetime(1970, 1, 1)
 
 def fresh_cache(url, properties):
     pr = properties[url]
@@ -53,7 +57,7 @@ def remember_headers(url, properties, headers):
 
 
 def changed(url, properties):
-    req = requests.head(url)
+    req = requests.head(url, allow_redirects=True)
     remember_headers(url, properties, req.headers)
 
     if req.status_code != 200:
@@ -67,21 +71,22 @@ def changed(url, properties):
 
 def http_to_keep(api, project_uuid, url):
     r = api.collections().list(filters=[["properties", "exists", url]]).execute()
-    name = urlparse.urlparse(url).path.split("/")[-1]
 
     for item in r["items"]:
         properties = item["properties"]
         if fresh_cache(url, properties):
             # Do nothing
-            return "keep:%s/%s" % (item["portable_data_hash"], name)
+            cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
+            return "keep:%s/%s" % (item["portable_data_hash"], cr.keys()[0])
 
         if not changed(url, properties):
             # ETag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
-            return "keep:%s/%s" % (item["portable_data_hash"], name)
+            cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
+            return "keep:%s/%s" % (item["portable_data_hash"], cr.keys()[0])
 
     properties = {}
-    req = requests.get(url, stream=True)
+    req = requests.get(url, stream=True, allow_redirects=True)
 
     if req.status_code != 200:
         raise Exception("Failed to download '%s' got status %s " % (req.status_code, url))
@@ -91,6 +96,15 @@ def http_to_keep(api, project_uuid, url):
     logger.info("Downloading %s (%s bytes)", url, properties[url]["Content-Length"])
 
     c = arvados.collection.Collection()
+
+    if req.headers.get("Content-Disposition"):
+        grp = re.search(r'filename=("((\"|[^"])+)"|([^][()<>@,;:\"/?={} ]+))', req.headers["Content-Disposition"])
+        if grp.groups(2):
+            name = grp.groups(2)
+        else:
+            name = grp.groups(3)
+    else:
+        name = urlparse.urlparse(url).path.split("/")[-1]
 
     count = 0
     start = time.time()
