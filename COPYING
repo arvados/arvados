@@ -1,0 +1,19 @@
+Unless indicated otherwise in the header of the file, the files in this
+repository are distributed under one of three different licenses: AGPL-3.0,
+Apache-2.0 or CC-BY-SA-3.0.
+
+Individual files contain an SPDX tag that indicates the license for the file.
+These are the three tags in use:
+
+    SPDX-License-Identifier: AGPL-3.0
+    SPDX-License-Identifier: Apache-2.0
+    SPDX-License-Identifier: CC-BY-SA-3.0
+
+This enables machine processing of license information based on the SPDX
+License Identifiers that are available here: http://spdx.org/licenses/
+
+The full license text for each license is available in this directory:
+
+  AGPL-3.0:     agpl-3.0.txt
+  Apache-2.0:   apache-2.0.txt
+  CC-BY-SA-3.0: cc-by-sa-3.0.txt

@@ -1,0 +1,20 @@
+# Names should be added to this file with this pattern:
+#
+# For individuals:
+#   Name <email address>
+#
+# For organizations:
+#   Organization <fnmatch pattern>
+#
+# See python fnmatch module documentation for more information.
+
+Curoverse, Inc. <*@curoverse.com>
+Adam Savitzky <adam.savitzky@gmail.com>
+Colin Nolan <colin.nolan@sanger.ac.uk>
+David <davide.fiorentino.loregio@gmail.com>
+Guillermo Carrasco <guille.ch.88@gmail.com>
+Joshua Randall <joshua.randall@sanger.ac.uk>
+President and Fellows of Harvard College <*@harvard.edu>
+Thomas Mooney <tmooney@genome.wustl.edu>
+Chen Chen <aflyhorse@gmail.com>
+Veritas Genetics, Inc. <*@veritasgenetics.com>
