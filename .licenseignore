@@ -26,6 +26,8 @@ docker/jobs/apt.arvados.org.list
 *.gz.report
 *.ico
 *.jpg
+*.svg
+*.odg
 *.json
 *LICENSE*.html
 .licenseignore
@@ -59,3 +61,6 @@ services/arv-web/sample-cgi-app/public/index.cgi
 services/keepproxy/pkg-extras/etc/default/keepproxy
 *.tar
 tools/crunchstat-summary/tests/crunchstat_error_messages.txt
+tools/crunchstat-summary/crunchstat_summary/synchronizer.js
+build/package-build-dockerfiles/debian9/D39DC0E3.asc
+build/package-test-dockerfiles/debian9/D39DC0E3.asc

@@ -175,7 +175,7 @@ ${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
     wantBYSAmd="[comment]: # (Copyright © The Arvados Authors. All rights reserved.)
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)"
-    found=$(head -n20 "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*Arvados' || true)
+    found=$(head -n20 "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*All rights reserved.' || true)
     case ${fnm} in
         Makefile | build/* | lib/* | tools/* | apps/* | services/* | sdk/cli/bin/crunch-job)
             want=${wantGPL}
