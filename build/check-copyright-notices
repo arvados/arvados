@@ -96,7 +96,7 @@ do
             | */nodemanager/doc/*.cfg \
             | */nodemanager/tests/fake*.cfg.template \
             | */nginx.conf \
-            | build/build.list)
+            | build/build.list | *.R)
             fixer=fixer
             cc="#"
             ;;
