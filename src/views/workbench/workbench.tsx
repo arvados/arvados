@@ -13,6 +13,9 @@ import { connect } from "react-redux";
 import Tree from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { RootState } from "../../store/root-reducer";
+import ProjectList from "../../components/project-list/project-list";
+import { Route, Switch } from "react-router";
+import { Link } from "react-router-dom";
 
 const drawerWidth = 240;
 
@@ -72,12 +75,17 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                     }}>
                     <div className={classes.toolbar}/>
                     <Tree items={this.props.projects} render={(p: Project) =>
-                        <span>{p.name}</span>
+                        <Link to={`/project/${p.name}`}>{p.name}</Link>
                     }/>
                 </Drawer>
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
-                    <Typography noWrap>Hello new workbench!</Typography>
+                    <Switch>
+                        <Route exact path="/">
+                            <Typography noWrap>Hello new workbench!</Typography>
+                        </Route>
+                        <Route path="/project/:name" component={ProjectList}/>
+                    </Switch>
                 </main>
             </div>
         );

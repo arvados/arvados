@@ -5,9 +5,11 @@
 import { combineReducers } from "redux";
 import { StateType } from "typesafe-actions";
 import projectsReducer from "./project-reducer";
+import { routerReducer } from "react-router-redux";
 
 const rootReducer = combineReducers({
-    projects: projectsReducer
+    projects: projectsReducer,
+    router: routerReducer
 });
 
 export type RootState = StateType<typeof rootReducer>;

@@ -8,6 +8,8 @@
     "react-dom": "16.3.2",
     "react-redux": "5.0.7",
     "react-router": "4.2.0",
+    "react-router-dom": "4.2.2",
+    "react-router-redux": "5.0.0-alpha.9",
     "react-scripts-ts": "2.16.0",
     "redux": "4.0.0",
     "redux-devtools": "3.4.1",
@@ -27,6 +29,8 @@
     "@types/react-dom": "16.0.5",
     "@types/react-redux": "6.0.0",
     "@types/react-router": "4.0.25",
+    "@types/react-router-dom": "4.2.6",
+    "@types/react-router-redux": "5.0.14",
     "@types/redux-devtools": "3.0.44",
     "typescript": "2.8.3"
   },
