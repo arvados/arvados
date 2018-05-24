@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 #Run script with $Rscript createDoc.R input.Rmd output.html
 
 require(knitr) # required for knitting from rmd to md

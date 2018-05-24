@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 getAPIDocument <- function(){
     url <- "https://4xphq.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
     serverResponse <- httr::RETRY("GET", url = url)
