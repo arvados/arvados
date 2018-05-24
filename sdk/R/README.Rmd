@@ -1,3 +1,7 @@
+[comment]: # (Copyright © The Arvados Authors. All rights reserved.)
+[comment]: # ()
+[comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
+
 ## R SDK for Arvados
 
 This SDK focuses on providing support for accessing Arvados projects, collections, and the files within collections.

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
 if (!requireNamespace("devtools")) {
   install.packages("devtools")
