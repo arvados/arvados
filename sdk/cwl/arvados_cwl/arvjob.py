@@ -310,7 +310,8 @@ class RunnerJob(Runner):
             "script_parameters": self.job_order,
             "runtime_constraints": {
                 "docker_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
-                "min_ram_mb_per_node": self.submit_runner_ram
+                "min_ram_mb_per_node": self.submit_runner_ram,
+                "min_cores_per_node": self.submit_runner_vcpus
             }
         }
 
@@ -367,7 +368,8 @@ class RunnerTemplate(object):
     }
 
     def __init__(self, runner, tool, job_order, enable_reuse, uuid,
-                 submit_runner_ram=0, name=None, merged_map=None):
+                 submit_runner_ram=0, submit_runner_vcpus=0, name=None,
+                 merged_map=None):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -378,6 +380,7 @@ class RunnerTemplate(object):
             output_name=None,
             output_tags=None,
             submit_runner_ram=submit_runner_ram,
+            submit_runner_vcpus=submit_runner_vcpus,
             name=name,
             merged_map=merged_map)
         self.uuid = uuid

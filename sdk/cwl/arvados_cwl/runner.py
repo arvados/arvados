@@ -345,9 +345,9 @@ class Runner(object):
 
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None, on_error=None, submit_runner_image=None,
-                 intermediate_output_ttl=0, merged_map=None, priority=None,
-                 secret_store=None):
+                 submit_runner_vcpus=0, name=None, on_error=None,
+                 submit_runner_image=None, intermediate_output_ttl=0,
+                 merged_map=None, priority=None, secret_store=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -377,6 +377,14 @@ class Runner(object):
 
         if self.submit_runner_ram <= 0:
             raise Exception("Value of --submit-runner-ram must be greater than zero")
+
+        if submit_runner_vcpus:
+            self.submit_runner_vcpus = submit_runner_vcpus
+        else:
+            self.submit_runner_vcpus = 1
+
+        if self.submit_runner_vcpus <= 0:
+            raise Exception("Value of --submit-runner-vcpus must be greater than zero")
 
         self.merged_map = merged_map or {}
 
