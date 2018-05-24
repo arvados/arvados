@@ -17,6 +17,7 @@ from apiclient import errors as apierror
 
 from .baseactor import BaseNodeManagerActor
 
+from functools import partial
 from libcloud.common.types import LibcloudError
 from libcloud.common.exceptions import BaseHTTPError
 
@@ -69,12 +70,22 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                 if not self.has_option(sec_name, opt_name):
                     self.set(sec_name, opt_name, value)
 
-    def get_section(self, section, transformer=None):
+    def get_section(self, section, transformers={}, default_transformer=None):
+        transformer_map = {
+            int: self.getint,
+            bool: self.getboolean,
+            float: self.getfloat,
+        }
         result = self._dict()
         for key, value in self.items(section):
+            transformer = None
+            if transformers.get(key) in transformer_map:
+                transformer = partial(transformer_map[transformers[key]], section)
+            elif default_transformer in transformer_map:
+                transformer = partial(transformer_map[default_transformer], section)
             if transformer is not None:
                 try:
-                    value = transformer(value)
+                    value = transformer(key)
                 except (TypeError, ValueError):
                     pass
             result[key] = value
@@ -136,21 +147,29 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         """
 
         size_kwargs = {}
+        section_types = {
+            'price': float,
+            'preemptable': bool,
+        }
         for sec_name in self.sections():
             sec_words = sec_name.split(None, 2)
             if sec_words[0] != 'Size':
                 continue
-            size_spec = self.get_section(sec_name, int)
-            if 'price' in size_spec:
-                size_spec['price'] = float(size_spec['price'])
+            size_spec = self.get_section(sec_name, section_types, int)
+            if 'preemptable' not in size_spec:
+                size_spec['preemptable'] = False
+            if 'instance_type' not in size_spec:
+                # Assume instance type is Size name is missing
+                size_spec['instance_type'] = sec_words[1]
             size_kwargs[sec_words[1]] = size_spec
         # EC2 node sizes are identified by id. GCE sizes are identified by name.
         matching_sizes = []
         for size in all_sizes:
-            if size.id in size_kwargs:
-                matching_sizes.append((size, size_kwargs[size.id]))
-            elif size.name in size_kwargs:
-                matching_sizes.append((size, size_kwargs[size.name]))
+            matching_sizes += [
+                (size, size_kwargs[s]) for s in size_kwargs
+                if size_kwargs[s]['instance_type'] == size.id
+                or size_kwargs[s]['instance_type'] == size.name
+            ]
         return matching_sizes
 
     def shutdown_windows(self):

@@ -38,6 +38,8 @@ class ServerCalculator(object):
                 self.disk = 0
             self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
+            self.preemptable = False
+            self.instance_type = None
             for name, override in kwargs.iteritems():
                 if not hasattr(self, name):
                     raise ValueError("unrecognized size field '%s'" % (name,))
@@ -80,10 +82,12 @@ class ServerCalculator(object):
         wants = {'cores': want_value('min_cores_per_node'),
                  'ram': want_value('min_ram_mb_per_node'),
                  'scratch': want_value('min_scratch_mb_per_node')}
+        # EC2 node sizes are identified by id. GCE sizes are identified by name.
         for size in self.cloud_sizes:
             if (size.meets_constraints(**wants) and
-                (specified_size is None or size.id == specified_size)):
-                    return size
+                (specified_size is None or
+                    size.id == specified_size or size.name == specified_size)):
+                        return size
         return None
 
     def servers_for_queue(self, queue):
