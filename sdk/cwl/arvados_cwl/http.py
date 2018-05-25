@@ -11,7 +11,8 @@ import logging
 logger = logging.getLogger('arvados.cwl-runner')
 
 def my_formatdate(dt):
-    return email.utils.formatdate(timeval=time.mktime(now.timetuple()), localtime=False, usegmt=True)
+    return email.utils.formatdate(timeval=time.mktime(dt.timetuple()),
+                                  localtime=False, usegmt=True)
 
 def my_parsedate(text):
     parsed = email.utils.parsedate(text)
@@ -20,7 +21,7 @@ def my_parsedate(text):
     else:
         return datetime.datetime(1970, 1, 1)
 
-def fresh_cache(url, properties):
+def fresh_cache(url, properties, now):
     pr = properties[url]
     expires = None
 
@@ -45,20 +46,20 @@ def fresh_cache(url, properties):
     if not expires:
         return False
 
-    return (datetime.datetime.utcnow() < expires)
+    return (now < expires)
 
-def remember_headers(url, properties, headers):
+def remember_headers(url, properties, headers, now):
     properties.setdefault(url, {})
     for h in ("Cache-Control", "ETag", "Expires", "Date", "Content-Length"):
         if h in headers:
             properties[url][h] = headers[h]
     if "Date" not in headers:
-        properties[url]["Date"] = my_formatdate(datetime.datetime.utcnow())
+        properties[url]["Date"] = my_formatdate(now)
 
 
-def changed(url, properties):
+def changed(url, properties, now):
     req = requests.head(url, allow_redirects=True)
-    remember_headers(url, properties, req.headers)
+    remember_headers(url, properties, req.headers, now)
 
     if req.status_code != 200:
         raise Exception("Got status %s" % req.status_code)
@@ -67,19 +68,22 @@ def changed(url, properties):
     if "ETag" in pr and "ETag" in req.headers:
         if pr["ETag"] == req.headers["ETag"]:
             return False
+
     return True
 
-def http_to_keep(api, project_uuid, url):
+def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
     r = api.collections().list(filters=[["properties", "exists", url]]).execute()
+
+    now = utcnow()
 
     for item in r["items"]:
         properties = item["properties"]
-        if fresh_cache(url, properties):
+        if fresh_cache(url, properties, now):
             # Do nothing
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], cr.keys()[0])
 
-        if not changed(url, properties):
+        if not changed(url, properties, now):
             # ETag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
@@ -91,18 +95,23 @@ def http_to_keep(api, project_uuid, url):
     if req.status_code != 200:
         raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
 
-    remember_headers(url, properties, req.headers)
+    remember_headers(url, properties, req.headers, now)
 
-    logger.info("Downloading %s (%s bytes)", url, properties[url]["Content-Length"])
+    if "Content-Length" in properties[url]:
+        cl = int(properties[url]["Content-Length"])
+        logger.info("Downloading %s (%s bytes)", url, cl)
+    else:
+        cl = None
+        logger.info("Downloading %s (unknown size)", url)
 
     c = arvados.collection.Collection()
 
     if req.headers.get("Content-Disposition"):
         grp = re.search(r'filename=("((\"|[^"])+)"|([^][()<>@,;:\"/?={} ]+))', req.headers["Content-Disposition"])
-        if grp.groups(2):
-            name = grp.groups(2)
+        if grp.group(2):
+            name = grp.group(2)
         else:
-            name = grp.groups(3)
+            name = grp.group(4)
     else:
         name = urlparse.urlparse(url).path.split("/")[-1]
 
@@ -113,14 +122,17 @@ def http_to_keep(api, project_uuid, url):
         for chunk in req.iter_content(chunk_size=1024):
             count += len(chunk)
             f.write(chunk)
-            now = time.time()
-            if (now - checkpoint) > 20:
-                bps = (float(count)/float(now - start))
-                logger.info("%2.1f%% complete, %3.2f MiB/s, %1.0f seconds left",
-                            float(count * 100) / float(properties[url]["Content-Length"]),
-                            bps/(1024*1024),
-                            (int(properties[url]["Content-Length"])-count)/bps)
-                checkpoint = now
+            loopnow = time.time()
+            if (loopnow - checkpoint) > 20:
+                bps = (float(count)/float(loopnow - start))
+                if cl is not None:
+                    logger.info("%2.1f%% complete, %3.2f MiB/s, %1.0f seconds left",
+                                float(count * 100) / float(cl),
+                                bps/(1024*1024),
+                                (cl-count)/bps)
+                else:
+                    logger.info("%d downloaded, %3.2f MiB/s", count, bps/(1024*1024))
+                checkpoint = loopnow
 
     c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid, ensure_unique_name=True)
 
