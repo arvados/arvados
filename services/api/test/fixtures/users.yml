@@ -365,3 +365,37 @@ permission_perftest:
       organization: example.com
       role: IT
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
+redirects_to_active:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-1au3is3g3chtthd
+  email: redirects-to-active-user@arvados.local
+  first_name: Active2
+  last_name: User2
+  identity_url: https://redirects-to-active-user.openid.local
+  is_active: true
+  is_admin: false
+  username: redirect_active
+  redirect_to_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
+double_redirects_to_active:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-oiusowoxoz0pk3p
+  email: double-redirects-to-active-user@arvados.local
+  first_name: Active3
+  last_name: User3
+  identity_url: https://double-redirects-to-active-user.openid.local
+  is_active: true
+  is_admin: false
+  username: double_redirect_active
+  redirect_to_user_uuid: zzzzz-tpzed-1au3is3g3chtthd
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z

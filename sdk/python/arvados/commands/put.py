@@ -140,6 +140,10 @@ physical storage devices (e.g., disks) should have a copy of each data
 block. Default is to use the server-provided default (if any) or 2.
 """)
 
+upload_opts.add_argument('--storage-classes', help="""
+Specify comma separated list of storage classes to be used when saving data to Keep.
+""")
+
 upload_opts.add_argument('--threads', type=int, metavar='N', default=None,
                          help="""
 Set the number of upload threads to be used. Take into account that
@@ -418,8 +422,8 @@ class ArvPutUploadJob(object):
     def __init__(self, paths, resume=True, use_cache=True, reporter=None,
                  name=None, owner_uuid=None, api_client=None,
                  ensure_unique_name=False, num_retries=None,
-                 put_threads=None, replication_desired=None,
-                 filename=None, update_time=60.0, update_collection=None,
+                 put_threads=None, replication_desired=None, filename=None,
+                 update_time=60.0, update_collection=None, storage_classes=None,
                  logger=logging.getLogger('arvados.arv_put'), dry_run=False,
                  follow_links=True, exclude_paths=[], exclude_names=None):
         self.paths = paths
@@ -439,6 +443,7 @@ class ArvPutUploadJob(object):
         self.replication_desired = replication_desired
         self.put_threads = put_threads
         self.filename = filename
+        self.storage_classes = storage_classes
         self._api_client = api_client
         self._state_lock = threading.Lock()
         self._state = None # Previous run state (file list & manifest)
@@ -614,10 +619,14 @@ class ArvPutUploadJob(object):
                 else:
                     # The file already exist on remote collection, skip it.
                     pass
-            self._remote_collection.save(num_retries=self.num_retries)
+            self._remote_collection.save(storage_classes=self.storage_classes,
+                                         num_retries=self.num_retries)
         else:
+            if self.storage_classes is None:
+                self.storage_classes = ['default']
             self._local_collection.save_new(
                 name=self.name, owner_uuid=self.owner_uuid,
+                storage_classes=self.storage_classes,
                 ensure_unique_name=self.ensure_unique_name,
                 num_retries=self.num_retries)
 
@@ -1045,6 +1054,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     else:
         reporter = None
 
+    #  Split storage-classes argument
+    storage_classes = None
+    if args.storage_classes:
+        storage_classes = args.storage_classes.strip().split(',')
+        if len(storage_classes) > 1:
+            logger.error("Multiple storage classes are not supported currently.")
+            sys.exit(1)
+
+
     # Setup exclude regex from all the --exclude arguments provided
     name_patterns = []
     exclude_paths = []
@@ -1102,6 +1120,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                                  owner_uuid = project_uuid,
                                  ensure_unique_name = True,
                                  update_collection = args.update_collection,
+                                 storage_classes=storage_classes,
                                  logger=logger,
                                  dry_run=args.dry_run,
                                  follow_links=args.follow_links,

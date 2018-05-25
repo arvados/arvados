@@ -70,7 +70,7 @@ class UserSessionsController < ApplicationController
       end
 
       while (uuid = user.redirect_to_user_uuid)
-        user = User.where(uuid: uuid).first
+        user = User.unscoped.where(uuid: uuid).first
         if !user
           raise Exception.new("identity_url #{omniauth['info']['identity_url']} redirects to nonexistent uuid #{uuid}")
         end

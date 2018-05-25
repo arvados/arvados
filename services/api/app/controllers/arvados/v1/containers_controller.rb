@@ -20,10 +20,13 @@ class Arvados::V1::ContainersController < ApplicationController
     show
   end
 
-  # Updates use row locking to resolve races between multiple
-  # dispatchers trying to lock the same container.
   def update
-    @object.with_lock do
+    # container updates can trigger container request lookups, which
+    # can deadlock if we don't lock the container_requests table
+    # first.
+    @object.transaction do
+      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
+      @object.reload
       super
     end
   end

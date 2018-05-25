@@ -1,3 +1,7 @@
+// Copyright (c) 2009 Dan Vanderkam. All rights reserved.
+//
+// SPDX-License-Identifier: MIT
+
 /**
  * Synchronize zooming and/or selections between a set of dygraphs.
  *
@@ -31,7 +35,6 @@
  * You may also set `range: false` if you wish to only sync the x-axis.
  * The `range` option has no effect unless `zoom` is true (the default).
  *
- * SPDX-License-Identifier: MIT
  * Original source: https://github.com/danvk/dygraphs/blob/master/src/extras/synchronizer.js
  * at commit b55a71d768d2f8de62877c32b3aec9e9975ac389
  *

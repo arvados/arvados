@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 RESTService <- R6::R6Class(
 
     "RESTService",
@@ -37,8 +41,8 @@ RESTService <- R6::R6Class(
 
                 headers <- list(Authorization = paste("OAuth2", self$token))
 
-                serverResponse <- self$http$execute("GET", discoveryDocumentURL, headers,
-                                                    retryTimes = self$numRetries)
+                serverResponse <- self$http$exec("GET", discoveryDocumentURL, headers,
+                                                 retryTimes = self$numRetries)
 
                 discoveryDocument <- self$httpParser$parseJSONResponse(serverResponse)
                 private$webDavHostName <- discoveryDocument$keepWebServiceUrl
@@ -64,8 +68,8 @@ RESTService <- R6::R6Class(
                               uuid, "/", relativePath);
             headers <- list(Authorization = paste("OAuth2", self$token)) 
 
-            serverResponse <- self$http$execute("DELETE", fileURL, headers,
-                                                retryTimes = self$numRetries)
+            serverResponse <- self$http$exec("DELETE", fileURL, headers,
+                                             retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -82,8 +86,8 @@ RESTService <- R6::R6Class(
             headers <- list("Authorization" = paste("OAuth2", self$token),
                            "Destination" = toURL)
 
-            serverResponse <- self$http$execute("MOVE", fromURL, headers,
-                                                retryTimes = self$numRetries)
+            serverResponse <- self$http$exec("MOVE", fromURL, headers,
+                                             retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -98,8 +102,8 @@ RESTService <- R6::R6Class(
 
             headers <- list("Authorization" = paste("OAuth2", self$token))
 
-            response <- self$http$execute("PROPFIND", collectionURL, headers,
-                                          retryTimes = self$numRetries)
+            response <- self$http$exec("PROPFIND", collectionURL, headers,
+                                       retryTimes = self$numRetries)
 
             if(all(response == ""))
                 stop("Response is empty, request may be misconfigured")
@@ -119,8 +123,8 @@ RESTService <- R6::R6Class(
 
             headers <- list("Authorization" = paste("OAuth2", self$token))
 
-            response <- self$http$execute("PROPFIND", subcollectionURL, headers,
-                                          retryTimes = self$numRetries)
+            response <- self$http$exec("PROPFIND", subcollectionURL, headers,
+                                       retryTimes = self$numRetries)
 
             if(all(response == ""))
                 stop("Response is empty, request may be misconfigured")
@@ -156,8 +160,8 @@ RESTService <- R6::R6Class(
             if(!(contentType %in% self$httpParser$validContentTypes))
                 stop("Invalid contentType. Please use text or raw.")
 
-            serverResponse <- self$http$execute("GET", fileURL, headers,
-                                                retryTimes = self$numRetries)
+            serverResponse <- self$http$exec("GET", fileURL, headers,
+                                             retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -173,8 +177,8 @@ RESTService <- R6::R6Class(
                             "Content-Type" = contentType)
             body <- content
 
-            serverResponse <- self$http$execute("PUT", fileURL, headers, body,
-                                                retryTimes = self$numRetries)
+            serverResponse <- self$http$exec("PUT", fileURL, headers, body,
+                                             retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))
@@ -210,8 +214,8 @@ RESTService <- R6::R6Class(
                             "Content-Type" = contentType)
             body <- NULL
 
-            serverResponse <- self$http$execute("PUT", fileURL, headers, body,
-                                                retryTimes = self$numRetries)
+            serverResponse <- self$http$exec("PUT", fileURL, headers, body,
+                                             retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
                 stop(paste("Server code:", serverResponse$status_code))

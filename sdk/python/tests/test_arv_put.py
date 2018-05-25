@@ -730,6 +730,11 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
+    def test_error_when_multiple_storage_classes_specified(self):
+        self.assertRaises(SystemExit,
+                          self.call_main_with_args,
+                          ['--storage-classes', 'hot,cold'])
+
     def test_error_when_excluding_absolute_path(self):
         tmpdir = self.make_tmpdir()
         self.assertRaises(SystemExit,
@@ -1060,6 +1065,18 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                                        '--name', link_name,
                                        '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, collection['name'])
+
+    def test_put_collection_with_storage_classes_specified(self):
+        collection = self.run_and_find_collection("", ['--storage-classes', 'hot'])
+
+        self.assertEqual(len(collection['storage_classes_desired']), 1)
+        self.assertEqual(collection['storage_classes_desired'][0], 'hot')
+
+    def test_put_collection_without_storage_classes_specified(self):
+        collection = self.run_and_find_collection("")
+
+        self.assertEqual(len(collection['storage_classes_desired']), 1)
+        self.assertEqual(collection['storage_classes_desired'][0], 'default')
 
     def test_exclude_filename_pattern(self):
         tmpdir = self.make_tmpdir()

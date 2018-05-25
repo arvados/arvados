@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 #' users.get
 #' 
 #' users.get is a method defined in Arvados class.

@@ -19,7 +19,8 @@ KeepServiceTypes:
     - disk
 RunPeriod: 600s
 CollectionBatchSize: 100000
-CollectionBuffers: 1000`)
+CollectionBuffers: 1000
+RequestTimeout: 30m`)
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `
@@ -85,6 +86,11 @@ Tuning resource usage:
     by allowing keep-balance to fetch the next page of collections
     while the current page is still being processed. If this is zero
     or omitted, pages are processed serially.
+
+    RequestTimeout is the maximum time keep-balance will spend on a
+    single HTTP request (getting a page of collections, getting the
+    block index from a keepstore server, or sending a trash or pull
+    list to a keepstore server). Defaults to 30 minutes.
 
 Limitations:
 

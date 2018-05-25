@@ -4,8 +4,8 @@
 
 class UsersController < ApplicationController
   skip_around_filter :require_thread_api_token, only: :welcome
-  skip_before_filter :check_user_agreements, only: [:welcome, :inactive]
-  skip_before_filter :check_user_profile, only: [:welcome, :inactive, :profile]
+  skip_before_filter :check_user_agreements, only: [:welcome, :inactive, :link_account, :merge]
+  skip_before_filter :check_user_profile, only: [:welcome, :inactive, :profile, :link_account, :merge]
   skip_before_filter :find_object_by_uuid, only: [:welcome, :activity, :storage]
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
@@ -315,6 +315,11 @@ class UsersController < ApplicationController
     logger.warn "request_access: #{params.inspect}"
     params['request_url'] = request.url
     RequestShellAccessReporter.send_request(current_user, params).deliver
+  end
+
+  def merge
+    User.merge params[:new_user_token], params[:direction]
+    redirect_to "/"
   end
 
   protected
