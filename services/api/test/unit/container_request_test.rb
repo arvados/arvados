@@ -758,31 +758,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    [{"preemptable" => true}, nil, ActiveRecord::RecordInvalid],
-    [{"preemptable" => false}, nil, nil],
-    [{"preemptable" => true}, 'zzzzz-dz642-runningcontainr', nil],
-    [{"preemptable" => false}, 'zzzzz-dz642-runningcontainr', nil],
-  ].each do |sp, requesting_c, expected|
-    test "create container request with scheduling_parameters #{sp} with requesting_container_uuid=#{requesting_c} and verify #{expected}" do
+    [false, ActiveRecord::RecordInvalid],
+    [true, nil],
+  ].each do |preemptable_conf, expected|
+    test "having Rails.configuration.preemptable_instances=#{preemptable_conf}, create preemptable container request and verify #{expected}" do
+      sp = {"preemptable" => true}
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
                       scheduling_parameters: sp,
                       mounts: {"test" => {"kind" => "json"}}}
-
+      Rails.configuration.preemptable_instances = preemptable_conf
       set_user_from_auth :active
 
-      if requesting_c
-        cr = with_container_auth(Container.find_by_uuid requesting_c) do
-          create_minimal_req!(common_attrs)
-        end
-        assert_not_nil cr.requesting_container_uuid
-      else
-        cr = create_minimal_req!(common_attrs)
-      end
-
+      cr = create_minimal_req!(common_attrs)
       cr.state = ContainerRequest::Committed
+
       if !expected.nil?
         assert_raises(expected) do
           cr.save!

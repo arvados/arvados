@@ -28,11 +28,12 @@ class ContainerRequest < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
-  before_validation :validate_scheduling_parameters
   before_validation :set_container
+  before_validation :set_default_preemptable_scheduling_parameter
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validate :validate_scheduling_parameters
   validate :validate_state_change
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
@@ -197,6 +198,16 @@ class ContainerRequest < ArvadosModel
     end
   end
 
+  def set_default_preemptable_scheduling_parameter
+    if self.state == Committed
+      # If preemptable instances (eg: AWS Spot Instances) are allowed,
+      # automatically ask them on non-child containers by default.
+      if Rails.configuration.preemptable_instances and !self.requesting_container_uuid.nil?
+        self.scheduling_parameters['preemptable'] ||= true
+      end
+    end
+  end
+
   def validate_runtime_constraints
     case self.state
     when Committed
@@ -223,12 +234,8 @@ class ContainerRequest < ArvadosModel
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"
       end
-      if !self.scheduling_parameters.include?('preemptable')
-        if !self.requesting_container_uuid.nil? and Rails.configuration.preemptable_instances
-          self.scheduling_parameters['preemptable'] = true
-        end
-      elsif scheduling_parameters['preemptable'] and self.requesting_container_uuid.nil?
-        errors.add :scheduling_parameters, "only child containers can be preemptable"
+      if !Rails.configuration.preemptable_instances and scheduling_parameters['preemptable']
+        errors.add :scheduling_parameters, "preemptable instances are not allowed"
       end
     end
   end
