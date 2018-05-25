@@ -234,7 +234,6 @@ def stubs(func):
             },
             'secret_mounts': {},
             'state': 'Committed',
-            'owner_uuid': None,
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
                         '--eval-timeout=20', '--thread-count=4',
@@ -751,7 +750,6 @@ class TestSubmit(unittest.TestCase):
                     'kind': 'json'
                 }
             }, 'state': 'Committed',
-            'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'expect_arvworkflow.cwl#main',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
@@ -870,7 +868,6 @@ class TestSubmit(unittest.TestCase):
                     'kind': 'json'
                 }
             }, 'state': 'Committed',
-            'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'a test workflow',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
@@ -1236,7 +1233,6 @@ class TestSubmit(unittest.TestCase):
             },
             "name": "secret_wf.cwl",
             "output_path": "/var/spool/cwl",
-            "owner_uuid": None,
             "priority": 500,
             "properties": {},
             "runtime_constraints": {

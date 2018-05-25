@@ -277,6 +277,7 @@ class ArvadosWorkflow(Workflow):
             })
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
+            kwargs["metadata"]  = self.metadata
             return ArvadosCommandTool(self.arvrunner, wf_runner, **kwargs).job(joborder_resolved, output_callback, **kwargs)
         else:
             return super(ArvadosWorkflow, self).job(joborder, output_callback, **kwargs)

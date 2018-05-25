@@ -18,7 +18,7 @@ def my_parsedate(text):
     if parsed:
         return datetime.datetime(*parsed[:6])
     else:
-        datetime.datetime(1970, 1, 1)
+        return datetime.datetime(1970, 1, 1)
 
 def fresh_cache(url, properties):
     pr = properties[url]
@@ -89,7 +89,7 @@ def http_to_keep(api, project_uuid, url):
     req = requests.get(url, stream=True, allow_redirects=True)
 
     if req.status_code != 200:
-        raise Exception("Failed to download '%s' got status %s " % (req.status_code, url))
+        raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
 
     remember_headers(url, properties, req.headers)
 
