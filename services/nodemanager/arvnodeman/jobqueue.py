@@ -105,7 +105,7 @@ class ServerCalculator(object):
                     "Job's min_nodes constraint is greater than the configured "
                     "max_nodes (%d)" % self.max_nodes)
             elif (want_count*cloud_size.price <= self.max_price):
-                servers.extend([cloud_size.real] * want_count)
+                servers.extend([cloud_size] * want_count)
             else:
                 unsatisfiable_jobs[job['uuid']] = (
                     "Job's price (%d) is above system's max_price "
