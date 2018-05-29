@@ -149,7 +149,7 @@ def http_cache(data_type):
     return cache.SafeHTTPCache(path, max_age=60*60*24*2)
 
 def api(version=None, cache=True, host=None, token=None, insecure=False,
-        request_id=None, **kwargs):
+        request_id=None, timeout=5*60, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
     :version:
@@ -168,6 +168,9 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
 
     :insecure:
       If True, ignore SSL certificate validation errors.
+
+    :timeout:
+      A timeout value for http requests.
 
     :request_id:
       Default X-Request-Id header value for outgoing requests that
@@ -220,6 +223,9 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
         if insecure:
             http_kwargs['disable_ssl_certificate_validation'] = True
         kwargs['http'] = httplib2.Http(**http_kwargs)
+
+    if kwargs['http'].timeout is None:
+        kwargs['http'].timeout = timeout
 
     kwargs['http'] = _patch_http_request(kwargs['http'], token)
 
