@@ -12,8 +12,6 @@ class ArvadosCommandTool(CommandLineTool):
 
     def __init__(self, arvrunner, toolpath_object, **kwargs):
         super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
-        if "cwlVersion" not in self.metadata:
-            raise Exception("missing")
         self.arvrunner = arvrunner
         self.work_api = kwargs["work_api"]
 
