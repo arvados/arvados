@@ -1436,19 +1436,32 @@ class Collection(RichCollectionBase):
     @must_be_writable
     @synchronized
     @retry_method
-    def save(self, storage_classes=None, merge=True, num_retries=None):
+    def save(self,
+             properties=None,
+             storage_classes=None,
+             trash_at=None,
+             merge=True,
+             num_retries=None):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
-        merge=True, the default), and update the collection record.  Returns
+        merge=True, the default), and update the collection record. Returns
         the current manifest text.
 
         Will raise AssertionError if not associated with a collection record on
         the API server.  If you want to save a manifest to Keep only, see
         `save_new()`.
 
+        :properties:
+          Additional properties of collection.
+
         :storage_classes:
           Specify desirable storage classes to be used when writing data to Keep.
+
+        :trash_at:
+          A collection is *expiring* when it has a *trash_at* time in the future.
+          An expiring collection can be accessed as normal,
+          but is scheduled to be trashed automatically at the *trash_at* time.
 
         :merge:
           Update and merge remote changes before saving.  Otherwise, any
@@ -1458,8 +1471,19 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
+        if properties and type(properties) is not dict:
+            raise errors.ArgumentError("properties must be dictionary type.")
+
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
+
+        body={}
+        if properties:
+            body["properties"] = properties
+        if storage_classes:
+            body["storage_classes_desired"] = storage_classes
+        if storage_classes:
+            body["trash_at"] = trash_at
 
         if not self.committed():
             if not self._has_collection_uuid():
@@ -1471,24 +1495,20 @@ class Collection(RichCollectionBase):
                 self.update()
 
             text = self.manifest_text(strip=False)
-            body={'manifest_text': text}
-            if storage_classes:
-                body["storage_classes_desired"] = storage_classes
+            body['manifest_text'] = text
 
             self._remember_api_response(self._my_api().collections().update(
                 uuid=self._manifest_locator,
                 body=body
-                ).execute(
-                    num_retries=num_retries))
+                ).execute(num_retries=num_retries))
             self._manifest_text = self._api_response["manifest_text"]
             self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
-        elif storage_classes:
+        elif body:
             self._remember_api_response(self._my_api().collections().update(
                 uuid=self._manifest_locator,
-                body={"storage_classes_desired": storage_classes}
-                ).execute(
-                    num_retries=num_retries))
+                body=body
+                ).execute(num_retries=num_retries))
 
         return self._manifest_text
 
@@ -1499,7 +1519,9 @@ class Collection(RichCollectionBase):
     def save_new(self, name=None,
                  create_collection_record=True,
                  owner_uuid=None,
+                 properties=None,
                  storage_classes=None,
+                 trash_at=None,
                  ensure_unique_name=False,
                  num_retries=None):
         """Save collection to a new collection record.
@@ -1507,7 +1529,7 @@ class Collection(RichCollectionBase):
         Commit pending buffer blocks to Keep and, when create_collection_record
         is True (default), create a new collection record.  After creating a
         new collection record, this Collection object will be associated with
-        the new record used by `save()`.  Returns the current manifest text.
+        the new record used by `save()`. Returns the current manifest text.
 
         :name:
           The collection name.
@@ -1520,8 +1542,16 @@ class Collection(RichCollectionBase):
           the user, or project uuid that will own this collection.
           If None, defaults to the current user.
 
+        :properties:
+          Additional properties of collection.
+
         :storage_classes:
           Specify desirable storage classes to be used when writing data to Keep.
+
+        :trash_at:
+          A collection is *expiring* when it has a *trash_at* time in the future.
+          An expiring collection can be accessed as normal,
+          but is scheduled to be trashed automatically at the *trash_at* time.
 
         :ensure_unique_name:
           If True, ask the API server to rename the collection
@@ -1532,6 +1562,12 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
+        if properties and type(properties) is not dict:
+            raise errors.ArgumentError("properties must be dictionary type.")
+
+        if storage_classes and type(storage_classes) is not list:
+            raise errors.ArgumentError("storage_classes must be list type.")
+
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
@@ -1545,10 +1581,12 @@ class Collection(RichCollectionBase):
                     "replication_desired": self.replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
+            if properties:
+                body["properties"] = properties
             if storage_classes:
-                if type(storage_classes) is not list:
-                    raise errors.ArgumentError("storage_classes must be list type.")
                 body["storage_classes_desired"] = storage_classes
+            if storage_classes:
+                body["trash_at"] = trash_at
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]

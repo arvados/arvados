@@ -1300,29 +1300,43 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
     def test_create_and_save(self):
         c = self.create_count_txt()
-        c.save(storage_classes=['archive'])
+        c.save(properties={'type' : 'Intermediate'},
+               storage_classes=['archive'],
+               trash_at='2100-01-01T00:00:00.000000000Z')
 
         self.assertRegex(
             c.manifest_text(),
             r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
         self.assertEqual(c.api_response()["storage_classes_desired"], ['archive'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Intermediate'})
+        self.assertEqual(c.api_response()["trash_at"], '2100-01-01T00:00:00.000000000Z')
 
 
     def test_create_and_save_new(self):
         c = self.create_count_txt()
-        c.save_new(storage_classes=['archive'])
+        c.save_new(properties={'type' : 'Intermediate'},
+                   storage_classes=['archive'],
+                   trash_at='2100-01-01T00:00:00.000000000Z')
 
         self.assertRegex(
             c.manifest_text(),
             r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
         self.assertEqual(c.api_response()["storage_classes_desired"], ['archive'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Intermediate'})
+        self.assertEqual(c.api_response()["trash_at"], '2100-01-01T00:00:00.000000000Z')
 
-    def test_update_storage_classes_desired_if_collection_is_commited(self):
+    def test_create_and_save_after_commiting(self):
         c = self.create_count_txt()
-        c.save(storage_classes=['hot'])
-        c.save(storage_classes=['cold'])
+        c.save(properties={'type' : 'Intermediate'},
+               storage_classes=['hot'],
+               trash_at='2100-01-01T00:00:00.000000000Z')
+        c.save(properties={'type' : 'Output'},
+               storage_classes=['cold'],
+               trash_at='2200-02-02T22:22:22.222222222Z')
 
         self.assertEqual(c.api_response()["storage_classes_desired"], ['cold'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Output'})
+        self.assertEqual(c.api_response()["trash_at"], '2200-02-02T22:22:22.222222222Z')
 
     def test_create_diff_apply(self):
         c1 = self.create_count_txt()
