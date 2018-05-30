@@ -53,7 +53,8 @@ class TestContainer(unittest.TestCase):
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                     basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+                                                     basedir="", make_fs_access=make_fs_access, loader=Loader({}),
+                                                     metadata={"cwlVersion": "v1.0"})
             arvtool.formatgraph = None
             for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_"+str(enable_reuse),
                                  make_fs_access=make_fs_access, tmpdir="/tmp"):
@@ -139,7 +140,7 @@ class TestContainer(unittest.TestCase):
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
-                                                 loader=Loader({}))
+                                                 loader=Loader({}), metadata={"cwlVersion": "v1.0"})
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
@@ -251,7 +252,7 @@ class TestContainer(unittest.TestCase):
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
-                                                 loader=Loader({}))
+                                                 loader=Loader({}), metadata={"cwlVersion": "v1.0"})
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_initial_work_dir",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
@@ -352,7 +353,8 @@ class TestContainer(unittest.TestCase):
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}),
+                                                 metadata={"cwlVersion": "v1.0"})
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_redirect",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
@@ -477,7 +479,8 @@ class TestContainer(unittest.TestCase):
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                      collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}),
+                                                 metadata={"cwlVersion": "v1.0"})
         arvtool.formatgraph = None
         job_order = {
             "p1": {
@@ -584,7 +587,8 @@ class TestContainer(unittest.TestCase):
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                      collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}),
+                                                 metadata={"cwlVersion": "v1.0"})
         arvtool.formatgraph = None
 
         job_order = {"pw": "blorp"}

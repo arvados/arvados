@@ -16,6 +16,8 @@ from schema_salad.sourceline import SourceLine
 from cwltool.pathmapper import PathMapper, MapperEnt, abspath, adjustFileObjs, adjustDirObjs
 from cwltool.workflow import WorkflowException
 
+from .http import http_to_keep
+
 logger = logging.getLogger('arvados.cwl-runner')
 
 def trim_listing(obj):
@@ -81,6 +83,10 @@ class ArvPathMapper(PathMapper):
                     raise WorkflowException("File literal '%s' is missing `contents`" % src)
                 if srcobj["class"] == "Directory" and "listing" not in srcobj:
                     raise WorkflowException("Directory literal '%s' is missing `listing`" % src)
+            elif src.startswith("http:") or src.startswith("https:"):
+                keepref = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src)
+                logger.info("%s is %s", src, keepref)
+                self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
