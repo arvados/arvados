@@ -53,8 +53,7 @@ testlogger = INFO
 
     def test_list_sizes(self):
         config = self.load_config()
-        client = config.new_cloud_client()
-        sizes = config.node_sizes(client.list_sizes())
+        sizes = config.node_sizes()
         self.assertEqual(1, len(sizes))
         size, kwargs = sizes[0]
         self.assertEqual('Small', size.name)

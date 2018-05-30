@@ -87,6 +87,8 @@ class MockSize(object):
         self.bandwidth = 16 * factor
         self.price = float(factor)
         self.extra = {}
+        self.real = self
+        self.preemptable = False
 
     def __eq__(self, other):
         return self.id == other.id

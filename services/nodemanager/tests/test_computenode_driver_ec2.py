@@ -56,9 +56,11 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver.create_node(testutil.MockSize(1), arv_node)
         create_method = self.driver_mock().create_node
         self.assertTrue(create_method.called)
-        self.assertEqual(
-            {'test':'testvalue'},
-            create_method.call_args[1].get('ex_metadata', {'arg': 'missing'})
+        self.assertIn(
+            ('test', 'testvalue'),
+            create_method.call_args[1].get(
+                'ex_metadata',
+                {'arg': 'missing'}).items()
         )
 
     def test_hostname_from_arvados_node(self):

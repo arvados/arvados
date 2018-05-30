@@ -49,7 +49,7 @@ class FakeDriver(NodeDriver):
             ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0]
         if ex_userdata:
             ping_url = ex_userdata
-        if ex_metadata:
+        elif ex_metadata:
             ping_url = ex_metadata["arv-ping-url"]
         ping_url += "&instance_id=" + nodeid
         ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
