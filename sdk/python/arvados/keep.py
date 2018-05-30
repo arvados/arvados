@@ -371,6 +371,8 @@ class KeepClient(object):
                         '{}: {}'.format(k,v) for k,v in self.get_headers.items()])
                     curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    if self.insecure:
+                        curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     if method == "HEAD":
                         curl.setopt(pycurl.NOBODY, True)
                     self._setcurltimeouts(curl, timeout)
@@ -463,6 +465,8 @@ class KeepClient(object):
                         '{}: {}'.format(k,v) for k,v in self.put_headers.items()])
                     curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    if self.insecure:
+                        curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     self._setcurltimeouts(curl, timeout)
                     try:
                         curl.perform()
@@ -761,6 +765,11 @@ class KeepClient(object):
                 "can't build KeepClient with both API client and token")
         if local_store is None:
             local_store = os.environ.get('KEEP_LOCAL_STORE')
+
+        if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
+            self.insecure = True
+        else:
+            self.insecure = False
 
         self.block_cache = block_cache if block_cache else KeepBlockCache()
         self.timeout = timeout
