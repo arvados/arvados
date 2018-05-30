@@ -78,6 +78,12 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
     def _init_image(self, urn):
         return "image", self.get_image(urn)
 
+    def create_node(self, size, arvados_node):
+        # Set up tag indicating the Arvados assigned Cloud Size id.
+        self.create_kwargs.setdefault('ex_tags', {})
+        self.create_kwargs['ex_tags'].update({'arvados-node-size-id': size.id})
+        return super(ComputeNodeDriver, self).create_node(size, arvados_node)
+
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.
         # Do our own filtering based on tag.

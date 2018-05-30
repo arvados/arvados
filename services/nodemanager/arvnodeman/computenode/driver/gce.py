@@ -109,6 +109,11 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return result
 
 
+    def create_node(self, size, arvados_node):
+        # Set up tag indicating the Arvados assigned Cloud Size id.
+        self.create_kwargs['ex_metadata'].update({'arvados-node-size-id': size.id})
+        return super(ComputeNodeDriver, self).create_node(size, arvados_node)
+
     def list_nodes(self):
         # The GCE libcloud driver only supports filtering node lists by zone.
         # Do our own filtering based on tag list.
