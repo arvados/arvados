@@ -139,13 +139,13 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                                         self.get_section('Cloud Create'),
                                         driver_class=driver_class)
 
-    def node_sizes(self, all_sizes):
+    def node_sizes(self):
         """Finds all acceptable NodeSizes for our installation.
 
         Returns a list of (NodeSize, kwargs) pairs for each NodeSize object
         returned by libcloud that matches a size listed in our config file.
         """
-
+        all_sizes = self.new_cloud_client().list_sizes()
         size_kwargs = {}
         section_types = {
             'price': float,
@@ -159,8 +159,9 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             if 'preemptable' not in size_spec:
                 size_spec['preemptable'] = False
             if 'instance_type' not in size_spec:
-                # Assume instance type is Size name is missing
+                # Assume instance type is Size name if missing
                 size_spec['instance_type'] = sec_words[1]
+            size_spec['id'] = sec_words[1]
             size_kwargs[sec_words[1]] = size_spec
         # EC2 node sizes are identified by id. GCE sizes are identified by name.
         matching_sizes = []
