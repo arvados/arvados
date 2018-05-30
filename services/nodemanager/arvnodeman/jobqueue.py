@@ -39,8 +39,8 @@ class ServerCalculator(object):
             self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
             self.preemptable = False
-            self.instance_type = None
             for name, override in kwargs.iteritems():
+                if name == 'instance_type': continue
                 if not hasattr(self, name):
                     raise ValueError("unrecognized size field '%s'" % (name,))
                 setattr(self, name, override)
