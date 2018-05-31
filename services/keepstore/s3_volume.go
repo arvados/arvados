@@ -429,7 +429,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	case <-ctx.Done():
 		theConfig.debugLogf("%s: taking PutReader's input away: %s", v, ctx.Err())
 		// Our pipe might be stuck in Write(), waiting for
-		// io.Copy() to read. If so, un-stick it. This means
+		// PutReader() to read. If so, un-stick it. This means
 		// PutReader will get corrupt data, but that's OK: the
 		// size and MD5 won't match, so the write will fail.
 		go io.Copy(ioutil.Discard, bufr)
@@ -438,6 +438,8 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 		theConfig.debugLogf("%s: abandoning PutReader goroutine", v)
 		return ctx.Err()
 	case <-ready:
+		// Unblock pipe in case PutReader did not consume it.
+		io.Copy(ioutil.Discard, bufr)
 		return v.translateError(err)
 	}
 }
