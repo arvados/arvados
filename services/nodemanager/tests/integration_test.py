@@ -433,8 +433,8 @@ def main():
             # Actions (pattern -> action)
             [
                 (r".*Daemon started", set_squeue),
-                (r".*Rate limit exceeded - scheduling retry in 12 seconds", noop),
                 (r".*Rate limit exceeded - scheduling retry in 2 seconds", noop),
+                (r".*Rate limit exceeded - scheduling retry in 1 seconds", noop),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", noop),
             ],
             # Checks (things that shouldn't happen)
