@@ -216,7 +216,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                     if code != 0:
                         detail.error("Check failed")
                         if not terminated:
-                            p.terminate()
+                            p.kill()
                             terminated = True
 
             if terminated:
@@ -226,7 +226,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                 detail.error("Exceeded timeout with actions remaining: %s", actions)
                 code += 1
                 if not terminated:
-                    p.terminate()
+                    p.kill()
                     terminated = True
 
             k, v = actions[0]
@@ -237,11 +237,11 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                 code += v(g)
                 if code != 0:
                     detail.error("Action failed")
-                    p.terminate()
+                    p.kill()
                     terminated = True
 
             if not actions:
-                p.terminate()
+                p.kill()
                 terminated = True
     except KeyboardInterrupt:
         p.kill()
