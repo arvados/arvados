@@ -7,7 +7,8 @@ import { Project } from "../models/project";
 
 export const actions = {
     createProject: createStandardAction('@@project/create')<Project>(),
-    removeProject: createStandardAction('@@project/remove')<string>()
+    removeProject: createStandardAction('@@project/remove')<string>(),
+    toggleProjectTreeItem: createStandardAction('@@project/toggleTreeItem')<string>()
 };
 
 export type ProjectAction = ActionType<typeof actions>;

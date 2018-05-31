@@ -9,7 +9,9 @@
     "member-access": false,
     "jsx-boolean-value": false,
     "jsx-no-lambda": false,
-    "no-debugger": false
+    "no-debugger": false,
+    "no-console": false,
+    "no-shadowed-variable": false
   },
   "linterOptions": {
     "exclude": [

@@ -10,12 +10,15 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { connect } from "react-redux";
-import Tree from "../../components/tree/tree";
+import Tree, { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { RootState } from "../../store/root-reducer";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
+
+import { actions as projectActions } from "../../store/project-action";
+import ListItemText from "@material-ui/core/ListItemText/ListItemText";
 
 const drawerWidth = 240;
 
@@ -49,7 +52,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 });
 
 interface WorkbenchProps {
-    projects: Project[]
+    projects: Array<TreeItem<Project>>;
+    toggleProjectTreeItem: (id: string) => any;
 }
 
 interface WorkbenchState {
@@ -58,7 +62,6 @@ interface WorkbenchState {
 class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, WorkbenchState> {
     render() {
         const {classes} = this.props;
-
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
@@ -74,9 +77,10 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-                    <Tree items={this.props.projects} render={(p: Project) =>
-                        <Link to={`/project/${p.name}`}>{p.name}</Link>
-                    }/>
+                    <Tree items={this.props.projects}
+                        toggleItem={this.props.toggleProjectTreeItem}
+                        render={(p: Project) => <ListItemText primary={p.name}/>}
+                        />
                 </Drawer>
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
@@ -92,10 +96,12 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
     }
 }
 
-export default connect<WorkbenchProps>(
+export default connect(
     (state: RootState) => ({
         projects: state.projects
-    })
+    }), {
+        toggleProjectTreeItem: (id: string) => projectActions.toggleProjectTreeItem(id)
+    }
 )(
     withStyles(styles)(Workbench)
 );

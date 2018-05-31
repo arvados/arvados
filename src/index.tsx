@@ -12,14 +12,44 @@ import { Route, Router } from "react-router";
 import createBrowserHistory from "history/createBrowserHistory";
 import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
+import { TreeItem } from "./components/tree/tree";
+import { Project } from "./models/project";
+
+const sampleProjects = [
+    [
+        'Project 1', [
+            ['Project 1.1', [['Project 1.1.1'], ['Project 1.1.2']]],
+            ['Project 1.2', [['Project 1.2.1'], ['Project 1.2.2'], ['Project 1.2.3']]]
+        ]
+    ],
+    [
+        'Project 2'
+    ],
+    [
+        'Project 3', [['Project 3.1'], ['Project 3.2']]
+    ]
+];
+
+
+function buildProjectTree(tree: any[], level = 0): Array<TreeItem<Project>> {
+    const projects = tree.map((t, idx) => ({
+        id: `l${level}i${idx}`,
+        open: false,
+        data: {
+            name: t[0],
+            createdAt: '2018-05-05',
+        },
+        items: t.length > 1 ? buildProjectTree(t[1], level + 1) : []
+    }));
+    return projects;
+}
+
 
 const history = createBrowserHistory();
+const projects = buildProjectTree(sampleProjects);
+
 const store = configureStore({
-    projects: [
-        { name: 'Mouse genome', createdAt: '2018-05-01' },
-        { name: 'Human body', createdAt: '2018-05-01' },
-        { name: 'Secret operation', createdAt: '2018-05-01' }
-    ],
+    projects,
     router: {
         location: null
     }

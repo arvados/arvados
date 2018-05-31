@@ -6,20 +6,39 @@ import * as React from 'react';
 import List from "@material-ui/core/List/List";
 import ListItem from "@material-ui/core/ListItem/ListItem";
 import { ReactElement } from "react";
+import Collapse from "@material-ui/core/Collapse/Collapse";
+
+export interface TreeItem<T> {
+    data: T;
+    id: string;
+    open: boolean;
+    items?: Array<TreeItem<T>>;
+}
 
 interface TreeProps<T> {
-    items: T[],
-    render: (item: T) => ReactElement<{}>
+    items?: Array<TreeItem<T>>;
+    render: (item: T) => ReactElement<{}>;
+    toggleItem: (id: string) => any;
+    level?: number;
 }
 
 class Tree<T> extends React.Component<TreeProps<T>, {}> {
-    render() {
-        return <List>
-            {this.props.items.map((it: T, idx: number) =>
-                <ListItem key={`item/${idx}`} button>
-                    {this.props.render(it)}
+    render(): ReactElement<any> {
+        const level = this.props.level ? this.props.level : 0;
+        return <List component="div">
+            {this.props.items && this.props.items.map((it: TreeItem<T>, idx: number) =>
+             <div key={`item/${level}/${idx}`}>
+                <ListItem button onClick={() => this.props.toggleItem(it.id)} style={{paddingLeft: (level + 1) * 30}}>
+                    {this.props.render(it.data)}
                 </ListItem>
-            )}
+                {it.items && it.items.length > 0 &&
+                <Collapse in={it.open} timeout="auto" unmountOnExit>
+                    <Tree items={it.items}
+                        render={this.props.render}
+                        toggleItem={this.props.toggleItem}
+                        level={level + 1}/>
+                </Collapse>}
+             </div>)}
         </List>
     }
 }
