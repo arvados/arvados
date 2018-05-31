@@ -111,7 +111,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def create_node(self, size, arvados_node):
         # Set up tag indicating the Arvados assigned Cloud Size id.
-        self.create_kwargs['ex_metadata'].update({'arvados-node-size-id': size.id})
+        self.create_kwargs['ex_metadata'].update({'arvados_node_size': size.id})
         return super(ComputeNodeDriver, self).create_node(size, arvados_node)
 
     def list_nodes(self):
@@ -126,6 +126,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         if nodelist and not hasattr(nodelist[0].size, 'id'):
             for node in nodelist:
                 node.size = self._sizes_by_id[node.size]
+                node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size')
         return nodelist
 
     @classmethod

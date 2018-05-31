@@ -81,7 +81,7 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
     def create_node(self, size, arvados_node):
         # Set up tag indicating the Arvados assigned Cloud Size id.
         self.create_kwargs.setdefault('ex_tags', {})
-        self.create_kwargs['ex_tags'].update({'arvados-node-size-id': size.id})
+        self.create_kwargs['ex_tags'].update({'arvados_node_size': size.id})
         return super(ComputeNodeDriver, self).create_node(size, arvados_node)
 
     def list_nodes(self):
@@ -94,6 +94,7 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
             # Need to populate Node.size
             if not n.size:
                 n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
+            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size')
         return nodes
 
     def broken(self, cloud_node):
