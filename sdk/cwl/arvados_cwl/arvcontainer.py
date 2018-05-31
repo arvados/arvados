@@ -51,7 +51,6 @@ class ArvadosContainer(object):
 
         container_request = {
             "command": self.command_line,
-            "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": self.outdir,
             "cwd": self.outdir,
@@ -60,6 +59,9 @@ class ArvadosContainer(object):
             "properties": {},
         }
         runtime_constraints = {}
+
+        if self.arvrunner.project_uuid:
+            container_request["owner_uuid"] = self.arvrunner.project_uuid
 
         if self.arvrunner.secret_store.has_secret(self.command_line):
             raise WorkflowException("Secret material leaked on command line, only file literals may contain secrets")
@@ -251,9 +253,15 @@ class ArvadosContainer(object):
         self.output_callback = self.arvrunner.get_wrapped_callback(self.output_callback)
 
         try:
-            response = self.arvrunner.api.container_requests().create(
-                body=container_request
-            ).execute(num_retries=self.arvrunner.num_retries)
+            if kwargs.get("submit_request_uuid"):
+                response = self.arvrunner.api.container_requests().update(
+                    uuid=kwargs["submit_request_uuid"],
+                    body=container_request
+                ).execute(num_retries=self.arvrunner.num_retries)
+            else:
+                response = self.arvrunner.api.container_requests().create(
+                    body=container_request
+                ).execute(num_retries=self.arvrunner.num_retries)
 
             self.uuid = response["uuid"]
             self.arvrunner.process_submitted(self)
@@ -343,7 +351,6 @@ class RunnerContainer(Runner):
                 self.job_order[param] = {"$include": mnt}
 
         container_req = {
-            "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
             "cwd": "/var/spool/cwl",
@@ -442,11 +449,18 @@ class RunnerContainer(Runner):
     def run(self, **kwargs):
         kwargs["keepprefix"] = "keep:"
         job_spec = self.arvados_job_spec(**kwargs)
-        job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
+        if self.arvrunner.project_uuid:
+            job_spec["owner_uuid"] = self.arvrunner.project_uuid
 
-        response = self.arvrunner.api.container_requests().create(
-            body=job_spec
-        ).execute(num_retries=self.arvrunner.num_retries)
+        if kwargs.get("submit_request_uuid"):
+            response = self.arvrunner.api.container_requests().update(
+                uuid=kwargs["submit_request_uuid"],
+                body=job_spec
+            ).execute(num_retries=self.arvrunner.num_retries)
+        else:
+            response = self.arvrunner.api.container_requests().create(
+                body=job_spec
+            ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
         self.arvrunner.process_submitted(self)

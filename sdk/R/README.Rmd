@@ -1,4 +1,4 @@
-[comment]: # (Copyright © The Arvados Authors. All rights reserved.)
+[comment]: # (Copyright (c) The Arvados Authors. All rights reserved.)
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
 

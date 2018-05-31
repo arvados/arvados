@@ -37,3 +37,9 @@ class ShutdownTimerTestCase(unittest.TestCase):
         time_mock.return_value += 200
         self.assertEqual(961, timer.next_opening())
         self.assertFalse(timer.window_open())
+
+
+class ArvadosTimestamp(unittest.TestCase):
+    def test_arvados_timestamp(self):
+        self.assertEqual(1527710178, cnode.arvados_timestamp('2018-05-30T19:56:18Z'))
+        self.assertEqual(1527710178.999371, cnode.arvados_timestamp('2018-05-30T19:56:18.999371Z'))

@@ -365,27 +365,29 @@ func (bal *Balancer) ComputeChangeSets() {
 		blkid arvados.SizedDigest
 		blk   *BlockState
 	}
-	nWorkers := 1 + runtime.NumCPU()
-	todo := make(chan balanceTask, nWorkers)
-	results := make(chan balanceResult, 16)
-	var wg sync.WaitGroup
-	for i := 0; i < nWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			for work := range todo {
-				results <- bal.balanceBlock(work.blkid, work.blk)
-			}
-			wg.Done()
-		}()
-	}
-	bal.BlockStateMap.Apply(func(blkid arvados.SizedDigest, blk *BlockState) {
-		todo <- balanceTask{
-			blkid: blkid,
-			blk:   blk,
-		}
-	})
-	close(todo)
+	workers := runtime.GOMAXPROCS(-1)
+	todo := make(chan balanceTask, workers)
 	go func() {
+		bal.BlockStateMap.Apply(func(blkid arvados.SizedDigest, blk *BlockState) {
+			todo <- balanceTask{
+				blkid: blkid,
+				blk:   blk,
+			}
+		})
+		close(todo)
+	}()
+	results := make(chan balanceResult, workers)
+	go func() {
+		var wg sync.WaitGroup
+		for i := 0; i < workers; i++ {
+			wg.Add(1)
+			go func() {
+				for work := range todo {
+					results <- bal.balanceBlock(work.blkid, work.blk)
+				}
+				wg.Done()
+			}()
+		}
 		wg.Wait()
 		close(results)
 	}()
