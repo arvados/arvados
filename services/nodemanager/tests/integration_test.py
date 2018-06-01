@@ -113,7 +113,8 @@ def node_busy(g):
 
 def node_shutdown(g):
     global compute_nodes
-    del compute_nodes[g.group(1)]
+    if g.group(1) in compute_nodes:
+        del compute_nodes[g.group(1)]
     return 0
 
 def jobs_req(g):
@@ -321,7 +322,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 4),
                 r".*Setting node quota.*": fail,
             },
@@ -347,7 +347,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 2),
                 r".*Sending create_node request.*": partial(expect_count, 5)
             },
@@ -384,7 +383,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 6),
                 r".*Sending create_node request.*": partial(expect_count, 9)
             },
@@ -444,7 +442,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
                 r".*Setting node quota.*": fail,
             },
@@ -465,7 +462,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
                 r".*Setting node quota.*": fail,
             },
