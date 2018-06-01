@@ -25,7 +25,6 @@ class Arvados::V1::ContainersController < ApplicationController
     # can deadlock if we don't lock the container_requests table
     # first.
     @object.transaction do
-      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       @object.reload
       super
     end
