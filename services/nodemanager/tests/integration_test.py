@@ -175,8 +175,8 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                                       driver_class=driver_class,
                                       ssh_key=os.path.join(fake_slurm, "id_rsa.pub")))
 
-    # Tests must complete in less than 3 minutes.
-    timeout = time.time() + 180
+    # Tests must complete in less than 30 seconds.
+    timeout = time.time() + 30
     terminated = False
 
     # Now start node manager
