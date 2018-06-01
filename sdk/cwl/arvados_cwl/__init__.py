@@ -279,7 +279,7 @@ class ArvCwlRunner(object):
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v)
 
-    def make_output_collection(self, name, tagsString, outputObj):
+    def make_output_collection(self, name, storage_classes, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -330,7 +330,7 @@ class ArvCwlRunner(object):
         with final.open("cwl.output.json", "w") as f:
             json.dump(outputObj, f, sort_keys=True, indent=4, separators=(',',': '))
 
-        final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
+        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
 
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
@@ -592,6 +592,7 @@ class ArvCwlRunner(object):
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
+
         if kwargs.get("submit") and isinstance(runnerjob, Runner):
             logger.info("Final output collection %s", runnerjob.final_output)
         else:
@@ -599,7 +600,12 @@ class ArvCwlRunner(object):
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             if self.output_tags is None:
                 self.output_tags = ""
-            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
+
+            storage_classes = ["default"]
+            if kwargs.get("storage_classes"):
+                storage_classes = kwargs.get("storage_classes").strip().split(",")
+
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
         if kwargs.get("compute_checksum"):
@@ -717,6 +723,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
+    parser.add_argument('--storage-classes', 
+                        help="Specify comma separated list of storage classes to be used when saving wortkflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
