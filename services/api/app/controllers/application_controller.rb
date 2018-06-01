@@ -382,7 +382,9 @@ class ApplicationController < ActionController::Base
       req_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
     end
     response.headers['X-Request-Id'] = Thread.current[:request_id] = req_id
-    yield
+    Rails.logger.tagged(req_id) do
+      yield
+    end
     Thread.current[:request_id] = nil
   end
 
