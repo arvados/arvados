@@ -19,10 +19,11 @@ import { Link } from "react-router-dom";
 
 import { actions as projectActions } from "../../store/project-action";
 import ListItemText from "@material-ui/core/ListItemText/ListItemText";
+import ListItemIcon from '@material-ui/core/ListItemIcon';
 
 const drawerWidth = 240;
 
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'row' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -48,6 +49,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: theme.spacing.unit * 3,
         minWidth: 0,
     },
+    row: {
+        display: 'flex'
+    },
     toolbar: theme.mixins.toolbar
 });
 
@@ -61,7 +65,7 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, WorkbenchState> {
     render() {
-        const {classes} = this.props;
+        const {classes, projects} = this.props;
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
@@ -77,9 +81,12 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-                    <Tree items={this.props.projects}
+                    <Tree items={projects}
                         toggleItem={this.props.toggleProjectTreeItem}
-                        render={(p: Project) => <ListItemText primary={p.name}/>}
+                        render={(p: Project) => <span className={classes.row}>
+                            <div style={{marginTop: "3px"}}><ListItemIcon>{p.icon}</ListItemIcon></div>
+                            <div><ListItemText primary={p.name}/></div>
+                        </span>}
                         />
                 </Drawer>
                 <main className={classes.content}>

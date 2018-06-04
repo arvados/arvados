@@ -27,8 +27,9 @@ class Tree<T> extends React.Component<TreeProps<T>, {}> {
         const level = this.props.level ? this.props.level : 0;
         return <List component="div">
             {this.props.items && this.props.items.map((it: TreeItem<T>, idx: number) =>
-             <div key={`item/${level}/${idx}`}>
-                <ListItem button onClick={() => this.props.toggleItem(it.id)} style={{paddingLeft: (level + 1) * 30}}>
+             <div key={`item/${level}/${idx}`}>      
+                <ListItem button onClick={() => this.props.toggleItem(it.id)} style={{paddingLeft: (level + 1) * 20}}>  
+                    <i style={{marginRight: "10px"}} className={it.open ? "fas fa-caret-down" : "fas fa-caret-right"} />
                     {this.props.render(it.data)}
                 </ListItem>
                 {it.items && it.items.length > 0 &&
