@@ -292,7 +292,7 @@ class KeepClient(object):
         def __init__(self, root, user_agent_pool=queue.LifoQueue(),
                      upload_counter=None,
                      download_counter=None,
-                     headers={}):
+                     headers={},insecure=False):
             self.root = root
             self._user_agent_pool = user_agent_pool
             self._result = {'error': None}
@@ -304,6 +304,7 @@ class KeepClient(object):
             self.put_headers = headers
             self.upload_counter = upload_counter
             self.download_counter = download_counter
+            self.insecure = insecure
 
         def usable(self):
             """Is it worth attempting a request?"""
@@ -771,6 +772,10 @@ class KeepClient(object):
         else:
             self.insecure = False
 
+        if api_client is not None:
+            if not self.insecure and api_client.insecure:
+                self.insecure = True
+
         self.block_cache = block_cache if block_cache else KeepBlockCache()
         self.timeout = timeout
         self.proxy_timeout = proxy_timeout
@@ -943,7 +948,7 @@ class KeepClient(object):
                     root, self._user_agent_pool,
                     upload_counter=self.upload_counter,
                     download_counter=self.download_counter,
-                    headers=headers)
+                    headers=headers,insecure=self.insecure)
         return local_roots
 
     @staticmethod
@@ -1044,7 +1049,7 @@ class KeepClient(object):
                 root: self.KeepService(root, self._user_agent_pool,
                                        upload_counter=self.upload_counter,
                                        download_counter=self.download_counter,
-                                       headers=headers)
+                                       headers=headers,insecure=self.insecure)
                 for root in hint_roots
             }
 
