@@ -16,6 +16,13 @@ import { RootState } from "../../store/root-reducer";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
+import Button from "@material-ui/core/Button/Button";
+import authActions from "../../store/auth-action";
+import { authService } from "../../services/services";
+import IconButton from "@material-ui/core/IconButton/IconButton";
+import Menu from "@material-ui/core/Menu/Menu";
+import MenuItem from "@material-ui/core/MenuItem/MenuItem";
+import { AccountCircle } from "@material-ui/icons";
 
 const drawerWidth = 240;
 
@@ -28,8 +35,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         overflow: 'hidden',
         position: 'relative',
         display: 'flex',
-        width: '100%',
-        height: '100%'
+        width: '100vw',
+        height: '100vh'
     },
     appBar: {
         zIndex: theme.zIndex.drawer + 1,
@@ -43,31 +50,98 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         flexGrow: 1,
         backgroundColor: theme.palette.background.default,
         padding: theme.spacing.unit * 3,
+        height: '100%',
         minWidth: 0,
     },
     toolbar: theme.mixins.toolbar
 });
 
-interface WorkbenchProps {
-    projects: Project[]
+interface WorkbenchDataProps {
+    projects: Project[];
 }
+
+interface WorkbenchActionProps {
+    login?: () => void;
+    logout?: () => void;
+}
+
+type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & WithStyles<CssRules>;
 
 interface WorkbenchState {
+    anchorEl: any;
 }
 
-class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, WorkbenchState> {
+class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
+    constructor(props: WorkbenchProps) {
+        super(props);
+        this.state = {
+            anchorEl: null
+        }
+    }
+
+    login = () => {
+        this.props.login!();
+    };
+
+    logout = () => {
+        this.handleClose();
+        this.props.logout!();
+    };
+
+    handleOpenMenu = (event: React.MouseEvent<any>) => {
+        this.setState({
+            anchorEl: event.currentTarget
+        });
+    };
+
+    handleClose = () => {
+        this.setState({
+            anchorEl: null
+        });
+    };
+
     render() {
         const {classes} = this.props;
-
+        const userLoggedIn = authService.isUserLoggedIn();
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
                     <Toolbar>
-                        <Typography variant="title" color="inherit" noWrap>
-                            Arvados<br/>Workbench 2
+                        <Typography variant="title" color="inherit" noWrap style={{flexGrow: 1}}>
+                            <span>Arvados</span><br/><span style={{fontSize: 12}}>Workbench 2</span>
                         </Typography>
+                        {userLoggedIn ?
+                            <div>
+                                <IconButton
+                                      aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
+                                      aria-haspopup="true"
+                                      onClick={this.handleOpenMenu}
+                                      color="inherit">
+                                  <AccountCircle/>
+                                </IconButton>
+                                <Menu
+                                  id="menu-appbar"
+                                  anchorEl={this.state.anchorEl}
+                                  anchorOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                  }}
+                                  transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                  }}
+                                  open={!!this.state.anchorEl}
+                                  onClose={this.handleClose}>
+                                  <MenuItem onClick={this.logout}>Logout</MenuItem>
+                                  <MenuItem onClick={this.handleClose}>My account</MenuItem>
+                                </Menu>
+                            </div>
+                            :
+                            <Button color="inherit" onClick={this.login}>Login</Button>
+                        }
                     </Toolbar>
                 </AppBar>
+                {userLoggedIn &&
                 <Drawer
                     variant="permanent"
                     classes={{
@@ -77,13 +151,10 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                     <Tree items={this.props.projects} render={(p: Project) =>
                         <Link to={`/project/${p.name}`}>{p.name}</Link>
                     }/>
-                </Drawer>
+                </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
                     <Switch>
-                        <Route exact path="/">
-                            <Typography noWrap>Hello new workbench!</Typography>
-                        </Route>
                         <Route path="/project/:name" component={ProjectList}/>
                     </Switch>
                 </main>
@@ -92,10 +163,13 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
     }
 }
 
-export default connect<WorkbenchProps>(
+export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects
-    })
+    }), {
+        login: authActions.login,
+        logout: authActions.logout
+    }
 )(
     withStyles(styles)(Workbench)
 );

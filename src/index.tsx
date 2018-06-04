@@ -8,10 +8,11 @@ import { Provider } from "react-redux";
 import Workbench from './views/workbench/workbench';
 import ProjectList from './components/project-list/project-list';
 import './index.css';
-import { Route, Router } from "react-router";
+import { Redirect, Route, RouteProps, Router, RouterProps } from "react-router";
 import createBrowserHistory from "history/createBrowserHistory";
 import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
+import ApiToken from "./components/api-token/api-token";
 
 const history = createBrowserHistory();
 const store = configureStore({
@@ -22,6 +23,8 @@ const store = configureStore({
     ],
     router: {
         location: null
+    },
+    auth: {
     }
 }, history);
 
@@ -30,6 +33,7 @@ const App = () =>
         <ConnectedRouter history={history}>
             <div>
                 <Route path="/" component={Workbench}/>
+                <Route path="/token" component={ApiToken}/>
             </div>
         </ConnectedRouter>
     </Provider>;

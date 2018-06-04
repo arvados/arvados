@@ -5,9 +5,10 @@
 import { ActionType, createStandardAction } from "typesafe-actions";
 import { Project } from "../models/project";
 
-export const actions = {
+const actions = {
     createProject: createStandardAction('@@project/create')<Project>(),
     removeProject: createStandardAction('@@project/remove')<string>()
 };
 
 export type ProjectAction = ActionType<typeof actions>;
+export default actions;

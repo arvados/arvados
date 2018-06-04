@@ -4,7 +4,7 @@
 
 import { getType } from "typesafe-actions";
 import { Project } from "../models/project";
-import { actions, ProjectAction } from "./project-action";
+import actions, { ProjectAction } from "./project-action";
 
 type ProjectState = Project[];
 

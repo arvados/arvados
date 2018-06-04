@@ -4,10 +4,12 @@
 
 import { combineReducers } from "redux";
 import { StateType } from "typesafe-actions";
-import projectsReducer from "./project-reducer";
 import { routerReducer } from "react-router-redux";
+import authReducer from "./auth-reducer";
+import projectsReducer from "./project-reducer";
 
 const rootReducer = combineReducers({
+    auth: authReducer,
     projects: projectsReducer,
     router: routerReducer
 });
