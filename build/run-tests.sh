@@ -270,6 +270,8 @@ declare -a failures
 declare -A skip
 declare -A testargs
 skip[apps/workbench_profile]=1
+# nodemanager_integration tests are not reliable, see #12061.
+skip[services/nodemanager_integration]=1
 
 while [[ -n "$1" ]]
 do
