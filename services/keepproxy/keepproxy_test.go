@@ -162,6 +162,36 @@ func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 	c.Check(err, ErrorMatches, `.*loop detected.*`)
 }
 
+func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	// Set up fake keepstore to record request headers
+	var hdr http.Header
+	ts := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			hdr = r.Header
+			http.Error(w, "Error", http.StatusInternalServerError)
+		}))
+	defer ts.Close()
+
+	// Point keepproxy router's keepclient to the fake keepstore
+	sr := map[string]string{
+		TestProxyUUID: ts.URL,
+	}
+	router.(*proxyHandler).KeepClient.SetServiceRoots(sr, sr, sr)
+
+	// Set up client to ask for storage classes to keepproxy
+	kc.StorageClasses = []string{"secure"}
+	content := []byte("Very important data")
+	_, _, err := kc.PutB(content)
+	c.Check(err, NotNil)
+	// errNotFound, _ := err.(*keepclient.ErrNotFound)
+	// c.Check(errNotFound.Temporary(), Equals, true)
+	// c.Assert(err, ErrorMatches, ".*connection refused.*")
+	c.Check(hdr.Get("X-Keep-Storage-Classes"), Equals, "secure")
+}
+
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
