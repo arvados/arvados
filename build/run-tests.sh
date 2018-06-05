@@ -515,12 +515,14 @@ export GOPATH
     mkdir -p "$GOPATH/src/git.curoverse.com"
     rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
     for d in \
-        "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
-            "$GOPATH/src/git.curoverse.com/arvados.git"; do
+        "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+        "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+        "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
+        "$GOPATH/src/git.curoverse.com/arvados.git"; do
         [[ -d "$d" ]] && rmdir "$d"
         [[ -h "$d" ]] && rm "$d"
     done
-    ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
     go get -v github.com/kardianos/govendor
     cd "$GOPATH/src/git.curoverse.com/arvados.git"
     if [[ -n "$short" ]]; then
