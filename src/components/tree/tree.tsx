@@ -25,10 +25,10 @@ interface TreeProps<T> {
 class Tree<T> extends React.Component<TreeProps<T>, {}> {
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
-        return <List component="div">
+        return <List component="div" style={{paddingBottom: '3px', paddingTop: '3px'}}>
             {this.props.items && this.props.items.map((it: TreeItem<T>, idx: number) =>
              <div key={`item/${level}/${idx}`}>      
-                <ListItem button onClick={() => this.props.toggleItem(it.id)} style={{paddingLeft: (level + 1) * 20}}>  
+                <ListItem button onClick={() => this.props.toggleItem(it.id)} style={{paddingLeft: (level + 1) * 15, paddingBottom: '3px', paddingTop: '3px'}}>  
                     <i style={{marginRight: "10px"}} className={it.open ? "fas fa-caret-down" : "fas fa-caret-right"} />
                     {this.props.render(it.data)}
                 </ListItem>

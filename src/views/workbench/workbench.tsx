@@ -23,7 +23,7 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 
 const drawerWidth = 240;
 
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'row' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'row' | 'treeContainer' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -50,7 +50,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         minWidth: 0,
     },
     row: {
-        display: 'flex'
+        display: 'flex',
+        alignItems: 'center'
+    },
+    treeContainer: {
+        position: 'absolute',        
+        overflowX: 'visible',
+        marginTop: '80px',
+        minWidth: drawerWidth,
+        whiteSpace: 'nowrap'
     },
     toolbar: theme.mixins.toolbar
 });
@@ -81,13 +89,15 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-                    <Tree items={projects}
-                        toggleItem={this.props.toggleProjectTreeItem}
-                        render={(p: Project) => <span className={classes.row}>
-                            <div style={{marginTop: "3px"}}><ListItemIcon>{p.icon}</ListItemIcon></div>
-                            <div><ListItemText primary={p.name}/></div>
-                        </span>}
-                        />
+                    <div className={classes.treeContainer}>
+                        <Tree items={projects}
+                            toggleItem={this.props.toggleProjectTreeItem}
+                            render={(p: Project) => <span className={classes.row}>
+                                <div><ListItemIcon>{p.icon}</ListItemIcon></div>
+                                <div><ListItemText primary={p.name}/></div>
+                            </span>}
+                            />
+                    </div>
                 </Drawer>
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
