@@ -13,6 +13,8 @@ import os
 import re
 import errno
 import hashlib
+import datetime
+import ciso8601
 import time
 import threading
 
@@ -1269,6 +1271,18 @@ class Collection(RichCollectionBase):
     def root_collection(self):
         return self
 
+    def get_properties(self):
+        if self._api_response and self._api_response["properties"]:
+            return self._api_response["properties"]
+        else:
+            return {}
+
+    def get_trash_at(self):
+        if self._api_response and self._api_response["trash_at"]:
+            return ciso8601.parse_datetime(self._api_response["trash_at"])
+        else:
+            return None
+
     def stream_name(self):
         return "."
 
@@ -1453,7 +1467,8 @@ class Collection(RichCollectionBase):
         `save_new()`.
 
         :properties:
-          Additional properties of collection.
+          Additional properties of collection. This value will replace any existing
+          properties of collection.
 
         :storage_classes:
           Specify desirable storage classes to be used when writing data to Keep.
@@ -1477,13 +1492,17 @@ class Collection(RichCollectionBase):
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
 
+        if trash_at and type(trash_at) is not datetime.datetime:
+            raise errors.ArgumentError("trash_at must be datetime type.")
+
         body={}
         if properties:
             body["properties"] = properties
         if storage_classes:
             body["storage_classes_desired"] = storage_classes
-        if storage_classes:
-            body["trash_at"] = trash_at
+        if trash_at:
+            t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            body["trash_at"] = t
 
         if not self.committed():
             if not self._has_collection_uuid():
@@ -1543,7 +1562,8 @@ class Collection(RichCollectionBase):
           If None, defaults to the current user.
 
         :properties:
-          Additional properties of collection.
+          Additional properties of collection. This value will replace any existing
+          properties of collection.
 
         :storage_classes:
           Specify desirable storage classes to be used when writing data to Keep.
@@ -1568,6 +1588,9 @@ class Collection(RichCollectionBase):
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
 
+        if trash_at and type(trash_at) is not datetime.datetime:
+            raise errors.ArgumentError("trash_at must be datetime type.")
+
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
@@ -1585,8 +1608,9 @@ class Collection(RichCollectionBase):
                 body["properties"] = properties
             if storage_classes:
                 body["storage_classes_desired"] = storage_classes
-            if storage_classes:
-                body["trash_at"] = trash_at
+            if trash_at:
+                t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                body["trash_at"] = t
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
