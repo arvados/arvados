@@ -617,30 +617,29 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	kc := runProxy(c, nil, false)
+	defer closeListener()
 
-	// keepclient with no such keep server
-	kc := keepclient.New(arv)
+	// Point keepproxy to a non-existant keepstore
 	locals := map[string]string{
 		TestProxyUUID: "http://localhost:12345",
 	}
-	kc.SetServiceRoots(locals, nil, nil)
+	router.(*proxyHandler).KeepClient.SetServiceRoots(locals, nil, nil)
 
-	// Ask should result in temporary connection refused error
+	// Ask should result in temporary bad gateway error
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	_, _, err = kc.Ask(hash)
+	_, _, err := kc.Ask(hash)
 	c.Check(err, NotNil)
 	errNotFound, _ := err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(err, ErrorMatches, ".*connection refused.*")
+	c.Assert(err, ErrorMatches, ".*HTTP 502.*")
 
-	// Get should result in temporary connection refused error
+	// Get should result in temporary bad gateway error
 	_, _, _, err = kc.Get(hash)
 	c.Check(err, NotNil)
 	errNotFound, _ = err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(err, ErrorMatches, ".*connection refused.*")
+	c.Assert(err, ErrorMatches, ".*HTTP 502.*")
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
