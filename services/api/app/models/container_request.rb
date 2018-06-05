@@ -201,9 +201,11 @@ class ContainerRequest < ArvadosModel
   def set_default_preemptable_scheduling_parameter
     if self.state == Committed
       # If preemptable instances (eg: AWS Spot Instances) are allowed,
-      # automatically ask them on non-child containers by default.
-      if Rails.configuration.preemptable_instances and !self.requesting_container_uuid.nil?
-        self.scheduling_parameters['preemptable'] ||= true
+      # ask them on child containers by default.
+      if Rails.configuration.preemptable_instances and
+        !self.requesting_container_uuid.nil? and
+        self.scheduling_parameters['preemptable'].nil?
+          self.scheduling_parameters['preemptable'] = true
       end
     end
   end
