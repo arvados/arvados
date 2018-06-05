@@ -53,7 +53,7 @@ make test
 yarn build
 
 # Build deb and rpm packages using fpm from dist passing the destination folder for the deploy to be /var/www/arvados-workbench2/
-fpm -s dir -t deb  -n arvados-workbench2 -v "$build_version" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" --deb-no-default-config-files $WORKDIR/build/=/var/www/arvados-workbench2/
+fpm -s dir -t deb  -n arvados-workbench2 -v "$build_version" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" --deb-no-default-config-files $WORKDIR/build/=/var/www/arvados-workbench2/workbench2/
 fpm -s dir -t rpm  -n arvados-workbench2 -v "$build_version" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" $WORKDIR/build/=/var/www/arvados-workbench2/workbench2/
 
 mkdir $WORKDIR/packages
