@@ -95,6 +95,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 			return
 		}
 	}
+	bal.dedupDevices()
 
 	if err = bal.CheckSanityEarly(&config.Client); err != nil {
 		return
@@ -167,6 +168,30 @@ func (bal *Balancer) DiscoverKeepServices(c *arvados.Client, okTypes []string) e
 		}
 		return nil
 	})
+}
+
+func (bal *Balancer) dedupDevices() {
+	rwdev := map[string]*KeepService{}
+	for _, srv := range bal.KeepServices {
+		for _, mnt := range srv.mounts {
+			if !mnt.ReadOnly && mnt.DeviceID != "" {
+				rwdev[mnt.DeviceID] = srv
+			}
+		}
+	}
+	// Drop the readonly mounts whose device is mounted RW
+	// elsewhere.
+	for _, srv := range bal.KeepServices {
+		var dedup []*KeepMount
+		for _, mnt := range srv.mounts {
+			if mnt.ReadOnly && rwdev[mnt.DeviceID] != nil {
+				bal.logf("skipping srv %s readonly mount %q because same device %q is mounted read-write on srv %s", srv, mnt.UUID, mnt.DeviceID, rwdev[mnt.DeviceID])
+			} else {
+				dedup = append(dedup, mnt)
+			}
+		}
+		srv.mounts = dedup
+	}
 }
 
 // CheckSanityEarly checks for configuration and runtime errors that

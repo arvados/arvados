@@ -245,6 +245,20 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 		shouldTrash: slots{2}})
 }
 
+func (bal *balancerSuite) TestDedupDevices(c *check.C) {
+	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
+	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
+	c.Check(len(bal.srvs[3].mounts), check.Equals, 1)
+	bal.dedupDevices()
+	c.Check(len(bal.srvs[3].mounts), check.Equals, 0)
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{2}})
+}
+
 func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// For known blocks 0/1/2/3, server 9 is slot 9/1/14/0 in
 	// probe order. For these tests we give it two mounts, one
