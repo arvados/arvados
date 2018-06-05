@@ -186,9 +186,6 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 	content := []byte("Very important data")
 	_, _, err := kc.PutB(content)
 	c.Check(err, NotNil)
-	// errNotFound, _ := err.(*keepclient.ErrNotFound)
-	// c.Check(errNotFound.Temporary(), Equals, true)
-	// c.Assert(err, ErrorMatches, ".*connection refused.*")
 	c.Check(hdr.Get("X-Keep-Storage-Classes"), Equals, "secure")
 }
 
