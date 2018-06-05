@@ -601,10 +601,7 @@ class ArvCwlRunner(object):
             if self.output_tags is None:
                 self.output_tags = ""
 
-            storage_classes = ["default"]
-            if kwargs.get("storage_classes"):
-                storage_classes = kwargs.get("storage_classes").strip().split(",")
-
+            storage_classes = kwargs.get("storage_classes")
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
@@ -723,8 +720,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
-    parser.add_argument('--storage-classes', 
-                        help="Specify comma separated list of storage classes to be used when saving wortkflow output to Keep.")
+    parser.add_argument('--storage-classes', default="default",
+                        help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
@@ -785,6 +782,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
 
     job_order_object = None
     arvargs = parser.parse_args(args)
+
+    arvargs.storage_classes = arvargs.storage_classes.strip().split(',')
+    if len(arvargs.storage_classes) > 1:
+        logger.error("Multiple storage classes are not supported currently.")
+        sys.exit(1)
 
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()

@@ -333,6 +333,17 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
+    @stubs
+    def test_error_when_multiple_storage_classes_specified(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        storage_classes = "foo,bar"
+
+        with self.assertRaises(SystemExit):
+            arvados_cwl.main(
+                ["--debug", "--storage-classes", storage_classes,
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api)
+
     @mock.patch("time.sleep")
     @stubs
     def test_submit_on_error(self, stubs, tm):
