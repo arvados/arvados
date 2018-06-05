@@ -5,6 +5,7 @@
 require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
+require 'update_priority'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates
@@ -37,6 +38,7 @@ class Container < ArvadosModel
   before_save :scrub_secret_mounts
   after_save :handle_completed
   after_save :propagate_priority
+  after_commit { UpdatePriority.run_update_thread }
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -126,7 +128,6 @@ class Container < ArvadosModel
       # Update the priority of child container requests to match new
       # priority of the parent container (ignoring requests with no
       # container assigned, because their priority doesn't matter).
-      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       ContainerRequest.
         where(requesting_container_uuid: self.uuid,
               state: ContainerRequest::Committed).
@@ -316,10 +317,6 @@ class Container < ArvadosModel
     # (because state might have changed while acquiring the lock).
     check_lock_fail
     transaction do
-      # Locking involves assigning auth_uuid, which involves looking
-      # up container requests, so we must lock both tables in the
-      # proper order to avoid deadlock.
-      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       reload
       check_lock_fail
       update_attributes!(state: Locked)
@@ -542,7 +539,6 @@ class Container < ArvadosModel
     if self.state_changed? and self.final?
       act_as_system_user do
 
-        ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
         if self.state == Cancelled
           retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
         else
