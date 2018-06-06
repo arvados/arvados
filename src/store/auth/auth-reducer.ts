@@ -22,7 +22,7 @@ const authReducer = (state: AuthState = {}, action: AuthAction) => {
         INIT: () => {
             const user = authService.getUser();
             const token = authService.getApiToken();
-            return { user, apiToken: token };
+            return {user, apiToken: token};
         },
         LOGIN: () => {
             authService.login();

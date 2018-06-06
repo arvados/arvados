@@ -10,6 +10,7 @@ import {
     USER_FIRST_NAME_KEY,
     USER_LAST_NAME_KEY
 } from "../../services/auth-service/auth-service";
+import { API_HOST } from "../../common/server-api";
 
 require('jest-localstorage-mock');
 
@@ -79,5 +80,39 @@ describe('auth-reducer', () => {
         });
 
         expect(localStorage.getItem(API_TOKEN_KEY)).toBe("token");
+    });
+
+    it('should fire external url to login', () => {
+        const initialState = undefined;
+
+        const location = {
+            href: 'http://localhost:3000',
+            protocol: 'http:',
+            host: 'localhost:3000'
+        };
+
+        global['window'] = { location };
+
+        authReducer(initialState, actions.LOGIN());
+        expect(window.location.href).toBe(
+            `${API_HOST}/login?return_to=${location.protocol}//${location.host}/token`
+        );
+    });
+
+    it('should fire external url to logout', () => {
+        const initialState = undefined;
+
+        const location = {
+            href: 'http://localhost:3000',
+            protocol: 'http:',
+            host: 'localhost:3000'
+        };
+
+        global['window'] = { location };
+
+        authReducer(initialState, actions.LOGOUT());
+        expect(window.location.href).toBe(
+            `${API_HOST}/logout?return_to=${location.protocol}//${location.host}`
+        );
     });
 });
