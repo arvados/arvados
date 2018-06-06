@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Project } from "../models/project";
+import { Project } from "../../models/project";
 import actions, { ProjectAction } from "./project-action";
 
 export type ProjectState = Project[];

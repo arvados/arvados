@@ -5,7 +5,7 @@
 import { Redirect, RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import authActions, { getUserDetails } from "../../store/auth-action";
+import authActions, { getUserDetails } from "../../store/auth/auth-action";
 
 interface ApiTokenProps {
 }

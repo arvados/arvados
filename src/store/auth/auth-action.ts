@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { serverApi } from "../common/server-api";
+import { serverApi } from "../../common/server-api";
 import { ofType, default as unionize, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 

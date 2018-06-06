@@ -13,7 +13,7 @@ import createBrowserHistory from "history/createBrowserHistory";
 import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
 import ApiToken from "./components/api-token/api-token";
-import authActions from "./store/auth-action";
+import authActions from "./store/auth/auth-action";
 
 const history = createBrowserHistory();
 const store = configureStore({

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Project } from "../models/project";
+import { Project } from "../../models/project";
 import { default as unionize, ofType, UnionOf } from "unionize";
 
 const actions = unionize({

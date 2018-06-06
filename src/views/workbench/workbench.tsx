@@ -12,18 +12,18 @@ import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
 import Tree from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { RootState } from "../../store/root-reducer";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
 import Button from "@material-ui/core/Button/Button";
-import authActions from "../../store/auth-action";
+import authActions from "../../store/auth/auth-action";
 import IconButton from "@material-ui/core/IconButton/IconButton";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
+import { RootState } from "../../store/store";
 
 const drawerWidth = 240;
 
