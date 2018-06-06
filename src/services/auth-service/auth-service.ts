@@ -5,10 +5,10 @@
 import { API_HOST } from "../../common/server-api";
 import { User } from "../../models/user";
 
-const API_TOKEN_KEY = 'apiToken';
-const USER_EMAIL_KEY = 'userEmail';
-const USER_FIRST_NAME_KEY = 'userFirstName';
-const USER_LAST_NAME_KEY = 'userLastName';
+export const API_TOKEN_KEY = 'apiToken';
+export const USER_EMAIL_KEY = 'userEmail';
+export const USER_FIRST_NAME_KEY = 'userFirstName';
+export const USER_LAST_NAME_KEY = 'userLastName';
 
 export default class AuthService {
 
