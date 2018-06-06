@@ -49,6 +49,8 @@ type tester struct {
 
 	shouldPullMounts  []string
 	shouldTrashMounts []string
+
+	expectResult balanceResult
 }
 
 func (bal *balancerSuite) SetUpSuite(c *check.C) {
@@ -292,14 +294,26 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 		known:      0,
 		desired:    map[string]int{"default": 2},
 		current:    slots{1, 9},
-		shouldPull: slots{0}})
+		shouldPull: slots{0},
+		expectResult: balanceResult{
+			have: 1,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      -1,
+				unachievable: false}}}})
 	// block 0 is overreplicated, but the second and third
 	// replicas are the same replica according to DeviceID
 	// (despite different Mtimes). Don't trash the third replica.
 	bal.try(c, tester{
 		known:   0,
 		desired: map[string]int{"default": 2},
-		current: slots{0, 1, 9}})
+		current: slots{0, 1, 9},
+		expectResult: balanceResult{
+			have: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      0,
+				unachievable: false}}}})
 	// block 0 is overreplicated; the third and fifth replicas are
 	// extra, but the fourth is another view of the second and
 	// shouldn't be trashed.
@@ -307,7 +321,13 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 		known:       0,
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1, 5, 9, 12},
-		shouldTrash: slots{5, 12}})
+		shouldTrash: slots{5, 12},
+		expectResult: balanceResult{
+			have: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      2,
+				unachievable: false}}}})
 }
 
 func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
@@ -438,7 +458,7 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	for _, srv := range bal.srvs {
 		srv.ChangeSet = &ChangeSet{}
 	}
-	bal.balanceBlock(knownBlkid(t.known), blk)
+	result := bal.balanceBlock(knownBlkid(t.known), blk)
 
 	var didPull, didTrash slots
 	var didPullMounts, didTrashMounts []string
@@ -473,6 +493,12 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	if t.shouldTrashMounts != nil {
 		sort.Strings(didTrashMounts)
 		c.Check(didTrashMounts, check.DeepEquals, t.shouldTrashMounts)
+	}
+	if t.expectResult.have > 0 {
+		c.Check(result.have, check.Equals, t.expectResult.have)
+	}
+	if t.expectResult.classState != nil {
+		c.Check(result.classState, check.DeepEquals, t.expectResult.classState)
 	}
 }
 

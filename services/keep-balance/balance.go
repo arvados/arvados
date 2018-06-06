@@ -528,10 +528,14 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	for _, class := range bal.classes {
 		desired := blk.Desired[class]
 
+		countedDev := map[string]bool{}
 		have := 0
 		for _, slot := range slots {
-			if slot.repl != nil && bal.mountsByClass[class][slot.mnt] {
+			if slot.repl != nil && bal.mountsByClass[class][slot.mnt] && !countedDev[slot.mnt.DeviceID] {
 				have++
+				if slot.mnt.DeviceID != "" {
+					countedDev[slot.mnt.DeviceID] = true
+				}
 			}
 		}
 		classState[class] = balancedBlockState{
@@ -670,13 +674,17 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	// replica that doesn't have a timestamp collision with
 	// others.
 
+	countedDev := map[string]bool{}
 	var have, want int
 	for _, slot := range slots {
 		if slot.want {
 			want++
 		}
-		if slot.repl != nil {
+		if slot.repl != nil && !countedDev[slot.mnt.DeviceID] {
 			have++
+			if slot.mnt.DeviceID != "" {
+				countedDev[slot.mnt.DeviceID] = true
+			}
 		}
 	}
 
