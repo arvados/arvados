@@ -23,7 +23,7 @@ import IconButton from "@material-ui/core/IconButton/IconButton";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import { AccountCircle } from "@material-ui/icons";
-import { AnyAction } from "redux";
+import { User } from "../../models/user";
 
 const drawerWidth = 240;
 
@@ -59,6 +59,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 interface WorkbenchDataProps {
     projects: Project[];
+    user: User;
 }
 
 interface WorkbenchActionProps {
@@ -79,12 +80,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     login = () => {
-        this.props.dispatch(authActions.LOGIN() as AnyAction);
+        this.props.dispatch(authActions.LOGIN());
     };
 
     logout = () => {
         this.handleClose();
-        this.props.dispatch(authActions.LOGOUT() as AnyAction);
+        this.props.dispatch(authActions.LOGOUT());
     };
 
     handleOpenMenu = (event: React.MouseEvent<any>) => {
@@ -111,6 +112,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         </Typography>
                         {userLoggedIn ?
                             <div>
+                                <Typography variant="title" color="inherit" noWrap>
+                                    {this.props.user.firstName} {this.props.user.lastName}
+                                </Typography>
                                 <IconButton
                                       aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
                                       aria-haspopup="true"
@@ -164,7 +168,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
-        projects: state.projects
+        projects: state.projects,
+        user: state.auth.user!
     })
 )(
     withStyles(styles)(Workbench)
