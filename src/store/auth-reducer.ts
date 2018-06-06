@@ -19,22 +19,30 @@ const authReducer = (state: AuthState = {}, action: AuthAction) => {
             setServerApiAuthorizationHeader(token);
             return {...state, apiToken: token};
         },
+        INIT: () => {
+            const user = authService.getUser();
+            const token = authService.getApiToken();
+            return { user, apiToken: token };
+        },
         LOGIN: () => {
             authService.login();
             return state;
         },
         LOGOUT: () => {
             authService.removeApiToken();
+            authService.removeUser();
             removeServerApiAuthorizationHeader();
             authService.logout();
             return {...state, apiToken: undefined};
         },
         USER_DETAILS_SUCCESS: (ud: UserDetailsResponse) => {
-            return {...state, user: {
+            const user = {
                 email: ud.email,
                 firstName: ud.first_name,
                 lastName: ud.last_name
-            }}
+            };
+            authService.saveUser(user);
+            return {...state, user};
         },
         default: () => state
     });

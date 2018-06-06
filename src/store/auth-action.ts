@@ -17,6 +17,7 @@ const actions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
     LOGIN: {},
     LOGOUT: {},
+    INIT: {},
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<UserDetailsResponse>()
 }, {

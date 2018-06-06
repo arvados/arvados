@@ -4,8 +4,12 @@
 
 import Axios from "axios";
 import { API_HOST } from "../../common/server-api";
+import { User } from "../../models/user";
 
-const API_TOKEN_KEY = 'api_token';
+const API_TOKEN_KEY = 'apiToken';
+const USER_EMAIL_KEY = 'userEmail';
+const USER_FIRST_NAME_KEY = 'userFirstName';
+const USER_LAST_NAME_KEY = 'userLastName';
 
 export default class AuthService {
 
@@ -18,11 +22,28 @@ export default class AuthService {
     }
 
     public getApiToken() {
-        return localStorage.getItem(API_TOKEN_KEY);
+        return localStorage.getItem(API_TOKEN_KEY) || undefined;
     }
 
-    public isUserLoggedIn() {
-        return this.getApiToken() !== null;
+    public getUser(): User | undefined {
+        const email = localStorage.getItem(USER_EMAIL_KEY);
+        const firstName = localStorage.getItem(USER_FIRST_NAME_KEY);
+        const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
+        return email && firstName && lastName
+            ? { email, firstName, lastName }
+            : undefined;
+    }
+
+    public saveUser(user: User) {
+        localStorage.setItem(USER_EMAIL_KEY, user.email);
+        localStorage.setItem(USER_FIRST_NAME_KEY, user.firstName);
+        localStorage.setItem(USER_LAST_NAME_KEY, user.lastName);
+    }
+
+    public removeUser() {
+        localStorage.removeItem(USER_EMAIL_KEY);
+        localStorage.removeItem(USER_FIRST_NAME_KEY);
+        localStorage.removeItem(USER_LAST_NAME_KEY);
     }
 
     public login() {
@@ -30,8 +51,8 @@ export default class AuthService {
         window.location.href = `${API_HOST}/login?return_to=${currentUrl}`;
     }
 
-    public logout(): Promise<any> {
+    public logout() {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        return Axios.get(`${API_HOST}/logout?return_to=${currentUrl}`);
+        window.location.href = `${API_HOST}/logout?return_to=${currentUrl}`;
     }
 }

@@ -6140,7 +6140,7 @@ redux-devtools@3.4.1:
     prop-types "^15.5.7"
     redux-devtools-instrument "^1.0.1"
 
-redux-thunk@^2.3.0:
+redux-thunk@2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/redux-thunk/-/redux-thunk-2.3.0.tgz#51c2c19a185ed5187aaa9a2d08b666d0d6467622"
 
@@ -7324,7 +7324,7 @@ union-value@^1.0.0:
     is-extendable "^0.1.1"
     set-value "^0.4.3"
 
-unionize@^2.1.2:
+unionize@2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/unionize/-/unionize-2.1.2.tgz#2513b148de515bec93f045d1685bd88eab62b608"
 

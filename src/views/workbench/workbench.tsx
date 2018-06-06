@@ -18,7 +18,6 @@ import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
 import Button from "@material-ui/core/Button/Button";
 import authActions from "../../store/auth-action";
-import { authService } from "../../services/services";
 import IconButton from "@material-ui/core/IconButton/IconButton";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
@@ -59,7 +58,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 interface WorkbenchDataProps {
     projects: Project[];
-    user: User;
+    user?: User;
 }
 
 interface WorkbenchActionProps {
@@ -101,8 +100,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     };
 
     render() {
-        const {classes} = this.props;
-        const userLoggedIn = authService.isUserLoggedIn();
+        const {classes, user} = this.props;
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
@@ -110,10 +108,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         <Typography variant="title" color="inherit" noWrap style={{flexGrow: 1}}>
                             <span>Arvados</span><br/><span style={{fontSize: 12}}>Workbench 2</span>
                         </Typography>
-                        {userLoggedIn ?
+                        {user ?
                             <div>
                                 <Typography variant="title" color="inherit" noWrap>
-                                    {this.props.user.firstName} {this.props.user.lastName}
+                                    {user.firstName} {user.lastName}
                                 </Typography>
                                 <IconButton
                                       aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
@@ -144,7 +142,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         }
                     </Toolbar>
                 </AppBar>
-                {userLoggedIn &&
+                {user &&
                 <Drawer
                     variant="permanent"
                     classes={{
@@ -169,7 +167,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects,
-        user: state.auth.user!
+        user: state.auth.user
     })
 )(
     withStyles(styles)(Workbench)

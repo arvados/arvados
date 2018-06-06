@@ -13,6 +13,7 @@ import createBrowserHistory from "history/createBrowserHistory";
 import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
 import ApiToken from "./components/api-token/api-token";
+import authActions from "./store/auth-action";
 
 const history = createBrowserHistory();
 const store = configureStore({
@@ -28,6 +29,8 @@ const store = configureStore({
         user: undefined
     }
 }, history);
+
+store.dispatch(authActions.INIT());
 
 const App = () =>
     <Provider store={store}>
