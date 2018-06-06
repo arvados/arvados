@@ -23,6 +23,7 @@ import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
+import Grid from "@material-ui/core/Grid/Grid";
 
 const drawerWidth = 240;
 
@@ -109,17 +110,21 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <span>Arvados</span><br/><span style={{fontSize: 12}}>Workbench 2</span>
                         </Typography>
                         {user ?
-                            <div>
-                                <Typography variant="title" color="inherit" noWrap>
-                                    {user.firstName} {user.lastName}
-                                </Typography>
-                                <IconButton
-                                      aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
-                                      aria-haspopup="true"
-                                      onClick={this.handleOpenMenu}
-                                      color="inherit">
-                                  <AccountCircle/>
-                                </IconButton>
+                            <Grid container style={{width: 'auto'}}>
+                                <Grid container style={{width: 'auto'}} alignItems='center'>
+                                    <Typography variant="title" color="inherit" noWrap>
+                                        {user.firstName} {user.lastName}
+                                    </Typography>
+                                </Grid>
+                                <Grid item>
+                                    <IconButton
+                                          aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
+                                          aria-haspopup="true"
+                                          onClick={this.handleOpenMenu}
+                                          color="inherit">
+                                      <AccountCircle/>
+                                    </IconButton>
+                                </Grid>
                                 <Menu
                                   id="menu-appbar"
                                   anchorEl={this.state.anchorEl}
@@ -136,7 +141,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                                   <MenuItem onClick={this.logout}>Logout</MenuItem>
                                   <MenuItem onClick={this.handleClose}>My account</MenuItem>
                                 </Menu>
-                            </div>
+                            </Grid>
                             :
                             <Button color="inherit" onClick={this.login}>Login</Button>
                         }
