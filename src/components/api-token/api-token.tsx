@@ -1,13 +1,16 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 import { Redirect, RouteProps } from "react-router";
 import * as React from "react";
-import { connect } from "react-redux";
-import authActions from "../../store/auth-action";
+import { connect, DispatchProp } from "react-redux";
+import authActions, { getUserDetails } from "../../store/auth-action";
 
 interface ApiTokenProps {
-    saveApiToken: (token: string) => void;
 }
 
-class ApiToken extends React.Component<ApiTokenProps & RouteProps, {}> {
+class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp<any>, {}> {
     static getUrlParameter(search: string, name: string) {
         const safeName = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
         const regex = new RegExp('[\\?&]' + safeName + '=([^&#]*)');
@@ -18,13 +21,12 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps, {}> {
     componentDidMount() {
         const search = this.props.location ? this.props.location.search : "";
         const apiToken = ApiToken.getUrlParameter(search, 'api_token');
-        this.props.saveApiToken(apiToken);
+        this.props.dispatch(authActions.SAVE_API_TOKEN(apiToken));
+        this.props.dispatch(getUserDetails());
     }
     render() {
         return <Redirect to="/"/>
     }
 }
 
-export default connect<ApiTokenProps>(null, {
-    saveApiToken: authActions.saveApiToken
-})(ApiToken);
+export default connect()(ApiToken);

@@ -2,20 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getType } from "typesafe-actions";
 import { Project } from "../models/project";
 import actions, { ProjectAction } from "./project-action";
 
-type ProjectState = Project[];
+export type ProjectState = Project[];
 
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
-    switch (action.type) {
-        case getType(actions.createProject): {
-            return [...state, action.payload];
-        }
-        default:
-            return state;
-    }
+    return actions.match(action, {
+        CREATE_PROJECT: (project) => [...state, project],
+        REMOVE_PROJECT: () => state,
+        default: () => state
+    });
 };
 
 export default projectsReducer;

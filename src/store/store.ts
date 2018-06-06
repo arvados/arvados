@@ -5,6 +5,7 @@
 import { createStore, applyMiddleware, compose, Middleware } from 'redux';
 import { default as rootReducer, RootState } from "./root-reducer";
 import { routerMiddleware } from "react-router-redux";
+import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 
 const composeEnhancers =
@@ -14,7 +15,8 @@ const composeEnhancers =
 
 export default function configureStore(initialState: RootState, history: History) {
     const middlewares: Middleware[] = [
-        routerMiddleware(history)
+        routerMiddleware(history),
+        thunkMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, initialState!, enhancer);

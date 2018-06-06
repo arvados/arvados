@@ -15,7 +15,7 @@ interface TreeProps<T> {
 class Tree<T> extends React.Component<TreeProps<T>, {}> {
     render() {
         return <List>
-            {this.props.items.map((it: T, idx: number) =>
+            {this.props.items && this.props.items.map((it: T, idx: number) =>
                 <ListItem key={`item/${idx}`} button>
                     {this.props.render(it)}
                 </ListItem>

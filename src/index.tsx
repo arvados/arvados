@@ -25,6 +25,7 @@ const store = configureStore({
         location: null
     },
     auth: {
+        user: undefined
     }
 }, history);
 

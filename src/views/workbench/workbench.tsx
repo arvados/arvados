@@ -9,7 +9,7 @@ import Drawer from '@material-ui/core/Drawer';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import { connect } from "react-redux";
+import { connect, DispatchProp } from "react-redux";
 import Tree from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { RootState } from "../../store/root-reducer";
@@ -23,6 +23,7 @@ import IconButton from "@material-ui/core/IconButton/IconButton";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import { AccountCircle } from "@material-ui/icons";
+import { AnyAction } from "redux";
 
 const drawerWidth = 240;
 
@@ -61,11 +62,9 @@ interface WorkbenchDataProps {
 }
 
 interface WorkbenchActionProps {
-    login?: () => void;
-    logout?: () => void;
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface WorkbenchState {
     anchorEl: any;
@@ -80,12 +79,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     login = () => {
-        this.props.login!();
+        this.props.dispatch(authActions.LOGIN() as AnyAction);
     };
 
     logout = () => {
         this.handleClose();
-        this.props.logout!();
+        this.props.dispatch(authActions.LOGOUT() as AnyAction);
     };
 
     handleOpenMenu = (event: React.MouseEvent<any>) => {
@@ -166,10 +165,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects
-    }), {
-        login: authActions.login,
-        logout: authActions.logout
-    }
+    })
 )(
     withStyles(styles)(Workbench)
 );

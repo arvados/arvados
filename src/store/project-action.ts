@@ -2,13 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ActionType, createStandardAction } from "typesafe-actions";
 import { Project } from "../models/project";
+import { default as unionize, ofType, UnionOf } from "unionize";
 
-const actions = {
-    createProject: createStandardAction('@@project/create')<Project>(),
-    removeProject: createStandardAction('@@project/remove')<string>()
-};
+const actions = unionize({
+    CREATE_PROJECT: ofType<Project>(),
+    REMOVE_PROJECT: ofType<string>()
+}, {
+    tag: 'type',
+    value: 'payload'
+});
 
-export type ProjectAction = ActionType<typeof actions>;
+export type ProjectAction = UnionOf<typeof actions>;
 export default actions;

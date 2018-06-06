@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from "axios";
-import { API_HOST, serverApi } from "../../common/server-api";
+import { API_HOST } from "../../common/server-api";
 
 const API_TOKEN_KEY = 'api_token';
 
