@@ -91,6 +91,14 @@ echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
 """,
                          driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['ex_customdata'])
 
+    def test_list_nodes_ignores_nodes_without_tags(self):
+        driver = self.new_driver(create_kwargs={"tag_arvados-class": "dynamic-compute"})
+        # Mock cloud node without tags
+        nodelist = [testutil.cloud_node_mock(1)]
+        self.driver_mock().list_nodes.return_value = nodelist
+        n = driver.list_nodes()
+        self.assertEqual([], n)
+
     def test_create_raises_but_actually_succeeded(self):
         arv_node = testutil.arvados_node_mock(1, hostname=None)
         driver = self.new_driver(create_kwargs={"tag_arvados-class": "dynamic-compute"})
