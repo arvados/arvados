@@ -35,9 +35,10 @@ function buildProjectTree(tree: any[], level = 0): Array<TreeItem<Project>> {
     const projects = tree.map((t, idx) => ({
         id: `l${level}i${idx}${t[0]}`,
         open: false,
+        active: false,
         data: {
             name: t[0],
-            icon: level === 0 ? <i className="icon-th"/> : <i className="fas fa-folder"/>,
+            icon: level === 0 ? <i className="fas fa-th"/> : <i className="fas fa-folder"/>,
             createdAt: '2018-05-05',
         },
         items: t.length > 1 ? buildProjectTree(t[1], level + 1) : []

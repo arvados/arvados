@@ -23,6 +23,16 @@ function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> 
     return item;
 }
 
+function resetTreeActivity<T>(tree: Array<TreeItem<T>>): boolean | undefined {
+    let item;
+    for (const leaf of tree) {
+        item = leaf.active === true
+            ? leaf.active = false
+            : resetTreeActivity(leaf.items ? leaf.items : []);
+    }
+    return item;
+}
+
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
     switch (action.type) {
         case getType(actions.createProject): {
@@ -31,9 +41,11 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
         case getType(actions.toggleProjectTreeItem): {
             const tree = _.cloneDeep(state);
             const itemId = action.payload;
+            resetTreeActivity(tree);
             const item = findTreeItem(tree, itemId);
             if (item) {
                 item.open = !item.open;
+                item.active = true;
             }
             return tree;
         }

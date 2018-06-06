@@ -23,7 +23,7 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 
 const drawerWidth = 240;
 
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'row' | 'treeContainer' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'active' | 'drawerPaper' | 'content' | 'row' | 'treeContainer' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -39,6 +39,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         zIndex: theme.zIndex.drawer + 1,
         backgroundColor: '#692498'
     },
+    active: {
+        color: '#4285F6',
+    },
     drawerPaper: {
         position: 'relative',
         width: drawerWidth,
@@ -51,14 +54,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     row: {
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     treeContainer: {
         position: 'absolute',        
         overflowX: 'visible',
         marginTop: '80px',
         minWidth: drawerWidth,
-        whiteSpace: 'nowrap'
+        whiteSpace: 'nowrap',
     },
     toolbar: theme.mixins.toolbar
 });
@@ -92,9 +95,9 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                     <div className={classes.treeContainer}>
                         <Tree items={projects}
                             toggleItem={this.props.toggleProjectTreeItem}
-                            render={(p: Project) => <span className={classes.row}>
-                                <div><ListItemIcon>{p.icon}</ListItemIcon></div>
-                                <div><ListItemText primary={p.name}/></div>
+                            render={(project: TreeItem<Project>) => <span className={classes.row}>
+                                <div><ListItemIcon className={project.active ? classes.active : ''}>{project.data.icon}</ListItemIcon></div>
+                                <div><ListItemText primary={<Typography className={project.active ? classes.active : ''}>{project.data.name}</Typography>} /></div>
                             </span>}
                             />
                     </div>
