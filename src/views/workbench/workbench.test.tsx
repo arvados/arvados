@@ -11,7 +11,7 @@ import createBrowserHistory from "history/createBrowserHistory";
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
-    const store = configureStore({ projects: [], router: { location: null } }, createBrowserHistory());
+    const store = configureStore({ projects: [], router: { location: null }, auth: {} }, createBrowserHistory());
     ReactDOM.render(<Provider store={store}><Workbench/></Provider>, div);
     ReactDOM.unmountComponentAtNode(div);
 });
