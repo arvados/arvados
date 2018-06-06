@@ -259,6 +259,57 @@ func (bal *balancerSuite) TestDedupDevices(c *check.C) {
 		shouldPull: slots{2}})
 }
 
+func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
+	bal.srvs[0].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[9].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
+	// block 0 belongs on servers 3 and e, which have different
+	// device IDs.
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{0}})
+	// block 1 belongs on servers 0 and 9, which both report
+	// having a replica, but the replicas are on the same device
+	// ID -- so we should pull to the third position (7).
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 2},
+		current:    slots{0, 1},
+		shouldPull: slots{2}})
+	// block 1 can be pulled to the doubly-mounted device, but the
+	// pull should only be done on the first of the two servers.
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 2},
+		current:    slots{2},
+		shouldPull: slots{0}})
+	// block 0 has one replica on a single device mounted on two
+	// servers (e,9 at positions 1,9). Trashing the replica on 9
+	// would lose the block.
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1, 9},
+		shouldPull: slots{0}})
+	// block 0 is overreplicated, but the second and third
+	// replicas are the same replica according to DeviceID
+	// (despite different Mtimes). Don't trash the third replica.
+	bal.try(c, tester{
+		known:   0,
+		desired: map[string]int{"default": 2},
+		current: slots{0, 1, 9}})
+	// block 0 is overreplicated; the third and fifth replicas are
+	// extra, but the fourth is another view of the second and
+	// shouldn't be trashed.
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 5, 9, 12},
+		shouldTrash: slots{5, 12}})
+}
+
 func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// For known blocks 0/1/2/3, server 9 is slot 9/1/14/0 in
 	// probe order. For these tests we give it two mounts, one

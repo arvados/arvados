@@ -576,11 +576,12 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			}
 		})
 
-		// Servers and mounts (with or without existing
+		// Servers/mounts/devices (with or without existing
 		// replicas) that are part of the best achievable
 		// layout for this storage class.
 		wantSrv := map[*KeepService]bool{}
 		wantMnt := map[*KeepMount]bool{}
+		wantDev := map[string]bool{}
 		// Positions (with existing replicas) that have been
 		// protected (via unsafeToDelete) to ensure we don't
 		// reduce replication below desired level when
@@ -592,6 +593,12 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// and returns true if all requirements are met.
 		trySlot := func(i int) bool {
 			slot := slots[i]
+			if wantDev[slot.mnt.DeviceID] {
+				// Already allocated a replica to this
+				// backend device, possibly on a
+				// different server.
+				return false
+			}
 			if len(protMnt) < desired && slot.repl != nil {
 				unsafeToDelete[slot.repl.Mtime] = true
 				protMnt[slot.mnt] = true
@@ -600,6 +607,9 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				slots[i].want = true
 				wantSrv[slot.mnt.KeepService] = true
 				wantMnt[slot.mnt] = true
+				if slot.mnt.DeviceID != "" {
+					wantDev[slot.mnt.DeviceID] = true
+				}
 			}
 			return len(protMnt) >= desired && len(wantMnt) >= desired
 		}
@@ -643,6 +653,16 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			cs := classState[class]
 			cs.unachievable = true
 			classState[class] = cs
+		}
+
+		// Avoid deleting wanted replicas from devices that
+		// are mounted on multiple servers -- even if they
+		// haven't already been added to unsafeToDelete
+		// because the servers report different Mtimes.
+		for _, slot := range slots {
+			if slot.repl != nil && wantDev[slot.mnt.DeviceID] {
+				unsafeToDelete[slot.repl.Mtime] = true
+			}
 		}
 	}
 
