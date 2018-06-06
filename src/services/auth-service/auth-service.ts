@@ -47,11 +47,11 @@ export default class AuthService {
 
     public login() {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        window.location.href = `${API_HOST}/login?return_to=${currentUrl}`;
+        window.location.assign(`${API_HOST}/login?return_to=${currentUrl}`);
     }
 
     public logout() {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        window.location.href = `${API_HOST}/logout?return_to=${currentUrl}`;
+        window.location.assign(`${API_HOST}/logout?return_to=${currentUrl}`);
     }
 }

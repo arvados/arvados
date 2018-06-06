@@ -12,7 +12,7 @@ import {
 } from "../../services/auth-service/auth-service";
 import { API_HOST } from "../../common/server-api";
 
-require('jest-localstorage-mock');
+import 'jest-localstorage-mock';
 
 describe('auth-reducer', () => {
     beforeAll(() => {
@@ -84,34 +84,18 @@ describe('auth-reducer', () => {
 
     it('should fire external url to login', () => {
         const initialState = undefined;
-
-        const location = {
-            href: 'http://localhost:3000',
-            protocol: 'http:',
-            host: 'localhost:3000'
-        };
-
-        global['window'] = { location };
-
+        window.location.assign = jest.fn();
         authReducer(initialState, actions.LOGIN());
-        expect(window.location.href).toBe(
-            `${API_HOST}/login?return_to=${location.protocol}//${location.host}/token`
+        expect(window.location.assign).toBeCalledWith(
+            `${API_HOST}/login?return_to=${window.location.protocol}//${window.location.host}/token`
         );
     });
 
     it('should fire external url to logout', () => {
         const initialState = undefined;
-
-        const location = {
-            href: 'http://localhost:3000',
-            protocol: 'http:',
-            host: 'localhost:3000'
-        };
-
-        global['window'] = { location };
-
+        window.location.assign = jest.fn();
         authReducer(initialState, actions.LOGOUT());
-        expect(window.location.href).toBe(
+        expect(window.location.assign).toBeCalledWith(
             `${API_HOST}/logout?return_to=${location.protocol}//${location.host}`
         );
     });
