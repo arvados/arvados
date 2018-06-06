@@ -514,12 +514,17 @@ export GOPATH
     set -e
     mkdir -p "$GOPATH/src/git.curoverse.com"
     rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
+    if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
+        for d in \
+            "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+                "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                "$GOPATH/src/git.curoverse.com/arvados.git"; do
+            [[ -d "$d" ]] && rmdir "$d"
+        done
+    fi
     for d in \
-        "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
-        "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
         "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
         "$GOPATH/src/git.curoverse.com/arvados.git"; do
-        [[ -d "$d" ]] && rmdir "$d"
         [[ -h "$d" ]] && rm "$d"
     done
     ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
