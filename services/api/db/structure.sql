@@ -277,7 +277,7 @@ CREATE TABLE container_requests (
     modified_by_user_uuid character varying(255),
     name character varying(255),
     description text,
-    properties text,
+    properties jsonb,
     state character varying(255),
     requesting_container_uuid character varying(255),
     container_uuid character varying(255),
@@ -682,7 +682,7 @@ CREATE TABLE links (
     link_class character varying(255),
     name character varying(255),
     head_uuid character varying(255),
-    properties text,
+    properties jsonb,
     updated_at timestamp without time zone NOT NULL
 );
 
@@ -853,9 +853,9 @@ CREATE TABLE nodes (
     ip_address character varying(255),
     first_ping_at timestamp without time zone,
     last_ping_at timestamp without time zone,
-    info text,
+    info jsonb,
     updated_at timestamp without time zone NOT NULL,
-    properties text,
+    properties jsonb,
     job_uuid character varying(255)
 );
 
@@ -1637,7 +1637,14 @@ CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, mo
 -- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text)));
+CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text)));
+
+
+--
+-- Name: container_requests_index_on_properties; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX container_requests_index_on_properties ON container_requests USING gin (properties);
 
 
 --
@@ -2614,6 +2621,13 @@ CREATE INDEX keep_services_search_index ON keep_services USING btree (uuid, owne
 
 
 --
+-- Name: links_index_on_properties; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX links_index_on_properties ON links USING gin (properties);
+
+
+--
 -- Name: links_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2632,6 +2646,20 @@ CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btr
 --
 
 CREATE INDEX logs_search_index ON logs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, object_uuid, event_type, object_owner_uuid);
+
+
+--
+-- Name: nodes_index_on_info; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX nodes_index_on_info ON nodes USING gin (info);
+
+
+--
+-- Name: nodes_index_on_properties; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX nodes_index_on_properties ON nodes USING gin (properties);
 
 
 --
@@ -3079,4 +3107,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180313180114');
 INSERT INTO schema_migrations (version) VALUES ('20180501182859');
 
 INSERT INTO schema_migrations (version) VALUES ('20180514135529');
+
+INSERT INTO schema_migrations (version) VALUES ('20180607175050');
 
