@@ -70,6 +70,7 @@ apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 cmd/arvados-client
+cmd/arvados-server
 doc
 lib/cli
 lib/cmd
@@ -891,6 +892,7 @@ do_install services/api apiserver
 declare -a gostuff
 gostuff=(
     cmd/arvados-client
+    cmd/arvados-server
     lib/cli
     lib/cmd
     lib/controller

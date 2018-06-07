@@ -12,6 +12,8 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -24,6 +26,14 @@ type HandlerFunc func(prog string, args []string, stdin io.Reader, stdout, stder
 
 func (f HandlerFunc) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return f(prog, args, stdin, stdout, stderr)
+}
+
+type Version string
+
+func (v Version) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
+	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, v, runtime.Version())
+	return 0
 }
 
 // Multi is a Handler that looks up its first argument in a map, and
