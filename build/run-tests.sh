@@ -73,6 +73,7 @@ cmd/arvados-client
 doc
 lib/cli
 lib/cmd
+lib/controller
 lib/crunchstat
 lib/dispatchcloud
 services/api
@@ -892,6 +893,7 @@ gostuff=(
     cmd/arvados-client
     lib/cli
     lib/cmd
+    lib/controller
     lib/crunchstat
     lib/dispatchcloud
     sdk/go/arvados

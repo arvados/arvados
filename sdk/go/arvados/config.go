@@ -90,6 +90,7 @@ func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
 }
 
 type SystemNode struct {
+	Controller  SystemServiceInstance `json:"arvados-controller"`
 	Health      SystemServiceInstance `json:"arvados-health"`
 	Keepproxy   SystemServiceInstance `json:"keepproxy"`
 	Keepstore   SystemServiceInstance `json:"keepstore"`
@@ -105,6 +106,7 @@ type SystemNode struct {
 func (sn *SystemNode) ServicePorts() map[string]string {
 	return map[string]string{
 		"arvados-api-server":   sn.RailsAPI.Listen,
+		"arvados-controller":   sn.Controller.Listen,
 		"arvados-node-manager": sn.Nodemanager.Listen,
 		"arvados-workbench":    sn.Workbench.Listen,
 		"arvados-ws":           sn.Websocket.Listen,
