@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 import datetime
+import ciso8601
 import time
 import unittest
 
@@ -812,8 +813,8 @@ class CollectionMethods(run_test_server.TestCaseWithServers):
     def test_get_trash_at(self):
         c = Collection()
         self.assertEqual(c.get_trash_at(), None)
-        c.save_new(trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111))
-        self.assertEqual(c.get_trash_at(), datetime.datetime(2111, 1, 1, 11, 11, 11, 111))
+        c.save_new(trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111111))
+        self.assertEqual(c.get_trash_at(), ciso8601.parse_datetime('2111-01-01T11:11:11.111111000Z'))
 
 
 class CollectionOpenModes(run_test_server.TestCaseWithServers):
