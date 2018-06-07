@@ -76,7 +76,6 @@ class ArvCwlRunner(object):
         self.workflow_eval_lock = threading.Condition(threading.RLock())
         self.final_output = None
         self.final_status = None
-        self.uploaded = {}
         self.num_retries = num_retries
         self.uuid = None
         self.stop_polling = threading.Event()
@@ -237,12 +236,6 @@ class ArvCwlRunner(object):
                 self.workflow_eval_lock.notifyAll()
         finally:
             self.stop_polling.set()
-
-    def get_uploaded(self):
-        return self.uploaded.copy()
-
-    def add_uploaded(self, src, pair):
-        self.uploaded[src] = pair
 
     def add_intermediate_output(self, uuid):
         if uuid:

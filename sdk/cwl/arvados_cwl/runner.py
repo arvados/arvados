@@ -122,10 +122,17 @@ def upload_dependencies(arvrunner, name, document_loader,
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
 
-    sc = scandeps(uri, scanobj,
+    sc_result = scandeps(uri, scanobj,
                   loadref_fields,
                   set(("$include", "$schemas", "location")),
                   loadref, urljoin=document_loader.fetcher.urljoin)
+
+    sc = []
+    def only_real(obj):
+        if obj.get("location", "").startswith("file:"):
+            sc.append(obj)
+
+    visit_class(sc_result, ("File", "Directory"), only_real)
 
     normalizeFilesDirs(sc)
 
