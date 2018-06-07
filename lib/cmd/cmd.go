@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -46,12 +47,15 @@ func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		m.Usage(stderr)
 		return 2
 	}
-	if cmd, ok := m[args[0]]; !ok {
-		fmt.Fprintf(stderr, "unrecognized command %q\n", args[0])
+	_, basename := filepath.Split(prog)
+	if cmd, ok := m[basename]; ok {
+		return cmd.RunCommand(prog, args, stdin, stdout, stderr)
+	} else if cmd, ok = m[args[0]]; ok {
+		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
+	} else {
+		fmt.Fprintf(stderr, "%s: unrecognized command %q\n", prog, args[0])
 		m.Usage(stderr)
 		return 2
-	} else {
-		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
 	}
 }
 
