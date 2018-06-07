@@ -391,16 +391,18 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 			types: []arvados.InstanceType{
 				{Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
 			},
-			err: dispatchcloud.ErrConstraintsNotSatisfiable,
+			err: dispatchcloud.ConstraintsNotSatisfiableError{},
 		},
 	} {
 		c.Logf("%#v", trial)
 		s.disp.cluster = &arvados.Cluster{InstanceTypes: trial.types}
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(err, Equals, trial.err)
+		c.Check(err == nil, Equals, trial.err == nil)
 		if trial.err == nil {
 			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--nice=10000"}, trial.sbatchArgs...))
+		} else {
+			c.Check(len(err.(dispatchcloud.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
 		}
 	}
 }
