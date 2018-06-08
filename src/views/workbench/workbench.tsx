@@ -10,20 +10,19 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { connect } from "react-redux";
-import Tree, { TreeItem } from "../../components/tree/tree";
-import { Project } from "../../models/project";
 import { RootState } from "../../store/root-reducer";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
 
 import { actions as projectActions } from "../../store/project-action";
-import ListItemText from "@material-ui/core/ListItemText/ListItemText";
-import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ProjectTree from '../../components/project-tree/project-tree';
+import { TreeItem } from '../../components/tree/tree';
+import { Project } from '../../models/project';
 
 const drawerWidth = 240;
 
-type CssRules = 'root' | 'appBar' | 'active' | 'drawerPaper' | 'content' | 'row' | 'treeContainer' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -39,9 +38,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         zIndex: theme.zIndex.drawer + 1,
         backgroundColor: '#692498'
     },
-    active: {
-        color: '#4285F6',
-    },
     drawerPaper: {
         position: 'relative',
         width: drawerWidth,
@@ -52,18 +48,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: theme.spacing.unit * 3,
         minWidth: 0,
     },
-    row: {
-        display: 'flex',
-        alignItems: 'center',
-        marginLeft: '20px', 
-    },
-    treeContainer: {
-        position: 'absolute',        
-        overflowX: 'visible',
-        marginTop: '80px',
-        minWidth: drawerWidth,
-        whiteSpace: 'nowrap',
-    },
     toolbar: theme.mixins.toolbar
 });
 
@@ -72,18 +56,15 @@ interface WorkbenchProps {
     toggleProjectTreeItem: (id: string) => any;
 }
 
-interface WorkbenchState {
-}
-
-class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, WorkbenchState> {
+class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>> {
     render() {
-        const {classes, projects} = this.props;
+        const { classes } = this.props;
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
                     <Toolbar>
                         <Typography variant="title" color="inherit" noWrap>
-                            Arvados<br/>Workbench 2
+                            Arvados<br />Workbench 2
                         </Typography>
                     </Toolbar>
                 </AppBar>
@@ -92,24 +73,18 @@ class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>, W
                     classes={{
                         paper: classes.drawerPaper,
                     }}>
-                    <div className={classes.toolbar}/>
-                    <div className={classes.treeContainer}>
-                        <Tree items={projects}
-                            toggleItem={this.props.toggleProjectTreeItem}
-                            render={(project: TreeItem<Project>) => <span className={classes.row}>
-                                <div><ListItemIcon className={project.active ? classes.active : ''}>{project.data.icon}</ListItemIcon></div>
-                                <div><ListItemText primary={<Typography className={project.active ? classes.active : ''}>{project.data.name}</Typography>} /></div>
-                            </span>}
-                            />
-                    </div>
+                    <div className={classes.toolbar} />
+                    <ProjectTree
+                        projects={this.props.projects}
+                        toggleProjectTreeItem={this.props.toggleProjectTreeItem} />
                 </Drawer>
                 <main className={classes.content}>
-                    <div className={classes.toolbar}/>
+                    <div className={classes.toolbar} />
                     <Switch>
                         <Route exact path="/">
                             <Typography noWrap>Hello new workbench!</Typography>
                         </Route>
-                        <Route path="/project/:name" component={ProjectList}/>
+                        <Route path="/project/:name" component={ProjectList} />
                     </Switch>
                 </main>
             </div>

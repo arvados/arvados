@@ -43,8 +43,6 @@ interface TreeProps<T> {
     level?: number;
 }
 
-
-
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
     renderArrow (items: Array<TreeItem<T>> | undefined, arrowClass: string, isOpen: boolean, arrowRotation: string){
         return items && items.length > 0 ? <i className={`${arrowClass} ${isOpen ? "fas fa-caret-down" : `fas fa-caret-down ${arrowRotation}`}`} /> : ''
