@@ -24,6 +24,7 @@ import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
+import MainAppBar from '../../components/main-app-bar/main-app-bar';
 
 const drawerWidth = 240;
 
@@ -154,12 +155,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
+                    <div className={classes.toolbar}/>
                     <Tree items={this.props.projects} render={(p: Project) =>
                         <Link to={`/project/${p.name}`}>{p.name}</Link>
                     }/>
                 </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
+                    <div className={classes.toolbar}/>
+                    <MainAppBar/>
                     <Switch>
                         <Route path="/project/:name" component={ProjectList}/>
                     </Switch>
