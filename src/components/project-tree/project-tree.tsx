@@ -32,7 +32,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
-interface WorkbenchProps {
+export interface WorkbenchProps {
     projects: Array<TreeItem<Project>>;
     toggleProjectTreeItem: (id: string) => any;
 }

@@ -16,9 +16,7 @@ import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
 
 import { actions as projectActions } from "../../store/project-action";
-import ProjectTree from '../../components/project-tree/project-tree';
-import { TreeItem } from '../../components/tree/tree';
-import { Project } from '../../models/project';
+import ProjectTree, { WorkbenchProps } from '../../components/project-tree/project-tree';
 
 const drawerWidth = 240;
 
@@ -50,11 +48,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     toolbar: theme.mixins.toolbar
 });
-
-interface WorkbenchProps {
-    projects: Array<TreeItem<Project>>;
-    toggleProjectTreeItem: (id: string) => any;
-}
 
 class Workbench extends React.Component<WorkbenchProps & WithStyles<CssRules>> {
     render() {
