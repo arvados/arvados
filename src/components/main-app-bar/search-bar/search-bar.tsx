@@ -56,13 +56,16 @@ const styles: StyleRulesCallback<CssRules> = theme => {
     const { unit } = theme.spacing
     return {
         container: {
-            position: 'relative'
+            position: 'relative',
+            width: '100%'
         },
         input: {
             border: 'none',
+            borderRadius: unit / 4,
+            boxSizing: 'border-box',
             padding: unit,
             paddingRight: unit * 4,
-            borderRadius: unit / 4
+            width: '100%',
         },
         button: {
             position: 'absolute',
