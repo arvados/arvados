@@ -396,7 +396,8 @@ CREATE TABLE groups (
     group_class character varying(255),
     trash_at timestamp without time zone,
     is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -1652,6 +1653,13 @@ CREATE INDEX container_requests_search_index ON container_requests USING btree (
 --
 
 CREATE INDEX containers_search_index ON containers USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, state, log, cwd, output_path, output, container_image, auth_uuid, locked_by_uuid);
+
+
+--
+-- Name: group_index_on_properties; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX group_index_on_properties ON groups USING gin (properties);
 
 
 --
@@ -3079,4 +3087,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180313180114');
 INSERT INTO schema_migrations (version) VALUES ('20180501182859');
 
 INSERT INTO schema_migrations (version) VALUES ('20180514135529');
+
+INSERT INTO schema_migrations (version) VALUES ('20180608123145');
 
