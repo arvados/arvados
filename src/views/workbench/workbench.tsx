@@ -55,6 +55,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     row: {
         display: 'flex',
         alignItems: 'center',
+        marginLeft: '20px', 
     },
     treeContainer: {
         position: 'absolute',        
