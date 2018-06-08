@@ -786,7 +786,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     arvargs.storage_classes = arvargs.storage_classes.strip().split(',')
     if len(arvargs.storage_classes) > 1:
         logger.error("Multiple storage classes are not supported currently.")
-        sys.exit(1)
+        return 1
 
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()
