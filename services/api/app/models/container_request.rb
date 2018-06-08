@@ -83,10 +83,10 @@ class ContainerRequest < ArvadosModel
     Committed => [Final]
   }
 
-  AttrsPermittedAlways = [:owner_uuid, :state, :name, :description]
+  AttrsPermittedAlways = [:owner_uuid, :state, :name, :description, :properties]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority, :properties,
+  :output_path, :priority,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
