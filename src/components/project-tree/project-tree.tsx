@@ -12,11 +12,14 @@ import Typography from '@material-ui/core/Typography';
 import Tree, { TreeItem } from '../tree/tree';
 import { Project } from '../../models/project';
 
-type CssRules = 'active' | 'row' | 'treeContainer';
+type CssRules = 'active' | 'listItemText' | 'row' | 'treeContainer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     active: {
         color: '#4285F6',
+    },
+    listItemText: {
+        padding: '0px',
     },
     row: {
         display: 'flex',
@@ -40,13 +43,14 @@ export interface WorkbenchProps {
 class ProjectTree<T> extends React.Component<WorkbenchProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const {classes, projects} = this.props;
+        const {active, listItemText, row, treeContainer} = classes;
         return (
-            <div className={classes.treeContainer}>
+            <div className={treeContainer}>
                 <Tree items={projects}
                     toggleItem={this.props.toggleProjectTreeItem}
-                    render={(project: TreeItem<Project>) => <span className={classes.row}>
-                        <div><ListItemIcon className={project.active ? classes.active : ''}>{project.data.icon}</ListItemIcon></div>
-                        <div><ListItemText primary={<Typography className={project.active ? classes.active : ''}>{project.data.name}</Typography>} /></div>
+                    render={(project: TreeItem<Project>) => <span className={row}>
+                        <ListItemIcon className={project.active ? active : ''}>{project.data.icon}</ListItemIcon>
+                        <ListItemText className={listItemText} primary={<Typography className={project.active ? active : ''}>{project.data.name}</Typography>} />
                     </span>} />
             </div>
         );
