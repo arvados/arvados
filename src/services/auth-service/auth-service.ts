@@ -2,13 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_HOST } from "../../common/server-api";
+import { API_HOST, serverApi } from "../../common/server-api";
 import { User } from "../../models/user";
+import { Dispatch } from "redux";
+import actions from "../../store/auth/auth-action";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
 export const USER_FIRST_NAME_KEY = 'userFirstName';
 export const USER_LAST_NAME_KEY = 'userLastName';
+
+export interface UserDetailsResponse {
+    email: string;
+    first_name: string;
+    last_name: string;
+    is_admin: boolean;
+}
 
 export default class AuthService {
 
@@ -54,4 +63,15 @@ export default class AuthService {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
         window.location.assign(`${API_HOST}/logout?return_to=${currentUrl}`);
     }
+
+    public getUserDetails = () => (dispatch: Dispatch) => {
+        dispatch(actions.USER_DETAILS_REQUEST());
+        serverApi
+            .get<UserDetailsResponse>('/users/current')
+            .then(resp => {
+                dispatch(actions.USER_DETAILS_SUCCESS(resp.data));
+            })
+            // .catch(err => {
+            // });
+    };
 }
