@@ -2,10 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import actions, { AuthAction, UserDetailsResponse } from "./auth-action";
+import actions, { AuthAction } from "./auth-action";
 import { User } from "../../models/user";
 import { authService } from "../../services/services";
 import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/server-api";
+import { UserDetailsResponse } from "../../services/auth-service/auth-service";
 
 export interface AuthState {
     user?: User;
@@ -22,6 +23,9 @@ const authReducer = (state: AuthState = {}, action: AuthAction) => {
         INIT: () => {
             const user = authService.getUser();
             const token = authService.getApiToken();
+            if (token) {
+                setServerApiAuthorizationHeader(token);
+            }
             return {user, apiToken: token};
         },
         LOGIN: () => {
