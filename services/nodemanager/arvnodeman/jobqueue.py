@@ -24,6 +24,26 @@ class ServerCalculator(object):
     that would best satisfy the jobs, choosing the cheapest size that
     satisfies each job, and ignoring jobs that can't be satisfied.
     """
+    class InvalidCloudSize(object):
+        """
+        Dummy CloudSizeWrapper-like class, to be used when a cloud node doesn't
+        have a recognizable arvados_node_size tag.
+        """
+        def __init__(self):
+            self.id = 'invalid'
+            self.name = 'invalid'
+            self.ram = 0
+            self.disk = 0
+            self.scratch = 0
+            self.cores = 0
+            self.bandwidth = 0
+            self.price = 9999999
+            self.preemptable = False
+            self.extra = {}
+
+        def meets_constraints(self, **kwargs):
+            return False
+
 
     class CloudSizeWrapper(object):
         def __init__(self, real_size, node_mem_scaling, **kwargs):
@@ -119,7 +139,7 @@ class ServerCalculator(object):
         for s in self.cloud_sizes:
             if s.id == sizeid:
                 return s
-        return None
+        return InvalidCloudSize()
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
