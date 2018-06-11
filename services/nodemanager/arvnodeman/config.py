@@ -154,5 +154,5 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         return matching_sizes
 
     def shutdown_windows(self):
-        return [int(n)
+        return [float(n)
                 for n in self.get('Cloud', 'shutdown_windows').split(',')]

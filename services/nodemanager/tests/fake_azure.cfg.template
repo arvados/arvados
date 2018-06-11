@@ -38,16 +38,16 @@ max_nodes = 8
 max_total_price = 0
 
 # Poll Azure nodes and Arvados for new information every N seconds.
-poll_time = 5
+poll_time = 0.5
 
 # Polls have exponential backoff when services fail to respond.
 # This is the longest time to wait between polls.
-max_poll_time = 300
+max_poll_time = 1
 
 # If Node Manager can't succesfully poll a service for this long,
 # it will never start or stop compute nodes, on the assumption that its
 # information is too outdated.
-poll_stale_after = 600
+poll_stale_after = 1
 
 # If Node Manager boots a cloud node, and it does not pair with an Arvados
 # node before this long, assume that there was a cloud bootstrap failure and
@@ -115,7 +115,7 @@ driver_class = {driver_class}
 # Azure bills by the minute, so it makes sense to agressively shut down idle
 # nodes.  Specify at least two windows.  You can add as many as you need beyond
 # that.
-shutdown_windows = 1, 999999
+shutdown_windows = 0.05, 999999
 
 [Cloud Credentials]
 # Use "azure account list" with the azure CLI to get these values.

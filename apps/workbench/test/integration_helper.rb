@@ -221,6 +221,8 @@ class ActionDispatch::IntegrationTest
     end
     if Capybara.current_driver == :selenium
       page.execute_script("window.localStorage.clear()")
+    else
+      page.driver.restart if defined?(page.driver.restart)
     end
     Capybara.reset_sessions!
   end

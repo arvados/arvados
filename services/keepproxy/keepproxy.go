@@ -487,6 +487,15 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	locatorIn := mux.Vars(req)["locator"]
 
+	// Check if the client specified storage classes
+	if req.Header.Get("X-Keep-Storage-Classes") != "" {
+		var scl []string
+		for _, sc := range strings.Split(req.Header.Get("X-Keep-Storage-Classes"), ",") {
+			scl = append(scl, strings.Trim(sc, " "))
+		}
+		kc.StorageClasses = scl
+	}
+
 	_, err = fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
 	if err != nil || expectLength < 0 {
 		err = LengthRequiredError

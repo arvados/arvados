@@ -234,7 +234,6 @@ def stubs(func):
             },
             'secret_mounts': {},
             'state': 'Committed',
-            'owner_uuid': None,
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
                         '--eval-timeout=20', '--thread-count=4',
@@ -760,7 +759,6 @@ class TestSubmit(unittest.TestCase):
                     'kind': 'json'
                 }
             }, 'state': 'Committed',
-            'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'expect_arvworkflow.cwl#main',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
@@ -879,7 +877,6 @@ class TestSubmit(unittest.TestCase):
                     'kind': 'json'
                 }
             }, 'state': 'Committed',
-            'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'a test workflow',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
@@ -1245,7 +1242,6 @@ class TestSubmit(unittest.TestCase):
             },
             "name": "secret_wf.cwl",
             "output_path": "/var/spool/cwl",
-            "owner_uuid": None,
             "priority": 500,
             "properties": {},
             "runtime_constraints": {
@@ -1265,6 +1261,31 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+    @stubs
+    def test_submit_request_uuid(self, stubs):
+        stubs.expect_container_request_uuid = "zzzzz-xvhdp-yyyyyyyyyyyyyyy"
+
+        stubs.api.container_requests().update().execute.return_value = {
+            "uuid": stubs.expect_container_request_uuid,
+            "container_uuid": "zzzzz-dz642-zzzzzzzzzzzzzzz",
+            "state": "Queued"
+        }
+
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-request-uuid=zzzzz-xvhdp-yyyyyyyyyyyyyyy",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        stubs.api.container_requests().update.assert_called_with(
+            uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
