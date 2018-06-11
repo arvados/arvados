@@ -356,6 +356,12 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def node_state(self, *states):
         return self.node_actor.in_state(*states).get(self.TIMEOUT)
 
+    def test_in_state_when_invalid_cloud_node_size(self):
+        self.make_mocks(1)
+        self.cloud_mock.size.id = 'invalid'
+        self.make_actor()
+        self.assertTrue(self.node_state('down'))
+
     def test_in_state_when_unpaired(self):
         self.make_actor()
         self.assertTrue(self.node_state('unpaired'))
