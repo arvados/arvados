@@ -29,6 +29,12 @@ creds = dummy_creds
 cores = 1
 price = 0.8
 
+[Size 1.preemptable]
+instance_type = 1
+preemptable = true
+cores = 1
+price = 0.8
+
 [Logging]
 file = /dev/null
 level = DEBUG
@@ -54,11 +60,24 @@ testlogger = INFO
     def test_list_sizes(self):
         config = self.load_config()
         sizes = config.node_sizes()
-        self.assertEqual(1, len(sizes))
+        self.assertEqual(2, len(sizes))
         size, kwargs = sizes[0]
         self.assertEqual('Small', size.name)
         self.assertEqual(1, kwargs['cores'])
         self.assertEqual(0.8, kwargs['price'])
+        # preemptable is False by default
+        self.assertEqual(False, kwargs['preemptable'])
+        # instance_type == arvados node size id by default
+        self.assertEqual(kwargs['id'], kwargs['instance_type'])
+        # Now retrieve the preemptable version
+        size, kwargs = sizes[1]
+        self.assertEqual('Small', size.name)
+        self.assertEqual('1.preemptable', kwargs['id'])
+        self.assertEqual(1, kwargs['cores'])
+        self.assertEqual(0.8, kwargs['price'])
+        self.assertEqual(True, kwargs['preemptable'])
+        self.assertEqual('1', kwargs['instance_type'])
+
 
     def test_default_node_mem_scaling(self):
         config = self.load_config()

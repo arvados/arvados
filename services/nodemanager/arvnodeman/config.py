@@ -72,6 +72,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
 
     def get_section(self, section, transformers={}, default_transformer=None):
         transformer_map = {
+            str: self.get,
             int: self.getint,
             bool: self.getboolean,
             float: self.getfloat,
@@ -148,6 +149,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         all_sizes = self.new_cloud_client().list_sizes()
         size_kwargs = {}
         section_types = {
+            'instance_type': str,
             'price': float,
             'preemptable': bool,
         }
