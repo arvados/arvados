@@ -7,7 +7,7 @@ import { Button, Grid, StyleRulesCallback, WithStyles } from '@material-ui/core'
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 
-interface Breadcrumb {
+export interface Breadcrumb {
     label: string
 }
 
