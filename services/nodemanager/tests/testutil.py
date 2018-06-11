@@ -78,7 +78,7 @@ class MockShutdownTimer(object):
 
 
 class MockSize(object):
-    def __init__(self, factor):
+    def __init__(self, factor, preemptable=False):
         self.id = 'z{}.test'.format(factor)
         self.name = 'test size '+self.id
         self.ram = 128 * factor
@@ -88,7 +88,7 @@ class MockSize(object):
         self.price = float(factor)
         self.extra = {}
         self.real = self
-        self.preemptable = False
+        self.preemptable = preemptable
 
     def __eq__(self, other):
         return self.id == other.id

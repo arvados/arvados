@@ -46,6 +46,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def arvados_create_kwargs(self, size, arvados_node):
         tags = {
+            # Set up tag indicating the Arvados assigned Cloud Size id.
+            'arvados_node_size': size.id,
             'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
             'arv-ping-url': self._make_ping_url(arvados_node)
         }
@@ -77,12 +79,6 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
 
     def _init_image(self, urn):
         return "image", self.get_image(urn)
-
-    def create_node(self, size, arvados_node):
-        # Set up tag indicating the Arvados assigned Cloud Size id.
-        self.create_kwargs.setdefault('ex_tags', {})
-        self.create_kwargs['ex_tags'].update({'arvados_node_size': size.id})
-        return super(ComputeNodeDriver, self).create_node(size, arvados_node)
 
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.
