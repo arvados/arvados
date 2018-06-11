@@ -9,7 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-We are going to install two Keepstore servers. By convention, we use the following hostname pattern:
+Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
+
+We recommend installing at least two Keepstore servers. By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
@@ -18,7 +20,7 @@ table(table table-bordered table-condensed).
 |keep1.@uuid_prefix@.your.domain|
 </div>
 
-Because the Keepstore servers are not directly accessible from the internet, these hostnames only need to resolve on the local network.
+Keepstore servers should not be directly accessible from the Internet (they are accessed via "keepproxy":install-keepproxy.html), so the hostnames only need to resolve on the private network.
 
 h2. Install Keepstore
 
@@ -39,130 +41,197 @@ On Red Hat-based systems:
 Verify that Keepstore is functional:
 
 <notextile>
-<pre><code>~$ <span class="userinput">keepstore -h</span>
-2016/07/01 14:06:21 keepstore starting, pid 32339
-Usage of ./keepstore:
-  -azure-max-get-bytes int
-    	Maximum bytes to request in a single GET request. If smaller than 67108864, use multiple concurrent range requests to retrieve a block. (default 67108864)
-  -azure-storage-account-key-file string
-    	File containing the account key used for subsequent --azure-storage-container-volume arguments.
-  -azure-storage-account-name string
-    	Azure storage account name used for subsequent --azure-storage-container-volume arguments.
-  -azure-storage-container-volume value
-    	Use the given container as a storage volume. Can be given multiple times. (default [])
-  -azure-storage-replication int
-    	Replication level to report to clients when data is stored in an Azure container. (default 3)
-  -blob-signature-ttl int
-    	Lifetime of blob permission signatures in seconds. Modifying the ttl will invalidate all existing signatures. See services/api/config/application.default.yml. (default 1209600)
-  -blob-signing-key-file string
-    	File containing the secret key for generating and verifying blob permission signatures.
-  -data-manager-token-file string
-    	File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
-  -enforce-permissions
-    	Enforce permission signatures on requests.
-  -listen string
-    	Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces. (default ":25107")
-  -max-buffers int
-    	Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released. (default 128)
-  -max-requests int
-    	Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)
-  -never-delete
-    	If true, nothing will be deleted. Warning: the relevant features in keepstore and data manager have not been extensively tested. You should leave this option alone unless you can afford to lose data. (default true)
-  -permission-key-file string
-    	Synonym for -blob-signing-key-file.
-  -permission-ttl int
-    	Synonym for -blob-signature-ttl.
-  -pid fuser -k pidfile
-    	Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so fuser -k pidfile is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.
-  -readonly
-    	Do not write, delete, or touch anything on the following volumes.
-  -s3-access-key-file string
-    	File containing the access key used for subsequent -s3-bucket-volume arguments.
-  -s3-bucket-volume value
-    	Use the given bucket as a storage volume. Can be given multiple times. (default [])
-  -s3-endpoint string
-    	Endpoint URL used for subsequent -s3-bucket-volume arguments. If blank, use the AWS endpoint corresponding to the -s3-region argument. For Google Storage, use "https://storage.googleapis.com".
-  -s3-region string
-    	AWS region used for subsequent -s3-bucket-volume arguments. Allowed values are ["ap-southeast-1" "eu-west-1" "us-gov-west-1" "sa-east-1" "cn-north-1" "ap-northeast-1" "ap-southeast-2" "eu-central-1" "us-east-1" "us-west-1" "us-west-2"].
-  -s3-replication int
-    	Replication level reported to clients for subsequent -s3-bucket-volume arguments. (default 2)
-  -s3-secret-key-file string
-    	File containing the secret key used for subsequent -s3-bucket-volume arguments.
-  -s3-unsafe-delete
-    	EXPERIMENTAL. Enable deletion (garbage collection), even though there are known race conditions that can cause data loss.
-  -serialize
-    	Serialize read and write operations on the following volumes.
-  -trash-check-interval duration
-    	Time duration at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day. (default 24h0m0s)
-  -trash-lifetime duration
-    	Time duration after a block is trashed during which it can be recovered using an /untrash request
-  -volume value
-    	Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named "keep" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead. (default [])
-  -volumes value
-    	Deprecated synonym for -volume. (default [])
+<pre><code>~$ <span class="userinput">keepstore --version</span>
 </code></pre>
 </notextile>
 
-h3. Prepare storage volumes
+h3. Create config file
 
-{% include 'notebox_begin' %}
-This section uses a local filesystem as a backing store. If you are using Azure Storage, follow the setup instructions on the "Azure Blob Storage":configure-azure-blob-storage.html page instead.
-{% include 'notebox_end' %}
+By default, keepstore will look for its configuration file at @/etc/arvados/keepstore/keepstore.yml@
 
-There are two ways to specify a set of local directories where keepstore should store its data files.
-# Implicitly, by creating a directory called @keep@ at the top level of each filesystem you intend to use, and omitting @-volume@ arguments.
-# Explicitly, by providing a @-volume@ argument for each directory.
+You can override the configuration file location using the @-config@ command line option to keepstore.
 
-For example, if there are filesystems mounted at @/mnt@ and @/mnt2@:
+The following is a sample configuration file:
 
-<notextile>
-<pre><code>~$ <span class="userinput">mkdir /mnt/keep /mnt2/keep</span>
-~$ <span class="userinput">keepstore</span>
-2015/05/08 13:44:26 keepstore starting, pid 2765
-2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
-2015/05/08 13:44:26 Using volume [UnixVolume /mnt2/keep] (writable=true)
-2015/05/08 13:44:26 listening at :25107
-</code></pre>
-</notextile>
+<pre>
+# Duration for which new permission signatures (returned in PUT
+# responses) will be valid.  This should be equal to the API
+# server's blob_signature_ttl configuration entry.
+BlobSignatureTTL: 336h0m0s
 
-Equivalently:
+# Local file containing the secret blob signing key (used to generate
+# and verify blob signatures).  The contents of the key file must be
+# identical to the API server's blob_signing_key configuration entry.
+BlobSigningKeyFile: ""
 
-<notextile>
-<pre><code>~$ <span class="userinput">mkdir /mnt/keep /mnt2/keep</span>
-~$ <span class="userinput">keepstore -volume=/mnt/keep -volume=/mnt2/keep</span>
-2015/05/08 13:44:26 keepstore starting, pid 2765
-2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
-2015/05/08 13:44:26 Using volume [UnixVolume /mnt2/keep] (writable=true)
-2015/05/08 13:44:26 listening at :25107
-</code></pre>
-</notextile>
+# Print extra debug logging
+Debug: false
 
-h3. Run keepstore as a supervised service
+# Maximum number of concurrent block deletion operations (per
+# volume) when emptying trash. Default is 1.
+EmptyTrashWorkers: 1
+
+# Enable trash and delete features. If false, trash lists will be
+# accepted but blocks will not be trashed or deleted.
+# Keepstore does not delete data on its own.  The keep-balance
+# service determines which blocks are candidates for deletion
+# and instructs the keepstore to move those blocks to the trash.
+EnableDelete: true
+
+# Local port to listen on. Can be 'address:port' or ':port', where
+# 'address' is a host IP address or name and 'port' is a port number
+# or name.
+Listen: :25107
+
+# Format of request/response and error logs: "json" or "text".
+LogFormat: json
+ManagementToken: ""
+
+# Maximum RAM to use for data buffers, given in multiples of block
+# size (64 MiB). When this limit is reached, HTTP requests requiring
+# buffers (like GET and PUT) will wait for buffer space to be
+# released.
+#
+# It should be set such that MaxBuffers * 64MiB + 10% fits
+# comfortably in memory. On a host dedicated to running keepstore,
+# divide total memory by 88MiB to suggest a suitable value. For example,
+# if grep MemTotal /proc/meminfo reports MemTotal: 7125440 kB,
+# compute 7125440 / (88 * 1024)=79 and configure MaxBuffers: 79
+MaxBuffers: 128
+
+# Maximum concurrent requests. When this limit is reached, new
+# requests will receive 503 responses. Note: this limit does not
+# include idle connections from clients using HTTP keepalive, so it
+# does not strictly limit the number of concurrent connections. If
+# omitted or zero, the default is 2 * MaxBuffers.
+MaxRequests: 0
+
+# Path to write PID file during startup. This file is kept open and
+# locked with LOCK_EX until keepstore exits, so "fuser -k pidfile" is
+# one way to shut down. Exit immediately if there is an error
+# opening, locking, or writing the PID file.
+PIDFile: ""
+
+# Maximum number of concurrent pull operations. Default is 1, i.e.,
+# pull lists are processed serially.
+PullWorkers: 0
+
+# Honor read requests only if a valid signature is provided.  This
+# should be true, except for development use and when migrating from
+# a very old version.
+RequireSignatures: true
+
+# Local file containing the Arvados API token used by keep-balance
+# or data manager.  Delete, trash, and index requests are honored
+# only for this token.
+SystemAuthTokenFile: ""
+
+# Path to server certificate file in X509 format. Enables TLS mode.
+#
+# Example: /var/lib/acme/live/keep0.example.com/fullchain
+TLSCertificateFile: ""
+
+# Path to server key file in X509 format. Enables TLS mode.
+#
+# The key pair is read from disk during startup, and whenever SIGHUP
+# is received.
+#
+# Example: /var/lib/acme/live/keep0.example.com/privkey
+TLSKeyFile: ""
+
+# How often to check for (and delete) trashed blocks whose
+# TrashLifetime has expired.
+TrashCheckInterval: 24h0m0s
+
+# Time duration after a block is trashed during which it can be
+# recovered using an /untrash request.
+TrashLifetime: 336h0m0s
+
+# Maximum number of concurrent trash operations. Default is 1, i.e.,
+# trash lists are processed serially.
+TrashWorkers: 1
+</pre>
+
+h3. Notes on storage management
+
+On its own, a keepstore server never deletes data.  The "keep-balance":install-keep-balance.html service service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash.
+
+When a block is newly written, it is protected from deletion for the duration in @BlobSignatureTTL@.  During this time, it cannot be trashed.
+
+If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".
+
+h3. Configure storage volumes
+
+Available storage volume types include cloud object storage and POSIX filesystems.
+
+If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions "S3 Object Storage":configure-s3-object-storage.html page instead and then "Run keepstore as a supervised service.":#keepstoreservice
+
+If you are using Azure Blob Storage, follow the setup instructions "Azure Blob Storage":configure-azure-blob-storage.html and then proceed to "Run keepstore as a supervised service.":#keepstoreservice
+
+To use a POSIX filesystem, including both local filesystems (ext4, xfs) and network file system such as GPFS or Lustre, continue reading this section.
+
+h4. Setting up filesystem mounts
+
+Volumes are configured in the @Volumes@ section of the configuration
+file.  You may provide multiple volumes for a single keepstore process
+to manage multiple disks.  Keepstore distributes blocks among volumes
+in round-robin fashion.
+
+<pre>
+Volumes:
+- # The volume type, indicates this is a filesystem directory.
+  Type: Directory
+
+  # The actual directory that will be used as the backing store.
+  Root: /mnt/local-disk
+
+  # How much replication is performed by the underlying filesystem.
+  # (for example, a network filesystem may provide its own replication).
+  # This is used to inform replication decisions at the Keep layer.
+  DirectoryReplication: 1
+
+  # If true, do not accept write or trash operations, only reads.
+  ReadOnly: false
+
+  # When true, read and write operations (for whole 64MiB blocks) on
+  # an individual volume will queued and issued sequentially.  When
+  # false, read and write operations will be issued concurrently as
+  # they come in.
+  #
+  # When using spinning disks where storage partitions map 1:1 to
+  # physical disks that are dedicated to Keepstore, enabling this may
+  # reduce contention and improve throughput by minimizing seeks.
+  #
+  # When using SSDs, RAID, or a parallel network filesystem, you probably
+  # don't want this.
+  Serialize: true
+
+  # Storage classes to associate with this volume.  See "Configuring
+  # storage classes" in the "Admin" section of doc.arvados.org.
+  StorageClasses: null
+
+  # Example of a second volume section
+- DirectoryReplication: 2
+  ReadOnly: false
+  Root: /mnt/network-disk
+  Serialize: false
+  StorageClasses: null
+  Type: Directory
+</pre>
+
+h3(#keepstoreservice). Run keepstore as a supervised service
 
 Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
 
-Install this script as the run script for the keepstore service, modifying it as directed below.
+Install this script as the run script @/etc/sv/keepstore/run@ for the keepstore service:
 
 <notextile>
 <pre><code>#!/bin/sh
 
 exec 2>&1
-GOGC=10 exec keepstore \
- -enforce-permissions=true \
- -blob-signing-key-file=<span class="userinput">/etc/keepstore/blob-signing.key</span> \
- -max-buffers=<span class="userinput">100</span> \
- -serialize=true \
- -never-delete=false \
- -volume=<span class="userinput">/mnt/keep</span> \
- -volume=<span class="userinput">/mnt2/keep</span>
+GOGC=10 exec keepstore -config /etc/arvados/keepstore/keepstore.yml
 </code></pre>
 </notextile>
-
-p(#max-buffers). The @-max-buffers@ argument limits keepstore's memory usage. It should be set such that @max-buffers * 64MiB + 10%@ fits comfortably in memory. On a host dedicated to running keepstore, divide total memory by 88MiB to suggest a suitable value. For example, if @grep MemTotal /proc/meminfo@ reports @MemTotal: 7125440 kB@, compute 7125440&divide;(88&times;1024)=79 and configure @-max-buffers=79@.
-
-If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server's":install-api-server.html configuration file, @/etc/arvados/api/application.yml@.
-
-The @-serialize=true@ (default: @false@) argument limits keepstore to one reader/writer process per storage partition. This avoids thrashing by allowing the storage device underneath the storage partition to do read/write operations sequentially. Enabling @-serialize@ can improve Keepstore performance if the storage partitions map 1:1 to physical disks that are dedicated to Keepstore, particularly so for mechanical disks. In some cloud environments, enabling @-serialize@ has also also proven to be beneficial for performance, but YMMV. If your storage partition(s) are backed by network or RAID storage that can handle many simultaneous reader/writer processes without thrashing, you probably do not want to set @-serialize@.
 
 h3. Set up additional servers
 
