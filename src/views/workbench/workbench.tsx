@@ -83,7 +83,7 @@ interface NavMenuItem extends MainAppBarMenuItem {
 interface WorkbenchState {
     anchorEl: any;
     breadcrumbs: NavBreadcrumb[];
-    searchQuery: string;
+    searchText: string;
     menuItems: {
         accountMenu: NavMenuItem[],
         helpMenu: NavMenuItem[],
@@ -94,7 +94,7 @@ interface WorkbenchState {
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
         anchorEl: null,
-        searchQuery: "",
+        searchText: "",
         breadcrumbs: [
             {
                 label: "Projects",
@@ -132,12 +132,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 
     mainAppBarActions: MainAppBarActionProps = {
-        actions: {
-            onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
-            onSearchQueryChange: searchQuery => this.setState({ searchQuery }),
-            onSearchQuerySubmit: () => this.props.dispatch(push(`/search?q=${this.state.searchQuery}`)),
-            onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
-        }
+        onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+        onSearch: searchText => {
+            this.setState({ searchText });
+            this.props.dispatch(push(`/search?q=${searchText}`));
+        },
+        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     }
 
     render() {
@@ -147,10 +147,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <div className={classes.appBar}>
                     <MainAppBar
                         breadcrumbs={this.state.breadcrumbs}
-                        searchQuery={this.state.searchQuery}
+                        searchText={this.state.searchText}
                         user={this.props.user}
                         menuItems={this.state.menuItems}
-                        actions={this.mainAppBarActions.actions}
+                        {...this.mainAppBarActions}
                     />
                 </div>
                 {user &&

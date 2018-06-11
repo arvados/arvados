@@ -15,13 +15,28 @@ interface SearchBarDataProps {
 }
 
 interface SearchBarActionProps {
-    onChange: (value: string) => any;
-    onSubmit: () => any;
+    onSearch: (value: string) => any;
+    debounce?: number;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>
 
+interface SearchBarState {
+    value: string;
+    prevValue: string;
+}
+
+const DEFAULT_SEARCH_DEBOUNCE = 1000;
+
 class SearchBar extends React.Component<SearchBarProps> {
+
+    state: SearchBarState = {
+        value: "",
+        prevValue: ""
+    }
+
+    timeout: NodeJS.Timer;
+
     render() {
         const { classes } = this.props
         return <Paper className={classes.container}>
@@ -30,7 +45,7 @@ class SearchBar extends React.Component<SearchBarProps> {
                     className={classes.input}
                     onChange={this.handleChange}
                     placeholder="Search"
-                    value={this.props.value}
+                    value={this.state.value}
                 />
                 <IconButton className={classes.button}>
                     <SearchIcon />
@@ -39,13 +54,26 @@ class SearchBar extends React.Component<SearchBarProps> {
         </Paper>
     }
 
+    componentWillReceiveProps(nextProps: SearchBarProps) {
+        if (nextProps.value !== this.props.value) {
+            this.setState({ value: nextProps.value });
+        }
+    }
+
     handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        this.props.onSubmit();
+        clearTimeout(this.timeout);
+        this.props.onSearch(this.state.value);
     }
 
     handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        this.props.onChange(event.target.value);
+        clearTimeout(this.timeout);
+        this.setState({ value: event.target.value });
+        this.timeout = setTimeout(
+            () => this.props.onSearch(this.state.value),
+            this.props.debounce || DEFAULT_SEARCH_DEBOUNCE
+        );
+
     }
 
 }

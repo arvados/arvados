@@ -13,7 +13,7 @@ import DropdownMenu from "./dropdown-menu/dropdown-menu"
 import { User } from "../../models/user";
 
 export interface MainAppBarMenuItem {
-    label: string
+    label: string;
 }
 
 export interface MainAppBarMenuItems {
@@ -23,19 +23,17 @@ export interface MainAppBarMenuItems {
 }
 
 interface MainAppBarDataProps {
-    searchQuery: string,
-    breadcrumbs: Breadcrumb[],
-    user?: User,
-    menuItems: MainAppBarMenuItems
+    searchText: string;
+    searchDebounce?: number;
+    breadcrumbs: Breadcrumb[];
+    user?: User;
+    menuItems: MainAppBarMenuItems;
 }
 
 export interface MainAppBarActionProps {
-    actions: {
-        onSearchQueryChange: (searchQuery: string) => void,
-        onSearchQuerySubmit: () => void,
-        onBreadcrumbClick: (breadcrumb: Breadcrumb) => void,
-        onMenuItemClick: (menuItem: MainAppBarMenuItem) => void
-    }
+    onSearch: (searchText: string) => void,
+    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void,
+    onMenuItemClick: (menuItem: MainAppBarMenuItem) => void
 }
 
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
@@ -43,7 +41,7 @@ type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<
 export class MainAppBar extends React.Component<MainAppBarProps> {
 
     render() {
-        const { classes, searchQuery, breadcrumbs } = this.props
+        const { classes, searchText, breadcrumbs, searchDebounce } = this.props
         return <AppBar className={classes.appBar} position="static">
             <Toolbar>
                 <Grid
@@ -58,9 +56,9 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
                     <Grid item xs={6} container alignItems="center">
                         {
                             this.props.user && <SearchBar
-                                value={searchQuery}
-                                onChange={this.props.actions.onSearchQueryChange}
-                                onSubmit={this.props.actions.onSearchQuerySubmit}
+                                value={searchText}
+                                onSearch={this.props.onSearch}
+                                debounce={searchDebounce}
                             />
                         }
                     </Grid>
@@ -73,14 +71,14 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
             </Toolbar>
             {
                 this.props.user && <Toolbar>
-                    <Breadcrumbs items={breadcrumbs} onClick={this.props.actions.onBreadcrumbClick} />
+                    <Breadcrumbs items={breadcrumbs} onClick={this.props.onBreadcrumbClick} />
                 </Toolbar>
             }
         </AppBar>
     }
 
     renderMenuForUser = () => {
-        const { user, actions } = this.props
+        const { user } = this.props
         return (
             <>
                 <IconButton color="inherit">
@@ -101,13 +99,13 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
 
     renderMenuForAnonymous = () => {
         return this.props.menuItems.anonymousMenu.map((item, index) => (
-            <Button color="inherit" onClick={() => this.props.actions.onMenuItemClick(item)}>{item.label}</Button>
+            <Button color="inherit" onClick={() => this.props.onMenuItemClick(item)}>{item.label}</Button>
         ))
     }
 
     renderMenuItems = (menuItems: MainAppBarMenuItem[]) => {
         return menuItems.map((item, index) => (
-            <MenuItem key={index} onClick={() => this.props.actions.onMenuItemClick(item)}>{item.label}</MenuItem>
+            <MenuItem key={index} onClick={() => this.props.onMenuItemClick(item)}>{item.label}</MenuItem>
         ))
     }
 
