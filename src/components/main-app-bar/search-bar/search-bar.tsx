@@ -3,12 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Paper, Input, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
-import NotificationsIcon from '@material-ui/icons/Notifications';
-import PersonIcon from '@material-ui/icons/Person';
-import HelpIcon from '@material-ui/icons/Help';
+import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
-import { AppBarProps } from '@material-ui/core/AppBar';
 
 interface SearchBarDataProps {
     value: string;
@@ -23,7 +19,6 @@ type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<Css
 
 interface SearchBarState {
     value: string;
-    prevValue: string;
 }
 
 const DEFAULT_SEARCH_DEBOUNCE = 1000;
@@ -31,8 +26,7 @@ const DEFAULT_SEARCH_DEBOUNCE = 1000;
 class SearchBar extends React.Component<SearchBarProps> {
 
     state: SearchBarState = {
-        value: "",
-        prevValue: ""
+        value: ""
     }
 
     timeout: NodeJS.Timer;
@@ -58,6 +52,10 @@ class SearchBar extends React.Component<SearchBarProps> {
         if (nextProps.value !== this.props.value) {
             this.setState({ value: nextProps.value });
         }
+    }
+
+    componentWillUnmount() {
+        clearTimeout(this.timeout);
     }
 
     handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
