@@ -24,7 +24,9 @@ import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
-import MainAppBar from '../../components/main-app-bar/main-app-bar';
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import { Breadcrumb } from '../../components/main-app-bar/breadcrumbs/breadcrumbs';
+import { push } from 'react-router-redux';
 
 const drawerWidth = 240;
 
@@ -42,7 +44,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     appBar: {
         zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: '#692498'
+        backgroundColor: '#692498',
+        position: "absolute",
+        width: "100%"
     },
     drawerPaper: {
         position: 'relative',
@@ -68,104 +72,104 @@ interface WorkbenchActionProps {
 
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
+interface NavBreadcrumb extends Breadcrumb {
+    path: string
+}
+
+interface NavMenuItem extends MainAppBarMenuItem {
+    action: () => void
+}
+
 interface WorkbenchState {
     anchorEl: any;
+    breadcrumbs: NavBreadcrumb[];
+    searchQuery: string;
+    menuItems: {
+        accountMenu: NavMenuItem[],
+        helpMenu: NavMenuItem[],
+        anonymousMenu: NavMenuItem[]
+    };
 }
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
-    constructor(props: WorkbenchProps) {
-        super(props);
-        this.state = {
-            anchorEl: null
+    state = {
+        anchorEl: null,
+        searchQuery: "",
+        breadcrumbs: [
+            {
+                label: "Projects",
+                path: "/projects"
+            }, {
+                label: "Project 1",
+                path: "/projects/project-1"
+            }
+        ],
+        menuItems: {
+            accountMenu: [
+                {
+                    label: "Logout",
+                    action: () => this.props.dispatch(authActions.LOGOUT())
+                },
+                {
+                    label: "My account",
+                    action: () => this.props.dispatch(push("/my-account"))
+                }
+            ],
+            helpMenu: [
+                {
+                    label: "Help",
+                    action: () => this.props.dispatch(push("/help"))
+                }
+            ],
+            anonymousMenu: [
+                {
+                    label: "Sign in",
+                    action: () => this.props.dispatch(authActions.LOGIN())
+                }
+            ]
         }
     }
 
-    login = () => {
-        this.props.dispatch(authActions.LOGIN());
-    };
 
-    logout = () => {
-        this.handleClose();
-        this.props.dispatch(authActions.LOGOUT());
-    };
-
-    handleOpenMenu = (event: React.MouseEvent<any>) => {
-        this.setState({
-            anchorEl: event.currentTarget
-        });
-    };
-
-    handleClose = () => {
-        this.setState({
-            anchorEl: null
-        });
-    };
+    mainAppBarActions: MainAppBarActionProps = {
+        actions: {
+            onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+            onSearchQueryChange: searchQuery => this.setState({ searchQuery }),
+            onSearchQuerySubmit: () => this.props.dispatch(push(`/search?q=${this.state.searchQuery}`)),
+            onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
+        }
+    }
 
     render() {
-        const {classes, user} = this.props;
+        const { classes, user } = this.props;
         return (
             <div className={classes.root}>
-                <AppBar position="absolute" className={classes.appBar}>
-                    <Toolbar>
-                        <Typography variant="title" color="inherit" noWrap style={{flexGrow: 1}}>
-                            <span>Arvados</span><br/><span style={{fontSize: 12}}>Workbench 2</span>
-                        </Typography>
-                        {user ?
-                            <Grid container style={{width: 'auto'}}>
-                                <Grid container style={{width: 'auto'}} alignItems='center'>
-                                    <Typography variant="title" color="inherit" noWrap>
-                                        {user.firstName} {user.lastName}
-                                    </Typography>
-                                </Grid>
-                                <Grid item>
-                                    <IconButton
-                                          aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
-                                          aria-haspopup="true"
-                                          onClick={this.handleOpenMenu}
-                                          color="inherit">
-                                      <AccountCircle/>
-                                    </IconButton>
-                                </Grid>
-                                <Menu
-                                  id="menu-appbar"
-                                  anchorEl={this.state.anchorEl}
-                                  anchorOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                  }}
-                                  transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                  }}
-                                  open={!!this.state.anchorEl}
-                                  onClose={this.handleClose}>
-                                  <MenuItem onClick={this.logout}>Logout</MenuItem>
-                                  <MenuItem onClick={this.handleClose}>My account</MenuItem>
-                                </Menu>
-                            </Grid>
-                            :
-                            <Button color="inherit" onClick={this.login}>Login</Button>
-                        }
-                    </Toolbar>
-                </AppBar>
+                <div className={classes.appBar}>
+                    <MainAppBar
+                        breadcrumbs={this.state.breadcrumbs}
+                        searchQuery={this.state.searchQuery}
+                        user={this.props.user}
+                        menuItems={this.state.menuItems}
+                        actions={this.mainAppBarActions.actions}
+                    />
+                </div>
                 {user &&
-                <Drawer
-                    variant="permanent"
-                    classes={{
-                        paper: classes.drawerPaper,
-                    }}>
-                    <div className={classes.toolbar}/>
-                    <div className={classes.toolbar}/>
-                    <Tree items={this.props.projects} render={(p: Project) =>
-                        <Link to={`/project/${p.name}`}>{p.name}</Link>
-                    }/>
-                </Drawer>}
+                    <Drawer
+                        variant="permanent"
+                        classes={{
+                            paper: classes.drawerPaper,
+                        }}>
+                        <div className={classes.toolbar} />
+                        <div className={classes.toolbar} />
+                        <Tree items={this.props.projects} render={(p: Project) =>
+                            <Link to={`/project/${p.name}`}>{p.name}</Link>
+                        } />
+                    </Drawer>}
                 <main className={classes.content}>
-                    <div className={classes.toolbar}/>
-                    <div className={classes.toolbar}/>
-                    <MainAppBar/>
+                    <div className={classes.toolbar} />
+                    <div className={classes.toolbar} />
                     <Switch>
-                        <Route path="/project/:name" component={ProjectList}/>
+                        <Route path="/project/:name" component={ProjectList} />
                     </Switch>
                 </main>
             </div>
