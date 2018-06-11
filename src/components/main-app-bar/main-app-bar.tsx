@@ -3,26 +3,47 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Paper, Input, StyleRulesCallback, withStyles, WithStyles } from "@material-ui/core";
+import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Paper, Input, StyleRulesCallback, withStyles, WithStyles, Button, MenuItem } from "@material-ui/core";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
-import SearchIcon from "@material-ui/icons/Search";
-import { AppBarProps } from "@material-ui/core/AppBar";
 import SearchBar from "./search-bar/search-bar";
-import Breadcrumbs from "./breadcrumbs/breadcrumbs"
+import Breadcrumbs, { Breadcrumb } from "./breadcrumbs/breadcrumbs"
+import DropdownMenu from "./dropdown-menu/dropdown-menu"
+import { User } from "../../models/user";
 
-type CssRules = "appBar"
+export interface MainAppBarMenuItem {
+    label: string
+}
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
-    appBar: {
-        backgroundColor: "#692498"
+export interface MainAppBarMenuItems {
+    accountMenu: MainAppBarMenuItem[];
+    helpMenu: MainAppBarMenuItem[];
+    anonymousMenu: MainAppBarMenuItem[];
+}
+
+interface MainAppBarDataProps {
+    searchQuery: string,
+    breadcrumbs: Breadcrumb[],
+    user?: User,
+    menuItems: MainAppBarMenuItems
+}
+
+export interface MainAppBarActionProps {
+    actions: {
+        onSearchQueryChange: (searchQuery: string) => void,
+        onSearchQuerySubmit: () => void,
+        onBreadcrumbClick: (breadcrumb: Breadcrumb) => void,
+        onMenuItemClick: (menuItem: MainAppBarMenuItem) => void
     }
-})
+}
 
-export class MainAppBar extends React.Component<WithStyles<CssRules>> {
+type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
+
+export class MainAppBar extends React.Component<MainAppBarProps> {
+
     render() {
-        const { classes } = this.props
+        const { classes, searchQuery, breadcrumbs } = this.props
         return <AppBar className={classes.appBar} position="static">
             <Toolbar>
                 <Grid
@@ -35,29 +56,74 @@ export class MainAppBar extends React.Component<WithStyles<CssRules>> {
                         </Typography>
                     </Grid>
                     <Grid item xs={6} container alignItems="center">
-                        <SearchBar value="" onChange={console.log} onSubmit={() => console.log("submit")} />
+                        {
+                            this.props.user && <SearchBar
+                                value={searchQuery}
+                                onChange={this.props.actions.onSearchQueryChange}
+                                onSubmit={this.props.actions.onSearchQuerySubmit}
+                            />
+                        }
                     </Grid>
                     <Grid item xs={3} container alignItems="center" justify="flex-end">
-                        <IconButton color="inherit">
-                            <Badge badgeContent={3} color="primary">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton>
-                        <IconButton color="inherit">
-                            <PersonIcon />
-                        </IconButton>
-                        <IconButton color="inherit">
-                            <HelpIcon />
-                        </IconButton>
+                        {
+                            this.props.user ? this.renderMenuForUser() : this.renderMenuForAnonymous()
+                        }
                     </Grid>
                 </Grid>
             </Toolbar>
-            <Toolbar>
-                <Breadcrumbs items={["Projects", "Project 1"]} />
-            </Toolbar>
+            {
+                this.props.user && <Toolbar>
+                    <Breadcrumbs items={breadcrumbs} onClick={this.props.actions.onBreadcrumbClick} />
+                </Toolbar>
+            }
         </AppBar>
     }
 
+    renderMenuForUser = () => {
+        const { user, actions } = this.props
+        return (
+            <>
+                <IconButton color="inherit">
+                    <Badge badgeContent={3} color="primary">
+                        <NotificationsIcon />
+                    </Badge>
+                </IconButton>
+                <DropdownMenu icon={PersonIcon} id="account-menu">
+                    <MenuItem>{this.getUserFullname()}</MenuItem>
+                    {this.renderMenuItems(this.props.menuItems.accountMenu)}
+                </DropdownMenu>
+                <DropdownMenu icon={HelpIcon} id="help-menu">
+                    {this.renderMenuItems(this.props.menuItems.helpMenu)}
+                </DropdownMenu>
+            </>
+        )
+    }
+
+    renderMenuForAnonymous = () => {
+        return this.props.menuItems.anonymousMenu.map((item, index) => (
+            <Button color="inherit" onClick={() => this.props.actions.onMenuItemClick(item)}>{item.label}</Button>
+        ))
+    }
+
+    renderMenuItems = (menuItems: MainAppBarMenuItem[]) => {
+        return menuItems.map((item, index) => (
+            <MenuItem key={index} onClick={() => this.props.actions.onMenuItemClick(item)}>{item.label}</MenuItem>
+        ))
+    }
+
+    getUserFullname = () => {
+        const { user } = this.props;
+        return user ? `${user.firstName} ${user.lastName}` : "";
+    }
+
 }
+
+type CssRules = "appBar"
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    appBar: {
+        backgroundColor: "#692498"
+    }
+})
 
 export default withStyles(styles)(MainAppBar)
