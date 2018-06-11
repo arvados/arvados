@@ -7,28 +7,48 @@ import { Button, Grid, StyleRulesCallback, WithStyles } from '@material-ui/core'
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 
-interface BreadcrumbsDataProps {
-    items: string[]
+interface Breadcrumb {
+    label: string
 }
 
-type BreadcrumbsProps = BreadcrumbsDataProps & WithStyles<CssRules>;
+interface BreadcrumbsDataProps {
+    items: Breadcrumb[]
+}
+
+interface BreadcrumbsActionProps {
+    onClick: (breadcrumb: Breadcrumb) => any
+}
+
+type BreadcrumbsProps = BreadcrumbsDataProps & BreadcrumbsActionProps & WithStyles<CssRules>;
 
 class Breadcrumbs extends React.Component<BreadcrumbsProps> {
 
     render() {
-        const { classes } = this.props;
+        const { classes, onClick } = this.props;
         return <Grid container alignItems="center">
             {
                 this.getInactiveItems().map((item, index) => (
                     <React.Fragment key={index}>
-                        <Button color="inherit" className={classes.inactiveItem}>{item}</Button>
+                        <Button
+                            color="inherit"
+                            className={classes.inactiveItem}
+                            onClick={() => onClick(item)}
+                        >
+                            {item.label}
+                        </Button>
                         <ChevronRightIcon color="inherit" className={classes.inactiveItem} />
                     </React.Fragment>
                 ))
             }
             {
                 this.getActiveItem().map((item, index) => (
-                    <Button key={index} color="inherit">{item}</Button>
+                    <Button
+                        color="inherit"
+                        key={index}
+                        onClick={() => onClick(item)}
+                    >
+                        {item.label}
+                    </Button>
                 ))
             }
         </Grid>
@@ -41,6 +61,7 @@ class Breadcrumbs extends React.Component<BreadcrumbsProps> {
     getActiveItem = () => {
         return this.props.items.slice(-1)
     }
+
 }
 
 type CssRules = 'inactiveItem'
