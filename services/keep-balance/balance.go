@@ -562,7 +562,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		have := 0
 		for _, slot := range slots {
 			if slot.repl != nil && bal.mountsByClass[class][slot.mnt] && !countedDev[slot.mnt.DeviceID] {
-				have++
+				have += slot.mnt.Replication
 				if slot.mnt.DeviceID != "" {
 					countedDev[slot.mnt.DeviceID] = true
 				}
@@ -713,14 +713,17 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	countedDev := map[string]bool{}
 	var have, want int
 	for _, slot := range slots {
-		if slot.want {
-			want++
+		if countedDev[slot.mnt.DeviceID] {
+			continue
 		}
-		if slot.repl != nil && !countedDev[slot.mnt.DeviceID] {
-			have++
-			if slot.mnt.DeviceID != "" {
-				countedDev[slot.mnt.DeviceID] = true
-			}
+		if slot.want {
+			want += slot.mnt.Replication
+		}
+		if slot.repl != nil {
+			have += slot.mnt.Replication
+		}
+		if slot.mnt.DeviceID != "" {
+			countedDev[slot.mnt.DeviceID] = true
 		}
 	}
 
@@ -862,7 +865,7 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 		case surplus > 0:
 			s.overrep.replicas += surplus
 			s.overrep.blocks++
-			s.overrep.bytes += bytes * int64(len(result.blk.Replicas)-result.want)
+			s.overrep.bytes += bytes * int64(result.have-result.want)
 		default:
 			s.justright.replicas += result.want
 			s.justright.blocks++
@@ -874,16 +877,16 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 			s.desired.blocks++
 			s.desired.bytes += bytes * int64(result.want)
 		}
-		if len(result.blk.Replicas) > 0 {
-			s.current.replicas += len(result.blk.Replicas)
+		if result.have > 0 {
+			s.current.replicas += result.have
 			s.current.blocks++
-			s.current.bytes += bytes * int64(len(result.blk.Replicas))
+			s.current.bytes += bytes * int64(result.have)
 		}
 
-		for len(s.replHistogram) <= len(result.blk.Replicas) {
+		for len(s.replHistogram) <= result.have {
 			s.replHistogram = append(s.replHistogram, 0)
 		}
-		s.replHistogram[len(result.blk.Replicas)]++
+		s.replHistogram[result.have]++
 	}
 	for _, srv := range bal.KeepServices {
 		s.pulls += len(srv.ChangeSet.Pulls)
