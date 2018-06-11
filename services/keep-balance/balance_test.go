@@ -92,6 +92,7 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 	}
 
 	bal.MinMtime = time.Now().UnixNano() - bal.signatureTTL*1e9
+	bal.cleanupMounts()
 }
 
 func (bal *balancerSuite) TestPerfect(c *check.C) {
@@ -247,18 +248,92 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 		shouldTrash: slots{2}})
 }
 
-func (bal *balancerSuite) TestDedupDevices(c *check.C) {
+func (bal *balancerSuite) TestCleanupMounts(c *check.C) {
 	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
 	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
 	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
 	c.Check(len(bal.srvs[3].mounts), check.Equals, 1)
-	bal.dedupDevices()
+	bal.cleanupMounts()
 	c.Check(len(bal.srvs[3].mounts), check.Equals, 0)
 	bal.try(c, tester{
 		known:      0,
 		desired:    map[string]int{"default": 2},
 		current:    slots{1},
 		shouldPull: slots{2}})
+}
+
+func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
+	bal.srvs[0].mounts[0].KeepMount.Replication = 2  // srv 0
+	bal.srvs[14].mounts[0].KeepMount.Replication = 2 // srv e
+	bal.cleanupMounts()
+	// block 0 rendezvous is 3,e,a -- so slot 1 has repl=2
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{0}})
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{0, 1},
+		shouldPull: nil})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2},
+		shouldTrash: slots{2}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 3},
+		current:     slots{0, 2, 3, 4},
+		shouldPull:  slots{1},
+		shouldTrash: slots{4}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 3},
+		current:     slots{0, 1, 2, 3, 4},
+		shouldTrash: slots{2, 3, 4}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 4},
+		current:     slots{0, 1, 2, 3, 4},
+		shouldTrash: slots{3, 4}})
+	// block 1 rendezvous is 0,9,7 -- so slot 0 has repl=2
+	bal.try(c, tester{
+		known:   1,
+		desired: map[string]int{"default": 2},
+		current: slots{0}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 3},
+		current:    slots{0},
+		shouldPull: slots{1}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{0},
+		shouldPull: slots{1, 2}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{2},
+		shouldPull: slots{0, 1}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{7},
+		shouldPull: slots{0, 1, 2}})
+	bal.try(c, tester{
+		known:       1,
+		desired:     map[string]int{"default": 2},
+		current:     slots{1, 2, 3, 4},
+		shouldPull:  slots{0},
+		shouldTrash: slots{3, 4}})
+	bal.try(c, tester{
+		known:       1,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2},
+		shouldTrash: slots{1, 2}})
 }
 
 func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
