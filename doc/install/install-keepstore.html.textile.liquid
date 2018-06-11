@@ -85,6 +85,9 @@ Listen: :25107
 
 # Format of request/response and error logs: "json" or "text".
 LogFormat: json
+
+# The secret key that must be provided by monitoring services
+# wishing to access the health check endpoint (/_health).
 ManagementToken: ""
 
 # Maximum RAM to use for data buffers, given in multiples of block
@@ -158,7 +161,7 @@ On its own, a keepstore server never deletes data.  The "keep-balance":install-k
 
 When a block is newly written, it is protected from deletion for the duration in @BlobSignatureTTL@.  During this time, it cannot be trashed.
 
-If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".
+If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".  A block which is in the trash has been moved out of the way and is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @TrashLifetime@.
 
 h3. Configure storage volumes
 
