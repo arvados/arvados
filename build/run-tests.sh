@@ -270,6 +270,8 @@ declare -a failures
 declare -A skip
 declare -A testargs
 skip[apps/workbench_profile]=1
+# nodemanager_integration tests are not reliable, see #12061.
+skip[services/nodemanager_integration]=1
 
 while [[ -n "$1" ]]
 do
@@ -512,13 +514,20 @@ export GOPATH
     set -e
     mkdir -p "$GOPATH/src/git.curoverse.com"
     rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
+    if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
+        for d in \
+            "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+                "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                "$GOPATH/src/git.curoverse.com/arvados.git"; do
+            [[ -d "$d" ]] && rmdir "$d"
+        done
+    fi
     for d in \
-        "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
-            "$GOPATH/src/git.curoverse.com/arvados.git"; do
-        [[ -d "$d" ]] && rmdir "$d"
+        "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
+        "$GOPATH/src/git.curoverse.com/arvados.git"; do
         [[ -h "$d" ]] && rm "$d"
     done
-    ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
     go get -v github.com/kardianos/govendor
     cd "$GOPATH/src/git.curoverse.com/arvados.git"
     if [[ -n "$short" ]]; then

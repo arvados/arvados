@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import requests
 import email.utils
 import time
@@ -7,17 +11,23 @@ import arvados
 import arvados.collection
 import urlparse
 import logging
+import calendar
 
 logger = logging.getLogger('arvados.cwl-runner')
 
 def my_formatdate(dt):
-    return email.utils.formatdate(timeval=time.mktime(dt.timetuple()),
+    return email.utils.formatdate(timeval=calendar.timegm(dt.timetuple()),
                                   localtime=False, usegmt=True)
 
 def my_parsedate(text):
-    parsed = email.utils.parsedate(text)
+    parsed = email.utils.parsedate_tz(text)
     if parsed:
-        return datetime.datetime(*parsed[:6])
+        if parsed[9]:
+            # Adjust to UTC
+            return datetime.datetime(*parsed[:6]) + datetime.timedelta(seconds=parsed[9])
+        else:
+            # TZ is zero or missing, assume UTC.
+            return datetime.datetime(*parsed[:6])
     else:
         return datetime.datetime(1970, 1, 1)
 

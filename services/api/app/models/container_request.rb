@@ -302,7 +302,6 @@ class ContainerRequest < ArvadosModel
   def update_priority
     return unless state_changed? || priority_changed? || container_uuid_changed?
     act_as_system_user do
-      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
       Container.
         where('uuid in (?)', [self.container_uuid_was, self.container_uuid].compact).
         map(&:update_priority!)
@@ -315,7 +314,6 @@ class ContainerRequest < ArvadosModel
 
   def set_requesting_container_uuid
     return if !current_api_client_authorization
-    ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
     if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
       self.requesting_container_uuid = c.uuid
       self.priority = c.priority>0 ? 1 : 0

@@ -37,7 +37,7 @@ setup(name='arvados-cwl-runner',
           'schema-salad==2.7.20180501211602',
           'typing >= 3.5.3',
           'ruamel.yaml >=0.13.11, <0.15',
-          'arvados-python-client>=1.1.4.20180507184611',
+          'arvados-python-client>=1.1.4.20180607143841',
           'setuptools',
           'ciso8601 >=1.0.6, <2.0.0'
       ],

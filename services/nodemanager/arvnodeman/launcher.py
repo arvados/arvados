@@ -80,7 +80,7 @@ def build_server_calculator(config):
                             config.getfloat('Daemon', 'node_mem_scaling'))
 
 def launch_pollers(config, server_calculator):
-    poll_time = config.getint('Daemon', 'poll_time')
+    poll_time = config.getfloat('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
     timer = TimedCallBackActor.start(poll_time / 10.0).tell_proxy()

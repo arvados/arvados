@@ -93,16 +93,18 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 }
 
 type StubPutHandler struct {
-	c              *C
-	expectPath     string
-	expectApiToken string
-	expectBody     string
-	handled        chan string
+	c                  *C
+	expectPath         string
+	expectApiToken     string
+	expectBody         string
+	expectStorageClass string
+	handled            chan string
 }
 
 func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
 	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectApiToken))
+	sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
@@ -148,11 +150,12 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
+		"hot",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, upload_status chan uploadStatus) {
-
+			kc.StorageClasses = []string{"hot"}
 			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
@@ -170,6 +173,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
+		"",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
@@ -265,6 +269,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -306,6 +311,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -354,6 +360,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 4)}
 
 	fh := FailHandler{
@@ -412,6 +419,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 1)}
 
 	fh := FailHandler{
@@ -989,6 +997,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -1027,6 +1036,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -1198,6 +1208,7 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 			Md5String("foo"),
 			"abc123",
 			"foo",
+			"",
 			make(chan string, 5)}}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
