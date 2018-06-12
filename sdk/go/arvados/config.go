@@ -49,10 +49,11 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 }
 
 type Cluster struct {
-	ClusterID       string `json:"-"`
-	ManagementToken string
-	SystemNodes     map[string]SystemNode
-	InstanceTypes   []InstanceType
+	ClusterID          string `json:"-"`
+	ManagementToken    string
+	SystemNodes        map[string]SystemNode
+	InstanceTypes      []InstanceType
+	HTTPRequestTimeout Duration
 }
 
 type InstanceType struct {

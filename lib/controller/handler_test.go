@@ -10,9 +10,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
 
@@ -54,6 +56,19 @@ func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 	c.Check(dd.BlobSignatureTTL > 0, check.Equals, true)
 	c.Check(len(dd.Resources), check.Not(check.Equals), 0)
 	c.Check(len(dd.Schemas), check.Not(check.Equals), 0)
+}
+
+func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
+	s.cluster.HTTPRequestTimeout = arvados.Duration(time.Nanosecond)
+	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
+	var jresp httpserver.ErrorResponse
+	err := json.Unmarshal(resp.Body.Bytes(), &jresp)
+	c.Check(err, check.IsNil)
+	c.Assert(len(jresp.Errors), check.Equals, 1)
+	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded`)
 }
 
 func (s *HandlerSuite) TestProxyWithoutToken(c *check.C) {

@@ -5,12 +5,14 @@
 package controller
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
@@ -44,7 +46,7 @@ func (h *Handler) setup() {
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	urlOut, err := findRailsAPI(h.Cluster, h.Node)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	urlOut = &url.URL{
@@ -68,14 +70,21 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	hdrOut.Set("X-Forwarded-For", xff)
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
+	ctx := reqIn.Context()
+	if timeout := h.Cluster.HTTPRequestTimeout; timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(timeout)))
+		defer cancel()
+	}
+
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
 		Header: hdrOut,
-	}).WithContext(reqIn.Context())
+	}).WithContext(ctx)
 	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	for k, v := range resp.Header {
