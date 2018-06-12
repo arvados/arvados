@@ -3,12 +3,31 @@
 # SPDX-License-Identifier: Apache-2.0
 
 APP_NAME?=arvados-workbench2
-#Get version from the latest tag plus timsetamp
+
+# GIT_TAG is the last tagged stable release (i.e. 1.2.0)
 GIT_TAG?=$(shell git describe --abbrev=0)
+
+# TS_GIT is the timestamp in the current directory (i.e. 1528815021).
+# Note that it will only change if files change.
 TS_GIT?=$(shell git log -n1 --first-parent "--format=format:%ct" .)
+
+# DATE_FROM_TS_GIT is the human(ish)-readable version of TS_GIT
+# 1528815021 -> 20180612145021
 DATE_FROM_TS_GIT?=$(shell date -ud @$(TS_GIT) +%Y%m%d%H%M%S)
-CI_VERSION?="$(GIT_TAG).$(DATE_FROM_TS_GIT)"	
+
+# NIGHTLY_VERSION uses all the above to produce X.Y.Z.timestamp
+# something in the lines of 1.2.0.20180612145021, this will be the package version
+NIGHTLY_VERSION?=$(GIT_TAG).$(DATE_FROM_TS_GIT)
+
+DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
+MAINTAINER=Ward Vandewege <wvandewege@veritasgenetics.com>
+
+# DEST_DIR will have the build package copied.
+DEST_DIR=/var/www/arvados-workbench2/workbench2/
+
 export WORKSPACE?=$(shell pwd)
+
+.PHONY: help clean* yarn-install test build packages packages-with-version 
 
 help:
 	@echo >&2
@@ -20,23 +39,63 @@ help:
 	@echo >&2 "  Project home            --> https://arvados.org"
 	@echo >&2
 	@false
-clean:
-	@rm -f $(WORKSPACE)/*.deb
-	@rm -f $(WORKSPACE)/*.rpm
-test:
-	@yarn install
-	@yarn test	--no-watchAll --bail --ci
 
-build: test
-	@yarn install
-	@yarn build
+clean-deb:
+	rm -f $(WORKSPACE)/*.deb
 
-package-version: build
-	# Build deb and rpm packages using fpm from dist passing the destination folder for the deploy to be /var/www/arvados-workbench2/
-	@fpm -s dir -t deb  -n "$(APP_NAME)" -v "$(VERSION)" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" --deb-no-default-config-files $(WORKSPACE)/build/=/var/www/arvados-workbench2/workbench2/
-	@fpm -s dir -t rpm  -n "$(APP_NAME)" -v "$(VERSION)" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" $(WORKSPACE)/build/=/var/www/arvados-workbench2/workbench2/
+clean-rpm:
+	rm -f $(WORKSPACE)/*.rpm
 
-package-no-version: build
-	# Build deb and rpm packages using fpm from dist passing the destination folder for the deploy to be /var/www/arvados-workbench2/
-	@fpm -s dir -t deb  -n "$(APP_NAME)" -v "$(CI_VERSION)" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" --deb-no-default-config-files $(WORKSPACE)/build/=/var/www/arvados-workbench2/workbench2/
-	@fpm -s dir -t rpm  -n "$(APP_NAME)" -v "$(CI_VERSION)" "--maintainer=Ward Vandewege <ward@curoverse.com>" --description "workbench2 Package" $(WORKSPACE)/build/=/var/www/arvados-workbench2/workbench2/
+clean-node-modules:
+	rm -rf $(WORKSPACE)/node_modules
+
+clean: clean-rpm clean-deb clean-node-modules
+
+yarn-install:
+	yarn install
+
+test: yarn-install
+	yarn test	--no-watchAll --bail --ci
+
+build: yarn-install test
+	yarn build
+
+# use FPM to create DEB and RPM with a version (usually triggered from CI to make a release)
+packages-with-version: build
+	fpm \
+	 -s dir \
+	 -t deb \
+	 -n "$(APP_NAME)" \
+	 -v "$(VERSION)" \
+	 --maintainer="$(MAINTAINER)" \
+	 --description="$(DESCRIPTION)" \
+	 --deb-no-default-config-files \
+	$(WORKSPACE)/build/=DEST_DIR
+	fpm \
+	 -s dir \
+	 -t rpm \
+	 -n "$(APP_NAME)" \
+	 -v "$(VERSION)" \
+	 --maintainer="$(MAINTAINER)" \
+	 --description="$(DESCRIPTION)" \
+	 $(WORKSPACE)/build/=DEST_DIR
+
+# use FPM to create DEB and RPM
+packages: build
+	fpm \
+	 -s dir \
+	 -t deb \
+	 -n "$(APP_NAME)" \
+	 -v "$(NIGHTLY_VERSION)" \
+	 --maintainer="$(MAINTAINER)" \
+	 --description="$(DESCRIPTION)" \
+	 --deb-no-default-config-files \
+	$(WORKSPACE)/build/=DEST_DIR
+	fpm \
+	 -s dir \
+	 -t rpm \
+	 -n "$(APP_NAME)" \
+	 -v "$(NIGHTLY_VERSION)" \
+	 --maintainer="$(MAINTAINER)" \
+	 --description="$(DESCRIPTION)" \
+	 $(WORKSPACE)/build/=DEST_DIR
