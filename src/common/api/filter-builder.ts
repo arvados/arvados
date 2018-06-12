@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export enum FilterField {
-    UUID = "uuid"
+    UUID = "uuid",
+    OWNER_UUID = "owner_uuid"
 }
 
 export default class FilterBuilder {

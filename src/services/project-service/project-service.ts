@@ -33,15 +33,15 @@ interface GroupsResponse {
 }
 
 export default class ProjectService {
-    public getProjectList = (parentUuid?: string) => (dispatch: Dispatch) => {
+    public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
         dispatch(actions.PROJECTS_REQUEST());
 
         const ub = new UrlBuilder('/groups');
         const fb = new FilterBuilder();
-        fb.addEqual(FilterField.UUID, parentUuid);
-        const url = ub.addParam('filter', fb.get()).get();
+        fb.addEqual(FilterField.OWNER_UUID, parentUuid);
+        const url = ub.addParam('filters', fb.get()).get();
 
-        serverApi.get<GroupsResponse>(url).then(groups => {
+        return serverApi.get<GroupsResponse>(url).then(groups => {
             const projects = groups.data.items.map(g => ({
                 name: g.name,
                 createdAt: g.created_at,
@@ -51,6 +51,7 @@ export default class ProjectService {
                 ownerUuid: g.owner_uuid
             } as Project));
             dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
+            return projects;
         });
     };
 }

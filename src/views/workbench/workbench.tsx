@@ -27,6 +27,7 @@ import projectActions from "../../store/project/project-action"
 import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
+import { projectService } from '../../services/services';
 
 const drawerWidth = 240;
 
@@ -103,6 +104,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         });
     };
 
+    toggleProjectTreeItem = (itemId: string) => {
+        this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+        });
+    };
+
     render() {
         const {classes, user} = this.props;
         return (
@@ -159,7 +166,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     <div className={classes.toolbar}/>
                     <ProjectTree
                         projects={this.props.projects}
-                        toggleProjectTreeItem={itemId => this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId))}/>
+                        toggleProjectTreeItem={this.toggleProjectTreeItem}/>
                 </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
