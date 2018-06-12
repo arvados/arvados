@@ -80,7 +80,7 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
         for an_error, is_cloud_error in errors:
             self.driver_mock().create_node.side_effect = an_error
             with self.assertRaises(an_error):
-                driver.create_node('1', 'id_1')
+                driver.create_node(testutil.MockSize(1), 'id_1')
             if is_cloud_error:
                 error_count += 1
             self.assertEqual(error_count, status.tracker.get('create_node_errors'))

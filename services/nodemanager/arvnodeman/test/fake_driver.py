@@ -43,13 +43,16 @@ class FakeDriver(NodeDriver):
         global all_nodes, create_calls
         create_calls += 1
         nodeid = "node%i" % create_calls
+        if ex_tags is None:
+            ex_tags = {}
+        ex_tags.update({'arvados_node_size': size.id})
         n = Node(nodeid, nodeid, NodeState.RUNNING, [], [], self, size=size, extra={"tags": ex_tags})
         all_nodes.append(n)
         if ex_customdata:
             ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0]
         if ex_userdata:
             ping_url = ex_userdata
-        if ex_metadata:
+        elif ex_metadata:
             ping_url = ex_metadata["arv-ping-url"]
         ping_url += "&instance_id=" + nodeid
         ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
@@ -161,7 +164,12 @@ class FakeAwsDriver(FakeDriver):
                                                       auth=auth,
                                                       ex_metadata=ex_metadata,
                                                       ex_userdata=ex_userdata)
-        n.extra = {"launch_time": time.strftime(ARVADOS_TIMEFMT, time.gmtime())[:-1]}
+        n.extra = {
+            "launch_time": time.strftime(ARVADOS_TIMEFMT, time.gmtime())[:-1],
+            "metadata" : {
+                "arvados_node_size": size.id
+            }
+        }
         return n
 
     def list_sizes(self, **kwargs):
@@ -187,7 +195,8 @@ class FakeGceDriver(FakeDriver):
                                                    ex_metadata=ex_metadata)
         n.extra = {
             "metadata": {
-                "items": [{"key": k, "value": v} for k,v in ex_metadata.iteritems()]
+                "items": [{"key": k, "value": v} for k,v in ex_metadata.iteritems()],
+                "arvados_node_size": size.id
             },
             "zone": "fake"
         }

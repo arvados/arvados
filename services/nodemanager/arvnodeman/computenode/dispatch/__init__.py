@@ -432,6 +432,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         reason for the decision.
         """
 
+        # If this node's size is invalid (because it has a stale arvados_node_size
+        # tag), return True so that it's properly shut down.
+        if self.cloud_node.size.id == 'invalid':
+            return (True, "node's size tag '%s' not recognizable" % (self.cloud_node.extra['arvados_node_size'],))
+
         # Collect states and then consult state transition table whether we
         # should shut down.  Possible states are:
         # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']

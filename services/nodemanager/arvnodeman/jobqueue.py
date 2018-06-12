@@ -24,6 +24,26 @@ class ServerCalculator(object):
     that would best satisfy the jobs, choosing the cheapest size that
     satisfies each job, and ignoring jobs that can't be satisfied.
     """
+    class InvalidCloudSize(object):
+        """
+        Dummy CloudSizeWrapper-like class, to be used when a cloud node doesn't
+        have a recognizable arvados_node_size tag.
+        """
+        def __init__(self):
+            self.id = 'invalid'
+            self.name = 'invalid'
+            self.ram = 0
+            self.disk = 0
+            self.scratch = 0
+            self.cores = 0
+            self.bandwidth = 0
+            self.price = 9999999
+            self.preemptable = False
+            self.extra = {}
+
+        def meets_constraints(self, **kwargs):
+            return False
+
 
     class CloudSizeWrapper(object):
         def __init__(self, real_size, node_mem_scaling, **kwargs):
@@ -38,7 +58,9 @@ class ServerCalculator(object):
                 self.disk = 0
             self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
+            self.preemptable = False
             for name, override in kwargs.iteritems():
+                if name == 'instance_type': continue
                 if not hasattr(self, name):
                     raise ValueError("unrecognized size field '%s'" % (name,))
                 setattr(self, name, override)
@@ -80,10 +102,12 @@ class ServerCalculator(object):
         wants = {'cores': want_value('min_cores_per_node'),
                  'ram': want_value('min_ram_mb_per_node'),
                  'scratch': want_value('min_scratch_mb_per_node')}
+        # EC2 node sizes are identified by id. GCE sizes are identified by name.
         for size in self.cloud_sizes:
             if (size.meets_constraints(**wants) and
-                (specified_size is None or size.id == specified_size)):
-                    return size
+                (specified_size is None or
+                    size.id == specified_size or size.name == specified_size)):
+                        return size
         return None
 
     def servers_for_queue(self, queue):
@@ -101,7 +125,7 @@ class ServerCalculator(object):
                     "Job's min_nodes constraint is greater than the configured "
                     "max_nodes (%d)" % self.max_nodes)
             elif (want_count*cloud_size.price <= self.max_price):
-                servers.extend([cloud_size.real] * want_count)
+                servers.extend([cloud_size] * want_count)
             else:
                 unsatisfiable_jobs[job['uuid']] = (
                     "Job's price (%d) is above system's max_price "
@@ -115,7 +139,7 @@ class ServerCalculator(object):
         for s in self.cloud_sizes:
             if s.id == sizeid:
                 return s
-        return None
+        return InvalidCloudSize()
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
