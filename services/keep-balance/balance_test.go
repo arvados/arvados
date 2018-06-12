@@ -287,7 +287,14 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 		desired:     map[string]int{"default": 3},
 		current:     slots{0, 2, 3, 4},
 		shouldPull:  slots{1},
-		shouldTrash: slots{4}})
+		shouldTrash: slots{4},
+		expectResult: balanceResult{
+			have: 4,
+			want: 3,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      3,
+				surplus:      1,
+				unachievable: false}}}})
 	bal.try(c, tester{
 		known:       0,
 		desired:     map[string]int{"default": 3},
@@ -297,12 +304,26 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 		known:       0,
 		desired:     map[string]int{"default": 4},
 		current:     slots{0, 1, 2, 3, 4},
-		shouldTrash: slots{3, 4}})
+		shouldTrash: slots{3, 4},
+		expectResult: balanceResult{
+			have: 6,
+			want: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      4,
+				surplus:      2,
+				unachievable: false}}}})
 	// block 1 rendezvous is 0,9,7 -- so slot 0 has repl=2
 	bal.try(c, tester{
 		known:   1,
 		desired: map[string]int{"default": 2},
-		current: slots{0}})
+		current: slots{0},
+		expectResult: balanceResult{
+			have: 2,
+			want: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      0,
+				unachievable: false}}}})
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 3},
@@ -322,7 +343,14 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 		known:      1,
 		desired:    map[string]int{"default": 4},
 		current:    slots{7},
-		shouldPull: slots{0, 1, 2}})
+		shouldPull: slots{0, 1, 2},
+		expectResult: balanceResult{
+			have: 1,
+			want: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      4,
+				surplus:      -3,
+				unachievable: false}}}})
 	bal.try(c, tester{
 		known:       1,
 		desired:     map[string]int{"default": 2},
@@ -333,7 +361,14 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 		known:       1,
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1, 2},
-		shouldTrash: slots{1, 2}})
+		shouldTrash: slots{1, 2},
+		expectResult: balanceResult{
+			have: 4,
+			want: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      2,
+				unachievable: false}}}})
 }
 
 func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
@@ -571,6 +606,9 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	}
 	if t.expectResult.have > 0 {
 		c.Check(result.have, check.Equals, t.expectResult.have)
+	}
+	if t.expectResult.want > 0 {
+		c.Check(result.want, check.Equals, t.expectResult.want)
 	}
 	if t.expectResult.classState != nil {
 		c.Check(result.classState, check.DeepEquals, t.expectResult.classState)
