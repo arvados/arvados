@@ -356,12 +356,6 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def node_state(self, *states):
         return self.node_actor.in_state(*states).get(self.TIMEOUT)
 
-    def test_in_state_when_invalid_cloud_node_size(self):
-        self.make_mocks(1)
-        self.cloud_mock.size.id = 'invalid'
-        self.make_actor()
-        self.assertTrue(self.node_state('down'))
-
     def test_in_state_when_unpaired(self):
         self.make_actor()
         self.assertTrue(self.node_state('unpaired'))
@@ -431,6 +425,15 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.shutdowns._set_state(True, 600)
         self.assertEquals(self.node_actor.shutdown_eligible().get(self.TIMEOUT),
                           (False, "node state is ('unpaired', 'open', 'boot wait', 'idle exceeded')"))
+
+    def test_shutdown_when_invalid_cloud_node_size(self):
+        self.make_mocks(1)
+        self.cloud_mock.size.id = 'invalid'
+        self.cloud_mock.extra['arvados_node_size'] = 'stale.type'
+        self.make_actor()
+        self.shutdowns._set_state(True, 600)
+        self.assertEquals((True, "node's size tag 'stale.type' not recognizable"),
+                          self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_shutdown_without_arvados_node(self):
         self.make_actor(start_time=0)

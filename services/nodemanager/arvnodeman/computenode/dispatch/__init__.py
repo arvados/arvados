@@ -370,11 +370,6 @@ class ComputeNodeMonitorActor(config.actor_class):
     def get_state(self):
         """Get node state, one of ['unpaired', 'busy', 'idle', 'down']."""
 
-        # If this node's size is invalid (because it has a stale arvados_node_size
-        # tag), return 'down' so that it's properly shut down.
-        if self.cloud_node.size.id == 'invalid':
-            return 'down'
-
         # If this node is not associated with an Arvados node, return
         # 'unpaired' if we're in the boot grace period, and 'down' if not,
         # so it isn't counted towards usable nodes.
@@ -436,6 +431,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         the node is candidate for shut down, and the second value is the
         reason for the decision.
         """
+
+        # If this node's size is invalid (because it has a stale arvados_node_size
+        # tag), return True so that it's properly shut down.
+        if self.cloud_node.size.id == 'invalid':
+            return (True, "node's size tag '%s' not recognizable" % (self.cloud_node.extra['arvados_node_size'],))
 
         # Collect states and then consult state transition table whether we
         # should shut down.  Possible states are:
