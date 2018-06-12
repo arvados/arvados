@@ -15,9 +15,10 @@ TS_GIT?=$(shell git log -n1 --first-parent "--format=format:%ct" .)
 # 1528815021 -> 20180612145021
 DATE_FROM_TS_GIT?=$(shell date -ud @$(TS_GIT) +%Y%m%d%H%M%S)
 
-# NIGHTLY_VERSION uses all the above to produce X.Y.Z.timestamp
+# VERSION uses all the above to produce X.Y.Z.timestamp
 # something in the lines of 1.2.0.20180612145021, this will be the package version
-NIGHTLY_VERSION?=$(GIT_TAG).$(DATE_FROM_TS_GIT)
+# it can be overwritten when invoking make as in make packages VERSION=1.2.0
+VERSION?=$(GIT_TAG).$(DATE_FROM_TS_GIT)
 
 # ITERATION is the package iteration, intended for manual change if anything non-code related
 # changes in the package. (i.e. example config files externally added
@@ -64,35 +65,13 @@ test: yarn-install
 build: yarn-install test
 	yarn build
 
-# use FPM to create DEB and RPM with a version (usually triggered from CI to make a release)
-packages-with-version: build
-	fpm \
-	 -s dir \
-	 -t deb \
-	 -n "$(APP_NAME)" \
-	 -v "$(VERSION)" \
-	 --iteration "$(ITERATION)" \
-	 --maintainer="$(MAINTAINER)" \
-	 --description="$(DESCRIPTION)" \
-	 --deb-no-default-config-files \
-	$(WORKSPACE)/build/=DEST_DIR
-	fpm \
-	 -s dir \
-	 -t rpm \
-	 -n "$(APP_NAME)" \
-	 -v "$(VERSION)" \
-	 --iteration "$(ITERATION)" \
-	 --maintainer="$(MAINTAINER)" \
-	 --description="$(DESCRIPTION)" \
-	 $(WORKSPACE)/build/=DEST_DIR
-
 # use FPM to create DEB and RPM
 packages: build
 	fpm \
 	 -s dir \
 	 -t deb \
 	 -n "$(APP_NAME)" \
-	 -v "$(NIGHTLY_VERSION)" \
+	 -v "$(VERSION)" \
 	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
@@ -102,7 +81,7 @@ packages: build
 	 -s dir \
 	 -t rpm \
 	 -n "$(APP_NAME)" \
-	 -v "$(NIGHTLY_VERSION)" \
+	 -v "$(VERSION)" \
 	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
