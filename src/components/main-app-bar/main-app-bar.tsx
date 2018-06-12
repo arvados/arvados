@@ -8,7 +8,7 @@ import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
 import SearchBar from "./search-bar/search-bar";
-import Breadcrumbs, { Breadcrumb } from "./breadcrumbs/breadcrumbs"
+import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs"
 import DropdownMenu from "./dropdown-menu/dropdown-menu"
 import { User } from "../../models/user";
 

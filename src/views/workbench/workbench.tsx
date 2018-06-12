@@ -25,7 +25,7 @@ import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
 import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
-import { Breadcrumb } from '../../components/main-app-bar/breadcrumbs/breadcrumbs';
+import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 
 const drawerWidth = 240;
