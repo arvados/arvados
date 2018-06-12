@@ -30,6 +30,12 @@ MAINTAINER=Ward Vandewege <wvandewege@veritasgenetics.com>
 # DEST_DIR will have the build package copied.
 DEST_DIR=/var/www/arvados-workbench2/workbench2/
 
+# Debian package file
+DEB_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION)_amd64.deb
+
+# redHat package file
+RPM_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION).x86_64.rpm
+
 export WORKSPACE?=$(shell pwd)
 
 .PHONY: help clean* yarn-install test build packages packages-with-version 
@@ -62,11 +68,10 @@ yarn-install:
 test: yarn-install
 	yarn test	--no-watchAll --bail --ci
 
-build: yarn-install test
+build: test
 	yarn build
 
-# use FPM to create DEB and RPM
-packages: build
+$(DEB_FILE): build
 	fpm \
 	 -s dir \
 	 -t deb \
@@ -76,7 +81,9 @@ packages: build
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
 	 --deb-no-default-config-files \
-	$(WORKSPACE)/build/=DEST_DIR
+	$(WORKSPACE)/build/=$(DEST_DIR)
+
+$(RPM_FILE): build
 	fpm \
 	 -s dir \
 	 -t rpm \
@@ -85,4 +92,7 @@ packages: build
 	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
-	 $(WORKSPACE)/build/=DEST_DIR
+	 $(WORKSPACE)/build/=$(DEST_DIR)
+
+# use FPM to create DEB and RPM
+packages: $(DEB_FILE) $(RPM_FILE)
