@@ -8,8 +8,8 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 const actions = unionize({
     CREATE_PROJECT: ofType<Project>(),
     REMOVE_PROJECT: ofType<string>(),
-    TOP_PROJECTS_REQUEST: {},
-    TOP_PROJECTS_SUCCESS: ofType<Project[]>()
+    PROJECTS_REQUEST: {},
+    PROJECTS_SUCCESS: ofType<Project[]>()
 }, {
     tag: 'type',
     value: 'payload'

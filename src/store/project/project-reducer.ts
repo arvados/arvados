@@ -11,8 +11,8 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
     return actions.match(action, {
         CREATE_PROJECT: project => [...state, project],
         REMOVE_PROJECT: () => state,
-        TOP_PROJECTS_REQUEST: () => state,
-        TOP_PROJECTS_SUCCESS: projects => {
+        PROJECTS_REQUEST: () => state,
+        PROJECTS_SUCCESS: projects => {
             return projects;
         },
         default: () => state

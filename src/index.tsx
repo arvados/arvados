@@ -29,7 +29,7 @@ const store = configureStore({
 }, history);
 
 store.dispatch(authActions.INIT());
-store.dispatch<any>(projectService.getTopProjectList());
+store.dispatch<any>(projectService.getProjectList());
 
 const App = () =>
     <Provider store={store}>

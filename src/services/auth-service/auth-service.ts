@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_HOST, serverApi } from "../../common/server-api";
+import { API_HOST, serverApi } from "../../common/api/server-api";
 import { User } from "../../models/user";
 import { Dispatch } from "redux";
 import actions from "../../store/auth/auth-action";

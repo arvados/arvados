@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { serverApi } from "../../common/server-api";
+import { serverApi } from "../../common/api/server-api";
 import { Dispatch } from "redux";
 import actions from "../../store/project/project-action";
 import { Project } from "../../models/project";
+import UrlBuilder from "../../common/api/url-builder";
+import FilterBuilder, { FilterField } from "../../common/api/filter-builder";
 
 interface GroupsResponse {
     offset: number;
@@ -31,9 +33,15 @@ interface GroupsResponse {
 }
 
 export default class ProjectService {
-    public getTopProjectList = () => (dispatch: Dispatch) => {
-        dispatch(actions.TOP_PROJECTS_REQUEST());
-        serverApi.get<GroupsResponse>('/groups').then(groups => {
+    public getProjectList = (parentUuid?: string) => (dispatch: Dispatch) => {
+        dispatch(actions.PROJECTS_REQUEST());
+
+        const ub = new UrlBuilder('/groups');
+        const fb = new FilterBuilder();
+        fb.addEqual(FilterField.UUID, parentUuid);
+        const url = ub.addParam('filter', fb.get()).get();
+
+        serverApi.get<GroupsResponse>(url).then(groups => {
             const projects = groups.data.items.map(g => ({
                 name: g.name,
                 createdAt: g.created_at,
@@ -42,7 +50,7 @@ export default class ProjectService {
                 uuid: g.uuid,
                 ownerUuid: g.owner_uuid
             } as Project));
-            dispatch(actions.TOP_PROJECTS_SUCCESS(projects));
+            dispatch(actions.PROJECTS_SUCCESS(projects));
         });
-    }
+    };
 }
