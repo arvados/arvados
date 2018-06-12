@@ -27,7 +27,7 @@ test:
 	@yarn install
 	@yarn test	--no-watchAll --bail --ci
 
-build:
+build: test
 	@yarn install
 	@yarn build
 
