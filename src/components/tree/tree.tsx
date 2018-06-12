@@ -5,23 +5,71 @@
 import * as React from 'react';
 import List from "@material-ui/core/List/List";
 import ListItem from "@material-ui/core/ListItem/ListItem";
+import { StyleRulesCallback, Theme, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
+import Collapse from "@material-ui/core/Collapse/Collapse";
 
-interface TreeProps<T> {
-    items: T[],
-    render: (item: T) => ReactElement<{}>
+type CssRules = 'list' | 'activeArrow' | 'arrow' | 'arrowRotate';
+
+const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+    list: {
+        paddingBottom: '3px',
+        paddingTop: '3px',
+    },
+    activeArrow: {
+        color: '#4285F6',
+        position: 'absolute',
+    },
+    arrow: {
+        position: 'absolute',
+    },
+    arrowRotate: {
+        transform: 'rotate(-90deg)',
+    }
+});
+
+export interface TreeItem<T> {
+    data: T;
+    id: string;
+    open: boolean;
+    active: boolean;
+    items?: Array<TreeItem<T>>;
 }
 
-class Tree<T> extends React.Component<TreeProps<T>, {}> {
-    render() {
-        return <List>
-            {this.props.items && this.props.items.map((it: T, idx: number) =>
-                <ListItem key={`item/${idx}`} button>
-                    {this.props.render(it)}
+interface TreeProps<T> {
+    items?: Array<TreeItem<T>>;
+    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
+    toggleItem: (id: string) => any;
+    level?: number;
+}
+
+class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
+    renderArrow (items: boolean, arrowClass: string, open: boolean){
+        return <i className={`${arrowClass} ${open ? "fas fa-caret-down" : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
+    }
+    render(): ReactElement<any> {
+        const level = this.props.level ? this.props.level : 0;
+        const {classes, render, toggleItem, items} = this.props;
+        const {list, arrow, activeArrow} = classes;
+        return <List component="div" className={list}>
+            {items && items.map((it: TreeItem<T>, idx: number) =>
+             <div key={`item/${level}/${idx}`}>
+                <ListItem button onClick={() => toggleItem(it.id)} className={list} style={{paddingLeft: (level + 1) * 20}}>
+                    {this.renderArrow(true, it.active ? activeArrow : arrow, it.open)}
+                    {render(it, level)}
                 </ListItem>
-            )}
+                {it.items && it.items.length > 0 &&
+                <Collapse in={it.open} timeout="auto" unmountOnExit>
+                    <StyledTree
+                        items={it.items}
+                        render={render}
+                        toggleItem={toggleItem}
+                        level={level + 1}/>
+                </Collapse>}
+             </div>)}
         </List>
     }
 }
 
-export default Tree;
+const StyledTree = withStyles(styles)(Tree);
+export default StyledTree

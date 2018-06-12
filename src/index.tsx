@@ -17,6 +17,7 @@ import authActions from "./store/auth/auth-action";
 import { projectService } from "./services/services";
 
 const history = createBrowserHistory();
+
 const store = configureStore({
     projects: [
     ],
@@ -29,7 +30,7 @@ const store = configureStore({
 }, history);
 
 store.dispatch(authActions.INIT());
-store.dispatch<any>(projectService.getTopProjectList());
+store.dispatch<any>(projectService.getProjectList());
 
 const App = () =>
     <Provider store={store}>

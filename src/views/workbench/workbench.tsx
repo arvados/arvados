@@ -10,8 +10,6 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
-import Tree from "../../components/tree/tree";
-import { Project } from "../../models/project";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
@@ -24,6 +22,12 @@ import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
+import projectActions from "../../store/project/project-action"
+
+import ProjectTree from '../../components/project-tree/project-tree';
+import { TreeItem } from "../../components/tree/tree";
+import { Project } from "../../models/project";
+import { projectService } from '../../services/services';
 
 const drawerWidth = 240;
 
@@ -58,7 +62,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 });
 
 interface WorkbenchDataProps {
-    projects: Project[];
+    projects: Array<TreeItem<Project>>;
     user?: User;
 }
 
@@ -97,6 +101,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     handleClose = () => {
         this.setState({
             anchorEl: null
+        });
+    };
+
+    toggleProjectTreeItem = (itemId: string) => {
+        this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         });
     };
 
@@ -154,9 +164,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-                    <Tree items={this.props.projects} render={(p: Project) =>
-                        <Link to={`/project/${p.name}`}>{p.name}</Link>
-                    }/>
+                    <ProjectTree
+                        projects={this.props.projects}
+                        toggleProjectTreeItem={this.toggleProjectTreeItem}/>
                 </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
