@@ -19,15 +19,16 @@ type contextKey struct {
 
 var requestTimeContextKey = contextKey{"requestTime"}
 
-var Logger logrus.FieldLogger = logrus.StandardLogger()
-
 // LogRequests wraps an http.Handler, logging each request and
-// response via logrus.
-func LogRequests(h http.Handler) http.Handler {
+// response via logger.
+func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
 	return http.HandlerFunc(func(wrapped http.ResponseWriter, req *http.Request) {
 		w := &responseTimer{ResponseWriter: WrapResponseWriter(wrapped)}
 		req = req.WithContext(context.WithValue(req.Context(), &requestTimeContextKey, time.Now()))
-		lgr := Logger.WithFields(logrus.Fields{
+		lgr := logger.WithFields(logrus.Fields{
 			"RequestID":       req.Header.Get("X-Request-Id"),
 			"remoteAddr":      req.RemoteAddr,
 			"reqForwardedFor": req.Header.Get("X-Forwarded-For"),

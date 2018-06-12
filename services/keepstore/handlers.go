@@ -92,7 +92,7 @@ func MakeRESTRouter() http.Handler {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", theConfig.metrics.Instrument(
-		httpserver.AddRequestIDs(httpserver.LogRequests(rtr.limiter))))
+		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter))))
 	mux.HandleFunc("/metrics.json", theConfig.metrics.exportJSON)
 	mux.Handle("/metrics", theConfig.metrics.exportProm)
 

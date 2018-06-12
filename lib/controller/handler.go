@@ -12,14 +12,12 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 type Handler struct {
 	Cluster *arvados.Cluster
 
 	setupOnce    sync.Once
-	mux          http.ServeMux
 	handlerStack http.Handler
 	proxyClient  *arvados.Client
 }
@@ -30,12 +28,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) setup() {
-	h.mux.Handle("/_health/", &health.Handler{
+	mux := http.NewServeMux()
+	mux.Handle("/_health/", &health.Handler{
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
 	})
-	h.mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
-	h.handlerStack = httpserver.LogRequests(&h.mux)
+	mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
+	h.handlerStack = mux
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, incomingReq *http.Request) {

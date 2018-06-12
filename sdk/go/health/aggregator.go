@@ -87,7 +87,7 @@ type ClusterHealthResponse struct {
 	// exposes problems that can't be expressed in Checks, like
 	// "service S is needed, but isn't configured to run
 	// anywhere."
-	Services map[string]ServiceHealth `json:"services"`
+	Services map[arvados.ServiceName]ServiceHealth `json:"services"`
 }
 
 type CheckResult struct {
@@ -108,7 +108,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 	resp := ClusterHealthResponse{
 		Health:   "OK",
 		Checks:   make(map[string]CheckResult),
-		Services: make(map[string]ServiceHealth),
+		Services: make(map[arvados.ServiceName]ServiceHealth),
 	}
 
 	mtx := sync.Mutex{}
@@ -128,7 +128,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 			}
 
 			wg.Add(1)
-			go func(node, svc, addr string) {
+			go func(node string, svc arvados.ServiceName, addr string) {
 				defer wg.Done()
 				var result CheckResult
 				url, err := agg.pingURL(node, addr)
@@ -143,7 +143,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 
 				mtx.Lock()
 				defer mtx.Unlock()
-				resp.Checks[svc+"+"+url] = result
+				resp.Checks[fmt.Sprintf("%s+%s", svc, url)] = result
 				if result.Health == "OK" {
 					h := resp.Services[svc]
 					h.N++

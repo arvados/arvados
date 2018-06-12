@@ -101,18 +101,31 @@ type SystemNode struct {
 	Workbench   SystemServiceInstance `json:"arvados-workbench"`
 }
 
+type ServiceName string
+
+const (
+	ServiceNameRailsAPI    ServiceName = "arvados-api-server"
+	ServiceNameController  ServiceName = "arvados-controller"
+	ServiceNameNodemanager ServiceName = "arvados-node-manager"
+	ServiceNameWorkbench   ServiceName = "arvados-workbench"
+	ServiceNameWebsocket   ServiceName = "arvados-ws"
+	ServiceNameKeepweb     ServiceName = "keep-web"
+	ServiceNameKeepproxy   ServiceName = "keepproxy"
+	ServiceNameKeepstore   ServiceName = "keepstore"
+)
+
 // ServicePorts returns the configured listening address (or "" if
 // disabled) for each service on the node.
-func (sn *SystemNode) ServicePorts() map[string]string {
-	return map[string]string{
-		"arvados-api-server":   sn.RailsAPI.Listen,
-		"arvados-controller":   sn.Controller.Listen,
-		"arvados-node-manager": sn.Nodemanager.Listen,
-		"arvados-workbench":    sn.Workbench.Listen,
-		"arvados-ws":           sn.Websocket.Listen,
-		"keep-web":             sn.Keepweb.Listen,
-		"keepproxy":            sn.Keepproxy.Listen,
-		"keepstore":            sn.Keepstore.Listen,
+func (sn *SystemNode) ServicePorts() map[ServiceName]string {
+	return map[ServiceName]string{
+		ServiceNameRailsAPI:    sn.RailsAPI.Listen,
+		ServiceNameController:  sn.Controller.Listen,
+		ServiceNameNodemanager: sn.Nodemanager.Listen,
+		ServiceNameWorkbench:   sn.Workbench.Listen,
+		ServiceNameWebsocket:   sn.Websocket.Listen,
+		ServiceNameKeepweb:     sn.Keepweb.Listen,
+		ServiceNameKeepproxy:   sn.Keepproxy.Listen,
+		ServiceNameKeepstore:   sn.Keepstore.Listen,
 	}
 }
 
