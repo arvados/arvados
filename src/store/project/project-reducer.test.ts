@@ -34,6 +34,19 @@ describe('project-reducer', () => {
 
         const projects = [project, project];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({projects, parentItemId: undefined}));
-        expect(state).toEqual(projects);
+        expect(state).toEqual([{
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project
+            }, {
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project
+            }
+        ]);
     });
 });
