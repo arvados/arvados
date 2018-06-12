@@ -19,6 +19,10 @@ DATE_FROM_TS_GIT?=$(shell date -ud @$(TS_GIT) +%Y%m%d%H%M%S)
 # something in the lines of 1.2.0.20180612145021, this will be the package version
 NIGHTLY_VERSION?=$(GIT_TAG).$(DATE_FROM_TS_GIT)
 
+# ITERATION is the package iteration, intended for manual change if anything non-code related
+# changes in the package. (i.e. example config files externally added
+ITERATION?=1
+
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
 MAINTAINER=Ward Vandewege <wvandewege@veritasgenetics.com>
 
@@ -67,6 +71,7 @@ packages-with-version: build
 	 -t deb \
 	 -n "$(APP_NAME)" \
 	 -v "$(VERSION)" \
+	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
 	 --deb-no-default-config-files \
@@ -76,6 +81,7 @@ packages-with-version: build
 	 -t rpm \
 	 -n "$(APP_NAME)" \
 	 -v "$(VERSION)" \
+	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
 	 $(WORKSPACE)/build/=DEST_DIR
@@ -87,6 +93,7 @@ packages: build
 	 -t deb \
 	 -n "$(APP_NAME)" \
 	 -v "$(NIGHTLY_VERSION)" \
+	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
 	 --deb-no-default-config-files \
@@ -96,6 +103,7 @@ packages: build
 	 -t rpm \
 	 -n "$(APP_NAME)" \
 	 -v "$(NIGHTLY_VERSION)" \
+	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
 	 $(WORKSPACE)/build/=DEST_DIR
