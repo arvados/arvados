@@ -25,6 +25,9 @@ import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
 
+import { actions as projectActions } from "../../store/project-action";
+import ProjectTree, { WorkbenchProps } from '../../components/project-tree/project-tree';
+
 const drawerWidth = 240;
 
 type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'toolbar';
@@ -154,9 +157,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-                    <Tree items={this.props.projects} render={(p: Project) =>
-                        <Link to={`/project/${p.name}`}>{p.name}</Link>
-                    }/>
+		            <ProjectTree
+                        projects={this.props.projects}
+                        toggleProjectTreeItem={this.props.toggleProjectTreeItem}/>
                 </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
@@ -173,7 +176,9 @@ export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects,
         user: state.auth.user
-    })
+    }){
+        toggleProjectTreeItem: (id: string) => projectActions.toggleProjectTreeItem(id)
+    }
 )(
     withStyles(styles)(Workbench)
 );

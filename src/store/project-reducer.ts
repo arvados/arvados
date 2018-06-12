@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Project } from "../../models/project";
-import actions, { ProjectAction } from "./project-action";
-import { TreeItem } from "../../components/tree/tree";
-import * as _ from "lodash";
+import { getType } from "typesafe-actions";
+import { Project } from "../models/project";
+import { actions, ProjectAction } from "./project-action";
+import { TreeItem } from "../components/tree/tree";
+import * as _ from 'lodash';
 
-export type ProjectState = Array<TreeItem<Project>>;
+type ProjectState = Array<TreeItem<Project>>;
 
 function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
@@ -33,15 +34,13 @@ function resetTreeActivity<T>(tree: Array<TreeItem<T>>): boolean | undefined {
 }
 
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
-    return actions.match(action, {
-        CREATE_PROJECT: project => [...state, project],
-        REMOVE_PROJECT: () => state,
-        PROJECTS_REQUEST: () => state,
-        PROJECTS_SUCCESS: projects => {
-            return projects;
-        },
-        TOGGLE_PROJECT_TREE_ITEM: itemId => {
+    switch (action.type) {
+        case getType(actions.createProject): {
+            return [...state, action.payload];
+        }
+        case getType(actions.toggleProjectTreeItem): {
             const tree = _.cloneDeep(state);
+            const itemId = action.payload;
             resetTreeActivity(tree);
             const item = findTreeItem(tree, itemId);
             if (item) {
@@ -49,9 +48,10 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
                 item.active = true;
             }
             return tree;
-        },
-        default: () => state
-    });
+        }
+        default:
+            return state;
+    }
 };
 
 export default projectsReducer;
