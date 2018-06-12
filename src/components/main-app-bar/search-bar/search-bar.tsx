@@ -21,7 +21,7 @@ interface SearchBarState {
     value: string;
 }
 
-const DEFAULT_SEARCH_DEBOUNCE = 1000;
+export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
 class SearchBar extends React.Component<SearchBarProps> {
 
@@ -46,6 +46,10 @@ class SearchBar extends React.Component<SearchBarProps> {
                 </IconButton>
             </form>
         </Paper>
+    }
+
+    componentDidMount() {
+        this.setState({value: this.props.value});
     }
 
     componentWillReceiveProps(nextProps: SearchBarProps) {
