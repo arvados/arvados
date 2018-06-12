@@ -44,8 +44,8 @@ interface TreeProps<T> {
 }
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
-    renderArrow (items: Array<TreeItem<T>> | undefined, arrowClass: string, isOpen: boolean, arrowRotation: string){
-        return items && items.length > 0 ? <i className={`${arrowClass} ${isOpen ? "fas fa-caret-down" : `fas fa-caret-down ${arrowRotation}`}`} /> : ''
+    renderArrow (items: Array<TreeItem<T>> | undefined, arrowClass: string, isOpen: boolean){
+        return items && items.length > 0 ? <i className={`${arrowClass} ${isOpen ? "fas fa-caret-down" : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} /> : ''
     }
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
@@ -55,7 +55,7 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
             {items && items.map((it: TreeItem<T>, idx: number) =>
              <div key={`item/${level}/${idx}`}>      
                 <ListItem button onClick={() => toggleItem(it.id)} className={list} style={{paddingLeft: (level + 1) * 20}}>  
-                    {it.active ? this.renderArrow(it.items, activeArrow, it.open, arrowRotate) : this.renderArrow(it.items, arrow, it.open, arrowRotate)}
+                    {it.active ? this.renderArrow(it.items, activeArrow, it.open) : this.renderArrow(it.items, arrow, it.open)}
                     {render(it)}
                 </ListItem>
                 {it.items && it.items.length > 0 &&
