@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Button, Grid, StyleRulesCallback, WithStyles, Menu, MenuItem } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import { withStyles } from '@material-ui/core';
-import { IconButton } from '@material-ui/core/es';
+import { Button, Grid, StyleRulesCallback, WithStyles, Menu, MenuItem, IconButton } from '@material-ui/core';
 import { PopoverOrigin } from '@material-ui/core/Popover';
 
 
