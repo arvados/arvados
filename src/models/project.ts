@@ -5,4 +5,8 @@
 export interface Project {
     name: string;
     createdAt: string;
+    modifiedAt: string;
+    uuid: string;
+    ownerUuid: string;
+    href: string
 }
