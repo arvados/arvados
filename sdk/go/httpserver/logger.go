@@ -17,7 +17,10 @@ type contextKey struct {
 	name string
 }
 
-var requestTimeContextKey = contextKey{"requestTime"}
+var (
+	requestTimeContextKey = contextKey{"requestTime"}
+	loggerContextKey      = contextKey{"logger"}
+)
 
 // LogRequests wraps an http.Handler, logging each request and
 // response via logger.
@@ -27,7 +30,6 @@ func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(func(wrapped http.ResponseWriter, req *http.Request) {
 		w := &responseTimer{ResponseWriter: WrapResponseWriter(wrapped)}
-		req = req.WithContext(context.WithValue(req.Context(), &requestTimeContextKey, time.Now()))
 		lgr := logger.WithFields(logrus.Fields{
 			"RequestID":       req.Header.Get("X-Request-Id"),
 			"remoteAddr":      req.RemoteAddr,
@@ -38,10 +40,23 @@ func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
 			"reqQuery":        req.URL.RawQuery,
 			"reqBytes":        req.ContentLength,
 		})
+		ctx := req.Context()
+		ctx = context.WithValue(ctx, &requestTimeContextKey, time.Now())
+		ctx = context.WithValue(ctx, &loggerContextKey, lgr)
+		req = req.WithContext(ctx)
+
 		logRequest(w, req, lgr)
 		defer logResponse(w, req, lgr)
 		h.ServeHTTP(w, req)
 	})
+}
+
+func Logger(req *http.Request) logrus.FieldLogger {
+	if lgr, ok := req.Context().Value(&loggerContextKey).(logrus.FieldLogger); ok {
+		return lgr
+	} else {
+		return logrus.StandardLogger()
+	}
 }
 
 func logRequest(w *responseTimer, req *http.Request, lgr *logrus.Entry) {

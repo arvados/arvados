@@ -6,16 +6,20 @@ package controller
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 type Handler struct {
 	Cluster *arvados.Cluster
+	Node    *arvados.SystemNode
 
 	setupOnce    sync.Once
 	handlerStack http.Handler
@@ -37,15 +41,39 @@ func (h *Handler) setup() {
 	h.handlerStack = mux
 }
 
-func (h *Handler) proxyRailsAPI(w http.ResponseWriter, incomingReq *http.Request) {
-	url, err := findRailsAPI(h.Cluster)
+func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
+	urlOut, err := findRailsAPI(h.Cluster, h.Node)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	req := *incomingReq
-	req.URL.Host = url.Host
-	resp, err := arvados.InsecureHTTPClient.Do(&req)
+	urlOut = &url.URL{
+		Scheme:   urlOut.Scheme,
+		Host:     urlOut.Host,
+		Path:     reqIn.URL.Path,
+		RawPath:  reqIn.URL.RawPath,
+		RawQuery: reqIn.URL.RawQuery,
+	}
+
+	// Copy headers from incoming request, then add/replace proxy
+	// headers like Via and X-Forwarded-For.
+	hdrOut := http.Header{}
+	for k, v := range reqIn.Header {
+		hdrOut[k] = v
+	}
+	xff := reqIn.RemoteAddr
+	if xffIn := reqIn.Header.Get("X-Forwarded-For"); xffIn != "" {
+		xff = xffIn + "," + xff
+	}
+	hdrOut.Set("X-Forwarded-For", xff)
+	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
+
+	reqOut := (&http.Request{
+		Method: reqIn.Method,
+		URL:    urlOut,
+		Header: hdrOut,
+	}).WithContext(reqIn.Context())
+	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -56,15 +84,27 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, incomingReq *http.Request
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	n, err := io.Copy(w, resp.Body)
+	if err != nil {
+		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
+	}
 }
 
 // For now, findRailsAPI always uses the rails API running on this
 // node.
-func findRailsAPI(cluster *arvados.Cluster) (*url.URL, error) {
-	node, err := cluster.GetThisSystemNode()
-	if err != nil {
+func findRailsAPI(cluster *arvados.Cluster, node *arvados.SystemNode) (*url.URL, error) {
+	hostport := node.RailsAPI.Listen
+	if len(hostport) > 1 && hostport[0] == ':' && strings.TrimRight(hostport[1:], "0123456789") == "" {
+		// ":12345" => connect to indicated port on localhost
+		hostport = "localhost" + hostport
+	} else if _, _, err := net.SplitHostPort(hostport); err == nil {
+		// "[::1]:12345" => connect to indicated address & port
+	} else {
 		return nil, err
 	}
-	return url.Parse("http://" + node.RailsAPI.Listen)
+	proto := "http"
+	if node.RailsAPI.TLS {
+		proto = "https"
+	}
+	return url.Parse(proto + "://" + hostport)
 }

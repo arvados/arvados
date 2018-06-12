@@ -12,6 +12,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-var Command cmd.Handler = service.Command(arvados.ServiceNameController, func(cluster *arvados.Cluster, _ *arvados.SystemNode) http.Handler {
-	return &Handler{Cluster: cluster}
-})
+var Command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
+
+func newHandler(cluster *arvados.Cluster, node *arvados.SystemNode) http.Handler {
+	return &Handler{Cluster: cluster, Node: node}
+}

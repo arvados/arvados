@@ -131,4 +131,5 @@ func (sn *SystemNode) ServicePorts() map[ServiceName]string {
 
 type SystemServiceInstance struct {
 	Listen string
+	TLS    bool
 }
