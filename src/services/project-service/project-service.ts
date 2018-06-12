@@ -50,7 +50,7 @@ export default class ProjectService {
                 uuid: g.uuid,
                 ownerUuid: g.owner_uuid
             } as Project));
-            dispatch(actions.PROJECTS_SUCCESS(projects));
+            dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
         });
     };
 }

@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { shallow, mount, render } from 'enzyme';
+import { mount } from 'enzyme';
 import * as Enzyme from 'enzyme';
 import * as Adapter from 'enzyme-adapter-react-16';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -22,12 +21,15 @@ describe("ProjectTree component", () => {
             data: {
                 name: "sample name",
                 createdAt: "2018-06-12",
-                icon: <i className="fas fa-th" />
+                modifiedAt: "2018-06-13",
+                uuid: "uuid",
+                ownerUuid: "ownerUuid",
+                href: "href",
             },
             id: "3",
             open: true,
             active: true
-        }
+        };
         const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
 
         expect(wrapper.find(ListItemIcon).length).toEqual(1);
@@ -39,7 +41,10 @@ describe("ProjectTree component", () => {
                 data: {
                     name: "sample name",
                     createdAt: "2018-06-12",
-                    icon: <i className="fas fa-th" />
+                    modifiedAt: "2018-06-13",
+                    uuid: "uuid",
+                    ownerUuid: "ownerUuid",
+                    href: "href",
                 },
                 id: "3",
                 open: false,
@@ -49,13 +54,16 @@ describe("ProjectTree component", () => {
                 data: {
                     name: "sample name",
                     createdAt: "2018-06-12",
-                    icon: <i className="fas fa-th" />
+                    modifiedAt: "2018-06-13",
+                    uuid: "uuid",
+                    ownerUuid: "ownerUuid",
+                    href: "href",
                 },
                 id: "3",
                 open: false,
                 active: true
             }
-        ]
+        ];
         const wrapper = mount(<ProjectTree projects={project} toggleProjectTreeItem={() => { }} />);
 
         expect(wrapper.find(ListItemIcon).length).toEqual(2);
@@ -66,7 +74,10 @@ describe("ProjectTree component", () => {
             data: {
                 name: "sample name",
                 createdAt: "2018-06-12",
-                icon: <i className="fas fa-th" />
+                modifiedAt: "2018-06-13",
+                uuid: "uuid",
+                ownerUuid: "ownerUuid",
+                href: "href",
             },
             id: "3",
             open: true,
@@ -76,14 +87,17 @@ describe("ProjectTree component", () => {
                     data: {
                         name: "sample name",
                         createdAt: "2018-06-12",
-                        icon: <i className="fas fa-th" />
+                        modifiedAt: "2018-06-13",
+                        uuid: "uuid",
+                        ownerUuid: "ownerUuid",
+                        href: "href",
                     },
                     id: "4",
                     open: false,
                     active: true
                 }
             ]
-        }
+        };
         const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
         wrapper.setState({open: true });
 

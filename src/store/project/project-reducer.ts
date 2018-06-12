@@ -22,23 +22,42 @@ function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> 
     return item;
 }
 
-function resetTreeActivity<T>(tree: Array<TreeItem<T>>): boolean | undefined {
-    let item;
-    for (const leaf of tree) {
-        item = leaf.active === true
-            ? leaf.active = false
-            : resetTreeActivity(leaf.items ? leaf.items : []);
+function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
+    for (const t of tree) {
+        t.active = false;
+        resetTreeActivity(t.items ? t.items : []);
     }
-    return item;
 }
+
+function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], parentItemId?: string): Array<TreeItem<Project>> {
+    let treeItem;
+    if (parentItemId) {
+        treeItem = findTreeItem(tree, parentItemId);
+    }
+    const items = projects.map((p, idx) => ({
+        id: p.uuid,
+        open: false,
+        active: false,
+        data: p,
+        items: []
+    } as TreeItem<Project>));
+
+    if (treeItem) {
+        treeItem.items = items;
+        return tree;
+    }
+
+    return items;
+}
+
 
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
     return actions.match(action, {
         CREATE_PROJECT: project => [...state, project],
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: () => state,
-        PROJECTS_SUCCESS: projects => {
-            return projects;
+        PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
+            return updateProjectTree(state, projects, parentItemId);
         },
         TOGGLE_PROJECT_TREE_ITEM: itemId => {
             const tree = _.cloneDeep(state);

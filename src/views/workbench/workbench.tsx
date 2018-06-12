@@ -10,8 +10,6 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
-import Tree from "../../components/tree/tree";
-import { Project } from "../../models/project";
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import { Link } from "react-router-dom";
@@ -24,9 +22,11 @@ import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
+import projectActions from "../../store/project/project-action"
 
-import { actions as projectActions } from "../../store/project-action";
-import ProjectTree, { WorkbenchProps } from '../../components/project-tree/project-tree';
+import ProjectTree from '../../components/project-tree/project-tree';
+import { TreeItem } from "../../components/tree/tree";
+import { Project } from "../../models/project";
 
 const drawerWidth = 240;
 
@@ -61,7 +61,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 });
 
 interface WorkbenchDataProps {
-    projects: Project[];
+    projects: Array<TreeItem<Project>>;
     user?: User;
 }
 
@@ -157,9 +157,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         paper: classes.drawerPaper,
                     }}>
                     <div className={classes.toolbar}/>
-		            <ProjectTree
+                    <ProjectTree
                         projects={this.props.projects}
-                        toggleProjectTreeItem={this.props.toggleProjectTreeItem}/>
+                        toggleProjectTreeItem={itemId => this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId))}/>
                 </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
@@ -176,9 +176,7 @@ export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects,
         user: state.auth.user
-    }){
-        toggleProjectTreeItem: (id: string) => projectActions.toggleProjectTreeItem(id)
-    }
+    })
 )(
     withStyles(styles)(Workbench)
 );

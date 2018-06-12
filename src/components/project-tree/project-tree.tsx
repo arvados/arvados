@@ -35,12 +35,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
-export interface WorkbenchProps {
+export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
-    toggleProjectTreeItem: (id: string) => any;
+    toggleProjectTreeItem: (id: string) => void;
 }
 
-class ProjectTree<T> extends React.Component<WorkbenchProps & WithStyles<CssRules>> {
+class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const {classes, projects} = this.props;
         const {active, listItemText, row, treeContainer} = classes;
@@ -48,10 +48,18 @@ class ProjectTree<T> extends React.Component<WorkbenchProps & WithStyles<CssRule
             <div className={treeContainer}>
                 <Tree items={projects}
                     toggleItem={this.props.toggleProjectTreeItem}
-                    render={(project: TreeItem<Project>) => <span className={row}>
-                        <ListItemIcon className={project.active ? active : ''}>{project.data.icon}</ListItemIcon>
-                        <ListItemText className={listItemText} primary={<Typography className={project.active ? active : ''}>{project.data.name}</Typography>} />
-                    </span>} />
+                    render={(project: TreeItem<Project>, level: number) =>
+                        <span className={row}>
+                            <ListItemIcon className={project.active ? active : ''}>
+                                {level === 0 ? <i className="fas fa-th"/> : <i className="fas fa-folder"/>}
+                            </ListItemIcon>
+                            <ListItemText className={listItemText} primary={
+                                <Typography className={project.active ? active : ''}>
+                                    {project.data.name}
+                                </Typography>
+                            }/>
+                        </span>
+                    }/>
             </div>
         );
     }

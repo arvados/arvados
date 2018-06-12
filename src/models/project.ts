@@ -9,5 +9,4 @@ export interface Project {
     uuid: string;
     ownerUuid: string;
     href: string;
-    icon?: any;
 }

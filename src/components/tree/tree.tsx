@@ -13,11 +13,11 @@ type CssRules = 'list' | 'activeArrow' | 'arrow' | 'arrowRotate';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     list: {
-        paddingBottom: '3px', 
+        paddingBottom: '3px',
         paddingTop: '3px',
     },
     activeArrow: {
-        color: '#4285F6', 
+        color: '#4285F6',
         position: 'absolute',
     },
     arrow: {
@@ -38,7 +38,7 @@ export interface TreeItem<T> {
 
 interface TreeProps<T> {
     items?: Array<TreeItem<T>>;
-    render: (item: TreeItem<T>) => ReactElement<{}>;
+    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     toggleItem: (id: string) => any;
     level?: number;
 }
@@ -50,17 +50,17 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
         const {classes, render, toggleItem, items} = this.props;
-        const {list, arrow, activeArrow, arrowRotate} = classes;
+        const {list, arrow, activeArrow} = classes;
         return <List component="div" className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) =>
-             <div key={`item/${level}/${idx}`}>      
-                <ListItem button onClick={() => toggleItem(it.id)} className={list} style={{paddingLeft: (level + 1) * 20}}>  
-                    {it.active ? this.renderArrow(it.items, activeArrow, it.open) : this.renderArrow(it.items, arrow, it.open)}
-                    {render(it)}
+             <div key={`item/${level}/${idx}`}>
+                <ListItem button onClick={() => toggleItem(it.id)} className={list} style={{paddingLeft: (level + 1) * 20}}>
+                    {this.renderArrow(it.items, it.active ? activeArrow : arrow, it.open)}
+                    {render(it, level)}
                 </ListItem>
                 {it.items && it.items.length > 0 &&
                 <Collapse in={it.open} timeout="auto" unmountOnExit>
-                    <StyledTree 
+                    <StyledTree
                         items={it.items}
                         render={render}
                         toggleItem={toggleItem}
