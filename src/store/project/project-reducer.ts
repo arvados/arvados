@@ -9,7 +9,7 @@ import * as _ from "lodash";
 
 export type ProjectState = Array<TreeItem<Project>>;
 
-function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
+export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
     for (const t of tree) {
         item = t.id === itemId

@@ -14,7 +14,8 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
@@ -29,7 +30,8 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const projects = [project, project];

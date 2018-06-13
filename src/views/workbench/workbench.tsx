@@ -28,6 +28,8 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
+import ProjectExplorer from '../project-explorer/project-explorer';
+import { push } from 'react-router-redux';
 
 const drawerWidth = 240;
 
@@ -107,6 +109,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     toggleProjectTreeItem = (itemId: string) => {
         this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+            this.props.dispatch(push(`/project/${itemId}`))
         });
     };
 
@@ -171,7 +174,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.content}>
                     <div className={classes.toolbar}/>
                     <Switch>
-                        <Route path="/project/:name" component={ProjectList}/>
+                        <Route path="/project/:name" component={ProjectExplorer}/>
                     </Switch>
                 </main>
             </div>
