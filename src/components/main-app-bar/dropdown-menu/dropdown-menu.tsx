@@ -8,8 +8,8 @@ import { PopoverOrigin } from '@material-ui/core/Popover';
 
 
 interface DropdownMenuDataProps {
-    id: string,
-    icon: React.ComponentType,
+    id: string;
+    icon: React.ComponentType;
 }
 
 
@@ -19,12 +19,12 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
 
     state = {
         anchorEl: undefined
-    }
+    };
 
     transformOrigin: PopoverOrigin = {
         vertical: "top",
         horizontal: "center"
-    }
+    };
 
     render() {
         const { icon: Icon, id, children } = this.props;
@@ -52,17 +52,17 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     {children}
                 </Menu>
             </div>
-        )
+        );
     }
 
     handleClose = () => {
-        this.setState({ anchorEl: undefined })
+        this.setState({ anchorEl: undefined });
     }
 
     handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-        this.setState({ anchorEl: event.currentTarget })
+        this.setState({ anchorEl: event.currentTarget });
     }
 }
 
 
-export default DropdownMenu
+export default DropdownMenu;

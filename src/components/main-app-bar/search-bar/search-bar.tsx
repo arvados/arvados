@@ -15,7 +15,7 @@ interface SearchBarActionProps {
     debounce?: number;
 }
 
-type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>
+type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
 interface SearchBarState {
     value: string;
@@ -27,12 +27,12 @@ class SearchBar extends React.Component<SearchBarProps> {
 
     state: SearchBarState = {
         value: ""
-    }
+    };
 
     timeout: NodeJS.Timer;
 
     render() {
-        const { classes } = this.props
+        const { classes } = this.props;
         return <Paper className={classes.container}>
             <form onSubmit={this.handleSubmit}>
                 <input
@@ -45,7 +45,7 @@ class SearchBar extends React.Component<SearchBarProps> {
                     <SearchIcon />
                 </IconButton>
             </form>
-        </Paper>
+        </Paper>;
     }
 
     componentDidMount() {
@@ -80,10 +80,10 @@ class SearchBar extends React.Component<SearchBarProps> {
 
 }
 
-type CssRules = 'container' | 'input' | 'button'
+type CssRules = 'container' | 'input' | 'button';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
-    const { unit } = theme.spacing
+    const { unit } = theme.spacing;
     return {
         container: {
             position: 'relative',
@@ -104,7 +104,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             width: unit * 3,
             height: unit * 3
         }
-    }
-}
+    };
+};
 
-export default withStyles(styles)(SearchBar)
+export default withStyles(styles)(SearchBar);

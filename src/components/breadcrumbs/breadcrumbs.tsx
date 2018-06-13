@@ -8,15 +8,15 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 
 export interface Breadcrumb {
-    label: string
+    label: string;
 }
 
 interface BreadcrumbsDataProps {
-    items: Breadcrumb[]
+    items: Breadcrumb[];
 }
 
 interface BreadcrumbsActionProps {
-    onClick: (breadcrumb: Breadcrumb) => any
+    onClick: (breadcrumb: Breadcrumb) => any;
 }
 
 type BreadcrumbsProps = BreadcrumbsDataProps & BreadcrumbsActionProps & WithStyles<CssRules>;
@@ -51,29 +51,29 @@ class Breadcrumbs extends React.Component<BreadcrumbsProps> {
                     </Button>
                 ))
             }
-        </Grid>
+        </Grid>;
     }
 
     getInactiveItems = () => {
-        return this.props.items.slice(0, -1)
+        return this.props.items.slice(0, -1);
     }
 
     getActiveItem = () => {
-        return this.props.items.slice(-1)
+        return this.props.items.slice(-1);
     }
 
 }
 
-type CssRules = 'inactiveItem'
+type CssRules = 'inactiveItem';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
-    const { unit } = theme.spacing
+    const { unit } = theme.spacing;
     return {
         inactiveItem: {
             opacity: 0.6
         }
-    }
-}
+    };
+};
 
-export default withStyles(styles)(Breadcrumbs)
+export default withStyles(styles)(Breadcrumbs);
 

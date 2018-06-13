@@ -25,7 +25,7 @@ import { RootState } from "../../store/store";
 import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
-import projectActions from "../../store/project/project-action"
+import projectActions from "../../store/project/project-action";
 import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
@@ -76,11 +76,11 @@ interface WorkbenchActionProps {
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
-    path: string
+    path: string;
 }
 
 interface NavMenuItem extends MainAppBarMenuItem {
-    action: () => void
+    action: () => void;
 }
 
 interface WorkbenchState {
@@ -131,7 +131,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 }
             ]
         }
-    }
+    };
 
 
     mainAppBarActions: MainAppBarActionProps = {
@@ -141,13 +141,13 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch(push(`/search?q=${searchText}`));
         },
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
-    }
+    };
 
     toggleProjectTreeItem = (itemId: string) => {
         this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         });
-    };
+    }
 
     render() {
         const { classes, user } = this.props;

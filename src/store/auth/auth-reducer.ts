@@ -11,7 +11,7 @@ import { UserDetailsResponse } from "../../services/auth-service/auth-service";
 export interface AuthState {
     user?: User;
     apiToken?: string;
-};
+}
 
 const authReducer = (state: AuthState = {}, action: AuthAction) => {
     return actions.match(action, {

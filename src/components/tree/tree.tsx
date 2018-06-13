@@ -45,7 +45,7 @@ interface TreeProps<T> {
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
     renderArrow (items: boolean, arrowClass: string, open: boolean){
-        return <i className={`${arrowClass} ${open ? "fas fa-caret-down" : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
+        return <i className={`${arrowClass} ${open ? "fas fa-caret-down" : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />;
     }
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
@@ -67,9 +67,9 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
                         level={level + 1}/>
                 </Collapse>}
              </div>)}
-        </List>
+        </List>;
     }
 }
 
 const StyledTree = withStyles(styles)(Tree);
-export default StyledTree
+export default StyledTree;

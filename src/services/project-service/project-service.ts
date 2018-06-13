@@ -53,5 +53,5 @@ export default class ProjectService {
             dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
             return projects;
         });
-    };
+    }
 }

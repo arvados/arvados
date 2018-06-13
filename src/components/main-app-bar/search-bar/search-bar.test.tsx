@@ -86,10 +86,10 @@ describe("<SearchBar />", () => {
             jest.advanceTimersByTime(500);
             searchBar.find("input").simulate("change", { target: { value: "intermediate value" } });
             jest.advanceTimersByTime(1000);
-            expect(onSearch).toBeCalledWith("intermediate value")
+            expect(onSearch).toBeCalledWith("intermediate value");
             searchBar.find("input").simulate("change", { target: { value: "latest value" } });
             jest.advanceTimersByTime(1000);
-            expect(onSearch).toBeCalledWith("latest value")
+            expect(onSearch).toBeCalledWith("latest value");
             expect(onSearch).toHaveBeenCalledTimes(2);
             
         });

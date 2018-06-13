@@ -70,8 +70,8 @@ export default class AuthService {
             .get<UserDetailsResponse>('/users/current')
             .then(resp => {
                 dispatch(actions.USER_DETAILS_SUCCESS(resp.data));
-            })
+            });
             // .catch(err => {
             // });
-    };
+    }
 }

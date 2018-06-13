@@ -8,8 +8,8 @@ import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
 import SearchBar from "./search-bar/search-bar";
-import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs"
-import DropdownMenu from "./dropdown-menu/dropdown-menu"
+import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs";
+import DropdownMenu from "./dropdown-menu/dropdown-menu";
 import { User } from "../../models/user";
 
 export interface MainAppBarMenuItem {
@@ -31,9 +31,9 @@ interface MainAppBarDataProps {
 }
 
 export interface MainAppBarActionProps {
-    onSearch: (searchText: string) => void,
-    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void,
-    onMenuItemClick: (menuItem: MainAppBarMenuItem) => void
+    onSearch: (searchText: string) => void;
+    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
+    onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
 }
 
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
@@ -41,7 +41,7 @@ type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<
 export class MainAppBar extends React.Component<MainAppBarProps> {
 
     render() {
-        const { classes, searchText, breadcrumbs, searchDebounce } = this.props
+        const { classes, searchText, breadcrumbs, searchDebounce } = this.props;
         return <AppBar className={classes.appBar} position="static">
             <Toolbar>
                 <Grid
@@ -74,11 +74,11 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
                     <Breadcrumbs items={breadcrumbs} onClick={this.props.onBreadcrumbClick} />
                 </Toolbar>
             }
-        </AppBar>
+        </AppBar>;
     }
 
     renderMenuForUser = () => {
-        const { user } = this.props
+        const { user } = this.props;
         return (
             <>
                 <IconButton color="inherit">
@@ -94,19 +94,19 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
                     {this.renderMenuItems(this.props.menuItems.helpMenu)}
                 </DropdownMenu>
             </>
-        )
+        );
     }
 
     renderMenuForAnonymous = () => {
         return this.props.menuItems.anonymousMenu.map((item, index) => (
             <Button key={index} color="inherit" onClick={() => this.props.onMenuItemClick(item)}>{item.label}</Button>
-        ))
+        ));
     }
 
     renderMenuItems = (menuItems: MainAppBarMenuItem[]) => {
         return menuItems.map((item, index) => (
             <MenuItem key={index} onClick={() => this.props.onMenuItemClick(item)}>{item.label}</MenuItem>
-        ))
+        ));
     }
 
     getUserFullname = () => {
@@ -116,12 +116,12 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
 
 }
 
-type CssRules = "appBar"
+type CssRules = "appBar";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     appBar: {
         backgroundColor: "#692498"
     }
-})
+});
 
-export default withStyles(styles)(MainAppBar)
+export default withStyles(styles)(MainAppBar);
