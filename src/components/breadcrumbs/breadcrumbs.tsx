@@ -16,48 +16,44 @@ interface BreadcrumbsProps {
     onClick: (breadcrumb: Breadcrumb) => any;
 }
 
-class Breadcrumbs extends React.Component<BreadcrumbsProps & WithStyles<CssRules>> {
-
-    render() {
-        const { classes, onClick } = this.props;
-        return <Grid container alignItems="center">
-            {
-                this.getInactiveItems().map((item, index) => (
-                    <React.Fragment key={index}>
-                        <Button
-                            color="inherit"
-                            className={classes.inactiveItem}
-                            onClick={() => onClick(item)}
-                        >
-                            {item.label}
-                        </Button>
-                        <ChevronRightIcon color="inherit" className={classes.inactiveItem} />
-                    </React.Fragment>
-                ))
-            }
-            {
-                this.getActiveItem().map((item, index) => (
+const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = (props) => {
+    const { classes, onClick, items } = props;
+    return <Grid container alignItems="center">
+        {
+            getInactiveItems(items).map((item, index) => (
+                <React.Fragment key={index}>
                     <Button
                         color="inherit"
-                        key={index}
+                        className={classes.inactiveItem}
                         onClick={() => onClick(item)}
                     >
                         {item.label}
                     </Button>
-                ))
-            }
-        </Grid>;
-    }
+                    <ChevronRightIcon color="inherit" className={classes.inactiveItem} />
+                </React.Fragment>
+            ))
+        }
+        {
+            getActiveItem(items).map((item, index) => (
+                <Button
+                    color="inherit"
+                    key={index}
+                    onClick={() => onClick(item)}
+                >
+                    {item.label}
+                </Button>
+            ))
+        }
+    </Grid>;
+};
 
-    getInactiveItems = () => {
-        return this.props.items.slice(0, -1);
-    }
+const getInactiveItems = (items: Breadcrumb[]) => {
+    return items.slice(0, -1);
+};
 
-    getActiveItem = () => {
-        return this.props.items.slice(-1);
-    }
-
-}
+const getActiveItem = (items: Breadcrumb[]) => {
+    return items.slice(-1);
+};
 
 type CssRules = 'inactiveItem';
 
