@@ -5,7 +5,9 @@
   "dependencies": {
     "@material-ui/core": "1.2.0",
     "@material-ui/icons": "^1.1.0",
+    "@types/lodash": "^4.14.109",
     "axios": "0.18.0",
+    "lodash": "4.17.10",
     "react": "16.4.0",
     "react-dom": "16.4.0",
     "react-redux": "5.0.7",

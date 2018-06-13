@@ -4,9 +4,8 @@
 
 import * as React from 'react';
 import { Theme } from "@material-ui/core";
-import { StyleRulesCallback, WithStyles } from "@material-ui/core/styles";
+import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper/Paper";
-import withStyles from "@material-ui/core/es/styles/withStyles";
 import Table from "@material-ui/core/Table/Table";
 import TableHead from "@material-ui/core/TableHead/TableHead";
 import TableRow from "@material-ui/core/TableRow/TableRow";

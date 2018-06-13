@@ -10,7 +10,7 @@ import {
     USER_FIRST_NAME_KEY,
     USER_LAST_NAME_KEY
 } from "../../services/auth-service/auth-service";
-import { API_HOST } from "../../common/server-api";
+import { API_HOST } from "../../common/api/server-api";
 
 import 'jest-localstorage-mock';
 

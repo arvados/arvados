@@ -8,5 +8,5 @@ export interface Project {
     modifiedAt: string;
     uuid: string;
     ownerUuid: string;
-    href: string
+    href: string;
 }

@@ -32,8 +32,21 @@ describe('project-reducer', () => {
             uuid: 'test123'
         };
 
-        const topProjects = [project, project];
-        const state = projectsReducer(initialState, actions.TOP_PROJECTS_SUCCESS(topProjects));
-        expect(state).toEqual(topProjects);
+        const projects = [project, project];
+        const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({projects, parentItemId: undefined}));
+        expect(state).toEqual([{
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project
+            }, {
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project
+            }
+        ]);
     });
 });

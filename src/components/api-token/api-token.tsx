@@ -24,7 +24,7 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp
         const apiToken = ApiToken.getUrlParameter(search, 'api_token');
         this.props.dispatch(authActions.SAVE_API_TOKEN(apiToken));
         this.props.dispatch(authService.getUserDetails());
-        this.props.dispatch(projectService.getTopProjectList());
+        this.props.dispatch(projectService.getProjectList());
     }
     render() {
         return <Redirect to="/"/>

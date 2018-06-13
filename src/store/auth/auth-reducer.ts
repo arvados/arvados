@@ -5,7 +5,7 @@
 import actions, { AuthAction } from "./auth-action";
 import { User } from "../../models/user";
 import { authService } from "../../services/services";
-import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/server-api";
+import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/api/server-api";
 import { UserDetailsResponse } from "../../services/auth-service/auth-service";
 
 export interface AuthState {
