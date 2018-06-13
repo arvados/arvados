@@ -99,7 +99,7 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
 
     renderMenuForAnonymous = () => {
         return this.props.menuItems.anonymousMenu.map((item, index) => (
-            <Button color="inherit" onClick={() => this.props.onMenuItemClick(item)}>{item.label}</Button>
+            <Button key={index} color="inherit" onClick={() => this.props.onMenuItemClick(item)}>{item.label}</Button>
         ))
     }
 
