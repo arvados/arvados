@@ -43,14 +43,17 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
     render() {
         const { classes, searchText, breadcrumbs, searchDebounce } = this.props;
         return <AppBar className={classes.appBar} position="static">
-            <Toolbar>
+            <Toolbar className={classes.toolbar}>
                 <Grid
                     container
                     justify="space-between"
                 >
                     <Grid item xs={3}>
-                        <Typography variant="title" color="inherit" noWrap style={{ flexGrow: 1 }}>
-                            <span>Arvados</span><br /><span style={{ fontSize: 12 }}>Workbench 2</span>
+                        <Typography variant="headline" color="inherit" noWrap>
+                            Arvados
+                        </Typography>
+                        <Typography variant="body1" color="inherit" noWrap >
+                            Workbench 2
                         </Typography>
                     </Grid>
                     <Grid item xs={6} container alignItems="center">
@@ -70,7 +73,7 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
                 </Grid>
             </Toolbar>
             {
-                this.props.user && <Toolbar>
+                this.props.user && <Toolbar className={classes.toolbar}>
                     <Breadcrumbs items={breadcrumbs} onClick={this.props.onBreadcrumbClick} />
                 </Toolbar>
             }
@@ -116,11 +119,14 @@ export class MainAppBar extends React.Component<MainAppBarProps> {
 
 }
 
-type CssRules = "appBar";
+type CssRules = "appBar" | "toolbar";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     appBar: {
         backgroundColor: "#692498"
+    },
+    toolbar: {
+        minHeight: '48px'
     }
 });
 
