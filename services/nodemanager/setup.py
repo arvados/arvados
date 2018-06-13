@@ -35,7 +35,7 @@ setup(name='arvados-node-manager',
           ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-          'apache-libcloud>=2.3',
+          'apache-libcloud>=2.3.1.dev1',
           'arvados-python-client>=0.1.20170731145219',
           'future',
           'pykka',
