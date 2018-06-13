@@ -38,86 +38,81 @@ export interface MainAppBarActionProps {
 
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
 
-export class MainAppBar extends React.Component<MainAppBarProps> {
-
-    render() {
-        const { classes, searchText, breadcrumbs, searchDebounce } = this.props;
-        return <AppBar className={classes.appBar} position="static">
-            <Toolbar className={classes.toolbar}>
-                <Grid
-                    container
-                    justify="space-between"
-                >
-                    <Grid item xs={3}>
-                        <Typography variant="headline" color="inherit" noWrap>
-                            Arvados
-                        </Typography>
-                        <Typography variant="body1" color="inherit" noWrap >
-                            Workbench 2
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={6} container alignItems="center">
-                        {
-                            this.props.user && <SearchBar
-                                value={searchText}
-                                onSearch={this.props.onSearch}
-                                debounce={searchDebounce}
-                            />
-                        }
-                    </Grid>
-                    <Grid item xs={3} container alignItems="center" justify="flex-end">
-                        {
-                            this.props.user ? this.renderMenuForUser() : this.renderMenuForAnonymous()
-                        }
-                    </Grid>
+export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
+    const { classes, searchText, breadcrumbs, searchDebounce, user } = props;
+    return <AppBar className={classes.appBar} position="static">
+        <Toolbar className={classes.toolbar}>
+            <Grid
+                container
+                justify="space-between"
+            >
+                <Grid item xs={3}>
+                    <Typography variant="headline" color="inherit" noWrap>
+                        Arvados
+                    </Typography>
+                    <Typography variant="body1" color="inherit" noWrap >
+                        Workbench 2
+                    </Typography>
                 </Grid>
+                <Grid item xs={6} container alignItems="center">
+                    {
+                        props.user && <SearchBar
+                            value={searchText}
+                            onSearch={props.onSearch}
+                            debounce={searchDebounce}
+                        />
+                    }
+                </Grid>
+                <Grid item xs={3} container alignItems="center" justify="flex-end">
+                    {
+                        props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
+                    }
+                </Grid>
+            </Grid>
+        </Toolbar>
+        {
+            props.user && <Toolbar className={classes.toolbar}>
+                <Breadcrumbs items={breadcrumbs} onClick={props.onBreadcrumbClick} />
             </Toolbar>
-            {
-                this.props.user && <Toolbar className={classes.toolbar}>
-                    <Breadcrumbs items={breadcrumbs} onClick={this.props.onBreadcrumbClick} />
-                </Toolbar>
-            }
-        </AppBar>;
-    }
+        }
+    </AppBar>;
+};
 
-    renderMenuForUser = () => {
-        const { user } = this.props;
-        return (
-            <>
-                <IconButton color="inherit">
-                    <Badge badgeContent={3} color="primary">
-                        <NotificationsIcon />
-                    </Badge>
-                </IconButton>
-                <DropdownMenu icon={PersonIcon} id="account-menu">
-                    <MenuItem>{this.getUserFullname()}</MenuItem>
-                    {this.renderMenuItems(this.props.menuItems.accountMenu)}
-                </DropdownMenu>
-                <DropdownMenu icon={HelpIcon} id="help-menu">
-                    {this.renderMenuItems(this.props.menuItems.helpMenu)}
-                </DropdownMenu>
-            </>
-        );
-    }
 
-    renderMenuForAnonymous = () => {
-        return this.props.menuItems.anonymousMenu.map((item, index) => (
-            <Button key={index} color="inherit" onClick={() => this.props.onMenuItemClick(item)}>{item.label}</Button>
-        ));
-    }
+const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
+    return (
+        <>
+            <IconButton color="inherit">
+                <Badge badgeContent={3} color="primary">
+                    <NotificationsIcon />
+                </Badge>
+            </IconButton>
+            <DropdownMenu icon={PersonIcon} id="account-menu">
+                <MenuItem>{getUserFullname(user)}</MenuItem>
+                {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
+            </DropdownMenu>
+            <DropdownMenu icon={HelpIcon} id="help-menu">
+                {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
+            </DropdownMenu>
+        </>
+    );
+};
 
-    renderMenuItems = (menuItems: MainAppBarMenuItem[]) => {
-        return menuItems.map((item, index) => (
-            <MenuItem key={index} onClick={() => this.props.onMenuItemClick(item)}>{item.label}</MenuItem>
-        ));
-    }
+const renderMenuForAnonymous = ({ onMenuItemClick, menuItems }: MainAppBarProps) => {
+    return menuItems.anonymousMenu.map((item, index) => (
+        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>{item.label}</Button>
+    ));
+};
 
-    getUserFullname = () => {
-        const { user } = this.props;
-        return user ? `${user.firstName} ${user.lastName}` : "";
-    }
+const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menuItem: MainAppBarMenuItem) => void) => {
+    return menuItems.map((item, index) => (
+        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>{item.label}</MenuItem>
+    ));
+};
 
-}
+const getUserFullname = (user?: User) => {
+    return user ? `${user.firstName} ${user.lastName}` : "";
+};
 
 type CssRules = "appBar" | "toolbar";
 
