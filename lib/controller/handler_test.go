@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -85,6 +87,20 @@ func (s *HandlerSuite) TestProxyWithoutToken(c *check.C) {
 func (s *HandlerSuite) TestProxyWithToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	var u arvados.User
+	err := json.Unmarshal(resp.Body.Bytes(), &u)
+	c.Check(err, check.IsNil)
+	c.Check(u.UUID, check.Equals, arvadostest.ActiveUserUUID)
+}
+
+func (s *HandlerSuite) TestProxyWithTokenInRequestBody(c *check.C) {
+	req := httptest.NewRequest("POST", "/arvados/v1/users/current", strings.NewReader(url.Values{
+		"_method":   {"GET"},
+		"api_token": {arvadostest.ActiveToken},
+	}.Encode()))
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)

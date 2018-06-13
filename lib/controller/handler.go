@@ -81,6 +81,7 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 		Method: reqIn.Method,
 		URL:    urlOut,
 		Header: hdrOut,
+		Body:   reqIn.Body,
 	}).WithContext(ctx)
 	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
 	if err != nil {
