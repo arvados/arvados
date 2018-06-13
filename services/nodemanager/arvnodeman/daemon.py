@@ -318,7 +318,10 @@ class NodeManagerDaemonActor(actor_class):
         busy_count = counts["busy"]
         wishlist_count = self._size_wishlist(size)
 
-        self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size.name,
+        size_name = size.name
+        if size.preemptable:
+            size_name += ' (preemptable)'
+        self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size_name,
                           wishlist_count,
                           up_count,
                           counts["booting"],
