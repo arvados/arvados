@@ -11,17 +11,12 @@ export interface Breadcrumb {
     label: string;
 }
 
-interface BreadcrumbsDataProps {
+interface BreadcrumbsProps {
     items: Breadcrumb[];
-}
-
-interface BreadcrumbsActionProps {
     onClick: (breadcrumb: Breadcrumb) => any;
 }
 
-type BreadcrumbsProps = BreadcrumbsDataProps & BreadcrumbsActionProps & WithStyles<CssRules>;
-
-class Breadcrumbs extends React.Component<BreadcrumbsProps> {
+class Breadcrumbs extends React.Component<BreadcrumbsProps & WithStyles<CssRules>> {
 
     render() {
         const { classes, onClick } = this.props;

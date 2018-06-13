@@ -29,7 +29,7 @@ class SearchBar extends React.Component<SearchBarProps> {
         value: ""
     };
 
-    timeout: NodeJS.Timer;
+    timeout: number;
 
     render() {
         const { classes } = this.props;
@@ -71,7 +71,7 @@ class SearchBar extends React.Component<SearchBarProps> {
     handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         clearTimeout(this.timeout);
         this.setState({ value: event.target.value });
-        this.timeout = setTimeout(
+        this.timeout = window.setTimeout(
             () => this.props.onSearch(this.state.value),
             this.props.debounce || DEFAULT_SEARCH_DEBOUNCE
         );
@@ -83,7 +83,6 @@ class SearchBar extends React.Component<SearchBarProps> {
 type CssRules = 'container' | 'input' | 'button';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
-    const { unit } = theme.spacing;
     return {
         container: {
             position: 'relative',
@@ -91,18 +90,18 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         },
         input: {
             border: 'none',
-            borderRadius: unit / 4,
+            borderRadius: theme.spacing.unit / 4,
             boxSizing: 'border-box',
-            padding: unit,
-            paddingRight: unit * 4,
+            padding: theme.spacing.unit,
+            paddingRight: theme.spacing.unit * 4,
             width: '100%',
         },
         button: {
             position: 'absolute',
-            top: unit / 2,
-            right: unit / 2,
-            width: unit * 3,
-            height: unit * 3
+            top: theme.spacing.unit / 2,
+            right: theme.spacing.unit / 2,
+            width: theme.spacing.unit * 3,
+            height: theme.spacing.unit * 3
         }
     };
 };

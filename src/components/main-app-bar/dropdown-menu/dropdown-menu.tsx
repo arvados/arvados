@@ -3,17 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Button, Grid, StyleRulesCallback, WithStyles, Menu, MenuItem, IconButton } from '@material-ui/core';
+import { Menu, IconButton } from '@material-ui/core';
 import { PopoverOrigin } from '@material-ui/core/Popover';
 
 
-interface DropdownMenuDataProps {
+interface DropdownMenuProps {
     id: string;
     icon: React.ComponentType;
 }
-
-
-type DropdownMenuProps = DropdownMenuDataProps;
 
 class DropdownMenu extends React.Component<DropdownMenuProps> {
 

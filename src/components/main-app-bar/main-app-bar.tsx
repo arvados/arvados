@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Paper, Input, StyleRulesCallback, withStyles, WithStyles, Button, MenuItem } from "@material-ui/core";
+import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, StyleRulesCallback, withStyles, WithStyles, Button, MenuItem } from "@material-ui/core";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
