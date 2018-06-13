@@ -35,23 +35,26 @@ interface GroupsResponse {
 export default class ProjectService {
     public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
         dispatch(actions.PROJECTS_REQUEST());
-
-        const ub = new UrlBuilder('/groups');
-        const fb = new FilterBuilder();
-        fb.addEqual(FilterField.OWNER_UUID, parentUuid);
-        const url = ub.addParam('filters', fb.get()).get();
-
-        return serverApi.get<GroupsResponse>(url).then(groups => {
-            const projects = groups.data.items.map(g => ({
-                name: g.name,
-                createdAt: g.created_at,
-                modifiedAt: g.modified_at,
-                href: g.href,
-                uuid: g.uuid,
-                ownerUuid: g.owner_uuid
-            } as Project));
-            dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
-            return projects;
-        });
+        if (parentUuid) {
+            const fb = new FilterBuilder();
+            fb.addLike(FilterField.OWNER_UUID, parentUuid);
+            return serverApi.get<GroupsResponse>('/groups', { params: {
+                filters: fb.get()
+            }}).then(groups => {
+                const projects = groups.data.items.map(g => ({
+                    name: g.name,
+                    createdAt: g.created_at,
+                    modifiedAt: g.modified_at,
+                    href: g.href,
+                    uuid: g.uuid,
+                    ownerUuid: g.owner_uuid
+                } as Project));
+                dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
+                return projects;
+            });
+        } else {
+            dispatch(actions.PROJECTS_SUCCESS({projects: [], parentItemId: parentUuid}));
+            return Promise.resolve([]);
+        }
     };
 }
