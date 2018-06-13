@@ -43,6 +43,19 @@ func (h *Handler) setup() {
 	h.handlerStack = mux
 }
 
+// headers that shouldn't be forwarded when proxying. See
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
+var dropHeaders = map[string]bool{
+	"Connection":          true,
+	"Keep-Alive":          true,
+	"Proxy-Authenticate":  true,
+	"Proxy-Authorization": true,
+	"TE":                true,
+	"Trailer":           true,
+	"Transfer-Encoding": true,
+	"Upgrade":           true,
+}
+
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	urlOut, err := findRailsAPI(h.Cluster, h.Node)
 	if err != nil {
@@ -61,7 +74,9 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	// headers like Via and X-Forwarded-For.
 	hdrOut := http.Header{}
 	for k, v := range reqIn.Header {
-		hdrOut[k] = v
+		if !dropHeaders[k] {
+			hdrOut[k] = v
+		}
 	}
 	xff := reqIn.RemoteAddr
 	if xffIn := reqIn.Header.Get("X-Forwarded-For"); xffIn != "" {
