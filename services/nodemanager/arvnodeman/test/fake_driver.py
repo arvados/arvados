@@ -166,7 +166,7 @@ class FakeAwsDriver(FakeDriver):
                                                       ex_userdata=ex_userdata)
         n.extra = {
             "launch_time": time.strftime(ARVADOS_TIMEFMT, time.gmtime())[:-1],
-            "metadata" : {
+            "tags" : {
                 "arvados_node_size": size.id
             }
         }

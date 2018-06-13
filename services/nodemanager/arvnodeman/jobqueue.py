@@ -139,7 +139,7 @@ class ServerCalculator(object):
         for s in self.cloud_sizes:
             if s.id == sizeid:
                 return s
-        return InvalidCloudSize()
+        return self.InvalidCloudSize()
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
@@ -248,5 +248,5 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                                    job_uuid,
                                    error)
         self._logger.debug("Calculated wishlist: %s",
-                           ', '.join(s.name for s in server_list) or "(empty)")
+                           ', '.join("%s (preemptable: %s)" % (s.name, s.preemptable) for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)
