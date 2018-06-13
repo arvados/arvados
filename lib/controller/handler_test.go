@@ -38,7 +38,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 		SystemNodes: map[string]arvados.SystemNode{
 			"*": {
 				Controller: arvados.SystemServiceInstance{Listen: ":"},
-				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_API_HOST"), TLS: true},
+				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true},
 			},
 		},
 	}

@@ -349,15 +349,19 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo fail=1) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && python sdk/python/tests/run_test_server.py start_controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && python sdk/python/tests/run_test_server.py start_nginx \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo fail=1) \
         && (env | egrep ^ARVADOS)
+    if [[ -n "$fail" ]]; then
+       return 1
+    fi
 }
 
 stop_services() {
@@ -371,6 +375,7 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop_ws \
         && python sdk/python/tests/run_test_server.py stop_keep-web \
         && python sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python sdk/python/tests/run_test_server.py stop_controller \
         && python sdk/python/tests/run_test_server.py stop
 }
 

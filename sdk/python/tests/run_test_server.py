@@ -377,6 +377,40 @@ def stop(force=False):
         kill_server_pid(_pidfile('api'))
         my_api_host = None
 
+def run_controller():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    stop_controller()
+    rails_api_port = int(string.split(os.environ.get('ARVADOS_TEST_API_HOST', my_api_host), ':')[-1])
+    port = find_available_port()
+    conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
+    with open(conf, 'w') as f:
+        f.write("""
+Clusters:
+  zzzzz:
+    SystemNodes:
+      "*":
+        "arvados-controller":
+          Listen: ":{}"
+        "arvados-api-server":
+          Listen: ":{}"
+          TLS: true
+        """.format(port, rails_api_port))
+    logf = open(_fifo2stderr('controller'), 'w')
+    controller = subprocess.Popen(
+        ["arvados-server", "controller", "-config", conf],
+        stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    with open(_pidfile('controller'), 'w') as f:
+        f.write(str(controller.pid))
+    _wait_until_port_listens(port)
+    _setport('controller', port)
+    return port
+
+def stop_controller():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('controller'))
+
 def run_ws():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
@@ -598,6 +632,8 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
+    nginxconf['CONTROLLERPORT'] = _getport('controller')
+    nginxconf['CONTROLLERSSLPORT'] = find_available_port()
     nginxconf['KEEPWEBPORT'] = _getport('keep-web')
     nginxconf['KEEPWEBDLSSLPORT'] = find_available_port()
     nginxconf['KEEPWEBSSLPORT'] = find_available_port()
@@ -628,6 +664,7 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _setport('controller-ssl', nginxconf['CONTROLLERSSLPORT'])
     _setport('keep-web-dl-ssl', nginxconf['KEEPWEBDLSSLPORT'])
     _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
@@ -766,6 +803,7 @@ if __name__ == "__main__":
     actions = [
         'start', 'stop',
         'start_ws', 'stop_ws',
+        'start_controller', 'stop_controller',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
@@ -802,6 +840,10 @@ if __name__ == "__main__":
         run_ws()
     elif args.action == 'stop_ws':
         stop_ws()
+    elif args.action == 'start_controller':
+        run_controller()
+    elif args.action == 'stop_controller':
+        stop_controller()
     elif args.action == 'start_keep':
         run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
@@ -820,6 +862,7 @@ if __name__ == "__main__":
         stop_keep_web()
     elif args.action == 'start_nginx':
         run_nginx()
+        print("export ARVADOS_API_HOST=0.0.0.0:{}".format(_getport('controller-ssl')))
     elif args.action == 'stop_nginx':
         stop_nginx()
     else:
