@@ -14,7 +14,7 @@ import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
 import ApiToken from "./components/api-token/api-token";
 import authActions from "./store/auth/auth-action";
-import { projectService } from "./services/services";
+import { authService, projectService } from "./services/services";
 
 const history = createBrowserHistory();
 
@@ -30,7 +30,8 @@ const store = configureStore({
 }, history);
 
 store.dispatch(authActions.INIT());
-store.dispatch<any>(projectService.getProjectList());
+const rootUuid = authService.getRootUuid();
+store.dispatch<any>(projectService.getProjectList(rootUuid));
 
 const App = () =>
     <Provider store={store}>

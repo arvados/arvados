@@ -43,7 +43,9 @@ const authReducer = (state: AuthState = {}, action: AuthAction) => {
             const user = {
                 email: ud.email,
                 firstName: ud.first_name,
-                lastName: ud.last_name
+                lastName: ud.last_name,
+                uuid: ud.uuid,
+                ownerUuid: ud.owner_uuid
             };
             authService.saveUser(user);
             return {...state, user};

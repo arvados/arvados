@@ -8,7 +8,9 @@ import {
     API_TOKEN_KEY,
     USER_EMAIL_KEY,
     USER_FIRST_NAME_KEY,
-    USER_LAST_NAME_KEY
+    USER_LAST_NAME_KEY,
+    USER_OWNER_UUID_KEY,
+    USER_UUID_KEY
 } from "../../services/auth-service/auth-service";
 import { API_HOST } from "../../common/api/server-api";
 
@@ -35,6 +37,8 @@ describe('auth-reducer', () => {
         localStorage.setItem(USER_EMAIL_KEY, "test@test.com");
         localStorage.setItem(USER_FIRST_NAME_KEY, "John");
         localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
+        localStorage.setItem(USER_UUID_KEY, "uuid");
+        localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
 
         const state = authReducer(initialState, actions.INIT());
         expect(state).toEqual({
@@ -42,7 +46,9 @@ describe('auth-reducer', () => {
             user: {
                 email: "test@test.com",
                 firstName: "John",
-                lastName: "Doe"
+                lastName: "Doe",
+                uuid: "uuid",
+                ownerUuid: "ownerUuid"
             }
         });
     });
@@ -66,6 +72,8 @@ describe('auth-reducer', () => {
             email: "test@test.com",
             first_name: "John",
             last_name: "Doe",
+            uuid: "uuid",
+            owner_uuid: "ownerUuid",
             is_admin: true
         };
 
@@ -75,7 +83,9 @@ describe('auth-reducer', () => {
             user: {
                 email: "test@test.com",
                 firstName: "John",
-                lastName: "Doe"
+                lastName: "Doe",
+                uuid: "uuid",
+                ownerUuid: "ownerUuid",
             }
         });
 

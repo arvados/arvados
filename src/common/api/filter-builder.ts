@@ -10,9 +10,9 @@ export enum FilterField {
 export default class FilterBuilder {
     private filters = "";
 
-    private addCondition(field: FilterField, cond: string, value?: string) {
+    private addCondition(field: FilterField, cond: string, value?: string, prefix: string = "", postfix: string = "") {
         if (value) {
-            this.filters += `["${field}","${cond}","${value}"]`;
+            this.filters += `["${field}","${cond}","${prefix}${value}${postfix}"]`;
         }
         return this;
     }
@@ -22,11 +22,11 @@ export default class FilterBuilder {
     }
 
     public addLike(field: FilterField, value?: string) {
-        return this.addCondition(field, "like", value);
+        return this.addCondition(field, "like", value, "", "%");
     }
 
     public addILike(field: FilterField, value?: string) {
-        return this.addCondition(field, "ilike", value);
+        return this.addCondition(field, "ilike", value, "", "%");
     }
 
     public get() {
