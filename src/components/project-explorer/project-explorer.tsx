@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import DataExplorer, { DataExplorerProps } from "../../components/data-explorer/data-explorer";
-import { Typography, Grid, ListItem, Divider, List } from '@material-ui/core';
+import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Column } from '../../components/data-explorer/column';
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
@@ -92,10 +92,37 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 selected: true,
                 render: item => (
                     <Popover triggerComponent={ItemActionsTrigger}>
-                        <List>
-                            <ListItem>Share</ListItem>
-                            <Divider />
-                            <ListItem>Remove</ListItem>
+                        <List dense>
+                            {[
+                                {
+                                    icon: "fas fa-users",
+                                    label: "Share"
+                                },
+                                {
+                                    icon: "fas fa-sign-out-alt",
+                                    label: "Move to"
+                                },
+                                {
+                                    icon: "fas fa-star",
+                                    label: "Add to favourite"
+                                },
+                                {
+                                    icon: "fas fa-edit",
+                                    label: "Rename"
+                                },
+                                {
+                                    icon: "fas fa-copy",
+                                    label: "Make a copy"
+                                },
+                                {
+                                    icon: "fas fa-download",
+                                    label: "Download"
+                                }].map(renderAction)
+                            }
+                            < Divider />
+                            {
+                                renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
+                            }
                         </List>
                     </Popover>
                 )
@@ -151,6 +178,17 @@ const renderIcon = (projectItem: ProjectItem) => {
             return <i />;
     }
 };
+
+const renderAction = (action: { label: string, icon: string }, index?: number) => (
+    <ListItem button key={index}>
+        <ListItemIcon>
+            <i className={action.icon} />
+        </ListItemIcon>
+        <ListItemText>
+            {action.label}
+        </ListItemText>
+    </ListItem>
+);
 
 const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) => (
     <IconButton {...props}>
