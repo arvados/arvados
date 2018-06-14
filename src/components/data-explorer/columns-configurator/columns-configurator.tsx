@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Popover, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
-import ColumnsIcon from "@material-ui/icons/ViewWeek";
+import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Popover, Paper, List, Checkbox, ListItemText, ListItem, Typography, ListSubheader } from '@material-ui/core';
+import MenuIcon from "@material-ui/icons/Menu";
 import { Column } from '../column';
 import { PopoverOrigin } from '@material-ui/core/Popover';
 
@@ -26,10 +26,10 @@ class ColumnsConfigurator extends React.Component<ColumnsConfiguratorProps & Wit
     };
 
     render() {
-        const { columns, onColumnToggle } = this.props;
+        const { columns, onColumnToggle, classes } = this.props;
         return (
             <>
-                <IconButton onClick={this.handleClick}><ColumnsIcon /></IconButton>
+                <IconButton onClick={this.handleClick}><MenuIcon /></IconButton>
                 <Popover
                     anchorEl={this.state.anchorEl}
                     open={Boolean(this.state.anchorEl)}
@@ -38,11 +38,14 @@ class ColumnsConfigurator extends React.Component<ColumnsConfiguratorProps & Wit
                     anchorOrigin={this.transformOrigin}
                 >
                     <Paper>
-                        <List>
+                        <List dense>
+                            <ListSubheader>
+                                Configure table columns
+                            </ListSubheader>
                             {
                                 columns.map((column, index) => (
-                                    <ListItem dense key={index} button onClick={() => onColumnToggle(column)}>
-                                        <Checkbox disableRipple color="primary" checked={column.selected}/>
+                                    <ListItem key={index} button onClick={() => onColumnToggle(column)}>
+                                        <Checkbox disableRipple color="primary" checked={column.selected} className={classes.checkbox} />
                                         <ListItemText>{column.header}</ListItemText>
                                     </ListItem>
 
@@ -65,10 +68,14 @@ class ColumnsConfigurator extends React.Component<ColumnsConfiguratorProps & Wit
 
 }
 
-type CssRules = "root";
+type CssRules = "root" | "checkbox";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    root: {}
+    root: {},
+    checkbox: {
+        width: 24,
+        height: 24
+    }
 });
 
 export default withStyles(styles)(ColumnsConfigurator);
