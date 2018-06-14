@@ -11,6 +11,16 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore can store data in one or more Azure Storage containers.
 
+h2. Set up VMs and Storage Accounts
+
+Before starting the configuration of individual keepstore servers is good to have an idea of the keepstores servers' final layout. One key decision is the amount of servers and type of VM to run. Azure may change over time the bandwith capacity of each type. After conducting some empirical saturation tests, the conclusion was that the bandwith is proportional to the amount of cores with some exceptions. As a rule of thumb, is better to invest resources in more cores instead of memory or IOps.
+
+Another decision is how many VMs should be running keepstore. For example there could be 8 VMs with one core each or one machine with 8 cores. Or anything in between. Assuming is the same cost for Cloud resources, there is always the benefit of distributing the risk of faulty VMs. The recommendation is to start with 2 VMs and expand in pairs. Having a minimum of 2 cores each. The total amount of VMs will be a function of the budget and the pipeline traffic to avoid saturation during periods of high usage. Standard D v3 family is a balanced choice, making Standard_D2_v3 the 2-core option
+
+There are many options for storage accounts. You can read details from Azure on their documentation https://docs.microsoft.com/en-us/azure/storage/common/storage-introduction. The type of storage and access tier will be a function of the budget and desired responsiveness. A balanced option is to have General-purpose Standard Storage account and use Blob storage, hot access tiers.
+
+Keepstore can be configure to reflect the level of underlaying redundancy the storage will have. This is call data replication option. For example LRS (Locally Redundant Storage) saves 3 copies of the data. There desired redundancy can be chosen at the keepstore layer or at the Storage Accunt layer. The decision where the redundancy will be done and the type of Storage Account data replication (LRS, ZRS, GRS and RA-GRS) has trade-offs. Please read more on https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy and decide what is best for your needs.
+
 h2. Create a storage container
 
 Using the Azure web portal or command line tool, create or choose a storage account with a suitable redundancy profile and availability region. Use the storage account keys to create a new container.
