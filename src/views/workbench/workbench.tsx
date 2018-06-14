@@ -105,9 +105,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     };
 
     toggleProjectTreeItem = (itemId: string) => {
-        this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
-            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-        });
+        this.props.projects ? 
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId)) : ( 
+                this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+                }))
     };
 
     render() {

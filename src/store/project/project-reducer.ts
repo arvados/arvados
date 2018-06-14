@@ -29,7 +29,15 @@ function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
     }
 }
 
+function resetTreeLoader<T>(tree: Array<TreeItem<T>>) {
+    for (const t of tree) {
+        t.isLoaded = true;
+        resetTreeLoader(t.items ? t.items : []);
+    }
+}
+
 function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], parentItemId?: string): Array<TreeItem<Project>> {
+    resetTreeLoader(tree)
     let treeItem;
     if (parentItemId) {
         treeItem = findTreeItem(tree, parentItemId);
@@ -38,6 +46,7 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
         id: p.uuid,
         open: false,
         active: false,
+        isLoaded: true,
         data: p,
         items: []
     } as TreeItem<Project>));
@@ -66,6 +75,7 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
             if (item) {
                 item.open = !item.open;
                 item.active = true;
+                item.isLoaded = false;
             }
             return tree;
         },
