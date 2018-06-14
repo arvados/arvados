@@ -27,6 +27,7 @@ from cwltool.process import shortname
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 from cwltool.errors import WorkflowException
+from cwltool.context import RuntimeContext
 
 from .fsaccess import CollectionFetcher, CollectionFsAccess
 
@@ -115,7 +116,7 @@ def run():
             logging.getLogger('arvados').setLevel(logging.DEBUG)
             logging.getLogger("cwltool").setLevel(logging.DEBUG)
 
-        args = argparse.Namespace()
+        args = RuntimeContext()
         args.project_uuid = arvados.current_job()["owner_uuid"]
         args.enable_reuse = enable_reuse
         args.on_error = on_error
@@ -134,7 +135,7 @@ def run():
         args.disable_js_validation = False
         args.tmp_outdir_prefix = "tmp"
 
-        runner.arv_executor(t, job_order_object, **vars(args))
+        runner.arv_executor(t, job_order_object, args)
     except Exception as e:
         if isinstance(e, WorkflowException):
             logging.info("Workflow error %s", e)

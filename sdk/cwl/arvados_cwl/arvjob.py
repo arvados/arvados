@@ -8,7 +8,7 @@ import copy
 import json
 import time
 
-from cwltool.process import get_feature, shortname, UnsupportedRequirement
+from cwltool.process import shortname, UnsupportedRequirement
 from cwltool.errors import WorkflowException
 from cwltool.command_line_tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
@@ -44,7 +44,7 @@ class ArvadosJob(object):
         self.running = False
         self.uuid = None
 
-    def run(self, dry_run=False, pull_image=True, **kwargs):
+    def run(self, runtimeContext):
         script_parameters = {
             "command": self.command_line
         }
@@ -96,8 +96,8 @@ class ArvadosJob(object):
             script_parameters["task.permanentFailCodes"] = self.permanentFailCodes
 
         with Perf(metrics, "arv_docker_get_image %s" % self.name):
-            (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
-            if docker_req and kwargs.get("use_container") is not False:
+            (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
+            if docker_req and runtimeContextuse_container is not False:
                 if docker_req.get("dockerOutputDirectory"):
                     raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                         "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
@@ -111,7 +111,7 @@ class ArvadosJob(object):
             runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
             runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
-        runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
+        runtime_req, _ = self.get_requirement("http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
             if "keep_cache" in runtime_req:
                 runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
@@ -128,9 +128,9 @@ class ArvadosJob(object):
         if not self.arvrunner.ignore_docker_for_reuse:
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
-        enable_reuse = kwargs.get("enable_reuse", True)
+        enable_reuse = runtimeContext.enable_reuse
         if enable_reuse:
-            reuse_req, _ = get_feature(self, "http://arvados.org/cwl#ReuseRequirement")
+            reuse_req, _ = self.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
 
@@ -269,7 +269,7 @@ class ArvadosJob(object):
 class RunnerJob(Runner):
     """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""
 
-    def arvados_job_spec(self, dry_run=False, pull_image=True, **kwargs):
+    def arvados_job_spec(self, runtimeContext):
         """Create an Arvados job specification for this workflow.
 
         The returned dict can be used to create a job (i.e., passed as
@@ -299,7 +299,7 @@ class RunnerJob(Runner):
         if self.on_error:
             self.job_order["arv:on_error"] = self.on_error
 
-        if kwargs.get("debug"):
+        if runtimeContext.debug:
             self.job_order["arv:debug"] = True
 
         return {
@@ -314,8 +314,8 @@ class RunnerJob(Runner):
             }
         }
 
-    def run(self, **kwargs):
-        job_spec = self.arvados_job_spec(**kwargs)
+    def run(self, runtimeContext):
+        job_spec = self.arvados_job_spec(runtimeContext)
 
         job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
 
@@ -346,7 +346,7 @@ class RunnerJob(Runner):
             body=instance_spec).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
 
-        if kwargs.get("wait") is False:
+        if runtimeContext.wait is False:
             self.uuid = self.arvrunner.pipeline["uuid"]
             return
 
