@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import DataExplorer, { DataExplorerProps } from "../../components/data-explorer/data-explorer";
+import ColumnsConfigurator from "../../components/data-explorer/columns-configurator/columns-configurator";
 import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Column } from '../../components/data-explorer/column';
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
@@ -89,9 +90,17 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             },
             {
                 header: "Actions",
+                key: "Actions",
                 selected: true,
                 configurable: false,
-                renderHeader: () => <span/>,
+                renderHeader: () => (
+                    <Grid container justify="flex-end">
+                        <ColumnsConfigurator
+                            columns={this.state.columns}
+                            onColumnToggle={this.toggleColumn}
+                        />
+                    </Grid>
+                ),
                 render: item => (
                     <Grid container justify="flex-end">
                         <Popover triggerComponent={ItemActionsTrigger}>

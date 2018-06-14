@@ -6,6 +6,7 @@ export interface Column<T> {
     header: string;
     selected: boolean;
     configurable?: boolean;
+    key?: React.Key;
     render: (item: T) => React.ReactElement<void>;
     renderHeader?: () => React.ReactElement<void>;
 }

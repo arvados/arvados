@@ -18,47 +18,42 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
     render() {
         const { items, columns, classes, onItemClick, onColumnToggle } = this.props;
         return (
-            <div>
-                <Grid container justify="flex-end">
-                    <ColumnsConfigurator {...{ columns, onColumnToggle }} />
-                </Grid>
-                <div className={classes.tableContainer}>
-                    {
-                        items.length > 0 ? (
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        {
-                                            columns.filter(column => column.selected).map(({ header, renderHeader }, index) => (
-                                                <TableCell key={index}>
-                                                    {renderHeader ? renderHeader() : header}
-                                                </TableCell>
-                                            ))
-                                        }
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody className={classes.tableBody}>
+            <div className={classes.tableContainer}>
+                {
+                    items.length > 0 ? (
+                        <Table>
+                            <TableHead>
+                                <TableRow>
                                     {
-                                        items.map((item, index) => (
-                                            <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
-                                                {
-                                                    columns.filter(column => column.selected).map((column, index) => (
-                                                        <TableCell key={index}>
-                                                            {column.render(item)}
-                                                        </TableCell>
-                                                    ))
-                                                }
-                                            </TableRow>
+                                        columns.filter(column => column.selected).map(({ header, renderHeader, key }, index) => (
+                                            <TableCell key={key || index}>
+                                                {renderHeader ? renderHeader() : header}
+                                            </TableCell>
                                         ))
                                     }
-                                </TableBody>
-                            </Table>
-                        ) : (
-                                <Typography>No items</Typography>
-                            )
-                    }
+                                </TableRow>
+                            </TableHead>
+                            <TableBody className={classes.tableBody}>
+                                {
+                                    items.map((item, index) => (
+                                        <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
+                                            {
+                                                columns.filter(column => column.selected).map((column, index) => (
+                                                    <TableCell key={index}>
+                                                        {column.render(item)}
+                                                    </TableCell>
+                                                ))
+                                            }
+                                        </TableRow>
+                                    ))
+                                }
+                            </TableBody>
+                        </Table>
+                    ) : (
+                            <Typography>No items</Typography>
+                        )
+                }
 
-                </div>
             </div>
         );
     }
