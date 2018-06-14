@@ -11,7 +11,7 @@ export interface DataExplorerProps<T> {
     items: T[];
     columns: Array<Column<T>>;
     onColumnToggle: (column: Column<T>) => void;
-    onItemClick: (item: T) => void;
+    onItemClick?: (item: T) => void;
 }
 
 class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {
@@ -38,7 +38,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                                 <TableBody className={classes.tableBody}>
                                     {
                                         items.map((item, index) => (
-                                            <TableRow key={index} hover onClick={() => onItemClick(item)}>
+                                            <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
                                                 {
                                                     columns.filter(column => column.selected).map((column, index) => (
                                                         <TableCell key={index}>
