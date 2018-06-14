@@ -46,7 +46,7 @@ const ColumnsConfigurator: React.SFC<ColumnsConfiguratorProps & WithStyles<CssRu
     );
 };
 
-const ColumnsConfiguratorTrigger: React.SFC<IconButtonProps> = (props) => (
+export const ColumnsConfiguratorTrigger: React.SFC<IconButtonProps> = (props) => (
     <IconButton {...props}>
         <MenuIcon />
     </IconButton>
