@@ -15,6 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/Sirupsen/logrus"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 type NewHandlerFunc func(*arvados.Cluster, *arvados.SystemNode) http.Handler
@@ -92,6 +93,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		"Listen":  srv.Addr,
 		"Service": c.svcName,
 	}).Info("listening")
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		log.WithError(err).Errorf("error notifying init daemon")
+	}
 	err = srv.Wait()
 	if err != nil {
 		return 1
