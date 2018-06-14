@@ -31,7 +31,8 @@ max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdir
 sum_res_pars = ("outdirMin", "outdirMax")
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
-                    submit_runner_ram=0, name=None, merged_map=None):
+                    submit_runner_ram=0, submit_runner_vcpus=0, name=None,
+                    merged_map=None):
 
     packed = packed_workflow(arvRunner, tool, merged_map)
 
@@ -52,6 +53,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
                         packed, tool.tool["id"], False)
 
     # TODO nowhere for submit_runner_ram to go.
+    # TODO nowhere for submit_runner_vcpus to go.
 
     body = {
         "workflow": {
