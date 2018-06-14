@@ -9,3 +9,7 @@ export interface User {
     uuid: string;
     ownerUuid: string;
 }
+
+export const getUserFullname = (user?: User) => {
+    return user ? `${user.firstName} ${user.lastName}` : "";
+};

@@ -10,7 +10,7 @@ import HelpIcon from "@material-ui/icons/Help";
 import SearchBar from "./search-bar/search-bar";
 import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs";
 import DropdownMenu from "./dropdown-menu/dropdown-menu";
-import { User } from "../../models/user";
+import { User, getUserFullname } from "../../models/user";
 
 export interface MainAppBarMenuItem {
     label: string;
@@ -39,9 +39,8 @@ export interface MainAppBarActionProps {
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
 
 export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
-    const { classes, searchText, breadcrumbs, searchDebounce, user } = props;
-    return <AppBar className={classes.appBar} position="static">
-        <Toolbar className={classes.toolbar}>
+    return <AppBar className={props.classes.appBar} position="static">
+        <Toolbar className={props.classes.toolbar}>
             <Grid
                 container
                 justify="space-between"
@@ -57,9 +56,9 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                 <Grid item xs={6} container alignItems="center">
                     {
                         props.user && <SearchBar
-                            value={searchText}
+                            value={props.searchText}
                             onSearch={props.onSearch}
-                            debounce={searchDebounce}
+                            debounce={props.searchDebounce}
                         />
                     }
                 </Grid>
@@ -71,8 +70,8 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
             </Grid>
         </Toolbar>
         {
-            props.user && <Toolbar className={classes.toolbar}>
-                <Breadcrumbs items={breadcrumbs} onClick={props.onBreadcrumbClick} />
+            props.user && <Toolbar className={props.classes.toolbar}>
+                <Breadcrumbs items={props.breadcrumbs} onClick={props.onBreadcrumbClick} />
             </Toolbar>
         }
     </AppBar>;
@@ -88,7 +87,9 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
                 </Badge>
             </IconButton>
             <DropdownMenu icon={PersonIcon} id="account-menu">
-                <MenuItem>{getUserFullname(user)}</MenuItem>
+                <MenuItem>
+                    {getUserFullname(user)}
+                </MenuItem>
                 {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
             </DropdownMenu>
             <DropdownMenu icon={HelpIcon} id="help-menu">
@@ -100,18 +101,18 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
 
 const renderMenuForAnonymous = ({ onMenuItemClick, menuItems }: MainAppBarProps) => {
     return menuItems.anonymousMenu.map((item, index) => (
-        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>{item.label}</Button>
+        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>
+            {item.label}
+        </Button>
     ));
 };
 
 const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menuItem: MainAppBarMenuItem) => void) => {
     return menuItems.map((item, index) => (
-        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>{item.label}</MenuItem>
+        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>
+            {item.label}
+        </MenuItem>
     ));
-};
-
-const getUserFullname = (user?: User) => {
-    return user ? `${user.firstName} ${user.lastName}` : "";
 };
 
 type CssRules = "appBar" | "toolbar";

@@ -10,15 +10,18 @@ import SearchBar from "./search-bar/search-bar";
 import Breadcrumbs from "../breadcrumbs/breadcrumbs";
 import DropdownMenu from "./dropdown-menu/dropdown-menu";
 import { Button, MenuItem, IconButton } from "@material-ui/core";
+import { User } from "../../models/user";
 
 configure({ adapter: new Adapter() });
 
 describe("<MainAppBar />", () => {
 
-    const user = {
+    const user: User = {
         firstName: "Test",
         lastName: "User",
-        email: "test.user@example.com"
+        email: "test.user@example.com",
+        uuid: "",
+        ownerUuid: ""
     };
 
     it("renders all components and the menu for authenticated user if user prop has value", () => {
