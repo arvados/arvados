@@ -166,7 +166,7 @@ When a block is newly written, it is protected from deletion for the duration in
 
 If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".  A block which is in the trash is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @TrashLifetime@.
 
-Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their storage class and "rendezvous hashing order":{{site.baseurl}}/api/storage.html).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed on the original server.
+Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their "storage class":{{site.baseurl}}/admin/storage-classes.html and "rendezvous hashing order":{{site.baseurl}}/api/storage.html).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed on the original server.
 
 h3. Configure storage volumes
 
