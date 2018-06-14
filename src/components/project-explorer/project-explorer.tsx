@@ -4,33 +4,102 @@
 
 import * as React from 'react';
 import DataExplorer, { DataExplorerProps } from "../../components/data-explorer/data-explorer";
-import { RouteComponentProps } from 'react-router';
-import { Project } from '../../models/project';
-import { ProjectState, findTreeItem } from '../../store/project/project-reducer';
-import { RootState } from '../../store/store';
-import { connect, DispatchProp } from 'react-redux';
-import { push } from 'react-router-redux';
-import projectActions from "../../store/project/project-action";
-import { Typography } from '@material-ui/core';
+import { Typography, Grid, ListItem, Divider, List } from '@material-ui/core';
 import { Column } from '../../components/data-explorer/column';
+import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
+import MoreVertIcon from "@material-ui/icons/MoreVert";
+import Popover from '../popover/popover';
 
-interface ProjectExplorerProps {
-    projects: Project[];
-    onProjectClick: (project: Project) => void;
+export interface ProjectItem {
+    name: string;
+    type: string;
+    owner: string;
+    lastModified: string;
+    fileSize?: number;
+    status?: string;
 }
 
-type ProjectExplorerState = Pick<DataExplorerProps<Project>, "columns">;
+interface ProjectExplorerProps {
+    items: ProjectItem[];
+    onItemClick: (item: ProjectItem) => void;
+}
+
+type ProjectExplorerState = Pick<DataExplorerProps<ProjectItem>, "columns">;
 
 class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplorerState> {
 
     state: ProjectExplorerState = {
         columns: [
-            { header: "Name", selected: true, render: item => <Typography noWrap>{renderIcon(item.kind)} {item.name}</Typography> },
-            { header: "Created at", selected: true, render: item => <Typography noWrap>{formatDate(item.createdAt)}</Typography> },
-            { header: "Modified at", selected: true, render: item => <Typography noWrap>{formatDate(item.modifiedAt)}</Typography> },
-            { header: "UUID", selected: true, render: item => <Typography noWrap>{item.uuid}</Typography> },
-            { header: "Owner UUID", selected: true, render: item => <Typography noWrap>{item.ownerUuid}</Typography> },
-            { header: "URL", selected: true, render: item => <Typography noWrap>{item.href}</Typography> }
+            {
+                header: "Name",
+                selected: true,
+                render: item => (
+                    <Grid container onClick={() => this.props.onItemClick(item)}>
+                        {renderIcon(item)}
+                        <Typography style={{ marginLeft: 8 }}>
+                            {item.name}
+                        </Typography>
+                    </Grid>
+                )
+            },
+            {
+                header: "Status",
+                selected: true,
+                render: item => (
+                    <Typography noWrap align="center">
+                        {item.status || "-"}
+                    </Typography>
+                )
+            },
+            {
+                header: "Type",
+                selected: true,
+                render: item => (
+                    <Typography noWrap>
+                        {item.type}
+                    </Typography>
+                )
+            },
+            {
+                header: "Owner",
+                selected: true,
+                render: item => (
+                    <Typography noWrap>
+                        {item.owner}
+                    </Typography>
+                )
+            },
+            {
+                header: "File size",
+                selected: true,
+                render: ({ fileSize }) => (
+                    <Typography noWrap>
+                        {typeof fileSize === "number" ? formatFileSize(fileSize) : "-"}
+                    </Typography>
+                )
+            },
+            {
+                header: "Last modified",
+                selected: true,
+                render: item => (
+                    <Typography noWrap>
+                        {formatDate(item.lastModified)}
+                    </Typography>
+                )
+            },
+            {
+                header: "Actions",
+                selected: true,
+                render: item => (
+                    <Popover triggerComponent={ItemActionsTrigger}>
+                        <List>
+                            <ListItem>Share</ListItem>
+                            <Divider />
+                            <ListItem>Remove</ListItem>
+                        </List>
+                    </Popover>
+                )
+            }
         ]
     };
 
@@ -38,14 +107,13 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         return (
             <DataExplorer
                 columns={this.state.columns}
-                items={this.props.projects}
-                onItemClick={this.props.onProjectClick}
+                items={this.props.items}
                 onColumnToggle={this.toggleColumn}
             />
         );
     }
 
-    toggleColumn = (column: Column<Project>) => {
+    toggleColumn = (column: Column<ProjectItem>) => {
         const index = this.state.columns.indexOf(column);
         const columns = this.state.columns.slice(0);
         columns.splice(index, 1, { ...column, selected: !column.selected });
@@ -58,8 +126,23 @@ const formatDate = (isoDate: string) => {
     return date.toLocaleString();
 };
 
-const renderIcon = (kind: string) => {
-    switch (kind) {
+const formatFileSize = (size: number) => {
+    switch (true) {
+        case size > 1000000000000:
+            return `${size / 1000000000000} TB`;
+        case size > 1000000000:
+            return `${size / 1000000000} GB`;
+        case size > 1000000:
+            return `${size / 1000000} MB`;
+        case size > 1000:
+            return `${size / 1000} KB`;
+        default:
+            return `${size} B`;
+    }
+};
+
+const renderIcon = (projectItem: ProjectItem) => {
+    switch (projectItem.type) {
         case "arvados#group":
             return <i className="fas fa-folder" />;
         case "arvados#groupList":
@@ -68,5 +151,11 @@ const renderIcon = (kind: string) => {
             return <i />;
     }
 };
+
+const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) => (
+    <IconButton {...props}>
+        <MoreVertIcon />
+    </IconButton>
+);
 
 export default ProjectExplorer;

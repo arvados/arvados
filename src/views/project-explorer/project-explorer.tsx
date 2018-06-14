@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import DataExplorer, { DataExplorerProps } from "../../components/data-explorer/data-explorer";
+import { DataExplorerProps } from "../../components/data-explorer/data-explorer";
 import { RouteComponentProps } from 'react-router';
 import { Project } from '../../models/project';
 import { ProjectState, findTreeItem } from '../../store/project/project-reducer';
@@ -11,9 +11,8 @@ import { RootState } from '../../store/store';
 import { connect, DispatchProp } from 'react-redux';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
-import { Typography } from '@material-ui/core';
-import { Column } from '../../components/data-explorer/column';
-import ProjectExplorer from '../../components/project-explorer/project-explorer';
+import ProjectExplorer, { ProjectItem } from '../../components/project-explorer/project-explorer';
+import { TreeItem } from '../../components/tree/tree';
 
 interface ProjectExplorerViewDataProps {
     projects: ProjectState;
@@ -23,6 +22,10 @@ type ProjectExplorerViewProps = ProjectExplorerViewDataProps & RouteComponentPro
 
 type ProjectExplorerViewState = Pick<DataExplorerProps<Project>, "columns">;
 
+interface MappedProjectItem extends ProjectItem {
+    uuid: string;
+}
+
 class ProjectExplorerView extends React.Component<ProjectExplorerViewProps, ProjectExplorerViewState> {
 
     render() {
@@ -30,18 +33,27 @@ class ProjectExplorerView extends React.Component<ProjectExplorerViewProps, Proj
         const projectItems = project && project.items || [];
         return (
             <ProjectExplorer
-                projects={projectItems.map(item => item.data)}
-                onProjectClick={this.goToProject}
+                items={projectItems.map(mapTreeItem)}
+                onItemClick={this.goToProject}
             />
         );
     }
 
-    goToProject = (project: Project) => {
+    goToProject = (project: MappedProjectItem) => {
         this.props.dispatch(push(`/project/${project.uuid}`));
         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(project.uuid));
     }
 
 }
+
+const mapTreeItem = (item: TreeItem<Project>): MappedProjectItem => ({
+    name: item.data.name,
+    type: item.data.kind,
+    owner: item.data.ownerUuid,
+    lastModified: item.data.modifiedAt,
+    uuid: item.data.uuid
+});
+
 
 export default connect(
     (state: RootState) => ({
