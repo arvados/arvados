@@ -248,5 +248,5 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                                    job_uuid,
                                    error)
         self._logger.debug("Calculated wishlist: %s",
-                           ', '.join("%s (preemptable: %s)" % (s.name, s.preemptable) for s in server_list) or "(empty)")
+                           ', '.join(s.id for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)

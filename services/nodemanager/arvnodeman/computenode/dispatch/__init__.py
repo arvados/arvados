@@ -130,7 +130,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @RetryMixin._retry()
     def create_cloud_node(self):
         self._logger.info("Sending create_node request for node size %s.",
-                          self.cloud_size.name)
+                          self.cloud_size.id)
         try:
             self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                       self.arvados_node)
