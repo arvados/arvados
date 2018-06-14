@@ -13,55 +13,43 @@ export interface Breadcrumb {
 
 interface BreadcrumbsProps {
     items: Breadcrumb[];
-    onClick: (breadcrumb: Breadcrumb) => any;
+    onClick: (breadcrumb: Breadcrumb) => void;
 }
 
-const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = (props) => {
-    const { classes, onClick, items } = props;
+const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ classes, onClick, items }) => {
     return <Grid container alignItems="center">
         {
-            getInactiveItems(items).map((item, index) => (
-                <React.Fragment key={index}>
-                    <Button
-                        color="inherit"
-                        className={classes.inactiveItem}
-                        onClick={() => onClick(item)}
-                    >
-                        {item.label}
-                    </Button>
-                    <ChevronRightIcon color="inherit" className={classes.inactiveItem} />
-                </React.Fragment>
-            ))
-        }
-        {
-            getActiveItem(items).map((item, index) => (
-                <Button
-                    color="inherit"
-                    key={index}
-                    onClick={() => onClick(item)}
-                >
-                    {item.label}
-                </Button>
-            ))
+            items.map((item, index) => {
+                const isLastItem = index === items.length - 1;
+                return (
+                    <React.Fragment key={index}>
+                        <Button
+                            color="inherit"
+                            className={isLastItem ? classes.currentItem : classes.item}
+                            onClick={() => onClick(item)}
+                        >
+                            {item.label}
+                        </Button>
+                        {
+                            !isLastItem && <ChevronRightIcon color="inherit" className={classes.item} />
+                        }
+                    </React.Fragment>
+                );
+            })
         }
     </Grid>;
 };
 
-const getInactiveItems = (items: Breadcrumb[]) => {
-    return items.slice(0, -1);
-};
-
-const getActiveItem = (items: Breadcrumb[]) => {
-    return items.slice(-1);
-};
-
-type CssRules = 'inactiveItem';
+type CssRules = "item" | "currentItem";
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     const { unit } = theme.spacing;
     return {
-        inactiveItem: {
+        item: {
             opacity: 0.6
+        },
+        currentItem: {
+            opacity: 1
         }
     };
 };
