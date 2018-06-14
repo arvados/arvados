@@ -3,70 +3,46 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Popover, Paper, List, Checkbox, ListItemText, ListItem, Typography, ListSubheader } from '@material-ui/core';
+import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Typography, ListSubheader } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
 import { Column } from '../column';
 import { PopoverOrigin } from '@material-ui/core/Popover';
+import Popover from "../../popover/popover";
+import { IconButtonProps } from '@material-ui/core/IconButton';
 
 export interface ColumnsConfiguratorProps {
     columns: Array<Column<any>>;
     onColumnToggle: (column: Column<any>) => void;
 }
 
-
-class ColumnsConfigurator extends React.Component<ColumnsConfiguratorProps & WithStyles<CssRules>> {
-
-    state = {
-        anchorEl: undefined
-    };
-
-    transformOrigin: PopoverOrigin = {
-        vertical: "top",
-        horizontal: "right",
-    };
-
-    render() {
-        const { columns, onColumnToggle, classes } = this.props;
-        return (
-            <>
-                <IconButton onClick={this.handleClick}><MenuIcon /></IconButton>
-                <Popover
-                    anchorEl={this.state.anchorEl}
-                    open={Boolean(this.state.anchorEl)}
-                    onClose={this.handleClose}
-                    transformOrigin={this.transformOrigin}
-                    anchorOrigin={this.transformOrigin}
-                >
-                    <Paper>
-                        <List dense>
-                            <ListSubheader>
-                                Configure table columns
+const ColumnsConfigurator: React.SFC<ColumnsConfiguratorProps & WithStyles<CssRules>> = ({ columns, onColumnToggle, classes }) => {
+    return (
+        <Popover triggerComponent={ColumnsConfiguratorTrigger}>
+            <Paper>
+                <List dense>
+                    <ListSubheader>
+                        Configure table columns
                             </ListSubheader>
-                            {
-                                columns.map((column, index) => (
-                                    <ListItem key={index} button onClick={() => onColumnToggle(column)}>
-                                        <Checkbox disableRipple color="primary" checked={column.selected} className={classes.checkbox} />
-                                        <ListItemText>{column.header}</ListItemText>
-                                    </ListItem>
+                    {
+                        columns.map((column, index) => (
+                            <ListItem key={index} button onClick={() => onColumnToggle(column)}>
+                                <Checkbox disableRipple color="primary" checked={column.selected} className={classes.checkbox} />
+                                <ListItemText>{column.header}</ListItemText>
+                            </ListItem>
 
-                                ))
-                            }
-                        </List>
-                    </Paper>
-                </Popover>
-            </>
-        );
-    }
+                        ))
+                    }
+                </List>
+            </Paper>
+        </Popover>
+    );
+};
 
-    handleClose = () => {
-        this.setState({ anchorEl: undefined });
-    }
-
-    handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        this.setState({ anchorEl: event.currentTarget });
-    }
-
-}
+const ColumnsConfiguratorTrigger: React.SFC<IconButtonProps> = (props) => (
+    <IconButton {...props}>
+        <MenuIcon />
+    </IconButton>
+);
 
 type CssRules = "root" | "checkbox";
 
