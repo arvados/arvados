@@ -413,6 +413,8 @@ do
     fi
 done
 
+rm -vf "${WORKSPACE}/tmp/*.log"
+
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
         source "$HOME/.rvm/scripts/rvm"
