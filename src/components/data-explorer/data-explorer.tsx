@@ -29,8 +29,10 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                                 <TableHead>
                                     <TableRow>
                                         {
-                                            columns.filter(column => column.selected).map((column, index) => (
-                                                <TableCell key={index}>{column.header}</TableCell>
+                                            columns.filter(column => column.selected).map(({ header, renderHeader }, index) => (
+                                                <TableCell key={index}>
+                                                    {renderHeader ? renderHeader() : header}
+                                                </TableCell>
                                             ))
                                         }
                                     </TableRow>

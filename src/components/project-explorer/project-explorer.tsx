@@ -90,41 +90,45 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             {
                 header: "Actions",
                 selected: true,
+                configurable: false,
+                renderHeader: () => <span/>,
                 render: item => (
-                    <Popover triggerComponent={ItemActionsTrigger}>
-                        <List dense>
-                            {[
+                    <Grid container justify="flex-end">
+                        <Popover triggerComponent={ItemActionsTrigger}>
+                            <List dense>
+                                {[
+                                    {
+                                        icon: "fas fa-users",
+                                        label: "Share"
+                                    },
+                                    {
+                                        icon: "fas fa-sign-out-alt",
+                                        label: "Move to"
+                                    },
+                                    {
+                                        icon: "fas fa-star",
+                                        label: "Add to favourite"
+                                    },
+                                    {
+                                        icon: "fas fa-edit",
+                                        label: "Rename"
+                                    },
+                                    {
+                                        icon: "fas fa-copy",
+                                        label: "Make a copy"
+                                    },
+                                    {
+                                        icon: "fas fa-download",
+                                        label: "Download"
+                                    }].map(renderAction)
+                                }
+                                < Divider />
                                 {
-                                    icon: "fas fa-users",
-                                    label: "Share"
-                                },
-                                {
-                                    icon: "fas fa-sign-out-alt",
-                                    label: "Move to"
-                                },
-                                {
-                                    icon: "fas fa-star",
-                                    label: "Add to favourite"
-                                },
-                                {
-                                    icon: "fas fa-edit",
-                                    label: "Rename"
-                                },
-                                {
-                                    icon: "fas fa-copy",
-                                    label: "Make a copy"
-                                },
-                                {
-                                    icon: "fas fa-download",
-                                    label: "Download"
-                                }].map(renderAction)
-                            }
-                            < Divider />
-                            {
-                                renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
-                            }
-                        </List>
-                    </Popover>
+                                    renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
+                                }
+                            </List>
+                        </Popover>
+                    </Grid>
                 )
             }
         ]

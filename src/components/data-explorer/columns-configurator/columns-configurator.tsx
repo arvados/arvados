@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Typography, ListSubheader } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
-import { Column } from '../column';
+import { Column, isColumnConfigurable } from '../column';
 import { PopoverOrigin } from '@material-ui/core/Popover';
 import Popover from "../../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
@@ -20,17 +20,15 @@ const ColumnsConfigurator: React.SFC<ColumnsConfiguratorProps & WithStyles<CssRu
         <Popover triggerComponent={ColumnsConfiguratorTrigger}>
             <Paper>
                 <List dense>
-                    <ListSubheader>
-                        Configure table columns
-                            </ListSubheader>
                     {
-                        columns.map((column, index) => (
-                            <ListItem key={index} button onClick={() => onColumnToggle(column)}>
-                                <Checkbox disableRipple color="primary" checked={column.selected} className={classes.checkbox} />
-                                <ListItemText>{column.header}</ListItemText>
-                            </ListItem>
-
-                        ))
+                        columns
+                            .filter(isColumnConfigurable)
+                            .map((column, index) => (
+                                <ListItem key={index} button onClick={() => onColumnToggle(column)}>
+                                    <Checkbox disableRipple color="primary" checked={column.selected} className={classes.checkbox} />
+                                    <ListItemText>{column.header}</ListItemText>
+                                </ListItem>
+                            ))
                     }
                 </List>
             </Paper>

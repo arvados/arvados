@@ -5,5 +5,11 @@
 export interface Column<T> {
     header: string;
     selected: boolean;
+    configurable?: boolean;
     render: (item: T) => React.ReactElement<void>;
+    renderHeader?: () => React.ReactElement<void>;
 }
+
+export const isColumnConfigurable = <T>(column: Column<T>) => {
+    return column.configurable === undefined || column.configurable === true;
+};
