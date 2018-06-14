@@ -10,7 +10,7 @@ import { PopoverOrigin } from '@material-ui/core/Popover';
 
 export interface ColumnsConfiguratorProps {
     columns: Array<Column<any>>;
-    onColumnToggle: (column: Column<any>) => void
+    onColumnToggle: (column: Column<any>) => void;
 }
 
 
@@ -18,12 +18,12 @@ class ColumnsConfigurator extends React.Component<ColumnsConfiguratorProps & Wit
 
     state = {
         anchorEl: undefined
-    }
+    };
 
     transformOrigin: PopoverOrigin = {
         vertical: "top",
         horizontal: "right",
-    }
+    };
 
     render() {
         const { columns, onColumnToggle } = this.props;

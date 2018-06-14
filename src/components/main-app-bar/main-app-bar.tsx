@@ -1,0 +1,129 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import * as React from "react";
+import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, StyleRulesCallback, withStyles, WithStyles, Button, MenuItem } from "@material-ui/core";
+import NotificationsIcon from "@material-ui/icons/Notifications";
+import PersonIcon from "@material-ui/icons/Person";
+import HelpIcon from "@material-ui/icons/Help";
+import SearchBar from "./search-bar/search-bar";
+import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs";
+import DropdownMenu from "./dropdown-menu/dropdown-menu";
+import { User, getUserFullname } from "../../models/user";
+
+export interface MainAppBarMenuItem {
+    label: string;
+}
+
+export interface MainAppBarMenuItems {
+    accountMenu: MainAppBarMenuItem[];
+    helpMenu: MainAppBarMenuItem[];
+    anonymousMenu: MainAppBarMenuItem[];
+}
+
+interface MainAppBarDataProps {
+    searchText: string;
+    searchDebounce?: number;
+    breadcrumbs: Breadcrumb[];
+    user?: User;
+    menuItems: MainAppBarMenuItems;
+}
+
+export interface MainAppBarActionProps {
+    onSearch: (searchText: string) => void;
+    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
+    onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
+}
+
+type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
+
+export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
+    return <AppBar className={props.classes.appBar} position="static">
+        <Toolbar className={props.classes.toolbar}>
+            <Grid
+                container
+                justify="space-between"
+            >
+                <Grid item xs={3}>
+                    <Typography variant="headline" color="inherit" noWrap>
+                        Arvados
+                    </Typography>
+                    <Typography variant="body1" color="inherit" noWrap >
+                        Workbench 2
+                    </Typography>
+                </Grid>
+                <Grid item xs={6} container alignItems="center">
+                    {
+                        props.user && <SearchBar
+                            value={props.searchText}
+                            onSearch={props.onSearch}
+                            debounce={props.searchDebounce}
+                        />
+                    }
+                </Grid>
+                <Grid item xs={3} container alignItems="center" justify="flex-end">
+                    {
+                        props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
+                    }
+                </Grid>
+            </Grid>
+        </Toolbar>
+        {
+            props.user && <Toolbar className={props.classes.toolbar}>
+                <Breadcrumbs items={props.breadcrumbs} onClick={props.onBreadcrumbClick} />
+            </Toolbar>
+        }
+    </AppBar>;
+};
+
+
+const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
+    return (
+        <>
+            <IconButton color="inherit">
+                <Badge badgeContent={3} color="primary">
+                    <NotificationsIcon />
+                </Badge>
+            </IconButton>
+            <DropdownMenu icon={PersonIcon} id="account-menu">
+                <MenuItem>
+                    {getUserFullname(user)}
+                </MenuItem>
+                {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
+            </DropdownMenu>
+            <DropdownMenu icon={HelpIcon} id="help-menu">
+                {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
+            </DropdownMenu>
+        </>
+    );
+};
+
+const renderMenuForAnonymous = ({ onMenuItemClick, menuItems }: MainAppBarProps) => {
+    return menuItems.anonymousMenu.map((item, index) => (
+        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>
+            {item.label}
+        </Button>
+    ));
+};
+
+const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menuItem: MainAppBarMenuItem) => void) => {
+    return menuItems.map((item, index) => (
+        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>
+            {item.label}
+        </MenuItem>
+    ));
+};
+
+type CssRules = "appBar" | "toolbar";
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    appBar: {
+        backgroundColor: "#692498"
+    },
+    toolbar: {
+        minHeight: '48px'
+    }
+});
+
+export default withStyles(styles)(MainAppBar);

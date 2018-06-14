@@ -17,17 +17,19 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp
         const regex = new RegExp('[\\?&]' + safeName + '=([^&#]*)');
         const results = regex.exec(search);
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    };
+    }
 
     componentDidMount() {
         const search = this.props.location ? this.props.location.search : "";
         const apiToken = ApiToken.getUrlParameter(search, 'api_token');
         this.props.dispatch(authActions.SAVE_API_TOKEN(apiToken));
-        this.props.dispatch(authService.getUserDetails());
-        this.props.dispatch(projectService.getProjectList());
+        this.props.dispatch<any>(authService.getUserDetails()).then(() => {
+            const rootUuid = authService.getRootUuid();
+            this.props.dispatch(projectService.getProjectList(rootUuid));
+        });
     }
     render() {
-        return <Redirect to="/"/>
+        return <Redirect to="/"/>;
     }
 }
 

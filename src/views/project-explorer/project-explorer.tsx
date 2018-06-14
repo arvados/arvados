@@ -10,12 +10,12 @@ import { ProjectState, findTreeItem } from '../../store/project/project-reducer'
 import { RootState } from '../../store/store';
 import { connect, DispatchProp } from 'react-redux';
 import { push } from 'react-router-redux';
-import projectActions from "../../store/project/project-action"
+import projectActions from "../../store/project/project-action";
 import { Typography } from '@material-ui/core';
 import { Column } from '../../components/data-explorer/column';
 
 interface ProjectExplorerViewDataProps {
-    projects: ProjectState
+    projects: ProjectState;
 }
 
 type ProjectExplorerViewProps = ProjectExplorerViewDataProps & RouteComponentProps<{ name: string }> & DispatchProp;
@@ -33,7 +33,7 @@ class ProjectExplorerView extends React.Component<ProjectExplorerViewProps, Proj
             { header: "Owner UUID", selected: true, render: item => <Typography noWrap>{item.ownerUuid}</Typography> },
             { header: "URL", selected: true, render: item => <Typography noWrap>{item.href}</Typography> }
         ]
-    }
+    };
 
     render() {
         const project = findTreeItem(this.props.projects, this.props.match.params.name);

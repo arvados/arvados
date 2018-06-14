@@ -6,4 +6,10 @@ export interface User {
     email: string;
     firstName: string;
     lastName: string;
+    uuid: string;
+    ownerUuid: string;
 }
+
+export const getUserFullname = (user?: User) => {
+    return user ? `${user.firstName} ${user.lastName}` : "";
+};
