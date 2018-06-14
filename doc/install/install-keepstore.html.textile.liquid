@@ -116,8 +116,9 @@ MaxRequests: 0
 PIDFile: ""
 
 # Maximum number of concurrent pull operations. Default is 1, i.e.,
-# pull lists are processed serially.
-PullWorkers: 0
+# pull lists are processed serially.  A pull operation copies a block
+# from another keepstore server.
+PullWorkers: 1
 
 # Honor read requests only if a valid signature is provided.  This
 # should be true, except for development use and when migrating from
@@ -150,79 +151,32 @@ TrashCheckInterval: 24h0m0s
 # recovered using an /untrash request.
 TrashLifetime: 336h0m0s
 
-# Maximum number of concurrent trash operations. Default is 1, i.e.,
-# trash lists are processed serially.
+# Maximum number of concurrent trash operations (moving a block to the
+# trash, or permanently deleting it) . Default is 1, i.e., trash lists
+# are processed serially.  If individual trash operations have high
+# latency (eg some cloud platforms) you should increase this.
 TrashWorkers: 1
 </pre>
 
 h3. Notes on storage management
 
-On its own, a keepstore server never deletes data.  The "keep-balance":install-keep-balance.html service service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash.
+On its own, a keepstore server never deletes data.  The "keep-balance":install-keep-balance.html service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash.
 
 When a block is newly written, it is protected from deletion for the duration in @BlobSignatureTTL@.  During this time, it cannot be trashed.
 
-If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".  A block which is in the trash has been moved out of the way and is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @TrashLifetime@.
+If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".  A block which is in the trash is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @TrashLifetime@.
+
+Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their storage class and "rendezvous hashing order":{{site.baseurl}}/api/storage.html).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed on the original server.
 
 h3. Configure storage volumes
 
-Available storage volume types include cloud object storage and POSIX filesystems.
+Available storage volume types include POSIX filesystems and cloud object storage.
 
-If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions "S3 Object Storage":configure-s3-object-storage.html page instead and then "Run keepstore as a supervised service.":#keepstoreservice
+* To use a POSIX filesystem, including both local filesystems (ext4, xfs) and network file system such as GPFS or Lustre, follow the setup instructions on "Filesystem storage":configure-fs-storage.html
+* If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
+* If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
 
-If you are using Azure Blob Storage, follow the setup instructions "Azure Blob Storage":configure-azure-blob-storage.html and then proceed to "Run keepstore as a supervised service.":#keepstoreservice
-
-To use a POSIX filesystem, including both local filesystems (ext4, xfs) and network file system such as GPFS or Lustre, continue reading this section.
-
-h4. Setting up filesystem mounts
-
-Volumes are configured in the @Volumes@ section of the configuration
-file.  You may provide multiple volumes for a single keepstore process
-to manage multiple disks.  Keepstore distributes blocks among volumes
-in round-robin fashion.
-
-<pre>
-Volumes:
-- # The volume type, indicates this is a filesystem directory.
-  Type: Directory
-
-  # The actual directory that will be used as the backing store.
-  Root: /mnt/local-disk
-
-  # How much replication is performed by the underlying filesystem.
-  # (for example, a network filesystem may provide its own replication).
-  # This is used to inform replication decisions at the Keep layer.
-  DirectoryReplication: 1
-
-  # If true, do not accept write or trash operations, only reads.
-  ReadOnly: false
-
-  # When true, read and write operations (for whole 64MiB blocks) on
-  # an individual volume will queued and issued sequentially.  When
-  # false, read and write operations will be issued concurrently as
-  # they come in.
-  #
-  # When using spinning disks where storage partitions map 1:1 to
-  # physical disks that are dedicated to Keepstore, enabling this may
-  # reduce contention and improve throughput by minimizing seeks.
-  #
-  # When using SSDs, RAID, or a parallel network filesystem, you probably
-  # don't want this.
-  Serialize: true
-
-  # Storage classes to associate with this volume.  See "Configuring
-  # storage classes" in the "Admin" section of doc.arvados.org.
-  StorageClasses: null
-
-  # Example of a second volume section
-- DirectoryReplication: 2
-  ReadOnly: false
-  Root: /mnt/network-disk
-  Serialize: false
-  StorageClasses: null
-  Type: Directory
-</pre>
-
-h3(#keepstoreservice). Run keepstore as a supervised service
+h3. Run keepstore as a supervised service
 
 Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
 

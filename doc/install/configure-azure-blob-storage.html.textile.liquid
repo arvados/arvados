@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-As an alternative to local and network-attached POSIX filesystems, Keepstore can store data in an Azure Storage container.
+Keepstore can store data in one or more Azure Storage containers.
 
 h2. Create a storage container
 
@@ -64,7 +64,7 @@ Volumes:
   ReadOnly: false
 
   # Amount of time to wait for a response before failing the request
-  RequestTimeout: 10m0s
+  RequestTimeout: 2m0s
 
   # The storage account name, used for authentication
   StorageAccountName: exampleStorageAccountName

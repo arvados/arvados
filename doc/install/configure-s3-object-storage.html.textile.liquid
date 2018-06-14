@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-As an alternative to local and network-attached POSIX filesystems, Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, or Ceph RADOS.
+Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, or Ceph RADOS.
 
 h2. Configure keepstore
 
@@ -23,14 +23,18 @@ EOF</span>
 </code></pre>
 </notextile>
 
-Next, edit the @Volumes@ section of the @keepstore.yml@ config file:
+Next, edit the @Volumes@ section of the @keepstore.yml@ config file.
+
+h3. Example config for Amazon S3
 
 <pre>
 Volumes:
 - # The volume type, this indicates object storage compatible with the S3 API
   Type: S3
 
-  # Storage provider (blank uses Amazon S3 by default)
+  # Storage provider.  If blank, uses Amazon S3 by default.
+  # See below for example alternate configuration for Google cloud
+  # storage.
   Endpoint: ""
 
   # The bucket to use for the backing store.
@@ -61,7 +65,7 @@ Volumes:
 
   # Maximum time to wait for a complete response from the backend before
   # failing the request.
-  ReadTimeout: 5m0s
+  ReadTimeout: 2m0s
 
   # How much replication is performed by the underlying bucket.
   # This is used to inform replication decisions at the Keep layer.
@@ -76,7 +80,16 @@ Volumes:
   # that can cause data loss.  Do not enable this unless you know what
   # you are doing.
   UnsafeDelete: false
+</pre>
 
+Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
+
+h3. Example config for Google cloud storage
+
+See previous section for documentation of configuration fields.
+
+</pre>
+Volumes:
 - # Example configuration using alternate storage provider
   # Configuration for Google cloud storage
   Endpoint: https://storage.googleapis.com
@@ -90,7 +103,7 @@ Volumes:
   LocationConstraint: false
   RaceWindow: 24h0m0s
   ReadOnly: false
-  ReadTimeout: 5m0s
+  ReadTimeout: 2m0s
   S3Replication: 2
   StorageClasses: null
   UnsafeDelete: false
