@@ -666,6 +666,7 @@ def run_nginx():
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
+    nginxconf['ERRORLOG'] = _logfilename('nginx_error')
     nginxconf['TMPDIR'] = TEST_TMPDIR
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
