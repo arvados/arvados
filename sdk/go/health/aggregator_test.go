@@ -107,6 +107,7 @@ func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+		Controller:  arvados.SystemServiceInstance{Listen: listen},
 		Keepproxy:   arvados.SystemServiceInstance{Listen: listen},
 		Keepstore:   arvados.SystemServiceInstance{Listen: listen},
 		Keepweb:     arvados.SystemServiceInstance{Listen: listen},
@@ -130,6 +131,7 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
 	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+		Controller:  arvados.SystemServiceInstance{Listen: listenH},
 		Keepproxy:   arvados.SystemServiceInstance{Listen: listenH},
 		Keepstore:   arvados.SystemServiceInstance{Listen: listenH},
 		Keepweb:     arvados.SystemServiceInstance{Listen: listenH},
