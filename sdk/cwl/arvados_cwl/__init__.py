@@ -512,7 +512,7 @@ class ArvCwlRunner(object):
             runnerjob.run(**submitargs)
             return (runnerjob.uuid, "success")
 
-        self.poll_api = arvados.api('v1', timeout=kwargs["http-timeout"])
+        self.poll_api = arvados.api('v1', timeout=kwargs["http_timeout"])
         self.polling_thread = threading.Thread(target=self.poll_states)
         self.polling_thread.start()
 
@@ -738,7 +738,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=4, help="Number of threads to use for job submit and output collection.")
 
     parser.add_argument("--http-timeout", type=int,
-                        default=5*60, help="Http timeout. Default is 5 minutes.")
+                        default=5*60, dest="http_timeout", help="Http timeout. Default is 5 minutes.")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",
