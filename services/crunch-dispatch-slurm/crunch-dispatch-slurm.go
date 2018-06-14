@@ -277,15 +277,17 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 			var text string
 			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
 				var logBuf bytes.Buffer
-				logBuf.WriteString(fmt.Sprintf("cannot run container %s: %s\n", ctr.UUID, err))
-				if len(err.AvailableTypes) > 0 {
-					logBuf.WriteString("Available instance types:\n")
-				}
-				for _, t := range err.AvailableTypes {
-					logBuf.WriteString(fmt.Sprintf(
-						"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
-						t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
-					))
+				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
+				if len(err.AvailableTypes) == 0 {
+					fmt.Fprint(&logBuf, "No instance types are configured.\n")
+				} else {
+					fmt.Fprint(&logBuf, "Available instance types:\n")
+					for _, t := range err.AvailableTypes {
+						fmt.Fprintf(&logBuf,
+							"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
+							t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
+						)
+					}
 				}
 				text = logBuf.String()
 				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
