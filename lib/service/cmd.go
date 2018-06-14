@@ -53,6 +53,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+	hostName := flags.String("host", "", "Host profile `name` to use in SystemNodes config (if blank, use hostname reported by OS)")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -68,7 +69,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if err != nil {
 		return 1
 	}
-	node, err := cluster.GetThisSystemNode()
+	node, err := cluster.GetSystemNode(*hostName)
 	if err != nil {
 		return 1
 	}

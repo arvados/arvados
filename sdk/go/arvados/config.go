@@ -68,17 +68,21 @@ type InstanceType struct {
 // GetThisSystemNode returns a SystemNode for the node we're running
 // on right now.
 func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-	return cc.GetSystemNode(hostname)
+	return cc.GetSystemNode("")
 }
 
 // GetSystemNode returns a SystemNode for the given hostname. An error
 // is returned if the appropriate configuration can't be determined
-// (e.g., this does not appear to be a system node).
+// (e.g., this does not appear to be a system node). If node is empty,
+// use the OS-reported hostname.
 func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
+	if node == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, err
+		}
+		node = hostname
+	}
 	if cfg, ok := cc.SystemNodes[node]; ok {
 		return &cfg, nil
 	}
