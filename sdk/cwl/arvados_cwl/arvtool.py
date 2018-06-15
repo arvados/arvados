@@ -21,7 +21,7 @@ class ArvadosCommandTool(CommandLineTool):
         elif runtimeContext.work_api == "jobs":
             return partial(ArvadosJob, self.arvrunner)
 
-    def make_path_mapper(self, reffiles, stagedir, runtimeContext):
+    def make_path_mapper(self, reffiles, stagedir, runtimeContext, separateDirs):
         if runtimeContext.work_api == "containers":
             return ArvPathMapper(self.arvrunner, reffiles+runtimeContext.extra_reffiles, runtimeContext.basedir,
                                  "/keep/%s",
