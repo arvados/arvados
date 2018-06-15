@@ -35,11 +35,21 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 header: "Name",
                 selected: true,
                 render: item => (
-                    <Grid container onClick={() => this.props.onItemClick(item)}>
-                        {renderIcon(item)}
-                        <Typography style={{ marginLeft: 8 }}>
-                            {item.name}
-                        </Typography>
+                    <Grid
+                        container
+                        alignItems="center"
+                        wrap="nowrap"
+                        spacing={16}
+                        onClick={() => this.props.onItemClick(item)}
+                    >
+                        <Grid item>
+                            {renderIcon(item)}
+                        </Grid>
+                        <Grid item>
+                            <Typography color="primary">
+                                {item.name}
+                            </Typography>
+                        </Grid>
                     </Grid>
                 )
             },
@@ -65,7 +75,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 header: "Owner",
                 selected: true,
                 render: item => (
-                    <Typography noWrap>
+                    <Typography noWrap color="primary">
                         {item.owner}
                     </Typography>
                 )
@@ -184,9 +194,9 @@ const formatFileSize = (size: number) => {
 const renderIcon = (projectItem: ProjectItem) => {
     switch (projectItem.type) {
         case "arvados#group":
-            return <i className="fas fa-folder" />;
+            return <i className="fas fa-folder fa-lg" />;
         case "arvados#groupList":
-            return <i className="fas fa-th" />;
+            return <i className="fas fa-th fa-lg"/>;
         default:
             return <i />;
     }
