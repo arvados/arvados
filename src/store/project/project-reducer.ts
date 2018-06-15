@@ -22,6 +22,20 @@ function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> 
     return item;
 }
 
+export function findTreeBranch<T>(tree: Array<TreeItem<T>>, itemId: string): Array<TreeItem<T>> {
+    for(const item of tree){
+        if(item.id === itemId){
+            return [item];
+        } else {
+            const branch = findTreeBranch(item.items || [], itemId);
+            if(branch.length > 0){
+                return [item, ...branch];
+            }
+        }
+    }
+    return [];
+}
+
 function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
     for (const t of tree) {
         t.active = false;
