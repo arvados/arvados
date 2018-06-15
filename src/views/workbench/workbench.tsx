@@ -30,6 +30,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
+import { findTreeBranch } from '../../store/project/project-reducer';
 
 const drawerWidth = 240;
 
@@ -76,7 +77,7 @@ interface WorkbenchActionProps {
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
-    path: string;
+    itemId: string;
 }
 
 interface NavMenuItem extends MainAppBarMenuItem {
@@ -98,15 +99,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
         anchorEl: null,
         searchText: "",
-        breadcrumbs: [
-            {
-                label: "Projects",
-                path: "/projects"
-            }, {
-                label: "Project 1",
-                path: "/projects/project-1"
-            }
-        ],
+        breadcrumbs: [],
         menuItems: {
             accountMenu: [
                 {
@@ -135,7 +128,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 
     mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
+            this.toggleProjectTreeItem(itemId);
+        },
         onSearch: searchText => {
             this.setState({ searchText });
             this.props.dispatch(push(`/search?q=${searchText}`));
@@ -144,6 +139,13 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     };
 
     toggleProjectTreeItem = (itemId: string) => {
+        const branch = findTreeBranch(this.props.projects, itemId);
+        this.setState({
+            breadcrumbs: branch.map(item => ({
+                label: item.data.name,
+                itemId: item.data.uuid
+            }))
+        });
         this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         });
@@ -163,16 +165,16 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     />
                 </div>
                 {user &&
-                <Drawer
-                    variant="permanent"
-                    classes={{
-                        paper: classes.drawerPaper,
-                    }}>
-                    <div className={classes.toolbar}/>
-                    <ProjectTree
-                        projects={this.props.projects}
-                        toggleProjectTreeItem={this.toggleProjectTreeItem}/>
-                </Drawer>}
+                    <Drawer
+                        variant="permanent"
+                        classes={{
+                            paper: classes.drawerPaper,
+                        }}>
+                        <div className={classes.toolbar} />
+                        <ProjectTree
+                            projects={this.props.projects}
+                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
+                    </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar} />
                     <div className={classes.toolbar} />
