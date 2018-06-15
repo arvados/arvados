@@ -51,6 +51,17 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         metadata = self.driver_mock().create_node.call_args[1]['ex_metadata']
         self.assertIn('ping_secret=ssshh', metadata.get('arv-ping-url'))
 
+    def test_create_includes_arvados_node_size(self):
+        arv_node = testutil.arvados_node_mock()
+        size = testutil.MockSize(1)
+        driver = self.new_driver()
+        driver.create_node(size, arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertIn(
+            ('arvados_node_size', size.id),
+            create_method.call_args[1].get('ex_metadata', {'metadata':'missing'}).items()
+        )
+
     def test_create_raises_but_actually_succeeded(self):
         arv_node = testutil.arvados_node_mock(1, hostname=None)
         driver = self.new_driver()

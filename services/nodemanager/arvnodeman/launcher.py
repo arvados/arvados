@@ -71,7 +71,7 @@ def setup_logging(path, level, **sublevels):
     return root_logger
 
 def build_server_calculator(config):
-    cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
+    cloud_size_list = config.node_sizes()
     if not cloud_size_list:
         abort("No valid node sizes configured")
     return ServerCalculator(cloud_size_list,

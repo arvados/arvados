@@ -84,6 +84,7 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             self.public_ips = []
             self.size = testutil.MockSize(1)
             self.state = 0
+            self.extra = {'arvados_node_size': self.size.id}
 
 
     def build_monitor(self, side_effect, *args, **kwargs):

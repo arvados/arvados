@@ -80,8 +80,8 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     def _send_request(self):
         nodes = self._client.list_nodes()
         for n in nodes:
-            # Replace with libcloud NodeSize object with compatible
+            # Replace the libcloud NodeSize object with compatible
             # CloudSizeWrapper object which merges the size info reported from
             # the cloud with size information from the configuration file.
-            n.size = self._calculator.find_size(n.size.id)
+            n.size = self._calculator.find_size(n.extra['arvados_node_size'])
         return nodes

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,10 +16,16 @@ import (
 )
 
 var (
-	ErrConstraintsNotSatisfiable  = errors.New("constraints not satisfiable by any configured instance type")
 	ErrInstanceTypesNotConfigured = errors.New("site configuration does not list any instance types")
 	discountConfiguredRAMPercent  = 5
 )
+
+// ConstraintsNotSatisfiableError includes a list of available instance types
+// to be reported back to the user.
+type ConstraintsNotSatisfiableError struct {
+	error
+	AvailableTypes []arvados.InstanceType
+}
 
 // ChooseInstanceType returns the cheapest available
 // arvados.InstanceType big enough to run ctr.
@@ -40,13 +47,22 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
 	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
-	err = ErrConstraintsNotSatisfiable
+	availableTypes := make([]arvados.InstanceType, len(cc.InstanceTypes))
+	copy(availableTypes, cc.InstanceTypes)
+	sort.Slice(availableTypes, func(a, b int) bool {
+		return availableTypes[a].Price < availableTypes[b].Price
+	})
+	err = ConstraintsNotSatisfiableError{
+		errors.New("constraints not satisfiable by any configured instance type"),
+		availableTypes,
+	}
 	for _, it := range cc.InstanceTypes {
 		switch {
 		case err == nil && it.Price > best.Price:
 		case it.Scratch < needScratch:
 		case it.RAM < needRAM:
 		case it.VCPUs < needVCPUs:
+		case it.Preemptable != ctr.SchedulingParameters.Preemptable:
 		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs):
 			// Equal price, but worse specs
 		default:
