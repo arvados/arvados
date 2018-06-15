@@ -71,9 +71,19 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None, keep_client=None,
-                 output_name=None, output_tags=None, default_storage_classes="default",
-                 num_retries=4, thread_count=4):
+    def __init__(self, api_client,
+                 arvargs=None,
+                 keep_client=None,
+                 num_retries=4,
+                 thread_count=4):
+
+        if arvargs is None:
+            arvargs = argparse.Namespace()
+            arvargs.work_api = None
+            arvargs.output_name = None
+            arvargs.output_tags = None
+            arvargs.thread_count = 1
+
         self.api = api_client
         self.processes = {}
         self.workflow_eval_lock = threading.Condition(threading.RLock())
@@ -85,15 +95,15 @@ class ArvCwlRunner(object):
         self.poll_api = None
         self.pipeline = None
         self.final_output_collection = None
-        self.output_name = output_name
-        self.output_tags = output_tags
+        self.output_name = arvargs.output_name
+        self.output_tags = arvargs.output_tags
         self.project_uuid = None
         self.intermediate_output_ttl = 0
         self.intermediate_output_collections = []
         self.trash_intermediate = False
-        self.thread_count = thread_count
+        self.thread_count = arvargs.thread_count
         self.poll_interval = 12
-        self.default_storage_classes = default_storage_classes
+        self.loadingContext = None
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -113,17 +123,23 @@ class ArvCwlRunner(object):
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
                 if ('httpMethod' in methods['create'] and
-                    (work_api == api or work_api is None)):
+                    (arvargs.work_api == api or arvargs.work_api is None)):
                     self.work_api = api
                     break
             except KeyError:
                 pass
 
         if not self.work_api:
-            if work_api is None:
+            if arvargs.work_api is None:
                 raise Exception("No supported APIs")
             else:
                 raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
+
+        self.loadingContext = ArvLoadingContext(vars(arvargs))
+        self.loadingContext.fetcher_constructor = self.fetcher_constructor
+        self.loadingContext.resolver = partial(collectionResolver, self.api, num_retries=self.num_retries)
+        self.loadingContext.construct_tool_object = self.arv_make_tool
+
 
     def arv_make_tool(self, toolpath_object, loadingContext):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
@@ -406,12 +422,11 @@ class ArvCwlRunner(object):
         # Reload tool object which may have been updated by
         # upload_workflow_deps
         # Don't validate this time because it will just print redundant errors.
-        loadingContext = ArvLoadingContext({
-            "construct_tool_object": self.arv_make_tool,
-            "loader": tool.doc_loader,
-            "avsc_names": tool.doc_schema,
-            "metadata": tool.metadata,
-            "do_validate": False})
+        loadingContext = self.loadingContext.copy()
+        loadingContext.loader = tool.doc_loader
+        loadingContext.avsc_names = tool.doc_schema
+        loadingContext.metadata = tool.metadata
+        loadingContext.do_validate = False
 
         tool = self.arv_make_tool(tool.doc_loader.idx[tool.tool["id"]],
                                   loadingContext)
@@ -485,7 +500,6 @@ class ArvCwlRunner(object):
                                                 submit_runner_image=runtimeContext.submit_runner_image,
                                                 intermediate_output_ttl=runtimeContext.intermediate_output_ttl,
                                                 merged_map=merged_map,
-                                                default_storage_classes=self.default_storage_classes,
                                                 priority=runtimeContext.priority,
                                                 secret_store=self.secret_store)
             elif self.work_api == "jobs":
@@ -597,7 +611,7 @@ class ArvCwlRunner(object):
             if self.output_tags is None:
                 self.output_tags = ""
 
-            storage_classes = kwargs.get("storage_classes").strip().split(",")
+            storage_classes = runtimeContext.storage_classes.strip().split(",")
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
@@ -787,6 +801,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         logger.error("Multiple storage classes are not supported currently.")
         return 1
 
+    arvargs.use_container = True
+    arvargs.relax_path_checks = True
+    arvargs.print_supported_versions = False
+
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()
 
@@ -814,10 +832,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
             keep_client = api_client.keep
         if keep_client is None:
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client,
-                              num_retries=4, output_name=arvargs.output_name,
-                              output_tags=arvargs.output_tags, default_storage_classes=parser.get_default("storage_classes"),
-                              thread_count=arvargs.thread_count)
+        runner = ArvCwlRunner(api_client, arvargs, keep_client=keep_client, num_retries=4)
     except Exception as e:
         logger.error(e)
         return 1
@@ -846,15 +861,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         if not hasattr(arvargs, key):
             setattr(arvargs, key, val)
 
-    arvargs.use_container = True
-    arvargs.relax_path_checks = True
-    arvargs.print_supported_versions = False
-
-    loadingContext = ArvLoadingContext(vars(arvargs))
-    loadingContext.fetcher_constructor = runner.fetcher_constructor
-    loadingContext.resolver = partial(collectionResolver, api_client, num_retries=runner.num_retries)
-    loadingContext.construct_tool_object = runner.arv_make_tool
-
     runtimeContext = ArvRuntimeContext(vars(arvargs))
     runtimeContext.make_fs_access = partial(CollectionFsAccess,
                              collection_cache=runner.collection_cache)
@@ -867,5 +873,5 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
                              job_order_object=job_order_object,
                              logger_handler=arvados.log_handler,
                              custom_schema_callback=add_arv_hints,
-                             loadingContext=loadingContext,
+                             loadingContext=runner.loadingContext,
                              runtimeContext=runtimeContext)

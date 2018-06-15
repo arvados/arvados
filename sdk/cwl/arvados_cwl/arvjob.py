@@ -278,7 +278,7 @@ class ArvadosJob(JobBase):
 class RunnerJob(Runner):
     """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""
 
-    def arvados_job_spec(self, runtimeContext):
+    def arvados_job_spec(self, debug=False):
         """Create an Arvados job specification for this workflow.
 
         The returned dict can be used to create a job (i.e., passed as
@@ -308,7 +308,7 @@ class RunnerJob(Runner):
         if self.on_error:
             self.job_order["arv:on_error"] = self.on_error
 
-        if runtimeContext.debug:
+        if debug:
             self.job_order["arv:debug"] = True
 
         return {
@@ -324,7 +324,7 @@ class RunnerJob(Runner):
         }
 
     def run(self, runtimeContext):
-        job_spec = self.arvados_job_spec(runtimeContext)
+        job_spec = self.arvados_job_spec(runtimeContext.debug)
 
         job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
 
