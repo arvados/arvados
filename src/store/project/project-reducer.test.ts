@@ -39,13 +39,15 @@ describe('project-reducer', () => {
                 open: false,
                 id: "test123",
                 items: [],
-                data: project
+                data: project,
+                status: 0
             }, {
                 active: false,
                 open: false,
                 id: "test123",
                 items: [],
-                data: project
+                data: project,
+                status: 0
             }
         ]);
     });

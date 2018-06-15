@@ -4,7 +4,7 @@
 
 import { Project } from "../../models/project";
 import actions, { ProjectAction } from "./project-action";
-import { TreeItem } from "../../components/tree/tree";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import * as _ from "lodash";
 
 export type ProjectState = Array<TreeItem<Project>>;
@@ -29,24 +29,19 @@ function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
     }
 }
 
-function resetTreeLoader<T>(tree: Array<TreeItem<T>>) {
-    for (const t of tree) {
-        t.isLoaded = true;
-        resetTreeLoader(t.items ? t.items : []);
-    }
-}
-
 function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], parentItemId?: string): Array<TreeItem<Project>> {
-    resetTreeLoader(tree)
     let treeItem;
     if (parentItemId) {
         treeItem = findTreeItem(tree, parentItemId);
+        if (treeItem) {
+            treeItem.status = TreeItemStatus.Loaded;
+        }
     }
     const items = projects.map((p, idx) => ({
         id: p.uuid,
         open: false,
         active: false,
-        isLoaded: true,
+        status: TreeItemStatus.Initial,
         data: p,
         items: []
     } as TreeItem<Project>));
@@ -59,12 +54,18 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
     return items;
 }
 
-
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
     return actions.match(action, {
         CREATE_PROJECT: project => [...state, project],
         REMOVE_PROJECT: () => state,
-        PROJECTS_REQUEST: () => state,
+        PROJECTS_REQUEST: itemId => {
+            const tree = _.cloneDeep(state);
+            const item = findTreeItem(tree, itemId);
+            if (item) {
+                item.status = TreeItemStatus.Pending;
+            }
+            return tree;
+        },
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
             return updateProjectTree(state, projects, parentItemId);
         },
@@ -75,7 +76,7 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
             if (item) {
                 item.open = !item.open;
                 item.active = true;
-                item.isLoaded = false;
+                item.toggled = true;
             }
             return tree;
         },

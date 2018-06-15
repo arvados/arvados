@@ -25,7 +25,7 @@ import { RootState } from "../../store/store";
 import projectActions from "../../store/project/project-action"
 
 import ProjectTree from '../../components/project-tree/project-tree';
-import { TreeItem } from "../../components/tree/tree";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
 
@@ -104,54 +104,56 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         });
     };
 
-    toggleProjectTreeItem = (itemId: string) => {
-        this.props.projects ? 
-            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId)) : ( 
-                this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
-                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-                }))
+    toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
+        if (status === TreeItemStatus.Loaded) {
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId))
+        } else {
+            this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+            })
+        }
     };
 
     render() {
-        const {classes, user} = this.props;
+        const { classes, user } = this.props;
         return (
             <div className={classes.root}>
                 <AppBar position="absolute" className={classes.appBar}>
                     <Toolbar>
-                        <Typography variant="title" color="inherit" noWrap style={{flexGrow: 1}}>
-                            <span>Arvados</span><br/><span style={{fontSize: 12}}>Workbench 2</span>
+                        <Typography variant="title" color="inherit" noWrap style={{ flexGrow: 1 }}>
+                            <span>Arvados</span><br /><span style={{ fontSize: 12 }}>Workbench 2</span>
                         </Typography>
                         {user ?
-                            <Grid container style={{width: 'auto'}}>
-                                <Grid container style={{width: 'auto'}} alignItems='center'>
+                            <Grid container style={{ width: 'auto' }}>
+                                <Grid container style={{ width: 'auto' }} alignItems='center'>
                                     <Typography variant="title" color="inherit" noWrap>
                                         {user.firstName} {user.lastName}
                                     </Typography>
                                 </Grid>
                                 <Grid item>
                                     <IconButton
-                                          aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
-                                          aria-haspopup="true"
-                                          onClick={this.handleOpenMenu}
-                                          color="inherit">
-                                      <AccountCircle/>
+                                        aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
+                                        aria-haspopup="true"
+                                        onClick={this.handleOpenMenu}
+                                        color="inherit">
+                                        <AccountCircle />
                                     </IconButton>
                                 </Grid>
                                 <Menu
-                                  id="menu-appbar"
-                                  anchorEl={this.state.anchorEl}
-                                  anchorOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                  }}
-                                  transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                  }}
-                                  open={!!this.state.anchorEl}
-                                  onClose={this.handleClose}>
-                                  <MenuItem onClick={this.logout}>Logout</MenuItem>
-                                  <MenuItem onClick={this.handleClose}>My account</MenuItem>
+                                    id="menu-appbar"
+                                    anchorEl={this.state.anchorEl}
+                                    anchorOrigin={{
+                                        vertical: 'top',
+                                        horizontal: 'right',
+                                    }}
+                                    transformOrigin={{
+                                        vertical: 'top',
+                                        horizontal: 'right',
+                                    }}
+                                    open={!!this.state.anchorEl}
+                                    onClose={this.handleClose}>
+                                    <MenuItem onClick={this.logout}>Logout</MenuItem>
+                                    <MenuItem onClick={this.handleClose}>My account</MenuItem>
                                 </Menu>
                             </Grid>
                             :
@@ -160,20 +162,20 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </Toolbar>
                 </AppBar>
                 {user &&
-                <Drawer
-                    variant="permanent"
-                    classes={{
-                        paper: classes.drawerPaper,
-                    }}>
-                    <div className={classes.toolbar}/>
-                    <ProjectTree
-                        projects={this.props.projects}
-                        toggleProjectTreeItem={this.toggleProjectTreeItem}/>
-                </Drawer>}
+                    <Drawer
+                        variant="permanent"
+                        classes={{
+                            paper: classes.drawerPaper,
+                        }}>
+                        <div className={classes.toolbar} />
+                        <ProjectTree
+                            projects={this.props.projects}
+                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
+                    </Drawer>}
                 <main className={classes.content}>
-                    <div className={classes.toolbar}/>
+                    <div className={classes.toolbar} />
                     <Switch>
-                        <Route path="/project/:name" component={ProjectList}/>
+                        <Route path="/project/:name" component={ProjectList} />
                     </Switch>
                 </main>
             </div>

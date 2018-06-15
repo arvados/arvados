@@ -11,7 +11,7 @@ import Collapse from "@material-ui/core/Collapse/Collapse";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { inherits } from 'util';
 
-type CssRules = 'list' | 'activeArrow' | 'arrow' | 'arrowRotate' | 'arrowTransition' | 'loader';
+type CssRules = 'list' | 'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition' | 'loader' | 'arrowVisibility';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     list: {
@@ -22,15 +22,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         color: '#4285F6',
         position: 'absolute',
     },
-    arrow: {
+    inactiveArrow: {
         position: 'absolute',
     },
     arrowTransition: { 
-        transition: 'all 0.3s ease',
+        transition: 'all 0.1s ease',
     },
     arrowRotate: {
-        transition: 'all 0.3s ease',
+        transition: 'all 0.1s ease',
         transform: 'rotate(-90deg)',
+    },
+    arrowVisibility: {
+        opacity: 0,
     },
     loader: {
         position: 'absolute',
@@ -39,35 +42,43 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
+export enum TreeItemStatus {
+    Initial,
+    Pending,
+    Loaded
+}
+
 export interface TreeItem<T> {
     data: T;
     id: string;
     open: boolean;
     active: boolean;
-    isLoaded: boolean;
+    status: TreeItemStatus;
+    toggled?: boolean;
     items?: Array<TreeItem<T>>;
 }
 
 interface TreeProps<T> {
     items?: Array<TreeItem<T>>;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
-    toggleItem: (id: string) => any;
+    toggleItem: (id: string, status: TreeItemStatus) => any;
     level?: number;
 }
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
-    renderArrow (arrowClass: string, open: boolean){
-        return <i className={`${arrowClass} ${open ? `fas fa-caret-down ${this.props.classes.arrowTransition}` : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
+    renderArrow (status: TreeItemStatus, arrowClass: string, open: boolean){
+        return <i className={`${arrowClass} ${status === TreeItemStatus.Pending ? this.props.classes.arrowVisibility : ''} ${open ? `fas fa-caret-down ${this.props.classes.arrowTransition}` : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
     }
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
         const {classes, render, toggleItem, items} = this.props;
-        const {list, arrow, activeArrow, loader} = classes;
+        const {list, inactiveArrow, activeArrow, loader} = classes;
         return <List component="div" className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) =>
              <div key={`item/${level}/${idx}`}>
-                <ListItem button onClick={() => toggleItem(it.id)} className={list} style={{paddingLeft: (level + 1) * 20}}>
-                    {it.isLoaded ? this.renderArrow(it.active ? activeArrow : arrow, it.open) : <CircularProgress size={10} className={loader}/> }
+                <ListItem button onClick={() => toggleItem(it.id, it.status)} className={list} style={{paddingLeft: (level + 1) * 20}}>
+                    {it.status === TreeItemStatus.Pending ? <CircularProgress size={10} className={loader}/> : null}
+                    {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open)}
                     {render(it, level)}
                 </ListItem>
                 {it.items && it.items.length > 0 &&
