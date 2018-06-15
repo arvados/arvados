@@ -18,7 +18,12 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 )
 
-type NewHandlerFunc func(*arvados.Cluster, *arvados.SystemNode) http.Handler
+type Handler interface {
+	http.Handler
+	CheckHealth() error
+}
+
+type NewHandlerFunc func(*arvados.Cluster, *arvados.SystemNode) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -79,9 +84,13 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
+	handler := c.newHandler(cluster, node)
+	if err = handler.CheckHealth(); err != nil {
+		return 1
+	}
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, c.newHandler(cluster, node))),
+			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, handler)),
 		},
 		Addr: listen,
 	}

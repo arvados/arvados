@@ -33,6 +33,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h.handlerStack.ServeHTTP(w, req)
 }
 
+func (h *Handler) CheckHealth() error {
+	h.setupOnce.Do(h.setup)
+	_, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	return err
+}
+
 func (h *Handler) setup() {
 	mux := http.NewServeMux()
 	mux.Handle("/_health/", &health.Handler{
