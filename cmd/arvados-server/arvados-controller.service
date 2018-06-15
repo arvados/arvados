@@ -16,6 +16,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=notify
+EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/arvados-controller
 Restart=always
 RestartSec=1
