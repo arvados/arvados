@@ -3,71 +3,218 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography, Grid } from '@material-ui/core';
-import { Column } from './column';
-import ColumnsConfigurator from "./columns-configurator/columns-configurator";
+import { DataTable, DataTableProps, Column, ColumnsConfigurator } from "../../components/data-table";
+import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText } from '@material-ui/core';
+import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
+import MoreVertIcon from "@material-ui/icons/MoreVert";
+import Popover from '../popover/popover';
 
-export interface DataExplorerProps<T> {
-    items: T[];
-    columns: Array<Column<T>>;
-    onColumnToggle: (column: Column<T>) => void;
-    onItemClick?: (item: T) => void;
+export interface DataItem {
+    name: string;
+    type: string;
+    owner: string;
+    lastModified: string;
+    fileSize?: number;
+    status?: string;
 }
 
-class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {
-    render() {
-        const { items, columns, classes, onItemClick, onColumnToggle } = this.props;
-        return (
-            <div className={classes.tableContainer}>
-                {
-                    items.length > 0 ? (
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    {
-                                        columns.filter(column => column.selected).map(({ header, renderHeader, key }, index) => (
-                                            <TableCell key={key || index}>
-                                                {renderHeader ? renderHeader() : header}
-                                            </TableCell>
-                                        ))
-                                    }
-                                </TableRow>
-                            </TableHead>
-                            <TableBody className={classes.tableBody}>
-                                {
-                                    items.map((item, index) => (
-                                        <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
-                                            {
-                                                columns.filter(column => column.selected).map((column, index) => (
-                                                    <TableCell key={index}>
-                                                        {column.render(item)}
-                                                    </TableCell>
-                                                ))
-                                            }
-                                        </TableRow>
-                                    ))
-                                }
-                            </TableBody>
-                        </Table>
-                    ) : (
-                            <Typography>No items</Typography>
-                        )
-                }
+interface DataExplorerProps {
+    items: DataItem[];
+    onItemClick: (item: DataItem) => void;
+}
 
-            </div>
+type DataExplorerState = Pick<DataTableProps<DataItem>, "columns">;
+
+class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState> {
+
+    state: DataExplorerState = {
+        columns: [
+            {
+                header: "Name",
+                selected: true,
+                render: item => (
+                    <Grid
+                        container
+                        alignItems="center"
+                        wrap="nowrap"
+                        spacing={16}
+                        onClick={() => this.props.onItemClick(item)}
+                    >
+                        <Grid item>
+                            {renderIcon(item)}
+                        </Grid>
+                        <Grid item>
+                            <Typography color="primary">
+                                {item.name}
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                )
+            },
+            {
+                header: "Status",
+                selected: true,
+                render: item => (
+                    <Typography noWrap align="center">
+                        {item.status || "-"}
+                    </Typography>
+                )
+            },
+            {
+                header: "Type",
+                selected: true,
+                render: item => (
+                    <Typography noWrap>
+                        {item.type}
+                    </Typography>
+                )
+            },
+            {
+                header: "Owner",
+                selected: true,
+                render: item => (
+                    <Typography noWrap color="primary">
+                        {item.owner}
+                    </Typography>
+                )
+            },
+            {
+                header: "File size",
+                selected: true,
+                render: ({ fileSize }) => (
+                    <Typography noWrap>
+                        {typeof fileSize === "number" ? formatFileSize(fileSize) : "-"}
+                    </Typography>
+                )
+            },
+            {
+                header: "Last modified",
+                selected: true,
+                render: item => (
+                    <Typography noWrap>
+                        {formatDate(item.lastModified)}
+                    </Typography>
+                )
+            },
+            {
+                header: "Actions",
+                key: "Actions",
+                selected: true,
+                configurable: false,
+                renderHeader: () => (
+                    <Grid container justify="flex-end">
+                        <ColumnsConfigurator
+                            columns={this.state.columns}
+                            onColumnToggle={this.toggleColumn}
+                        />
+                    </Grid>
+                ),
+                render: item => (
+                    <Grid container justify="flex-end">
+                        <Popover triggerComponent={ItemActionsTrigger}>
+                            <List dense>
+                                {[
+                                    {
+                                        icon: "fas fa-users",
+                                        label: "Share"
+                                    },
+                                    {
+                                        icon: "fas fa-sign-out-alt",
+                                        label: "Move to"
+                                    },
+                                    {
+                                        icon: "fas fa-star",
+                                        label: "Add to favourite"
+                                    },
+                                    {
+                                        icon: "fas fa-edit",
+                                        label: "Rename"
+                                    },
+                                    {
+                                        icon: "fas fa-copy",
+                                        label: "Make a copy"
+                                    },
+                                    {
+                                        icon: "fas fa-download",
+                                        label: "Download"
+                                    }].map(renderAction)
+                                }
+                                < Divider />
+                                {
+                                    renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
+                                }
+                            </List>
+                        </Popover>
+                    </Grid>
+                )
+            }
+        ]
+    };
+
+    render() {
+        return (
+            <DataTable
+                columns={this.state.columns}
+                items={this.props.items}
+                onColumnToggle={this.toggleColumn}
+            />
         );
     }
+
+    toggleColumn = (column: Column<DataItem>) => {
+        const index = this.state.columns.indexOf(column);
+        const columns = this.state.columns.slice(0);
+        columns.splice(index, 1, { ...column, selected: !column.selected });
+        this.setState({ columns });
+    }
 }
 
-type CssRules = "tableBody" | "tableContainer";
+const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return date.toLocaleString();
+};
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    tableContainer: {
-        overflowX: 'auto'
-    },
-    tableBody: {
-        background: theme.palette.background.paper
+const formatFileSize = (size: number) => {
+    switch (true) {
+        case size > 1000000000000:
+            return `${size / 1000000000000} TB`;
+        case size > 1000000000:
+            return `${size / 1000000000} GB`;
+        case size > 1000000:
+            return `${size / 1000000} MB`;
+        case size > 1000:
+            return `${size / 1000} KB`;
+        default:
+            return `${size} B`;
     }
-});
+};
 
-export default withStyles(styles)(DataExplorer);
+const renderIcon = (DataItem: DataItem) => {
+    switch (DataItem.type) {
+        case "arvados#group":
+            return <i className="fas fa-folder fa-lg" />;
+        case "arvados#groupList":
+            return <i className="fas fa-th fa-lg" />;
+        default:
+            return <i />;
+    }
+};
+
+const renderAction = (action: { label: string, icon: string }, index?: number) => (
+    <ListItem button key={index}>
+        <ListItemIcon>
+            <i className={action.icon} />
+        </ListItemIcon>
+        <ListItemText>
+            {action.label}
+        </ListItemText>
+    </ListItem>
+);
+
+const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) => (
+    <IconButton {...props}>
+        <MoreVertIcon />
+    </IconButton>
+);
+
+export default DataExplorer;

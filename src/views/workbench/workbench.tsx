@@ -6,23 +6,12 @@ import * as React from 'react';
 
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
-import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
-import { Link } from "react-router-dom";
-import Button from "@material-ui/core/Button/Button";
 import authActions from "../../store/auth/auth-action";
-import IconButton from "@material-ui/core/IconButton/IconButton";
-import Menu from "@material-ui/core/Menu/Menu";
-import MenuItem from "@material-ui/core/MenuItem/MenuItem";
-import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
-import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
-import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
@@ -30,7 +19,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
-import ProjectExplorer from '../project-explorer/project-explorer';
+import DataExplorer from '../data-explorer/data-explorer';
 
 const drawerWidth = 240;
 
@@ -179,7 +168,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     <div className={classes.toolbar} />
                     <div className={classes.toolbar} />
                     <Switch>
-                        <Route path="/project/:name" component={ProjectExplorer}/>
+                        <Route path="/project/:name" component={DataExplorer}/>
                     </Switch>
                 </main>
             </div>
