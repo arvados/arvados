@@ -3,9 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography, Grid } from '@material-ui/core';
+import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
 import { Column } from './column';
-import ColumnsConfigurator from "./columns-configurator/columns-configurator";
 
 export interface DataTableProps<T> {
     items: T[];
@@ -24,27 +23,32 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                             <TableHead>
                                 <TableRow>
                                     {
-                                        columns.filter(column => column.selected).map(({ header, renderHeader, key }, index) => (
-                                            <TableCell key={key || index}>
-                                                {renderHeader ? renderHeader() : header}
-                                            </TableCell>
-                                        ))
+                                        columns
+                                            .filter(column => column.selected)
+                                            .map(({ header, renderHeader, key }, index) => (
+                                                <TableCell key={key || index}>
+                                                    {renderHeader ? renderHeader() : header}
+                                                </TableCell>
+                                            ))
                                     }
                                 </TableRow>
                             </TableHead>
                             <TableBody className={classes.tableBody}>
                                 {
-                                    items.map((item, index) => (
-                                        <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
-                                            {
-                                                columns.filter(column => column.selected).map((column, index) => (
-                                                    <TableCell key={column.key || index}>
-                                                        {column.render(item)}
-                                                    </TableCell>
-                                                ))
-                                            }
-                                        </TableRow>
-                                    ))
+                                    items
+                                        .map((item, index) => (
+                                            <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
+                                                {
+                                                    columns
+                                                        .filter(column => column.selected)
+                                                        .map((column, index) => (
+                                                            <TableCell key={column.key || index}>
+                                                                {column.render(item)}
+                                                            </TableCell>
+                                                        ))
+                                                }
+                                            </TableRow>
+                                        ))
                                 }
                             </TableBody>
                         </Table>
