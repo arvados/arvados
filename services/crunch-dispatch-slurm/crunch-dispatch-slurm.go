@@ -7,6 +7,7 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -274,8 +275,21 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		if err := disp.submit(ctr, disp.CrunchRunCommand); err != nil {
 			var text string
-			if err == dispatchcloud.ErrConstraintsNotSatisfiable {
-				text = fmt.Sprintf("cannot run container %s: %s", ctr.UUID, err)
+			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
+				var logBuf bytes.Buffer
+				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
+				if len(err.AvailableTypes) == 0 {
+					fmt.Fprint(&logBuf, "No instance types are configured.\n")
+				} else {
+					fmt.Fprint(&logBuf, "Available instance types:\n")
+					for _, t := range err.AvailableTypes {
+						fmt.Fprintf(&logBuf,
+							"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
+							t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
+						)
+					}
+				}
+				text = logBuf.String()
 				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
 			} else {
 				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)

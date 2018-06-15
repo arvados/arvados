@@ -32,7 +32,7 @@ func (*NodeSizeSuite) TestChooseUnsatisfiable(c *check.C) {
 			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Name: "small2"},
 			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Name: "small4", Scratch: GiB},
 		}}, ctr)
-		c.Check(err, check.Equals, ErrConstraintsNotSatisfiable)
+		c.Check(err, check.FitsTypeOf, ConstraintsNotSatisfiableError{})
 	}
 
 	for _, rc := range []arvados.RuntimeConstraints{
