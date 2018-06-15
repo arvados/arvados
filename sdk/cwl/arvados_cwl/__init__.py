@@ -45,12 +45,14 @@ from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver,
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
 from .task_queue import TaskQueue
+from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
 from cwltool.pack import pack
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
 from cwltool.command_line_tool import compute_checksums
+
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -371,7 +373,7 @@ class ArvCwlRunner(object):
                                        'progress':1.0
                                    }).execute(num_retries=self.num_retries)
 
-    def arv_executor(self, tool, job_order, runtimeContext):
+    def arv_executor(self, tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
         tool.visit(self.check_features)
@@ -404,12 +406,15 @@ class ArvCwlRunner(object):
         # Reload tool object which may have been updated by
         # upload_workflow_deps
         # Don't validate this time because it will just print redundant errors.
+        loadingContext = ArvLoadingContext({
+            "construct_tool_object": self.arv_make_tool,
+            "loader": tool.doc_loader,
+            "avsc_names": tool.doc_schema,
+            "metadata": tool.metadata,
+            "do_validate": False})
+
         tool = self.arv_make_tool(tool.doc_loader.idx[tool.tool["id"]],
-                                  construct_tool_object=self.arv_make_tool,
-                                  loader=tool.doc_loader,
-                                  avsc_names=tool.doc_schema,
-                                  metadata=tool.metadata,
-                                  do_validate=False)
+                                  loadingContext)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % runtimeContext.name,
@@ -837,7 +842,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     else:
         arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
 
-    for key, val in six.iteritems(cwltool.argparser.get_default_args()):
+    for key, val in cwltool.argparser.get_default_args().items():
         if not hasattr(arvargs, key):
             setattr(arvargs, key, val)
 
@@ -845,12 +850,12 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     arvargs.relax_path_checks = True
     arvargs.print_supported_versions = False
 
-    loadingContext = LoadingContext(vars(arvargs))
+    loadingContext = ArvLoadingContext(vars(arvargs))
     loadingContext.fetcher_constructor = runner.fetcher_constructor
     loadingContext.resolver = partial(collectionResolver, api_client, num_retries=runner.num_retries)
     loadingContext.construct_tool_object = runner.arv_make_tool
 
-    runtimeContext = RuntimeContext(vars(arvargs))
+    runtimeContext = ArvRuntimeContext(vars(arvargs))
     runtimeContext.make_fs_access = partial(CollectionFsAccess,
                              collection_cache=runner.collection_cache)
 
@@ -861,4 +866,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
                              versionfunc=versionstring,
                              job_order_object=job_order_object,
                              logger_handler=arvados.log_handler,
-                             custom_schema_callback=add_arv_hints)
+                             custom_schema_callback=add_arv_hints,
+                             loadingContext=loadingContext,
+                             runtimeContext=runtimeContext)

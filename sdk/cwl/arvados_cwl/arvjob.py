@@ -14,6 +14,7 @@ from cwltool.command_line_tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
+from cwltool.job import JobBase
 
 from schema_salad.sourceline import SourceLine
 
@@ -36,10 +37,18 @@ crunchrunner_re = re.compile(r"^.*crunchrunner: \$\(task\.(tmpdir|outdir|keep)\)
 
 crunchrunner_git_commit = 'a3f2cb186e437bfce0031b024b2157b73ed2717d'
 
-class ArvadosJob(object):
+class ArvadosJob(JobBase):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
 
-    def __init__(self, runner):
+    def __init__(self, runner,
+                 builder,   # type: Builder
+                 joborder,  # type: Dict[Text, Union[Dict[Text, Any], List, Text]]
+                 make_path_mapper,  # type: Callable[..., PathMapper]
+                 requirements,      # type: List[Dict[Text, Text]]
+                 hints,     # type: List[Dict[Text, Text]]
+                 name       # type: Text
+    ):
+        super(ArvadosJob, self).__init__(builder, joborder, make_path_mapper, requirements, hints, name)
         self.arvrunner = runner
         self.running = False
         self.uuid = None

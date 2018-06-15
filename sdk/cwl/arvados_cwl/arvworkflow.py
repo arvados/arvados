@@ -143,11 +143,10 @@ class ArvadosWorkflow(Workflow):
 
                     packed = pack(document_loader, workflowobj, uri, self.metadata)
 
-                    builder = Builder()
-                    builder.job = joborder
-                    builder.requirements = workflowobj["requirements"]
-                    builder.hints = workflowobj["hints"]
-                    builder.resources = {}
+                    builder = Builder(joborder,
+                                      requirements=workflowobj["requirements"],
+                                      hints=workflowobj["hints"],
+                                      resources={})
 
                     def visit(item):
                         for t in ("hints", "requirements"):
@@ -259,14 +258,12 @@ class ArvadosWorkflow(Workflow):
                 "outputs": self.tool["outputs"],
                 "stdout": "cwl.output.json",
                 "requirements": self.requirements+job_res_reqs+[
+                    {"class": "InlineJavascriptRequirement"},
                     {
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
                             "entryname": "workflow.cwl",
-                            "entry": {
-                                "class": "File",
-                                "location": "keep:%s/workflow.cwl" % self.wf_pdh
-                            }
+                            "entry": '$({"class": "File", "location": "keep:%s/workflow.cwl"})' % self.wf_pdh
                         }, {
                             "entryname": "cwl.input.yml",
                             "entry": json.dumps(joborder_keepmount, indent=2, sort_keys=True, separators=(',',': ')).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')

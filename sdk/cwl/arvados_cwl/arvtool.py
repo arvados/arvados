@@ -6,28 +6,27 @@ from cwltool.command_line_tool import CommandLineTool
 from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
+from functools import partial
 
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
 
-    def __init__(self, arvrunner, toolpath_object, runtimeContext):
-        super(ArvadosCommandTool, self).__init__(toolpath_object, runtimeContext)
+    def __init__(self, arvrunner, toolpath_object, loadingContext):
+        super(ArvadosCommandTool, self).__init__(toolpath_object, loadingContext)
         self.arvrunner = arvrunner
-        self.work_api = runtimeContext.work_api
 
-    def makeJobRunner(self, runtimeContext):
-        if self.work_api == "containers":
-            return ArvadosContainer(self.arvrunner)
-        elif self.work_api == "jobs":
-            return ArvadosJob(self.arvrunner)
+    def make_job_runner(self, runtimeContext):
+        if runtimeContext.work_api == "containers":
+            return partial(ArvadosContainer, self.arvrunner)
+        elif runtimeContext.work_api == "jobs":
+            return partial(ArvadosJob, self.arvrunner)
 
-    def makePathMapper(self, reffiles, stagedir, runtimeContext):
-        # type: (List[Any], unicode, **Any) -> PathMapper
-        if self.work_api == "containers":
+    def make_path_mapper(self, reffiles, stagedir, runtimeContext):
+        if runtimeContext.work_api == "containers":
             return ArvPathMapper(self.arvrunner, reffiles+runtimeContext.extra_reffiles, runtimeContext.basedir,
                                  "/keep/%s",
                                  "/keep/%s/%s")
-        elif self.work_api == "jobs":
+        elif runtimeContext.work_api == "jobs":
             return ArvPathMapper(self.arvrunner, reffiles, runtimeContext.basedir,
                                  "$(task.keep)/%s",
                                  "$(task.keep)/%s/%s")
@@ -43,7 +42,7 @@ class ArvadosCommandTool(CommandLineTool):
 
         runtimeContext = runtimeContext.copy()
 
-        if self.work_api == "containers":
+        if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
             if dockerReq and dockerReq.get("dockerOutputDirectory"):
                 runtimeContext.outdir = dockerReq.get("dockerOutputDirectory")
@@ -51,7 +50,7 @@ class ArvadosCommandTool(CommandLineTool):
             else:
                 runtimeContext.outdir = "/var/spool/cwl"
                 runtimeContext.docker_outdir = "/var/spool/cwl"
-        elif self.work_api == "jobs":
+        elif runtimeContext.work_api == "jobs":
             runtimeContext.outdir = "$(task.outdir)"
             runtimeContext.docker_outdir = "$(task.outdir)"
             runtimeContext.tmpdir = "$(task.tmpdir)"

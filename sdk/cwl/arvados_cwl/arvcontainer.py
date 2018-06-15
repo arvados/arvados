@@ -17,6 +17,7 @@ from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
+from cwltool.job import JobBase
 
 import arvados.collection
 
@@ -30,10 +31,18 @@ from .perf import Perf
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
-class ArvadosContainer(object):
+class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
-    def __init__(self, runner):
+    def __init__(self, runner,
+                 builder,   # type: Builder
+                 joborder,  # type: Dict[Text, Union[Dict[Text, Any], List, Text]]
+                 make_path_mapper,  # type: Callable[..., PathMapper]
+                 requirements,      # type: List[Dict[Text, Text]]
+                 hints,     # type: List[Dict[Text, Text]]
+                 name       # type: Text
+    ):
+        super(ArvadosContainer, self).__init__(builder, joborder, make_path_mapper, requirements, hints, name)
         self.arvrunner = runner
         self.running = False
         self.uuid = None
@@ -196,7 +205,7 @@ class ArvadosContainer(object):
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
-                                                                     pull_image,
+                                                                     runtimeContext.pull_image,
                                                                      self.arvrunner.project_uuid)
 
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
