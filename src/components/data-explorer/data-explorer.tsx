@@ -156,7 +156,6 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
             <DataTable
                 columns={this.state.columns}
                 items={this.props.items}
-                onColumnToggle={this.toggleColumn}
             />
         );
     }
