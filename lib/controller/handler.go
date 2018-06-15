@@ -20,8 +20,8 @@ import (
 )
 
 type Handler struct {
-	Cluster *arvados.Cluster
-	Node    *arvados.SystemNode
+	Cluster     *arvados.Cluster
+	NodeProfile *arvados.NodeProfile
 
 	setupOnce    sync.Once
 	handlerStack http.Handler
@@ -63,7 +63,7 @@ var dropHeaders = map[string]bool{
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
-	urlOut, err := findRailsAPI(h.Cluster, h.Node)
+	urlOut, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -123,8 +123,8 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 
 // For now, findRailsAPI always uses the rails API running on this
 // node.
-func findRailsAPI(cluster *arvados.Cluster, node *arvados.SystemNode) (*url.URL, error) {
-	hostport := node.RailsAPI.Listen
+func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, error) {
+	hostport := np.RailsAPI.Listen
 	if len(hostport) > 1 && hostport[0] == ':' && strings.TrimRight(hostport[1:], "0123456789") == "" {
 		// ":12345" => connect to indicated port on localhost
 		hostport = "localhost" + hostport
@@ -134,7 +134,7 @@ func findRailsAPI(cluster *arvados.Cluster, node *arvados.SystemNode) (*url.URL,
 		return nil, err
 	}
 	proto := "http"
-	if node.RailsAPI.TLS {
+	if np.RailsAPI.TLS {
 		proto = "https"
 	}
 	return url.Parse(proto + "://" + hostport)

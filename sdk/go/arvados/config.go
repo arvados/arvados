@@ -51,7 +51,7 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 type Cluster struct {
 	ClusterID          string `json:"-"`
 	ManagementToken    string
-	SystemNodes        map[string]SystemNode
+	NodeProfiles       map[string]NodeProfile
 	InstanceTypes      []InstanceType
 	HTTPRequestTimeout Duration
 }
@@ -65,17 +65,11 @@ type InstanceType struct {
 	Price        float64
 }
 
-// GetThisSystemNode returns a SystemNode for the node we're running
-// on right now.
-func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
-	return cc.GetSystemNode("")
-}
-
-// GetSystemNode returns a SystemNode for the given hostname. An error
-// is returned if the appropriate configuration can't be determined
-// (e.g., this does not appear to be a system node). If node is empty,
-// use the OS-reported hostname.
-func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
+// GetNodeProfile returns a NodeProfile for the given hostname. An
+// error is returned if the appropriate configuration can't be
+// determined (e.g., this does not appear to be a system node). If
+// node is empty, use the OS-reported hostname.
+func (cc *Cluster) GetNodeProfile(node string) (*NodeProfile, error) {
 	if node == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
@@ -83,18 +77,18 @@ func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
 		}
 		node = hostname
 	}
-	if cfg, ok := cc.SystemNodes[node]; ok {
+	if cfg, ok := cc.NodeProfiles[node]; ok {
 		return &cfg, nil
 	}
 	// If node is not listed, but "*" gives a default system node
 	// config, use the default config.
-	if cfg, ok := cc.SystemNodes["*"]; ok {
+	if cfg, ok := cc.NodeProfiles["*"]; ok {
 		return &cfg, nil
 	}
 	return nil, fmt.Errorf("config does not provision host %q as a system node", node)
 }
 
-type SystemNode struct {
+type NodeProfile struct {
 	Controller  SystemServiceInstance `json:"arvados-controller"`
 	Health      SystemServiceInstance `json:"arvados-health"`
 	Keepproxy   SystemServiceInstance `json:"keepproxy"`
@@ -121,16 +115,16 @@ const (
 
 // ServicePorts returns the configured listening address (or "" if
 // disabled) for each service on the node.
-func (sn *SystemNode) ServicePorts() map[ServiceName]string {
+func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 	return map[ServiceName]string{
-		ServiceNameRailsAPI:    sn.RailsAPI.Listen,
-		ServiceNameController:  sn.Controller.Listen,
-		ServiceNameNodemanager: sn.Nodemanager.Listen,
-		ServiceNameWorkbench:   sn.Workbench.Listen,
-		ServiceNameWebsocket:   sn.Websocket.Listen,
-		ServiceNameKeepweb:     sn.Keepweb.Listen,
-		ServiceNameKeepproxy:   sn.Keepproxy.Listen,
-		ServiceNameKeepstore:   sn.Keepstore.Listen,
+		ServiceNameRailsAPI:    np.RailsAPI.Listen,
+		ServiceNameController:  np.Controller.Listen,
+		ServiceNameNodemanager: np.Nodemanager.Listen,
+		ServiceNameWorkbench:   np.Workbench.Listen,
+		ServiceNameWebsocket:   np.Websocket.Listen,
+		ServiceNameKeepweb:     np.Keepweb.Listen,
+		ServiceNameKeepproxy:   np.Keepproxy.Listen,
+		ServiceNameKeepstore:   np.Keepstore.Listen,
 	}
 }
 

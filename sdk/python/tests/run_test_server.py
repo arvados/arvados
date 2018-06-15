@@ -408,7 +408,7 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
-    SystemNodes:
+    NodeProfiles:
       "*":
         "arvados-controller":
           Listen: ":{}"

@@ -113,8 +113,8 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 
 	mtx := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	for node, nodeConfig := range cluster.SystemNodes {
-		for svc, addr := range nodeConfig.ServicePorts() {
+	for profileName, profile := range cluster.NodeProfiles {
+		for svc, addr := range profile.ServicePorts() {
 			// Ensure svc is listed in resp.Services.
 			mtx.Lock()
 			if _, ok := resp.Services[svc]; !ok {
@@ -128,10 +128,10 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 			}
 
 			wg.Add(1)
-			go func(node string, svc arvados.ServiceName, addr string) {
+			go func(profileName string, svc arvados.ServiceName, addr string) {
 				defer wg.Done()
 				var result CheckResult
-				url, err := agg.pingURL(node, addr)
+				url, err := agg.pingURL(profileName, addr)
 				if err != nil {
 					result = CheckResult{
 						Health: "ERROR",
@@ -152,7 +152,7 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 				} else {
 					resp.Health = "ERROR"
 				}
-			}(node, svc, addr)
+			}(profileName, svc, addr)
 		}
 	}
 	wg.Wait()

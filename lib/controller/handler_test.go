@@ -35,14 +35,14 @@ type HandlerSuite struct {
 func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
 		ClusterID: "zzzzz",
-		SystemNodes: map[string]arvados.SystemNode{
+		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": {
 				Controller: arvados.SystemServiceInstance{Listen: ":"},
 				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true},
 			},
 		},
 	}
-	node := s.cluster.SystemNodes["*"]
+	node := s.cluster.NodeProfiles["*"]
 	s.handler = newHandler(s.cluster, &node)
 }
 

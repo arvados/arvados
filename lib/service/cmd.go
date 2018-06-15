@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -23,7 +24,7 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(*arvados.Cluster, *arvados.SystemNode) Handler
+type NewHandlerFunc func(*arvados.Cluster, *arvados.NodeProfile) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -59,7 +60,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
-	hostName := flags.String("host", "", "Host profile `name` to use in SystemNodes config (if blank, use hostname reported by OS)")
+	nodeProfile := flags.String("node-profile", "", "`Name` of NodeProfiles config entry to use (if blank, use $ARVADOS_NODE_PROFILE or hostname reported by OS)")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -75,16 +76,20 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if err != nil {
 		return 1
 	}
-	node, err := cluster.GetSystemNode(*hostName)
+	profileName := *nodeProfile
+	if profileName == "" {
+		profileName = os.Getenv("ARVADOS_NODE_PROFILE")
+	}
+	profile, err := cluster.GetNodeProfile(profileName)
 	if err != nil {
 		return 1
 	}
-	listen := node.ServicePorts()[c.svcName]
+	listen := profile.ServicePorts()[c.svcName]
 	if listen == "" {
 		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
-	handler := c.newHandler(cluster, node)
+	handler := c.newHandler(cluster, profile)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}
