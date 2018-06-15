@@ -10,13 +10,12 @@ import ColumnsConfigurator from "./columns-configurator/columns-configurator";
 export interface DataTableProps<T> {
     items: T[];
     columns: Array<Column<T>>;
-    onColumnToggle: (column: Column<T>) => void;
     onItemClick?: (item: T) => void;
 }
 
 class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
     render() {
-        const { items, columns, classes, onItemClick, onColumnToggle } = this.props;
+        const { items, columns, classes, onItemClick } = this.props;
         return (
             <div className={classes.tableContainer}>
                 {
@@ -39,7 +38,7 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                                         <TableRow key={index} hover onClick={() => onItemClick && onItemClick(item)}>
                                             {
                                                 columns.filter(column => column.selected).map((column, index) => (
-                                                    <TableCell key={index}>
+                                                    <TableCell key={column.key || index}>
                                                         {column.render(item)}
                                                     </TableCell>
                                                 ))
