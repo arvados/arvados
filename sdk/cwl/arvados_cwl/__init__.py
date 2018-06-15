@@ -147,7 +147,7 @@ class ArvCwlRunner(object):
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":
             return ArvadosWorkflow(self, toolpath_object, loadingContext)
         else:
-            return cwltool.workflow.defaultMakeTool(toolpath_object, loadingContext)
+            return cwltool.workflow.default_make_tool(toolpath_object, loadingContext)
 
     def output_callback(self, out, processStatus):
         with self.workflow_eval_lock:
@@ -157,7 +157,7 @@ class ArvCwlRunner(object):
                     self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                          body={"state": "Complete"}).execute(num_retries=self.num_retries)
             else:
-                logger.warn("Overall process status is %s", processStatus)
+                logger.error("Overall process status is %s", processStatus)
                 if self.pipeline:
                     self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                          body={"state": "Failed"}).execute(num_retries=self.num_retries)

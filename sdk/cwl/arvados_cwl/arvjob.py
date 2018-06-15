@@ -252,7 +252,7 @@ class ArvadosJob(JobBase):
                                 dirs[g.group(1)] = g.group(2)
 
                     if processStatus == "permanentFail":
-                        done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
+                        done.logtail(logc, logger.error, "%s (%s) error log:" % (self.arvrunner.label(self), record["uuid"]), maxlen=40)
 
                     with Perf(metrics, "output collection %s" % self.name):
                         outputs = done.done(self, record, dirs["tmpdir"],
