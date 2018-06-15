@@ -187,11 +187,10 @@ class ArvadosWorkflow(Workflow):
 
 
             if self.dynamic_resource_req:
-                builder = Builder()
-                builder.job = joborder
-                builder.requirements = self.requirements
-                builder.hints = self.hints
-                builder.resources = {}
+                builder = Builder(joborder,
+                                  requirements=self.requirements,
+                                  hints=self.hints,
+                                  resources={})
 
                 # Evaluate dynamic resource requirements using current builder
                 rs = copy.copy(self.static_resource_req)
