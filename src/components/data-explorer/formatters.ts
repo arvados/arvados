@@ -1,0 +1,40 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+export const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return date.toLocaleString();
+};
+
+export const formatFileSize = (size: number) => {
+    for (const { base, unit } of fileSizes) {
+        if (size >= base) {
+            return `${(size / base).toFixed()} ${unit}`;
+        }
+    }
+    return "";
+};
+
+const fileSizes = [
+    {
+        base: 1000000000000,
+        unit: "TB"
+    },
+    {
+        base: 1000000000,
+        unit: "GB"
+    },
+    {
+        base: 1000000,
+        unit: "MB"
+    },
+    {
+        base: 1000,
+        unit: "KB"
+    },
+    {
+        base: 1,
+        unit: "B"
+    }
+];

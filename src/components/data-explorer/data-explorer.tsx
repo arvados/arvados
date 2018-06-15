@@ -8,15 +8,8 @@ import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText }
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import Popover from '../popover/popover';
-
-export interface DataItem {
-    name: string;
-    type: string;
-    owner: string;
-    lastModified: string;
-    fileSize?: number;
-    status?: string;
-}
+import { formatFileSize, formatDate } from './formatters';
+import { DataItem } from './data-item';
 
 interface DataExplorerProps {
     items: DataItem[];
@@ -32,121 +25,40 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
             {
                 header: "Name",
                 selected: true,
-                render: item => (
-                    <Grid
-                        container
-                        alignItems="center"
-                        wrap="nowrap"
-                        spacing={16}
-                        onClick={() => this.props.onItemClick(item)}
-                    >
-                        <Grid item>
-                            {renderIcon(item)}
-                        </Grid>
-                        <Grid item>
-                            <Typography color="primary">
-                                {item.name}
-                            </Typography>
-                        </Grid>
-                    </Grid>
-                )
+                render: item => this.renderName(item)
             },
             {
                 header: "Status",
                 selected: true,
-                render: item => (
-                    <Typography noWrap align="center">
-                        {item.status || "-"}
-                    </Typography>
-                )
+                render: item => renderStatus(item.status)
             },
             {
                 header: "Type",
                 selected: true,
-                render: item => (
-                    <Typography noWrap>
-                        {item.type}
-                    </Typography>
-                )
+                render: item => renderType(item.type)
             },
             {
                 header: "Owner",
                 selected: true,
-                render: item => (
-                    <Typography noWrap color="primary">
-                        {item.owner}
-                    </Typography>
-                )
+                render: item => renderOwner(item.owner)
             },
             {
                 header: "File size",
                 selected: true,
-                render: ({ fileSize }) => (
-                    <Typography noWrap>
-                        {typeof fileSize === "number" ? formatFileSize(fileSize) : "-"}
-                    </Typography>
-                )
+                render: (item) => renderFileSize(item.fileSize)
             },
             {
                 header: "Last modified",
                 selected: true,
-                render: item => (
-                    <Typography noWrap>
-                        {formatDate(item.lastModified)}
-                    </Typography>
-                )
+                render: item => renderDate(item.lastModified)
             },
             {
                 header: "Actions",
                 key: "Actions",
                 selected: true,
                 configurable: false,
-                renderHeader: () => (
-                    <Grid container justify="flex-end">
-                        <ColumnsConfigurator
-                            columns={this.state.columns}
-                            onColumnToggle={this.toggleColumn}
-                        />
-                    </Grid>
-                ),
-                render: item => (
-                    <Grid container justify="flex-end">
-                        <Popover triggerComponent={ItemActionsTrigger}>
-                            <List dense>
-                                {[
-                                    {
-                                        icon: "fas fa-users",
-                                        label: "Share"
-                                    },
-                                    {
-                                        icon: "fas fa-sign-out-alt",
-                                        label: "Move to"
-                                    },
-                                    {
-                                        icon: "fas fa-star",
-                                        label: "Add to favourite"
-                                    },
-                                    {
-                                        icon: "fas fa-edit",
-                                        label: "Rename"
-                                    },
-                                    {
-                                        icon: "fas fa-copy",
-                                        label: "Make a copy"
-                                    },
-                                    {
-                                        icon: "fas fa-download",
-                                        label: "Download"
-                                    }].map(renderAction)
-                                }
-                                < Divider />
-                                {
-                                    renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
-                                }
-                            </List>
-                        </Popover>
-                    </Grid>
-                )
+                renderHeader: () => this.renderActionsHeader(),
+                render: renderItemActions
             }
         ]
     };
@@ -166,30 +78,44 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         columns.splice(index, 1, { ...column, selected: !column.selected });
         this.setState({ columns });
     }
+
+    renderActionsHeader = () => {
+        return (
+            <Grid container justify="flex-end">
+                <ColumnsConfigurator
+                    columns={this.state.columns}
+                    onColumnToggle={this.toggleColumn}
+                />
+            </Grid>
+        );
+    }
+
+    renderName = (item: DataItem) => {
+        return (
+            (
+                <Grid
+                    container
+                    alignItems="center"
+                    wrap="nowrap"
+                    spacing={16}
+                    onClick={() => this.props.onItemClick(item)}
+                >
+                    <Grid item>
+                        {renderIcon(item)}
+                    </Grid>
+                    <Grid item>
+                        <Typography color="primary">
+                            {item.name}
+                        </Typography>
+                    </Grid>
+                </Grid>
+            )
+        );
+    }
 }
 
-const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleString();
-};
-
-const formatFileSize = (size: number) => {
-    switch (true) {
-        case size > 1000000000000:
-            return `${size / 1000000000000} TB`;
-        case size > 1000000000:
-            return `${size / 1000000000} GB`;
-        case size > 1000000:
-            return `${size / 1000000} MB`;
-        case size > 1000:
-            return `${size / 1000} KB`;
-        default:
-            return `${size} B`;
-    }
-};
-
-const renderIcon = (DataItem: DataItem) => {
-    switch (DataItem.type) {
+const renderIcon = (dataItem: DataItem) => {
+    switch (dataItem.type) {
         case "arvados#group":
             return <i className="fas fa-folder fa-lg" />;
         case "arvados#groupList":
@@ -197,6 +123,87 @@ const renderIcon = (DataItem: DataItem) => {
         default:
             return <i />;
     }
+};
+
+const renderDate = (date: string) => {
+    return (
+        <Typography noWrap>
+            {formatDate(date)}
+        </Typography>
+    );
+};
+
+const renderFileSize = (fileSize?: number) => {
+    return (
+        <Typography noWrap>
+            {typeof fileSize === "number" ? formatFileSize(fileSize) : "-"}
+        </Typography>
+    );
+};
+
+const renderOwner = (owner: string) => {
+    return (
+        <Typography noWrap color="primary">
+            {owner}
+        </Typography>
+    );
+};
+
+const renderType = (type: string) => {
+    return (
+        <Typography noWrap>
+            {type}
+        </Typography>
+    );
+};
+
+const renderStatus = (status?: string) => {
+    return (
+        <Typography noWrap align="center">
+            {status || "-"}
+        </Typography>
+    );
+};
+
+const renderItemActions = () => {
+    return (
+        <Grid container justify="flex-end">
+            <Popover triggerComponent={ItemActionsTrigger}>
+                <List dense>
+                    {[
+                        {
+                            icon: "fas fa-users",
+                            label: "Share"
+                        },
+                        {
+                            icon: "fas fa-sign-out-alt",
+                            label: "Move to"
+                        },
+                        {
+                            icon: "fas fa-star",
+                            label: "Add to favourite"
+                        },
+                        {
+                            icon: "fas fa-edit",
+                            label: "Rename"
+                        },
+                        {
+                            icon: "fas fa-copy",
+                            label: "Make a copy"
+                        },
+                        {
+                            icon: "fas fa-download",
+                            label: "Download"
+                        }].map(renderAction)
+                    }
+                    < Divider />
+                    {
+                        renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
+                    }
+                </List>
+            </Popover>
+        </Grid>
+    );
 };
 
 const renderAction = (action: { label: string, icon: string }, index?: number) => (

@@ -11,7 +11,7 @@ import { RootState } from '../../store/store';
 import { connect, DispatchProp } from 'react-redux';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
-import DataExplorer, { DataItem } from '../../components/data-explorer/data-explorer';
+import { DataExplorer, DataItem } from '../../components/data-explorer';
 import { TreeItem } from '../../components/tree/tree';
 
 interface DataExplorerViewDataProps {
