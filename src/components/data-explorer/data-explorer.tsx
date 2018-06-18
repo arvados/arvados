@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { DataTable, DataTableProps, DataColumn, ColumnSelector } from "../../components/data-table";
-import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText, Paper, Toolbar } from '@material-ui/core';
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import Popover from '../popover/popover';
@@ -55,16 +55,26 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
                 name: "Actions",
                 selected: true,
                 configurable: false,
-                renderHeader: () => this.renderActionsHeader(),
+                renderHeader: () => null,
                 render: renderItemActions
             }
         ]
     };
 
     render() {
-        return <DataTable
-            columns={this.state.columns}
-            items={this.props.items} />;
+        return <Paper>
+            <Toolbar>
+                <Grid container justify="flex-end">
+                    <ColumnSelector
+                        columns={this.state.columns}
+                        onColumnToggle={this.toggleColumn} />
+                </Grid>
+            </Toolbar>
+            <DataTable
+                columns={this.state.columns}
+                items={this.props.items} />
+            <Toolbar />
+        </Paper>;
     }
 
     toggleColumn = (column: DataColumn<DataItem>) => {
@@ -73,13 +83,6 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         columns.splice(index, 1, { ...column, selected: !column.selected });
         this.setState({ columns });
     }
-
-    renderActionsHeader = () =>
-        <Grid container justify="flex-end">
-            <ColumnSelector
-                columns={this.state.columns}
-                onColumnToggle={this.toggleColumn} />
-        </Grid>
 
     renderName = (item: DataItem) =>
         <Grid

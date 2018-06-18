@@ -172,6 +172,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar} />
+                    <div className={classes.toolbar} />
                     <Switch>
                         <Route path="/project/:name" component={DataExplorer} />
                     </Switch>

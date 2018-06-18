@@ -8,7 +8,7 @@ export interface DataColumn<T> {
     configurable?: boolean;
     key?: React.Key;
     render: (item: T) => React.ReactElement<void>;
-    renderHeader?: () => React.ReactElement<void>;
+    renderHeader?: () => React.ReactElement<void> | null;
 }
 
 export const isColumnConfigurable = <T>(column: DataColumn<T>) => {

@@ -46,12 +46,17 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                                 </TableRow>
                             )}
                     </TableBody>
-                </Table> : <Typography>No items</Typography>}
+                </Table> : <Typography 
+                    className={classes.noItemsInfo}
+                    variant="body2"
+                    gutterBottom>
+                    No items
+                </Typography>}
         </div>;
     }
 }
 
-type CssRules = "tableBody" | "tableContainer";
+type CssRules = "tableBody" | "tableContainer" | "noItemsInfo";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     tableContainer: {
@@ -59,6 +64,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper
+    },
+    noItemsInfo: {
+        textAlign: "center",
+        padding: theme.spacing.unit
     }
 });
 
