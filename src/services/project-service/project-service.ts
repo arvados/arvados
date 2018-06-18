@@ -34,7 +34,7 @@ interface GroupsResponse {
 
 export default class ProjectService {
     public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
-        dispatch(actions.PROJECTS_REQUEST());
+        dispatch(actions.PROJECTS_REQUEST(parentUuid));
         if (parentUuid) {
             const fb = new FilterBuilder();
             fb.addLike(FilterField.OWNER_UUID, parentUuid);
@@ -47,7 +47,8 @@ export default class ProjectService {
                     modifiedAt: g.modified_at,
                     href: g.href,
                     uuid: g.uuid,
-                    ownerUuid: g.owner_uuid
+                    ownerUuid: g.owner_uuid,
+                    kind: g.kind
                 } as Project));
                 dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
                 return projects;

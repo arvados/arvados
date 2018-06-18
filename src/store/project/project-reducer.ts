@@ -4,12 +4,12 @@
 
 import { Project } from "../../models/project";
 import actions, { ProjectAction } from "./project-action";
-import { TreeItem } from "../../components/tree/tree";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import * as _ from "lodash";
 
 export type ProjectState = Array<TreeItem<Project>>;
 
-function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
+export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
     for (const t of tree) {
         item = t.id === itemId
@@ -47,11 +47,15 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
     let treeItem;
     if (parentItemId) {
         treeItem = findTreeItem(tree, parentItemId);
+        if (treeItem) {
+            treeItem.status = TreeItemStatus.Loaded;
+        }
     }
     const items = projects.map((p, idx) => ({
         id: p.uuid,
         open: false,
         active: false,
+        status: TreeItemStatus.Initial,
         data: p,
         items: []
     } as TreeItem<Project>));
@@ -64,12 +68,18 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
     return items;
 }
 
-
 const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
     return actions.match(action, {
         CREATE_PROJECT: project => [...state, project],
         REMOVE_PROJECT: () => state,
-        PROJECTS_REQUEST: () => state,
+        PROJECTS_REQUEST: itemId => {
+            const tree = _.cloneDeep(state);
+            const item = findTreeItem(tree, itemId);
+            if (item) {
+                item.status = TreeItemStatus.Pending;
+            }
+            return tree;
+        },
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
             return updateProjectTree(state, projects, parentItemId);
         },
@@ -80,6 +90,7 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
             if (item) {
                 item.open = !item.open;
                 item.active = true;
+                item.toggled = true;
             }
             return tree;
         },

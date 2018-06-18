@@ -9,4 +9,5 @@ export interface Project {
     uuid: string;
     ownerUuid: string;
     href: string;
+    kind: string;
 }

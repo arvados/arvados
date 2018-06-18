@@ -4,7 +4,7 @@
 
 import projectsReducer, { findTreeBranch } from "./project-reducer";
 import actions from "./project-action";
-import { TreeItem } from "../../components/tree/tree";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 
 describe('project-reducer', () => {
     it('should add new project to the list', () => {
@@ -15,7 +15,8 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
@@ -30,24 +31,27 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const projects = [project, project];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
         expect(state).toEqual([{
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project
-        }, {
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project
-        }
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }, {
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }
         ]);
     });
 });
@@ -60,6 +64,7 @@ describe("findTreeBranch", () => {
         active: false,
         data: "",
         open: false,
+        status: TreeItemStatus.Initial
     });
 
     it("should return an array that matches path to the given item", () => {
