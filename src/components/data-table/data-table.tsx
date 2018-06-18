@@ -6,9 +6,11 @@ import * as React from 'react';
 import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
 import { DataColumn } from './data-column';
 
+export type DataColumns<T> = Array<DataColumn<T>>;
+
 export interface DataTableProps<T> {
     items: T[];
-    columns: Array<DataColumn<T>>;
+    columns: DataColumns<T>;
     onItemClick?: (item: T) => void;
 }
 
@@ -46,7 +48,7 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                                 </TableRow>
                             )}
                     </TableBody>
-                </Table> : <Typography 
+                </Table> : <Typography
                     className={classes.noItemsInfo}
                     variant="body2"
                     gutterBottom>

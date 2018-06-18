@@ -11,7 +11,7 @@ import { Collapse } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import ProjectTree from './project-tree';
-import { TreeItem } from '../tree/tree';
+import { TreeItem } from '../../components/tree/tree';
 import { Project } from '../../models/project';
 Enzyme.configure({ adapter: new Adapter() });
 

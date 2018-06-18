@@ -9,7 +9,7 @@ import ListItemText from "@material-ui/core/ListItemText/ListItemText";
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import Typography from '@material-ui/core/Typography';
 
-import Tree, { TreeItem, TreeItemStatus } from '../tree/tree';
+import Tree, { TreeItem, TreeItemStatus } from '../../components/tree/tree';
 import { Project } from '../../models/project';
 
 type CssRules = 'active' | 'listItemText' | 'row' | 'treeContainer';

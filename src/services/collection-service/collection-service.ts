@@ -4,38 +4,42 @@
 
 import { serverApi } from "../../common/api/server-api";
 import { Dispatch } from "redux";
-import actions from "../../store/project/project-action";
-import { Project } from "../../models/project";
+import actions from "../../store/collection/collection-action";
 import UrlBuilder from "../../common/api/url-builder";
 import FilterBuilder, { FilterField } from "../../common/api/filter-builder";
 import { ArvadosResource } from "../response";
+import { Collection } from "../../models/collection";
 
-interface GroupResource extends ArvadosResource {
+interface CollectionResource extends ArvadosResource {
     name: string;
-    group_class: string;
     description: string;
-    writable_by: string[];
-    delete_at: string;
+    properties: any;
+    portable_data_hash: string;
+    manifest_text: string;
+    replication_desired: number;
+    replication_confirmed: number;
+    replication_confirmed_at: string;
     trash_at: string;
+    delete_at: string;
     is_trashed: boolean;
 }
 
-interface GroupsResponse {
+interface CollectionsResponse {
     offset: number;
     limit: number;
-    items: GroupResource[];
+    items: CollectionResource[];
 }
 
-export default class ProjectService {
-    public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
-        dispatch(actions.PROJECTS_REQUEST(parentUuid));
+export default class CollectionService {
+    public getCollectionList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Collection[]> => {
+        dispatch(actions.COLLECTIONS_REQUEST());
         if (parentUuid) {
             const fb = new FilterBuilder();
             fb.addLike(FilterField.OWNER_UUID, parentUuid);
-            return serverApi.get<GroupsResponse>('/groups', { params: {
+            return serverApi.get<CollectionsResponse>('/collections', { params: {
                 filters: fb.get()
             }}).then(resp => {
-                const projects = resp.data.items.map(g => ({
+                const collections = resp.data.items.map(g => ({
                     name: g.name,
                     createdAt: g.created_at,
                     modifiedAt: g.modified_at,
@@ -43,12 +47,12 @@ export default class ProjectService {
                     uuid: g.uuid,
                     ownerUuid: g.owner_uuid,
                     kind: g.kind
-                } as Project));
-                dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
-                return projects;
+                } as Collection));
+                dispatch(actions.COLLECTIONS_SUCCESS({collections}));
+                return collections;
             });
         } else {
-            dispatch(actions.PROJECTS_SUCCESS({projects: [], parentItemId: parentUuid}));
+            dispatch(actions.COLLECTIONS_SUCCESS({collections: []}));
             return Promise.resolve([]);
         }
     }

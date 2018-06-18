@@ -3,20 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataTable, DataTableProps, DataColumn, ColumnSelector } from "../../components/data-table";
 import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText, Paper, Toolbar } from '@material-ui/core';
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import Popover from '../popover/popover';
+import Popover from '../../components/popover/popover';
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
+import { DataColumns, DataTableProps } from "../../components/data-table/data-table";
+import { DataColumn } from "../../components/data-table/data-column";
+import ColumnSelector from "../../components/column-selector/column-selector";
+import DataTable from "../../components/data-table/data-table";
 
 interface DataExplorerProps {
     items: DataItem[];
     onItemClick: (item: DataItem) => void;
 }
 
-type DataExplorerState = Pick<DataTableProps<DataItem>, "columns">;
+interface DataExplorerState {
+    columns: DataColumns<DataItem>;
+}
 
 class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState> {
     state: DataExplorerState = {

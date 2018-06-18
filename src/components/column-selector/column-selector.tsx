@@ -5,8 +5,8 @@
 import * as React from 'react';
 import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
-import { DataColumn, isColumnConfigurable } from '../data-column';
-import Popover from "../../popover/popover";
+import { DataColumn, isColumnConfigurable } from '../data-table/data-column';
+import Popover from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 
 export interface ColumnSelectorProps {
