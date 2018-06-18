@@ -23,5 +23,6 @@ class ArvRuntimeContext(RuntimeContext):
         self.submit_runner_image = None
         self.wait = True
         self.cwl_runner_job = None
+        self.storage_classes = "default"
 
         super(ArvRuntimeContext, self).__init__(kwargs)

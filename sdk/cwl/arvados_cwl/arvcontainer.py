@@ -437,7 +437,7 @@ class RunnerContainer(Runner):
             command.append("--debug")
 
         if runtimeContext.storage_classes != "default":
-            command.append("--storage-classes=" + runtimeContext.storage_classes
+            command.append("--storage-classes=" + runtimeContext.storage_classes)
 
         if self.on_error:
             command.append("--on-error=" + self.on_error)

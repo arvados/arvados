@@ -628,7 +628,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
                                        '--eval-timeout=20', '--thread-count=4',
-                                       '--enable-reuse', "--debug", 
+                                       '--enable-reuse', "--debug",
                                        "--storage-classes=foo", '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -642,7 +642,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
     @stubs
     def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
-        def set_final_output(job_order, output_callback, **kwargs):
+        def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
             return []
         job.side_effect = set_final_output
@@ -663,14 +663,14 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
     @stubs
     def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
-        def set_final_output(job_order, output_callback, **kwargs):
+        def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
             return []
         job.side_effect = set_final_output
 
         try:
             exited = arvados_cwl.main(
-                ["--debug", "--local", 
+                ["--debug", "--local",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
                 sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
