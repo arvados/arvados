@@ -6,23 +6,12 @@ import * as React from 'react';
 
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
-import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
-import { Link } from "react-router-dom";
-import Button from "@material-ui/core/Button/Button";
 import authActions from "../../store/auth/auth-action";
-import IconButton from "@material-ui/core/IconButton/IconButton";
-import Menu from "@material-ui/core/Menu/Menu";
-import MenuItem from "@material-ui/core/MenuItem/MenuItem";
-import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
-import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
-import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
@@ -30,6 +19,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
+import DataExplorer from '../data-explorer/data-explorer';
 
 const drawerWidth = 240;
 
@@ -145,12 +135,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
         if (status === TreeItemStatus.Loaded) {
-            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+            this.openProjectItem(itemId);
         } else {
-            this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
-                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-            });
+            this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => this.openProjectItem(itemId));
         }
+    }
+
+    openProjectItem = (itemId: string) => {
+        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+        this.props.dispatch(push(`/project/${itemId}`));
     }
 
     render() {
@@ -179,8 +172,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar} />
+                    <div className={classes.toolbar} />
                     <Switch>
-                        <Route path="/project/:name" component={ProjectList} />
+                        <Route path="/project/:name" component={DataExplorer} />
                     </Switch>
                 </main>
             </div>

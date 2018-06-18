@@ -47,7 +47,8 @@ export default class ProjectService {
                     modifiedAt: g.modified_at,
                     href: g.href,
                     uuid: g.uuid,
-                    ownerUuid: g.owner_uuid
+                    ownerUuid: g.owner_uuid,
+                    kind: g.kind
                 } as Project));
                 dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
                 return projects;
