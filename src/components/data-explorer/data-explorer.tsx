@@ -10,11 +10,12 @@ import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
 import { mockAnchorFromMouseEvent } from '../popover/helpers';
-import { ContextMenu } from './context-menu';
+import { ContextMenu, ContextMenuActions } from './context-menu';
 
 interface DataExplorerProps {
     items: DataItem[];
     onItemClick: (item: DataItem) => void;
+    contextMenuActions: ContextMenuActions;
 }
 
 interface DataExplorerState {
@@ -71,7 +72,10 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
 
     render() {
         return <Paper>
-            <ContextMenu {...this.state.contextMenu} onClose={this.closeContextMenu} />
+            <ContextMenu
+                {...this.state.contextMenu}
+                onClose={this.closeContextMenu}
+                actions={this.props.contextMenuActions} />
             <Toolbar>
                 <Grid container justify="flex-end">
                     <ColumnSelector

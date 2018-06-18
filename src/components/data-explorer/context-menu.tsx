@@ -4,64 +4,107 @@
 import * as React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
+import { DataItem } from "./data-item";
 
+export type ContextMenuAction = (item: DataItem) => void;
+export interface ContextMenuActions {
+    onShare: ContextMenuAction;
+    onMoveTo: ContextMenuAction;
+    onAddToFavourite: ContextMenuAction;
+    onRename: ContextMenuAction;
+    onCopy: ContextMenuAction;
+    onDownload: ContextMenuAction;
+    onRemove: ContextMenuAction;
+}
 export interface ContextMenuProps {
     anchorEl?: HTMLElement;
-    onClose: () => void;
+    item?: DataItem;
+    onClose: VoidFunction;
+    actions: ContextMenuActions;
 }
 
-export const ContextMenu: React.SFC<ContextMenuProps> = ({ anchorEl, onClose, children }) =>
+export const ContextMenu: React.SFC<ContextMenuProps> = ({ anchorEl, onClose, actions, item }) =>
     <Popover
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={onClose}
         transformOrigin={DefaultTransformOrigin}
         anchorOrigin={DefaultTransformOrigin}>
-        <Actions />
+        <Actions {...{ actions, item, onClose }} />
     </Popover>;
 
-const Actions: React.SFC = () =>
+interface ActionsProps {
+    actions: ContextMenuActions;
+    item?: DataItem;
+    onClose: VoidFunction;
+}
+
+const Actions: React.SFC<ActionsProps> = ({ actions, item, onClose }) =>
     <List dense>
         {[{
             icon: "fas fa-users",
-            label: "Share"
+            label: "Share",
+            onClick: actions.onShare
         },
         {
             icon: "fas fa-sign-out-alt",
-            label: "Move to"
+            label: "Move to",
+            onClick: actions.onMoveTo
         },
         {
             icon: "fas fa-star",
-            label: "Add to favourite"
+            label: "Add to favourite",
+            onClick: actions.onAddToFavourite
         },
         {
             icon: "fas fa-edit",
-            label: "Rename"
+            label: "Rename",
+            onClick: actions.onRename
         },
         {
             icon: "fas fa-copy",
-            label: "Make a copy"
+            label: "Make a copy",
+            onClick: actions.onCopy
         },
         {
             icon: "fas fa-download",
-            label: "Download"
-        }].map((props, index) => <Action {...props} key={index} />)}
+            label: "Download",
+            onClick: actions.onDownload
+        }].map((props, index) =>
+            <Action
+                item={item}
+                onClose={onClose}
+                key={index}
+                {...props} />)}
         < Divider />
-        <Action icon="fas fa-trash-alt" label="Remove" />
+        <Action
+            icon="fas fa-trash-alt"
+            label="Remove"
+            item={item}
+            onClose={onClose}
+            onClick={actions.onRemove} />
     </List>;
 
 interface ActionProps {
+    onClick: ContextMenuAction;
+    item?: DataItem;
     icon: string;
     label: string;
+    onClose: VoidFunction;
 }
 
-const Action: React.SFC<ActionProps> = (props) =>
-    <ListItem button>
+const Action: React.SFC<ActionProps> = ({ onClick, onClose, item, icon, label }) =>
+    <ListItem button onClick={() => {
+        if (item) {
+            onClick(item);
+            onClose();
+        }
+    }}>
         <ListItemIcon>
-            <i className={props.icon} />
+            <i className={icon} />
         </ListItemIcon>
         <ListItemText>
-            {props.label}
+            {label}
         </ListItemText>
-    </ListItem>;
+    </ListItem >;
 
