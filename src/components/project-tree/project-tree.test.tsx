@@ -34,7 +34,7 @@ describe("ProjectTree component", () => {
         };
         const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
 
-        expect(wrapper.find(ListItemIcon).length).toEqual(1);
+        expect(wrapper.find(ListItemIcon)).toHaveLength(1);
     });
 
     it("should render 2 ListItemIcons", () => {
@@ -70,7 +70,7 @@ describe("ProjectTree component", () => {
         ];
         const wrapper = mount(<ProjectTree projects={project} toggleProjectTreeItem={() => { }} />);
 
-        expect(wrapper.find(ListItemIcon).length).toEqual(2);
+        expect(wrapper.find(ListItemIcon)).toHaveLength(2);
     });
 
     it("should render Collapse", () => {
@@ -108,7 +108,7 @@ describe("ProjectTree component", () => {
         ];
         const wrapper = mount(<ProjectTree projects={project} toggleProjectTreeItem={() => { }} />);
 
-        expect(wrapper.find(Collapse).length).toEqual(1);
+        expect(wrapper.find(Collapse)).toHaveLength(1);
     });
 
     it("should render CircularProgress", () => {
@@ -128,6 +128,6 @@ describe("ProjectTree component", () => {
         };
         const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
 
-        expect(wrapper.find(CircularProgress).length).toEqual(1);
+        expect(wrapper.find(CircularProgress)).toHaveLength(1);
     });
 });

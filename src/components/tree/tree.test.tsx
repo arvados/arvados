@@ -13,7 +13,7 @@ import Tree, {TreeItem} from './tree';
 import { Project } from '../../models/project';
 Enzyme.configure({ adapter: new Adapter() });
 
-describe("ProjectTree component", () => {
+describe("Tree component", () => {
 
 	it("should render ListItem", () => {
 		const project: TreeItem<Project> = {
@@ -28,10 +28,10 @@ describe("ProjectTree component", () => {
             id: "3",
             open: true,
 			active: true,
-			loading: true,
+			status: 1,
         };
 		const wrapper = mount(<Tree render={project => <div/>} toggleItem={() => { }} items={[project]}/>)
-		expect(wrapper.find(ListItem).length).toEqual(1);
+		expect(wrapper.find(ListItem)).toHaveLength(1);
 	});
     
     it("should render arrow", () => {
@@ -47,9 +47,9 @@ describe("ProjectTree component", () => {
             id: "3",
             open: true,
 			active: true,
-			loading: true,
+			status: 1,
         };
 		const wrapper = mount(<Tree render={project => <div/>} toggleItem={() => { }} items={[project]}/>)
-		expect(wrapper.find('i').length).toEqual(1);
+		expect(wrapper.find('i')).toHaveLength(1);
 	});
 });

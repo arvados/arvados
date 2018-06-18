@@ -25,7 +25,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     inactiveArrow: {
         position: 'absolute',
     },
-    arrowTransition: { 
+    arrowTransition: {
         transition: 'all 0.1s ease',
     },
     arrowRotate: {
@@ -38,7 +38,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     loader: {
         position: 'absolute',
         transform: 'translate(0px)',
-        top: '3px'  
+        top: '3px'
     }
 });
 
@@ -66,30 +66,35 @@ interface TreeProps<T> {
 }
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
-    renderArrow (status: TreeItemStatus, arrowClass: string, open: boolean){
-        return <i className={`${arrowClass} ${status === TreeItemStatus.Pending ? this.props.classes.arrowVisibility : ''} ${open ? `fas fa-caret-down ${this.props.classes.arrowTransition}` : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
+    renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
+        return <i
+            onClick={() => this.props.toggleItem(id, status)}
+            className={`
+                ${arrowClass} 
+                ${status === TreeItemStatus.Pending ? this.props.classes.arrowVisibility : ''} 
+                ${open ? `fas fa-caret-down ${this.props.classes.arrowTransition}` : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />
     }
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
-        const {classes, render, toggleItem, items} = this.props;
-        const {list, inactiveArrow, activeArrow, loader} = classes;
+        const { classes, render, toggleItem, items } = this.props;
+        const { list, inactiveArrow, activeArrow, loader } = classes;
         return <List component="div" className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) =>
-             <div key={`item/${level}/${idx}`}>
-                <ListItem button onClick={() => toggleItem(it.id, it.status)} className={list} style={{paddingLeft: (level + 1) * 20}}>
-                    {it.status === TreeItemStatus.Pending ? <CircularProgress size={10} className={loader}/> : null}
-                    {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open)}
-                    {render(it, level)}
-                </ListItem>
-                {it.items && it.items.length > 0 &&
-                <Collapse in={it.open} timeout="auto" unmountOnExit>
-                    <StyledTree
-                        items={it.items}
-                        render={render}
-                        toggleItem={toggleItem}
-                        level={level + 1}/>
-                </Collapse>}
-             </div>)}
+                <div key={`item/${level}/${idx}`}>
+                    <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }}>
+                        {it.status === TreeItemStatus.Pending ? <CircularProgress size={10} className={loader} /> : null}
+                        {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open, it.id)}
+                        {render(it, level)}
+                    </ListItem>
+                    {it.items && it.items.length > 0 &&
+                        <Collapse in={it.open} timeout="auto" unmountOnExit>
+                            <StyledTree
+                                items={it.items}
+                                render={render}
+                                toggleItem={toggleItem}
+                                level={level + 1} />
+                        </Collapse>}
+                </div>)}
         </List>
     }
 }
