@@ -7,10 +7,12 @@ export const formatDate = (isoDate: string) => {
     return date.toLocaleString();
 };
 
-export const formatFileSize = (size: number) => {
-    for (const { base, unit } of fileSizes) {
-        if (size >= base) {
-            return `${(size / base).toFixed()} ${unit}`;
+export const formatFileSize = (size?: number) => {
+    if (typeof size === "number") {
+        for (const { base, unit } of fileSizes) {
+            if (size >= base) {
+                return `${(size / base).toFixed()} ${unit}`;
+            }
         }
     }
     return "";

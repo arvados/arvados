@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataTable, DataTableProps, Column, ColumnsConfigurator } from "../../components/data-table";
+import { DataTable, DataTableProps, DataColumn, ColumnSelector } from "../../components/data-table";
 import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText } from '@material-ui/core';
 import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import Popover from '../popover/popover';
-import { formatFileSize, formatDate } from './formatters';
+import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
 
 interface DataExplorerProps {
@@ -19,42 +19,40 @@ interface DataExplorerProps {
 type DataExplorerState = Pick<DataTableProps<DataItem>, "columns">;
 
 class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState> {
-
     state: DataExplorerState = {
         columns: [
             {
-                header: "Name",
+                name: "Name",
                 selected: true,
                 render: item => this.renderName(item)
             },
             {
-                header: "Status",
+                name: "Status",
                 selected: true,
                 render: item => renderStatus(item.status)
             },
             {
-                header: "Type",
+                name: "Type",
                 selected: true,
                 render: item => renderType(item.type)
             },
             {
-                header: "Owner",
+                name: "Owner",
                 selected: true,
                 render: item => renderOwner(item.owner)
             },
             {
-                header: "File size",
+                name: "File size",
                 selected: true,
                 render: (item) => renderFileSize(item.fileSize)
             },
             {
-                header: "Last modified",
+                name: "Last modified",
                 selected: true,
                 render: item => renderDate(item.lastModified)
             },
             {
-                header: "Actions",
-                key: "Actions",
+                name: "Actions",
                 selected: true,
                 configurable: false,
                 renderHeader: () => this.renderActionsHeader(),
@@ -64,54 +62,42 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
     };
 
     render() {
-        return (
-            <DataTable
-                columns={this.state.columns}
-                items={this.props.items}
-            />
-        );
+        return <DataTable
+            columns={this.state.columns}
+            items={this.props.items} />;
     }
 
-    toggleColumn = (column: Column<DataItem>) => {
+    toggleColumn = (column: DataColumn<DataItem>) => {
         const index = this.state.columns.indexOf(column);
         const columns = this.state.columns.slice(0);
         columns.splice(index, 1, { ...column, selected: !column.selected });
         this.setState({ columns });
     }
 
-    renderActionsHeader = () => {
-        return (
-            <Grid container justify="flex-end">
-                <ColumnsConfigurator
-                    columns={this.state.columns}
-                    onColumnToggle={this.toggleColumn}
-                />
-            </Grid>
-        );
-    }
+    renderActionsHeader = () =>
+        <Grid container justify="flex-end">
+            <ColumnSelector
+                columns={this.state.columns}
+                onColumnToggle={this.toggleColumn} />
+        </Grid>
 
-    renderName = (item: DataItem) => {
-        return (
-            (
-                <Grid
-                    container
-                    alignItems="center"
-                    wrap="nowrap"
-                    spacing={16}
-                    onClick={() => this.props.onItemClick(item)}
-                >
-                    <Grid item>
-                        {renderIcon(item)}
-                    </Grid>
-                    <Grid item>
-                        <Typography color="primary">
-                            {item.name}
-                        </Typography>
-                    </Grid>
-                </Grid>
-            )
-        );
-    }
+    renderName = (item: DataItem) =>
+        <Grid
+            container
+            alignItems="center"
+            wrap="nowrap"
+            spacing={16}
+            onClick={() => this.props.onItemClick(item)}>
+            <Grid item>
+                {renderIcon(item)}
+            </Grid>
+            <Grid item>
+                <Typography color="primary">
+                    {item.name}
+                </Typography>
+            </Grid>
+        </Grid>
+
 }
 
 const renderIcon = (dataItem: DataItem) => {
@@ -125,88 +111,66 @@ const renderIcon = (dataItem: DataItem) => {
     }
 };
 
-const renderDate = (date: string) => {
-    return (
-        <Typography noWrap>
-            {formatDate(date)}
-        </Typography>
-    );
-};
+const renderDate = (date: string) =>
+    <Typography noWrap>
+        {formatDate(date)}
+    </Typography>;
 
-const renderFileSize = (fileSize?: number) => {
-    return (
-        <Typography noWrap>
-            {typeof fileSize === "number" ? formatFileSize(fileSize) : "-"}
-        </Typography>
-    );
-};
+const renderFileSize = (fileSize?: number) =>
+    <Typography noWrap>
+        {formatFileSize(fileSize)}
+    </Typography>;
 
-const renderOwner = (owner: string) => {
-    return (
-        <Typography noWrap color="primary">
-            {owner}
-        </Typography>
-    );
-};
+const renderOwner = (owner: string) =>
+    <Typography noWrap color="primary">
+        {owner}
+    </Typography>;
 
-const renderType = (type: string) => {
-    return (
-        <Typography noWrap>
-            {type}
-        </Typography>
-    );
-};
+const renderType = (type: string) =>
+    <Typography noWrap>
+        {type}
+    </Typography>;
 
-const renderStatus = (status?: string) => {
-    return (
-        <Typography noWrap align="center">
-            {status || "-"}
-        </Typography>
-    );
-};
+const renderStatus = (status?: string) =>
+    <Typography noWrap align="center">
+        {status || "-"}
+    </Typography>;
 
-const renderItemActions = () => {
-    return (
-        <Grid container justify="flex-end">
-            <Popover triggerComponent={ItemActionsTrigger}>
-                <List dense>
-                    {[
-                        {
-                            icon: "fas fa-users",
-                            label: "Share"
-                        },
-                        {
-                            icon: "fas fa-sign-out-alt",
-                            label: "Move to"
-                        },
-                        {
-                            icon: "fas fa-star",
-                            label: "Add to favourite"
-                        },
-                        {
-                            icon: "fas fa-edit",
-                            label: "Rename"
-                        },
-                        {
-                            icon: "fas fa-copy",
-                            label: "Make a copy"
-                        },
-                        {
-                            icon: "fas fa-download",
-                            label: "Download"
-                        }].map(renderAction)
-                    }
-                    < Divider />
-                    {
-                        renderAction({ icon: "fas fa-trash-alt", label: "Remove" })
-                    }
-                </List>
-            </Popover>
-        </Grid>
-    );
-};
+const renderItemActions = () =>
+    <Grid container justify="flex-end">
+        <Popover triggerComponent={ItemActionsTrigger}>
+            <List dense>
+                {[{
+                    icon: "fas fa-users",
+                    label: "Share"
+                },
+                {
+                    icon: "fas fa-sign-out-alt",
+                    label: "Move to"
+                },
+                {
+                    icon: "fas fa-star",
+                    label: "Add to favourite"
+                },
+                {
+                    icon: "fas fa-edit",
+                    label: "Rename"
+                },
+                {
+                    icon: "fas fa-copy",
+                    label: "Make a copy"
+                },
+                {
+                    icon: "fas fa-download",
+                    label: "Download"
+                }].map(renderAction)}
+                < Divider />
+                {renderAction({ icon: "fas fa-trash-alt", label: "Remove" })}
+            </List>
+        </Popover>
+    </Grid>;
 
-const renderAction = (action: { label: string, icon: string }, index?: number) => (
+const renderAction = (action: { label: string, icon: string }, index?: number) =>
     <ListItem button key={index}>
         <ListItemIcon>
             <i className={action.icon} />
@@ -214,13 +178,11 @@ const renderAction = (action: { label: string, icon: string }, index?: number) =
         <ListItemText>
             {action.label}
         </ListItemText>
-    </ListItem>
-);
+    </ListItem>;
 
-const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) => (
+const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) =>
     <IconButton {...props}>
         <MoreVertIcon />
-    </IconButton>
-);
+    </IconButton>;
 
 export default DataExplorer;

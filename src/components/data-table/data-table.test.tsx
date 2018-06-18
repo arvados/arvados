@@ -6,26 +6,26 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 import DataTable from "./data-table";
-import { Column } from "./column";
+import { DataColumn } from "./data-column";
 import { TableHead, TableCell, Typography, TableBody, Button } from "@material-ui/core";
 
 configure({ adapter: new Adapter() });
 
 describe("<DataTable />", () => {
     it("shows only selected columns", () => {
-        const columns: Array<Column<string>> = [
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 render: () => <span />,
                 selected: true
             },
             {
-                header: "Column 2",
+                name: "Column 2",
                 render: () => <span />,
                 selected: true
             },
             {
-                header: "Column 3",
+                name: "Column 3",
                 render: () => <span />,
                 selected: false
             }
@@ -34,10 +34,10 @@ describe("<DataTable />", () => {
         expect(dataTable.find(TableHead).find(TableCell)).toHaveLength(2);
     });
     
-    it("renders header label", () => {
-        const columns: Array<Column<string>> = [
+    it("renders column name", () => {
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 render: () => <span />,
                 selected: true
             }
@@ -46,10 +46,10 @@ describe("<DataTable />", () => {
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column 1");
     });
     
-    it("uses renderHeader instead of header prop", () => {
-        const columns: Array<Column<string>> = [
+    it("uses renderHeader instead of name prop", () => {
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 renderHeader: () => <span>Column Header</span>,
                 render: () => <span />,
                 selected: true
@@ -60,9 +60,9 @@ describe("<DataTable />", () => {
     });
     
     it("passes column key prop to corresponding cells", () => {
-        const columns: Array<Column<string>> = [
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 key: "column-1-key",
                 render: () => <span />,
                 selected: true
@@ -74,9 +74,9 @@ describe("<DataTable />", () => {
     });
     
     it("shows information that items array is empty", () => {
-        const columns: Array<Column<string>> = [
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 render: () => <span />,
                 selected: true
             }
@@ -86,14 +86,14 @@ describe("<DataTable />", () => {
     });
 
     it("renders items", () => {
-        const columns: Array<Column<string>> = [
+        const columns: Array<DataColumn<string>> = [
             {
-                header: "Column 1",
+                name: "Column 1",
                 render: (item) => <Typography>{item}</Typography>,
                 selected: true
             },
             {
-                header: "Column 2",
+                name: "Column 2",
                 render: (item) => <Button>{item}</Button>,
                 selected: true
             }

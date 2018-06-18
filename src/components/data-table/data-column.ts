@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export interface Column<T> {
-    header: string;
+export interface DataColumn<T> {
+    name: string;
     selected: boolean;
     configurable?: boolean;
     key?: React.Key;
@@ -11,6 +11,6 @@ export interface Column<T> {
     renderHeader?: () => React.ReactElement<void>;
 }
 
-export const isColumnConfigurable = <T>(column: Column<T>) => {
-    return column.configurable === undefined || column.configurable === true;
+export const isColumnConfigurable = <T>(column: DataColumn<T>) => {
+    return column.configurable === undefined || column.configurable;
 };
