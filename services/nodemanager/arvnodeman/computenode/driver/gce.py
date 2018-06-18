@@ -102,12 +102,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                   'ex_disks_gce_struct': disks,
                   }
         result['ex_metadata'].update({
-                'arv-ping-url': self._make_ping_url(arvados_node),
-                'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
-                'hostname': arvados_node_fqdn(arvados_node),
-                })
+            'arvados_node_size': size.id,
+            'arv-ping-url': self._make_ping_url(arvados_node),
+            'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
+            'hostname': arvados_node_fqdn(arvados_node),
+        })
         return result
-
 
     def list_nodes(self):
         # The GCE libcloud driver only supports filtering node lists by zone.
@@ -115,12 +115,14 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         nodelist = [node for node in
                     super(ComputeNodeDriver, self).list_nodes()
                     if self.node_tags.issubset(node.extra.get('tags', []))]
-        # As of 0.18, the libcloud GCE driver sets node.size to the size's name.
-        # It's supposed to be the actual size object.  Check that it's not,
-        # and monkeypatch the results when that's the case.
-        if nodelist and not hasattr(nodelist[0].size, 'id'):
-            for node in nodelist:
+        for node in nodelist:
+            # As of 0.18, the libcloud GCE driver sets node.size to the size's name.
+            # It's supposed to be the actual size object.  Check that it's not,
+            # and monkeypatch the results when that's the case.
+            if not hasattr(node.size, 'id'):
                 node.size = self._sizes_by_id[node.size]
+            # Get arvados-assigned cloud size id
+            node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size')
         return nodelist
 
     @classmethod

@@ -46,6 +46,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def arvados_create_kwargs(self, size, arvados_node):
         tags = {
+            # Set up tag indicating the Arvados assigned Cloud Size id.
+            'arvados_node_size': size.id,
             'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
             'arv-ping-url': self._make_ping_url(arvados_node)
         }
@@ -88,6 +90,7 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
             # Need to populate Node.size
             if not n.size:
                 n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
+            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size')
         return nodes
 
     def broken(self, cloud_node):

@@ -426,6 +426,15 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertEquals(self.node_actor.shutdown_eligible().get(self.TIMEOUT),
                           (False, "node state is ('unpaired', 'open', 'boot wait', 'idle exceeded')"))
 
+    def test_shutdown_when_invalid_cloud_node_size(self):
+        self.make_mocks(1)
+        self.cloud_mock.size.id = 'invalid'
+        self.cloud_mock.extra['arvados_node_size'] = 'stale.type'
+        self.make_actor()
+        self.shutdowns._set_state(True, 600)
+        self.assertEquals((True, "node's size tag 'stale.type' not recognizable"),
+                          self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
     def test_shutdown_without_arvados_node(self):
         self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
