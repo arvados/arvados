@@ -27,6 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginLeft: '20px',
     },
     treeContainer: {
+        marginTop: '37px',
         overflowX: 'visible',
         overflowY: 'auto',
         minWidth: '240px',
