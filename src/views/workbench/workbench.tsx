@@ -19,7 +19,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
-import { findTreeBranch } from '../../store/project/project-reducer';
+import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
 
 const drawerWidth = 240;
@@ -138,7 +138,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     openProjectItem = (itemId: string) => {
-        const branch = findTreeBranch(this.props.projects, itemId);
+        const branch = getTreePath(this.props.projects, itemId);
         this.setState({
             breadcrumbs: branch.map(item => ({
                 label: item.data.name,

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import projectsReducer, { findTreeBranch } from "./project-reducer";
+import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 
@@ -82,7 +82,7 @@ describe("findTreeBranch", () => {
                 ])
             ])
         ];
-        const branch = findTreeBranch(tree, "2.1.1");
+        const branch = getTreePath(tree, "2.1.1");
         expect(branch.map(item => item.id)).toEqual(["2", "2.1", "2.1.1"]);
     });
 
@@ -101,7 +101,7 @@ describe("findTreeBranch", () => {
                 ])
             ])
         ];
-        expect(findTreeBranch(tree, "3")).toHaveLength(0);
+        expect(getTreePath(tree, "3")).toHaveLength(0);
     });
 
 });
