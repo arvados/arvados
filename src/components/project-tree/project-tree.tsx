@@ -9,7 +9,7 @@ import ListItemText from "@material-ui/core/ListItemText/ListItemText";
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import Typography from '@material-ui/core/Typography';
 
-import Tree, { TreeItem } from '../tree/tree';
+import Tree, { TreeItem, TreeItemStatus } from '../tree/tree';
 import { Project } from '../../models/project';
 
 type CssRules = 'active' | 'listItemText' | 'row' | 'treeContainer';
@@ -27,9 +27,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginLeft: '20px',
     },
     treeContainer: {
-        position: 'absolute',
+        marginTop: '37px',
         overflowX: 'visible',
-        marginTop: '80px',
+        overflowY: 'auto',
         minWidth: '240px',
         whiteSpace: 'nowrap',
     }
@@ -37,7 +37,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
-    toggleProjectTreeItem: (id: string) => void;
+    toggleProjectTreeItem: (id: string, status: TreeItemStatus) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
