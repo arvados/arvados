@@ -3,23 +3,31 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataTable, DataTableProps, DataColumn, ColumnSelector } from "../../components/data-table";
-import { Typography, Grid, ListItem, Divider, List, ListItemIcon, ListItemText, Paper, Toolbar } from '@material-ui/core';
-import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
+import { DataTable, DataColumn, ColumnSelector } from "../../components/data-table";
+import { Typography, Grid, Paper, Toolbar } from '@material-ui/core';
+import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import Popover from '../popover/popover';
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
+import { mockAnchorFromMouseEvent } from '../popover/helpers';
+import { ContextMenu } from './context-menu';
 
 interface DataExplorerProps {
     items: DataItem[];
     onItemClick: (item: DataItem) => void;
 }
 
-type DataExplorerState = Pick<DataTableProps<DataItem>, "columns">;
+interface DataExplorerState {
+    columns: Array<DataColumn<DataItem>>;
+    contextMenu: {
+        anchorEl?: HTMLElement;
+        item?: DataItem;
+    };
+}
 
 class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState> {
     state: DataExplorerState = {
+        contextMenu: {},
         columns: [
             {
                 name: "Name",
@@ -44,7 +52,7 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
             {
                 name: "File size",
                 selected: true,
-                render: (item) => renderFileSize(item.fileSize)
+                render: item => renderFileSize(item.fileSize)
             },
             {
                 name: "Last modified",
@@ -56,13 +64,14 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
                 selected: true,
                 configurable: false,
                 renderHeader: () => null,
-                render: renderItemActions
+                render: item => this.renderActions(item)
             }
         ]
     };
 
     render() {
         return <Paper>
+            <ContextMenu {...this.state.contextMenu} onClose={this.closeContextMenu} />
             <Toolbar>
                 <Grid container justify="flex-end">
                     <ColumnSelector
@@ -72,7 +81,8 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
             </Toolbar>
             <DataTable
                 columns={this.state.columns}
-                items={this.props.items} />
+                items={this.props.items}
+                onRowContextMenu={this.openItemMenuOnRowClick} />
             <Toolbar />
         </Paper>;
     }
@@ -100,6 +110,36 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
                 </Typography>
             </Grid>
         </Grid>
+
+    renderActions = (item: DataItem) =>
+        <Grid container justify="flex-end">
+            <IconButton onClick={event => this.openItemMenuOnActionsClick(event, item)}>
+                <MoreVertIcon />
+            </IconButton>
+        </Grid>
+
+    openItemMenuOnRowClick = (event: React.MouseEvent<HTMLElement>, item: DataItem) => {
+        event.preventDefault();
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                item
+            }
+        });
+    }
+
+    openItemMenuOnActionsClick = (event: React.MouseEvent<HTMLElement>, item: DataItem) => {
+        this.setState({
+            contextMenu: {
+                anchorEl: event.currentTarget,
+                item
+            }
+        });
+    }
+
+    closeContextMenu = () => {
+        this.setState({ contextMenu: {} });
+    }
 
 }
 
@@ -138,54 +178,5 @@ const renderStatus = (status?: string) =>
     <Typography noWrap align="center">
         {status || "-"}
     </Typography>;
-
-const renderItemActions = () =>
-    <Grid container justify="flex-end">
-        <Popover triggerComponent={ItemActionsTrigger}>
-            <List dense>
-                {[{
-                    icon: "fas fa-users",
-                    label: "Share"
-                },
-                {
-                    icon: "fas fa-sign-out-alt",
-                    label: "Move to"
-                },
-                {
-                    icon: "fas fa-star",
-                    label: "Add to favourite"
-                },
-                {
-                    icon: "fas fa-edit",
-                    label: "Rename"
-                },
-                {
-                    icon: "fas fa-copy",
-                    label: "Make a copy"
-                },
-                {
-                    icon: "fas fa-download",
-                    label: "Download"
-                }].map(renderAction)}
-                < Divider />
-                {renderAction({ icon: "fas fa-trash-alt", label: "Remove" })}
-            </List>
-        </Popover>
-    </Grid>;
-
-const renderAction = (action: { label: string, icon: string }, index?: number) =>
-    <ListItem button key={index}>
-        <ListItemIcon>
-            <i className={action.icon} />
-        </ListItemIcon>
-        <ListItemText>
-            {action.label}
-        </ListItemText>
-    </ListItem>;
-
-const ItemActionsTrigger: React.SFC<IconButtonProps> = (props) =>
-    <IconButton {...props}>
-        <MoreVertIcon />
-    </IconButton>;
 
 export default DataExplorer;
