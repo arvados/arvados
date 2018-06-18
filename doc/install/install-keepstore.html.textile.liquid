@@ -11,7 +11,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
 
-We recommend installing at least two Keepstore servers. By convention, we use the following hostname pattern:
+We recommend starting off with two Keepstore servers.  Exact server specifications will be site and workload specific, but in general keepstore will be I/O bound and should be set up to maximize aggregate bandwidth with compute nodes.  To increase capacity (either space or throughput) it is straightforward to add additional servers, or (in cloud environments) to increase the machine size of the existing servers.
+
+By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
