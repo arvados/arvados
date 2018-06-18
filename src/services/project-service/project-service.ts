@@ -34,7 +34,7 @@ interface GroupsResponse {
 
 export default class ProjectService {
     public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
-        dispatch(actions.PROJECTS_REQUEST());
+        dispatch(actions.PROJECTS_REQUEST(parentUuid));
         if (parentUuid) {
             const fb = new FilterBuilder();
             fb.addLike(FilterField.OWNER_UUID, parentUuid);

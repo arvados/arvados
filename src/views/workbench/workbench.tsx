@@ -27,7 +27,7 @@ import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
 import ProjectTree from '../../components/project-tree/project-tree';
-import { TreeItem } from "../../components/tree/tree";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
 
@@ -143,10 +143,14 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     };
 
-    toggleProjectTreeItem = (itemId: string) => {
-        this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+    toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
+        if (status === TreeItemStatus.Loaded) {
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-        });
+        } else {
+            this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
+                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+            });
+        }
     }
 
     render() {
@@ -163,18 +167,17 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     />
                 </div>
                 {user &&
-                <Drawer
-                    variant="permanent"
-                    classes={{
-                        paper: classes.drawerPaper,
-                    }}>
-                    <div className={classes.toolbar}/>
-                    <ProjectTree
-                        projects={this.props.projects}
-                        toggleProjectTreeItem={this.toggleProjectTreeItem}/>
-                </Drawer>}
+                    <Drawer
+                        variant="permanent"
+                        classes={{
+                            paper: classes.drawerPaper,
+                        }}>
+                        <div className={classes.toolbar} />
+                        <ProjectTree
+                            projects={this.props.projects}
+                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
+                    </Drawer>}
                 <main className={classes.content}>
-                    <div className={classes.toolbar} />
                     <div className={classes.toolbar} />
                     <Switch>
                         <Route path="/project/:name" component={ProjectList} />
