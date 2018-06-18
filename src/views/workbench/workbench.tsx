@@ -19,6 +19,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
+import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
 
 const drawerWidth = 240;
@@ -66,7 +67,8 @@ interface WorkbenchActionProps {
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
-    path: string;
+    itemId: string;
+    status: TreeItemStatus;
 }
 
 interface NavMenuItem extends MainAppBarMenuItem {
@@ -88,15 +90,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
         anchorEl: null,
         searchText: "",
-        breadcrumbs: [
-            {
-                label: "Projects",
-                path: "/projects"
-            }, {
-                label: "Project 1",
-                path: "/projects/project-1"
-            }
-        ],
+        breadcrumbs: [],
         menuItems: {
             accountMenu: [
                 {
@@ -125,7 +119,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 
     mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+        onBreadcrumbClick: ({ itemId, status }: NavBreadcrumb) => {
+            this.toggleProjectTreeItem(itemId, status);
+        },
         onSearch: searchText => {
             this.setState({ searchText });
             this.props.dispatch(push(`/search?q=${searchText}`));
@@ -142,6 +138,14 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     openProjectItem = (itemId: string) => {
+        const branch = getTreePath(this.props.projects, itemId);
+        this.setState({
+            breadcrumbs: branch.map(item => ({
+                label: item.data.name,
+                itemId: item.data.uuid,
+                status: item.status
+            }))
+        });
         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         this.props.dispatch(push(`/project/${itemId}`));
     }
