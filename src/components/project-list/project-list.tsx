@@ -54,7 +54,7 @@ class ProjectList extends React.Component<ProjectListProps & WithStyles<CssRules
                     </TableRow>
                 </TableBody>
             </Table>
-        </Paper>
+        </Paper>;
     }
 }
 

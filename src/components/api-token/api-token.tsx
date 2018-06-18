@@ -17,7 +17,7 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp
         const regex = new RegExp('[\\?&]' + safeName + '=([^&#]*)');
         const results = regex.exec(search);
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    };
+    }
 
     componentDidMount() {
         const search = this.props.location ? this.props.location.search : "";
@@ -29,7 +29,7 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp
         });
     }
     render() {
-        return <Redirect to="/"/>
+        return <Redirect to="/"/>;
     }
 }
 

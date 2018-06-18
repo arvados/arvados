@@ -65,4 +65,4 @@ class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRu
     }
 }
 
-export default withStyles(styles)(ProjectTree)
+export default withStyles(styles)(ProjectTree);

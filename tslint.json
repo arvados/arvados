@@ -11,7 +11,8 @@
     "jsx-no-lambda": false,
     "no-debugger": false,
     "no-console": false,
-    "no-shadowed-variable": false
+    "no-shadowed-variable": false,
+    "semicolon": true
   },
   "linterOptions": {
     "exclude": [

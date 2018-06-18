@@ -22,8 +22,10 @@ import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
 import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
-import projectActions from "../../store/project/project-action"
-
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
+import { push } from 'react-router-redux';
+import projectActions from "../../store/project/project-action";
 import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
@@ -45,7 +47,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     appBar: {
         zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: '#692498'
+        backgroundColor: '#692498',
+        position: "absolute",
+        width: "100%"
     },
     drawerPaper: {
         position: 'relative',
@@ -71,96 +75,97 @@ interface WorkbenchActionProps {
 
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
+interface NavBreadcrumb extends Breadcrumb {
+    path: string;
+}
+
+interface NavMenuItem extends MainAppBarMenuItem {
+    action: () => void;
+}
+
 interface WorkbenchState {
     anchorEl: any;
+    breadcrumbs: NavBreadcrumb[];
+    searchText: string;
+    menuItems: {
+        accountMenu: NavMenuItem[],
+        helpMenu: NavMenuItem[],
+        anonymousMenu: NavMenuItem[]
+    };
 }
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
-    constructor(props: WorkbenchProps) {
-        super(props);
-        this.state = {
-            anchorEl: null
+    state = {
+        anchorEl: null,
+        searchText: "",
+        breadcrumbs: [
+            {
+                label: "Projects",
+                path: "/projects"
+            }, {
+                label: "Project 1",
+                path: "/projects/project-1"
+            }
+        ],
+        menuItems: {
+            accountMenu: [
+                {
+                    label: "Logout",
+                    action: () => this.props.dispatch(authActions.LOGOUT())
+                },
+                {
+                    label: "My account",
+                    action: () => this.props.dispatch(push("/my-account"))
+                }
+            ],
+            helpMenu: [
+                {
+                    label: "Help",
+                    action: () => this.props.dispatch(push("/help"))
+                }
+            ],
+            anonymousMenu: [
+                {
+                    label: "Sign in",
+                    action: () => this.props.dispatch(authActions.LOGIN())
+                }
+            ]
         }
-    }
-
-    login = () => {
-        this.props.dispatch(authActions.LOGIN());
     };
 
-    logout = () => {
-        this.handleClose();
-        this.props.dispatch(authActions.LOGOUT());
-    };
 
-    handleOpenMenu = (event: React.MouseEvent<any>) => {
-        this.setState({
-            anchorEl: event.currentTarget
-        });
-    };
-
-    handleClose = () => {
-        this.setState({
-            anchorEl: null
-        });
+    mainAppBarActions: MainAppBarActionProps = {
+        onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+        onSearch: searchText => {
+            this.setState({ searchText });
+            this.props.dispatch(push(`/search?q=${searchText}`));
+        },
+        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     };
 
     toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
         if (status === TreeItemStatus.Loaded) {
-            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId))
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         } else {
             this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
                 this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-            })
+            });
         }
-    };
+    }
 
     render() {
         const { classes, user } = this.props;
         return (
             <div className={classes.root}>
-                <AppBar position="absolute" className={classes.appBar}>
-                    <Toolbar>
-                        <Typography variant="title" color="inherit" noWrap style={{ flexGrow: 1 }}>
-                            <span>Arvados</span><br /><span style={{ fontSize: 12 }}>Workbench 2</span>
-                        </Typography>
-                        {user ?
-                            <Grid container style={{ width: 'auto' }}>
-                                <Grid container style={{ width: 'auto' }} alignItems='center'>
-                                    <Typography variant="title" color="inherit" noWrap>
-                                        {user.firstName} {user.lastName}
-                                    </Typography>
-                                </Grid>
-                                <Grid item>
-                                    <IconButton
-                                        aria-owns={this.state.anchorEl ? 'menu-appbar' : undefined}
-                                        aria-haspopup="true"
-                                        onClick={this.handleOpenMenu}
-                                        color="inherit">
-                                        <AccountCircle />
-                                    </IconButton>
-                                </Grid>
-                                <Menu
-                                    id="menu-appbar"
-                                    anchorEl={this.state.anchorEl}
-                                    anchorOrigin={{
-                                        vertical: 'top',
-                                        horizontal: 'right',
-                                    }}
-                                    transformOrigin={{
-                                        vertical: 'top',
-                                        horizontal: 'right',
-                                    }}
-                                    open={!!this.state.anchorEl}
-                                    onClose={this.handleClose}>
-                                    <MenuItem onClick={this.logout}>Logout</MenuItem>
-                                    <MenuItem onClick={this.handleClose}>My account</MenuItem>
-                                </Menu>
-                            </Grid>
-                            :
-                            <Button color="inherit" onClick={this.login}>Login</Button>
-                        }
-                    </Toolbar>
-                </AppBar>
+                <div className={classes.appBar}>
+                    <MainAppBar
+                        breadcrumbs={this.state.breadcrumbs}
+                        searchText={this.state.searchText}
+                        user={this.props.user}
+                        menuItems={this.state.menuItems}
+                        {...this.mainAppBarActions}
+                    />
+                </div>
                 {user &&
                     <Drawer
                         variant="permanent"

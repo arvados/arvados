@@ -86,7 +86,7 @@ export default class AuthService {
             .then(resp => {
                 dispatch(actions.USER_DETAILS_SUCCESS(resp.data));
             });
-    };
+    }
 
     public getRootUuid() {
         const uuid = this.getOwnerUuid();

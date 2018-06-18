@@ -15,9 +15,9 @@ const composeEnhancers =
     compose;
 
 export interface RootState {
-    auth: AuthState,
-    projects: ProjectState,
-    router: RouterState
+    auth: AuthState;
+    projects: ProjectState;
+    router: RouterState;
 }
 
 const rootReducer = combineReducers({
