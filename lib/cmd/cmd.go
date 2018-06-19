@@ -11,6 +11,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -23,6 +26,14 @@ type HandlerFunc func(prog string, args []string, stdin io.Reader, stdout, stder
 
 func (f HandlerFunc) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return f(prog, args, stdin, stdout, stderr)
+}
+
+type Version string
+
+func (v Version) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
+	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, v, runtime.Version())
+	return 0
 }
 
 // Multi is a Handler that looks up its first argument in a map, and
@@ -46,12 +57,20 @@ func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		m.Usage(stderr)
 		return 2
 	}
-	if cmd, ok := m[args[0]]; !ok {
-		fmt.Fprintf(stderr, "unrecognized command %q\n", args[0])
+	_, basename := filepath.Split(prog)
+	if strings.HasPrefix(basename, "arvados-") {
+		basename = basename[8:]
+	} else if strings.HasPrefix(basename, "crunch-") {
+		basename = basename[7:]
+	}
+	if cmd, ok := m[basename]; ok {
+		return cmd.RunCommand(prog, args, stdin, stdout, stderr)
+	} else if cmd, ok = m[args[0]]; ok {
+		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
+	} else {
+		fmt.Fprintf(stderr, "%s: unrecognized command %q\n", prog, args[0])
 		m.Usage(stderr)
 		return 2
-	} else {
-		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
 	}
 }
 
