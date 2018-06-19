@@ -13,7 +13,7 @@ import projectActions from "../../store/project/project-action";
 import { DataColumns } from "../../components/data-table/data-table";
 import { DataItem } from "../../views-components/data-explorer/data-item";
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
-import { mapProjectTreeItem } from "../../views-selectors/data-explorer/data-explorer";
+import { mapProjectTreeItem } from "./data-explorer-selectors";
 
 interface DataExplorerViewDataProps {
     projects: ProjectState;
