@@ -28,8 +28,8 @@ class ContainerRequest < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
-  before_validation :set_container
   before_validation :set_default_preemptible_scheduling_parameter
+  before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
@@ -199,11 +199,11 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_default_preemptible_scheduling_parameter
+    c = get_requesting_container()
     if self.state == Committed
       # If preemptible instances (eg: AWS Spot Instances) are allowed,
       # ask them on child containers by default.
-      if Rails.configuration.preemptible_instances and
-        !self.requesting_container_uuid.nil? and
+      if Rails.configuration.preemptible_instances and !c.nil? and
         self.scheduling_parameters['preemptible'].nil?
           self.scheduling_parameters['preemptible'] = true
       end
@@ -313,10 +313,18 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    return if !current_api_client_authorization
-    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
+    c = get_requesting_container()
+    if !c.nil?
       self.requesting_container_uuid = c.uuid
       self.priority = c.priority>0 ? 1 : 0
+    end
+  end
+
+  def get_requesting_container
+    return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
+    return if !current_api_client_authorization
+    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
+      return c
     end
   end
 end
