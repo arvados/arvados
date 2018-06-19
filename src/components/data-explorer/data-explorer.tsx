@@ -10,7 +10,7 @@ import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
 import { mockAnchorFromMouseEvent } from '../popover/helpers';
-import ContextMenu, { ContextMenuActionGroup } from '../context-menu/context-menu';
+import ContextMenu from '../context-menu/context-menu';
 
 export interface DataExplorerContextActions {
     onAddToFavourite: (dataIitem: DataItem) => void;
@@ -32,44 +32,12 @@ interface DataExplorerState {
     contextMenu: {
         anchorEl?: HTMLElement;
         item?: DataItem;
-        actions: Array<ContextMenuActionGroup<DataItem>>;
     };
 }
 
 class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState> {
     state: DataExplorerState = {
-        contextMenu: {
-            actions: [[{
-                icon: "fas fa-users fa-fw",
-                name: "Share",
-                onClick: this.handleContextAction("onShare")
-            }, {
-                icon: "fas fa-sign-out-alt fa-fw",
-                name: "Move to",
-                onClick: this.handleContextAction("onMoveTo")
-            }, {
-                icon: "fas fa-star fa-fw",
-                name: "Add to favourite",
-                onClick: this.handleContextAction("onAddToFavourite")
-            }, {
-                icon: "fas fa-edit fa-fw",
-                name: "Rename",
-                onClick: this.handleContextAction("onRename")
-            }, {
-                icon: "fas fa-copy fa-fw",
-                name: "Make a copy",
-                onClick: this.handleContextAction("onCopy")
-            }, {
-                icon: "fas fa-download fa-fw",
-                name: "Download",
-                onClick: this.handleContextAction("onDownload")
-            }], [{
-                icon: "fas fa-trash-alt fa-fw",
-                name: "Remove",
-                onClick: this.handleContextAction("onRemove")
-            }
-            ]]
-        },
+        contextMenu: {},
         columns: [{
             name: "Name",
             selected: true,
@@ -103,10 +71,42 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         }]
     };
 
+    contextMenuActions = [[{
+        icon: "fas fa-users fa-fw",
+        name: "Share",
+        onClick: this.handleContextAction("onShare")
+    }, {
+        icon: "fas fa-sign-out-alt fa-fw",
+        name: "Move to",
+        onClick: this.handleContextAction("onMoveTo")
+    }, {
+        icon: "fas fa-star fa-fw",
+        name: "Add to favourite",
+        onClick: this.handleContextAction("onAddToFavourite")
+    }, {
+        icon: "fas fa-edit fa-fw",
+        name: "Rename",
+        onClick: this.handleContextAction("onRename")
+    }, {
+        icon: "fas fa-copy fa-fw",
+        name: "Make a copy",
+        onClick: this.handleContextAction("onCopy")
+    }, {
+        icon: "fas fa-download fa-fw",
+        name: "Download",
+        onClick: this.handleContextAction("onDownload")
+    }], [{
+        icon: "fas fa-trash-alt fa-fw",
+        name: "Remove",
+        onClick: this.handleContextAction("onRemove")
+    }
+    ]];
+
     render() {
         return <Paper>
             <ContextMenu
                 {...this.state.contextMenu}
+                actions={this.contextMenuActions}
                 onClose={this.closeContextMenu} />
             <Toolbar>
                 <Grid container justify="flex-end">
@@ -156,25 +156,25 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
 
     openItemMenuOnRowClick = (event: React.MouseEvent<HTMLElement>, item: DataItem) => {
         event.preventDefault();
-        this.setContextMenuState({
-            anchorEl: mockAnchorFromMouseEvent(event),
-            item
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                item
+            }
         });
     }
 
     openItemMenuOnActionsClick = (event: React.MouseEvent<HTMLElement>, item: DataItem) => {
-        this.setContextMenuState({
-            anchorEl: event.currentTarget,
-            item
+        this.setState({
+            contextMenu: {
+                anchorEl: event.currentTarget,
+                item
+            }
         });
     }
 
     closeContextMenu = () => {
-        this.setContextMenuState({});
-    }
-
-    setContextMenuState = (contextMenu: { anchorEl?: HTMLElement; item?: DataItem; }) => {
-        this.setState(prev => ({ contextMenu: { ...contextMenu, actions: prev.contextMenu.actions } }));
+        this.setState({ contextMenu: {} });
     }
 
     handleContextAction(action: keyof DataExplorerContextActions) {
