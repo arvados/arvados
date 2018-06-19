@@ -289,10 +289,10 @@ common:
   ### Crunch, DNS & compute node management
   ###
 
-  # Preemptable instance support (e.g. AWS Spot Instances)
-  # When true, child containers will get created with the preemptable
+  # Preemptible instance support (e.g. AWS Spot Instances)
+  # When true, child containers will get created with the preemptible
   # scheduling parameter parameter set.
-  preemptable_instances: false
+  preemptible_instances: false
 
   # Docker image to be used when none found in runtime_constraints of a job
   default_docker_image_for_jobs: false

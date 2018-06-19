@@ -53,7 +53,7 @@ type RuntimeConstraints struct {
 // such as Partitions
 type SchedulingParameters struct {
 	Partitions  []string `json:"partitions"`
-	Preemptable bool     `json:"preemptable"`
+	Preemptible bool     `json:"preemptible"`
 }
 
 // ContainerList is an arvados#containerList resource.

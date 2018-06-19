@@ -73,10 +73,10 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
             create_method.call_args[1].get('ex_metadata', {'arg': 'missing'}).items()
         )
 
-    def test_create_preemptable_instance(self):
+    def test_create_preemptible_instance(self):
         arv_node = testutil.arvados_node_mock()
         driver = self.new_driver()
-        driver.create_node(testutil.MockSize(1, preemptable=True), arv_node)
+        driver.create_node(testutil.MockSize(1, preemptible=True), arv_node)
         create_method = self.driver_mock().create_node
         self.assertTrue(create_method.called)
         self.assertEqual(

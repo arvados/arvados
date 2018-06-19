@@ -760,16 +760,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
   [
     [false, ActiveRecord::RecordInvalid],
     [true, nil],
-  ].each do |preemptable_conf, expected|
-    test "having Rails.configuration.preemptable_instances=#{preemptable_conf}, create preemptable container request and verify #{expected}" do
-      sp = {"preemptable" => true}
+  ].each do |preemptible_conf, expected|
+    test "having Rails.configuration.preemptible_instances=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
+      sp = {"preemptible" => true}
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
                       scheduling_parameters: sp,
                       mounts: {"test" => {"kind" => "json"}}}
-      Rails.configuration.preemptable_instances = preemptable_conf
+      Rails.configuration.preemptible_instances = preemptible_conf
       set_user_from_auth :active
 
       cr = create_minimal_req!(common_attrs)
@@ -790,15 +790,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     'zzzzz-dz642-runningcontainr',
     nil,
   ].each do |requesting_c|
-    test "having preemptable instances active on the API server, a committed #{requesting_c.nil? ? 'non-':''}child CR should not ask for preemptable instance if parameter already set to false" do
+    test "having preemptible instances active on the API server, a committed #{requesting_c.nil? ? 'non-':''}child CR should not ask for preemptible instance if parameter already set to false" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
-                      scheduling_parameters: {"preemptable" => false},
+                      scheduling_parameters: {"preemptible" => false},
                       mounts: {"test" => {"kind" => "json"}}}
 
-      Rails.configuration.preemptable_instances = true
+      Rails.configuration.preemptible_instances = true
       set_user_from_auth :active
 
       if requesting_c
@@ -813,7 +813,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.state = ContainerRequest::Committed
       cr.save!
 
-      assert_equal false, cr.scheduling_parameters['preemptable']
+      assert_equal false, cr.scheduling_parameters['preemptible']
     end
   end
 
@@ -822,15 +822,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [true, nil, nil],
     [false, 'zzzzz-dz642-runningcontainr', nil],
     [false, nil, nil],
-  ].each do |preemptable_conf, requesting_c, schedule_preemptable|
-    test "having Rails.configuration.preemptable_instances=#{preemptable_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptable ? '':'not'} ask for preemptable instance by default" do
+  ].each do |preemptible_conf, requesting_c, schedule_preemptible|
+    test "having Rails.configuration.preemptible_instances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
                       mounts: {"test" => {"kind" => "json"}}}
 
-      Rails.configuration.preemptable_instances = preemptable_conf
+      Rails.configuration.preemptible_instances = preemptible_conf
       set_user_from_auth :active
 
       if requesting_c
@@ -845,7 +845,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.state = ContainerRequest::Committed
       cr.save!
 
-      assert_equal schedule_preemptable, cr.scheduling_parameters['preemptable']
+      assert_equal schedule_preemptible, cr.scheduling_parameters['preemptible']
     end
   end
 

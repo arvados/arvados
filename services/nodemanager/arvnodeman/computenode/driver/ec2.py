@@ -91,7 +91,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     "VolumeSize": volsize,
                     "VolumeType": "gp2"
                 }}]
-        if size.preemptable:
+        if size.preemptible:
             # Request a Spot instance for this node
             kw['ex_spot_market'] = True
         return kw
