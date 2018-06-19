@@ -1,0 +1,52 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+import * as React from "react";
+import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
+import { DefaultTransformOrigin } from "../popover/helpers";
+
+export interface ContextMenuAction<T> {
+    name: string;
+    icon: string;
+    onClick: (item: T) => void;
+}
+
+export type ContextMenuActionGroup<T> = Array<ContextMenuAction<T>>;
+
+export interface ContextMenuProps<T> {
+    anchorEl?: HTMLElement;
+    item?: T;
+    onClose: () => void;
+    actions: Array<ContextMenuActionGroup<T>>;
+}
+
+export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps<T>> {
+    render() {
+        const { anchorEl, onClose, actions, item } = this.props;
+        return <Popover
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={onClose}
+            transformOrigin={DefaultTransformOrigin}
+            anchorOrigin={DefaultTransformOrigin}>
+            <List dense>
+                {actions.map((group, groupIndex) =>
+                    <React.Fragment key={groupIndex}>
+                        {group.map((action, actionIndex) =>
+                            <ListItem
+                                button
+                                key={actionIndex}
+                                onClick={() => item && action.onClick(item)}>
+                                <ListItemIcon>
+                                    <i className={action.icon} />
+                                </ListItemIcon>
+                                <ListItemText>
+                                    {action.name}
+                                </ListItemText>
+                            </ListItem>)}
+                        {groupIndex < actions.length - 1 && <Divider />}
+                    </React.Fragment>)}
+            </List>
+        </Popover>;
+    }
+}

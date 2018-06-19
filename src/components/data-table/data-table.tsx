@@ -9,12 +9,13 @@ import { DataColumn } from './data-column';
 export interface DataTableProps<T> {
     items: T[];
     columns: Array<DataColumn<T>>;
-    onItemClick?: (item: T) => void;
+    onRowClick?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onRowContextMenu?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
 }
 
 class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
     render() {
-        const { items, columns, classes, onItemClick } = this.props;
+        const { items, columns, classes, onRowClick, onRowContextMenu } = this.props;
         return <div className={classes.tableContainer}>
             {items.length > 0 ?
                 <Table>
@@ -35,7 +36,8 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                                 <TableRow
                                     hover
                                     key={index}
-                                    onClick={() => onItemClick && onItemClick(item)}>
+                                    onClick={event => onRowClick && onRowClick(event, item)}
+                                    onContextMenu={event => onRowContextMenu && onRowContextMenu(event, item)}>
                                     {columns
                                         .filter(column => column.selected)
                                         .map((column, index) => (
