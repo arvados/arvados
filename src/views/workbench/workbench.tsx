@@ -23,8 +23,9 @@ import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
 
 const drawerWidth = 240;
+const appBarHeight = 102;
 
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -46,12 +47,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         position: 'relative',
         width: drawerWidth,
     },
-    content: {
-        flexGrow: 1,
+    contentWrapper: {
         backgroundColor: theme.palette.background.default,
-        padding: theme.spacing.unit * 3,
-        height: '100%',
+        display: "flex",
+        flexGrow: 1,
         minWidth: 0,
+        paddingTop: appBarHeight
+    },
+    content: {
+        padding: theme.spacing.unit * 3,
+        overflowY: "auto",
+        flexGrow: 1
     },
     toolbar: theme.mixins.toolbar
 });
@@ -174,12 +180,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             projects={this.props.projects}
                             toggleProjectTreeItem={this.toggleProjectTreeItem} />
                     </Drawer>}
-                <main className={classes.content}>
-                    <div className={classes.toolbar} />
-                    <div className={classes.toolbar} />
-                    <Switch>
-                        <Route path="/project/:name" component={DataExplorer} />
-                    </Switch>
+                <main className={classes.contentWrapper}>
+                    <div className={classes.content}>
+                        <Switch>
+                            <Route path="/project/:name" component={DataExplorer} />
+                        </Switch>
+                    </div>
                 </main>
             </div>
         );
