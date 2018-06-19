@@ -19,7 +19,7 @@ export interface ContextMenuActions {
 export interface ContextMenuProps {
     anchorEl?: HTMLElement;
     item?: DataItem;
-    onClose: VoidFunction;
+    onClose: () => void;
     actions: ContextMenuActions;
 }
 
@@ -36,7 +36,7 @@ export const ContextMenu: React.SFC<ContextMenuProps> = ({ anchorEl, onClose, ac
 interface ActionsProps {
     actions: ContextMenuActions;
     item?: DataItem;
-    onClose: VoidFunction;
+    onClose: () => void;
 }
 
 const Actions: React.SFC<ActionsProps> = ({ actions, item, onClose }) =>
@@ -90,7 +90,7 @@ interface ActionProps {
     item?: DataItem;
     icon: string;
     label: string;
-    onClose: VoidFunction;
+    onClose: () => void;
 }
 
 const Action: React.SFC<ActionProps> = ({ onClick, onClose, item, icon, label }) =>
