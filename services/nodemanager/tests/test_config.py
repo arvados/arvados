@@ -29,9 +29,9 @@ creds = dummy_creds
 cores = 1
 price = 0.8
 
-[Size 1.preemptable]
+[Size 1.preemptible]
 instance_type = 1
-preemptable = true
+preemptible = true
 cores = 1
 price = 0.8
 
@@ -65,17 +65,17 @@ testlogger = INFO
         self.assertEqual('Small', size.name)
         self.assertEqual(1, kwargs['cores'])
         self.assertEqual(0.8, kwargs['price'])
-        # preemptable is False by default
-        self.assertEqual(False, kwargs['preemptable'])
+        # preemptible is False by default
+        self.assertEqual(False, kwargs['preemptible'])
         # instance_type == arvados node size id by default
         self.assertEqual(kwargs['id'], kwargs['instance_type'])
-        # Now retrieve the preemptable version
+        # Now retrieve the preemptible version
         size, kwargs = sizes[1]
         self.assertEqual('Small', size.name)
-        self.assertEqual('1.preemptable', kwargs['id'])
+        self.assertEqual('1.preemptible', kwargs['id'])
         self.assertEqual(1, kwargs['cores'])
         self.assertEqual(0.8, kwargs['price'])
-        self.assertEqual(True, kwargs['preemptable'])
+        self.assertEqual(True, kwargs['preemptible'])
         self.assertEqual('1', kwargs['instance_type'])
 
 

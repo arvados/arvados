@@ -92,12 +92,12 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 	}
 }
 
-func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
+func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
 	menu := []arvados.InstanceType{
-		{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Preemptable: true, Name: "costly"},
+		{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Preemptible: true, Name: "costly"},
 		{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "almost best"},
-		{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Preemptable: true, Name: "best"},
-		{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Preemptable: true, Name: "small"},
+		{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Preemptible: true, Name: "best"},
+		{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Preemptible: true, Name: "small"},
 	}
 	best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
 		Mounts: map[string]arvados.Mount{
@@ -109,7 +109,7 @@ func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
 			KeepCacheRAM: 123456789,
 		},
 		SchedulingParameters: arvados.SchedulingParameters{
-			Preemptable: true,
+			Preemptible: true,
 		},
 	})
 	c.Check(err, check.IsNil)
@@ -117,5 +117,5 @@ func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
 	c.Check(best.RAM >= 1234567890, check.Equals, true)
 	c.Check(best.VCPUs >= 2, check.Equals, true)
 	c.Check(best.Scratch >= 2*GiB, check.Equals, true)
-	c.Check(best.Preemptable, check.Equals, true)
+	c.Check(best.Preemptible, check.Equals, true)
 }

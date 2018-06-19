@@ -62,7 +62,7 @@ type InstanceType struct {
 	RAM          int64
 	Scratch      int64
 	Price        float64
-	Preemptable  bool
+	Preemptible  bool
 }
 
 // GetThisSystemNode returns a SystemNode for the node we're running
