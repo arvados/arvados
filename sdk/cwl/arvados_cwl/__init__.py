@@ -69,8 +69,8 @@ class ArvCwlRunner(object):
     """
 
     def __init__(self, api_client, work_api=None, keep_client=None,
-                 output_name=None, output_tags=None, num_retries=4,
-                 thread_count=4):
+                 output_name=None, output_tags=None, default_storage_classes="default",
+                 num_retries=4, thread_count=4):
         self.api = api_client
         self.processes = {}
         self.workflow_eval_lock = threading.Condition(threading.RLock())
@@ -90,6 +90,7 @@ class ArvCwlRunner(object):
         self.trash_intermediate = False
         self.thread_count = thread_count
         self.poll_interval = 12
+        self.default_storage_classes = default_storage_classes
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -272,7 +273,7 @@ class ArvCwlRunner(object):
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v)
 
-    def make_output_collection(self, name, tagsString, outputObj):
+    def make_output_collection(self, name, storage_classes, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -323,7 +324,7 @@ class ArvCwlRunner(object):
         with final.open("cwl.output.json", "w") as f:
             json.dump(outputObj, f, sort_keys=True, indent=4, separators=(',',': '))
 
-        final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
+        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
 
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
@@ -485,6 +486,7 @@ class ArvCwlRunner(object):
                                                 submit_runner_image=kwargs.get("submit_runner_image"),
                                                 intermediate_output_ttl=kwargs.get("intermediate_output_ttl"),
                                                 merged_map=merged_map,
+                                                default_storage_classes=self.default_storage_classes,
                                                 priority=kwargs.get("priority"),
                                                 secret_store=self.secret_store)
             elif self.work_api == "jobs":
@@ -588,6 +590,7 @@ class ArvCwlRunner(object):
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
+
         if kwargs.get("submit") and isinstance(runnerjob, Runner):
             logger.info("Final output collection %s", runnerjob.final_output)
         else:
@@ -595,7 +598,9 @@ class ArvCwlRunner(object):
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             if self.output_tags is None:
                 self.output_tags = ""
-            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
+
+            storage_classes = kwargs.get("storage_classes").strip().split(",")
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
         if kwargs.get("compute_checksum"):
@@ -717,6 +722,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
+    parser.add_argument('--storage-classes', default="default", type=str,
+                        help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
@@ -778,6 +785,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     job_order_object = None
     arvargs = parser.parse_args(args)
 
+    if len(arvargs.storage_classes.strip().split(',')) > 1:
+        logger.error("Multiple storage classes are not supported currently.")
+        return 1
+
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()
 
@@ -807,7 +818,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
         runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client,
                               num_retries=4, output_name=arvargs.output_name,
-                              output_tags=arvargs.output_tags,
+                              output_tags=arvargs.output_tags, default_storage_classes=parser.get_default("storage_classes"),
                               thread_count=arvargs.thread_count)
     except Exception as e:
         logger.error(e)

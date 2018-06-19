@@ -427,6 +427,9 @@ class RunnerContainer(Runner):
         if kwargs.get("debug"):
             command.append("--debug")
 
+        if kwargs.get("storage_classes") and kwargs.get("storage_classes") != self.default_storage_classes:
+            command.append("--storage-classes=" + kwargs.get("storage_classes"))
+
         if self.on_error:
             command.append("--on-error=" + self.on_error)
 
