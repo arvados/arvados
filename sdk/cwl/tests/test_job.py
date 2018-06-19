@@ -41,7 +41,7 @@ class TestJob(unittest.TestCase):
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "jobs",
              "basedir": "",
-             "name": "test_run_"+str(enable_reuse),
+             "name": "test_run_job_"+str(enable_reuse),
              "make_fs_access": make_fs_access,
              "enable_reuse": enable_reuse,
              "priority": 500})
@@ -354,7 +354,7 @@ class TestWorkflow(unittest.TestCase):
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "jobs",
              "basedir": "",
-             "name": "test_run_"+str(enable_reuse),
+             "name": "test_run_wf_"+str(enable_reuse),
              "make_fs_access": make_fs_access,
              "enable_reuse": enable_reuse,
              "priority": 500})
