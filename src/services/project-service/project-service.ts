@@ -4,9 +4,7 @@
 
 import { serverApi } from "../../common/api/server-api";
 import { Dispatch } from "redux";
-import actions from "../../store/project/project-action";
 import { Project } from "../../models/project";
-import UrlBuilder from "../../common/api/url-builder";
 import FilterBuilder, { FilterField } from "../../common/api/filter-builder";
 import { ArvadosResource } from "../response";
 
@@ -27,8 +25,7 @@ interface GroupsResponse {
 }
 
 export default class ProjectService {
-    public getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
-        dispatch(actions.PROJECTS_REQUEST(parentUuid));
+    public getProjectList = (parentUuid?: string): Promise<Project[]> => {
         if (parentUuid) {
             const fb = new FilterBuilder();
             fb.addLike(FilterField.OWNER_UUID, parentUuid);
@@ -44,11 +41,9 @@ export default class ProjectService {
                     ownerUuid: g.owner_uuid,
                     kind: g.kind
                 } as Project));
-                dispatch(actions.PROJECTS_SUCCESS({projects, parentItemId: parentUuid}));
                 return projects;
             });
         } else {
-            dispatch(actions.PROJECTS_SUCCESS({projects: [], parentItemId: parentUuid}));
             return Promise.resolve([]);
         }
     }

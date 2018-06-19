@@ -14,11 +14,10 @@ import { RootState } from "../../store/store";
 import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
-import projectActions from "../../store/project/project-action";
+import projectActions, { getProjectList } from "../../store/project/project-action";
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { projectService } from '../../services/services';
 import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
 
@@ -133,7 +132,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         if (status === TreeItemStatus.Loaded) {
             this.openProjectItem(itemId);
         } else {
-            this.props.dispatch<any>(projectService.getProjectList(itemId))
+            this.props.dispatch<any>(getProjectList(itemId))
                 .then(() => this.openProjectItem(itemId));
         }
     }

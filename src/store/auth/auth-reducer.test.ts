@@ -68,16 +68,15 @@ describe('auth-reducer', () => {
     it('should set user details on success fetch', () => {
         const initialState = undefined;
 
-        const userDetails = {
+        const user = {
             email: "test@test.com",
-            first_name: "John",
-            last_name: "Doe",
+            firstName: "John",
+            lastName: "Doe",
             uuid: "uuid",
-            owner_uuid: "ownerUuid",
-            is_admin: true
+            ownerUuid: "ownerUuid"
         };
 
-        const state = authReducer(initialState, actions.USER_DETAILS_SUCCESS(userDetails));
+        const state = authReducer(initialState, actions.USER_DETAILS_SUCCESS(user));
         expect(state).toEqual({
             apiToken: undefined,
             user: {
