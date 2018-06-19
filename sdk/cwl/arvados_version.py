@@ -7,15 +7,30 @@ import time
 import os
 import re
 
+SETUP_DIR = os.path.dirname(__file__) or '.'
+
 def git_latest_tag():
     gitinfo = subprocess.check_output(
         ['git', 'describe', '--abbrev=0']).strip()
     return str(gitinfo.decode('utf-8'))
 
+def choose_version_from():
+    sdk_ts = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ct', os.path.join(SETUP_DIR, "../python")]).strip()
+    cwl_ts = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ct', SETUP_DIR]).strip()
+    if int(sdk_ts) > int(cwl_ts):
+        getver = os.path.join(SETUP_DIR, "../python")
+    else:
+        getver = SETUP_DIR
+    return getver
+
 def git_timestamp_tag():
     gitinfo = subprocess.check_output(
         ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%ct', '.']).strip()
+         '--format=format:%ct', choose_version_from()]).strip()
     return str(time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo))))
 
 def save_version(setup_dir, module, v):
