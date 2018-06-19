@@ -29,7 +29,6 @@ class ContainerRequest < ArvadosModel
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
   before_validation :set_container
-  before_validation :set_default_preemptible_scheduling_parameter
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
@@ -38,7 +37,8 @@ class ContainerRequest < ArvadosModel
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
   before_save :scrub_secret_mounts
-  before_create :set_requesting_container_uuid
+  before_save :set_requesting_container_uuid
+  before_save :set_default_preemptible_scheduling_parameter
   before_destroy :set_priority_zero
   after_save :update_priority
   after_save :finalize_if_needed
@@ -313,7 +313,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    return if !current_api_client_authorization
+    return if !current_api_client_authorization || !self.requesting_container_uuid.nil?
     if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
       self.requesting_container_uuid = c.uuid
       self.priority = c.priority>0 ? 1 : 0
