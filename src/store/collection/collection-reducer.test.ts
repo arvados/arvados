@@ -36,21 +36,6 @@ describe('collection-reducer', () => {
 
         const collections = [collection, collection];
         const state = collectionsReducer(initialState, actions.COLLECTIONS_SUCCESS({ collections }));
-        expect(state).toEqual([{
-                active: false,
-                open: false,
-                id: "test123",
-                items: [],
-                data: collection,
-                status: 0
-            }, {
-                active: false,
-                open: false,
-                id: "test123",
-                items: [],
-                data: collection,
-                status: 0
-            }
-        ]);
+        expect(state).toEqual([collection, collection]);
     });
 });
