@@ -182,7 +182,7 @@ func main() {
 
 	// Start serving requests.
 	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout), cfg.ManagementToken)
-	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
+	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(nil, router)))
 
 	log.Println("shutting down")
 }

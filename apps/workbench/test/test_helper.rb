@@ -177,38 +177,14 @@ class ApiServerForTests
   end
 
   def run_test_server
-    env_script = nil
     Dir.chdir PYTHON_TESTS_DIR do
-      # These are no-ops if we're running within run-tests.sh (except
-      # that we do get a useful env_script back from "start", even
-      # though it doesn't need to start up a new server).
-      env_script = check_output %w(python ./run_test_server.py start --auth admin)
-      check_output %w(python ./run_test_server.py start_arv-git-httpd)
-      check_output %w(python ./run_test_server.py start_keep-web)
-      check_output %w(python ./run_test_server.py start_nginx)
-      # This one isn't a no-op, even under run-tests.sh.
       check_output %w(python ./run_test_server.py start_keep)
     end
-    test_env = {}
-    env_script.each_line do |line|
-      line = line.chomp
-      if 0 == line.index('export ')
-        toks = line.sub('export ', '').split '=', 2
-        $stderr.puts "run_test_server.py: #{toks[0]}=#{toks[1]}"
-        test_env[toks[0]] = toks[1]
-      end
-    end
-    test_env
   end
 
   def stop_test_server
     Dir.chdir PYTHON_TESTS_DIR do
       check_output %w(python ./run_test_server.py stop_keep)
-      # These are no-ops if we're running within run-tests.sh
-      check_output %w(python ./run_test_server.py stop_nginx)
-      check_output %w(python ./run_test_server.py stop_arv-git-httpd)
-      check_output %w(python ./run_test_server.py stop_keep-web)
-      check_output %w(python ./run_test_server.py stop)
     end
     @@server_is_running = false
   end
@@ -223,9 +199,9 @@ class ApiServerForTests
       stop_test_server
     end
 
-    test_env = run_test_server
-    $application_config['arvados_login_base'] = "https://#{test_env['ARVADOS_API_HOST']}/login"
-    $application_config['arvados_v1_base'] = "https://#{test_env['ARVADOS_API_HOST']}/arvados/v1"
+    run_test_server
+    $application_config['arvados_login_base'] = "https://#{ENV['ARVADOS_API_HOST']}/login"
+    $application_config['arvados_v1_base'] = "https://#{ENV['ARVADOS_API_HOST']}/arvados/v1"
     $application_config['arvados_insecure_host'] = true
     ActiveSupport::TestCase.reset_application_config
 
