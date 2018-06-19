@@ -13,7 +13,7 @@ import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
 import { DataExplorer, DataItem } from '../../components/data-explorer';
 import { TreeItem } from '../../components/tree/tree';
-import { ContextMenuActions } from '../../components/data-explorer/context-menu';
+import { DataExplorerContextActions } from '../../components/data-explorer/data-explorer';
 
 interface DataExplorerViewDataProps {
     projects: ProjectState;
@@ -36,12 +36,12 @@ class DataExplorerView extends React.Component<DataExplorerViewProps, DataExplor
             <DataExplorer
                 items={projectItems.map(mapTreeItem)}
                 onItemClick={this.goToProject}
-                contextMenuActions={this.contextMenuActions}
+                contextActions={this.contextActions}
             />
         );
     }
 
-    contextMenuActions: ContextMenuActions = {
+    contextActions: DataExplorerContextActions = {
         onAddToFavourite: console.log,
         onCopy: console.log,
         onDownload: console.log,
