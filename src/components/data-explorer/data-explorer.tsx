@@ -178,7 +178,10 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
     }
 
     handleContextAction(action: keyof DataExplorerContextActions) {
-        return (item: DataItem) => this.props.contextActions[action](item);
+        return (item: DataItem) => {
+            this.closeContextMenu();
+            this.props.contextActions[action](item);
+        };
     }
 
 }
