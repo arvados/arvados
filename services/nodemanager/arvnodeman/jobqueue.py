@@ -38,7 +38,7 @@ class ServerCalculator(object):
             self.cores = 0
             self.bandwidth = 0
             self.price = 9999999
-            self.preemptable = False
+            self.preemptible = False
             self.extra = {}
 
         def meets_constraints(self, **kwargs):
@@ -58,7 +58,7 @@ class ServerCalculator(object):
                 self.disk = 0
             self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
-            self.preemptable = False
+            self.preemptible = False
             for name, override in kwargs.iteritems():
                 if name == 'instance_type': continue
                 if not hasattr(self, name):

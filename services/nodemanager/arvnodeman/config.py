@@ -151,15 +151,15 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         section_types = {
             'instance_type': str,
             'price': float,
-            'preemptable': bool,
+            'preemptible': bool,
         }
         for sec_name in self.sections():
             sec_words = sec_name.split(None, 2)
             if sec_words[0] != 'Size':
                 continue
             size_spec = self.get_section(sec_name, section_types, int)
-            if 'preemptable' not in size_spec:
-                size_spec['preemptable'] = False
+            if 'preemptible' not in size_spec:
+                size_spec['preemptible'] = False
             if 'instance_type' not in size_spec:
                 # Assume instance type is Size name if missing
                 size_spec['instance_type'] = sec_words[1]
