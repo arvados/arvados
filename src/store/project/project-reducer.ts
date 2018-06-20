@@ -2,10 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import * as _ from "lodash";
+
 import { Project } from "../../models/project";
 import actions, { ProjectAction } from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import * as _ from "lodash";
 
 export type ProjectState = Array<TreeItem<Project>>;
 
@@ -69,14 +70,21 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
             return updateProjectTree(state, projects, parentItemId);
         },
-        TOGGLE_PROJECT_TREE_ITEM: itemId => {
+        TOGGLE_PROJECT_TREE_ITEM_OPEN: itemId => {
+            const tree = _.cloneDeep(state);
+            const item = findTreeItem(tree, itemId);
+            if (item) {
+                item.toggled = true;
+                item.open = !item.open;
+            }
+            return tree;
+        },
+        TOGGLE_PROJECT_TREE_ITEM_ACTIVE: itemId => {
             const tree = _.cloneDeep(state);
             resetTreeActivity(tree);
             const item = findTreeItem(tree, itemId);
             if (item) {
-                item.open = !item.open;
                 item.active = true;
-                item.toggled = true;
             }
             return tree;
         },

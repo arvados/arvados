@@ -3,33 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
 import { connect, DispatchProp } from "react-redux";
+
 import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
-import { Link } from "react-router-dom";
-import Button from "@material-ui/core/Button/Button";
 import authActions from "../../store/auth/auth-action";
-import IconButton from "@material-ui/core/IconButton/IconButton";
-import Menu from "@material-ui/core/Menu/Menu";
-import MenuItem from "@material-ui/core/MenuItem/MenuItem";
-import { AccountCircle } from "@material-ui/icons";
 import { User } from "../../models/user";
-import Grid from "@material-ui/core/Grid/Grid";
 import { RootState } from "../../store/store";
-import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItems, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import projectActions from "../../store/project/project-action";
+import sidePanelActions from '../../store/side-panel/side-panel-action';
 import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
+import SidePanel, {SidePanelItem} from '../../components/side-panel/side-panel';
 
 const drawerWidth = 240;
 
@@ -68,6 +60,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 interface WorkbenchDataProps {
     projects: Array<TreeItem<Project>>;
     user?: User;
+    sidePanelItems: SidePanelItem[];
 }
 
 interface WorkbenchActionProps {
@@ -143,18 +136,32 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     };
 
-    toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
+    toggleProjectTreeItemOpen = (itemId: string, status: TreeItemStatus) => {
         if (status === TreeItemStatus.Loaded) {
-            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
         } else {
             this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
-                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
+                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
             });
         }
     }
 
+    toggleProjectTreeItemActive = (itemId: string) => {
+        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+    }
+
+    toggleSidePanelOpen = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+    }
+
+    toggleSidePanelActive = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+    }
+
     render() {
-        const { classes, user } = this.props;
+        const { classes, user, projects, sidePanelItems } = this.props;
         return (
             <div className={classes.root}>
                 <div className={classes.appBar}>
@@ -173,9 +180,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             paper: classes.drawerPaper,
                         }}>
                         <div className={classes.toolbar} />
-                        <ProjectTree
-                            projects={this.props.projects}
-                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
+                        <SidePanel
+                            toggleSidePanelOpen={this.toggleSidePanelOpen}
+                            toggleSidePanelActive={this.toggleSidePanelActive}
+                            sidePanelItems={sidePanelItems}>
+                            <ProjectTree
+                                projects={projects}
+                                toggleProjectTreeItemOpen={this.toggleProjectTreeItemOpen}
+                                toggleProjectTreeItemActive={this.toggleProjectTreeItemActive} />
+                        </SidePanel>
                     </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar} />
@@ -191,7 +204,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects,
-        user: state.auth.user
+        user: state.auth.user,
+        sidePanelItems: state.sidePanel,
     })
 )(
     withStyles(styles)(Workbench)

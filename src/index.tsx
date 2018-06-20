@@ -6,7 +6,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from "react-redux";
 import Workbench from './views/workbench/workbench';
-import ProjectList from './components/project-list/project-list';
 import './index.css';
 import { Route } from "react-router";
 import createBrowserHistory from "history/createBrowserHistory";
@@ -15,6 +14,7 @@ import { ConnectedRouter } from "react-router-redux";
 import ApiToken from "./components/api-token/api-token";
 import authActions from "./store/auth/auth-action";
 import { authService, projectService } from "./services/services";
+import { sidePanelData } from './store/side-panel/side-panel-reducer';
 
 const history = createBrowserHistory();
 
@@ -26,7 +26,8 @@ const store = configureStore({
     },
     auth: {
         user: undefined
-    }
+    },
+    sidePanel: sidePanelData
 }, history);
 
 store.dispatch(authActions.INIT());
