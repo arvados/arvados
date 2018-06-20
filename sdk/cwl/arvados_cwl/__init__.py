@@ -463,6 +463,7 @@ class ArvCwlRunner(object):
         runtimeContext = runtimeContext.copy()
         runtimeContext.use_container = True
         runtimeContext.tmpdir_prefix = "tmp"
+        runtimeContext.work_api = self.work_api
 
         if self.work_api == "containers":
             if self.ignore_docker_for_reuse:
