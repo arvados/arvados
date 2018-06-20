@@ -6,9 +6,11 @@ import * as React from 'react';
 import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
 import { DataColumn } from './data-column';
 
+export type DataColumns<T> = Array<DataColumn<T>>;
+
 export interface DataTableProps<T> {
     items: T[];
-    columns: Array<DataColumn<T>>;
+    columns: DataColumns<T>;
     onRowClick?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
     onRowContextMenu?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
 }

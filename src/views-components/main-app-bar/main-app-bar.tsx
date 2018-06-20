@@ -7,9 +7,9 @@ import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, StyleRulesCallbac
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
-import SearchBar from "./search-bar/search-bar";
-import Breadcrumbs, { Breadcrumb } from "../breadcrumbs/breadcrumbs";
-import DropdownMenu from "./dropdown-menu/dropdown-menu";
+import SearchBar from "../../components/search-bar/search-bar";
+import Breadcrumbs, { Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
+import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
 import { User, getUserFullname } from "../../models/user";
 
 export interface MainAppBarMenuItem {

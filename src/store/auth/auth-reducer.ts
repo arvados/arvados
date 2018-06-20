@@ -6,7 +6,6 @@ import actions, { AuthAction } from "./auth-action";
 import { User } from "../../models/user";
 import { authService } from "../../services/services";
 import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/api/server-api";
-import { UserDetailsResponse } from "../../services/auth-service/auth-service";
 
 export interface AuthState {
     user?: User;
@@ -39,14 +38,7 @@ const authReducer = (state: AuthState = {}, action: AuthAction) => {
             authService.logout();
             return {...state, apiToken: undefined};
         },
-        USER_DETAILS_SUCCESS: (ud: UserDetailsResponse) => {
-            const user = {
-                email: ud.email,
-                firstName: ud.first_name,
-                lastName: ud.last_name,
-                uuid: ud.uuid,
-                ownerUuid: ud.owner_uuid
-            };
+        USER_DETAILS_SUCCESS: (user: User) => {
             authService.saveUser(user);
             return {...state, user};
         },

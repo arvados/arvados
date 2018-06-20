@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataTable, DataColumn, ColumnSelector, toggleSortDirection, SortDirection, resetSortDirection } from "../../components/data-table";
 import { Typography, Grid, Paper, Toolbar } from '@material-ui/core';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import TableSortLabel from '@material-ui/core/TableSortLabel';
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
-import { mockAnchorFromMouseEvent } from '../popover/helpers';
-import ContextMenu from '../context-menu/context-menu';
+import ContextMenu from "../../components/context-menu/context-menu";
+import ColumnSelector from "../../components/column-selector/column-selector";
+import DataTable from "../../components/data-table/data-table";
+import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
+import { DataColumn, toggleSortDirection, resetSortDirection } from "../../components/data-table/data-column";
 
 export interface DataExplorerContextActions {
     onAddToFavourite: (dataIitem: DataItem) => void;
