@@ -47,8 +47,10 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
 	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
-	availableTypes := make([]arvados.InstanceType, len(cc.InstanceTypes))
-	copy(availableTypes, cc.InstanceTypes)
+	availableTypes := make([]arvados.InstanceType, 0, len(cc.InstanceTypes))
+	for _, t := range cc.InstanceTypes {
+		availableTypes = append(availableTypes, t)
+	}
 	sort.Slice(availableTypes, func(a, b int) bool {
 		return availableTypes[a].Price < availableTypes[b].Price
 	})
