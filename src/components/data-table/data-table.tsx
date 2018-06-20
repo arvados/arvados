@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
+import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
 import { DataColumn } from './data-column';
 
 export interface DataTableProps<T> {
@@ -23,9 +23,16 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                         <TableRow>
                             {columns
                                 .filter(column => column.selected)
-                                .map(({ name, renderHeader, key }, index) =>
+                                .map(({ name, renderHeader, key, sortDirection, onSortToggle }, index) =>
                                     <TableCell key={key || index}>
-                                        {renderHeader ? renderHeader() : name}
+                                        {renderHeader ?
+                                            renderHeader() :
+                                            <TableSortLabel
+                                                active={!!sortDirection}
+                                                direction={sortDirection}
+                                                onClick={() => onSortToggle && onSortToggle()}>
+                                                {name}
+                                            </TableSortLabel>}
                                     </TableCell>
                                 )}
                         </TableRow>
@@ -48,7 +55,7 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                                 </TableRow>
                             )}
                     </TableBody>
-                </Table> : <Typography 
+                </Table> : <Typography
                     className={classes.noItemsInfo}
                     variant="body2"
                     gutterBottom>

@@ -7,7 +7,7 @@ import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 import DataTable from "./data-table";
 import { DataColumn } from "./data-column";
-import { TableHead, TableCell, Typography, TableBody, Button } from "@material-ui/core";
+import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
 
 configure({ adapter: new Adapter() });
 
@@ -30,10 +30,10 @@ describe("<DataTable />", () => {
                 selected: false
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
         expect(dataTable.find(TableHead).find(TableCell)).toHaveLength(2);
     });
-    
+
     it("renders column name", () => {
         const columns: Array<DataColumn<string>> = [
             {
@@ -42,10 +42,10 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column 1");
     });
-    
+
     it("uses renderHeader instead of name prop", () => {
         const columns: Array<DataColumn<string>> = [
             {
@@ -55,10 +55,10 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column Header");
     });
-    
+
     it("passes column key prop to corresponding cells", () => {
         const columns: Array<DataColumn<string>> = [
             {
@@ -68,11 +68,11 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
         expect(dataTable.find(TableHead).find(TableCell).key()).toBe("column-1-key");
         expect(dataTable.find(TableBody).find(TableCell).key()).toBe("column-1-key");
     });
-    
+
     it("shows information that items array is empty", () => {
         const columns: Array<DataColumn<string>> = [
             {
@@ -81,7 +81,7 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={[]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={[]} />);
         expect(dataTable.find(Typography).text()).toBe("No items");
     });
 
@@ -98,9 +98,23 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]}/>);
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
         expect(dataTable.find(TableBody).find(Typography).text()).toBe("item 1");
         expect(dataTable.find(TableBody).find(Button).text()).toBe("item 1");
+    });
+
+    it("passes sorting props to <TableSortLabel />", () => {
+        const columns: Array<DataColumn<string>> = [{
+            name: "Column 1",
+            sortDirection: "asc",
+            onSortToggle: jest.fn(),
+            selected: true,
+            render: (item) => <Typography>{item}</Typography>
+        }];
+        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        expect(dataTable.find(TableSortLabel).prop("active")).toBeTruthy();
+        dataTable.find(TableSortLabel).at(0).simulate("click");
+        expect(columns[0].onSortToggle).toHaveBeenCalled();
     });
 
 

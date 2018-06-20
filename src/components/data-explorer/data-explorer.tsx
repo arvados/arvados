@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataTable, DataColumn, ColumnSelector } from "../../components/data-table";
+import { DataTable, DataColumn, ColumnSelector, toggleSortDirection, SortDirection, resetSortDirection } from "../../components/data-table";
 import { Typography, Grid, Paper, Toolbar } from '@material-ui/core';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
+import TableSortLabel from '@material-ui/core/TableSortLabel';
 import { formatFileSize, formatDate } from '../../common/formatters';
 import { DataItem } from './data-item';
 import { mockAnchorFromMouseEvent } from '../popover/helpers';
@@ -41,6 +42,8 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         columns: [{
             name: "Name",
             selected: true,
+            sortDirection: "asc",
+            onSortToggle: () => this.toggleSort("Name"),
             render: item => this.renderName(item)
         }, {
             name: "Status",
@@ -61,6 +64,7 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         }, {
             name: "Last modified",
             selected: true,
+            onSortToggle: () => this.toggleSort("Last modified"),
             render: item => renderDate(item.lastModified)
         }, {
             name: "Actions",
@@ -182,6 +186,13 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
             this.closeContextMenu();
             this.props.contextActions[action](item);
         };
+    }
+
+    toggleSort = (columnName: string) => {
+        this.setState({
+            columns: this.state.columns.map((column, index) =>
+                column.name === columnName ? toggleSortDirection(column) : resetSortDirection(column))
+        });
     }
 
 }
