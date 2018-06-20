@@ -5,8 +5,9 @@
 import { Redirect, RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import authActions from "../../store/auth/auth-action";
-import { authService, projectService } from "../../services/services";
+import authActions, { getUserDetails } from "../../store/auth/auth-action";
+import { authService } from "../../services/services";
+import { getProjectList } from "../../store/project/project-action";
 
 interface ApiTokenProps {
 }
@@ -23,9 +24,9 @@ class ApiToken extends React.Component<ApiTokenProps & RouteProps & DispatchProp
         const search = this.props.location ? this.props.location.search : "";
         const apiToken = ApiToken.getUrlParameter(search, 'api_token');
         this.props.dispatch(authActions.SAVE_API_TOKEN(apiToken));
-        this.props.dispatch<any>(authService.getUserDetails()).then(() => {
+        this.props.dispatch<any>(getUserDetails()).then(() => {
             const rootUuid = authService.getRootUuid();
-            this.props.dispatch(projectService.getProjectList(rootUuid));
+            this.props.dispatch(getProjectList(rootUuid));
         });
     }
     render() {

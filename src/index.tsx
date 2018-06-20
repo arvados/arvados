@@ -6,15 +6,15 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from "react-redux";
 import Workbench from './views/workbench/workbench';
-import ProjectList from './components/project-list/project-list';
 import './index.css';
 import { Route } from "react-router";
 import createBrowserHistory from "history/createBrowserHistory";
 import configureStore from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
-import ApiToken from "./components/api-token/api-token";
+import ApiToken from "./views-components/api-token/api-token";
 import authActions from "./store/auth/auth-action";
-import { authService, projectService } from "./services/services";
+import { authService } from "./services/services";
+import { getProjectList } from "./store/project/project-action";
 
 const history = createBrowserHistory();
 
@@ -31,7 +31,7 @@ const store = configureStore({
 
 store.dispatch(authActions.INIT());
 const rootUuid = authService.getRootUuid();
-store.dispatch<any>(projectService.getProjectList(rootUuid));
+store.dispatch<any>(getProjectList(rootUuid));
 
 const App = () =>
     <Provider store={store}>

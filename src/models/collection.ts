@@ -2,5 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export { default as DataExplorer } from "./data-explorer";
-export * from "./data-item";
+import { Resource } from "./resource";
+
+export interface Collection extends Resource {
+}
