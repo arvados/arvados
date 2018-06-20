@@ -20,6 +20,8 @@ class ArvadosCommandTool(CommandLineTool):
             return partial(ArvadosContainer, self.arvrunner)
         elif runtimeContext.work_api == "jobs":
             return partial(ArvadosJob, self.arvrunner)
+        else:
+            raise Exception("Unsupported work_api %s", runtimeContext.work_api)
 
     def make_path_mapper(self, reffiles, stagedir, runtimeContext, separateDirs):
         if runtimeContext.work_api == "containers":
