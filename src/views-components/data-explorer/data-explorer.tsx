@@ -49,10 +49,26 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         }, {
             name: "Status",
             selected: true,
+            onFiltersChange: console.log,
+            filters: [{
+                name: "In progress", 
+                selected: true
+            }, {
+                name: "Complete",
+                selected: true
+            }],
             render: item => renderStatus(item.status)
         }, {
             name: "Type",
             selected: true,
+            onFiltersChange: console.log,
+            filters: [{
+                name: "Collection", 
+                selected: true
+            }, {
+                name: "Group",
+                selected: true
+            }],
             render: item => renderType(item.type)
         }, {
             name: "Owner",

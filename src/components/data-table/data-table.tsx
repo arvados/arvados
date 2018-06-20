@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
 import { DataColumn } from './data-column';
+import DataTableFilters from "../data-table-filters/data-table-filters";
 
 export type DataColumns<T> = Array<DataColumn<T>>;
 
@@ -25,16 +26,23 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                         <TableRow>
                             {columns
                                 .filter(column => column.selected)
-                                .map(({ name, renderHeader, key, sortDirection, onSortToggle }, index) =>
+                                .map(({ name, renderHeader, key, sortDirection, onSortToggle, filters, onFiltersChange }, index) =>
                                     <TableCell key={key || index}>
                                         {renderHeader ?
                                             renderHeader() :
-                                            <TableSortLabel
-                                                active={!!sortDirection}
-                                                direction={sortDirection}
-                                                onClick={() => onSortToggle && onSortToggle()}>
-                                                {name}
-                                            </TableSortLabel>}
+                                            filters ?
+                                                <DataTableFilters
+                                                    name={`${name} filters`}
+                                                    onChange={onFiltersChange}
+                                                    filters={filters}>
+                                                    {name}
+                                                </DataTableFilters> :
+                                                <TableSortLabel
+                                                    active={!!sortDirection}
+                                                    direction={sortDirection}
+                                                    onClick={() => onSortToggle && onSortToggle()}>
+                                                    {name}
+                                                </TableSortLabel>}
                                     </TableCell>
                                 )}
                         </TableRow>
