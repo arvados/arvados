@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export interface DataItem {
+export interface ProjectExplorerItem {
     uuid: string;
     name: string;
     type: string;

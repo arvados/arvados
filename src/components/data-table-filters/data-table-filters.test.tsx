@@ -5,10 +5,8 @@
 import * as React from "react";
 import { mount, configure } from "enzyme";
 import DataTableFilter, { DataTableFilterItem } from "./data-table-filters";
-
 import * as Adapter from 'enzyme-adapter-react-16';
 import { Checkbox, ButtonBase, ListItem, Button, ListItemText } from "@material-ui/core";
-import dataTableFilters from "./data-table-filters";
 
 configure({ adapter: new Adapter() });
 

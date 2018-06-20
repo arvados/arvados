@@ -50,11 +50,10 @@ class DataTableFilter extends React.Component<DataTableFilterProps & WithStyles<
 
     render() {
         const { name, classes, children } = this.props;
+        const isActive = this.state.filters.filter(({ selected }) => !selected).length > 0;
         return <>
             <ButtonBase
-                className={classnames([
-                    classes.root,
-                    { [classes.active]: this.state.filters.filter(({ selected }) => !selected).length > 0 }])}
+                className={classnames([classes.root, { [classes.active]: isActive }])}
                 component="span"
                 onClick={this.open}
                 disableRipple>

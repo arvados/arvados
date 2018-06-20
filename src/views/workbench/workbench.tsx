@@ -19,7 +19,7 @@ import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { getTreePath } from '../../store/project/project-reducer';
-import DataExplorer from '../data-explorer/data-explorer';
+import ProjectPanel from '../project-panel/project-panel';
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -183,7 +183,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/project/:name" component={DataExplorer} />
+                            <Route path="/project/:name" component={ProjectPanel} />
                         </Switch>
                     </div>
                 </main>
