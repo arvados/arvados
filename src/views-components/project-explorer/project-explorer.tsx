@@ -27,10 +27,12 @@ interface ProjectExplorerProps {
 
 interface ProjectExplorerState {
     columns: Array<DataColumn<ProjectExplorerItem>>;
+    searchValue: string;
 }
 
 class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplorerState> {
     state: ProjectExplorerState = {
+        searchValue: "",
         columns: [{
             name: "Name",
             selected: true,
@@ -103,10 +105,12 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             items={this.props.items}
             columns={this.state.columns}
             contextActions={this.contextMenuActions}
+            searchValue={this.state.searchValue}
             onColumnToggle={this.toggleColumn}
             onFiltersChange={this.changeFilters}
             onRowClick={console.log}
             onSortToggle={this.toggleSort}
+            onSearch={this.search}
             onContextAction={this.executeAction} />;
     }
 
@@ -142,6 +146,10 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
 
     executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
         alert(`Executing ${action.name} on ${item.name}`);
+    }
+
+    search = (searchValue: string) => {
+        this.setState({ searchValue });
     }
 }
 

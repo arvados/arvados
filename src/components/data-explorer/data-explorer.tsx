@@ -3,18 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles } from '@material-ui/core';
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
 import DataTable from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 import { DataColumn, toggleSortDirection } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import SearchInput from '../search-input/search-input';
 
 interface DataExplorerProps<T> {
     items: T[];
     columns: Array<DataColumn<T>>;
     contextActions: ContextMenuActionGroup[];
+    searchValue: string;
+    onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onColumnToggle: (column: DataColumn<T>) => void;
     onContextAction: (action: ContextMenuAction, item: T) => void;
@@ -29,7 +32,7 @@ interface DataExplorerState<T> {
     };
 }
 
-class DataExplorer<T> extends React.Component<DataExplorerProps<T>, DataExplorerState<T>> {
+class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>, DataExplorerState<T>> {
     state: DataExplorerState<T> = {
         contextMenu: {}
     };
@@ -41,8 +44,13 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T>, DataExplorer
                 actions={this.props.contextActions}
                 onActionClick={this.callAction}
                 onClose={this.closeContextMenu} />
-            <Toolbar>
-                <Grid container justify="flex-end">
+            <Toolbar className={this.props.classes.toolbar}>
+                <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                    <div className={this.props.classes.searchBox}>
+                        <SearchInput
+                            value={this.props.searchValue}
+                            onSearch={this.props.onSearch} />
+                    </div>
                     <ColumnSelector
                         columns={this.props.columns}
                         onColumnToggle={this.props.onColumnToggle} />
@@ -83,4 +91,15 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T>, DataExplorer
 
 }
 
-export default DataExplorer;
+type CssRules = "searchBox" | "toolbar";
+
+const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+    searchBox: {
+        paddingBottom: theme.spacing.unit * 2
+    },
+    toolbar: {
+        paddingTop: theme.spacing.unit * 2
+    }
+});
+
+export default withStyles(styles)(DataExplorer);
