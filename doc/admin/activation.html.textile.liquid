@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 After completing the authentication process with the SSO server and receiving a new @identity_url@, a new user object is always created.
 
-h3. Auto setup
+h3. Setup
 
 If @auto_setup_new_users@ is true, as part of creating the new user object, the user is immediately setup with:
 
@@ -21,13 +21,17 @@ If @auto_setup_new_users@ is true, as part of creating the new user object, the 
 * A new git repo and @can_manage@ permission if @auto_setup_new_users_with_repository@ is true
 * @can_login@ permission to a shell node if @auto_setup_new_users_with_vm_uuid@ is set to the uuid of a vm
 
-h3. is_active
+Otherwise, an admin must explicitly call "setup" on the user.
+
+h3. Activation
 
 A newly created user is inactive (@is_active@ is false) by default unless @new_users_are_active@.
 
 An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read.  This implies that if @auto_setup_new_users@ is true, an "inactive" user who has been set up may still be able to do things, such as read things shared with "All users", clone and push to the git repository, or login to a vm.  (unless these services check is_active)
 
+{% comment %}
 (I believe that when this was originally designed, being able to access git and VM required an ssh key, and an inactive user could not register an ssh key because that required creating a record.  However, it is now possible to authenticate to shell VMs and http+git with just an API token).
+{% endcomment %}
 
 At this point, there are two ways a user can become active:
 
@@ -53,7 +57,43 @@ The @user_agreements/sign@ endpoint creates a Link with @link_class: signature@ 
 
 The @user_agreements/signatures@ endpoint returns the list of Link objects that represent signatures by the current user (created by @sign@).
 
-h3. Typical flows
+h3. User profile
+
+The user profile is checked by workbench after checking if user agreements need to be signed.  The requirement to fill out the user profile is not enforced by the API server.
+
+h3. Pre-activated user accounts
+
+It is possible to create a user account for a user that has not yet logged in.
+
+# As an admin, create a user object.
+# Create a link with @link_class: permission@ and @name: can_login@ and (email address &rarr; user_uuid) and @properties[identity_url_prefix] = 'xxxxx-tpzed-'@ where 'xxxxx' is the @uuid_prefix@ of the SSO server.
+# When the user logs in the first time, the email address will be recognized and the user will be associated with the existing user uuid.
+
+h3. Federated users
+
+Hmmm?
+
+h3. Deactivating users
+
+Setting @is_active@ is not sufficient to lock out a user.  The user can call @activate@ to become active again.  Instead, use @unsetup@:
+
+* Delete oid_login_perms
+* Delete git repository permission links
+* Delete VM login permission links
+* Remove from "All users" group
+* Delete any "signatures"
+* Clear preferences / profile
+* Mark as inactive
+
+{% comment %}
+Does not revoke @is_admin@ though!  Maybe we need to fix that?
+
+Does not prevent user from reading things.
+
+Does not revoke API tokens.
+{% endcomment %}
+
+h3. Activation flows
 
 h4. Open instance
 
@@ -97,23 +137,3 @@ new_users_are_active: true
 
 # User is created and auto-setup.  Also sets @is_active@ to true.
 # User can immediately start using workbench.
-
-h3. User profile
-
-The user profile is checked by workbench after checking if user agreements need to be signed.  The requirement to fill out the user profile is not enforced by the API server.
-
-h3. Deactivating users
-
-Setting @is_active@ is not sufficient to lock out a user.  The user can call @activate@ to become active again.  Instead, use @unsetup@:
-
-* Delete oid_login_perms
-* Delete git repository permission links
-* Delete VM login permission links
-* Remove from "All users" group
-* Delete any "signatures"
-* Clear preferences / profile
-* Mark as inactive
-
-Does not revoke @is_admin@ though!  Maybe we need to fix that?
-
-Does not prevent user from reading things?
