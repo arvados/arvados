@@ -88,6 +88,11 @@ const projectsReducer = (state: ProjectState = [], action: ProjectAction) => {
             }
             return tree;
         },
+        RESET_PROJECT_TREE_ACTIVITY: () => {
+            const tree = _.cloneDeep(state);
+            resetTreeActivity(tree);
+            return tree;
+        },
         default: () => state
     });
 };

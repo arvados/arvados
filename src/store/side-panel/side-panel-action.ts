@@ -7,6 +7,7 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 const actions = unionize({
     TOGGLE_SIDE_PANEL_ITEM_OPEN: ofType<string>(),
     TOGGLE_SIDE_PANEL_ITEM_ACTIVE: ofType<string>(),
+    RESET_SIDE_PANEL_ACTIVITY: ofType<string>(),
 }, {
     tag: 'type',
     value: 'payload'

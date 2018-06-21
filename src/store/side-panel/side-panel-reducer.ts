@@ -24,7 +24,11 @@ const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePan
                     it.active = true;
                 }
             });
-            resetProjectsCollapse(sidePanel); 
+            return sidePanel;
+        },
+        RESET_SIDE_PANEL_ACTIVITY: () => {
+            const sidePanel = _.cloneDeep(state);
+            resetSidePanelActivity(sidePanel);
             return sidePanel;
         },
         default: () => state
@@ -74,12 +78,6 @@ export const sidePanelData = [
 function resetSidePanelActivity(sidePanel: SidePanelItem[]) {
     for (const t of sidePanel) {
         t.active = false;
-    }
-}
-
-function resetProjectsCollapse(sidePanel: SidePanelItem[]) {
-    if (!sidePanel[0].active) {
-        sidePanel[0].open = false;
     }
 }
 

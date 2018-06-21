@@ -12,6 +12,7 @@ const actions = unionize({
     PROJECTS_SUCCESS: ofType<{ projects: Project[], parentItemId?: string }>(),
     TOGGLE_PROJECT_TREE_ITEM_OPEN: ofType<string>(),
     TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ofType<string>(),
+    RESET_PROJECT_TREE_ACTIVITY: ofType<string>(),
 }, {
     tag: 'type',
     value: 'payload'

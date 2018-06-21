@@ -87,16 +87,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         transform: 'rotate(-90deg)',
     },
     leftSidePanelContainer: {
-        position: 'absolute',
-        top: '100px',
         overflowY: 'auto',
         minWidth: '240px',
         whiteSpace: 'nowrap',
+        marginTop: '38px',
+        display: 'flex',
+        flexGrow: 1,
     },
     list: {
         paddingBottom: '5px',
         paddingTop: '5px',
-        paddingLeft: '14px'
+        paddingLeft: '14px',
+        minWidth: '240px',
     },
     icon: {
         minWidth: '20px',

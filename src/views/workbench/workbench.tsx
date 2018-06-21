@@ -21,7 +21,7 @@ import ProjectTree from '../../components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { projectService } from '../../services/services';
-import SidePanel, {SidePanelItem} from '../../components/side-panel/side-panel';
+import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 
 const drawerWidth = 240;
 
@@ -46,6 +46,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     drawerPaper: {
         position: 'relative',
         width: drawerWidth,
+        display: 'flex',
+        flexDirection: 'column',
     },
     content: {
         flexGrow: 1,
@@ -150,6 +152,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     toggleProjectTreeItemActive = (itemId: string) => {
         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+        this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
     }
 
     toggleSidePanelOpen = (itemId: string) => {
@@ -158,6 +161,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     toggleSidePanelActive = (itemId: string) => {
         this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
     }
 
     render() {
@@ -180,15 +184,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             paper: classes.drawerPaper,
                         }}>
                         <div className={classes.toolbar} />
-                        <SidePanel
-                            toggleSidePanelOpen={this.toggleSidePanelOpen}
-                            toggleSidePanelActive={this.toggleSidePanelActive}
-                            sidePanelItems={sidePanelItems}>
-                            <ProjectTree
-                                projects={projects}
-                                toggleProjectTreeItemOpen={this.toggleProjectTreeItemOpen}
-                                toggleProjectTreeItemActive={this.toggleProjectTreeItemActive} />
-                        </SidePanel>
+                            <SidePanel
+                                toggleSidePanelOpen={this.toggleSidePanelOpen}
+                                toggleSidePanelActive={this.toggleSidePanelActive}
+                                sidePanelItems={sidePanelItems}>
+                                <ProjectTree
+                                    projects={projects}
+                                    toggleProjectTreeItemOpen={this.toggleProjectTreeItemOpen}
+                                    toggleProjectTreeItemActive={this.toggleProjectTreeItemActive} />
+                            </SidePanel>
                     </Drawer>}
                 <main className={classes.content}>
                     <div className={classes.toolbar} />
