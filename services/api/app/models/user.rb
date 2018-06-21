@@ -26,6 +26,7 @@ class User < ArvadosModel
     user.username.nil? and user.username_changed?
   }
   before_update :setup_on_activate
+  before_create :setup_on_activate
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
