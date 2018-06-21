@@ -31,6 +31,8 @@ On Debian, this is:
 apt-get install build-essential libxml2-dev libssl-dev libcurl4-gnutls-dev
 ```
 
+Minimum R version required to run ArvadosR is 3.3.0.
+
 
 ### Usage
 
