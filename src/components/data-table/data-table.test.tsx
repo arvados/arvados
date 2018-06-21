@@ -30,7 +30,13 @@ describe("<DataTable />", () => {
                 selected: false
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={["item 1"]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell)).toHaveLength(2);
     });
 
@@ -42,7 +48,13 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={["item 1"]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column 1");
     });
 
@@ -55,7 +67,13 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={["item 1"]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column Header");
     });
 
@@ -68,7 +86,13 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={["item 1"]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).key()).toBe("column-1-key");
         expect(dataTable.find(TableBody).find(TableCell).key()).toBe("column-1-key");
     });
@@ -81,7 +105,13 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={[]} />);
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={[]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(Typography).text()).toBe("No items");
     });
 
@@ -98,7 +128,13 @@ describe("<DataTable />", () => {
                 selected: true
             }
         ];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const dataTable = mount(<DataTable 
+            columns={columns} 
+            items={["item 1"]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableBody).find(Typography).text()).toBe("item 1");
         expect(dataTable.find(TableBody).find(Button).text()).toBe("item 1");
     });
@@ -107,14 +143,20 @@ describe("<DataTable />", () => {
         const columns: Array<DataColumn<string>> = [{
             name: "Column 1",
             sortDirection: "asc",
-            onSortToggle: jest.fn(),
             selected: true,
             render: (item) => <Typography>{item}</Typography>
         }];
-        const dataTable = mount(<DataTable columns={columns} items={["item 1"]} />);
+        const onSortToggle = jest.fn();
+        const dataTable = mount(<DataTable 
+            columns={columns} 
+            items={["item 1"]} 
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowContextMenu={jest.fn()}
+            onSortToggle={onSortToggle}/>);
         expect(dataTable.find(TableSortLabel).prop("active")).toBeTruthy();
         dataTable.find(TableSortLabel).at(0).simulate("click");
-        expect(columns[0].onSortToggle).toHaveBeenCalled();
+        expect(onSortToggle).toHaveBeenCalledWith(columns[0]);
     });
 
 

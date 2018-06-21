@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataExplorerColumn } from '../../components/data-explorer/data-explorer-column';
 import { ProjectExplorerItem } from './project-explorer-item';
 import { Grid, Typography } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from '../../components/data-explorer/data-explorer';
+import { DataColumn, toggleSortDirection, resetSortDirection } from '../../components/data-table/data-column';
+import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import { ContextMenuAction } from '../../components/context-menu/context-menu';
 
 export interface ProjectExplorerContextActions {
     onAddToFavourite: (item: ProjectExplorerItem) => void;
@@ -24,7 +26,7 @@ interface ProjectExplorerProps {
 }
 
 interface ProjectExplorerState {
-    columns: Array<DataExplorerColumn<ProjectExplorerItem>>;
+    columns: Array<DataColumn<ProjectExplorerItem>>;
 }
 
 class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplorerState> {
@@ -33,12 +35,10 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             name: "Name",
             selected: true,
             sortDirection: "asc",
-            sortable: true,
             render: renderName
         }, {
             name: "Status",
             selected: true,
-            filterable: true,
             filters: [{
                 name: "In progress",
                 selected: true
@@ -50,7 +50,6 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         }, {
             name: "Type",
             selected: true,
-            filterable: true,
             filters: [{
                 name: "Collection",
                 selected: true
@@ -66,43 +65,36 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         }, {
             name: "File size",
             selected: true,
+            sortDirection: "none",
             render: item => renderFileSize(item.fileSize)
         }, {
             name: "Last modified",
             selected: true,
-            sortable: true,
             render: item => renderDate(item.lastModified)
         }]
     };
 
     contextMenuActions = [[{
         icon: "fas fa-users fa-fw",
-        name: "Share",
-        onClick: console.log
+        name: "Share"
     }, {
         icon: "fas fa-sign-out-alt fa-fw",
-        name: "Move to",
-        onClick: console.log
+        name: "Move to"
     }, {
         icon: "fas fa-star fa-fw",
-        name: "Add to favourite",
-        onClick: console.log
+        name: "Add to favourite"
     }, {
         icon: "fas fa-edit fa-fw",
-        name: "Rename",
-        onClick: console.log
+        name: "Rename"
     }, {
         icon: "fas fa-copy fa-fw",
-        name: "Make a copy",
-        onClick: console.log
+        name: "Make a copy"
     }, {
         icon: "fas fa-download fa-fw",
-        name: "Download",
-        onClick: console.log
+        name: "Download"
     }], [{
         icon: "fas fa-trash-alt fa-fw",
-        name: "Remove",
-        onClick: console.log
+        name: "Remove"
     }
     ]];
 
@@ -111,10 +103,45 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             items={this.props.items}
             columns={this.state.columns}
             contextActions={this.contextMenuActions}
-            onColumnToggle={console.log}
-            onFiltersChange={console.log}
+            onColumnToggle={this.toggleColumn}
+            onFiltersChange={this.changeFilters}
             onRowClick={console.log}
-            onSortingToggle={console.log} />;
+            onSortToggle={this.toggleSort}
+            onContextAction={this.executeAction} />;
+    }
+
+    toggleColumn = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
+        this.setState({
+            columns: this.state.columns.map(column =>
+                column.name === toggledColumn.name
+                    ? { ...column, selected: !column.selected }
+                    : column
+            )
+        });
+    }
+
+    toggleSort = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
+        this.setState({
+            columns: this.state.columns.map(column =>
+                column.name === toggledColumn.name
+                    ? toggleSortDirection(column)
+                    : resetSortDirection(column)
+            )
+        });
+    }
+
+    changeFilters = (filters: DataTableFilterItem[], updatedColumn: DataColumn<ProjectExplorerItem>) => {
+        this.setState({
+            columns: this.state.columns.map(column =>
+                column.name === updatedColumn.name
+                    ? { ...column, filters }
+                    : column
+            )
+        });
+    }
+
+    executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
+        alert(`Executing ${action.name} on ${item.name}`);
     }
 }
 

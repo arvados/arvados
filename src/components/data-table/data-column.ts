@@ -10,24 +10,25 @@ export interface DataColumn<T> {
     configurable?: boolean;
     key?: React.Key;
     sortDirection?: SortDirection;
-    onSortToggle?: () => void;
     filters?: DataTableFilterItem[];
-    onFiltersChange?: (filters: DataTableFilterItem[]) => void;
     render: (item: T) => React.ReactElement<void>;
     renderHeader?: () => React.ReactElement<void> | null;
 }
 
-export type SortDirection = "asc" | "desc";
+export type SortDirection = "asc" | "desc" | "none";
 
 export const isColumnConfigurable = <T>(column: DataColumn<T>) => {
     return column.configurable === undefined || column.configurable;
 };
 
 export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
-    const sortDirection = column.sortDirection === undefined || column.sortDirection === "desc" ? "asc" : "desc";
-    return { ...column, sortDirection };
+    return column.sortDirection
+        ? column.sortDirection === "asc"
+            ? { ...column, sortDirection: "desc" }
+            : { ...column, sortDirection: "asc" }
+        : column;
 };
 
 export const resetSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
-    return { ...column, sortDirection: undefined };
+    return column.sortDirection ? { ...column, sortDirection: "none" } : column;
 };
