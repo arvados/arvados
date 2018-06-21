@@ -1,0 +1,191 @@
+---
+layout: default
+navsection: installguide
+title: Arvados on Kubernetes
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados on Kubernetes is implemented as a Helm chart.
+
+{% include 'notebox_begin_warning' %}
+This Helm chart does not retain any state after it is deleted. An Arvados cluster spun up with this Helm Chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
+{% include 'notebox_end' %}
+
+h2. Requirements
+
+* Kubernetes 1.10+ cluster with at least 3 nodes, 2 or more cores per node
+* `kubectl` and `helm` installed locally, and able to connect to your Kubernetes cluster
+
+If that does not describe your environment, please see the "GKE":#GKE or "Minikube":#Minikube sections below to get set up with Kubernetes.
+
+h2(#helm). Install helm on the Kubernetes cluster
+
+If you already have helm running on the Kubernetes cluster, proceed directly to "Start the Arvados cluster":#Start below.
+
+<pre>
+$ helm init
+$ kubectl create serviceaccount --namespace kube-system tiller
+$ kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+$ kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+</pre>
+
+Test `helm` by running
+
+<pre>
+$ helm ls
+</pre>
+
+There should be no errors. The command will return nothing.
+
+h2(#Start). Start the Arvados cluster
+
+First, determine the IP address that the Arvados cluster will use to expose its API, Workbench, etc. If you want this Arvados cluster to be reachable from places other than the local machine, the IP address will need to be routable as appropriate.
+
+<pre>
+$ git clone https://github.com/curoverse/arvados-kubernetes.git
+$ cd arvados-kubernetes/charts/arvados
+$ ./cert-gen.sh <IP ADDRESS>
+</pre>
+
+The `values.yaml` file contains a number of variables that can be modified.
+Specifically, you probably want to modify the values for
+
+<pre>
+  adminUserEmail
+  adminUserPassword
+  superUserSecret
+  anonymousUserSecret
+</pre>
+
+Now start the Arvados cluster:
+
+<pre>
+$ helm install --name arvados . --set externalIP=<IP ADDRESS>
+</pre>
+
+At this point, you can use kubectl to see the Arvados cluster boot:
+
+<pre>
+$ kubectl get pods
+$ kubectl get svc
+</pre>
+
+After a few minutes, you can access Arvados Workbench at the IP address specified
+
+* https://&lt;IP ADDRESS&gt;
+
+with the username and password specified in the `values.yaml` file.
+
+Alternatively, use the Arvados cli tools or SDKs:
+
+Set the environment variables:
+
+<pre>
+$ export ARVADOS_API_TOKEN=<superUserSecret from values.yaml>
+$ export ARVADOS_API_HOST=<STATIC IP>:444
+$ export ARVADOS_API_HOST_INSECURE=true
+</pre>
+
+Test access with:
+
+<pre>
+$ arv user current
+</pre>
+
+h2. Reload
+
+If you make changes to the Helm chart (e.g. to `values.yaml`), you can reload Arvados with
+
+<pre>
+$ helm upgrade arvados .
+</pre>
+
+h2. Shut down
+
+{% include 'notebox_begin_warning' %}
+This Helm chart does not retain any state after it is deleted. An Arvados cluster spun up with this Helm Chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
+{% include 'notebox_end' %}
+
+<pre>
+$ helm del arvados --purge
+</pre>
+
+h2(#GKE). GKE
+
+h3. Install tooling
+
+Install `gcloud`:
+
+* Follow the instructions at "https://cloud.google.com/sdk/downloads":https://cloud.google.com/sdk/downloads
+
+Install `kubectl`:
+
+<pre>
+$ gcloud components install kubectl
+</pre>
+
+Install `helm`:
+
+* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
+
+h3. Boot the GKE cluster
+
+This can be done via the "cloud console":https://console.cloud.google.com/kubernetes/ or via the command line:
+
+<pre>
+$ gcloud container clusters create <CLUSTERNAME> --zone us-central1-a --machine-type n1-standard-2 --cluster-version 1.10.2-gke.3
+</pre>
+
+It takes a few minutes for the cluster to be initialized.
+
+h3. Reserve a static IP
+
+Reserve a "static IP":https://console.cloud.google.com/networking/addresses in GCE. Make sure the IP is in the same region as your GKE cluster, and is of the "Regional" type.
+
+h3. Connect to the GKE cluster.
+
+Via the web:
+* Click the "Connect" button next to your "GKE cluster"https://console.cloud.google.com/kubernetes/.
+* Execute the "Command-line access" command on your development machine.
+
+Alternatively, use this command:
+
+<pre>
+$ gcloud container clusters get-credentials <CLUSTERNAME> --zone us-central1-a --project <YOUR-PROJECT>
+</pre>
+
+Test the connection:
+
+<pre>
+$ kubectl get nodes
+</pre>
+
+Now proceed to the "Install helm on the Kubernetes cluster":#helm section.
+
+h2(#Minikube). Minikube
+
+h3. Install tooling
+
+Install `kubectl`:
+
+* Follow the instructions at "https://kubernetes.io/docs/tasks/tools/install-kubectl/":https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+Install `helm`:
+
+* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
+
+h3. Install Minikube
+
+Follow the instructions at "https://kubernetes.io/docs/setup/minikube/":https://kubernetes.io/docs/setup/minikube/
+
+Test the connection:
+
+<pre>
+$ kubectl get nodes
+</pre>
+
+Now proceed to the "Install helm on the Kubernetes cluster":#helm section.

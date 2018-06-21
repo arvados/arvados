@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Installation overview
+title: Installation options
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -11,7 +11,19 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados components run on GNU/Linux systems, and do not depend on any particular cloud operating stack.  Arvados supports Debian and derivatives such as Ubuntu, as well as Red Hat and derivatives such as CentOS.
 
-Arvados components can be installed and configured in a number of different ways.  Step-by-step instructions are available to perform a production installation from packages with manual configuration.  This method assumes you have several (virtual) machines at your disposal for running the various Arvados components.
+Arvados components can be installed and configured in a number of different ways.
 
-* "Docker quick start":arvbox.html
-* "Manual installation":install-manual-prerequisites.html
+<div class="offset1">
+table(table table-bordered table-condensed).
+||||\6=. _Appropriate for_|
+||_Ease of installation_|_Multiuser/Networked_|_Demo_|_Workflow Development_|_Workflow QA/QC_|_Large Scale Production_|_Arvados Software Development_|_Arvados Software Development Testing_|
+|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|no|yes|no|no|no|yes|yes|
+|"Arvados on Kubernetes":arvados-on-kubernetes.html|Easy ^1^|yes|yes|no ^2^|no ^2^|no ^2^|no|yes|
+|"Manual installation":install-manual-prerequisites.html|Complex|yes|yes|yes|yes|yes|no|no|
+|"Cloud demo":https://cloud.curoverse.com by Curoverse|N/A ^3^|yes|yes|no|no|no|no|no|
+|"Cluster Operation Subscription":https://curoverse.com/products by Curoverse|N/A ^3^|yes|yes|yes|yes|yes|no|no|
+</div>
+
+* ^1^ Assumes a Kubernetes cluster is available
+* ^2^ While Arvados on Kubernetes is not yet ready for production use, it is being developed toward that goal
+* ^3^ No installation necessary, Curoverse run and managed
