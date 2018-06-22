@@ -65,11 +65,33 @@ The @activate@ method of the users controller checks if the user @is_invited@ an
 
 User agreements are accessed by getting a listing on the @user_agreements@ endpoint.  This returns a list of collection uuids.  This is executed as a system user, so it bypasses normal read permission checks.
 
-The available user agreements are represented in the Links table as @link_class: signature@ and @name: require@ and (system_user_uuid &rarr; uuid of collection containing user agreement text file)
+The available user agreements are represented in the Links table as
+
+<pre>
+{
+  "link_class": "signature",
+  "name": "require",
+  "tail_uuid": "*system user uuid*",
+  "head_uuid: "*collection uuid*"
+}
+</pre>
+
+The collection contains the user agreement text file.
 
 On workbench, it checks @is_invited@.  If true, it displays the clickthrough agreements which the user can "sign".  If @is_invited@ is false, the user ends up at the "inactive user" page.
 
-The @user_agreements/sign@ endpoint creates a Link with @link_class: signature@ and @name: click@ and (current user uuid &rarr; collection uuid). This is executed as a system user, so it bypasses the restriction that inactive users cannot create objects.
+The @user_agreements/sign@ endpoint creates a Link object:
+
+<pre>
+{
+  "link_class": "signature"
+  "name": "click",
+  "tail_uuid": "*user uuid*",
+  "head_uuid: "*collection uuid*"
+}
+</pre>
+
+This is executed as a system user, so it bypasses the restriction that inactive users cannot create objects.
 
 The @user_agreements/signatures@ endpoint returns the list of Link objects that represent signatures by the current user (created by @sign@).
 
@@ -81,9 +103,22 @@ h3(#pre-activated). Pre-activated user accounts
 
 It is possible to create a user account for a user that has not yet logged in.
 
-# As an admin, create a user object.
-# Create a link with @link_class: permission@ and @name: can_login@ and (email address &rarr; user_uuid) and @properties[identity_url_prefix] = 'xxxxx-tpzed-'@ where 'xxxxx' is the @uuid_prefix@ of the SSO server.
-# When the user logs in the first time, the email address will be recognized and the user will be associated with the existing user uuid.
+1. As an admin, create a user object.
+2. Create a link object, where 'xxxxx' is the @uuid_prefix@ of the SSO server.
+
+<pre>
+{
+  "link_class": "permission",
+  "name": "can_login",
+  "tail_uuid": "email address",
+  "head_uuid: "user uuid",
+  "properties": {
+    "identity_url_prefix": "xxxxx-tpzed-"
+  }
+}
+</pre>
+
+3. When the user logs in the first time, the email address will be recognized and the user will be associated with the existing user uuid.
 
 h3. Federated users
 
@@ -102,9 +137,9 @@ Setting @is_active@ is not sufficient to lock out a user.  The user can call @ac
 * Mark as inactive
 
 {% comment %}
-Does not revoke @is_admin@ though!  Maybe we need to fix that?
+Does not revoke @is_admin@, so you can't unsetup an admin unless you turn admin off first.
 
-Does not prevent user from reading things.
+"inactive" does not prevent user from reading things they previously had access to.
 
 Does not revoke API tokens.
 {% endcomment %}
