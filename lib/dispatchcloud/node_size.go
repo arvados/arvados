@@ -47,20 +47,10 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
 	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
-	availableTypes := make([]arvados.InstanceType, 0, len(cc.InstanceTypes))
-	for _, t := range cc.InstanceTypes {
-		availableTypes = append(availableTypes, t)
-	}
-	sort.Slice(availableTypes, func(a, b int) bool {
-		return availableTypes[a].Price < availableTypes[b].Price
-	})
-	err = ConstraintsNotSatisfiableError{
-		errors.New("constraints not satisfiable by any configured instance type"),
-		availableTypes,
-	}
+	ok := false
 	for _, it := range cc.InstanceTypes {
 		switch {
-		case err == nil && it.Price > best.Price:
+		case ok && it.Price > best.Price:
 		case it.Scratch < needScratch:
 		case it.RAM < needRAM:
 		case it.VCPUs < needVCPUs:
@@ -70,8 +60,22 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		default:
 			// Lower price || (same price && better specs)
 			best = it
-			err = nil
+			ok = true
 		}
+	}
+	if !ok {
+		availableTypes := make([]arvados.InstanceType, 0, len(cc.InstanceTypes))
+		for _, t := range cc.InstanceTypes {
+			availableTypes = append(availableTypes, t)
+		}
+		sort.Slice(availableTypes, func(a, b int) bool {
+			return availableTypes[a].Price < availableTypes[b].Price
+		})
+		err = ConstraintsNotSatisfiableError{
+			errors.New("constraints not satisfiable by any configured instance type"),
+			availableTypes,
+		}
+		return
 	}
 	return
 }
