@@ -849,25 +849,6 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "submit a Committed child CR with preemptible_instances active" do
-    attrs = {cwd: "test",
-             priority: 1,
-             state: ContainerRequest::Committed,
-             command: ["echo", "hello"],
-             output_path: "test",
-             mounts: {"test" => {"kind" => "json"}}}
-
-    Rails.configuration.preemptible_instances = true
-    set_user_from_auth :active
-
-    cr = with_container_auth(Container.find_by_uuid 'zzzzz-dz642-runningcontainr') do
-      create_minimal_req!(attrs)
-    end
-
-    assert_not_nil cr.requesting_container_uuid
-    assert_equal true, cr.scheduling_parameters['preemptible']
-  end
-
   [
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
@@ -913,6 +894,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = with_container_auth(Container.find_by_uuid 'zzzzz-dz642-runningcontainr') do
       create_minimal_req!(common_attrs)
     end
+    assert_equal 'zzzzz-dz642-runningcontainr', cr.requesting_container_uuid
     assert_equal true, cr.scheduling_parameters["preemptible"]
 
     c = Container.find_by_uuid(cr.container_uuid)
