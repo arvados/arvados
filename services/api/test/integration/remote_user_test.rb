@@ -85,6 +85,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
+    assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
 
@@ -218,4 +219,16 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     refute_includes(group_uuids, groups(:trashed_project).uuid)
     refute_includes(group_uuids, groups(:testusergroup_admins).uuid)
   end
+
+  test 'auto-activate with remote token' do
+    Rails.configuration.auto_activate_users_from = ['zbbbb']
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
 end
