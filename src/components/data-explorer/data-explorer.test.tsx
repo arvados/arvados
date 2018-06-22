@@ -37,6 +37,7 @@ describe("<DataExplorer />", () => {
         const onSearch = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
+            items={["item 1"]}
             searchValue="search value"
             onSearch={onSearch} />);
         expect(dataExplorer.find(SearchInput).prop("value")).toEqual("search value");
@@ -81,14 +82,14 @@ describe("<DataExplorer />", () => {
         expect(onRowClick).toHaveBeenCalledWith("rowClick");
     });
 
-    it("renders <TablePagination/> if items list is not empty", () => {
-        const onChangePage = jest.fn();
-        const onChangeRowsPerPage = jest.fn();
+    it("does not render <SearchInput/>, <ColumnSelector/> and <TablePagination/> if there is no items", () => {
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            items={["Item 1"]}
+            items={[]}
         />);
-        expect(dataExplorer.find(TablePagination)).toHaveLength(1);
+        expect(dataExplorer.find(SearchInput)).toHaveLength(0);
+        expect(dataExplorer.find(ColumnSelector)).toHaveLength(0);
+        expect(dataExplorer.find(TablePagination)).toHaveLength(0);
     });
 
     it("communicates with <TablePagination/>", () => {

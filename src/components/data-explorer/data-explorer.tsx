@@ -49,16 +49,18 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 onActionClick={this.callAction}
                 onClose={this.closeContextMenu} />
             <Toolbar className={this.props.classes.toolbar}>
-                <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                    <div className={this.props.classes.searchBox}>
-                        <SearchInput
-                            value={this.props.searchValue}
-                            onSearch={this.props.onSearch} />
-                    </div>
-                    <ColumnSelector
-                        columns={this.props.columns}
-                        onColumnToggle={this.props.onColumnToggle} />
-                </Grid>
+                {this.props.items.length > 0 &&
+                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                        <div className={this.props.classes.searchBox}>
+                            <SearchInput
+                                value={this.props.searchValue}
+                                onSearch={this.props.onSearch} />
+                        </div>
+                        <ColumnSelector
+                            columns={this.props.columns}
+                            onColumnToggle={this.props.onColumnToggle} />
+                    </Grid>}
+
             </Toolbar>
             <DataTable
                 columns={this.props.columns}
