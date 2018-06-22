@@ -5,27 +5,26 @@ import * as React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
 
-export interface ContextMenuAction<T> {
+export interface ContextMenuAction {
     name: string;
     icon: string;
-    onClick: (item: T) => void;
 }
 
-export type ContextMenuActionGroup<T> = Array<ContextMenuAction<T>>;
+export type ContextMenuActionGroup = ContextMenuAction[];
 
 export interface ContextMenuProps<T> {
     anchorEl?: HTMLElement;
-    item?: T;
+    actions: ContextMenuActionGroup[];
+    onActionClick: (action: ContextMenuAction) => void;
     onClose: () => void;
-    actions: Array<ContextMenuActionGroup<T>>;
 }
 
 export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps<T>> {
     render() {
-        const { anchorEl, onClose, actions, item } = this.props;
+        const { anchorEl, actions, onClose, onActionClick } = this.props;
         return <Popover
             anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
+            open={!!anchorEl}
             onClose={onClose}
             transformOrigin={DefaultTransformOrigin}
             anchorOrigin={DefaultTransformOrigin}>
@@ -36,7 +35,7 @@ export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps
                             <ListItem
                                 button
                                 key={actionIndex}
-                                onClick={() => item && action.onClick(item)}>
+                                onClick={() => onActionClick(action)}>
                                 <ListItemIcon>
                                     <i className={action.icon} />
                                 </ListItemIcon>

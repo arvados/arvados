@@ -11,41 +11,25 @@ import { ListItem } from "@material-ui/core";
 configure({ adapter: new Adapter() });
 
 describe("<ContextMenu />", () => {
-
-    const item = {
-        name: "",
-        owner: "",
-        lastModified: "",
-        type: ""
-    };
-
     const actions = [[{
         icon: "",
-        name: "Action 1.1",
-        onClick: jest.fn()
-    },
-    {
+        name: "Action 1.1"
+    }, {
         icon: "",
-        name: "Action 1.2",
-        onClick: jest.fn()
+        name: "Action 1.2"
     },], [{
         icon: "",
-        name: "Action 2.1",
-        onClick: jest.fn()
+        name: "Action 2.1"
     }]];
 
-    it("calls provided actions with provided item", () => {
+    it("calls onActionClick with clicked action", () => {
+        const onActionClick = jest.fn();
         const contextMenu = mount(<ContextMenu
             anchorEl={document.createElement("div")}
             onClose={jest.fn()}
-            {...{ actions, item }} />);
-
-        contextMenu.find(ListItem).at(0).simulate("click");
-        contextMenu.find(ListItem).at(1).simulate("click");
+            onActionClick={onActionClick}
+            actions={actions} />);
         contextMenu.find(ListItem).at(2).simulate("click");
-
-        expect(actions[0][0].onClick).toHaveBeenCalledWith(item);
-        expect(actions[0][1].onClick).toHaveBeenCalledWith(item);
-        expect(actions[1][0].onClick).toHaveBeenCalledWith(item);
+        expect(onActionClick).toHaveBeenCalledWith(actions[1][0]);
     });
 });

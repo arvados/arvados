@@ -7,6 +7,7 @@
     "@material-ui/icons": "1.1.0",
     "@types/lodash": "4.14.109",
     "axios": "0.18.0",
+    "classnames": "^2.2.6",
     "lodash": "4.17.10",
     "react": "16.4.1",
     "react-dom": "16.4.1",
@@ -27,11 +28,12 @@
     "lint": "tslint src/** -t verbose"
   },
   "devDependencies": {
+    "@types/classnames": "^2.2.4",
     "@types/enzyme": "3.1.10",
     "@types/enzyme-adapter-react-16": "1.0.2",
     "@types/jest": "23.1.0",
     "@types/node": "10.3.3",
-    "@types/react": "16.3.18",
+    "@types/react": "16.3",
     "@types/react-dom": "16.0.6",
     "@types/react-redux": "6.0.2",
     "@types/react-router": "4.0.26",
