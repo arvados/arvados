@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, Table } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, Table, IconButton } from '@material-ui/core';
+import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
 import DataTable from "../../components/data-table/data-table";
@@ -63,7 +64,9 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
             </Toolbar>
             <DataTable
-                columns={this.props.columns}
+                columns={[
+                    ...this.props.columns,
+                    this.contextMenuColumn]}
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
                 onRowContextMenu={this.openContextMenu}
@@ -114,6 +117,21 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
     changeRowsPerPage: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement> = (event) => {
         this.props.onChangeRowsPerPage(parseInt(event.target.value, 10));
     }
+
+    renderContextMenuTrigger = (item: T) =>
+        <Grid container justify="flex-end">
+            <IconButton onClick={event => this.openContextMenu(event, item)}>
+                <MoreVertIcon />
+            </IconButton>
+        </Grid>
+
+    contextMenuColumn = {
+        name: "Actions",
+        selected: true,
+        key: "context-actions",
+        renderHeader: () => null,
+        render: this.renderContextMenuTrigger
+    };
 
 }
 
