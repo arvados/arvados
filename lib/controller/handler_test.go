@@ -101,6 +101,7 @@ func (s *HandlerSuite) TestProxyWithTokenInRequestBody(c *check.C) {
 		"_method":   {"GET"},
 		"api_token": {arvadostest.ActiveToken},
 	}.Encode()))
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)

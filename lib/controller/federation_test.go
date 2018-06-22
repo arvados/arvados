@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -66,10 +68,18 @@ func (s *FederationSuite) TearDownTest(c *check.C) {
 	}
 }
 
-func (s *FederationSuite) TestLocalRequestError(c *check.C) {
+func (s *FederationSuite) TestLocalRequest(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zhome-", 1), nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
+	s.checkHandledLocally(c, resp)
+}
+
+func (s *FederationSuite) checkHandledLocally(c *check.C, resp *httptest.ResponseRecorder) {
+	// Our "home" controller can't handle local requests because
+	// it doesn't have its own stub/test Rails API, so we rely on
+	// "connection refused" to indicate the controller tried to
+	// proxy the request to its local Rails API.
 	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
 	s.checkJSONErrorMatches(c, resp, `.*connection refused`)
 }
@@ -109,7 +119,17 @@ func (s *FederationSuite) TestGetUnknownRemote(c *check.C) {
 	s.checkJSONErrorMatches(c, resp, `.*no proxy available for cluster zz404`)
 }
 
-func (s *FederationSuite) TestRemoteDown(c *check.C) {
+func (s *FederationSuite) TestRemoteError(c *check.C) {
+	rc := s.handler.Cluster.RemoteClusters["zzzzz"]
+	rc.Scheme = "https"
+	s.handler.Cluster.RemoteClusters["zzzzz"] = rc
+
+	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
+	s.checkJSONErrorMatches(c, resp, `.*HTTP response to HTTPS client`)
 }
 
 func (s *FederationSuite) TestGetRemoteWorkflow(c *check.C) {
@@ -122,6 +142,30 @@ func (s *FederationSuite) TestGetRemoteWorkflow(c *check.C) {
 	c.Check(json.Unmarshal(resp.Body.Bytes(), &wf), check.IsNil)
 	c.Check(wf.UUID, check.Equals, arvadostest.WorkflowWithDefinitionYAMLUUID)
 	c.Check(wf.OwnerUUID, check.Equals, arvadostest.ActiveUserUUID)
+}
+
+func (s *FederationSuite) TestUpdateRemoteWorkflow(c *check.C) {
+	req := httptest.NewRequest("PATCH", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, strings.NewReader(url.Values{
+		"workflow": {`{"description":"updated by TestUpdateRemoteWorkflow"}`},
+	}.Encode()))
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	s.checkResponseOK(c, resp)
+	var wf arvados.Workflow
+	c.Check(json.Unmarshal(resp.Body.Bytes(), &wf), check.IsNil)
+	c.Check(wf.UUID, check.Equals, arvadostest.WorkflowWithDefinitionYAMLUUID)
+	c.Assert(wf.ModifiedAt, check.NotNil)
+	c.Logf("%s", *wf.ModifiedAt)
+	c.Check(time.Since(*wf.ModifiedAt) < time.Minute, check.Equals, true)
+}
+
+func (s *FederationSuite) checkResponseOK(c *check.C, resp *httptest.ResponseRecorder) {
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	if resp.Code != http.StatusOK {
+		c.Logf("... response body = %s\n", resp.Body.String())
+	}
 }
 
 func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *httptest.ResponseRecorder, re string) {
