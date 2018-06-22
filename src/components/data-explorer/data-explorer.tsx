@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, Table } from '@material-ui/core';
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
 import DataTable from "../../components/data-table/data-table";
@@ -17,12 +17,16 @@ interface DataExplorerProps<T> {
     columns: Array<DataColumn<T>>;
     contextActions: ContextMenuActionGroup[];
     searchValue: string;
+    rowsPerPage: number;
+    page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onColumnToggle: (column: DataColumn<T>) => void;
     onContextAction: (action: ContextMenuAction, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
+    onChangePage: (page: number) => void;
+    onChangeRowsPerPage: (rowsPerPage: number) => void;
 }
 
 interface DataExplorerState<T> {
@@ -63,7 +67,19 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 onRowContextMenu={this.openContextMenu}
                 onFiltersChange={this.props.onFiltersChange}
                 onSortToggle={this.props.onSortToggle} />
-            <Toolbar />
+            <Toolbar>
+                {this.props.items.length > 0 &&
+                    <Grid container justify="flex-end">
+                        <TablePagination
+                            count={this.props.items.length}
+                            rowsPerPage={this.props.rowsPerPage}
+                            page={this.props.page}
+                            onChangePage={this.changePage}
+                            onChangeRowsPerPage={this.changeRowsPerPage}
+                            component="div"
+                        />
+                    </Grid>}
+            </Toolbar>
         </Paper>;
     }
 
@@ -87,6 +103,14 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
         if (item) {
             this.props.onContextAction(action, item);
         }
+    }
+
+    changePage = (event: React.MouseEvent<HTMLButtonElement> | null, page: number) => {
+        this.props.onChangePage(page);
+    }
+
+    changeRowsPerPage: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement> = (event) => {
+        this.props.onChangeRowsPerPage(parseInt(event.target.value, 10));
     }
 
 }

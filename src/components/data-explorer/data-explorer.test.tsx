@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { mount, configure } from "enzyme";
+import { configure, mount } from "enzyme";
 import * as Adapter from 'enzyme-adapter-react-16';
 
 import DataExplorer from "./data-explorer";
@@ -11,10 +11,12 @@ import ContextMenu from "../context-menu/context-menu";
 import ColumnSelector from "../column-selector/column-selector";
 import DataTable from "../data-table/data-table";
 import SearchInput from "../search-input/search-input";
+import { TablePagination } from "@material-ui/core";
 
 configure({ adapter: new Adapter() });
 
 describe("<DataExplorer />", () => {
+
     it("communicates with <ContextMenu/>", () => {
         const onContextAction = jest.fn();
         const dataExplorer = mount(<DataExplorer
@@ -30,13 +32,13 @@ describe("<DataExplorer />", () => {
         dataExplorer.find(ContextMenu).prop("onActionClick")({ name: "Action 1", icon: "" });
         expect(onContextAction).toHaveBeenCalledWith({ name: "Action 1", icon: "" }, "Item 1");
     });
-    
+
     it("communicates with <SearchInput/>", () => {
         const onSearch = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             searchValue="search value"
-            onSearch={onSearch}/>);
+            onSearch={onSearch} />);
         expect(dataExplorer.find(SearchInput).prop("value")).toEqual("search value");
         dataExplorer.find(SearchInput).prop("onSearch")("new value");
         expect(onSearch).toHaveBeenCalledWith("new value");
@@ -78,6 +80,35 @@ describe("<DataExplorer />", () => {
         expect(onSortToggle).toHaveBeenCalledWith("sortToggle");
         expect(onRowClick).toHaveBeenCalledWith("rowClick");
     });
+
+    it("renders <TablePagination/> if items list is not empty", () => {
+        const onChangePage = jest.fn();
+        const onChangeRowsPerPage = jest.fn();
+        const dataExplorer = mount(<DataExplorer
+            {...mockDataExplorerProps()}
+            items={["Item 1"]}
+        />);
+        expect(dataExplorer.find(TablePagination)).toHaveLength(1);
+    });
+
+    it("communicates with <TablePagination/>", () => {
+        const onChangePage = jest.fn();
+        const onChangeRowsPerPage = jest.fn();
+        const dataExplorer = mount(<DataExplorer
+            {...mockDataExplorerProps()}
+            items={["Item 1"]}
+            page={10}
+            rowsPerPage={50}
+            onChangePage={onChangePage}
+            onChangeRowsPerPage={onChangeRowsPerPage}
+        />);
+        expect(dataExplorer.find(TablePagination).prop("page")).toEqual(10);
+        expect(dataExplorer.find(TablePagination).prop("rowsPerPage")).toEqual(50);
+        dataExplorer.find(TablePagination).prop("onChangePage")(undefined, 6);
+        dataExplorer.find(TablePagination).prop("onChangeRowsPerPage")({ target: { value: 10 } });
+        expect(onChangePage).toHaveBeenCalledWith(6);
+        expect(onChangeRowsPerPage).toHaveBeenCalledWith(10);
+    });
 });
 
 const mockDataExplorerProps = () => ({
@@ -85,10 +116,14 @@ const mockDataExplorerProps = () => ({
     items: [],
     contextActions: [],
     searchValue: "",
+    page: 0,
+    rowsPerPage: 0,
     onSearch: jest.fn(),
     onFiltersChange: jest.fn(),
     onSortToggle: jest.fn(),
     onRowClick: jest.fn(),
     onColumnToggle: jest.fn(),
-    onContextAction: jest.fn()
+    onContextAction: jest.fn(),
+    onChangePage: jest.fn(),
+    onChangeRowsPerPage: jest.fn()
 });

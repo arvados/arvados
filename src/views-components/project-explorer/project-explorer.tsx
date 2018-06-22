@@ -28,11 +28,15 @@ interface ProjectExplorerProps {
 interface ProjectExplorerState {
     columns: Array<DataColumn<ProjectExplorerItem>>;
     searchValue: string;
+    page: number;
+    rowsPerPage: number;
 }
 
 class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplorerState> {
     state: ProjectExplorerState = {
         searchValue: "",
+        page: 0,
+        rowsPerPage: 10,
         columns: [{
             name: "Name",
             selected: true,
@@ -106,12 +110,16 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             columns={this.state.columns}
             contextActions={this.contextMenuActions}
             searchValue={this.state.searchValue}
+            page={this.state.page}
+            rowsPerPage={this.state.rowsPerPage}
             onColumnToggle={this.toggleColumn}
             onFiltersChange={this.changeFilters}
             onRowClick={console.log}
             onSortToggle={this.toggleSort}
             onSearch={this.search}
-            onContextAction={this.executeAction} />;
+            onContextAction={this.executeAction}
+            onChangePage={this.changePage}
+            onChangeRowsPerPage={this.changeRowsPerPage} />;
     }
 
     toggleColumn = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
@@ -150,6 +158,14 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
 
     search = (searchValue: string) => {
         this.setState({ searchValue });
+    }
+
+    changePage = (page: number) => {
+        this.setState({ page });
+    }
+
+    changeRowsPerPage = (rowsPerPage: number) => {
+        this.setState({ rowsPerPage });
     }
 }
 
