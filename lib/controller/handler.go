@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +46,10 @@ func (h *Handler) setup() {
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
 	})
-	mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
+	hs := http.NotFoundHandler()
+	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.proxyRemoteCluster)
+	mux.Handle("/", hs)
 	h.handlerStack = mux
 }
 
@@ -62,7 +66,42 @@ var dropHeaders = map[string]bool{
 	"Upgrade":           true,
 }
 
-func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
+type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)
+
+func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		middleware(w, req, next)
+	})
+}
+
+var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
+
+func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	m := wfRe.FindStringSubmatch(req.URL.Path)
+	if len(m) < 2 || m[1] == h.Cluster.ClusterID {
+		next.ServeHTTP(w, req)
+		return
+	}
+	remote, ok := h.Cluster.RemoteClusters[m[1]]
+	if !ok {
+		httpserver.Error(w, "no proxy available for cluster "+m[1], http.StatusNotFound)
+		return
+	}
+	scheme := remote.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+	urlOut := &url.URL{
+		Scheme:   scheme,
+		Host:     remote.Host,
+		Path:     req.URL.Path,
+		RawPath:  req.URL.RawPath,
+		RawQuery: req.URL.RawQuery,
+	}
+	h.proxy(w, req, urlOut)
+}
+
+func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
 	urlOut, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,11 +110,14 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
 		Host:     urlOut.Host,
-		Path:     reqIn.URL.Path,
-		RawPath:  reqIn.URL.RawPath,
-		RawQuery: reqIn.URL.RawQuery,
+		Path:     req.URL.Path,
+		RawPath:  req.URL.RawPath,
+		RawQuery: req.URL.RawQuery,
 	}
+	h.proxy(w, req, urlOut)
+}
 
+func (h *Handler) proxy(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL) {
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
 	hdrOut := http.Header{}

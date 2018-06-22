@@ -54,6 +54,17 @@ type Cluster struct {
 	NodeProfiles       map[string]NodeProfile
 	InstanceTypes      []InstanceType
 	HTTPRequestTimeout Duration
+	RemoteClusters     map[string]RemoteCluster
+}
+
+type RemoteCluster struct {
+	// API endpoint host or host:port; default is {id}.arvadosapi.com
+	Host string
+	// Perform a proxy request when a local client requests an
+	// object belonging to this remote.
+	Proxy bool
+	// Scheme, default "https". Can be set to "http" for testing.
+	Scheme string
 }
 
 type InstanceType struct {
