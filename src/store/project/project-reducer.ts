@@ -22,8 +22,21 @@ export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeI
     return item;
 }
 
+export function getActiveTreeItem<T>(tree: Array<TreeItem<T>>): TreeItem<T> | undefined {
+    let item;
+    for (const t of tree) {
+        item = t.active
+            ? t
+            : getActiveTreeItem(t.items ? t.items : []);
+        if (item) {
+            break;
+        }
+    }
+    return item;
+}
+
 export function getTreePath<T>(tree: Array<TreeItem<T>>, itemId: string): Array<TreeItem<T>> {
-    for(const item of tree){
+    for (const item of tree){
         if(item.id === itemId){
             return [item];
         } else {

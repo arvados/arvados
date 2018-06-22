@@ -8,7 +8,7 @@ import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 import projectsReducer, { ProjectState } from "./project/project-reducer";
 import authReducer, { AuthState } from "./auth/auth-reducer";
-import collectionsReducer from "./collection/collection-reducer";
+import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -18,6 +18,7 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
+    collections: CollectionState;
     router: RouterState;
 }
 

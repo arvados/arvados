@@ -21,6 +21,8 @@ const history = createBrowserHistory();
 const store = configureStore({
     projects: [
     ],
+    collections: [
+    ],
     router: {
         location: null
     },

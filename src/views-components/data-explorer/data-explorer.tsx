@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Typography, Grid, Paper, Toolbar } from '@material-ui/core';
+import { Grid, Paper, Toolbar, Typography } from '@material-ui/core';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import { formatFileSize, formatDate } from '../../common/formatters';
+import { formatDate, formatFileSize } from '../../common/formatters';
 import { DataItem } from './data-item';
-import { DataColumns } from "../../components/data-table/data-table";
+import DataTable, { DataColumns } from "../../components/data-table/data-table";
 import ContextMenu from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 import { DataColumn } from "../../components/data-table/data-column";
+import { ResourceKind } from "../../models/resource";
 
 export interface DataExplorerContextActions {
     onAddToFavourite: (dataIitem: DataItem) => void;
@@ -191,10 +191,12 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
 
 const renderIcon = (dataItem: DataItem) => {
     switch (dataItem.type) {
-        case "arvados#group":
-            return <i className="fas fa-folder fa-lg" />;
-        case "arvados#groupList":
-            return <i className="fas fa-th fa-lg" />;
+        case ResourceKind.LEVEL_UP:
+            return <i className="icon-level-up" style={{fontSize: "1rem"}}/>;
+        case ResourceKind.PROJECT:
+            return <i className="fas fa-folder fa-lg"/>;
+        case ResourceKind.COLLECTION:
+            return <i className="fas fa-th fa-lg"/>;
         default:
             return <i />;
     }

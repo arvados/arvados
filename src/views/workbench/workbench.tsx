@@ -20,6 +20,7 @@ import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
+import { getCollectionList } from "../../store/collection/collection-action";
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -122,7 +123,6 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         }
     };
 
-
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId, status }: NavBreadcrumb) => {
             this.toggleProjectTreeItem(itemId, status);
@@ -141,6 +141,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch<any>(getProjectList(itemId))
                 .then(() => this.openProjectItem(itemId));
         }
+        this.props.dispatch<any>(getCollectionList(itemId));
     }
 
     openProjectItem = (itemId: string) => {
@@ -183,7 +184,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/project/:name" component={DataExplorer} />
+                            <Route path="/project/:uuid" component={DataExplorer} />
                         </Switch>
                     </div>
                 </main>
