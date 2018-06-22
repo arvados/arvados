@@ -14,20 +14,20 @@ import { Project } from '../../models/project';
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
-    toggleProjectTreeItemOpen: (id: string, status: TreeItemStatus) => void;
-    toggleProjectTreeItemActive: (id: string) => void;
+    toggleOpen: (id: string, status: TreeItemStatus) => void;
+    toggleActive: (id: string) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
-        const { classes, projects, toggleProjectTreeItemOpen, toggleProjectTreeItemActive } = this.props;
+        const { classes, projects, toggleOpen, toggleActive } = this.props;
         const { active, listItemText, row, treeContainer } = classes;
         return (
             <div className={treeContainer}>
                 <Tree items={projects}
-                    toggleItemOpen={toggleProjectTreeItemOpen}
-                    toggleItemActive={toggleProjectTreeItemActive}
-                    render={(project: TreeItem<Project>, level: number) =>
+                    toggleItemOpen={toggleOpen}
+                    toggleItemActive={toggleActive}
+                    render={(project: TreeItem<Project>) =>
                         <span className={row}>
                             <ListItemIcon className={project.active ? active : ''}>
                                 <i className="fas fa-folder" />

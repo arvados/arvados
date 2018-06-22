@@ -22,23 +22,23 @@ export interface SidePanelItem {
 }
 
 interface SidePanelProps {
-    toggleSidePanelOpen: (id: string) => void;
-    toggleSidePanelActive: (id: string) => void;
+    toggleOpen: (id: string) => void;
+    toggleActive: (id: string) => void;
     sidePanelItems: SidePanelItem[];
 }
 
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
-        const { classes, toggleSidePanelOpen, toggleSidePanelActive, sidePanelItems } = this.props;
+        const { classes, toggleOpen, toggleActive, sidePanelItems } = this.props;
         const { listItemText, leftSidePanelContainer, row, list, icon, projectIcon, active, activeArrow, inactiveArrow, arrowTransition, arrowRotate } = classes;
         return (
             <div className={leftSidePanelContainer}>
                 <List>
                     {sidePanelItems.map(it => (
                         <span key={it.name}>
-                            <ListItem button className={list} onClick={() => toggleSidePanelActive(it.id)}>
+                            <ListItem button className={list} onClick={() => toggleActive(it.id)}>
                                 <span className={row}>
-                                    {it.name === "Projects" ? <i onClick={() => toggleSidePanelOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
+                                    {it.name === "Projects" ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
                                         ${it.open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} /> : null}
                                     <ListItemIcon className={it.active ? active : ''}>
                                         <i className={`${it.icon} ${icon} ${it.name === "Projects" ? projectIcon : ''}`} />

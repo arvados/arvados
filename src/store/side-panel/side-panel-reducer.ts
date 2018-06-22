@@ -10,29 +10,29 @@ import { SidePanelItem } from '../../components/side-panel/side-panel';
 export type SidePanelState = SidePanelItem[];
 
 const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
-    return actions.match(action, {
-        TOGGLE_SIDE_PANEL_ITEM_OPEN: () => {
-            const sidePanel = _.cloneDeep(state);
-            sidePanel[0].open = !sidePanel[0].open;
-            return sidePanel;
-        },
-        TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
-            const sidePanel = _.cloneDeep(state);
-            resetSidePanelActivity(sidePanel);
-            sidePanel.map(it => {
-                if (it.id === itemId) {
-                    it.active = true;
-                }
-            });
-            return sidePanel;
-        },
-        RESET_SIDE_PANEL_ACTIVITY: () => {
-            const sidePanel = _.cloneDeep(state);
-            resetSidePanelActivity(sidePanel);
-            return sidePanel;
-        },
-        default: () => state
-    });
+    if (state.length === 0) {
+        return sidePanelData;
+    } else {
+        return actions.match(action, {
+            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId => state.map(it => itemId === it.id && it.open === false ? {...it, open: true} : {...it, open: false}),
+            TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
+                const sidePanel = _.cloneDeep(state);
+                resetSidePanelActivity(sidePanel);
+                sidePanel.map(it => {
+                    if (it.id === itemId) {
+                        it.active = true;
+                    }
+                });
+                return sidePanel;
+            },
+            RESET_SIDE_PANEL_ACTIVITY: () => {
+                const sidePanel = _.cloneDeep(state);
+                resetSidePanelActivity(sidePanel);
+                return sidePanel;
+            },
+            default: () => state
+        });
+    }
 };
 
 export const sidePanelData = [

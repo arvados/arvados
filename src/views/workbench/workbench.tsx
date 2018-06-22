@@ -185,13 +185,13 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         }}>
                         <div className={classes.toolbar} />
                             <SidePanel
-                                toggleSidePanelOpen={this.toggleSidePanelOpen}
-                                toggleSidePanelActive={this.toggleSidePanelActive}
+                                toggleOpen={this.toggleSidePanelOpen}
+                                toggleActive={this.toggleSidePanelActive}
                                 sidePanelItems={sidePanelItems}>
                                 <ProjectTree
                                     projects={projects}
-                                    toggleProjectTreeItemOpen={this.toggleProjectTreeItemOpen}
-                                    toggleProjectTreeItemActive={this.toggleProjectTreeItemActive} />
+                                    toggleOpen={this.toggleProjectTreeItemOpen}
+                                    toggleActive={this.toggleProjectTreeItemActive} />
                             </SidePanel>
                     </Drawer>}
                 <main className={classes.content}>

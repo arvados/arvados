@@ -27,7 +27,7 @@ const store = configureStore({
     auth: {
         user: undefined
     },
-    sidePanel: sidePanelData
+    sidePanel: []
 }, history);
 
 store.dispatch(authActions.INIT());
