@@ -50,7 +50,7 @@ class DataTableFilter extends React.Component<DataTableFilterProps & WithStyles<
 
     render() {
         const { name, classes, children } = this.props;
-        const isActive = this.state.filters.filter(({ selected }) => !selected).length > 0;
+        const isActive = this.state.filters.some(f => f.selected);
         return <>
             <ButtonBase
                 className={classnames([classes.root, { [classes.active]: isActive }])}
