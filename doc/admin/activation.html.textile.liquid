@@ -99,12 +99,21 @@ h3. User profile
 
 The user profile is checked by workbench after checking if user agreements need to be signed.  The requirement to fill out the user profile is not enforced by the API server.
 
-h3(#pre-activated). Pre-activated user accounts
+h3(#pre-activated). Pre-activate user by email address
 
-It is possible to create a user account for a user that has not yet logged in.
+You may create a user account for a user that has not yet logged in, and identify the user by email address.
 
-1. As an admin, create a user object.
-2. Create a link object, where 'xxxxx' is the @uuid_prefix@ of the SSO server.
+1. As an admin, create a user object:
+
+<pre>
+{
+  "email": "foo@example.com",
+  "username": "barney",
+  "is_active": true
+}
+</pre>
+
+2. Create a link object, where @tail_uuid@ is the user's email address, @head_uuid@ is the user object created in the previous step, and @xxxxx@ is the value of @uuid_prefix@ of the SSO server.
 
 <pre>
 {
@@ -118,11 +127,26 @@ It is possible to create a user account for a user that has not yet logged in.
 }
 </pre>
 
-3. When the user logs in the first time, the email address will be recognized and the user will be associated with the existing user uuid.
+3. When the user logs in the first time, the email address will be recognized and the user will be associated with the linked user object.
 
-h3. Federated users
+h3. Pre-activate federated user
 
-In the API server config, set @auto_activate_users_from@ with a list of cluster ids.  A federated users from one of the listed clusters which @is_active@ on the home cluster will be automatically set up and activated on this cluster.
+1. As admin, create a user object with the @uuid@ of the federated user (this is the user's uuid on their home cluster):
+
+<pre>
+{
+  "uuid": "home1-tpzed-000000000000000",
+  "email": "foo@example.com",
+  "username": "barney",
+  "is_active": true
+}
+</pre>
+
+2. When the user logs in, they will be associated with the existing user object.
+
+h3. Auto-activate federated users from trusted clusters
+
+In the API server config, configure @auto_activate_users_from@ with a list of one or more five-character cluster ids.  A federated user from one of the listed clusters which @is_active@ on the home cluster will be automatically set up and activated on this cluster.
 
 h3(#deactivating_users). Deactivating users
 

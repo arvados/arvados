@@ -220,12 +220,32 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     refute_includes(group_uuids, groups(:testusergroup_admins).uuid)
   end
 
-  test 'auto-activate with remote token' do
+  test 'auto-activate user from trusted cluster' do
     Rails.configuration.auto_activate_users_from = ['zbbbb']
     get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
+  test 'pre-activate remote user' do
+    post '/arvados/v1/users', {
+           "user" => {
+             "uuid" => "zbbbb-tpzed-000000000000000",
+             "email" => 'foo@example.com',
+             "username" => 'barney',
+             "is_active" => true
+           }
+    }, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
+    assert_response :success
+
+    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal nil, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']

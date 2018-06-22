@@ -26,11 +26,11 @@ class User < ArvadosModel
     user.username.nil? and user.username_changed?
   }
   before_update :setup_on_activate
-  before_create :setup_on_activate
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
   }
+  after_create :setup_on_activate
   after_create :add_system_group_permission_link
   after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
@@ -464,7 +464,7 @@ class User < ArvadosModel
 
     if !oid_login_perms.any?
       # create openid login permission
-      oid_login_perm = Link.create(link_class: 'permission',
+      oid_login_perm = Link.create!(link_class: 'permission',
                                    name: 'can_login',
                                    tail_uuid: self.email,
                                    head_uuid: self.uuid,
