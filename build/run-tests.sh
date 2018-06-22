@@ -619,7 +619,8 @@ fi
 # Jenkins config requires that glob tmp/*.log match something. Ensure
 # that happens even if we don't end up running services that set up
 # logging.
-touch "${WORKSPACE}/tmp/controller.log"
+mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
+touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
 
 retry() {
     remain="${repeat}"
