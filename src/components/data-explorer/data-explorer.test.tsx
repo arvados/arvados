@@ -72,7 +72,7 @@ describe("<DataExplorer />", () => {
             onFiltersChange={onFiltersChange}
             onSortToggle={onSortToggle}
             onRowClick={onRowClick} />);
-        expect(dataExplorer.find(DataTable).prop("columns")).toBe(columns);
+        expect(dataExplorer.find(DataTable).prop("columns").slice(0, -1)).toEqual(columns);
         expect(dataExplorer.find(DataTable).prop("items")).toBe(items);
         dataExplorer.find(DataTable).prop("onRowClick")("event", "rowClick");
         dataExplorer.find(DataTable).prop("onFiltersChange")("filtersChange");
