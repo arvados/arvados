@@ -160,6 +160,8 @@ navbar:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Arvados on Kubernetes:
+      - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-postgresql.html.textile.liquid
