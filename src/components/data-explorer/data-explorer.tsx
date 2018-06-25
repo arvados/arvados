@@ -19,6 +19,7 @@ interface DataExplorerProps<T> {
     contextActions: ContextMenuActionGroup[];
     searchValue: string;
     rowsPerPage: number;
+    rowsPerPageOptions?: number[];
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
@@ -78,6 +79,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                         <TablePagination
                             count={this.props.items.length}
                             rowsPerPage={this.props.rowsPerPage}
+                            rowsPerPageOptions={this.props.rowsPerPageOptions}
                             page={this.props.page}
                             onChangePage={this.changePage}
                             onChangeRowsPerPage={this.changeRowsPerPage}

@@ -12,6 +12,7 @@ interface DataExplorer {
     items: any[];
     page: number;
     rowsPerPage: number;
+    rowsPerPageOptions?: number[];
     searchValue: string;
 }
 
@@ -19,7 +20,8 @@ export const initialDataExplorer: DataExplorer = {
     columns: [],
     items: [],
     page: 0,
-    rowsPerPage: 0,
+    rowsPerPage: 10,
+    rowsPerPageOptions: [5, 10, 25, 50],
     searchValue: ""
 };
 
