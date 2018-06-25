@@ -151,6 +151,7 @@ navbar:
       - install/cheat_sheet.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
+      - admin/activation.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
