@@ -643,11 +643,11 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(expect_username, user.username)
 
     # check user setup
-    verify_link_exists(Rails.configuration.auto_setup_new_users,
+    verify_link_exists(Rails.configuration.auto_setup_new_users || active,
                        groups(:all_users).uuid, user.uuid,
                        "permission", "can_read")
     # Check for OID login link.
-    verify_link_exists(Rails.configuration.auto_setup_new_users,
+    verify_link_exists(Rails.configuration.auto_setup_new_users || active,
                        user.uuid, user.email, "permission", "can_login")
     # Check for repository.
     if named_repo = (prior_repo or
