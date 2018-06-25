@@ -61,17 +61,17 @@ export interface TreeItem<T> {
 interface TreeProps<T> {
     items?: Array<TreeItem<T>>;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
-    toggleItem: (id: string, status: TreeItemStatus) => any;
+    toggleItem: (itemId: string) => any;
     level?: number;
 }
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
     renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
         return <i
-            onClick={() => this.props.toggleItem(id, status)}
+            onClick={() => this.props.toggleItem(id)}
             className={`
-                ${arrowClass} 
-                ${status === TreeItemStatus.Pending ? this.props.classes.arrowVisibility : ''} 
+                ${arrowClass}
+                ${status === TreeItemStatus.Pending ? this.props.classes.arrowVisibility : ''}
                 ${open ? `fas fa-caret-down ${this.props.classes.arrowTransition}` : `fas fa-caret-down ${this.props.classes.arrowRotate}`}`} />;
     }
     render(): ReactElement<any> {

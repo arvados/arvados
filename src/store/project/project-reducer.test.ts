@@ -5,6 +5,7 @@
 import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { ResourceKind } from "../../models/resource";
 
 describe('project-reducer', () => {
     it('should add new project to the list', () => {
@@ -16,7 +17,7 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
@@ -32,7 +33,7 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const projects = [project, project];

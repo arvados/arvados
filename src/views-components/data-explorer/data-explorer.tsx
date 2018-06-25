@@ -52,7 +52,7 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
         }, {
             name: "Type",
             selected: true,
-            render: item => renderType(item.type)
+            render: item => renderType(item.kind)
         }, {
             name: "Owner",
             selected: true,
@@ -190,7 +190,7 @@ class DataExplorer extends React.Component<DataExplorerProps, DataExplorerState>
 }
 
 const renderIcon = (dataItem: DataItem) => {
-    switch (dataItem.type) {
+    switch (dataItem.kind) {
         case ResourceKind.LEVEL_UP:
             return <i className="icon-level-up" style={{fontSize: "1rem"}}/>;
         case ResourceKind.PROJECT:

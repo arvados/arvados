@@ -11,16 +11,19 @@ import { Route, Switch } from "react-router";
 import authActions from "../../store/auth/auth-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
-import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
+import MainAppBar, {
+    MainAppBarActionProps,
+    MainAppBarMenuItem
+} from '../../views-components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
-import projectActions, { getProjectList } from "../../store/project/project-action";
 import ProjectTree from '../../views-components/project-tree/project-tree';
-import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { getTreePath } from '../../store/project/project-reducer';
 import DataExplorer from '../data-explorer/data-explorer';
-import { getCollectionList } from "../../store/collection/collection-action";
+import { setProjectItem } from "../../store/navigation/navigation-action";
+import { ResourceKind } from "../../models/resource";
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -64,6 +67,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 interface WorkbenchDataProps {
     projects: Array<TreeItem<Project>>;
+    currentProjectId: string;
     user?: User;
 }
 
@@ -74,7 +78,6 @@ type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp &
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
-    status: TreeItemStatus;
 }
 
 interface NavMenuItem extends MainAppBarMenuItem {
@@ -83,7 +86,6 @@ interface NavMenuItem extends MainAppBarMenuItem {
 
 interface WorkbenchState {
     anchorEl: any;
-    breadcrumbs: NavBreadcrumb[];
     searchText: string;
     menuItems: {
         accountMenu: NavMenuItem[],
@@ -124,8 +126,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     };
 
     mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: ({ itemId, status }: NavBreadcrumb) => {
-            this.toggleProjectTreeItem(itemId, status);
+        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
+            // this.toggleProjectTreeItem(itemId, status);
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -134,57 +136,43 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     };
 
-    toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
-        if (status === TreeItemStatus.Loaded) {
-            this.openProjectItem(itemId);
-        } else {
-            this.props.dispatch<any>(getProjectList(itemId))
-                .then(() => this.openProjectItem(itemId));
-        }
-        this.props.dispatch<any>(getCollectionList(itemId));
-    }
-
-    openProjectItem = (itemId: string) => {
-        const branch = getTreePath(this.props.projects, itemId);
-        this.setState({
-            breadcrumbs: branch.map(item => ({
-                label: item.data.name,
-                itemId: item.data.uuid,
-                status: item.status
-            }))
-        });
-        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
-        this.props.dispatch(push(`/project/${itemId}`));
-    }
-
     render() {
+        const branch = getTreePath(this.props.projects, this.props.currentProjectId);
+        const breadcrumbs = branch.map(item => ({
+            label: item.data.name,
+            itemId: item.data.uuid,
+            status: item.status
+        }));
+
         const { classes, user } = this.props;
         return (
             <div className={classes.root}>
                 <div className={classes.appBar}>
                     <MainAppBar
-                        breadcrumbs={this.state.breadcrumbs}
+                        breadcrumbs={breadcrumbs}
                         searchText={this.state.searchText}
                         user={this.props.user}
                         menuItems={this.state.menuItems}
                         {...this.mainAppBarActions}
                     />
                 </div>
-                {user &&
-                    <Drawer
-                        variant="permanent"
-                        classes={{
-                            paper: classes.drawerPaper,
-                        }}>
-                        <div className={classes.toolbar} />
-                        <ProjectTree
-                            projects={this.props.projects}
-                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
-                    </Drawer>}
+                {user && <Drawer
+                    variant="permanent"
+                    classes={{
+                        paper: classes.drawerPaper,
+                    }}>
+                    <div className={classes.toolbar} />
+                    <ProjectTree
+                        projects={this.props.projects}
+                        toggleProjectTreeItem={itemId =>
+                            this.props.dispatch<any>(
+                                setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT)
+                            )}/>
+                </Drawer>}
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/project/:uuid" component={DataExplorer} />
+                            <Route path="/projects/:uuid" component={DataExplorer} />
                         </Switch>
                     </div>
                 </main>
@@ -195,7 +183,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
-        projects: state.projects,
+        projects: state.projects.items,
+        currentProjectId: state.projects.currentItemId,
         user: state.auth.user
     })
 )(

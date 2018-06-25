@@ -7,7 +7,7 @@ import { getResourceKind, Resource, ResourceKind } from "../../models/resource";
 export interface DataItem {
     uuid: string;
     name: string;
-    type: ResourceKind;
+    kind: ResourceKind;
     url: string;
     owner: string;
     lastModified: string;
@@ -19,7 +19,7 @@ function resourceToDataItem(r: Resource, kind?: ResourceKind) {
     return {
         uuid: r.uuid,
         name: r.name,
-        type: kind ? kind : getResourceKind(r.kind),
+        kind: kind ? kind : getResourceKind(r.kind),
         owner: r.ownerUuid,
         lastModified: r.modifiedAt
     };

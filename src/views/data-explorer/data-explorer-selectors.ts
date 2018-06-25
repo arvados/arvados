@@ -1,10 +1,14 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { DataItem } from "../../views-components/data-explorer/data-item";
 import { findTreeItem } from "../../store/project/project-reducer";
 import { ResourceKind } from "../../models/resource";
 import { Collection } from "../../models/collection";
-
+import { getResourceUrl } from "../../store/navigation/navigation-action";
 
 export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeItemId: string, collections: Array<Collection>): DataItem[] => {
     const dataItems: DataItem[] = [];
@@ -13,8 +17,8 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
     if (treeItem) {
         dataItems.push({
             name: "..",
-            url: `/projects/${treeItem.data.ownerUuid}`,
-            type: ResourceKind.LEVEL_UP,
+            url: getResourceUrl(treeItem.data),
+            kind: ResourceKind.LEVEL_UP,
             owner: treeItem.data.ownerUuid,
             uuid: treeItem.data.uuid,
             lastModified: treeItem.data.modifiedAt
@@ -24,8 +28,8 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
             treeItem.items.forEach(p => {
                 const item = {
                     name: p.data.name,
-                    type: ResourceKind.PROJECT,
-                    url: `/projects/${treeItem.data.uuid}`,
+                    kind: ResourceKind.PROJECT,
+                    url: getResourceUrl(treeItem.data),
                     owner: p.data.ownerUuid,
                     uuid: p.data.uuid,
                     lastModified: p.data.modifiedAt
@@ -39,8 +43,8 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
     collections.forEach(c => {
         const item = {
             name: c.name,
-            type: ResourceKind.COLLECTION,
-            url: `/collections/${c.uuid}`,
+            kind: ResourceKind.COLLECTION,
+            url: getResourceUrl(c),
             owner: c.ownerUuid,
             uuid: c.uuid,
             lastModified: c.modifiedAt

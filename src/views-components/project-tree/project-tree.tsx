@@ -37,7 +37,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
-    toggleProjectTreeItem: (id: string, status: TreeItemStatus) => void;
+    toggleProjectTreeItem: (itemId: string) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {

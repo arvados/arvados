@@ -19,8 +19,10 @@ import { getProjectList } from "./store/project/project-action";
 const history = createBrowserHistory();
 
 const store = configureStore({
-    projects: [
-    ],
+    projects: {
+        items: [],
+        currentItemId: ""
+    },
     collections: [
     ],
     router: {

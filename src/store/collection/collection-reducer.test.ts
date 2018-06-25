@@ -4,6 +4,7 @@
 
 import collectionsReducer from "./collection-reducer";
 import actions from "./collection-action";
+import { ResourceKind } from "../../models/resource";
 
 describe('collection-reducer', () => {
     it('should add new collection to the list', () => {
@@ -15,7 +16,7 @@ describe('collection-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.COLLECTION
         };
 
         const state = collectionsReducer(initialState, actions.CREATE_COLLECTION(collection));
@@ -31,7 +32,7 @@ describe('collection-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.COLLECTION
         };
 
         const collections = [collection, collection];
