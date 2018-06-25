@@ -6,14 +6,14 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 import ColumnSelector, { ColumnSelectorProps, ColumnSelectorTrigger } from "./column-selector";
-import { DataColumn } from "../data-table/data-column";
 import { ListItem, Checkbox } from "@material-ui/core";
+import { DataColumns } from "../data-table/data-table";
 
 configure({ adapter: new Adapter() });
 
 describe("<ColumnSelector />", () => {
     it("shows only configurable columns", () => {
-        const columns: Array<DataColumn<void>> = [
+        const columns: DataColumns<void> = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -38,7 +38,7 @@ describe("<ColumnSelector />", () => {
     });
 
     it("renders checked checkboxes next to selected columns", () => {
-        const columns: Array<DataColumn<void>> = [
+        const columns: DataColumns<void> = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -63,7 +63,7 @@ describe("<ColumnSelector />", () => {
     });
 
     it("calls onColumnToggle with clicked column", () => {
-        const columns: Array<DataColumn<void>> = [
+        const columns: DataColumns<void> = [
             {
                 name: "Column 1",
                 render: () => <span />,

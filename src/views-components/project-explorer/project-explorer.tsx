@@ -7,11 +7,12 @@ import { ProjectExplorerItem } from './project-explorer-item';
 import { Grid, Typography } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from '../data-explorer/data-explorer';
-import { DataColumn, toggleSortDirection, resetSortDirection } from '../../components/data-table/data-column';
+import { DataColumn } from '../../components/data-table/data-column';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import actions from "../../store/data-explorer/data-explorer-action";
+import { DataColumns } from '../../components/data-table/data-table';
 
 export const PROJECT_EXPLORER_ID = "projectExplorer";
 class ProjectExplorer extends React.Component<DispatchProp> {
@@ -139,7 +140,7 @@ const renderStatus = (item: ProjectExplorerItem) =>
         {item.status || "-"}
     </Typography>;
 
-const columns: Array<DataColumn<ProjectExplorerItem>> = [{
+const columns: DataColumns<ProjectExplorerItem> = [{
     name: "Name",
     selected: true,
     sortDirection: "asc",

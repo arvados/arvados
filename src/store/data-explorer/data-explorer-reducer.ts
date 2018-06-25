@@ -5,9 +5,10 @@
 import { DataColumn, toggleSortDirection, resetSortDirection } from "../../components/data-table/data-column";
 import actions, { DataExplorerAction } from "./data-explorer-action";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
+import { DataColumns } from "../../components/data-table/data-table";
 
 interface DataExplorer {
-    columns: Array<DataColumn<any>>;
+    columns: DataColumns<any>;
     items: any[];
     page: number;
     rowsPerPage: number;
@@ -58,7 +59,7 @@ export const getDataExplorer = (state: DataExplorerState, id: string) =>
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
     ({ ...state, [id]: updateFn(getDataExplorer(state, id)) });
 
-const setColumns = (columns: Array<DataColumn<any>>) =>
+const setColumns = (columns: DataColumns<any>) =>
     (dataExplorer: DataExplorer) =>
         ({ ...dataExplorer, columns });
 

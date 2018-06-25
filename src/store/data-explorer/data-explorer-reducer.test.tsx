@@ -4,12 +4,12 @@
 
 import dataExplorerReducer, { initialDataExplorer } from "./data-explorer-reducer";
 import actions from "./data-explorer-action";
-import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
+import { DataColumns } from "../../components/data-table/data-table";
 
 describe('data-explorer-reducer', () => {
     it('should set columns', () => {
-        const columns: Array<DataColumn<any>> = [{
+        const columns: DataColumns<any> = [{
             name: "Column 1",
             render: jest.fn(),
             selected: true
@@ -20,7 +20,7 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should toggle sorting', () => {
-        const columns: Array<DataColumn<any>> = [{
+        const columns: DataColumns<any> = [{
             name: "Column 1",
             render: jest.fn(),
             selected: true,
@@ -38,7 +38,7 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set filters', () => {
-        const columns: Array<DataColumn<any>> = [{
+        const columns: DataColumns<any> = [{
             name: "Column 1",
             render: jest.fn(),
             selected: true,

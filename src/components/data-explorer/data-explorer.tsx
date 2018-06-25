@@ -7,15 +7,15 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable from "../../components/data-table/data-table";
+import DataTable, { DataColumns } from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
-import { DataColumn, toggleSortDirection } from "../../components/data-table/data-column";
+import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import SearchInput from '../search-input/search-input';
 
 interface DataExplorerProps<T> {
     items: T[];
-    columns: Array<DataColumn<T>>;
+    columns: DataColumns<T>;
     contextActions: ContextMenuActionGroup[];
     searchValue: string;
     rowsPerPage: number;

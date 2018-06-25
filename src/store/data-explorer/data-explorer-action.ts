@@ -5,11 +5,12 @@
 import { default as unionize, ofType, UnionOf } from "unionize";
 import { SortDirection, DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
+import { DataColumns } from "../../components/data-table/data-table";
 
 type WithId<T> = T & { id: string };
 
 const actions = unionize({
-    SET_COLUMNS: ofType<WithId<{ columns: Array<DataColumn<any>> }>>(),
+    SET_COLUMNS: ofType<WithId<{ columns: DataColumns<any> }>>(),
     SET_FILTERS: ofType<WithId<{columnName: string, filters: DataTableFilterItem[]}>>(),
     SET_ITEMS: ofType<WithId<{items: any[]}>>(),
     SET_PAGE: ofType<WithId<{page: number}>>(),
