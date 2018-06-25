@@ -154,6 +154,7 @@ navbar:
       - admin/activation.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:

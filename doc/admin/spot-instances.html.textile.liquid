@@ -1,0 +1,78 @@
+---
+layout: default
+navsection: admin
+title: Using AWS Spot instances
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page describes how to set up the system to take advantage of "Amazon's EC2 spot instances":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html.
+
+h3. Nodemanager
+
+Nodemanager should have configured cloud sizes that include the @preemptible@ boolean parameter. For example, for every on-demand cloud node size, you could create a @.spot@ variant, like this:
+
+<pre>
+[Size m4.large]
+cores = 2
+scratch = 32000
+
+[Size m4.large.spot]
+cores = 2
+instance_type = m4.large
+preemptible = true
+scratch = 32000
+</pre>
+
+h3. Slurm dispatcher
+
+The @crunch-dispatch-slurm@ service needs a matching instance type configuration on @/etc/arvados/config.yml@, following the previous example:
+
+<pre>
+Clusters:
+  uuid_prefix:
+    InstanceTypes:
+    - Name: m4.large
+      VCPUs: 2
+      RAM: 7782000000
+      Scratch: 32000000000
+      Price: 0.1
+    - Name: m4.large.spot
+      Preemptible: true
+      VCPUs: 2
+      RAM: 7782000000
+      Scratch: 32000000000
+      Price: 0.1
+</pre>
+
+@InstanceType@ names should match those defined on nodemanager's config file because it's @crunch-dispatch-slurm@'s job to select the instance type and communicate the decision to @nodemanager@ via Slurm.
+
+h3. API Server
+
+Container requests will need the @preemptible@ scheduling parameter included, to make the dispatcher request a spot instance. The API Server configuration file includes an option that when active, will auto assign the @preemptible@ parameter to any new child container request if it doesn't have it already. To activate this feature, the following should be added to the @application.yml@ file:
+
+<pre>
+preemptible_instances: true
+</pre>
+
+With this configuration active, child container requests should include the @preemptible = false@ parameter at creation time to avoid being scheduled for spot instance usage.
+
+h3. AWS Permissions
+
+When requesting spot instances, Amazon's API may return an authorization error depending on how users and permissions are set on the account. If attempting to use this feature with an already working AWS account and getting an error message on nodemanager's log like this one:
+
+<pre>
+BaseHTTPError: AuthFailure.ServiceLinkedRoleCreationNotPermitted: The provided credentials do not have permission to create the service-linked role for EC2 Spot Instances.
+</pre>
+
+...the account needs to have a service linked role created. For this, you can log into your AWS account, go to _IAM Management_ &rarr; _Roles_ and create the @AWSServiceRoleForEC2Spot@ role by clicking on the @Create@ button, selecting @EC2@ service and @EC2 - Spot Instances@ use case.
+
+h3. Cost Tracking
+
+Amazon's Spot instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that nodemanager uses for now, as it doesn't include any pricing data to the spot instance request.
+
+The real price that a spot instance has at any point in time is discovered at the end of each usage hour, depending on instance demand. For this reason, AWS provides a data feed subscription to get hourly logs, as described on "Amazon's User Guide":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html.
