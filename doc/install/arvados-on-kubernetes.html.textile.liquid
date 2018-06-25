@@ -18,11 +18,11 @@ This Helm chart does not retain any state after it is deleted. An Arvados cluste
 h2. Requirements
 
 * Kubernetes 1.10+ cluster with at least 3 nodes, 2 or more cores per node
-* `kubectl` and `helm` installed locally, and able to connect to your Kubernetes cluster
+* @kubectl@ and @helm@ installed locally, and able to connect to your Kubernetes cluster
 
-If that does not describe your environment, please see the "GKE":#GKE or "Minikube":#Minikube sections below to get set up with Kubernetes.
+If you do not have a Kubernetes cluster already set up, you can use "Google Kubernetes Engine":/install/arvados-on-kubernetes-GKE.html for multi-node development and testing, "Minikube":/install/arvados-on-kubernetes-minikube.html for single node development and testing or "another Kubernetes solution":https://kubernetes.io/docs/setup/pick-right-solution/.
 
-h2(#helm). Install helm on the Kubernetes cluster
+h2(#helm). Initialize helm on the Kubernetes cluster
 
 If you already have helm running on the Kubernetes cluster, proceed directly to "Start the Arvados cluster":#Start below.
 
@@ -33,7 +33,7 @@ $ kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-ad
 $ kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 </pre>
 
-Test `helm` by running
+Test @helm@ by running
 
 <pre>
 $ helm ls
@@ -51,8 +51,7 @@ $ cd arvados-kubernetes/charts/arvados
 $ ./cert-gen.sh <IP ADDRESS>
 </pre>
 
-The `values.yaml` file contains a number of variables that can be modified.
-Specifically, you probably want to modify the values for
+The @values.yaml@ file contains a number of variables that can be modified. At a minimum, review and/or modify the values for
 
 <pre>
   adminUserEmail
@@ -78,7 +77,7 @@ After a few minutes, you can access Arvados Workbench at the IP address specifie
 
 * https://&lt;IP ADDRESS&gt;
 
-with the username and password specified in the `values.yaml` file.
+with the username and password specified in the @values.yaml@ file.
 
 Alternatively, use the Arvados cli tools or SDKs:
 
@@ -98,7 +97,7 @@ $ arv user current
 
 h2. Reload
 
-If you make changes to the Helm chart (e.g. to `values.yaml`), you can reload Arvados with
+If you make changes to the Helm chart (e.g. to @values.yaml@), you can reload Arvados with
 
 <pre>
 $ helm upgrade arvados .
@@ -113,79 +112,3 @@ This Helm chart does not retain any state after it is deleted. An Arvados cluste
 <pre>
 $ helm del arvados --purge
 </pre>
-
-h2(#GKE). GKE
-
-h3. Install tooling
-
-Install `gcloud`:
-
-* Follow the instructions at "https://cloud.google.com/sdk/downloads":https://cloud.google.com/sdk/downloads
-
-Install `kubectl`:
-
-<pre>
-$ gcloud components install kubectl
-</pre>
-
-Install `helm`:
-
-* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
-
-h3. Boot the GKE cluster
-
-This can be done via the "cloud console":https://console.cloud.google.com/kubernetes/ or via the command line:
-
-<pre>
-$ gcloud container clusters create <CLUSTERNAME> --zone us-central1-a --machine-type n1-standard-2 --cluster-version 1.10.2-gke.3
-</pre>
-
-It takes a few minutes for the cluster to be initialized.
-
-h3. Reserve a static IP
-
-Reserve a "static IP":https://console.cloud.google.com/networking/addresses in GCE. Make sure the IP is in the same region as your GKE cluster, and is of the "Regional" type.
-
-h3. Connect to the GKE cluster.
-
-Via the web:
-* Click the "Connect" button next to your "GKE cluster"https://console.cloud.google.com/kubernetes/.
-* Execute the "Command-line access" command on your development machine.
-
-Alternatively, use this command:
-
-<pre>
-$ gcloud container clusters get-credentials <CLUSTERNAME> --zone us-central1-a --project <YOUR-PROJECT>
-</pre>
-
-Test the connection:
-
-<pre>
-$ kubectl get nodes
-</pre>
-
-Now proceed to the "Install helm on the Kubernetes cluster":#helm section.
-
-h2(#Minikube). Minikube
-
-h3. Install tooling
-
-Install `kubectl`:
-
-* Follow the instructions at "https://kubernetes.io/docs/tasks/tools/install-kubectl/":https://kubernetes.io/docs/tasks/tools/install-kubectl/
-
-Install `helm`:
-
-* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
-
-h3. Install Minikube
-
-Follow the instructions at "https://kubernetes.io/docs/setup/minikube/":https://kubernetes.io/docs/setup/minikube/
-
-Test the connection:
-
-<pre>
-$ kubectl get nodes
-</pre>
-
-Now proceed to the "Install helm on the Kubernetes cluster":#helm section.
