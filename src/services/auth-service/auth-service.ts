@@ -4,8 +4,6 @@
 
 import { API_HOST, serverApi } from "../../common/api/server-api";
 import { User } from "../../models/user";
-import { Dispatch } from "redux";
-import actions from "../../store/auth/auth-action";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -79,13 +77,16 @@ export default class AuthService {
         window.location.assign(`${API_HOST}/logout?return_to=${currentUrl}`);
     }
 
-    public getUserDetails = () => (dispatch: Dispatch): Promise<void> => {
-        dispatch(actions.USER_DETAILS_REQUEST());
+    public getUserDetails = (): Promise<User> => {
         return serverApi
             .get<UserDetailsResponse>('/users/current')
-            .then(resp => {
-                dispatch(actions.USER_DETAILS_SUCCESS(resp.data));
-            });
+            .then(resp => ({
+                email: resp.data.email,
+                firstName: resp.data.first_name,
+                lastName: resp.data.last_name,
+                uuid: resp.data.uuid,
+                ownerUuid: resp.data.owner_uuid
+            }));
     }
 
     public getRootUuid() {

@@ -4,5 +4,5 @@
 
 import { Resource } from "./resource";
 
-export interface Project extends Resource {
+export interface Collection extends Resource {
 }

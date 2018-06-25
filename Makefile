@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Use bash, and run all lines in each recipe as one shell command
+SHELL := /bin/bash
+.ONESHELL:
+
 APP_NAME?=arvados-workbench2
 
 # GIT_TAG is the last tagged stable release (i.e. 1.2.0)
@@ -34,7 +38,7 @@ DEST_DIR=/var/www/arvados-workbench2/workbench2/
 DEB_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION)_amd64.deb
 
 # redHat package file
-RPM_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION).x86_64.rpm
+RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 
 export WORKSPACE?=$(shell pwd)
 
@@ -94,5 +98,16 @@ $(RPM_FILE): build
 	 --description="$(DESCRIPTION)" \
 	 $(WORKSPACE)/build/=$(DEST_DIR)
 
+copy: $(DEB_FILE) $(RPM_FILE)
+	for target in $(TARGETS); do \
+		if [[ $$target =~ ^centos ]]; then
+			cp -p $(RPM_FILE) packages/$$target ; \
+		else
+			cp -p $(DEB_FILE) packages/$$target ; \
+		fi
+	done
+	rm -f $(RPM_FILE)
+	rm -f $(DEB_FILE)
+
 # use FPM to create DEB and RPM
-packages: $(DEB_FILE) $(RPM_FILE)
+packages: copy

@@ -10,7 +10,7 @@ import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 
 export type ProjectState = Array<TreeItem<Project>>;
 
-function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
+export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
     for (const t of tree) {
         item = t.id === itemId
@@ -21,6 +21,20 @@ function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> 
         }
     }
     return item;
+}
+
+export function getTreePath<T>(tree: Array<TreeItem<T>>, itemId: string): Array<TreeItem<T>> {
+    for(const item of tree){
+        if(item.id === itemId){
+            return [item];
+        } else {
+            const branch = getTreePath(item.items || [], itemId);
+            if(branch.length > 0){
+                return [item, ...branch];
+            }
+        }
+    }
+    return [];
 }
 
 function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {

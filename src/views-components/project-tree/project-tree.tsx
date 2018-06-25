@@ -9,13 +9,13 @@ import ListItemText from "@material-ui/core/ListItemText/ListItemText";
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import Typography from '@material-ui/core/Typography';
 
-import Tree, { TreeItem, TreeItemStatus } from '../tree/tree';
+import Tree, { TreeItem, TreeItemStatus } from '../../components/tree/tree';
 import { Project } from '../../models/project';
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
     toggleOpen: (id: string, status: TreeItemStatus) => void;
-    toggleActive: (id: string) => void;
+    toggleActive: (id: string, status: TreeItemStatus) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {

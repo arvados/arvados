@@ -30,7 +30,7 @@ interface TreeProps<T> {
     items?: Array<TreeItem<T>>;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     toggleItemOpen: (id: string, status: TreeItemStatus) => void;
-    toggleItemActive: (id: string) => void;
+    toggleItemActive: (id: string, status: TreeItemStatus) => void;
     level?: number;
 }
 
@@ -50,7 +50,7 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         return <List component="div" className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) =>
                 <div key={`item/${level}/${idx}`}>
-                    <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }} onClick={() => toggleItemActive(it.id)}>
+                    <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }} onClick={() => toggleItemActive(it.id, it.status)}>
                         {it.status === TreeItemStatus.Pending ? <CircularProgress size={10} className={loader} /> : null}
                         {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open, it.id)}
                         {render(it, level)}

@@ -11,7 +11,7 @@ import { Collapse } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import ProjectTree from './project-tree';
-import { TreeItem } from '../tree/tree';
+import { TreeItem } from '../../components/tree/tree';
 import { Project } from '../../models/project';
 Enzyme.configure({ adapter: new Adapter() });
 
@@ -26,13 +26,14 @@ describe("ProjectTree component", () => {
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
                 href: "href",
+                kind: 'example'
             },
             id: "3",
             open: true,
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
+        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(1);
     });
@@ -47,6 +48,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
+                    kind: 'example'
                 },
                 id: "3",
                 open: false,
@@ -61,6 +63,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
+                    kind: 'example'
                 },
                 id: "3",
                 open: false,
@@ -68,7 +71,7 @@ describe("ProjectTree component", () => {
                 status: 1
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleProjectTreeItem={() => { }} />);
+        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(2);
     });
@@ -83,6 +86,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
+                    kind: 'example'
                 },
                 id: "3",
                 open: true,
@@ -97,6 +101,7 @@ describe("ProjectTree component", () => {
                             uuid: "uuid",
                             ownerUuid: "ownerUuid",
                             href: "href",
+                            kind: 'example'
                         },
                         id: "3",
                         open: true,
@@ -106,7 +111,7 @@ describe("ProjectTree component", () => {
                 ]
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleProjectTreeItem={() => { }} />);
+        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()}/>);
 
         expect(wrapper.find(Collapse)).toHaveLength(1);
     });
@@ -120,13 +125,14 @@ describe("ProjectTree component", () => {
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
                 href: "href",
+                kind: 'example'
             },
             id: "3",
             open: false,
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleProjectTreeItem={() => { }} />);
+        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(CircularProgress)).toHaveLength(1);
     });

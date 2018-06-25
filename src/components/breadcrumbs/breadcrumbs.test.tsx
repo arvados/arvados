@@ -22,29 +22,29 @@ describe("<Breadcrumbs />", () => {
 
     it("renders one item", () => {
         const items = [
-            {label: 'breadcrumb 1'}
+            { label: 'breadcrumb 1' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick}  />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
         expect(breadcrumbs.find(Button)).toHaveLength(1);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(0);
     });
-    
+
     it("renders multiple items", () => {
         const items = [
-            {label: 'breadcrumb 1'},
-            {label: 'breadcrumb 2'}
+            { label: 'breadcrumb 1' },
+            { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick}  />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
         expect(breadcrumbs.find(Button)).toHaveLength(2);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(1);
     });
-    
+
     it("calls onClick with clicked item", () => {
         const items = [
-            {label: 'breadcrumb 1'},
-            {label: 'breadcrumb 2'}
+            { label: 'breadcrumb 1' },
+            { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick}  />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
         breadcrumbs.find(Button).at(1).simulate('click');
         expect(onClick).toBeCalledWith(items[1]);
     });

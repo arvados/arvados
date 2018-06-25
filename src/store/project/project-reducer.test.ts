@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import projectsReducer from "./project-reducer";
+import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
+import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 
 describe('project-reducer', () => {
     it('should add new project to the list', () => {
@@ -14,7 +15,8 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
@@ -29,7 +31,8 @@ describe('project-reducer', () => {
             createdAt: '2018-01-01',
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
-            uuid: 'test123'
+            uuid: 'test123',
+            kind: ""
         };
 
         const projects = [project, project];
@@ -62,6 +65,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: true,
@@ -78,6 +82,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: true,
@@ -100,6 +105,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: true,
@@ -116,6 +122,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: true,
@@ -139,6 +146,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: true,
@@ -156,6 +164,7 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
+                    kind: 'example'
                 },
                 id: "1",
                 open: false,
@@ -168,4 +177,54 @@ describe('project-reducer', () => {
         const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState[0].id));
         expect(state).toEqual(project);
     });
+});
+
+describe("findTreeBranch", () => {
+
+    const createTreeItem = (id: string, items?: Array<TreeItem<string>>): TreeItem<string> => ({
+        id,
+        items,
+        active: false,
+        data: "",
+        open: false,
+        status: TreeItemStatus.Initial
+    });
+
+    it("should return an array that matches path to the given item", () => {
+        const tree: Array<TreeItem<string>> = [
+            createTreeItem("1", [
+                createTreeItem("1.1", [
+                    createTreeItem("1.1.1"),
+                    createTreeItem("1.1.2")
+                ])
+            ]),
+            createTreeItem("2", [
+                createTreeItem("2.1", [
+                    createTreeItem("2.1.1"),
+                    createTreeItem("2.1.2")
+                ])
+            ])
+        ];
+        const branch = getTreePath(tree, "2.1.1");
+        expect(branch.map(item => item.id)).toEqual(["2", "2.1", "2.1.1"]);
+    });
+
+    it("should return empty array if item is not found", () => {
+        const tree: Array<TreeItem<string>> = [
+            createTreeItem("1", [
+                createTreeItem("1.1", [
+                    createTreeItem("1.1.1"),
+                    createTreeItem("1.1.2")
+                ])
+            ]),
+            createTreeItem("2", [
+                createTreeItem("2.1", [
+                    createTreeItem("2.1.1"),
+                    createTreeItem("2.1.2")
+                ])
+            ])
+        ];
+        expect(getTreePath(tree, "3")).toHaveLength(0);
+    });
+
 });

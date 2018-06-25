@@ -6,26 +6,27 @@ import * as React from 'react';
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-
-import ProjectList from "../../components/project-list/project-list";
 import { Route, Switch } from "react-router";
 import authActions from "../../store/auth/auth-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
-import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../components/main-app-bar/main-app-bar';
+import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
-import projectActions from "../../store/project/project-action";
-import sidePanelActions from '../../store/side-panel/side-panel-action';
-import ProjectTree from '../../components/project-tree/project-tree';
+import projectActions, { getProjectList } from "../../store/project/project-action";
+import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
+import { getTreePath } from '../../store/project/project-reducer';
+import ProjectPanel from '../project-panel/project-panel';
+import sidePanelActions from '../../store/side-panel/side-panel-action';
 import { projectService } from '../../services/services';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 
 const drawerWidth = 240;
+const appBarHeight = 102;
 
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'toolbar';
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -49,12 +50,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         display: 'flex',
         flexDirection: 'column',
     },
-    content: {
-        flexGrow: 1,
+    contentWrapper: {
         backgroundColor: theme.palette.background.default,
-        padding: theme.spacing.unit * 3,
-        height: '100%',
+        display: "flex",
+        flexGrow: 1,
         minWidth: 0,
+        paddingTop: appBarHeight
+    },
+    content: {
+        padding: theme.spacing.unit * 3,
+        overflowY: "auto",
+        flexGrow: 1
     },
     toolbar: theme.mixins.toolbar
 });
@@ -71,7 +77,8 @@ interface WorkbenchActionProps {
 type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
-    path: string;
+    itemId: string;
+    status: TreeItemStatus;
 }
 
 interface NavMenuItem extends MainAppBarMenuItem {
@@ -93,15 +100,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
         anchorEl: null,
         searchText: "",
-        breadcrumbs: [
-            {
-                label: "Projects",
-                path: "/projects"
-            }, {
-                label: "Project 1",
-                path: "/projects/project-1"
-            }
-        ],
+        breadcrumbs: [],
         menuItems: {
             accountMenu: [
                 {
@@ -130,7 +129,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
 
     mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: (breadcrumb: NavBreadcrumb) => this.props.dispatch(push(breadcrumb.path)),
+        onBreadcrumbClick: ({ itemId, status }: NavBreadcrumb) => {
+            this.toggleProjectTreeItemOpen(itemId, status);
+        },
         onSearch: searchText => {
             this.setState({ searchText });
             this.props.dispatch(push(`/search?q=${searchText}`));
@@ -140,19 +141,32 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     toggleProjectTreeItemOpen = (itemId: string, status: TreeItemStatus) => {
         if (status === TreeItemStatus.Loaded) {
+            this.openProjectItem(itemId);
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
             this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
         } else {
-            this.props.dispatch<any>(projectService.getProjectList(itemId)).then(() => {
-                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
-                this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
-            });
+            this.props.dispatch<any>(getProjectList(itemId))
+                .then(() => {
+                    this.openProjectItem(itemId);
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+                });
         }
     }
 
-    toggleProjectTreeItemActive = (itemId: string) => {
-        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
-        this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+    toggleProjectTreeItemActive = (itemId: string, status: TreeItemStatus) => {
+        if (status === TreeItemStatus.Loaded) {
+            this.openProjectItem(itemId);
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+            this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+        } else {
+            this.props.dispatch<any>(getProjectList(itemId))
+                .then(() => {
+                    this.openProjectItem(itemId);
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+                    this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+                });
+        }
     }
 
     toggleSidePanelOpen = (itemId: string) => {
@@ -162,6 +176,19 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     toggleSidePanelActive = (itemId: string) => {
         this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
         this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+    }
+
+    openProjectItem = (itemId: string) => {
+        const branch = getTreePath(this.props.projects, itemId);
+        this.setState({
+            breadcrumbs: branch.map(item => ({
+                label: item.data.name,
+                itemId: item.data.uuid,
+                status: item.status
+            }))
+        });
+        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+        this.props.dispatch(push(`/project/${itemId}`));
     }
 
     render() {
@@ -184,21 +211,22 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             paper: classes.drawerPaper,
                         }}>
                         <div className={classes.toolbar} />
-                            <SidePanel
-                                toggleOpen={this.toggleSidePanelOpen}
-                                toggleActive={this.toggleSidePanelActive}
-                                sidePanelItems={sidePanelItems}>
-                                <ProjectTree
-                                    projects={projects}
-                                    toggleOpen={this.toggleProjectTreeItemOpen}
-                                    toggleActive={this.toggleProjectTreeItemActive} />
-                            </SidePanel>
+                        <SidePanel
+                            toggleOpen={this.toggleSidePanelOpen}
+                            toggleActive={this.toggleSidePanelActive}
+                            sidePanelItems={sidePanelItems}>
+                            <ProjectTree
+                                projects={projects}
+                                toggleOpen={this.toggleProjectTreeItemOpen}
+                                toggleActive={this.toggleProjectTreeItemActive} />
+                        </SidePanel>
                     </Drawer>}
-                <main className={classes.content}>
-                    <div className={classes.toolbar} />
-                    <Switch>
-                        <Route path="/project/:name" component={ProjectList} />
-                    </Switch>
+                <main className={classes.contentWrapper}>
+                    <div className={classes.content}>
+                        <Switch>
+                            <Route path="/project/:name" component={ProjectPanel} />
+                        </Switch>
+                    </div>
                 </main>
             </div>
         );
