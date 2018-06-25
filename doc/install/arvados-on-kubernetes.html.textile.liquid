@@ -9,11 +9,23 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados on Kubernetes is implemented as a Helm chart.
+Arvados on Kubernetes is implemented as a Helm Chart.
 
 {% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster spun up with this Helm Chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
+This Helm Chart does not retain any state after it is deleted. An Arvados cluster created with this Helm Chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
 {% include 'notebox_end' %}
+
+h2(#overview). Overview
+
+This Helm Chart provides a basic, small Arvados cluster.
+
+Current limitations, to be addressed in the future:
+
+* An Arvados cluster created with this Helm Chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down.
+* No dynamic scaling of compute nodes (but you can adjust @values.yaml@ and "reload the Helm Chart":#reload
+* All compute nodes are the same size
+* Compute nodes have no cpu/memory/disk constraints yet
+* No git server
 
 h2. Requirements
 
@@ -41,13 +53,20 @@ $ helm ls
 
 There should be no errors. The command will return nothing.
 
-h2(#Start). Start the Arvados cluster
+h2(#git). Clone the repository
 
-First, determine the IP address that the Arvados cluster will use to expose its API, Workbench, etc. If you want this Arvados cluster to be reachable from places other than the local machine, the IP address will need to be routable as appropriate.
+Clone the repository and nagivate to the @arvados-kubernetes/charts/arvados@ directory:
 
 <pre>
 $ git clone https://github.com/curoverse/arvados-kubernetes.git
 $ cd arvados-kubernetes/charts/arvados
+</pre>
+
+h2(#Start). Start the Arvados cluster
+
+Next, determine the IP address that the Arvados cluster will use to expose its API, Workbench, etc. If you want this Arvados cluster to be reachable from places other than the local machine, the IP address will need to be routable as appropriate.
+
+<pre>
 $ ./cert-gen.sh <IP ADDRESS>
 </pre>
 
@@ -95,9 +114,9 @@ Test access with:
 $ arv user current
 </pre>
 
-h2. Reload
+h2(#reload). Reload
 
-If you make changes to the Helm chart (e.g. to @values.yaml@), you can reload Arvados with
+If you make changes to the Helm Chart (e.g. to @values.yaml@), you can reload Arvados with
 
 <pre>
 $ helm upgrade arvados .
@@ -106,7 +125,7 @@ $ helm upgrade arvados .
 h2. Shut down
 
 {% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster spun up with this Helm Chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
+This Helm Chart does not retain any state after it is deleted. An Arvados cluster created with this Helm Chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
 {% include 'notebox_end' %}
 
 <pre>
