@@ -42,6 +42,8 @@ export const sidePanelData = [
         icon: "fas fa-th fa-fw",
         open: false,
         active: false,
+        margin: true,
+        openAble: true
     },
     {
         id: "2",

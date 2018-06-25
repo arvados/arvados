@@ -19,6 +19,8 @@ export interface SidePanelItem {
     icon: string;
     active?: boolean;
     open?: boolean;
+    margin?: boolean;
+    openAble?: boolean;
 }
 
 interface SidePanelProps {
@@ -29,8 +31,8 @@ interface SidePanelProps {
 
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
-        const { classes, toggleOpen, toggleActive, sidePanelItems } = this.props;
-        const { listItemText, leftSidePanelContainer, row, list, icon, projectIcon, active, activeArrow, inactiveArrow, arrowTransition, arrowRotate } = classes;
+        const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
+        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, activeArrow, inactiveArrow, arrowTransition, arrowRotate } = classes;
         return (
             <div className={leftSidePanelContainer}>
                 <List>
@@ -38,17 +40,17 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                         <span key={it.name}>
                             <ListItem button className={list} onClick={() => toggleActive(it.id)}>
                                 <span className={row}>
-                                    {it.name === "Projects" ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
+                                    {it.openAble ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
                                         ${it.open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} /> : null}
                                     <ListItemIcon className={it.active ? active : ''}>
-                                        <i className={`${it.icon} ${icon} ${it.name === "Projects" ? projectIcon : ''}`} />
+                                        <i className={`${it.icon} ${icon} ${it.margin ? projectIconMargin : ''}`} />
                                     </ListItemIcon>
                                     <ListItemText className={listItemText} primary={<Typography className={it.active ? active : ''}>{it.name}</Typography>} />
                                 </span>
                             </ListItem>
-                            {it.name === "Projects" ? (
+                            {it.openAble ? (
                                 <Collapse in={it.open} timeout="auto" unmountOnExit>
-                                    {this.props.children}
+                                    {children}
                                 </Collapse>) : null}
                         </span>
                     ))}
@@ -58,7 +60,7 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     }
 }
 
-type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 'projectIcon' |
+type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 'projectIconMargin' |
     'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
@@ -103,7 +105,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     icon: {
         minWidth: '20px',
     },
-    projectIcon: {
+    projectIconMargin: {
         marginLeft: '17px',
     }
 });
