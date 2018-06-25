@@ -5,6 +5,8 @@
 import { connect } from "react-redux";
 import { RootState } from "../../store/store";
 import DataExplorer from "../../components/data-explorer/data-explorer";
-import { get } from "../../store/data-explorer/data-explorer-reducer";
+import { getDataExplorer } from "../../store/data-explorer/data-explorer-reducer";
 
-export default connect((state: RootState, props: { id: string }) => get(state.dataExplorer, props.id))(DataExplorer);
+export default connect((state: RootState, props: { id: string }) =>
+    getDataExplorer(state.dataExplorer, props.id)
+)(DataExplorer);

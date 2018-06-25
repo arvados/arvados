@@ -26,22 +26,37 @@ export type DataExplorerState = Record<string, DataExplorer | undefined>;
 
 const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
     actions.match(action, {
-        SET_COLUMNS: ({ id, columns }) => update(state, id, setColumns(columns)),
-        SET_FILTERS: ({ id, columnName, filters }) => update(state, id, mapColumns(setFilters(columnName, filters))),
-        SET_ITEMS: ({ id, items }) => update(state, id, explorer => ({ ...explorer, items })),
-        SET_PAGE: ({ id, page }) => update(state, id, explorer => ({ ...explorer, page })),
-        SET_ROWS_PER_PAGE: ({ id, rowsPerPage }) => update(state, id, explorer => ({ ...explorer, rowsPerPage })),
-        TOGGLE_SORT: ({ id, columnName }) => update(state, id, mapColumns(toggleSort(columnName))),
-        TOGGLE_COLUMN: ({ id, columnName }) => update(state, id, mapColumns(toggleColumn(columnName))),
+        SET_COLUMNS: ({ id, columns }) =>
+            update(state, id, setColumns(columns)),
+
+        SET_FILTERS: ({ id, columnName, filters }) =>
+            update(state, id, mapColumns(setFilters(columnName, filters))),
+
+        SET_ITEMS: ({ id, items }) =>
+            update(state, id, explorer => ({ ...explorer, items })),
+
+        SET_PAGE: ({ id, page }) =>
+            update(state, id, explorer => ({ ...explorer, page })),
+
+        SET_ROWS_PER_PAGE: ({ id, rowsPerPage }) =>
+            update(state, id, explorer => ({ ...explorer, rowsPerPage })),
+
+        TOGGLE_SORT: ({ id, columnName }) =>
+            update(state, id, mapColumns(toggleSort(columnName))),
+
+        TOGGLE_COLUMN: ({ id, columnName }) =>
+            update(state, id, mapColumns(toggleColumn(columnName))),
+
         default: () => state
     });
 
 export default dataExplorerReducer;
 
-export const get = (state: DataExplorerState, id: string) => state[id] || initialDataExplorer;
+export const getDataExplorer = (state: DataExplorerState, id: string) =>
+    state[id] || initialDataExplorer;
 
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
-    ({ ...state, [id]: updateFn(get(state, id)) });
+    ({ ...state, [id]: updateFn(getDataExplorer(state, id)) });
 
 const setColumns = (columns: Array<DataColumn<any>>) =>
     (dataExplorer: DataExplorer) =>
