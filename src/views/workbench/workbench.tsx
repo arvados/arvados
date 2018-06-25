@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
@@ -20,6 +19,9 @@ import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { getTreePath } from '../../store/project/project-reducer';
 import ProjectPanel from '../project-panel/project-panel';
+import sidePanelActions from '../../store/side-panel/side-panel-action';
+import { projectService } from '../../services/services';
+import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -45,6 +47,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     drawerPaper: {
         position: 'relative',
         width: drawerWidth,
+        display: 'flex',
+        flexDirection: 'column',
     },
     contentWrapper: {
         backgroundColor: theme.palette.background.default,
@@ -64,6 +68,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 interface WorkbenchDataProps {
     projects: Array<TreeItem<Project>>;
     user?: User;
+    sidePanelItems: SidePanelItem[];
 }
 
 interface WorkbenchActionProps {
@@ -125,7 +130,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId, status }: NavBreadcrumb) => {
-            this.toggleProjectTreeItem(itemId, status);
+            this.toggleProjectTreeItemOpen(itemId, status);
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -134,13 +139,43 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
     };
 
-    toggleProjectTreeItem = (itemId: string, status: TreeItemStatus) => {
+    toggleProjectTreeItemOpen = (itemId: string, status: TreeItemStatus) => {
         if (status === TreeItemStatus.Loaded) {
             this.openProjectItem(itemId);
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
         } else {
             this.props.dispatch<any>(getProjectList(itemId))
-                .then(() => this.openProjectItem(itemId));
+                .then(() => {
+                    this.openProjectItem(itemId);
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(itemId));
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+                });
         }
+    }
+
+    toggleProjectTreeItemActive = (itemId: string, status: TreeItemStatus) => {
+        if (status === TreeItemStatus.Loaded) {
+            this.openProjectItem(itemId);
+            this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+            this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+        } else {
+            this.props.dispatch<any>(getProjectList(itemId))
+                .then(() => {
+                    this.openProjectItem(itemId);
+                    this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+                    this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+                });
+        }
+    }
+
+    toggleSidePanelOpen = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+    }
+
+    toggleSidePanelActive = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
     }
 
     openProjectItem = (itemId: string) => {
@@ -152,12 +187,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 status: item.status
             }))
         });
-        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
+        this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
         this.props.dispatch(push(`/project/${itemId}`));
     }
 
     render() {
-        const { classes, user } = this.props;
+        const { classes, user, projects, sidePanelItems } = this.props;
         return (
             <div className={classes.root}>
                 <div className={classes.appBar}>
@@ -176,9 +211,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             paper: classes.drawerPaper,
                         }}>
                         <div className={classes.toolbar} />
-                        <ProjectTree
-                            projects={this.props.projects}
-                            toggleProjectTreeItem={this.toggleProjectTreeItem} />
+                        <SidePanel
+                            toggleOpen={this.toggleSidePanelOpen}
+                            toggleActive={this.toggleSidePanelActive}
+                            sidePanelItems={sidePanelItems}>
+                            <ProjectTree
+                                projects={projects}
+                                toggleOpen={this.toggleProjectTreeItemOpen}
+                                toggleActive={this.toggleProjectTreeItemActive} />
+                        </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
@@ -195,7 +236,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
         projects: state.projects,
-        user: state.auth.user
+        user: state.auth.user,
+        sidePanelItems: state.sidePanel,
     })
 )(
     withStyles(styles)(Workbench)
