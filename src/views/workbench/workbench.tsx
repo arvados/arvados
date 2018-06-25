@@ -9,6 +9,7 @@ import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
 import { Route, Switch } from "react-router";
 import authActions from "../../store/auth/auth-action";
+import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import MainAppBar, { MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
@@ -18,8 +19,10 @@ import projectActions, { getProjectList } from "../../store/project/project-acti
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { getTreePath } from '../../store/project/project-reducer';
+import { getTreePath, findTreeItem } from '../../store/project/project-reducer';
 import ProjectPanel from '../project-panel/project-panel';
+import { PROJECT_EXPLORER_ID } from '../../views-components/project-explorer/project-explorer';
+import { ProjectExplorerItem } from '../../views-components/project-explorer/project-explorer-item';
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -154,6 +157,18 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         });
         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(itemId));
         this.props.dispatch(push(`/project/${itemId}`));
+
+        const project = findTreeItem(this.props.projects, itemId);
+        const items: ProjectExplorerItem[] = project && project.items
+            ? project.items.map(({ data }) => ({
+                uuid: data.uuid,
+                name: data.name,
+                type: data.kind,
+                owner: data.ownerUuid,
+                lastModified: data.modifiedAt
+            }))
+            : [];
+        this.props.dispatch(dataExplorerActions.SET_ITEMS({ id: PROJECT_EXPLORER_ID, items }));
     }
 
     render() {

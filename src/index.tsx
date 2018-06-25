@@ -18,16 +18,7 @@ import { getProjectList } from "./store/project/project-action";
 
 const history = createBrowserHistory();
 
-const store = configureStore({
-    projects: [
-    ],
-    router: {
-        location: null
-    },
-    auth: {
-        user: undefined
-    }
-}, history);
+const store = configureStore(history);
 
 store.dispatch(authActions.INIT());
 const rootUuid = authService.getRootUuid();

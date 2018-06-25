@@ -11,13 +11,15 @@ interface DataExplorer {
     items: any[];
     page: number;
     rowsPerPage: number;
+    searchValue: string;
 }
 
 export const initialDataExplorer: DataExplorer = {
     columns: [],
     items: [],
     page: 0,
-    rowsPerPage: 0
+    rowsPerPage: 0,
+    searchValue: ""
 };
 
 export type DataExplorerState = Record<string, DataExplorer | undefined>;
@@ -36,7 +38,7 @@ const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorer
 
 export default dataExplorerReducer;
 
-const get = (state: DataExplorerState, id: string) => state[id] || initialDataExplorer;
+export const get = (state: DataExplorerState, id: string) => state[id] || initialDataExplorer;
 
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
     ({ ...state, [id]: updateFn(get(state, id)) });

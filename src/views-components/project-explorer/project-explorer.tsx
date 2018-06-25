@@ -6,79 +6,15 @@ import * as React from 'react';
 import { ProjectExplorerItem } from './project-explorer-item';
 import { Grid, Typography } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
-import DataExplorer from '../../components/data-explorer/data-explorer';
+import DataExplorer from '../data-explorer/data-explorer';
 import { DataColumn, toggleSortDirection, resetSortDirection } from '../../components/data-table/data-column';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
+import { DispatchProp, connect } from 'react-redux';
+import actions from "../../store/data-explorer/data-explorer-action";
 
-export interface ProjectExplorerContextActions {
-    onAddToFavourite: (item: ProjectExplorerItem) => void;
-    onCopy: (item: ProjectExplorerItem) => void;
-    onDownload: (item: ProjectExplorerItem) => void;
-    onMoveTo: (item: ProjectExplorerItem) => void;
-    onRemove: (item: ProjectExplorerItem) => void;
-    onRename: (item: ProjectExplorerItem) => void;
-    onShare: (item: ProjectExplorerItem) => void;
-}
-
-interface ProjectExplorerProps {
-    items: ProjectExplorerItem[];
-}
-
-interface ProjectExplorerState {
-    columns: Array<DataColumn<ProjectExplorerItem>>;
-    searchValue: string;
-    page: number;
-    rowsPerPage: number;
-}
-
-class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplorerState> {
-    state: ProjectExplorerState = {
-        searchValue: "",
-        page: 0,
-        rowsPerPage: 10,
-        columns: [{
-            name: "Name",
-            selected: true,
-            sortDirection: "asc",
-            render: renderName
-        }, {
-            name: "Status",
-            selected: true,
-            filters: [{
-                name: "In progress",
-                selected: true
-            }, {
-                name: "Complete",
-                selected: true
-            }],
-            render: renderStatus
-        }, {
-            name: "Type",
-            selected: true,
-            filters: [{
-                name: "Collection",
-                selected: true
-            }, {
-                name: "Group",
-                selected: true
-            }],
-            render: item => renderType(item.type)
-        }, {
-            name: "Owner",
-            selected: true,
-            render: item => renderOwner(item.owner)
-        }, {
-            name: "File size",
-            selected: true,
-            sortDirection: "none",
-            render: item => renderFileSize(item.fileSize)
-        }, {
-            name: "Last modified",
-            selected: true,
-            render: item => renderDate(item.lastModified)
-        }]
-    };
+export const PROJECT_EXPLORER_ID = "projectExplorer";
+class ProjectExplorer extends React.Component<DispatchProp> {
 
     contextMenuActions = [[{
         icon: "fas fa-users fa-fw",
@@ -106,12 +42,8 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
 
     render() {
         return <DataExplorer
-            items={this.props.items}
-            columns={this.state.columns}
+            id={PROJECT_EXPLORER_ID}
             contextActions={this.contextMenuActions}
-            searchValue={this.state.searchValue}
-            page={this.state.page}
-            rowsPerPage={this.state.rowsPerPage}
             onColumnToggle={this.toggleColumn}
             onFiltersChange={this.changeFilters}
             onRowClick={console.log}
@@ -122,34 +54,20 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             onChangeRowsPerPage={this.changeRowsPerPage} />;
     }
 
+    componentDidMount() {
+        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_EXPLORER_ID, columns }));
+    }
+
     toggleColumn = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
-        this.setState({
-            columns: this.state.columns.map(column =>
-                column.name === toggledColumn.name
-                    ? { ...column, selected: !column.selected }
-                    : column
-            )
-        });
+        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_EXPLORER_ID, columnName: toggledColumn.name }));
     }
 
     toggleSort = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
-        this.setState({
-            columns: this.state.columns.map(column =>
-                column.name === toggledColumn.name
-                    ? toggleSortDirection(column)
-                    : resetSortDirection(column)
-            )
-        });
+        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_EXPLORER_ID, columnName: toggledColumn.name }));
     }
 
     changeFilters = (filters: DataTableFilterItem[], updatedColumn: DataColumn<ProjectExplorerItem>) => {
-        this.setState({
-            columns: this.state.columns.map(column =>
-                column.name === updatedColumn.name
-                    ? { ...column, filters }
-                    : column
-            )
-        });
+        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_EXPLORER_ID, columnName: updatedColumn.name, filters }));
     }
 
     executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
@@ -157,15 +75,15 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
     }
 
     search = (searchValue: string) => {
-        this.setState({ searchValue });
+        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_EXPLORER_ID, searchValue }));
     }
 
     changePage = (page: number) => {
-        this.setState({ page });
+        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_EXPLORER_ID, page }));
     }
 
     changeRowsPerPage = (rowsPerPage: number) => {
-        this.setState({ rowsPerPage });
+        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_EXPLORER_ID, rowsPerPage }));
     }
 }
 
@@ -221,4 +139,46 @@ const renderStatus = (item: ProjectExplorerItem) =>
         {item.status || "-"}
     </Typography>;
 
-export default ProjectExplorer;
+const columns: Array<DataColumn<ProjectExplorerItem>> = [{
+    name: "Name",
+    selected: true,
+    sortDirection: "asc",
+    render: renderName
+}, {
+    name: "Status",
+    selected: true,
+    filters: [{
+        name: "In progress",
+        selected: true
+    }, {
+        name: "Complete",
+        selected: true
+    }],
+    render: renderStatus
+}, {
+    name: "Type",
+    selected: true,
+    filters: [{
+        name: "Collection",
+        selected: true
+    }, {
+        name: "Group",
+        selected: true
+    }],
+    render: item => renderType(item.type)
+}, {
+    name: "Owner",
+    selected: true,
+    render: item => renderOwner(item.owner)
+}, {
+    name: "File size",
+    selected: true,
+    sortDirection: "none",
+    render: item => renderFileSize(item.fileSize)
+}, {
+    name: "Last modified",
+    selected: true,
+    render: item => renderDate(item.lastModified)
+}];
+
+export default connect()(ProjectExplorer);
