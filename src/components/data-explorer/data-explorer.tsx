@@ -120,10 +120,20 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
     renderContextMenuTrigger = (item: T) =>
         <Grid container justify="flex-end">
-            <IconButton onClick={event => this.openContextMenu(event, item)}>
+            <IconButton onClick={event => this.openContextMenuWithTrigger(event, item)}>
                 <MoreVertIcon />
             </IconButton>
         </Grid>
+
+    openContextMenuWithTrigger = (event: React.MouseEvent<HTMLElement>, item: T) => {
+        event.preventDefault();
+        this.setState({
+            contextMenu: {
+                anchorEl: event.currentTarget,
+                item
+            }
+        });
+    }
 
     contextMenuColumn = {
         name: "Actions",
