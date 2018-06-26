@@ -13,6 +13,7 @@ export interface DataColumn<T> {
     filters?: DataTableFilterItem[];
     render: (item: T) => React.ReactElement<void>;
     renderHeader?: () => React.ReactElement<void> | null;
+    width?: string;
 }
 
 export type SortDirection = "asc" | "desc" | "none";

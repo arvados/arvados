@@ -97,24 +97,6 @@ describe("<DataTable />", () => {
         expect(dataTable.find(TableBody).find(TableCell).key()).toBe("column-1-key");
     });
 
-    it("shows information that items array is empty", () => {
-        const columns: DataColumns<string> = [
-            {
-                name: "Column 1",
-                render: () => <span />,
-                selected: true
-            }
-        ];
-        const dataTable = mount(<DataTable
-            columns={columns}
-            items={[]}
-            onFiltersChange={jest.fn()}
-            onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
-            onSortToggle={jest.fn()} />);
-        expect(dataTable.find(Typography).text()).toBe("No items");
-    });
-
     it("renders items", () => {
         const columns: DataColumns<string> = [
             {

@@ -5,6 +5,7 @@
 import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { ResourceKind } from "../../models/resource";
 
 describe('project-reducer', () => {
     it('should add new project to the list', () => {
@@ -16,11 +17,11 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
-        expect(state).toEqual([project]);
+        expect(state.items[0].data).toEqual(project);
     });
 
     it('should load projects', () => {
@@ -32,32 +33,35 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const projects = [project, project];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
-        expect(state).toEqual([{
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project,
-            status: 0
-        }, {
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project,
-            status: 0
-        }
-        ]);
+        expect(state).toEqual({
+            items: [{
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }, {
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }
+            ],
+            currentItemId: ""
+        });
     });
 
     it('should remove activity on projects list', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -65,16 +69,17 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: true,
                 status: 1
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -82,22 +87,23 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1
-            }
-        ];
+            }],
+            currentItemId: ""
+        };
 
-        const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState[0].id));
+        const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
     it('should toggle project tree item activity', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -105,16 +111,17 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -122,23 +129,24 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: true,
                 status: 1
-            }
-        ];
+            }],
+            currentItemId: "1"
+        };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState[0].id));
+        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
 
     it('should close project tree item ', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -146,17 +154,18 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1,
                 toggled: false,
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -164,23 +173,23 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: false,
                 active: false,
                 status: 1,
                 toggled: true
-            }
-        ];
+            }],
+            currentItemId: "1"
+        };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState[0].id));
+        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 });
 
 describe("findTreeBranch", () => {
-
     const createTreeItem = (id: string, items?: Array<TreeItem<string>>): TreeItem<string> => ({
         id,
         items,

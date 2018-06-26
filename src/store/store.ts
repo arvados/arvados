@@ -10,8 +10,8 @@ import { History } from "history";
 import projectsReducer, { ProjectState } from "./project/project-reducer";
 import sidePanelReducer, { SidePanelState } from './side-panel/side-panel-reducer';
 import authReducer, { AuthState } from "./auth/auth-reducer";
-import collectionsReducer from "./collection/collection-reducer";
 import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
+import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -21,6 +21,7 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
+    collections: CollectionState;
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;

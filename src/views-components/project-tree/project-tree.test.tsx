@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { mount } from 'enzyme';
 import * as Enzyme from 'enzyme';
+import { mount } from 'enzyme';
 import * as Adapter from 'enzyme-adapter-react-16';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import { Collapse } from '@material-ui/core';
@@ -13,6 +13,8 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import ProjectTree from './project-tree';
 import { TreeItem } from '../../components/tree/tree';
 import { Project } from '../../models/project';
+import { ResourceKind } from "../../models/resource";
+
 Enzyme.configure({ adapter: new Adapter() });
 
 describe("ProjectTree component", () => {
@@ -26,7 +28,7 @@ describe("ProjectTree component", () => {
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
                 href: "href",
-                kind: 'example'
+                kind: ResourceKind.PROJECT
             },
             id: "3",
             open: true,
@@ -48,7 +50,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "3",
                 open: false,
@@ -63,7 +65,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "3",
                 open: false,
@@ -86,7 +88,7 @@ describe("ProjectTree component", () => {
                     uuid: "uuid",
                     ownerUuid: "ownerUuid",
                     href: "href",
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "3",
                 open: true,
@@ -101,7 +103,7 @@ describe("ProjectTree component", () => {
                             uuid: "uuid",
                             ownerUuid: "ownerUuid",
                             href: "href",
-                            kind: 'example'
+                            kind: ResourceKind.PROJECT
                         },
                         id: "3",
                         open: true,
@@ -125,7 +127,7 @@ describe("ProjectTree component", () => {
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
                 href: "href",
-                kind: 'example'
+                kind: ResourceKind.PROJECT
             },
             id: "3",
             open: false,

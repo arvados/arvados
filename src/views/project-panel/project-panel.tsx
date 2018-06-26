@@ -3,19 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ProjectExplorerItem } from './project-explorer-item';
+import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
-import DataExplorer from '../data-explorer/data-explorer';
-import { DataColumn } from '../../components/data-table/data-column';
+import DataExplorer from "../../views-components/data-explorer/data-explorer";
+import { DataColumn, toggleSortDirection } from '../../components/data-table/data-column';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import actions from "../../store/data-explorer/data-explorer-action";
+import { setProjectItem } from "../../store/navigation/navigation-action";
 import { DataColumns } from '../../components/data-table/data-table';
+import { ResourceKind } from "../../models/resource";
 
-export const PROJECT_EXPLORER_ID = "projectExplorer";
-class ProjectExplorer extends React.Component<DispatchProp & WithStyles<CssRules>> {
+export const PROJECT_PANEL_ID = "projectPanel";
+class ProjectPanel extends React.Component<DispatchProp & WithStyles<CssRules>> {
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -30,11 +32,11 @@ class ProjectExplorer extends React.Component<DispatchProp & WithStyles<CssRules
                 </Button>
             </div>
             <DataExplorer
-                id={PROJECT_EXPLORER_ID}
+                id={PROJECT_PANEL_ID}
                 contextActions={contextMenuActions}
                 onColumnToggle={this.toggleColumn}
                 onFiltersChange={this.changeFilters}
-                onRowClick={console.log}
+                onRowClick={this.openProject}
                 onSortToggle={this.toggleSort}
                 onSearch={this.search}
                 onContextAction={this.executeAction}
@@ -44,35 +46,39 @@ class ProjectExplorer extends React.Component<DispatchProp & WithStyles<CssRules
     }
 
     componentDidMount() {
-        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_EXPLORER_ID, columns }));
+        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
-    toggleColumn = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
-        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_EXPLORER_ID, columnName: toggledColumn.name }));
+    toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
     }
 
-    toggleSort = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
-        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_EXPLORER_ID, columnName: toggledColumn.name }));
+    toggleSort = (column: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_PANEL_ID, columnName: column.name }));
     }
 
-    changeFilters = (filters: DataTableFilterItem[], updatedColumn: DataColumn<ProjectExplorerItem>) => {
-        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_EXPLORER_ID, columnName: updatedColumn.name, filters }));
+    changeFilters = (filters: DataTableFilterItem[], column: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_PANEL_ID, columnName: column.name, filters }));
     }
 
-    executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
+    executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
         alert(`Executing ${action.name} on ${item.name}`);
     }
 
     search = (searchValue: string) => {
-        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_EXPLORER_ID, searchValue }));
+        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_PANEL_ID, searchValue }));
     }
 
     changePage = (page: number) => {
-        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_EXPLORER_ID, page }));
+        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_PANEL_ID, page }));
     }
 
     changeRowsPerPage = (rowsPerPage: number) => {
-        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_EXPLORER_ID, rowsPerPage }));
+        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
+    }
+
+    openProject = (item: ProjectPanelItem) => {
+        this.props.dispatch<any>(setProjectItem(item.uuid));
     }
 }
 
@@ -88,7 +94,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     }
 });
 
-const renderName = (item: ProjectExplorerItem) =>
+const renderName = (item: ProjectPanelItem) =>
     <Grid
         container
         alignItems="center"
@@ -104,11 +110,14 @@ const renderName = (item: ProjectExplorerItem) =>
         </Grid>
     </Grid>;
 
-const renderIcon = (item: ProjectExplorerItem) => {
-    switch (item.type) {
-        case "arvados#group":
+
+const renderIcon = (item: ProjectPanelItem) => {
+    switch (item.kind) {
+        case ResourceKind.LEVEL_UP:
+            return <i className="icon-level-up" style={{ fontSize: "1rem" }} />;
+        case ResourceKind.PROJECT:
             return <i className="fas fa-folder fa-lg" />;
-        case "arvados#groupList":
+        case ResourceKind.COLLECTION:
             return <i className="fas fa-th fa-lg" />;
         default:
             return <i />;
@@ -135,27 +144,22 @@ const renderType = (type: string) =>
         {type}
     </Typography>;
 
-const renderStatus = (item: ProjectExplorerItem) =>
+const renderStatus = (item: ProjectPanelItem) =>
     <Typography noWrap align="center">
         {item.status || "-"}
     </Typography>;
 
-const columns: DataColumns<ProjectExplorerItem> = [{
+const columns: DataColumns<ProjectPanelItem> = [{
     name: "Name",
     selected: true,
-    sortDirection: "asc",
-    render: renderName
+    sortDirection: "desc",
+    render: renderName,
+    width: "450px"
 }, {
     name: "Status",
     selected: true,
-    filters: [{
-        name: "In progress",
-        selected: true
-    }, {
-        name: "Complete",
-        selected: true
-    }],
-    render: renderStatus
+    render: renderStatus,
+    width: "75px"
 }, {
     name: "Type",
     selected: true,
@@ -163,23 +167,27 @@ const columns: DataColumns<ProjectExplorerItem> = [{
         name: "Collection",
         selected: true
     }, {
-        name: "Group",
+        name: "Project",
         selected: true
     }],
-    render: item => renderType(item.type)
+    render: item => renderType(item.kind),
+    width: "125px"
 }, {
     name: "Owner",
     selected: true,
-    render: item => renderOwner(item.owner)
+    render: item => renderOwner(item.owner),
+    width: "200px"
 }, {
     name: "File size",
     selected: true,
-    sortDirection: "none",
-    render: item => renderFileSize(item.fileSize)
+    render: item => renderFileSize(item.fileSize),
+    width: "50px"
 }, {
     name: "Last modified",
     selected: true,
-    render: item => renderDate(item.lastModified)
+    sortDirection: "none",
+    render: item => renderDate(item.lastModified),
+    width: "150px"
 }];
 
 const contextMenuActions = [[{
@@ -206,4 +214,4 @@ const contextMenuActions = [[{
 }
 ]];
 
-export default withStyles(styles)(connect()(ProjectExplorer));
+export default withStyles(styles)(connect()(ProjectPanel));

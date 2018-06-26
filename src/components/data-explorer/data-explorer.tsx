@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, Table, IconButton } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, IconButton } from '@material-ui/core';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
@@ -51,18 +51,16 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 onActionClick={this.callAction}
                 onClose={this.closeContextMenu} />
             <Toolbar className={this.props.classes.toolbar}>
-                {this.props.items.length > 0 &&
-                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={this.props.classes.searchBox}>
-                            <SearchInput
-                                value={this.props.searchValue}
-                                onSearch={this.props.onSearch} />
-                        </div>
-                        <ColumnSelector
-                            columns={this.props.columns}
-                            onColumnToggle={this.props.onColumnToggle} />
-                    </Grid>}
-
+                <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                    <div className={this.props.classes.searchBox}>
+                        {this.props.items.length > 0 && <SearchInput
+                            value={this.props.searchValue}
+                            onSearch={this.props.onSearch} />}
+                    </div>
+                    <ColumnSelector
+                        columns={this.props.columns}
+                        onColumnToggle={this.props.onColumnToggle} />
+                </Grid>
             </Toolbar>
             <DataTable
                 columns={[
@@ -92,6 +90,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
     openContextMenu = (event: React.MouseEvent<HTMLElement>, item: T) => {
         event.preventDefault();
+        event.stopPropagation();
         this.setState({
             contextMenu: {
                 anchorEl: mockAnchorFromMouseEvent(event),
@@ -142,7 +141,8 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
         selected: true,
         key: "context-actions",
         renderHeader: () => null,
-        render: this.renderContextMenuTrigger
+        render: this.renderContextMenuTrigger,
+        width: "auto"
     };
 
 }

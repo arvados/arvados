@@ -14,7 +14,16 @@ const history = createBrowserHistory();
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
-    const store = configureStore({ projects: [], router: { location: null }, auth: {}, sidePanel: [] }, createBrowserHistory());
+    const store = configureStore({
+        projects: {
+            items: [],
+            currentItemId: ""
+        },
+        collections: [],
+        router: { location: null },
+        auth: {},
+        sidePanel: []
+    }, createBrowserHistory());
     ReactDOM.render(
         <Provider store={store}>
             <ConnectedRouter history={history}>

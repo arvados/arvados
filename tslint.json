@@ -12,7 +12,9 @@
     "no-debugger": false,
     "no-console": false,
     "no-shadowed-variable": false,
-    "semicolon": true
+    "semicolon": true,
+    "array-type": false,
+    "interface-over-type-literal": false
   },
   "linterOptions": {
     "exclude": [
