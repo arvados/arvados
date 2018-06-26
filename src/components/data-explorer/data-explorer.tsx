@@ -88,6 +88,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
     openContextMenu = (event: React.MouseEvent<HTMLElement>, item: T) => {
         event.preventDefault();
+        event.stopPropagation();
         this.setState({
             contextMenu: {
                 anchorEl: mockAnchorFromMouseEvent(event),
