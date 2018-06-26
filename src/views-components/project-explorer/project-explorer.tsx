@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { ProjectExplorerItem } from './project-explorer-item';
-import { Grid, Typography } from '@material-ui/core';
+import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from '../data-explorer/data-explorer';
 import { DataColumn } from '../../components/data-table/data-column';
@@ -15,19 +15,32 @@ import actions from "../../store/data-explorer/data-explorer-action";
 import { DataColumns } from '../../components/data-table/data-table';
 
 export const PROJECT_EXPLORER_ID = "projectExplorer";
-class ProjectExplorer extends React.Component<DispatchProp> {
+class ProjectExplorer extends React.Component<DispatchProp & WithStyles<CssRules>> {
     render() {
-        return <DataExplorer
-            id={PROJECT_EXPLORER_ID}
-            contextActions={contextMenuActions}
-            onColumnToggle={this.toggleColumn}
-            onFiltersChange={this.changeFilters}
-            onRowClick={console.log}
-            onSortToggle={this.toggleSort}
-            onSearch={this.search}
-            onContextAction={this.executeAction}
-            onChangePage={this.changePage}
-            onChangeRowsPerPage={this.changeRowsPerPage} />;
+        return <div>
+            <div className={this.props.classes.toolbar}>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Create a collection
+                </Button>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Run a process
+                </Button>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Create a project
+                </Button>
+            </div>
+            <DataExplorer
+                id={PROJECT_EXPLORER_ID}
+                contextActions={contextMenuActions}
+                onColumnToggle={this.toggleColumn}
+                onFiltersChange={this.changeFilters}
+                onRowClick={console.log}
+                onSortToggle={this.toggleSort}
+                onSearch={this.search}
+                onContextAction={this.executeAction}
+                onChangePage={this.changePage}
+                onChangeRowsPerPage={this.changeRowsPerPage} />;
+        </div>;
     }
 
     componentDidMount() {
@@ -62,6 +75,18 @@ class ProjectExplorer extends React.Component<DispatchProp> {
         this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_EXPLORER_ID, rowsPerPage }));
     }
 }
+
+type CssRules = "toolbar" | "button";
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    toolbar: {
+        paddingBottom: theme.spacing.unit * 3,
+        textAlign: "right"
+    },
+    button: {
+        marginLeft: theme.spacing.unit
+    }
+});
 
 const renderName = (item: ProjectExplorerItem) =>
     <Grid
@@ -181,4 +206,4 @@ const contextMenuActions = [[{
 }
 ]];
 
-export default connect()(ProjectExplorer);
+export default withStyles(styles)(connect()(ProjectExplorer));
