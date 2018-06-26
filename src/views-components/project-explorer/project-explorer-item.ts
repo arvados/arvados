@@ -4,7 +4,7 @@
 
 import { getResourceKind, Resource, ResourceKind } from "../../models/resource";
 
-export interface DataItem {
+export interface ProjectExplorerItem {
     uuid: string;
     name: string;
     kind: ResourceKind;

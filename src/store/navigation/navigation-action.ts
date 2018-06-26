@@ -10,6 +10,7 @@ import { getCollectionList } from "../collection/collection-action";
 import { findTreeItem } from "../project/project-reducer";
 import { Project } from "../../models/project";
 import { Resource, ResourceKind } from "../../models/resource";
+import sidePanelActions from "../side-panel/side-panel-action";
 
 export const getResourceUrl = (resource: Resource): string => {
     switch (resource.kind) {
@@ -24,7 +25,9 @@ export const getResourceUrl = (resource: Resource): string => {
 export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: string, itemKind: ResourceKind) => (dispatch: Dispatch) => {
 
     const openProjectItem = (resource: Resource) => {
-        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(resource.uuid));
+        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(resource.uuid));
+        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(resource.uuid));
+        dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
         dispatch(push(getResourceUrl({...resource, kind: itemKind})));
     };
     const treeItem = findTreeItem(projects, itemId);
@@ -45,3 +48,18 @@ export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: strin
 
     }
 };
+
+    // toggleProjectTreeItemActive = (itemId: string, status: TreeItemStatus) => {
+    //     if (status === TreeItemStatus.Loaded) {
+    //         this.openProjectItem(itemId);
+    //         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+    //         this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+    //     } else {
+    //         this.props.dispatch<any>(getProjectList(itemId))
+    //             .then(() => {
+    //                 this.openProjectItem(itemId);
+    //                 this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
+    //                 this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
+    //             });
+    //     }
+    // }

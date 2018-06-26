@@ -3,52 +3,34 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
-import { DataColumn } from './data-column';
+import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, Typography } from '@material-ui/core';
+import { DataColumn, SortDirection } from './data-column';
+import DataTableFilters, { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 
 export type DataColumns<T> = Array<DataColumn<T>>;
 
 export interface DataTableProps<T> {
     items: T[];
     columns: DataColumns<T>;
-    onRowClick?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
-    onRowContextMenu?: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onRowContextMenu: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onSortToggle: (column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
 }
 
 class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
     render() {
-        const { items, columns, classes, onRowClick, onRowContextMenu } = this.props;
+        const { items, classes } = this.props;
         return <div className={classes.tableContainer}>
             {items.length > 0 ?
                 <Table>
                     <TableHead>
                         <TableRow>
-                            {columns
-                                .filter(column => column.selected)
-                                .map(({ name, renderHeader, key }, index) =>
-                                    <TableCell key={key || index}>
-                                        {renderHeader ? renderHeader() : name}
-                                    </TableCell>
-                                )}
+                            {this.mapVisibleColumns(this.renderHeadCell)}
                         </TableRow>
                     </TableHead>
                     <TableBody className={classes.tableBody}>
-                        {items
-                            .map((item, index) =>
-                                <TableRow
-                                    hover
-                                    key={index}
-                                    onClick={event => onRowClick && onRowClick(event, item)}
-                                    onContextMenu={event => onRowContextMenu && onRowContextMenu(event, item)}>
-                                    {columns
-                                        .filter(column => column.selected)
-                                        .map((column, index) => (
-                                            <TableCell key={column.key || index}>
-                                                {column.render(item)}
-                                            </TableCell>
-                                        ))}
-                                </TableRow>
-                            )}
+                        {items.map(this.renderBodyRow)}
                     </TableBody>
                 </Table> : <Typography
                     className={classes.noItemsInfo}
@@ -58,6 +40,56 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                 </Typography>}
         </div>;
     }
+
+    renderHeadCell = (column: DataColumn<T>, index: number) => {
+        const { name, key, renderHeader, filters, sortDirection } = column;
+        const { onSortToggle, onFiltersChange } = this.props;
+        return <TableCell key={key || index}>
+            {renderHeader ?
+                renderHeader() :
+                filters
+                    ? <DataTableFilters
+                        name={`${name} filters`}
+                        onChange={filters =>
+                            onFiltersChange &&
+                            onFiltersChange(filters, column)}
+                        filters={filters}>
+                        {name}
+                    </DataTableFilters>
+                    : sortDirection
+                        ? <TableSortLabel
+                            active={sortDirection !== "none"}
+                            direction={sortDirection !== "none" ? sortDirection : undefined}
+                            onClick={() =>
+                                onSortToggle &&
+                                onSortToggle(column)}>
+                            {name}
+                        </TableSortLabel>
+                        : <span>
+                            {name}
+                        </span>}
+        </TableCell>;
+    }
+
+    renderBodyRow = (item: T, index: number) => {
+        const { columns, onRowClick, onRowContextMenu } = this.props;
+        return <TableRow
+            hover
+            key={index}
+            onClick={event => onRowClick && onRowClick(event, item)}
+            onContextMenu={event => onRowContextMenu && onRowContextMenu(event, item)}>
+            {this.mapVisibleColumns((column, index) => (
+                <TableCell key={column.key || index}>
+                    {column.render(item)}
+                </TableCell>
+            ))}
+        </TableRow>;
+    }
+
+    mapVisibleColumns = (fn: (column: DataColumn<T>, index: number) => React.ReactElement<any>) => {
+        return this.props.columns.filter(column => column.selected).map(fn);
+    }
+
 }
 
 type CssRules = "tableBody" | "tableContainer" | "noItemsInfo";

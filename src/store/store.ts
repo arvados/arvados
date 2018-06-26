@@ -6,13 +6,15 @@ import { createStore, applyMiddleware, compose, Middleware, combineReducers } fr
 import { routerMiddleware, routerReducer, RouterState } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
+
 import projectsReducer, { ProjectState } from "./project/project-reducer";
+import sidePanelReducer, { SidePanelState } from './side-panel/side-panel-reducer';
 import authReducer, { AuthState } from "./auth/auth-reducer";
 import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
-    window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+        window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
     compose;
 
 export interface RootState {
@@ -20,13 +22,15 @@ export interface RootState {
     projects: ProjectState;
     collections: CollectionState;
     router: RouterState;
+    sidePanel: SidePanelState;
 }
 
 const rootReducer = combineReducers({
     auth: authReducer,
     projects: projectsReducer,
     collections: collectionsReducer,
-    router: routerReducer
+    router: routerReducer,
+    sidePanel: sidePanelReducer
 });
 
 
