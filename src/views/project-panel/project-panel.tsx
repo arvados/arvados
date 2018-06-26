@@ -8,7 +8,7 @@ import { ProjectState } from '../../store/project/project-reducer';
 import { RootState } from '../../store/store';
 import { connect, DispatchProp } from 'react-redux';
 import { CollectionState } from "../../store/collection/collection-reducer";
-import { setProjectItem } from "../../store/navigation/navigation-action";
+import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import ProjectExplorer, { ProjectExplorerContextActions } from "../../views-components/project-explorer/project-explorer";
 import { projectExplorerItems } from "./project-panel-selectors";
 import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
@@ -36,7 +36,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
     }
 
     goToItem = (item: ProjectExplorerItem) => {
-        this.props.dispatch<any>(setProjectItem(this.props.projects.items, item.uuid, item.kind));
+        this.props.dispatch<any>(setProjectItem(this.props.projects.items, item.uuid, item.kind, ItemMode.BOTH));
     }
 }
 

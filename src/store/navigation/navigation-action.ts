@@ -22,12 +22,24 @@ export const getResourceUrl = (resource: Resource): string => {
     }
 };
 
-export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: string, itemKind: ResourceKind) => (dispatch: Dispatch) => {
+export enum ItemMode {
+    BOTH,
+    OPEN,
+    ACTIVE
+}
+
+export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: string, itemKind: ResourceKind, itemMode: ItemMode) => (dispatch: Dispatch) => {
 
     const openProjectItem = (resource: Resource) => {
-        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(resource.uuid));
-        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(resource.uuid));
-        dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
+        if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(resource.uuid));
+        }
+
+        if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(resource.uuid));
+            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
+        }
+
         dispatch(push(getResourceUrl({...resource, kind: itemKind})));
     };
     const treeItem = findTreeItem(projects, itemId);
@@ -39,27 +51,8 @@ export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: strin
             dispatch<any>(getProjectList(itemId))
                 .then(() => openProjectItem(treeItem.data));
         }
-        dispatch<any>(getCollectionList(itemId));
-
-        // if (item.type === ResourceKind.PROJECT || item.type === ResourceKind.LEVEL_UP) {
-        //     this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM(item.uuid));
-        // }
-        // this.props.dispatch<any>(getCollectionList(item.uuid));
-
+        if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
+            dispatch<any>(getCollectionList(itemId));
+        }
     }
 };
-
-    // toggleProjectTreeItemActive = (itemId: string, status: TreeItemStatus) => {
-    //     if (status === TreeItemStatus.Loaded) {
-    //         this.openProjectItem(itemId);
-    //         this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
-    //         this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
-    //     } else {
-    //         this.props.dispatch<any>(getProjectList(itemId))
-    //             .then(() => {
-    //                 this.openProjectItem(itemId);
-    //                 this.props.dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(itemId));
-    //                 this.props.dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(itemId));
-    //             });
-    //     }
-    // }

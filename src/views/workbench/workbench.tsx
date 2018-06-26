@@ -24,7 +24,7 @@ import ProjectPanel from '../project-panel/project-panel';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ResourceKind } from "../../models/resource";
-import { setProjectItem } from "../../store/navigation/navigation-action";
+import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -184,11 +184,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                                 projects={this.props.projects}
                                 toggleOpen={itemId =>
                                     this.props.dispatch<any>(
-                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT)
+                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.OPEN)
                                     )}
                                 toggleActive={itemId =>
                                     this.props.dispatch<any>(
-                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT)
+                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.ACTIVE)
                                     )}
                             />
                         </SidePanel>
@@ -196,7 +196,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/project/:name" component={ProjectPanel} />
+                            <Route path="/projects/:name" component={ProjectPanel} />
                         </Switch>
                     </div>
                 </main>
@@ -204,14 +204,6 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         );
     }
 }
-/*
-                    <ProjectTree
-                        projects={this.props.projects}
-                        toggleProjectTreeItem={itemId =>
-                            this.props.dispatch<any>(
-                                setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT)
-                            )}/>
-*/
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({
