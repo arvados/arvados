@@ -38,7 +38,7 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
     renderHeadCell = (column: DataColumn<T>, index: number) => {
         const { name, key, renderHeader, filters, sortDirection } = column;
         const { onSortToggle, onFiltersChange } = this.props;
-        return <TableCell key={key || index} style={{minWidth: column.width}}>
+        return <TableCell key={key || index} style={{width: column.width, minWidth: column.width}}>
             {renderHeader ?
                 renderHeader() :
                 filters

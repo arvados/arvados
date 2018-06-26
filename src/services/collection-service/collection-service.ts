@@ -6,6 +6,7 @@ import { serverApi } from "../../common/api/server-api";
 import FilterBuilder, { FilterField } from "../../common/api/filter-builder";
 import { ArvadosResource } from "../response";
 import { Collection } from "../../models/collection";
+import { getResourceKind } from "../../models/resource";
 
 interface CollectionResource extends ArvadosResource {
     name: string;
@@ -42,7 +43,7 @@ export default class CollectionService {
                     href: g.href,
                     uuid: g.uuid,
                     ownerUuid: g.owner_uuid,
-                    kind: g.kind
+                    kind: getResourceKind(g.kind)
                 } as Collection));
                 return collections;
             });
