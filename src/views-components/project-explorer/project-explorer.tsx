@@ -16,35 +16,10 @@ import { DataColumns } from '../../components/data-table/data-table';
 
 export const PROJECT_EXPLORER_ID = "projectExplorer";
 class ProjectExplorer extends React.Component<DispatchProp> {
-
-    contextMenuActions = [[{
-        icon: "fas fa-users fa-fw",
-        name: "Share"
-    }, {
-        icon: "fas fa-sign-out-alt fa-fw",
-        name: "Move to"
-    }, {
-        icon: "fas fa-star fa-fw",
-        name: "Add to favourite"
-    }, {
-        icon: "fas fa-edit fa-fw",
-        name: "Rename"
-    }, {
-        icon: "fas fa-copy fa-fw",
-        name: "Make a copy"
-    }, {
-        icon: "fas fa-download fa-fw",
-        name: "Download"
-    }], [{
-        icon: "fas fa-trash-alt fa-fw",
-        name: "Remove"
-    }
-    ]];
-
     render() {
         return <DataExplorer
             id={PROJECT_EXPLORER_ID}
-            contextActions={this.contextMenuActions}
+            contextActions={contextMenuActions}
             onColumnToggle={this.toggleColumn}
             onFiltersChange={this.changeFilters}
             onRowClick={console.log}
@@ -181,5 +156,29 @@ const columns: DataColumns<ProjectExplorerItem> = [{
     selected: true,
     render: item => renderDate(item.lastModified)
 }];
+
+const contextMenuActions = [[{
+    icon: "fas fa-users fa-fw",
+    name: "Share"
+}, {
+    icon: "fas fa-sign-out-alt fa-fw",
+    name: "Move to"
+}, {
+    icon: "fas fa-star fa-fw",
+    name: "Add to favourite"
+}, {
+    icon: "fas fa-edit fa-fw",
+    name: "Rename"
+}, {
+    icon: "fas fa-copy fa-fw",
+    name: "Make a copy"
+}, {
+    icon: "fas fa-download fa-fw",
+    name: "Download"
+}], [{
+    icon: "fas fa-trash-alt fa-fw",
+    name: "Remove"
+}
+]];
 
 export default connect()(ProjectExplorer);

@@ -19,11 +19,9 @@ import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { Project } from "../../models/project";
 import { getTreePath, findTreeItem } from '../../store/project/project-reducer';
-import ProjectPanel from '../project-panel/project-panel';
-import { PROJECT_EXPLORER_ID } from '../../views-components/project-explorer/project-explorer';
-import { ProjectExplorerItem } from '../../views-components/project-explorer/project-explorer-item';
+import ProjectExplorer, { PROJECT_EXPLORER_ID } from '../../views-components/project-explorer/project-explorer';
+import { ProjectExplorerItem, mapProjectTreeItem } from '../../views-components/project-explorer/project-explorer-item';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
-import { projectService } from '../../services/services';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 
 const drawerWidth = 240;
@@ -195,13 +193,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
         const project = findTreeItem(this.props.projects, itemId);
         const items: ProjectExplorerItem[] = project && project.items
-            ? project.items.map(({ data }) => ({
-                uuid: data.uuid,
-                name: data.name,
-                type: data.kind,
-                owner: data.ownerUuid,
-                lastModified: data.modifiedAt
-            }))
+            ? project.items.map(mapProjectTreeItem)
             : [];
         this.props.dispatch(dataExplorerActions.SET_ITEMS({ id: PROJECT_EXPLORER_ID, items }));
     }
@@ -239,7 +231,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/project/:name" component={ProjectPanel} />
+                            <Route path="/project/:name" component={ProjectExplorer} />
                         </Switch>
                     </div>
                 </main>
