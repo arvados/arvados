@@ -16,7 +16,7 @@ export enum ResourceKind {
     PROJECT = "project",
     COLLECTION = "collection",
     PIPELINE = "pipeline",
-    LEVEL_UP = "levelup",
+    LEVEL_UP = "",
     UNKNOWN = "unknown"
 }
 

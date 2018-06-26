@@ -27,7 +27,8 @@ describe("<DataExplorer />", () => {
             columns={[{ name: "Column 1", render: jest.fn(), selected: true }]} />);
         expect(dataExplorer.find(ContextMenu).prop("actions")).toEqual([]);
         dataExplorer.find(DataTable).prop("onRowContextMenu")({
-            preventDefault: jest.fn()
+            preventDefault: jest.fn(),
+            stopPropagation: jest.fn()
         }, "Item 1");
         dataExplorer.find(ContextMenu).prop("onActionClick")({ name: "Action 1", icon: "" });
         expect(onContextAction).toHaveBeenCalledWith({ name: "Action 1", icon: "" }, "Item 1");
