@@ -5,6 +5,7 @@
 import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { ResourceKind } from "../../models/resource";
 
 describe('project-reducer', () => {
     it('should add new project to the list', () => {
@@ -16,7 +17,7 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
@@ -32,7 +33,7 @@ describe('project-reducer', () => {
             modifiedAt: '2018-01-01',
             ownerUuid: 'owner-test123',
             uuid: 'test123',
-            kind: ""
+            kind: ResourceKind.PROJECT
         };
 
         const projects = [project, project];
@@ -56,8 +57,8 @@ describe('project-reducer', () => {
     });
 
     it('should remove activity on projects list', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -65,16 +66,17 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: true,
                 status: 1
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -82,22 +84,23 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1
-            }
-        ];
+            }],
+            currentItemId: "1"
+        };
 
         const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState[0].id));
         expect(state).toEqual(project);
     });
 
     it('should toggle project tree item activity', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -105,16 +108,17 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -122,14 +126,15 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: true,
                 status: 1
-            }
-        ];
+            }],
+            currentItemId: "1"
+        };
 
         const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState[0].id));
         expect(state).toEqual(project);
@@ -137,8 +142,8 @@ describe('project-reducer', () => {
 
 
     it('should close project tree item ', () => {
-        const initialState = [
-            {
+        const initialState = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -146,17 +151,18 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: true,
                 active: false,
                 status: 1,
                 toggled: false,
-            }
-        ];
-        const project = [
-            {
+            }],
+            currentItemId: "1"
+        };
+        const project = {
+            items: [{
                 data: {
                     name: 'test',
                     href: 'href',
@@ -164,15 +170,16 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: 'example'
+                    kind: ResourceKind.PROJECT
                 },
                 id: "1",
                 open: false,
                 active: false,
                 status: 1,
                 toggled: true
-            }
-        ];
+            }],
+            currentItemId: "1"
+        };
 
         const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState[0].id));
         expect(state).toEqual(project);
@@ -180,7 +187,6 @@ describe('project-reducer', () => {
 });
 
 describe("findTreeBranch", () => {
-
     const createTreeItem = (id: string, items?: Array<TreeItem<string>>): TreeItem<string> => ({
         id,
         items,

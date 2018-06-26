@@ -13,7 +13,7 @@ const collectionsReducer = (state: CollectionState = [], action: CollectionActio
         CREATE_COLLECTION: collection => [...state, collection],
         REMOVE_COLLECTION: () => state,
         COLLECTIONS_REQUEST: () => {
-            return state;
+            return [];
         },
         COLLECTIONS_SUCCESS: ({ collections }) => {
             return collections;

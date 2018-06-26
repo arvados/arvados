@@ -7,6 +7,7 @@ import { Dispatch } from "redux";
 import { Project } from "../../models/project";
 import FilterBuilder, { FilterField } from "../../common/api/filter-builder";
 import { ArvadosResource } from "../response";
+import { getResourceKind } from "../../models/resource";
 
 interface GroupResource extends ArvadosResource {
     name: string;
@@ -39,7 +40,7 @@ export default class ProjectService {
                     href: g.href,
                     uuid: g.uuid,
                     ownerUuid: g.owner_uuid,
-                    kind: g.kind
+                    kind: getResourceKind(g.kind)
                 } as Project));
                 return projects;
             });

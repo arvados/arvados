@@ -10,6 +10,7 @@ import DataExplorer from '../../components/data-explorer/data-explorer';
 import { DataColumn, toggleSortDirection, resetSortDirection } from '../../components/data-table/data-column';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
+import { ResourceKind } from "../../models/resource";
 
 export interface ProjectExplorerContextActions {
     onAddToFavourite: (item: ProjectExplorerItem) => void;
@@ -23,6 +24,7 @@ export interface ProjectExplorerContextActions {
 
 interface ProjectExplorerProps {
     items: ProjectExplorerItem[];
+    onRowClick: (item: ProjectExplorerItem) => void;
 }
 
 interface ProjectExplorerState {
@@ -63,7 +65,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 name: "Group",
                 selected: true
             }],
-            render: item => renderType(item.type)
+            render: item => renderType(item.kind)
         }, {
             name: "Owner",
             selected: true,
@@ -114,7 +116,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             rowsPerPage={this.state.rowsPerPage}
             onColumnToggle={this.toggleColumn}
             onFiltersChange={this.changeFilters}
-            onRowClick={console.log}
+            onRowClick={this.props.onRowClick}
             onSortToggle={this.toggleSort}
             onSearch={this.search}
             onContextAction={this.executeAction}
@@ -185,12 +187,15 @@ const renderName = (item: ProjectExplorerItem) =>
         </Grid>
     </Grid>;
 
+
 const renderIcon = (item: ProjectExplorerItem) => {
-    switch (item.type) {
-        case "arvados#group":
-            return <i className="fas fa-folder fa-lg" />;
-        case "arvados#groupList":
-            return <i className="fas fa-th fa-lg" />;
+    switch (item.kind) {
+        case ResourceKind.LEVEL_UP:
+            return <i className="icon-level-up" style={{fontSize: "1rem"}}/>;
+        case ResourceKind.PROJECT:
+            return <i className="fas fa-folder fa-lg"/>;
+        case ResourceKind.COLLECTION:
+            return <i className="fas fa-th fa-lg"/>;
         default:
             return <i />;
     }

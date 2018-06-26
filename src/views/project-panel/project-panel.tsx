@@ -3,32 +3,46 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
-import { DispatchProp, connect } from 'react-redux';
-import { ProjectState, findTreeItem } from '../../store/project/project-reducer';
-import ProjectExplorer from '../../views-components/project-explorer/project-explorer';
+import { RouteComponentProps } from 'react-router';
+import { ProjectState } from '../../store/project/project-reducer';
 import { RootState } from '../../store/store';
-import { mapProjectTreeItem } from './project-panel-selectors';
+import { connect, DispatchProp } from 'react-redux';
+import { CollectionState } from "../../store/collection/collection-reducer";
+import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
+import ProjectExplorer from "../../views-components/project-explorer/project-explorer";
+import { projectExplorerItems } from "./project-panel-selectors";
+import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
 
 interface ProjectPanelDataProps {
     projects: ProjectState;
+    collections: CollectionState;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & RouteComponentProps<{ name: string }> & DispatchProp;
 
 class ProjectPanel extends React.Component<ProjectPanelProps> {
-
     render() {
-        const project = findTreeItem(this.props.projects, this.props.match.params.name);
-        const projectItems = project && project.items || [];
-        return (
-            <ProjectExplorer items={projectItems.map(mapProjectTreeItem)} />
+        const items = projectExplorerItems(
+            this.props.projects.items,
+            this.props.projects.currentItemId,
+            this.props.collections
         );
+        return (
+            <ProjectExplorer
+                items={items}
+                onRowClick={this.goToItem}
+            />
+        );
+    }
+
+    goToItem = (item: ProjectExplorerItem) => {
+        this.props.dispatch<any>(setProjectItem(this.props.projects.items, item.uuid, item.kind, ItemMode.BOTH));
     }
 }
 
 export default connect(
     (state: RootState) => ({
-        projects: state.projects
+        projects: state.projects,
+        collections: state.collections
     })
 )(ProjectPanel);
