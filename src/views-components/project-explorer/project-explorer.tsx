@@ -43,7 +43,8 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
             name: "Name",
             selected: true,
             sortDirection: "asc",
-            render: renderName
+            render: renderName,
+            width: "450px"
         }, {
             name: "Status",
             selected: true,
@@ -54,7 +55,8 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 name: "Complete",
                 selected: true
             }],
-            render: renderStatus
+            render: renderStatus,
+            width: "75px"
         }, {
             name: "Type",
             selected: true,
@@ -65,20 +67,24 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 name: "Group",
                 selected: true
             }],
-            render: item => renderType(item.kind)
+            render: item => renderType(item.kind),
+            width: "125px"
         }, {
             name: "Owner",
             selected: true,
-            render: item => renderOwner(item.owner)
+            render: item => renderOwner(item.owner),
+            width: "200px"
         }, {
             name: "File size",
             selected: true,
             sortDirection: "none",
-            render: item => renderFileSize(item.fileSize)
+            render: item => renderFileSize(item.fileSize),
+            width: "50px"
         }, {
             name: "Last modified",
             selected: true,
-            render: item => renderDate(item.lastModified)
+            render: item => renderDate(item.lastModified),
+            width: "150px"
         }]
     };
 

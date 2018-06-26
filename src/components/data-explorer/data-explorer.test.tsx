@@ -88,7 +88,6 @@ describe("<DataExplorer />", () => {
             items={[]}
         />);
         expect(dataExplorer.find(SearchInput)).toHaveLength(0);
-        expect(dataExplorer.find(ColumnSelector)).toHaveLength(0);
         expect(dataExplorer.find(TablePagination)).toHaveLength(0);
     });
 
