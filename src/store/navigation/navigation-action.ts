@@ -42,14 +42,17 @@ export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: strin
 
         dispatch(push(getResourceUrl({...resource, kind: itemKind})));
     };
-    const treeItem = findTreeItem(projects, itemId);
+    let treeItem = findTreeItem(projects, itemId);
+    if (treeItem && itemKind === ResourceKind.LEVEL_UP) {
+        treeItem = findTreeItem(projects, treeItem.data.ownerUuid);
+    }
 
     if (treeItem) {
         if (treeItem.status === TreeItemStatus.Loaded) {
             openProjectItem(treeItem.data);
         } else {
             dispatch<any>(getProjectList(itemId))
-                .then(() => openProjectItem(treeItem.data));
+                .then(() => openProjectItem(treeItem!.data));
         }
         if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
             dispatch<any>(getCollectionList(itemId));

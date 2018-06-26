@@ -123,8 +123,8 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
                 item.open = !item.open;
             }
             return {
-                ...state,
-                items
+                items,
+                currentItemId: itemId
             };
         },
         TOGGLE_PROJECT_TREE_ITEM_ACTIVE: itemId => {
@@ -143,8 +143,8 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
             const items = _.cloneDeep(state.items);
             resetTreeActivity(items);
             return {
-                ...state,
-                items
+                items,
+                currentItemId: ""
             };
         },
         default: () => state

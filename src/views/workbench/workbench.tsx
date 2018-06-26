@@ -131,7 +131,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-            // this.toggleProjectTreeItem(itemId, status);
+            this.props.dispatch<any>(
+                setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.BOTH)
+            );
         },
         onSearch: searchText => {
             this.setState({ searchText });

@@ -35,6 +35,10 @@ export default class AuthService {
         return localStorage.getItem(API_TOKEN_KEY) || undefined;
     }
 
+    public getUuid() {
+        return localStorage.getItem(USER_UUID_KEY) || undefined;
+    }
+
     public getOwnerUuid() {
         return localStorage.getItem(USER_OWNER_UUID_KEY) || undefined;
     }
