@@ -36,18 +36,20 @@ export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: strin
         }
 
         if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(resource.uuid));
             dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
         }
 
         dispatch(push(getResourceUrl({...resource, kind: itemKind})));
     };
+
     let treeItem = findTreeItem(projects, itemId);
     if (treeItem && itemKind === ResourceKind.LEVEL_UP) {
         treeItem = findTreeItem(projects, treeItem.data.ownerUuid);
     }
 
     if (treeItem) {
+        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
+
         if (treeItem.status === TreeItemStatus.Loaded) {
             openProjectItem(treeItem.data);
         } else {

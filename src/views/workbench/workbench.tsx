@@ -25,6 +25,7 @@ import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ResourceKind } from "../../models/resource";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
+import projectActions from "../../store/project/project-action";
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -148,7 +149,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     toggleSidePanelActive = (itemId: string) => {
         this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
-        // this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
     }
 
     render() {

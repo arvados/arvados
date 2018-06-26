@@ -9,7 +9,7 @@ import { RootState } from '../../store/store';
 import { connect, DispatchProp } from 'react-redux';
 import { CollectionState } from "../../store/collection/collection-reducer";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
-import ProjectExplorer, { ProjectExplorerContextActions } from "../../views-components/project-explorer/project-explorer";
+import ProjectExplorer from "../../views-components/project-explorer/project-explorer";
 import { projectExplorerItems } from "./project-panel-selectors";
 import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
 
