@@ -173,7 +173,9 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.container_count_max ||= Rails.configuration.container_count_max
-    self.scheduling_parameters ||= {}
+    self.scheduling_parameters ||= {
+      max_run_time: 0,
+    }
     self.output_ttl ||= 0
     self.priority ||= 0
   end
@@ -238,6 +240,11 @@ class ContainerRequest < ArvadosModel
       end
       if !Rails.configuration.preemptible_instances and scheduling_parameters['preemptible']
         errors.add :scheduling_parameters, "preemptible instances are not allowed"
+      end
+      if scheduling_parameters.include? 'max_run_time' and
+        (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
+          scheduling_parameters['max_run_time'] < 0)
+          errors.add :scheduling_parameters, "max_run_time must be positive integer"
       end
     end
   end
