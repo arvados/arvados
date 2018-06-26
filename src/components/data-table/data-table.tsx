@@ -22,29 +22,23 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
     render() {
         const { items, classes } = this.props;
         return <div className={classes.tableContainer}>
-            {items.length > 0 ?
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {this.mapVisibleColumns(this.renderHeadCell)}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody className={classes.tableBody}>
-                        {items.map(this.renderBodyRow)}
-                    </TableBody>
-                </Table> : <Typography
-                    className={classes.noItemsInfo}
-                    variant="body2"
-                    gutterBottom>
-                    No items
-                </Typography>}
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        {this.mapVisibleColumns(this.renderHeadCell)}
+                    </TableRow>
+                </TableHead>
+                <TableBody className={classes.tableBody}>
+                    {items.map(this.renderBodyRow)}
+                </TableBody>
+            </Table>
         </div>;
     }
 
     renderHeadCell = (column: DataColumn<T>, index: number) => {
         const { name, key, renderHeader, filters, sortDirection } = column;
         const { onSortToggle, onFiltersChange } = this.props;
-        return <TableCell key={key || index}>
+        return <TableCell key={key || index} style={{minWidth: column.width}}>
             {renderHeader ?
                 renderHeader() :
                 filters
@@ -96,7 +90,8 @@ type CssRules = "tableBody" | "tableContainer" | "noItemsInfo";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     tableContainer: {
-        overflowX: 'auto'
+        overflowX: 'auto',
+        overflowY: 'hidden'
     },
     tableBody: {
         background: theme.palette.background.paper
