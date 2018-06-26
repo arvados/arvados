@@ -14,6 +14,7 @@ import { projectExplorerItems } from "./project-panel-selectors";
 import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
 import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataColumn, SortDirection } from '../../components/data-table/data-column';
+import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 
 interface ProjectPanelDataProps {
     projects: ProjectState;
@@ -27,6 +28,7 @@ interface ProjectPanelState {
         columnName: string;
         direction: SortDirection;
     };
+    filters: string[];
 }
 
 class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRules>, ProjectPanelState> {
@@ -34,7 +36,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
         sort: {
             columnName: "Name",
             direction: "desc"
-        }
+        },
+        filters: ['collection', 'project']
     };
 
     render() {
@@ -44,7 +47,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
             this.props.collections
         );
         const [goBackItem, ...otherItems] = items;
-        const sortedItems = sortItems(this.state.sort, otherItems);
+        const filteredItems = otherItems.filter(i => this.state.filters.some(f => f === i.kind));
+        const sortedItems = sortItems(this.state.sort, filteredItems);
         return (
             <div>
                 <div className={this.props.classes.toolbar}>
@@ -59,9 +63,10 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
                     </Button>
                 </div>
                 <ProjectExplorer
-                    items={goBackItem ? [goBackItem, ...sortedItems] : sortedItems }
+                    items={goBackItem ? [goBackItem, ...sortedItems] : sortedItems}
                     onRowClick={this.goToItem}
                     onToggleSort={this.toggleSort}
+                    onChangeFilters={this.changeFilters}
                 />
             </div>
         );
@@ -72,18 +77,24 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
     }
 
     toggleSort = (column: DataColumn<ProjectExplorerItem>) => {
-        this.setState({sort: {
-            columnName: column.name,
-            direction: column.sortDirection || "none"
-        }});
+        this.setState({
+            sort: {
+                columnName: column.name,
+                direction: column.sortDirection || "none"
+            }
+        });
+    }
+
+    changeFilters = (filters: DataTableFilterItem[]) => {
+        this.setState({ filters: filters.filter(f => f.selected).map(f => f.name.toLowerCase()) });
     }
 }
 
-const sortItems = (sort: {columnName: string, direction: SortDirection}, items: ProjectExplorerItem[]) => {
+const sortItems = (sort: { columnName: string, direction: SortDirection }, items: ProjectExplorerItem[]) => {
     const sortedItems = items.slice(0);
     const direction = sort.direction === "asc" ? -1 : 1;
     sortedItems.sort((a, b) => {
-        if(sort.columnName === "Last modified") {
+        if (sort.columnName === "Last modified") {
             return ((new Date(a.lastModified)).getTime() - (new Date(b.lastModified)).getTime()) * direction;
         } else {
             return a.name.localeCompare(b.name) * direction;

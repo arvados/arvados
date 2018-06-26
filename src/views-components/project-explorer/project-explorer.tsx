@@ -26,6 +26,7 @@ interface ProjectExplorerProps {
     items: ProjectExplorerItem[];
     onRowClick: (item: ProjectExplorerItem) => void;
     onToggleSort: (toggledColumn: DataColumn<ProjectExplorerItem>) => void;
+    onChangeFilters: (filters: DataTableFilterItem[]) => void;
 }
 
 interface ProjectExplorerState {
@@ -49,13 +50,6 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         }, {
             name: "Status",
             selected: true,
-            filters: [{
-                name: "In progress",
-                selected: true
-            }, {
-                name: "Complete",
-                selected: true
-            }],
             render: renderStatus,
             width: "75px"
         }, {
@@ -65,7 +59,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 name: "Collection",
                 selected: true
             }, {
-                name: "Group",
+                name: "Project",
                 selected: true
             }],
             render: item => renderType(item.kind),
@@ -162,6 +156,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                     : column
             )
         });
+        this.props.onChangeFilters(filters);
     }
 
     executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
