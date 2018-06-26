@@ -21,7 +21,7 @@ describe('project-reducer', () => {
         };
 
         const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
-        expect(state).toEqual([project]);
+        expect(state.items[0].data).toEqual(project);
     });
 
     it('should load projects', () => {
@@ -38,22 +38,25 @@ describe('project-reducer', () => {
 
         const projects = [project, project];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
-        expect(state).toEqual([{
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project,
-            status: 0
-        }, {
-            active: false,
-            open: false,
-            id: "test123",
-            items: [],
-            data: project,
-            status: 0
-        }
-        ]);
+        expect(state).toEqual({
+            items: [{
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }, {
+                active: false,
+                open: false,
+                id: "test123",
+                items: [],
+                data: project,
+                status: 0
+            }
+            ],
+            currentItemId: ""
+        });
     });
 
     it('should remove activity on projects list', () => {
@@ -91,10 +94,10 @@ describe('project-reducer', () => {
                 active: false,
                 status: 1
             }],
-            currentItemId: "1"
+            currentItemId: ""
         };
 
-        const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState[0].id));
+        const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
@@ -136,7 +139,7 @@ describe('project-reducer', () => {
             currentItemId: "1"
         };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState[0].id));
+        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
@@ -181,7 +184,7 @@ describe('project-reducer', () => {
             currentItemId: "1"
         };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState[0].id));
+        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 });
