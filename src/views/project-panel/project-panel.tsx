@@ -12,6 +12,7 @@ import { ItemMode, setProjectItem } from "../../store/navigation/navigation-acti
 import ProjectExplorer from "../../views-components/project-explorer/project-explorer";
 import { projectExplorerItems } from "./project-panel-selectors";
 import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
+import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 
 interface ProjectPanelDataProps {
     projects: ProjectState;
@@ -20,7 +21,7 @@ interface ProjectPanelDataProps {
 
 type ProjectPanelProps = ProjectPanelDataProps & RouteComponentProps<{ name: string }> & DispatchProp;
 
-class ProjectPanel extends React.Component<ProjectPanelProps> {
+class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRules>> {
     render() {
         const items = projectExplorerItems(
             this.props.projects.items,
@@ -28,10 +29,23 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             this.props.collections
         );
         return (
-            <ProjectExplorer
-                items={items}
-                onRowClick={this.goToItem}
-            />
+            <div>
+                <div className={this.props.classes.toolbar}>
+                    <Button color="primary" variant="raised" className={this.props.classes.button}>
+                        Create a collection
+                    </Button>
+                    <Button color="primary" variant="raised" className={this.props.classes.button}>
+                        Run a process
+                    </Button>
+                    <Button color="primary" variant="raised" className={this.props.classes.button}>
+                        Create a project
+                    </Button>
+                </div>
+                <ProjectExplorer
+                    items={items}
+                    onRowClick={this.goToItem}
+                />
+            </div>
         );
     }
 
@@ -40,9 +54,23 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
     }
 }
 
-export default connect(
-    (state: RootState) => ({
-        projects: state.projects,
-        collections: state.collections
-    })
-)(ProjectPanel);
+type CssRules = "toolbar" | "button";
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    toolbar: {
+        marginBottom: theme.spacing.unit * 3,
+        display: "flex",
+        justifyContent: "flex-end"
+    },
+    button: {
+        marginLeft: theme.spacing.unit
+    }
+});
+
+export default withStyles(styles)(
+    connect(
+        (state: RootState) => ({
+            projects: state.projects,
+            collections: state.collections
+        })
+    )(ProjectPanel));
