@@ -13,6 +13,7 @@ import ProjectExplorer from "../../views-components/project-explorer/project-exp
 import { projectExplorerItems } from "./project-panel-selectors";
 import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
 import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { DataColumn, SortDirection } from '../../components/data-table/data-column';
 
 interface ProjectPanelDataProps {
     projects: ProjectState;
@@ -21,13 +22,29 @@ interface ProjectPanelDataProps {
 
 type ProjectPanelProps = ProjectPanelDataProps & RouteComponentProps<{ name: string }> & DispatchProp;
 
-class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRules>> {
+interface ProjectPanelState {
+    sort: {
+        columnName: string;
+        direction: SortDirection;
+    };
+}
+
+class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRules>, ProjectPanelState> {
+    state: ProjectPanelState = {
+        sort: {
+            columnName: "Name",
+            direction: "desc"
+        }
+    };
+
     render() {
         const items = projectExplorerItems(
             this.props.projects.items,
             this.props.projects.currentItemId,
             this.props.collections
         );
+        const [goBackItem, ...otherItems] = items;
+        const sortedItems = sortItems(this.state.sort, otherItems);
         return (
             <div>
                 <div className={this.props.classes.toolbar}>
@@ -42,8 +59,9 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
                     </Button>
                 </div>
                 <ProjectExplorer
-                    items={items}
+                    items={goBackItem ? [goBackItem, ...sortedItems] : sortedItems }
                     onRowClick={this.goToItem}
+                    onToggleSort={this.toggleSort}
                 />
             </div>
         );
@@ -52,7 +70,27 @@ class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRul
     goToItem = (item: ProjectExplorerItem) => {
         this.props.dispatch<any>(setProjectItem(this.props.projects.items, item.uuid, item.kind, ItemMode.BOTH));
     }
+
+    toggleSort = (column: DataColumn<ProjectExplorerItem>) => {
+        this.setState({sort: {
+            columnName: column.name,
+            direction: column.sortDirection || "none"
+        }});
+    }
 }
+
+const sortItems = (sort: {columnName: string, direction: SortDirection}, items: ProjectExplorerItem[]) => {
+    const sortedItems = items.slice(0);
+    const direction = sort.direction === "asc" ? -1 : 1;
+    sortedItems.sort((a, b) => {
+        if(sort.columnName === "Last modified") {
+            return ((new Date(a.lastModified)).getTime() - (new Date(b.lastModified)).getTime()) * direction;
+        } else {
+            return a.name.localeCompare(b.name) * direction;
+        }
+    });
+    return sortedItems;
+};
 
 type CssRules = "toolbar" | "button";
 
