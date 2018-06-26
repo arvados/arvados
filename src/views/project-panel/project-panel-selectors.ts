@@ -19,9 +19,9 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
             name: "..",
             url: getResourceUrl(treeItem.data),
             kind: ResourceKind.LEVEL_UP,
-            owner: treeItem.data.ownerUuid,
+            owner: "",
             uuid: treeItem.data.uuid,
-            lastModified: treeItem.data.modifiedAt
+            lastModified: ""
         });
 
         if (treeItem.items) {

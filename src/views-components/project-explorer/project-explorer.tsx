@@ -25,6 +25,8 @@ export interface ProjectExplorerContextActions {
 interface ProjectExplorerProps {
     items: ProjectExplorerItem[];
     onRowClick: (item: ProjectExplorerItem) => void;
+    onToggleSort: (toggledColumn: DataColumn<ProjectExplorerItem>) => void;
+    onChangeFilters: (filters: DataTableFilterItem[]) => void;
 }
 
 interface ProjectExplorerState {
@@ -42,19 +44,12 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         columns: [{
             name: "Name",
             selected: true,
-            sortDirection: "asc",
+            sortDirection: "desc",
             render: renderName,
             width: "450px"
         }, {
             name: "Status",
             selected: true,
-            filters: [{
-                name: "In progress",
-                selected: true
-            }, {
-                name: "Complete",
-                selected: true
-            }],
             render: renderStatus,
             width: "75px"
         }, {
@@ -64,7 +59,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                 name: "Collection",
                 selected: true
             }, {
-                name: "Group",
+                name: "Project",
                 selected: true
             }],
             render: item => renderType(item.kind),
@@ -77,12 +72,12 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         }, {
             name: "File size",
             selected: true,
-            sortDirection: "none",
             render: item => renderFileSize(item.fileSize),
             width: "50px"
         }, {
             name: "Last modified",
             selected: true,
+            sortDirection: "none",
             render: item => renderDate(item.lastModified),
             width: "150px"
         }]
@@ -140,14 +135,17 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
         });
     }
 
-    toggleSort = (toggledColumn: DataColumn<ProjectExplorerItem>) => {
-        this.setState({
-            columns: this.state.columns.map(column =>
-                column.name === toggledColumn.name
-                    ? toggleSortDirection(column)
-                    : resetSortDirection(column)
-            )
-        });
+    toggleSort = (column: DataColumn<ProjectExplorerItem>) => {
+        const columns = this.state.columns.map(c =>
+            c.name === column.name
+                ? toggleSortDirection(c)
+                : resetSortDirection(c)
+        );
+        this.setState({ columns });
+        const toggledColumn = columns.find(c => c.name === column.name);
+        if (toggledColumn) {
+            this.props.onToggleSort(toggledColumn);
+        }
     }
 
     changeFilters = (filters: DataTableFilterItem[], updatedColumn: DataColumn<ProjectExplorerItem>) => {
@@ -158,6 +156,7 @@ class ProjectExplorer extends React.Component<ProjectExplorerProps, ProjectExplo
                     : column
             )
         });
+        this.props.onChangeFilters(filters);
     }
 
     executeAction = (action: ContextMenuAction, item: ProjectExplorerItem) => {
@@ -197,11 +196,11 @@ const renderName = (item: ProjectExplorerItem) =>
 const renderIcon = (item: ProjectExplorerItem) => {
     switch (item.kind) {
         case ResourceKind.LEVEL_UP:
-            return <i className="icon-level-up" style={{fontSize: "1rem"}}/>;
+            return <i className="icon-level-up" style={{ fontSize: "1rem" }} />;
         case ResourceKind.PROJECT:
-            return <i className="fas fa-folder fa-lg"/>;
+            return <i className="fas fa-folder fa-lg" />;
         case ResourceKind.COLLECTION:
-            return <i className="fas fa-th fa-lg"/>;
+            return <i className="fas fa-th fa-lg" />;
         default:
             return <i />;
     }
