@@ -195,6 +195,9 @@ RESTService <- R6::R6Class(
             h <- curl::new_handle()
             curl::handle_setheaders(h, .list = headers)
 
+            if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
+               curl::handle_setopt(h, ssl_verifypeer = 0L)
+
             conn <- curl::curl(url = fileURL, open = openMode, handle = h)
 
             conn
