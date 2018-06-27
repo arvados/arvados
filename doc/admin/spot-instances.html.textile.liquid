@@ -63,13 +63,13 @@ With this configuration active, child container requests should include the @pre
 
 h3. AWS Permissions
 
-When requesting spot instances, Amazon's API may return an authorization error depending on how users and permissions are set on the account. If attempting to use this feature with an already working AWS account and getting an error message on nodemanager's log like this one:
+When requesting spot instances, Amazon's API may return an authorization error depending on how users and permissions are set on the account. If this is the case check nodemanager's log for:
 
 <pre>
 BaseHTTPError: AuthFailure.ServiceLinkedRoleCreationNotPermitted: The provided credentials do not have permission to create the service-linked role for EC2 Spot Instances.
 </pre>
 
-...the account needs to have a service linked role created. For this, you can log into your AWS account, go to _IAM Management_ &rarr; _Roles_ and create the @AWSServiceRoleForEC2Spot@ role by clicking on the @Create@ button, selecting @EC2@ service and @EC2 - Spot Instances@ use case.
+The account needs to have a service linked role created. This can be done by logging into the AWS account, go to _IAM Management_ &rarr; _Roles_ and create the @AWSServiceRoleForEC2Spot@ role by clicking on the @Create@ button, selecting @EC2@ service and @EC2 - Spot Instances@ use case.
 
 h3. Cost Tracking
 
