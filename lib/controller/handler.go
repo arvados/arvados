@@ -82,9 +82,10 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 		next.ServeHTTP(w, req)
 		return
 	}
-	remote, ok := h.Cluster.RemoteClusters[m[1]]
+	remoteID := m[1]
+	remote, ok := h.Cluster.RemoteClusters[remoteID]
 	if !ok {
-		httpserver.Error(w, "no proxy available for cluster "+m[1], http.StatusNotFound)
+		httpserver.Error(w, "no proxy available for cluster "+remoteID, http.StatusNotFound)
 		return
 	}
 	scheme := remote.Scheme
@@ -97,6 +98,11 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 		Path:     req.URL.Path,
 		RawPath:  req.URL.RawPath,
 		RawQuery: req.URL.RawQuery,
+	}
+	err := h.saltAuthToken(req, remoteID)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	h.proxy(w, req, urlOut)
 }

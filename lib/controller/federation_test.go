@@ -94,7 +94,7 @@ func (s *FederationSuite) TestNoAuth(c *check.C) {
 
 func (s *FederationSuite) TestBadAuth(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, nil)
-	req.Header.Set("Authorization", "Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	req.Header.Set("Authorization", "Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusUnauthorized)
@@ -145,14 +145,23 @@ func (s *FederationSuite) TestGetRemoteWorkflow(c *check.C) {
 }
 
 func (s *FederationSuite) TestUpdateRemoteWorkflow(c *check.C) {
-	req := httptest.NewRequest("PATCH", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, strings.NewReader(url.Values{
-		"workflow": {`{"description":"updated by TestUpdateRemoteWorkflow"}`},
-	}.Encode()))
-	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	s.checkResponseOK(c, resp)
+	updateDescription := func(descr string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("PATCH", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, strings.NewReader(url.Values{
+			"workflow": {`{"description":"` + descr + `"}`},
+		}.Encode()))
+		req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		s.checkResponseOK(c, resp)
+		return resp
+	}
+
+	// Update description twice so running this test twice in a
+	// row still causes ModifiedAt to change
+	updateDescription("updated once by TestUpdateRemoteWorkflow")
+	resp := updateDescription("updated twice by TestUpdateRemoteWorkflow")
+
 	var wf arvados.Workflow
 	c.Check(json.Unmarshal(resp.Body.Bytes(), &wf), check.IsNil)
 	c.Check(wf.UUID, check.Equals, arvadostest.WorkflowWithDefinitionYAMLUUID)
