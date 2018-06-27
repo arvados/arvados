@@ -173,9 +173,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.container_count_max ||= Rails.configuration.container_count_max
-    self.scheduling_parameters ||= {
-      max_run_time: 0,
-    }
+    self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
     self.priority ||= 0
   end

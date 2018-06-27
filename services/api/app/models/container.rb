@@ -364,9 +364,7 @@ class Container < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.priority ||= 0
-    self.scheduling_parameters ||= {
-      max_run_time: 0,
-    }
+    self.scheduling_parameters ||= {}
   end
 
   def permission_to_create
