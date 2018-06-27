@@ -20,7 +20,6 @@ type Container struct {
 	OutputPath           string               `json:"output_path"`
 	Priority             int                  `json:"priority"`
 	RuntimeConstraints   RuntimeConstraints   `json:"runtime_constraints"`
-	StartedAt            time.Time            `json:"started_at"`
 	State                ContainerState       `json:"state"`
 	SchedulingParameters SchedulingParameters `json:"scheduling_parameters"`
 }
