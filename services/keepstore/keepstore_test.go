@@ -33,10 +33,6 @@ var TestHash3 = "eed29bbffbc2dbe5e5ee0bb71888e61f"
 // It must not match any test hashes.
 var BadBlock = []byte("The magic words are squeamish ossifrage.")
 
-// Empty block
-var EmptyHash = "d41d8cd98f00b204e9800998ecf8427e"
-var EmptyBlock = []byte("")
-
 // TODO(twp): Tests still to be written
 //
 //   * TestPutBlockFull

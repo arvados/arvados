@@ -28,6 +28,10 @@ const BlockSize = 64 * 1024 * 1024
 // in order to permit writes.
 const MinFreeKilobytes = BlockSize / 1024
 
+// Empty block
+var EmptyHash = "d41d8cd98f00b204e9800998ecf8427e"
+var EmptyBlock = []byte("")
+
 // ProcMounts /proc/mounts
 var ProcMounts = "/proc/mounts"
 
