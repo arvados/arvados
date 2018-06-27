@@ -20,6 +20,7 @@ type Container struct {
 	OutputPath           string               `json:"output_path"`
 	Priority             int                  `json:"priority"`
 	RuntimeConstraints   RuntimeConstraints   `json:"runtime_constraints"`
+	StartedAt            time.Time            `json:"started_at"`
 	State                ContainerState       `json:"state"`
 	SchedulingParameters SchedulingParameters `json:"scheduling_parameters"`
 }
@@ -54,6 +55,7 @@ type RuntimeConstraints struct {
 type SchedulingParameters struct {
 	Partitions  []string `json:"partitions"`
 	Preemptible bool     `json:"preemptible"`
+	MaxRunTime  int      `json:"max_run_time"`
 }
 
 // ContainerList is an arvados#containerList resource.

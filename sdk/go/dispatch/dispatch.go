@@ -195,6 +195,13 @@ func (d *Dispatcher) checkListForUpdates(containers []arvados.Container, todo ma
 			case Queued:
 				tracker.close()
 			case Locked, Running:
+				if c.SchedulingParameters.MaxRunTime > 0 {
+					maxRunTime := time.Duration(c.SchedulingParameters.MaxRunTime) * time.Second
+					if time.Since(c.StartedAt) >= maxRunTime {
+						// Time's up, schedule container for cancellation
+						c.Priority = 0
+					}
+				}
 				tracker.update(c)
 			case Cancelled, Complete:
 				tracker.close()
