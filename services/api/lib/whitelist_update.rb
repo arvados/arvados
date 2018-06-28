@@ -6,7 +6,7 @@ module WhitelistUpdate
   def check_update_whitelist permitted_fields
     attribute_names.each do |field|
       if !permitted_fields.include?(field.to_sym) && really_changed(field)
-        errors.add field, "cannot be modified in this state (#{send(field+"_was").inspect}, #{send(field).inspect})"
+        errors.add field, "cannot be modified in state '#{self.state}' (#{send(field+"_was").inspect}, #{send(field).inspect})"
       end
     end
   end

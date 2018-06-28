@@ -151,14 +151,18 @@ navbar:
       - install/cheat_sheet.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
+      - admin/activation.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Arvados on Kubernetes:
+      - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-postgresql.html.textile.liquid

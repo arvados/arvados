@@ -1,0 +1,34 @@
+---
+layout: default
+navsection: installguide
+title: Arvados on Kubernetes - Minikube
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page documents the setup of the prerequisites to run the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Minikube@.
+
+h3. Install tooling
+
+Install @kubectl@:
+
+* Follow the instructions at "https://kubernetes.io/docs/tasks/tools/install-kubectl/":https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+Install @helm@:
+
+* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
+
+h3. Install Minikube
+
+Follow the instructions at "https://kubernetes.io/docs/setup/minikube/":https://kubernetes.io/docs/setup/minikube/
+
+Test the connection:
+
+<pre>
+$ kubectl get nodes
+</pre>
+
+Now proceed to the "Initialize helm on the Kubernetes cluster":/install/arvados-on-kubernetes.html#helm section.
