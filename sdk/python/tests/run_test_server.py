@@ -415,6 +415,7 @@ Clusters:
         "arvados-api-server":
           Listen: ":{}"
           TLS: true
+          Insecure: true
         """.format(port, rails_api_port))
     logf = open(_logfilename('controller'), 'a')
     controller = subprocess.Popen(

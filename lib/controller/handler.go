@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
@@ -20,9 +21,11 @@ type Handler struct {
 	Cluster     *arvados.Cluster
 	NodeProfile *arvados.NodeProfile
 
-	setupOnce    sync.Once
-	handlerStack http.Handler
-	proxyClient  *arvados.Client
+	setupOnce      sync.Once
+	handlerStack   http.Handler
+	proxy          *proxy
+	secureClient   *http.Client
+	insecureClient *http.Client
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -32,7 +35,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	_, _, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	return err
 }
 
@@ -47,6 +50,19 @@ func (h *Handler) setup() {
 	hs = prepend(hs, h.proxyRemoteCluster)
 	mux.Handle("/", hs)
 	h.handlerStack = mux
+
+	sc := *arvados.DefaultSecureClient
+	sc.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	h.secureClient = &sc
+
+	ic := *arvados.InsecureHTTPClient
+	ic.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	h.insecureClient = &ic
+
+	h.proxy = &proxy{
+		Name:           "arvados-controller",
+		RequestTimeout: time.Duration(h.Cluster.HTTPRequestTimeout),
+	}
 }
 
 type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)
@@ -58,7 +74,7 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	urlOut, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,12 +86,16 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next h
 		RawPath:  req.URL.RawPath,
 		RawQuery: req.URL.RawQuery,
 	}
-	h.proxy(w, req, urlOut)
+	client := h.secureClient
+	if insecure {
+		client = h.insecureClient
+	}
+	h.proxy.Do(w, req, urlOut, client)
 }
 
 // For now, findRailsAPI always uses the rails API running on this
 // node.
-func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, error) {
+func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, bool, error) {
 	hostport := np.RailsAPI.Listen
 	if len(hostport) > 1 && hostport[0] == ':' && strings.TrimRight(hostport[1:], "0123456789") == "" {
 		// ":12345" => connect to indicated port on localhost
@@ -83,11 +103,12 @@ func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, 
 	} else if _, _, err := net.SplitHostPort(hostport); err == nil {
 		// "[::1]:12345" => connect to indicated address & port
 	} else {
-		return nil, err
+		return nil, false, err
 	}
 	proto := "http"
 	if np.RailsAPI.TLS {
 		proto = "https"
 	}
-	return url.Parse(proto + "://" + hostport)
+	url, err := url.Parse(proto + "://" + hostport)
+	return url, np.RailsAPI.Insecure, err
 }

@@ -11,9 +11,13 @@ import (
 	"net/url"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
+
+type proxy struct {
+	Name           string // to use in Via header
+	RequestTimeout time.Duration
+}
 
 // headers that shouldn't be forwarded when proxying. See
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
@@ -28,7 +32,7 @@ var dropHeaders = map[string]bool{
 	"Upgrade":           true,
 }
 
-func (h *Handler) proxy(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL) {
+func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, client *http.Client) {
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
 	hdrOut := http.Header{}
@@ -45,9 +49,9 @@ func (h *Handler) proxy(w http.ResponseWriter, reqIn *http.Request, urlOut *url.
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	ctx := reqIn.Context()
-	if timeout := h.Cluster.HTTPRequestTimeout; timeout > 0 {
+	if p.RequestTimeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(timeout)))
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
 		defer cancel()
 	}
 
@@ -57,7 +61,7 @@ func (h *Handler) proxy(w http.ResponseWriter, reqIn *http.Request, urlOut *url.
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
-	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
+	resp, err := client.Do(reqOut)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return

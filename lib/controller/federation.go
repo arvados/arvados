@@ -45,7 +45,11 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 		httpserver.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.proxy(w, req, urlOut)
+	client := h.secureClient
+	if remote.Insecure {
+		client = h.insecureClient
+	}
+	h.proxy.Do(w, req, urlOut, client)
 }
 
 // Extract the auth token supplied in req, and replace it with a

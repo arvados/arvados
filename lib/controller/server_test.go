@@ -34,7 +34,7 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 
 	nodeProfile := arvados.NodeProfile{
 		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true},
+		RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
 	}
 	handler := &Handler{Cluster: &arvados.Cluster{
 		ClusterID: "zzzzz",

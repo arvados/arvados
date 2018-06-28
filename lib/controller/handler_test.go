@@ -38,7 +38,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": {
 				Controller: arvados.SystemServiceInstance{Listen: ":"},
-				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true},
+				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
 			},
 		},
 	}
@@ -70,7 +70,7 @@ func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
 	err := json.Unmarshal(resp.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
 	c.Assert(len(jresp.Errors), check.Equals, 1)
-	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded`)
+	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded.*`)
 }
 
 func (s *HandlerSuite) TestProxyWithoutToken(c *check.C) {

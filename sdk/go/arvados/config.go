@@ -65,6 +65,8 @@ type RemoteCluster struct {
 	Proxy bool
 	// Scheme, default "https". Can be set to "http" for testing.
 	Scheme string
+	// Disable TLS verify. Can be set to true for testing.
+	Insecure bool
 }
 
 type InstanceType struct {
@@ -141,6 +143,7 @@ func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 }
 
 type SystemServiceInstance struct {
-	Listen string
-	TLS    bool
+	Listen   string
+	TLS      bool
+	Insecure bool
 }
