@@ -62,8 +62,8 @@ type InstanceType struct {
 	Name         string
 	ProviderType string
 	VCPUs        int
-	RAM          int64
-	Scratch      int64
+	RAM          ByteSize
+	Scratch      ByteSize
 	Price        float64
 	Preemptible  bool
 }
