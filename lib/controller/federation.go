@@ -8,9 +8,45 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"regexp"
 
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
+
+var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
+
+func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	m := wfRe.FindStringSubmatch(req.URL.Path)
+	if len(m) < 2 || m[1] == h.Cluster.ClusterID {
+		next.ServeHTTP(w, req)
+		return
+	}
+	remoteID := m[1]
+	remote, ok := h.Cluster.RemoteClusters[remoteID]
+	if !ok {
+		httpserver.Error(w, "no proxy available for cluster "+remoteID, http.StatusNotFound)
+		return
+	}
+	scheme := remote.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+	urlOut := &url.URL{
+		Scheme:   scheme,
+		Host:     remote.Host,
+		Path:     req.URL.Path,
+		RawPath:  req.URL.RawPath,
+		RawQuery: req.URL.RawQuery,
+	}
+	err := h.saltAuthToken(req, remoteID)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	h.proxy(w, req, urlOut)
+}
 
 // Extract the auth token supplied in req, and replace it with a
 // salted token for the remote cluster.

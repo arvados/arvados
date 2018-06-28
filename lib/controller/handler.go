@@ -5,15 +5,11 @@
 package controller
 
 import (
-	"context"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
@@ -53,58 +49,12 @@ func (h *Handler) setup() {
 	h.handlerStack = mux
 }
 
-// headers that shouldn't be forwarded when proxying. See
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
-var dropHeaders = map[string]bool{
-	"Connection":          true,
-	"Keep-Alive":          true,
-	"Proxy-Authenticate":  true,
-	"Proxy-Authorization": true,
-	"TE":                true,
-	"Trailer":           true,
-	"Transfer-Encoding": true,
-	"Upgrade":           true,
-}
-
 type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)
 
 func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		middleware(w, req, next)
 	})
-}
-
-var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
-
-func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	m := wfRe.FindStringSubmatch(req.URL.Path)
-	if len(m) < 2 || m[1] == h.Cluster.ClusterID {
-		next.ServeHTTP(w, req)
-		return
-	}
-	remoteID := m[1]
-	remote, ok := h.Cluster.RemoteClusters[remoteID]
-	if !ok {
-		httpserver.Error(w, "no proxy available for cluster "+remoteID, http.StatusNotFound)
-		return
-	}
-	scheme := remote.Scheme
-	if scheme == "" {
-		scheme = "https"
-	}
-	urlOut := &url.URL{
-		Scheme:   scheme,
-		Host:     remote.Host,
-		Path:     req.URL.Path,
-		RawPath:  req.URL.RawPath,
-		RawQuery: req.URL.RawQuery,
-	}
-	err := h.saltAuthToken(req, remoteID)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	h.proxy(w, req, urlOut)
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
@@ -121,52 +71,6 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next h
 		RawQuery: req.URL.RawQuery,
 	}
 	h.proxy(w, req, urlOut)
-}
-
-func (h *Handler) proxy(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL) {
-	// Copy headers from incoming request, then add/replace proxy
-	// headers like Via and X-Forwarded-For.
-	hdrOut := http.Header{}
-	for k, v := range reqIn.Header {
-		if !dropHeaders[k] {
-			hdrOut[k] = v
-		}
-	}
-	xff := reqIn.RemoteAddr
-	if xffIn := reqIn.Header.Get("X-Forwarded-For"); xffIn != "" {
-		xff = xffIn + "," + xff
-	}
-	hdrOut.Set("X-Forwarded-For", xff)
-	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
-
-	ctx := reqIn.Context()
-	if timeout := h.Cluster.HTTPRequestTimeout; timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(timeout)))
-		defer cancel()
-	}
-
-	reqOut := (&http.Request{
-		Method: reqIn.Method,
-		URL:    urlOut,
-		Header: hdrOut,
-		Body:   reqIn.Body,
-	}).WithContext(ctx)
-	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for k, v := range resp.Header {
-		for _, v := range v {
-			w.Header().Add(k, v)
-		}
-	}
-	w.WriteHeader(resp.StatusCode)
-	n, err := io.Copy(w, resp.Body)
-	if err != nil {
-		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
-	}
 }
 
 // For now, findRailsAPI always uses the rails API running on this
