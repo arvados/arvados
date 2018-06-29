@@ -292,7 +292,8 @@ class KeepClient(object):
         def __init__(self, root, user_agent_pool=queue.LifoQueue(),
                      upload_counter=None,
                      download_counter=None,
-                     headers={},insecure=False):
+                     headers={},
+                     insecure=False):
             self.root = root
             self._user_agent_pool = user_agent_pool
             self._result = {'error': None}
@@ -948,7 +949,8 @@ class KeepClient(object):
                     root, self._user_agent_pool,
                     upload_counter=self.upload_counter,
                     download_counter=self.download_counter,
-                    headers=headers,insecure=self.insecure)
+                    headers=headers,
+                    insecure=self.insecure)
         return local_roots
 
     @staticmethod
@@ -1049,7 +1051,8 @@ class KeepClient(object):
                 root: self.KeepService(root, self._user_agent_pool,
                                        upload_counter=self.upload_counter,
                                        download_counter=self.download_counter,
-                                       headers=headers,insecure=self.insecure)
+                                       headers=headers,
+                                       insecure=self.insecure)
                 for root in hint_roots
             }
 
