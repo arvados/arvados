@@ -33,7 +33,7 @@ def arvados_timestamp(timestr):
         subsecs = float(subsec_match.group(1))
         timestr = timestr[:subsec_match.start()] + 'Z'
     return calendar.timegm(time.strptime(timestr + 'UTC',
-                                         ARVADOS_TIMEFMT + '%Z'))
+                                         ARVADOS_TIMEFMT + '%Z')) + subsecs
 
 def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time

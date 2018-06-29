@@ -16,7 +16,7 @@ from schema_salad.sourceline import SourceLine, cmap
 
 from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
+from cwltool.process import scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
@@ -122,10 +122,17 @@ def upload_dependencies(arvrunner, name, document_loader,
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
 
-    sc = scandeps(uri, scanobj,
+    sc_result = scandeps(uri, scanobj,
                   loadref_fields,
                   set(("$include", "$schemas", "location")),
                   loadref, urljoin=document_loader.fetcher.urljoin)
+
+    sc = []
+    def only_real(obj):
+        if obj.get("location", "").startswith("file:"):
+            sc.append(obj)
+
+    visit_class(sc_result, ("File", "Directory"), only_real)
 
     normalizeFilesDirs(sc)
 
@@ -194,7 +201,7 @@ def upload_docker(arvrunner, tool):
     """Uploads Docker images used in CommandLineTool objects."""
 
     if isinstance(tool, CommandLineTool):
-        (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
+        (docker_req, docker_is_req) = tool.get_requirement("DockerRequirement")
         if docker_req:
             if docker_req.get("dockerOutputDirectory") and arvrunner.work_api != "containers":
                 # TODO: can be supported by containers API, but not jobs API.
@@ -346,8 +353,8 @@ class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
-                 intermediate_output_ttl=0, merged_map=None, priority=None,
-                 secret_store=None):
+                 intermediate_output_ttl=0, merged_map=None,
+                 priority=None, secret_store=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -355,7 +362,7 @@ class Runner(object):
         if enable_reuse:
             # If reuse is permitted by command line arguments but
             # disabled by the workflow itself, disable it.
-            reuse_req, _ = get_feature(self.tool, "http://arvados.org/cwl#ReuseRequirement")
+            reuse_req, _ = self.tool.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
         self.enable_reuse = enable_reuse
@@ -407,7 +414,7 @@ class Runner(object):
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self), maxlen=40)
+                done.logtail(logc, logger.error, "%s (%s) error log:" % (self.arvrunner.label(self), record["uuid"]), maxlen=40)
 
             self.final_output = record["output"]
             outc = arvados.collection.CollectionReader(self.final_output,

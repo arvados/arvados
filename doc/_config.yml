@@ -37,6 +37,7 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
@@ -149,14 +150,19 @@ navbar:
       - admin/upgrading.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/storage-classes.html.textile.liquid
+      - admin/activation.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Arvados on Kubernetes:
+      - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-postgresql.html.textile.liquid
@@ -168,6 +174,8 @@ navbar:
       - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
+      - install/configure-fs-storage.html.textile.liquid
+      - install/configure-s3-object-storage.html.textile.liquid
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid

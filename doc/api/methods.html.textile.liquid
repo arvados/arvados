@@ -98,7 +98,7 @@ table(table table-bordered table-condensed).
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
-h4. Filtering on subproperties
+h4(#subpropertyfilters). Filtering on subproperties
 
 Some record type have an additional @properties@ attribute that allows recording and filtering on additional key-value pairs.  To filter on a subproperty, the value in the @attribute@ position has the form @properties.user_property@.  You may also use JSON-LD / RDF style URIs for property keys by enclosing them in @<...>@ for example @properties.<http://example.com/user_property>@.  Alternately you may also provide a JSON-LD "@context" field, however at this time JSON-LD contexts are not interpreted by Arvados.
 

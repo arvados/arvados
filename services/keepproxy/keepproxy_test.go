@@ -162,6 +162,33 @@ func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 	c.Check(err, ErrorMatches, `.*loop detected.*`)
 }
 
+func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	// Set up fake keepstore to record request headers
+	var hdr http.Header
+	ts := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			hdr = r.Header
+			http.Error(w, "Error", http.StatusInternalServerError)
+		}))
+	defer ts.Close()
+
+	// Point keepproxy router's keepclient to the fake keepstore
+	sr := map[string]string{
+		TestProxyUUID: ts.URL,
+	}
+	router.(*proxyHandler).KeepClient.SetServiceRoots(sr, sr, sr)
+
+	// Set up client to ask for storage classes to keepproxy
+	kc.StorageClasses = []string{"secure"}
+	content := []byte("Very important data")
+	_, _, err := kc.PutB(content)
+	c.Check(err, NotNil)
+	c.Check(hdr.Get("X-Keep-Storage-Classes"), Equals, "secure")
+}
+
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
@@ -587,30 +614,29 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	kc := runProxy(c, nil, false)
+	defer closeListener()
 
-	// keepclient with no such keep server
-	kc := keepclient.New(arv)
+	// Point keepproxy to a non-existant keepstore
 	locals := map[string]string{
 		TestProxyUUID: "http://localhost:12345",
 	}
-	kc.SetServiceRoots(locals, nil, nil)
+	router.(*proxyHandler).KeepClient.SetServiceRoots(locals, nil, nil)
 
-	// Ask should result in temporary connection refused error
+	// Ask should result in temporary bad gateway error
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	_, _, err = kc.Ask(hash)
+	_, _, err := kc.Ask(hash)
 	c.Check(err, NotNil)
 	errNotFound, _ := err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(err, ErrorMatches, ".*connection refused.*")
+	c.Assert(err, ErrorMatches, ".*HTTP 502.*")
 
-	// Get should result in temporary connection refused error
+	// Get should result in temporary bad gateway error
 	_, _, _, err = kc.Get(hash)
 	c.Check(err, NotNil)
 	errNotFound, _ = err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(err, ErrorMatches, ".*connection refused.*")
+	c.Assert(err, ErrorMatches, ".*HTTP 502.*")
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {

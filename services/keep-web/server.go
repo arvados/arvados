@@ -14,7 +14,7 @@ type server struct {
 }
 
 func (srv *server) Start() error {
-	srv.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(&handler{Config: srv.Config}))
+	srv.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(nil, &handler{Config: srv.Config}))
 	srv.Addr = srv.Config.Listen
 	return srv.Server.Start()
 }

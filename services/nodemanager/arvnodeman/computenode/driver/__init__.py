@@ -174,7 +174,7 @@ class BaseComputeNodeDriver(RetryMixin):
         try:
             kwargs = self.create_kwargs.copy()
             kwargs.update(self.arvados_create_kwargs(size, arvados_node))
-            kwargs['size'] = size
+            kwargs['size'] = size.real
             return self.real.create_node(**kwargs)
         except CLOUD_ERRORS as create_error:
             # Workaround for bug #6702: sometimes the create node request

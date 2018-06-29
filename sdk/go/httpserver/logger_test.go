@@ -9,11 +9,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -26,12 +25,13 @@ var _ = check.Suite(&Suite{})
 type Suite struct{}
 
 func (s *Suite) TestLogRequests(c *check.C) {
-	defer log.SetOutput(os.Stdout)
 	captured := &bytes.Buffer{}
-	log.SetOutput(captured)
-	log.SetFormatter(&log.JSONFormatter{
+	log := logrus.New()
+	log.Out = captured
+	log.Formatter = &logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339Nano,
-	})
+	}
+
 	h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("hello world"))
 	})
@@ -39,7 +39,7 @@ func (s *Suite) TestLogRequests(c *check.C) {
 	req.Header.Set("X-Forwarded-For", "1.2.3.4:12345")
 	c.Assert(err, check.IsNil)
 	resp := httptest.NewRecorder()
-	AddRequestIDs(LogRequests(h)).ServeHTTP(resp, req)
+	AddRequestIDs(LogRequests(log, h)).ServeHTTP(resp, req)
 
 	dec := json.NewDecoder(captured)
 

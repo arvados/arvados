@@ -202,14 +202,21 @@ def _wait_until_port_listens(port, timeout=10):
         format(port, timeout),
         file=sys.stderr)
 
-def _fifo2stderr(label):
-    """Create a fifo, and copy it to stderr, prepending label to each line.
+def _logfilename(label):
+    """Set up a labelled log file, and return a path to write logs to.
 
-    Return value is the path to the new FIFO.
+    Normally, the returned path is {tmpdir}/{label}.log.
+
+    In debug mode, logs are also written to stderr, with [label]
+    prepended to each line. The returned path is a FIFO.
 
     +label+ should contain only alphanumerics: it is also used as part
     of the FIFO filename.
+
     """
+    logfilename = os.path.join(TEST_TMPDIR, label+'.log')
+    if not os.environ.get('ARVADOS_DEBUG', ''):
+        return logfilename
     fifo = os.path.join(TEST_TMPDIR, label+'.fifo')
     try:
         os.remove(fifo)
@@ -217,8 +224,21 @@ def _fifo2stderr(label):
         if error.errno != errno.ENOENT:
             raise
     os.mkfifo(fifo, 0o700)
+    stdbuf = ['stdbuf', '-i0', '-oL', '-eL']
+    # open(fifo, 'r') would block waiting for someone to open the fifo
+    # for writing, so we need a separate cat process to open it for
+    # us.
+    cat = subprocess.Popen(
+        stdbuf+['cat', fifo],
+        stdin=open('/dev/null'),
+        stdout=subprocess.PIPE)
+    tee = subprocess.Popen(
+        stdbuf+['tee', '-a', logfilename],
+        stdin=cat.stdout,
+        stdout=subprocess.PIPE)
     subprocess.Popen(
-        ['stdbuf', '-i0', '-oL', '-eL', 'sed', '-e', 's/^/['+label+'] /', fifo],
+        stdbuf+['sed', '-e', 's/^/['+label+'] /'],
+        stdin=tee.stdout,
         stdout=sys.stderr)
     return fifo
 
@@ -377,6 +397,40 @@ def stop(force=False):
         kill_server_pid(_pidfile('api'))
         my_api_host = None
 
+def run_controller():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    stop_controller()
+    rails_api_port = int(string.split(os.environ.get('ARVADOS_TEST_API_HOST', my_api_host), ':')[-1])
+    port = find_available_port()
+    conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
+    with open(conf, 'w') as f:
+        f.write("""
+Clusters:
+  zzzzz:
+    NodeProfiles:
+      "*":
+        "arvados-controller":
+          Listen: ":{}"
+        "arvados-api-server":
+          Listen: ":{}"
+          TLS: true
+        """.format(port, rails_api_port))
+    logf = open(_logfilename('controller'), 'a')
+    controller = subprocess.Popen(
+        ["arvados-server", "controller", "-config", conf],
+        stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    with open(_pidfile('controller'), 'w') as f:
+        f.write(str(controller.pid))
+    _wait_until_port_listens(port)
+    _setport('controller', port)
+    return port
+
+def stop_controller():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('controller'))
+
 def run_ws():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
@@ -403,7 +457,7 @@ Postgres:
                    _dbconfig('database'),
                    _dbconfig('username'),
                    _dbconfig('password')))
-    logf = open(_fifo2stderr('ws'), 'w')
+    logf = open(_logfilename('ws'), 'a')
     ws = subprocess.Popen(
         ["ws", "-config", conf],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
@@ -429,7 +483,7 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.items():
         keep_cmd.append("{}={}".format(arg, val))
 
-    logf = open(_fifo2stderr('keep{}'.format(n)), 'w')
+    logf = open(_logfilename('keep{}'.format(n)), 'a')
     kp0 = subprocess.Popen(
         keep_cmd, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
@@ -513,7 +567,7 @@ def run_keep_proxy():
     port = find_available_port()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
-    logf = open(_fifo2stderr('keepproxy'), 'w')
+    logf = open(_logfilename('keepproxy'), 'a')
     kp = subprocess.Popen(
         ['keepproxy',
          '-pid='+_pidfile('keepproxy'),
@@ -552,7 +606,7 @@ def run_arv_git_httpd():
     gitport = find_available_port()
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_fifo2stderr('arv-git-httpd'), 'w')
+    logf = open(_logfilename('arv-git-httpd'), 'a')
     agh = subprocess.Popen(
         ['arv-git-httpd',
          '-repo-root='+gitdir+'/test',
@@ -576,7 +630,7 @@ def run_keep_web():
     keepwebport = find_available_port()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
-    logf = open(_fifo2stderr('keep-web'), 'w')
+    logf = open(_logfilename('keep-web'), 'a')
     keepweb = subprocess.Popen(
         ['keep-web',
          '-allow-anonymous',
@@ -598,6 +652,8 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
+    nginxconf['CONTROLLERPORT'] = _getport('controller')
+    nginxconf['CONTROLLERSSLPORT'] = find_available_port()
     nginxconf['KEEPWEBPORT'] = _getport('keep-web')
     nginxconf['KEEPWEBDLSSLPORT'] = find_available_port()
     nginxconf['KEEPWEBSSLPORT'] = find_available_port()
@@ -609,7 +665,9 @@ def run_nginx():
     nginxconf['WSSPORT'] = _getport('wss')
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
-    nginxconf['ACCESSLOG'] = _fifo2stderr('nginx_access_log')
+    nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
+    nginxconf['ERRORLOG'] = _logfilename('nginx_error')
+    nginxconf['TMPDIR'] = TEST_TMPDIR
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -628,6 +686,7 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _setport('controller-ssl', nginxconf['CONTROLLERSSLPORT'])
     _setport('keep-web-dl-ssl', nginxconf['KEEPWEBDLSSLPORT'])
     _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
@@ -766,6 +825,7 @@ if __name__ == "__main__":
     actions = [
         'start', 'stop',
         'start_ws', 'stop_ws',
+        'start_controller', 'stop_controller',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
@@ -802,6 +862,10 @@ if __name__ == "__main__":
         run_ws()
     elif args.action == 'stop_ws':
         stop_ws()
+    elif args.action == 'start_controller':
+        run_controller()
+    elif args.action == 'stop_controller':
+        stop_controller()
     elif args.action == 'start_keep':
         run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
@@ -820,6 +884,7 @@ if __name__ == "__main__":
         stop_keep_web()
     elif args.action == 'start_nginx':
         run_nginx()
+        print("export ARVADOS_API_HOST=0.0.0.0:{}".format(_getport('controller-ssl')))
     elif args.action == 'stop_nginx':
         stop_nginx()
     else:
