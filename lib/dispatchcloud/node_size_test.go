@@ -11,7 +11,7 @@ import (
 
 var _ = check.Suite(&NodeSizeSuite{})
 
-const GiB = int64(1 << 30)
+const GiB = arvados.ByteSize(1 << 30)
 
 type NodeSizeSuite struct{}
 
@@ -43,7 +43,7 @@ func (*NodeSizeSuite) TestChooseUnsatisfiable(c *check.C) {
 		checkUnsatisfiable(&arvados.Container{RuntimeConstraints: rc})
 	}
 	checkUnsatisfiable(&arvados.Container{
-		Mounts:             map[string]arvados.Mount{"/tmp": {Kind: "tmp", Capacity: 2 * GiB}},
+		Mounts:             map[string]arvados.Mount{"/tmp": {Kind: "tmp", Capacity: int64(2 * GiB)}},
 		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 12345, VCPUs: 1},
 	})
 }
@@ -76,7 +76,7 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 	} {
 		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
 			Mounts: map[string]arvados.Mount{
-				"/tmp": {Kind: "tmp", Capacity: 2 * GiB},
+				"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 			},
 			RuntimeConstraints: arvados.RuntimeConstraints{
 				VCPUs:        2,
@@ -101,7 +101,7 @@ func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
 	}
 	best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
 		Mounts: map[string]arvados.Mount{
-			"/tmp": {Kind: "tmp", Capacity: 2 * GiB},
+			"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 		},
 		RuntimeConstraints: arvados.RuntimeConstraints{
 			VCPUs:        2,
