@@ -11,7 +11,7 @@ import (
 
 var _ = check.Suite(&NodeSizeSuite{})
 
-const GiB = int64(1 << 30)
+const GiB = arvados.ByteSize(1 << 30)
 
 type NodeSizeSuite struct{}
 
@@ -27,10 +27,10 @@ func (*NodeSizeSuite) TestChooseNotConfigured(c *check.C) {
 
 func (*NodeSizeSuite) TestChooseUnsatisfiable(c *check.C) {
 	checkUnsatisfiable := func(ctr *arvados.Container) {
-		_, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: []arvados.InstanceType{
-			{Price: 1.1, RAM: 1000000000, VCPUs: 2, Name: "small1"},
-			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Name: "small2"},
-			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Name: "small4", Scratch: GiB},
+		_, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: map[string]arvados.InstanceType{
+			"small1": {Price: 1.1, RAM: 1000000000, VCPUs: 2, Name: "small1"},
+			"small2": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Name: "small2"},
+			"small4": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Name: "small4", Scratch: GiB},
 		}}, ctr)
 		c.Check(err, check.FitsTypeOf, ConstraintsNotSatisfiableError{})
 	}
@@ -43,40 +43,40 @@ func (*NodeSizeSuite) TestChooseUnsatisfiable(c *check.C) {
 		checkUnsatisfiable(&arvados.Container{RuntimeConstraints: rc})
 	}
 	checkUnsatisfiable(&arvados.Container{
-		Mounts:             map[string]arvados.Mount{"/tmp": {Kind: "tmp", Capacity: 2 * GiB}},
+		Mounts:             map[string]arvados.Mount{"/tmp": {Kind: "tmp", Capacity: int64(2 * GiB)}},
 		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 12345, VCPUs: 1},
 	})
 }
 
 func (*NodeSizeSuite) TestChoose(c *check.C) {
-	for _, menu := range [][]arvados.InstanceType{
+	for _, menu := range []map[string]arvados.InstanceType{
 		{
-			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
-			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
-			{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
+			"costly": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+			"best":   {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+			"small":  {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
 		},
 		{
-			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
-			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "goodenough"},
-			{Price: 2.2, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
-			{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
+			"costly":     {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+			"goodenough": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "goodenough"},
+			"best":       {Price: 2.2, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+			"small":      {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
 		},
 		{
-			{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
-			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "goodenough"},
-			{Price: 2.2, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
-			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+			"small":      {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Name: "small"},
+			"goodenough": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "goodenough"},
+			"best":       {Price: 2.2, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+			"costly":     {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
 		},
 		{
-			{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: GiB, Name: "small"},
-			{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: GiB, Name: "nearly"},
-			{Price: 3.3, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
-			{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+			"small":  {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: GiB, Name: "small"},
+			"nearly": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: GiB, Name: "nearly"},
+			"best":   {Price: 3.3, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+			"costly": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
 		},
 	} {
 		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
 			Mounts: map[string]arvados.Mount{
-				"/tmp": {Kind: "tmp", Capacity: 2 * GiB},
+				"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 			},
 			RuntimeConstraints: arvados.RuntimeConstraints{
 				VCPUs:        2,
@@ -92,16 +92,16 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 	}
 }
 
-func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
-	menu := []arvados.InstanceType{
-		{Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Preemptible: true, Name: "costly"},
-		{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "almost best"},
-		{Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Preemptible: true, Name: "best"},
-		{Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Preemptible: true, Name: "small"},
+func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
+	menu := map[string]arvados.InstanceType{
+		"costly":      {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Preemptible: true, Name: "costly"},
+		"almost best": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "almost best"},
+		"best":        {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Preemptible: true, Name: "best"},
+		"small":       {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 2 * GiB, Preemptible: true, Name: "small"},
 	}
 	best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
 		Mounts: map[string]arvados.Mount{
-			"/tmp": {Kind: "tmp", Capacity: 2 * GiB},
+			"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 		},
 		RuntimeConstraints: arvados.RuntimeConstraints{
 			VCPUs:        2,
