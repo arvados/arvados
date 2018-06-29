@@ -17,11 +17,9 @@ import { RootState } from "../store";
 
 export const getResourceUrl = (resource: Resource): string => {
     switch (resource.kind) {
-        case ResourceKind.LEVEL_UP: return `/projects/${resource.ownerUuid}`;
         case ResourceKind.PROJECT: return `/projects/${resource.uuid}`;
         case ResourceKind.COLLECTION: return `/collections/${resource.uuid}`;
-        default:
-            return "#";
+        default: return "";
     }
 };
 
@@ -31,50 +29,45 @@ export enum ItemMode {
     ACTIVE
 }
 
-export const setProjectItem = (itemId: string, itemKind = ResourceKind.PROJECT, itemMode = ItemMode.OPEN) =>
+export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { projects } = getState();
-
-        let treeItem = findTreeItem(projects.items, itemId);
-        if (treeItem && itemKind === ResourceKind.LEVEL_UP) {
-            treeItem = findTreeItem(projects.items, treeItem.data.ownerUuid);
-        }
+        const { projects, router } = getState();
+        const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
 
-            if (treeItem.status === TreeItemStatus.Loaded) {
-                dispatch<any>(openProjectItem(treeItem.data, itemKind, itemMode));
-            } else {
-                dispatch<any>(getProjectList(itemId))
-                    .then(() => dispatch<any>(openProjectItem(treeItem!.data, itemKind, itemMode)));
+            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
+
+            if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
             }
+
+            const resourceUrl = getResourceUrl({ ...treeItem.data });
+
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
-                dispatch<any>(getCollectionList(itemId));
+                if (router.location && !router.location.pathname.includes(resourceUrl)) {
+                    dispatch(push(resourceUrl));
+                }
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
             }
+
+            const promise = treeItem.status === TreeItemStatus.Loaded
+                ? Promise.resolve()
+                : dispatch<any>(getProjectList(itemId));
+
+            promise
+                .then(() => dispatch<any>(getCollectionList(itemId)))
+                .then(() => dispatch<any>(() => {
+                    const { projects, collections } = getState();
+                    dispatch(dataExplorerActions.SET_ITEMS({
+                        id: PROJECT_PANEL_ID,
+                        items: projectPanelItems(
+                            projects.items,
+                            treeItem.data.uuid,
+                            collections
+                        )
+                    }));
+                }));
+
         }
-    };
-
-const openProjectItem = (resource: Resource, itemKind: ResourceKind, itemMode: ItemMode) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-
-        const { collections, projects } = getState();
-
-        if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(resource.uuid));
-        }
-
-        if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
-            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
-        }
-
-        dispatch(push(getResourceUrl({ ...resource, kind: itemKind })));
-        dispatch(dataExplorerActions.SET_ITEMS({
-            id: PROJECT_PANEL_ID,
-            items: projectPanelItems(
-                projects.items,
-                resource.uuid,
-                collections
-            )
-        }));
     };

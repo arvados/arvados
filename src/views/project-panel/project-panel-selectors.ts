@@ -15,15 +15,6 @@ export const projectPanelItems = (projects: Array<TreeItem<Project>>, treeItemId
 
     const treeItem = findTreeItem(projects, treeItemId);
     if (treeItem) {
-        dataItems.push({
-            name: "..",
-            url: getResourceUrl(treeItem.data),
-            kind: ResourceKind.LEVEL_UP,
-            owner: "",
-            uuid: treeItem.data.uuid,
-            lastModified: ""
-        });
-
         if (treeItem.items) {
             treeItem.items.forEach(p => {
                 const item = {

@@ -12,12 +12,18 @@ import { DataTableFilterItem } from '../../components/data-table-filters/data-ta
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import actions from "../../store/data-explorer/data-explorer-action";
-import { setProjectItem } from "../../store/navigation/navigation-action";
+import { setProjectItem, ItemMode } from "../../store/navigation/navigation-action";
 import { DataColumns } from '../../components/data-table/data-table';
 import { ResourceKind } from "../../models/resource";
+import { RouteComponentProps } from 'react-router';
 
 export const PROJECT_PANEL_ID = "projectPanel";
-class ProjectPanel extends React.Component<DispatchProp & WithStyles<CssRules>> {
+
+type ProjectPanelProps = { onItemOpen: (itemId: string) => void }
+    & DispatchProp
+    & WithStyles<CssRules>
+    & RouteComponentProps<{ id: string }>;
+class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -49,6 +55,12 @@ class ProjectPanel extends React.Component<DispatchProp & WithStyles<CssRules>> 
         this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
+    componentWillReceiveProps(nextProps: ProjectPanelProps) {
+        if (this.props.match.params.id !== nextProps.match.params.id) {
+            this.props.onItemOpen(nextProps.match.params.id);
+        }
+    }
+
     toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
         this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
     }
@@ -78,7 +90,7 @@ class ProjectPanel extends React.Component<DispatchProp & WithStyles<CssRules>> 
     }
 
     openProject = (item: ProjectPanelItem) => {
-        this.props.dispatch<any>(setProjectItem(item.uuid));
+        this.props.onItemOpen(item.uuid);
     }
 }
 
@@ -113,8 +125,6 @@ const renderName = (item: ProjectPanelItem) =>
 
 const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
-        case ResourceKind.LEVEL_UP:
-            return <i className="icon-level-up" style={{ fontSize: "1rem" }} />;
         case ResourceKind.PROJECT:
             return <i className="fas fa-folder fa-lg" />;
         case ResourceKind.COLLECTION:

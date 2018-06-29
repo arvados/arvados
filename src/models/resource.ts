@@ -16,15 +16,18 @@ export enum ResourceKind {
     PROJECT = "project",
     COLLECTION = "collection",
     PIPELINE = "pipeline",
-    LEVEL_UP = "",
     UNKNOWN = "unknown"
 }
 
 export function getResourceKind(itemKind: string) {
     switch (itemKind) {
-        case "arvados#project": return ResourceKind.PROJECT;
-        case "arvados#collection": return ResourceKind.COLLECTION;
-        case "arvados#pipeline": return ResourceKind.PIPELINE;
+        case "arvados#project":
+        case "arvados#group":
+            return ResourceKind.PROJECT;
+        case "arvados#collection":
+            return ResourceKind.COLLECTION;
+        case "arvados#pipeline":
+            return ResourceKind.PIPELINE;
         default:
             return ResourceKind.UNKNOWN;
     }

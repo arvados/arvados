@@ -6,7 +6,7 @@ import * as React from 'react';
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch } from "react-router";
+import { Route, Switch, RouteComponentProps } from "react-router";
 import authActions from "../../store/auth/auth-action";
 import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
@@ -133,7 +133,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-            this.props.dispatch<any>(setProjectItem(itemId, ResourceKind.PROJECT, ItemMode.BOTH));
+            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -152,12 +152,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     render() {
-        const branch = getTreePath(this.props.projects, this.props.currentProjectId);
-        const breadcrumbs = branch.map(item => ({
+        const path = getTreePath(this.props.projects, this.props.currentProjectId);
+        const breadcrumbs = path.map(item => ({
             label: item.data.name,
             itemId: item.data.uuid,
             status: item.status
-        }));
+        }));  
 
         const { classes, user } = this.props;
         return (
@@ -186,11 +186,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                                 projects={this.props.projects}
                                 toggleOpen={itemId =>
                                     this.props.dispatch<any>(
-                                        setProjectItem(itemId, ResourceKind.PROJECT, ItemMode.OPEN)
+                                        setProjectItem(itemId, ItemMode.OPEN)
                                     )}
                                 toggleActive={itemId =>
                                     this.props.dispatch<any>(
-                                        setProjectItem(itemId, ResourceKind.PROJECT, ItemMode.ACTIVE)
+                                        setProjectItem(itemId, ItemMode.ACTIVE)
                                     )}
                             />
                         </SidePanel>
@@ -198,13 +198,20 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/projects/:name" component={ProjectPanel} />
+                            <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
                 </main>
             </div>
         );
     }
+
+    renderProjectPanel = (props: RouteComponentProps<any>) =>
+        <ProjectPanel
+            onItemOpen={itemId => this.props.dispatch<any>(
+                setProjectItem(itemId, ItemMode.ACTIVE)
+            )}
+            {...props} />
 }
 
 export default connect<WorkbenchDataProps>(
