@@ -7,6 +7,7 @@ package arvados
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -43,12 +44,21 @@ func (n *ByteSize) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	split := strings.LastIndexAny(s, "0123456789") + 1
+	split := strings.LastIndexAny(s, "0123456789.+-eE") + 1
 	if split == 0 {
 		return fmt.Errorf("invalid byte size %q", s)
 	}
-	var val int64
-	err = json.Unmarshal([]byte(s[:split]), &val)
+	if s[split-1] == 'E' {
+		// We accepted an E as if it started the exponent part
+		// of a json number, but if the next char isn't +, -,
+		// or digit, then the E must have meant Exa. Instead
+		// of "4.5E"+"iB" we want "4.5"+"EiB".
+		split--
+	}
+	var val json.Number
+	dec := json.NewDecoder(strings.NewReader(s[:split]))
+	dec.UseNumber()
+	err = dec.Decode(&val)
 	if err != nil {
 		return err
 	}
@@ -63,9 +73,19 @@ func (n *ByteSize) UnmarshalJSON(data []byte) error {
 	if !ok {
 		return fmt.Errorf("invalid unit %q", strings.Trim(s[split:], " "))
 	}
-	if pval > 1 && (val*pval)/pval != val {
-		return fmt.Errorf("size %q overflows int64", s)
+	if intval, err := val.Int64(); err == nil {
+		if pval > 1 && (intval*pval)/pval != intval {
+			return fmt.Errorf("size %q overflows int64", s)
+		}
+		*n = ByteSize(intval * pval)
+		return nil
+	} else if floatval, err := val.Float64(); err == nil {
+		if floatval*float64(pval) > math.MaxInt64 {
+			return fmt.Errorf("size %q overflows int64", s)
+		}
+		*n = ByteSize(int64(floatval * float64(pval)))
+		return nil
+	} else {
+		return fmt.Errorf("bug: json.Number for %q is not int64 or float64: %s", s, err)
 	}
-	*n = ByteSize(val * pval)
-	return nil
 }
