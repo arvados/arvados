@@ -768,14 +768,10 @@ class KeepClient(object):
         if local_store is None:
             local_store = os.environ.get('KEEP_LOCAL_STORE')
 
-        if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
-            self.insecure = True
+        if api_client is None:
+            self.insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
         else:
-            self.insecure = False
-
-        if api_client is not None:
-            if not self.insecure and api_client.insecure:
-                self.insecure = True
+            self.insecure = api_client.insecure
 
         self.block_cache = block_cache if block_cache else KeepBlockCache()
         self.timeout = timeout

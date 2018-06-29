@@ -1257,6 +1257,8 @@ class KeepClientAPIErrorTest(unittest.TestCase):
             def __getattr__(self, r):
                 if r == "api_token":
                     return "abc"
+                elif r == "insecure":
+                    return False
                 else:
                     raise arvados.errors.KeepReadError()
         keep_client = arvados.KeepClient(api_client=ApiMock(),
