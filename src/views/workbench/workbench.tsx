@@ -202,15 +202,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
-        onItemRouteChange={this.handleItemRouteChange}
+        onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
         {...props} />
-
-    handleItemRouteChange = (itemId: string) => {
-        this.props.dispatch<any>(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
-        this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(sidePanelData[0].id));
-        this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
-    }
 
 }
 

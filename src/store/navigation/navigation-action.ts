@@ -14,6 +14,7 @@ import dataExplorerActions from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { projectPanelItems } from "../../views/project-panel/project-panel-selectors";
 import { RootState } from "../store";
+import { sidePanelData } from "../side-panel/side-panel-reducer";
 
 export const getResourceUrl = (resource: Resource): string => {
     switch (resource.kind) {
@@ -31,12 +32,16 @@ export enum ItemMode {
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { projects, router } = getState();
+        const { projects, router, sidePanel } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
 
             dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
+            const projectsItem = sidePanelData[0];
+            if(sidePanel.some(item => item.id === projectsItem.id && !item.open)){
+                dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(projectsItem.id));
+            }
 
             if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
                 dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
