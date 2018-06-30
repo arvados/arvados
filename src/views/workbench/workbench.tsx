@@ -6,7 +6,7 @@ import * as React from 'react';
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, RouteComponentProps } from "react-router";
+import { Route, Switch, RouteComponentProps, withRouter } from "react-router";
 import authActions from "../../store/auth/auth-action";
 import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
@@ -27,6 +27,7 @@ import { ResourceKind } from "../../models/resource";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
+import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -184,14 +185,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             sidePanelItems={this.props.sidePanelItems}>
                             <ProjectTree
                                 projects={this.props.projects}
-                                toggleOpen={itemId =>
-                                    this.props.dispatch<any>(
-                                        setProjectItem(itemId, ItemMode.OPEN)
-                                    )}
-                                toggleActive={itemId =>
-                                    this.props.dispatch<any>(
-                                        setProjectItem(itemId, ItemMode.ACTIVE)
-                                    )}
+                                toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
+                                toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
                             />
                         </SidePanel>
                     </Drawer>}
@@ -206,16 +201,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         );
     }
 
-    renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => {
-        if (props.match.params.id !== this.props.currentProjectId) {
-            this.props.dispatch<any>(
-                setProjectItem(props.match.params.id, ItemMode.ACTIVE)
-            );
-        }
-        return <ProjectPanel
-            onItemClick={item => this.props.dispatch<any>(
-                setProjectItem(item.uuid, ItemMode.ACTIVE)
-            )} />;
+    renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
+        onItemRouteChange={this.handleItemRouteChange}
+        onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
+        {...props} />
+
+    handleItemRouteChange = (itemId: string) => {
+        this.props.dispatch<any>(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
+        this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(sidePanelData[0].id));
+        this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
     }
 
 }

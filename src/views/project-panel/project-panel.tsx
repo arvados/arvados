@@ -12,16 +12,21 @@ import { DataTableFilterItem } from '../../components/data-table-filters/data-ta
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import actions from "../../store/data-explorer/data-explorer-action";
-import { setProjectItem, ItemMode } from "../../store/navigation/navigation-action";
 import { DataColumns } from '../../components/data-table/data-table';
 import { ResourceKind } from "../../models/resource";
 import { RouteComponentProps } from 'react-router';
+import { RootState } from '../../store/store';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
-type ProjectPanelProps = { onItemClick: (item: ProjectPanelItem) => void }
+type ProjectPanelProps = {
+    currentItemId: string,
+    onItemClick: (item: ProjectPanelItem) => void,
+    onItemRouteChange: (itemId: string) => void
+}
     & DispatchProp
-    & WithStyles<CssRules>;
+    & WithStyles<CssRules>
+    & RouteComponentProps<{ id: string }>;
 class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
         return <div>
@@ -54,6 +59,12 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
         this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
+    componentWillReceiveProps({ match, currentItemId }: ProjectPanelProps) {
+        if (match.params.id !== currentItemId) {
+            this.props.onItemRouteChange(match.params.id);
+        }
+    }
+
     toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
         this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
     }
@@ -81,6 +92,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
     changeRowsPerPage = (rowsPerPage: number) => {
         this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
     }
+
 }
 
 type CssRules = "toolbar" | "button";
@@ -213,4 +225,6 @@ const contextMenuActions = [[{
 }
 ]];
 
-export default withStyles(styles)(connect()(ProjectPanel));
+export default withStyles(styles)(
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+        ProjectPanel));
