@@ -157,7 +157,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             label: item.data.name,
             itemId: item.data.uuid,
             status: item.status
-        }));  
+        }));
 
         const { classes, user } = this.props;
         return (
@@ -206,12 +206,18 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         );
     }
 
-    renderProjectPanel = (props: RouteComponentProps<any>) =>
-        <ProjectPanel
-            onItemOpen={itemId => this.props.dispatch<any>(
-                setProjectItem(itemId, ItemMode.ACTIVE)
-            )}
-            {...props} />
+    renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => {
+        if (props.match.params.id !== this.props.currentProjectId) {
+            this.props.dispatch<any>(
+                setProjectItem(props.match.params.id, ItemMode.ACTIVE)
+            );
+        }
+        return <ProjectPanel
+            onItemClick={item => this.props.dispatch<any>(
+                setProjectItem(item.uuid, ItemMode.ACTIVE)
+            )} />;
+    }
+
 }
 
 export default connect<WorkbenchDataProps>(

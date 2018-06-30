@@ -19,10 +19,9 @@ import { RouteComponentProps } from 'react-router';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
-type ProjectPanelProps = { onItemOpen: (itemId: string) => void }
+type ProjectPanelProps = { onItemClick: (item: ProjectPanelItem) => void }
     & DispatchProp
-    & WithStyles<CssRules>
-    & RouteComponentProps<{ id: string }>;
+    & WithStyles<CssRules>;
 class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
         return <div>
@@ -42,7 +41,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 contextActions={contextMenuActions}
                 onColumnToggle={this.toggleColumn}
                 onFiltersChange={this.changeFilters}
-                onRowClick={this.openProject}
+                onRowClick={this.props.onItemClick}
                 onSortToggle={this.toggleSort}
                 onSearch={this.search}
                 onContextAction={this.executeAction}
@@ -53,12 +52,6 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
 
     componentDidMount() {
         this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
-    }
-
-    componentWillReceiveProps(nextProps: ProjectPanelProps) {
-        if (this.props.match.params.id !== nextProps.match.params.id) {
-            this.props.onItemOpen(nextProps.match.params.id);
-        }
     }
 
     toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
@@ -87,10 +80,6 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
 
     changeRowsPerPage = (rowsPerPage: number) => {
         this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
-    }
-
-    openProject = (item: ProjectPanelItem) => {
-        this.props.onItemOpen(item.uuid);
     }
 }
 
