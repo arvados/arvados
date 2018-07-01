@@ -3,123 +3,228 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { RouteComponentProps } from 'react-router';
-import { ProjectState } from '../../store/project/project-reducer';
-import { RootState } from '../../store/store';
-import { connect, DispatchProp } from 'react-redux';
-import { CollectionState } from "../../store/collection/collection-reducer";
-import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
-import ProjectExplorer from "../../views-components/project-explorer/project-explorer";
-import { projectExplorerItems } from "./project-panel-selectors";
-import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
-import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataColumn, SortDirection } from '../../components/data-table/data-column';
+import { ProjectPanelItem } from './project-panel-item';
+import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { formatDate, formatFileSize } from '../../common/formatters';
+import DataExplorer from "../../views-components/data-explorer/data-explorer";
+import { DataColumn, toggleSortDirection } from '../../components/data-table/data-column';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import { ContextMenuAction } from '../../components/context-menu/context-menu';
+import { DispatchProp, connect } from 'react-redux';
+import actions from "../../store/data-explorer/data-explorer-action";
+import { DataColumns } from '../../components/data-table/data-table';
+import { ResourceKind } from "../../models/resource";
+import { RouteComponentProps } from 'react-router';
+import { RootState } from '../../store/store';
 
-interface ProjectPanelDataProps {
-    projects: ProjectState;
-    collections: CollectionState;
+export const PROJECT_PANEL_ID = "projectPanel";
+
+type ProjectPanelProps = {
+    currentItemId: string,
+    onItemClick: (item: ProjectPanelItem) => void,
+    onItemRouteChange: (itemId: string) => void
 }
-
-type ProjectPanelProps = ProjectPanelDataProps & RouteComponentProps<{ name: string }> & DispatchProp;
-
-interface ProjectPanelState {
-    sort: {
-        columnName: string;
-        direction: SortDirection;
-    };
-    filters: string[];
-}
-
-class ProjectPanel extends React.Component<ProjectPanelProps & WithStyles<CssRules>, ProjectPanelState> {
-    state: ProjectPanelState = {
-        sort: {
-            columnName: "Name",
-            direction: "desc"
-        },
-        filters: ['collection', 'project']
-    };
-
+    & DispatchProp
+    & WithStyles<CssRules>
+    & RouteComponentProps<{ id: string }>;
+class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
-        const items = projectExplorerItems(
-            this.props.projects.items,
-            this.props.projects.currentItemId,
-            this.props.collections
-        );
-        const [goBackItem, ...otherItems] = items;
-        const filteredItems = otherItems.filter(i => this.state.filters.some(f => f === i.kind));
-        const sortedItems = sortItems(this.state.sort, filteredItems);
-        return (
-            <div>
-                <div className={this.props.classes.toolbar}>
-                    <Button color="primary" variant="raised" className={this.props.classes.button}>
-                        Create a collection
-                    </Button>
-                    <Button color="primary" variant="raised" className={this.props.classes.button}>
-                        Run a process
-                    </Button>
-                    <Button color="primary" variant="raised" className={this.props.classes.button}>
-                        Create a project
-                    </Button>
-                </div>
-                <ProjectExplorer
-                    items={goBackItem ? [goBackItem, ...sortedItems] : sortedItems}
-                    onRowClick={this.goToItem}
-                    onToggleSort={this.toggleSort}
-                    onChangeFilters={this.changeFilters}
-                />
+        return <div>
+            <div className={this.props.classes.toolbar}>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Create a collection
+                </Button>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Run a process
+                </Button>
+                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                    Create a project
+                </Button>
             </div>
-        );
+            <DataExplorer
+                id={PROJECT_PANEL_ID}
+                contextActions={contextMenuActions}
+                onColumnToggle={this.toggleColumn}
+                onFiltersChange={this.changeFilters}
+                onRowClick={this.props.onItemClick}
+                onSortToggle={this.toggleSort}
+                onSearch={this.search}
+                onContextAction={this.executeAction}
+                onChangePage={this.changePage}
+                onChangeRowsPerPage={this.changeRowsPerPage} />;
+        </div>;
     }
 
-    goToItem = (item: ProjectExplorerItem) => {
-        this.props.dispatch<any>(setProjectItem(this.props.projects.items, item.uuid, item.kind, ItemMode.BOTH));
+    componentDidMount() {
+        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
-    toggleSort = (column: DataColumn<ProjectExplorerItem>) => {
-        this.setState({
-            sort: {
-                columnName: column.name,
-                direction: column.sortDirection || "none"
-            }
-        });
-    }
-
-    changeFilters = (filters: DataTableFilterItem[]) => {
-        this.setState({ filters: filters.filter(f => f.selected).map(f => f.name.toLowerCase()) });
-    }
-}
-
-const sortItems = (sort: { columnName: string, direction: SortDirection }, items: ProjectExplorerItem[]) => {
-    const sortedItems = items.slice(0);
-    const direction = sort.direction === "asc" ? -1 : 1;
-    sortedItems.sort((a, b) => {
-        if (sort.columnName === "Last modified") {
-            return ((new Date(a.lastModified)).getTime() - (new Date(b.lastModified)).getTime()) * direction;
-        } else {
-            return a.name.localeCompare(b.name) * direction;
+    componentWillReceiveProps({ match, currentItemId }: ProjectPanelProps) {
+        if (match.params.id !== currentItemId) {
+            this.props.onItemRouteChange(match.params.id);
         }
-    });
-    return sortedItems;
-};
+    }
+
+    toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
+    }
+
+    toggleSort = (column: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_PANEL_ID, columnName: column.name }));
+    }
+
+    changeFilters = (filters: DataTableFilterItem[], column: DataColumn<ProjectPanelItem>) => {
+        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_PANEL_ID, columnName: column.name, filters }));
+    }
+
+    executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
+        alert(`Executing ${action.name} on ${item.name}`);
+    }
+
+    search = (searchValue: string) => {
+        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_PANEL_ID, searchValue }));
+    }
+
+    changePage = (page: number) => {
+        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_PANEL_ID, page }));
+    }
+
+    changeRowsPerPage = (rowsPerPage: number) => {
+        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
+    }
+
+}
 
 type CssRules = "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     toolbar: {
-        marginBottom: theme.spacing.unit * 3,
-        display: "flex",
-        justifyContent: "flex-end"
+        paddingBottom: theme.spacing.unit * 3,
+        textAlign: "right"
     },
     button: {
         marginLeft: theme.spacing.unit
     }
 });
 
+const renderName = (item: ProjectPanelItem) =>
+    <Grid
+        container
+        alignItems="center"
+        wrap="nowrap"
+        spacing={16}>
+        <Grid item>
+            {renderIcon(item)}
+        </Grid>
+        <Grid item>
+            <Typography color="primary">
+                {item.name}
+            </Typography>
+        </Grid>
+    </Grid>;
+
+
+const renderIcon = (item: ProjectPanelItem) => {
+    switch (item.kind) {
+        case ResourceKind.PROJECT:
+            return <i className="fas fa-folder fa-lg" />;
+        case ResourceKind.COLLECTION:
+            return <i className="fas fa-th fa-lg" />;
+        default:
+            return <i />;
+    }
+};
+
+const renderDate = (date: string) =>
+    <Typography noWrap>
+        {formatDate(date)}
+    </Typography>;
+
+const renderFileSize = (fileSize?: number) =>
+    <Typography noWrap>
+        {formatFileSize(fileSize)}
+    </Typography>;
+
+const renderOwner = (owner: string) =>
+    <Typography noWrap color="primary">
+        {owner}
+    </Typography>;
+
+const renderType = (type: string) =>
+    <Typography noWrap>
+        {type}
+    </Typography>;
+
+const renderStatus = (item: ProjectPanelItem) =>
+    <Typography noWrap align="center">
+        {item.status || "-"}
+    </Typography>;
+
+const columns: DataColumns<ProjectPanelItem> = [{
+    name: "Name",
+    selected: true,
+    sortDirection: "desc",
+    render: renderName,
+    width: "450px"
+}, {
+    name: "Status",
+    selected: true,
+    render: renderStatus,
+    width: "75px"
+}, {
+    name: "Type",
+    selected: true,
+    filters: [{
+        name: "Collection",
+        selected: true
+    }, {
+        name: "Project",
+        selected: true
+    }],
+    render: item => renderType(item.kind),
+    width: "125px"
+}, {
+    name: "Owner",
+    selected: true,
+    render: item => renderOwner(item.owner),
+    width: "200px"
+}, {
+    name: "File size",
+    selected: true,
+    render: item => renderFileSize(item.fileSize),
+    width: "50px"
+}, {
+    name: "Last modified",
+    selected: true,
+    sortDirection: "none",
+    render: item => renderDate(item.lastModified),
+    width: "150px"
+}];
+
+const contextMenuActions = [[{
+    icon: "fas fa-users fa-fw",
+    name: "Share"
+}, {
+    icon: "fas fa-sign-out-alt fa-fw",
+    name: "Move to"
+}, {
+    icon: "fas fa-star fa-fw",
+    name: "Add to favourite"
+}, {
+    icon: "fas fa-edit fa-fw",
+    name: "Rename"
+}, {
+    icon: "fas fa-copy fa-fw",
+    name: "Make a copy"
+}, {
+    icon: "fas fa-download fa-fw",
+    name: "Download"
+}], [{
+    icon: "fas fa-trash-alt fa-fw",
+    name: "Remove"
+}
+]];
+
 export default withStyles(styles)(
-    connect(
-        (state: RootState) => ({
-            projects: state.projects,
-            collections: state.collections
-        })
-    )(ProjectPanel));
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+        ProjectPanel));

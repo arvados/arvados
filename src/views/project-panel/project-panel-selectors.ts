@@ -8,22 +8,13 @@ import { findTreeItem } from "../../store/project/project-reducer";
 import { ResourceKind } from "../../models/resource";
 import { Collection } from "../../models/collection";
 import { getResourceUrl } from "../../store/navigation/navigation-action";
-import { ProjectExplorerItem } from "../../views-components/project-explorer/project-explorer-item";
+import { ProjectPanelItem } from "./project-panel-item";
 
-export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeItemId: string, collections: Array<Collection>): ProjectExplorerItem[] => {
-    const dataItems: ProjectExplorerItem[] = [];
+export const projectPanelItems = (projects: Array<TreeItem<Project>>, treeItemId: string, collections: Array<Collection>): ProjectPanelItem[] => {
+    const dataItems: ProjectPanelItem[] = [];
 
     const treeItem = findTreeItem(projects, treeItemId);
     if (treeItem) {
-        dataItems.push({
-            name: "..",
-            url: getResourceUrl(treeItem.data),
-            kind: ResourceKind.LEVEL_UP,
-            owner: "",
-            uuid: treeItem.data.uuid,
-            lastModified: ""
-        });
-
         if (treeItem.items) {
             treeItem.items.forEach(p => {
                 const item = {
@@ -33,7 +24,7 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
                     owner: p.data.ownerUuid,
                     uuid: p.data.uuid,
                     lastModified: p.data.modifiedAt
-                } as ProjectExplorerItem;
+                } as ProjectPanelItem;
 
                 dataItems.push(item);
             });
@@ -48,7 +39,7 @@ export const projectExplorerItems = (projects: Array<TreeItem<Project>>, treeIte
             owner: c.ownerUuid,
             uuid: c.uuid,
             lastModified: c.modifiedAt
-        } as ProjectExplorerItem;
+        } as ProjectPanelItem;
 
         dataItems.push(item);
     });

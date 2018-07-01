@@ -5,20 +5,22 @@
 import { Dispatch } from "redux";
 import projectActions, { getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
-import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { TreeItemStatus } from "../../components/tree/tree";
 import { getCollectionList } from "../collection/collection-action";
 import { findTreeItem } from "../project/project-reducer";
-import { Project } from "../../models/project";
 import { Resource, ResourceKind } from "../../models/resource";
 import sidePanelActions from "../side-panel/side-panel-action";
+import dataExplorerActions from "../data-explorer/data-explorer-action";
+import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
+import { projectPanelItems } from "../../views/project-panel/project-panel-selectors";
+import { RootState } from "../store";
+import { sidePanelData } from "../side-panel/side-panel-reducer";
 
 export const getResourceUrl = (resource: Resource): string => {
     switch (resource.kind) {
-        case ResourceKind.LEVEL_UP: return `/projects/${resource.ownerUuid}`;
         case ResourceKind.PROJECT: return `/projects/${resource.uuid}`;
         case ResourceKind.COLLECTION: return `/collections/${resource.uuid}`;
-        default:
-            return "#";
+        default: return "";
     }
 };
 
@@ -28,36 +30,49 @@ export enum ItemMode {
     ACTIVE
 }
 
-export const setProjectItem = (projects: Array<TreeItem<Project>>, itemId: string, itemKind: ResourceKind, itemMode: ItemMode) => (dispatch: Dispatch) => {
+export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const { projects, router, sidePanel } = getState();
+        const treeItem = findTreeItem(projects.items, itemId);
 
-    const openProjectItem = (resource: Resource) => {
-        if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(resource.uuid));
+        if (treeItem) {
+
+            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
+            const projectsItem = sidePanelData[0];
+            if(sidePanel.some(item => item.id === projectsItem.id && !item.open)){
+                dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(projectsItem.id));
+            }
+
+            if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
+            }
+
+            const resourceUrl = getResourceUrl({ ...treeItem.data });
+
+            if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
+                if (router.location && !router.location.pathname.includes(resourceUrl)) {
+                    dispatch(push(resourceUrl));
+                }
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
+            }
+
+            const promise = treeItem.status === TreeItemStatus.Loaded
+                ? Promise.resolve()
+                : dispatch<any>(getProjectList(itemId));
+
+            promise
+                .then(() => dispatch<any>(getCollectionList(itemId)))
+                .then(() => dispatch<any>(() => {
+                    const { projects, collections } = getState();
+                    dispatch(dataExplorerActions.SET_ITEMS({
+                        id: PROJECT_PANEL_ID,
+                        items: projectPanelItems(
+                            projects.items,
+                            treeItem.data.uuid,
+                            collections
+                        )
+                    }));
+                }));
+
         }
-
-        if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
-            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(resource.uuid));
-        }
-
-        dispatch(push(getResourceUrl({...resource, kind: itemKind})));
     };
-
-    let treeItem = findTreeItem(projects, itemId);
-    if (treeItem && itemKind === ResourceKind.LEVEL_UP) {
-        treeItem = findTreeItem(projects, treeItem.data.ownerUuid);
-    }
-
-    if (treeItem) {
-        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
-
-        if (treeItem.status === TreeItemStatus.Loaded) {
-            openProjectItem(treeItem.data);
-        } else {
-            dispatch<any>(getProjectList(itemId))
-                .then(() => openProjectItem(treeItem!.data));
-        }
-        if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
-            dispatch<any>(getCollectionList(itemId));
-        }
-    }
-};

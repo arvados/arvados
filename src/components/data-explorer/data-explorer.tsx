@@ -7,7 +7,7 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable from "../../components/data-table/data-table";
+import DataTable, { DataColumns } from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
@@ -15,10 +15,11 @@ import SearchInput from '../search-input/search-input';
 
 interface DataExplorerProps<T> {
     items: T[];
-    columns: Array<DataColumn<T>>;
+    columns: DataColumns<T>;
     contextActions: ContextMenuActionGroup[];
     searchValue: string;
     rowsPerPage: number;
+    rowsPerPageOptions?: number[];
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
@@ -62,9 +63,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 </Grid>
             </Toolbar>
             <DataTable
-                columns={[
-                    ...this.props.columns,
-                    this.contextMenuColumn]}
+                columns={[...this.props.columns, this.contextMenuColumn]}
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
                 onRowContextMenu={this.openContextMenu}
@@ -76,6 +75,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                         <TablePagination
                             count={this.props.items.length}
                             rowsPerPage={this.props.rowsPerPage}
+                            rowsPerPageOptions={this.props.rowsPerPageOptions}
                             page={this.props.page}
                             onChangePage={this.changePage}
                             onChangeRowsPerPage={this.changeRowsPerPage}
@@ -119,10 +119,20 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
     renderContextMenuTrigger = (item: T) =>
         <Grid container justify="flex-end">
-            <IconButton onClick={event => this.openContextMenu(event, item)}>
+            <IconButton onClick={event => this.openContextMenuTrigger(event, item)}>
                 <MoreVertIcon />
             </IconButton>
         </Grid>
+
+    openContextMenuTrigger = (event: React.MouseEvent<HTMLElement>, item: T) => {
+        event.preventDefault();
+        this.setState({
+            contextMenu: {
+                anchorEl: event.currentTarget,
+                item
+            }
+        });
+    }
 
     contextMenuColumn = {
         name: "Actions",

@@ -10,6 +10,7 @@ import { History } from "history";
 import projectsReducer, { ProjectState } from "./project/project-reducer";
 import sidePanelReducer, { SidePanelState } from './side-panel/side-panel-reducer';
 import authReducer, { AuthState } from "./auth/auth-reducer";
+import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
 import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
 
 const composeEnhancers =
@@ -22,6 +23,7 @@ export interface RootState {
     projects: ProjectState;
     collections: CollectionState;
     router: RouterState;
+    dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
 }
 
@@ -30,15 +32,16 @@ const rootReducer = combineReducers({
     projects: projectsReducer,
     collections: collectionsReducer,
     router: routerReducer,
+    dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer
 });
 
 
-export default function configureStore(initialState: RootState, history: History) {
+export default function configureStore(history: History) {
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
-    return createStore(rootReducer, initialState!, enhancer);
+    return createStore(rootReducer, enhancer);
 }

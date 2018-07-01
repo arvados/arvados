@@ -8,9 +8,10 @@ import MenuIcon from "@material-ui/icons/Menu";
 import { DataColumn, isColumnConfigurable } from '../data-table/data-column';
 import Popover from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
+import { DataColumns } from '../data-table/data-table';
 
 export interface ColumnSelectorProps {
-    columns: Array<DataColumn<any>>;
+    columns: DataColumns<any>;
     onColumnToggle: (column: DataColumn<any>) => void;
 }
 

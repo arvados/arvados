@@ -6,8 +6,9 @@ import * as React from 'react';
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch } from "react-router";
+import { Route, Switch, RouteComponentProps, withRouter } from "react-router";
 import authActions from "../../store/auth/auth-action";
+import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import MainAppBar, {
@@ -19,13 +20,14 @@ import { push } from 'react-router-redux';
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { getTreePath } from '../../store/project/project-reducer';
-import ProjectPanel from '../project-panel/project-panel';
+import { getTreePath, findTreeItem } from '../../store/project/project-reducer';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ResourceKind } from "../../models/resource";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import projectActions from "../../store/project/project-action";
+import ProjectPanel from "../project-panel/project-panel";
+import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 
 const drawerWidth = 240;
 const appBarHeight = 102;
@@ -132,9 +134,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-            this.props.dispatch<any>(
-                setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.BOTH)
-            );
+            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -153,8 +153,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     render() {
-        const branch = getTreePath(this.props.projects, this.props.currentProjectId);
-        const breadcrumbs = branch.map(item => ({
+        const path = getTreePath(this.props.projects, this.props.currentProjectId);
+        const breadcrumbs = path.map(item => ({
             label: item.data.name,
             itemId: item.data.uuid,
             status: item.status
@@ -185,27 +185,27 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             sidePanelItems={this.props.sidePanelItems}>
                             <ProjectTree
                                 projects={this.props.projects}
-                                toggleOpen={itemId =>
-                                    this.props.dispatch<any>(
-                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.OPEN)
-                                    )}
-                                toggleActive={itemId =>
-                                    this.props.dispatch<any>(
-                                        setProjectItem(this.props.projects, itemId, ResourceKind.PROJECT, ItemMode.ACTIVE)
-                                    )}
+                                toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
+                                toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
                             />
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
                     <div className={classes.content}>
                         <Switch>
-                            <Route path="/projects/:name" component={ProjectPanel} />
+                            <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
                 </main>
             </div>
         );
     }
+
+    renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
+        onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
+        onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
+        {...props} />
+
 }
 
 export default connect<WorkbenchDataProps>(

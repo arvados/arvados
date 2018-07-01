@@ -132,6 +132,7 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
             resetTreeActivity(items);
             const item = findTreeItem(items, itemId);
             if (item) {
+                item.toggled = true;
                 item.active = true;
             }
             return {

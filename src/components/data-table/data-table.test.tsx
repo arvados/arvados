@@ -6,15 +6,14 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
 import * as Adapter from "enzyme-adapter-react-16";
-import DataTable from "./data-table";
-import { DataColumn } from "./data-column";
+import DataTable, { DataColumns } from "./data-table";
 import DataTableFilters from "../data-table-filters/data-table-filters";
 
 configure({ adapter: new Adapter() });
 
 describe("<DataTable />", () => {
     it("shows only selected columns", () => {
-        const columns: Array<DataColumn<string>> = [
+        const columns: DataColumns<string> = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -42,7 +41,7 @@ describe("<DataTable />", () => {
     });
 
     it("renders column name", () => {
-        const columns: Array<DataColumn<string>> = [
+        const columns: DataColumns<string> = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -60,7 +59,7 @@ describe("<DataTable />", () => {
     });
 
     it("uses renderHeader instead of name prop", () => {
-        const columns: Array<DataColumn<string>> = [
+        const columns: DataColumns<string> = [
             {
                 name: "Column 1",
                 renderHeader: () => <span>Column Header</span>,
@@ -79,7 +78,7 @@ describe("<DataTable />", () => {
     });
 
     it("passes column key prop to corresponding cells", () => {
-        const columns: Array<DataColumn<string>> = [
+        const columns: DataColumns<string> = [
             {
                 name: "Column 1",
                 key: "column-1-key",
@@ -99,7 +98,7 @@ describe("<DataTable />", () => {
     });
 
     it("renders items", () => {
-        const columns: Array<DataColumn<string>> = [
+        const columns: DataColumns<string> = [
             {
                 name: "Column 1",
                 render: (item) => <Typography>{item}</Typography>,
@@ -123,7 +122,7 @@ describe("<DataTable />", () => {
     });
 
     it("passes sorting props to <TableSortLabel />", () => {
-        const columns: Array<DataColumn<string>> = [{
+        const columns: DataColumns<string> = [{
             name: "Column 1",
             sortDirection: "asc",
             selected: true,
@@ -143,7 +142,7 @@ describe("<DataTable />", () => {
     });
 
     it("passes filter props to <DataTableFilter />", () => {
-        const columns: Array<DataColumn<string>> = [{
+        const columns: DataColumns<string> = [{
             name: "Column 1",
             sortDirection: "asc",
             selected: true,
