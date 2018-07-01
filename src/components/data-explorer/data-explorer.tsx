@@ -63,9 +63,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 </Grid>
             </Toolbar>
             <DataTable
-                columns={[
-                    ...this.props.columns,
-                    this.contextMenuColumn]}
+                columns={[...this.props.columns, this.contextMenuColumn]}
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
                 onRowContextMenu={this.openContextMenu}
@@ -121,12 +119,12 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
 
     renderContextMenuTrigger = (item: T) =>
         <Grid container justify="flex-end">
-            <IconButton onClick={event => this.openContextMenuWithTrigger(event, item)}>
+            <IconButton onClick={event => this.openContextMenuTrigger(event, item)}>
                 <MoreVertIcon />
             </IconButton>
         </Grid>
 
-    openContextMenuWithTrigger = (event: React.MouseEvent<HTMLElement>, item: T) => {
+    openContextMenuTrigger = (event: React.MouseEvent<HTMLElement>, item: T) => {
         event.preventDefault();
         this.setState({
             contextMenu: {
