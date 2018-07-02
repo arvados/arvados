@@ -39,9 +39,6 @@ export interface ListResults<T> {
 
 export default class CommonResourceService<T extends Resource> {
 
-    serverApi: AxiosInstance;
-    resourceType: string;
-
     static mapResponseKeys = (response: any): Promise<any> =>
         CommonResourceService.mapKeys(_.camelCase)(response.data)
 
@@ -63,9 +60,12 @@ export default class CommonResourceService<T extends Resource> {
             }
         }
 
+    protected serverApi: AxiosInstance;
+    protected resourceType: string;
+
     constructor(serverApi: AxiosInstance, resourceType: string) {
         this.serverApi = serverApi;
-        this.resourceType = "/" + resourceType;
+        this.resourceType = '/' + resourceType + '/';
     }
 
     create() {
@@ -74,13 +74,13 @@ export default class CommonResourceService<T extends Resource> {
 
     delete(uuid: string): Promise<T> {
         return this.serverApi
-            .delete(this.resourceType + "/" + uuid)
+            .delete(this.resourceType + uuid)
             .then(CommonResourceService.mapResponseKeys);
     }
 
     get(uuid: string) {
         return this.serverApi
-            .get<T>(this.resourceType + "/" + uuid)
+            .get<T>(this.resourceType + uuid)
             .then(CommonResourceService.mapResponseKeys);
     }
 

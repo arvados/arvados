@@ -41,7 +41,7 @@ export default class GroupsService extends CommonResourceService<GroupResource> 
             order: order ? order.get() : undefined
         };
         return this.serverApi
-            .get(this.resourceType + `/${uuid}/contents`, {
+            .get(this.resourceType + `${uuid}/contents/`, {
                 params: CommonResourceService.mapKeys(_.snakeCase)(params)
             })
             .then(CommonResourceService.mapResponseKeys);
