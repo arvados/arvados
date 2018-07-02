@@ -688,36 +688,6 @@ class TestContainer(unittest.TestCase):
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
-            runner.api.container_requests().create.assert_called_with(
-                body=JsonDiffMatcher({
-                    'environment': {
-                        'HOME': '/var/spool/cwl',
-                        'TMPDIR': '/tmp'
-                    },
-                    'name': 'test_timelimit',
-                    'runtime_constraints': {
-                        'vcpus': 1,
-                        'ram': 1073741824
-                    },
-                    'use_existing': True,
-                    'priority': 500,
-                    'mounts': {
-                        '/tmp': {'kind': 'tmp',
-                                    "capacity": 1073741824
-                                },
-                        '/var/spool/cwl': {'kind': 'tmp',
-                                            "capacity": 1073741824 }
-                    },
-                    'state': 'Committed',
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'output_path': '/var/spool/cwl',
-                    'output_ttl': 0,
-                    'container_image': 'arvados/jobs',
-                    'command': ['ls', '/var/spool/cwl'],
-                    'cwd': '/var/spool/cwl',
-                    'scheduling_parameters': {
-                        "max_run_time": 42
-                    },
-                    'properties': {},
-                    'secret_mounts': {}
-                }))
+
+        _, kwargs = runner.api.container_requests().create.call_args
+        self.assertEqual(42, kwargs['body']['scheduling_parameters'].get('max_run_time'))
