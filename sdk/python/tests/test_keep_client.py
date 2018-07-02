@@ -319,6 +319,29 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
 
+    def test_insecure_disables_tls_verify(self):
+        api_client = self.mock_keep_services(count=1)
+        force_timeout = socket.timeout("timed out")
+
+        api_client.insecure = True
+        with tutil.mock_keep_responses(b'foo', 200) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
+            keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3')
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.SSL_VERIFYPEER),
+                0)
+
+        api_client.insecure = False
+        with tutil.mock_keep_responses(b'foo', 200) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
+            keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3')
+            # getopt()==None here means we didn't change the
+            # default. If we were using real pycurl instead of a mock,
+            # it would return the default value 1.
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.SSL_VERIFYPEER),
+                None)
+
     # test_*_timeout verify that KeepClient instructs pycurl to use
     # the appropriate connection and read timeouts. They don't care
     # whether pycurl actually exhibits the expected timeout behavior
