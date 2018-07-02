@@ -17,6 +17,6 @@ export default class OrderBuilder {
     }
 
     get() {
-        return `["${this.order.join(`","`)}"]`;
+        return this.order;
     }
 }

@@ -11,6 +11,6 @@ describe("OrderBuilder", () => {
             .addAsc("name")
             .addDesc("modified_at")
             .get();
-        expect(order).toEqual(`["name asc","modified_at desc"]`);
+        expect(order).toEqual(["name asc","modified_at desc"]);
     });
 });
