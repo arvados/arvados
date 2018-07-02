@@ -67,26 +67,12 @@ class ArvadosJob(object):
                                 n.write(p.resolved.encode("utf-8"))
 
                 if vwd:
-                    trash_time = None 
-                    if self.arvrunner.intermediate_output_ttl > 0: 
-                        trash_time = datetime.datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl) 
- 
-                    current_container_uuid = None 
-                    try: 
-                        current_container = self.arvrunner.api.containers().current().execute(num_retries=self.arvrunner.num_retries) 
-                        current_container_uuid = current_container['uuid'] 
-                    except ApiError as e: 
-                        # Status code 404 just means we're not running in a container. 
-                        if e.resp.status != 404: 
-                            logger.info("Getting current container: %s", e) 
- 
-                    props = {"type": "Intermediate", 
-                             "container": current_container_uuid}
                     with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                        vwd.save_new(name="Intermediate collection", 
+                        info = self._get_intermediate_collection_info()
+                        vwd.save_new(name=info["name"], 
                                      ensure_unique_name=True, 
-                                     trash_at=trash_time, 
-                                     properties=props)
+                                     trash_at=info["trash_at"], 
+                                     properties=info["properties"])
 
                 for f, p in generatemapper.items():
                     if p.type == "File":
@@ -283,6 +269,26 @@ class ArvadosJob(object):
                 processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
+
+    def _get_intermediate_collection_info(self):
+            trash_time = None 
+            if self.arvrunner.intermediate_output_ttl > 0: 
+                trash_time = datetime.datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl) 
+
+            current_container_uuid = None 
+            try: 
+                current_container = self.arvrunner.api.containers().current().execute(num_retries=self.arvrunner.num_retries) 
+                current_container_uuid = current_container['uuid'] 
+            except ApiError as e: 
+                # Status code 404 just means we're not running in a container. 
+                if e.resp.status != 404: 
+                    logger.info("Getting current container: %s", e)
+            props = {"type": "Intermediate", 
+                          "container": current_container_uuid}
+
+            return {"name" : "Intermediate collection",
+                    "trash_at" : trash_time,
+                    "properties" : props}
 
 
 class RunnerJob(Runner):

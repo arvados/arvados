@@ -8,6 +8,7 @@ import logging
 import mock
 import unittest
 import os
+import datetime
 import functools
 import cwltool.process
 import cwltool.secrets
@@ -20,6 +21,12 @@ if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
 
+class MockDateTime(datetime.datetime):
+    @classmethod
+    def now(cls):
+        return datetime.datetime(2018, 1, 1, 0, 0, 0, 0)
+
+datetime.datetime = MockDateTime
 
 class TestContainer(unittest.TestCase):
 
@@ -633,3 +640,16 @@ class TestContainer(unittest.TestCase):
                         }
                     }
                 }))
+
+    def test_get_intermediate_collection_info(self):
+        arvrunner = mock.MagicMock()
+        arvrunner.intermediate_output_ttl = 60
+        arvrunner.api.containers().current().execute.return_value = {"uuid" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
+
+        container = arvados_cwl.ArvadosContainer(arvrunner)
+
+        info = container._get_intermediate_collection_info()
+
+        self.assertEqual(info["name"], "Intermediate collection")
+        self.assertEqual(info["trash_at"], datetime.datetime(2018, 1, 1, 0, 1))
+        self.assertEqual(info["properties"], {"type" : "Intermediate", "container" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})

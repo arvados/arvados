@@ -10,6 +10,7 @@ import os
 import unittest
 import copy
 import StringIO
+import datetime
 
 import arvados
 import arvados_cwl
@@ -23,6 +24,13 @@ from .matcher import JsonDiffMatcher, StripYAMLComments
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
+class MockDateTime(datetime.datetime):
+    @classmethod
+    def now(cls):
+        return datetime.datetime(2018, 1, 1, 0, 0, 0, 0)
+
+datetime.datetime = MockDateTime
 
 class TestJob(unittest.TestCase):
 
@@ -306,6 +314,20 @@ class TestJob(unittest.TestCase):
         self.assertFalse(api.collections().create.called)
 
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
+
+    def test_get_intermediate_collection_info(self):
+        arvrunner = mock.MagicMock()
+        arvrunner.intermediate_output_ttl = 60
+        arvrunner.api.containers().current().execute.return_value = {"uuid" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
+
+        job = arvados_cwl.ArvadosJob(arvrunner)
+
+        info = job._get_intermediate_collection_info()
+
+        self.assertEqual(info["name"], "Intermediate collection")
+        self.assertEqual(info["trash_at"], datetime.datetime(2018, 1, 1, 0, 1))
+        self.assertEqual(info["properties"], {"type" : "Intermediate", "container" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})
+
 
 
 class TestWorkflow(unittest.TestCase):

@@ -9,6 +9,7 @@ import unittest
 import json
 import logging
 import os
+import datetime
 
 import arvados
 import arvados.keep
@@ -25,6 +26,13 @@ def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPatter
     for c in files:
         c.keepref = "%s/%s" % (pdh, os.path.basename(c.fn))
         c.fn = fnPattern % (pdh, os.path.basename(c.fn))
+
+class MockDateTime(datetime.datetime):
+    @classmethod
+    def now(cls):
+        return datetime.datetime(2018, 1, 1, 0, 0, 0, 0)
+
+datetime.datetime = MockDateTime
 
 class TestPathmap(unittest.TestCase):
     def setUp(self):
@@ -101,3 +109,19 @@ class TestPathmap(unittest.TestCase):
                 "class": "File",
                 "location": "file:tests/hw.py"
             }], "", "/test/%s", "/test/%s/%s")
+
+    def test_get_intermediate_collection_info(self):
+        self.api.containers().current().execute.return_value = {"uuid" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+        arvrunner.intermediate_output_ttl = 60
+
+        path_mapper = ArvPathMapper(arvrunner, [{
+            "class": "File",
+            "location": "keep:99999999999999999999999999999991+99/hw.py"
+        }], "", "/test/%s", "/test/%s/%s")
+
+        info = path_mapper._get_intermediate_collection_info()
+
+        self.assertEqual(info["name"], "Intermediate collection")
+        self.assertEqual(info["trash_at"], datetime.datetime(2018, 1, 1, 0, 1))
+        self.assertEqual(info["properties"], {"type" : "Intermediate", "container" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})

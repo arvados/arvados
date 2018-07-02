@@ -155,13 +155,13 @@ class ArvPathMapper(PathMapper):
                 for l in srcobj.get("listing", []):
                     self.addentry(l, c, ".", remap)
 
-                trash_time, props = self.__get_collection_attributes()
+                info = self._get_intermediate_collection_info()
 
-                c.save_new(name="Intermediate collection", 
+                c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid, 
                            ensure_unique_name=True, 
-                           trash_at=trash_time, 
-                           properties=props)
+                           trash_at=info["trash_at"], 
+                           properties=info["properties"])
 
                 ab = self.collection_pattern % c.portable_data_hash()
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
@@ -173,13 +173,13 @@ class ArvPathMapper(PathMapper):
                                                   num_retries=self.arvrunner.num_retries                                                  )
                 self.addentry(srcobj, c, ".", remap)
 
-                trash_time, props = self.__get_collection_attributes()
+                info = self._get_intermediate_collection_info()
 
-                c.save_new(name="Intermediate collection", 
+                c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid, 
                            ensure_unique_name=True, 
-                           trash_at=trash_time, 
-                           properties=props)
+                           trash_at=info["trash_at"], 
+                           properties=info["properties"])
 
                 ab = self.file_pattern % (c.portable_data_hash(), srcobj["basename"])
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:%s/%s" % (c.portable_data_hash(), srcobj["basename"]),
@@ -212,7 +212,7 @@ class ArvPathMapper(PathMapper):
         else:
             return None
 
-    def __get_collection_attributes(self):
+    def _get_intermediate_collection_info(self):
             trash_time = None 
             if self.arvrunner.intermediate_output_ttl > 0: 
                 trash_time = datetime.datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl) 
@@ -225,10 +225,12 @@ class ArvPathMapper(PathMapper):
                 # Status code 404 just means we're not running in a container. 
                 if e.resp.status != 404: 
                     logger.info("Getting current container: %s", e)
-            properties = {"type": "Intermediate", 
+            props = {"type": "Intermediate", 
                           "container": current_container_uuid}
 
-            return (trash_time, properties)
+            return {"name" : "Intermediate collection",
+                    "trash_at" : trash_time,
+                    "properties" : props}
 
 
 class StagingPathMapper(PathMapper):
