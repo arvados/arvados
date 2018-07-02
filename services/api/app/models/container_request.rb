@@ -239,6 +239,11 @@ class ContainerRequest < ArvadosModel
       if !Rails.configuration.preemptible_instances and scheduling_parameters['preemptible']
         errors.add :scheduling_parameters, "preemptible instances are not allowed"
       end
+      if scheduling_parameters.include? 'max_run_time' and
+        (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
+          scheduling_parameters['max_run_time'] < 0)
+          errors.add :scheduling_parameters, "max_run_time must be positive integer"
+      end
     end
   end
 

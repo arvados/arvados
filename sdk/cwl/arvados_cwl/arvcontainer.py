@@ -239,6 +239,9 @@ class ArvadosContainer(JobBase):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
+        if self.timelimit is not None:
+            scheduling_parameters["max_run_time"] = self.timelimit
+
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts

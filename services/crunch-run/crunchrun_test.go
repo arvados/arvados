@@ -793,7 +793,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+	"runtime_constraints": {}
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -803,6 +803,26 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
+}
+
+func (s *TestSuite) TestRunTimeExceeded(c *C) {
+	api, _, _ := s.fullRunHelper(c, `{
+    "command": ["sleep", "3"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+	"runtime_constraints": {},
+	"scheduling_parameters":{"max_run_time": 1}
+}`, nil, 0, func(t *TestDockerClient) {
+		time.Sleep(3 * time.Second)
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
