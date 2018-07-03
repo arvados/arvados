@@ -6,8 +6,10 @@ import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from '@material-ui/icons/Close';
+import FolderIcon from '@material-ui/icons/Folder';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
+import Attribute from '../../components/attribute/attribute';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
@@ -41,6 +43,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
 					<Typography component="div" className={classes.headerContainer}>
 						<Grid container alignItems='center' justify='space-around'>
+                            <i className="fas fa-cogs fa-lg" />
 							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
@@ -54,36 +57,26 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 						<Tab disableRipple label="Activity" />
 					</Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
-						<Grid container>
-							<Grid item xs={6} sm={4} className={classes.gridLabel}>
-								<p>Type</p>
-								<p>Size</p>
-								<p>Location</p>
-								<p>Owner</p>
-							</Grid>
-							<Grid item xs={6} sm={4}>								
-								<p>Process</p>
-								<p>---</p>
-								<p>Projects</p>
-								<p>me</p>
-							</Grid>
+                        <Grid container direction="column">
+                            <Attribute label="Type">Process</Attribute>
+                            <Attribute label="Size">---</Attribute>
+                            <Attribute label="Location">
+                                <FolderIcon />
+                                Projects
+                            </Attribute>
+                            <Attribute label="Owner">me</Attribute>
 						</Grid>
 					)}
                     {tabsValue === 1 && this.renderTabContainer(
-						<Grid container>
-							<Grid item xs={6} sm={4} className={classes.gridLabel}>
-								<p>Type</p>
-								<p>Size</p>
-								<p>Location</p>
-								<p>Owner</p>
-							</Grid>
-							<Grid item xs={6} sm={4}>
-								<p>Process</p>
-								<p>---</p>
-								<p>Projects</p>
-								<p>me</p>
-							</Grid>
-						</Grid>
+                        <Grid container direction="column">
+                            <Attribute label="Type">Process</Attribute>
+                            <Attribute label="Size">---</Attribute>
+                            <Attribute label="Location">
+                                <FolderIcon />
+                                Projects
+                            </Attribute>
+                            <Attribute label="Owner">me</Attribute>
+                        </Grid>
 					)}
                 </Drawer>
             </div>
@@ -92,8 +85,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 
 }
 
-type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' 
-	| 'tabContainer' | 'tabSelected' | 'gridLabel';
+type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'tabContainer';
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -113,14 +105,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 	},
 	headerContainer: {
         color: theme.palette.grey["600"],
-		margin: `${theme.spacing.unit}px 0`
+        margin: `${theme.spacing.unit}px 0`,
+        '& .fa-cogs': {
+            fontSize: "24px",
+            color: theme.customs.colors.green700
+        }
 	},
 	tabContainer: {
 		padding: theme.spacing.unit * 3
-	},
-	tabSelected: {},
-	gridLabel: {
-        color: theme.palette.grey["500"]
 	}
 });
 

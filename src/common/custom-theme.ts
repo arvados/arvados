@@ -7,6 +7,7 @@ import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
 import purple from '@material-ui/core/colors/purple';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
+import green from '@material-ui/core/colors/green';
 
 interface ArvadosThemeOptions extends ThemeOptions {
     customs: any;
@@ -21,7 +22,7 @@ const grey600 = grey["600"];
 const themeOptions: ArvadosThemeOptions = {
     customs: {
         colors: {
-            
+            green700: green["700"]
         }
     },
     overrides: {
