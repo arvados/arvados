@@ -39,7 +39,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 		const { classes, toggleDrawer, isOpened } = this.props;
 		const { tabsValue } = this.state;
         return (
-            <div className={classes.container}>
+            <div className={classnames([classes.container, { [classes.opened]: isOpened }])}>
 				<Drawer variant="persistent" anchor="right" open={isOpened} onClose={() => toggleDrawer(false)}
                     classes={{
                         paper: classes.drawerPaper
@@ -105,16 +105,22 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 
 }
 
-type CssRules = 'drawerPaper' | 'container' | 'headerContainer' 
+type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' 
 	| 'tabsIndicator' | 'tabRoot' | 'tabContainer' | 'tabSelected' | 'gridLabel';
 
 const drawerWidth = 320;
 const purple = '#692498';
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 	container: {
+        width: 0,
 		position: 'relative',
-		height: 'auto'
-	},
+        height: 'auto',
+        transition: 'width 0.5s ease',
+        '&$opened': {
+            width: drawerWidth
+        }
+    },
+    opened: {},
     drawerPaper: {
         position: 'relative',
         width: drawerWidth
