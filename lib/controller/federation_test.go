@@ -171,7 +171,9 @@ func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1)+"?api_token="+arvadostest.ActiveToken, nil)
 	s.testRequest(req)
 	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
-	c.Check(s.remoteMockRequests[0].URL.String(), check.Not(check.Matches), `.*api_token=.*`)
+	pr := s.remoteMockRequests[0]
+	c.Check(pr.URL.String(), check.Not(check.Matches), `.*api_token=.*`)
+	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer "+arvadostest.ActiveToken)
 }
 
 func (s *FederationSuite) TestUpdateRemoteWorkflow(c *check.C) {
