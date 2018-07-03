@@ -28,9 +28,10 @@ import { ItemMode, setProjectItem } from "../../store/navigation/navigation-acti
 import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
+import DetailsPanel from '../../views-components/details-panel/details-panel';
 
 const drawerWidth = 240;
-const appBarHeight = 102;
+const appBarHeight = 116;
 
 type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
 
@@ -99,6 +100,7 @@ interface WorkbenchState {
         helpMenu: NavMenuItem[],
         anonymousMenu: NavMenuItem[]
     };
+    isDetailsPanelOpened: boolean;
 }
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
@@ -129,7 +131,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     action: () => this.props.dispatch(authActions.LOGIN())
                 }
             ]
-        }
+        },
+        isDetailsPanelOpened: false
     };
 
     mainAppBarActions: MainAppBarActionProps = {
@@ -140,7 +143,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.setState({ searchText });
             this.props.dispatch(push(`/search?q=${searchText}`));
         },
-        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action()
+        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
+        onDetailsPanelClick: (isOpened: boolean) => {
+            this.setState({ isDetailsPanelOpened: isOpened });
+        }
     };
 
     toggleSidePanelOpen = (itemId: string) => {
@@ -196,6 +202,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
+                    <DetailsPanel 
+                        isOpened={this.state.isDetailsPanelOpened} 
+                        toggleDrawer={this.mainAppBarActions.onDetailsPanelClick} />
                 </main>
             </div>
         );

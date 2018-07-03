@@ -7,6 +7,7 @@ import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, StyleRulesCallbac
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
+import InfoIcon from '@material-ui/icons/Info';
 import SearchBar from "../../components/search-bar/search-bar";
 import Breadcrumbs, { Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
 import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
@@ -34,6 +35,7 @@ export interface MainAppBarActionProps {
     onSearch: (searchText: string) => void;
     onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
     onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
+    onDetailsPanelClick: (isOpened: boolean) => void;
 }
 
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
@@ -69,11 +71,14 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                 </Grid>
             </Grid>
         </Toolbar>
-        {
-            props.user && <Toolbar className={props.classes.toolbar}>
-                <Breadcrumbs items={props.breadcrumbs} onClick={props.onBreadcrumbClick} />
-            </Toolbar>
-        }
+        <Toolbar >
+            {
+                props.user && <Breadcrumbs items={props.breadcrumbs} onClick={props.onBreadcrumbClick} />
+            }
+            <IconButton color="inherit" onClick={() => props.onDetailsPanelClick(true)}>
+                <InfoIcon />
+            </IconButton>
+        </Toolbar>
     </AppBar>;
 };
 
