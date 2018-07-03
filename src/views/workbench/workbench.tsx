@@ -144,8 +144,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch(push(`/search?q=${searchText}`));
         },
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
-        onDetailsPanelClick: (isOpened: boolean) => {
-            this.setState({ isDetailsPanelOpened: isOpened });
+        onDetailsPanelToggle: () => {
+            this.setState(prev => ({ isDetailsPanelOpened: !prev.isDetailsPanelOpened }));
         }
     };
 
@@ -204,7 +204,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </div>
                     <DetailsPanel 
                         isOpened={this.state.isDetailsPanelOpened} 
-                        toggleDrawer={this.mainAppBarActions.onDetailsPanelClick} />
+                        closeDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
                 </main>
             </div>
         );

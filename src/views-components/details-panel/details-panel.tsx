@@ -10,19 +10,11 @@ import { StyleRulesCallback, WithStyles, withStyles, Theme } from "@material-ui/
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
-import * as classnames from "classnames";
 import Grid from '@material-ui/core/Grid';
-
-function TabContainer(props: any) {
-	return (
-		<Typography component="div" style={{ padding: 8 * 3 }}>
-			{props.children}
-		</Typography>
-	);
-}
+import * as classnames from "classnames";
 
 export interface DetailsPanelProps {
-    toggleDrawer: (isOpened: boolean) => void;
+    closeDrawer: () => void;
     isOpened: boolean;
 }
 
@@ -34,23 +26,27 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 	handleChange = (event: any, value: boolean) => {
 		this.setState({ tabsValue: value });
 	}
-	
+    
+    renderTabContainer = (children: React.ReactElement<any>) => {
+        return (
+            <Typography className={this.props.classes.tabContainer} component="div">
+                {children}
+            </Typography>
+        );
+    }
+
 	render() {
-		const { classes, toggleDrawer, isOpened } = this.props;
+        const { classes, closeDrawer, isOpened } = this.props;
 		const { tabsValue } = this.state;
         return (
             <div className={classnames([classes.container, { [classes.opened]: isOpened }])}>
-				<Drawer variant="persistent" anchor="right" open={isOpened} onClose={() => toggleDrawer(false)}
-                    classes={{
-                        paper: classes.drawerPaper
-                    }}>
-					{/* className={classnames([classes.root, { [classes.active]: isActive }])} */}
+                <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
 					<Typography component="div" className={classes.headerContainer}>
 						<Grid container alignItems='center' justify='space-around'>
 							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
-							<IconButton color="inherit" onClick={() => toggleDrawer(false)}>
+                            <IconButton color="inherit" onClick={closeDrawer}>
 								<CloseIcon />
 							</IconButton>
 						</Grid>
@@ -66,7 +62,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 							classes={{ root: classes.tabRoot, selected: classes.tabSelected }}
 							label="Activity" />
 					</Tabs>
-					{tabsValue === 0 && <TabContainer>
+                    {tabsValue === 0 && this.renderTabContainer(
 						<Grid container>
 							<Grid item xs={6} sm={4} className={classes.gridLabel}>
 								<p>Type</p>
@@ -81,8 +77,8 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 								<p>me</p>
 							</Grid>
 						</Grid>
-					</TabContainer>}
-					{tabsValue === 1 && <TabContainer>
+					)}
+                    {tabsValue === 1 && this.renderTabContainer(
 						<Grid container>
 							<Grid item xs={6} sm={4} className={classes.gridLabel}>
 								<p>Type</p>
@@ -97,7 +93,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 								<p>me</p>
 							</Grid>
 						</Grid>
-					</TabContainer>}
+					)}
                 </Drawer>
             </div>
         );
@@ -109,7 +105,11 @@ type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer'
 	| 'tabsIndicator' | 'tabRoot' | 'tabContainer' | 'tabSelected' | 'gridLabel';
 
 const drawerWidth = 320;
-const purple = '#692498';
+const colorPurple = '#692498';
+const colorLightGray = '#A1A1A1';
+const colorVeryLightGray = '#999999';
+const colorGray = '#333';
+
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 	container: {
         width: 0,
@@ -126,17 +126,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: drawerWidth
 	},
 	headerContainer: {
-		color: '#A1A1A1',
+        color: colorLightGray,
 		margin: `${theme.spacing.unit}px 0`
 	},
 	tabsIndicator: {
-		backgroundColor: purple
+        backgroundColor: colorPurple
 	},
 	tabRoot: {
-		color: '#333333',
+        color: colorGray,
 		'&$tabSelected': {
 			fontWeight: 700,
-			color: purple
+            color: colorPurple
 		}
 	},
 	tabContainer: {
@@ -144,7 +144,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 	},
 	tabSelected: {},
 	gridLabel: {
-		color: '#999999',
+        color: colorVeryLightGray,
 	}
 });
 

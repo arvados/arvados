@@ -35,7 +35,7 @@ export interface MainAppBarActionProps {
     onSearch: (searchText: string) => void;
     onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
     onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
-    onDetailsPanelClick: (isOpened: boolean) => void;
+    onDetailsPanelToggle: () => void;
 }
 
 type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
@@ -75,7 +75,7 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
             {
                 props.user && <Breadcrumbs items={props.breadcrumbs} onClick={props.onBreadcrumbClick} />
             }
-            <IconButton color="inherit" onClick={() => props.onDetailsPanelClick(true)}>
+            <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
                 <InfoIcon />
             </IconButton>
         </Toolbar>
