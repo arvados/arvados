@@ -2,21 +2,46 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import * as _ from "lodash";
+import { Resource } from "./common-resource-service";
 
-export default class OrderBuilder {
-    private order: string[] = [];
+export default class OrderBuilder<T extends Resource = Resource> {
 
-    addAsc(attribute: string) {
-        this.order.push(`${attribute} asc`);
-        return this;
+    static create<T extends Resource = Resource>(prefix?: string){
+        return new OrderBuilder<T>([], prefix);
     }
 
-    addDesc(attribute: string) {
-        this.order.push(`${attribute} desc`);
-        return this;
+    private constructor(
+        private order: string[] = [], 
+        private prefix = ""){}
+
+    private getRule (direction: string, attribute: keyof T) {
+        const prefix = this.prefix ? this.prefix + "." : "";
+        return `${prefix}${_.snakeCase(attribute.toString())} ${direction}`;
     }
 
-    get() {
-        return this.order;
+    addAsc(attribute: keyof T) {
+        return new OrderBuilder<T>(
+            [...this.order, this.getRule("asc", attribute)],
+            this.prefix
+        );
+    }
+
+    addDesc(attribute: keyof T) {
+        return new OrderBuilder<T>(
+            [...this.order, this.getRule("desc", attribute)],
+            this.prefix
+        );
+    }
+
+    concat(orderBuilder: OrderBuilder){
+        return new OrderBuilder<T>(
+            this.order.concat(orderBuilder.getOrder()),
+            this.prefix
+        );
+    }
+
+    getOrder() {
+        return this.order.slice();
     }
 }
