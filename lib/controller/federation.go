@@ -33,17 +33,17 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 	if scheme == "" {
 		scheme = "https"
 	}
+	err := h.saltAuthToken(req, remoteID)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	urlOut := &url.URL{
 		Scheme:   scheme,
 		Host:     remote.Host,
 		Path:     req.URL.Path,
 		RawPath:  req.URL.RawPath,
 		RawQuery: req.URL.RawQuery,
-	}
-	err := h.saltAuthToken(req, remoteID)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusBadRequest)
-		return
 	}
 	client := h.secureClient
 	if remote.Insecure {
@@ -66,7 +66,7 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) error {
 		}
 		// Replace req.Body with a buffer that re-encodes the
 		// form without api_token, in case we end up
-		// forwarding the request to RailsAPI.
+		// forwarding the request.
 		if req.PostForm != nil {
 			req.PostForm.Del("api_token")
 		}
@@ -86,5 +86,14 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) error {
 		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
+
+	// Remove api_token=... from the the query string, in case we
+	// end up forwarding the request.
+	if values, err := url.ParseQuery(req.URL.RawQuery); err != nil {
+		return err
+	} else if _, ok := values["api_token"]; ok {
+		delete(values, "api_token")
+		req.URL.RawQuery = values.Encode()
+	}
 	return nil
 }

@@ -23,10 +23,12 @@ import (
 var _ = check.Suite(&FederationSuite{})
 
 type FederationSuite struct {
-	log          *logrus.Logger
-	localServer  *httpserver.Server
-	remoteServer *httpserver.Server
-	handler      *Handler
+	log                *logrus.Logger
+	localServer        *httpserver.Server
+	remoteServer       *httpserver.Server
+	remoteMock         *httpserver.Server
+	remoteMockRequests []http.Request
+	handler            *Handler
 }
 
 func (s *FederationSuite) SetUpTest(c *check.C) {
@@ -36,6 +38,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 
 	s.remoteServer = newServerFromIntegrationTestEnv(c)
 	c.Assert(s.remoteServer.Start(), check.IsNil)
+
+	s.remoteMock = newServerFromIntegrationTestEnv(c)
+	s.remoteMock.Server.Handler = http.HandlerFunc(s.remoteMockHandler)
+	c.Assert(s.remoteMock.Start(), check.IsNil)
 
 	nodeProfile := arvados.NodeProfile{
 		Controller: arvados.SystemServiceInstance{Listen: ":"},
@@ -49,14 +55,25 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	}, NodeProfile: &nodeProfile}
 	s.localServer = newServerFromIntegrationTestEnv(c)
 	s.localServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.log, s.handler))
+
 	s.handler.Cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		"zzzzz": {
 			Host:   s.remoteServer.Addr,
 			Proxy:  true,
 			Scheme: "http",
 		},
+		"zmock": {
+			Host:   s.remoteMock.Addr,
+			Proxy:  true,
+			Scheme: "http",
+		},
 	}
+
 	c.Assert(s.localServer.Start(), check.IsNil)
+}
+
+func (s *FederationSuite) remoteMockHandler(w http.ResponseWriter, req *http.Request) {
+	s.remoteMockRequests = append(s.remoteMockRequests, *req)
 }
 
 func (s *FederationSuite) TearDownTest(c *check.C) {
@@ -142,6 +159,13 @@ func (s *FederationSuite) TestGetRemoteWorkflow(c *check.C) {
 	c.Check(json.Unmarshal(resp.Body.Bytes(), &wf), check.IsNil)
 	c.Check(wf.UUID, check.Equals, arvadostest.WorkflowWithDefinitionYAMLUUID)
 	c.Check(wf.OwnerUUID, check.Equals, arvadostest.ActiveUserUUID)
+}
+
+func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1)+"?api_token="+arvadostest.ActiveToken, nil)
+	s.handler.ServeHTTP(httptest.NewRecorder(), req)
+	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	c.Check(s.remoteMockRequests[0].URL.String(), check.Not(check.Matches), `.*api_token=.*`)
 }
 
 func (s *FederationSuite) TestUpdateRemoteWorkflow(c *check.C) {
