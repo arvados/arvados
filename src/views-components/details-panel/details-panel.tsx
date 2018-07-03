@@ -47,7 +47,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 					{/* className={classnames([classes.root, { [classes.active]: isActive }])} */}
 					<Typography component="div" className={classes.headerContainer}>
 						<Grid container alignItems='center' justify='space-around'>
-							<Typography variant="title" className={classes.headerTitle} gutterBottom>
+							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
 							<IconButton color="inherit" onClick={() => toggleDrawer(false)}>
@@ -105,7 +105,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 
 }
 
-type CssRules = 'drawerPaper' | 'container' | 'headerContainer' | 'headerTitle' 
+type CssRules = 'drawerPaper' | 'container' | 'headerContainer' 
 	| 'tabsIndicator' | 'tabRoot' | 'tabContainer' | 'tabSelected' | 'gridLabel';
 
 const drawerWidth = 320;
@@ -122,9 +122,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 	headerContainer: {
 		color: '#A1A1A1',
 		margin: `${theme.spacing.unit}px 0`
-	},
-	headerTitle: {
-		marginBottom: 0
 	},
 	tabsIndicator: {
 		backgroundColor: purple
