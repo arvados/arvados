@@ -10,6 +10,8 @@ import { StyleRulesCallback, WithStyles, withStyles, Theme } from "@material-ui/
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
+import * as classnames from "classnames";
+import Grid from '@material-ui/core/Grid';
 
 function TabContainer(props: any) {
 	return (
@@ -26,28 +28,35 @@ export interface DetailsPanelProps {
 
 class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRules>, {}> {
 	state = {
-		value: 0,
+		tabsValue: 0,
 	};
 
 	handleChange = (event: any, value: boolean) => {
-		this.setState({ value });
+		this.setState({ tabsValue: value });
 	}
 	
 	render() {
 		const { classes, toggleDrawer, isOpened } = this.props;
-		const { value } = this.state;
+		const { tabsValue } = this.state;
         return (
             <div className={classes.container}>
 				<Drawer variant="persistent" anchor="right" open={isOpened} onClose={() => toggleDrawer(false)}
                     classes={{
                         paper: classes.drawerPaper
                     }}>
-					<h2 className={classes.title}>Tutorial pipeline</h2>
-					<IconButton color="inherit" onClick={() => toggleDrawer(false)}>
-						<CloseIcon />
-					</IconButton>
-					<Tabs value={value} onChange={this.handleChange}
-						classes={{ root: classes.tabsRoot, indicator: classes.tabsIndicator }}>
+					{/* className={classnames([classes.root, { [classes.active]: isActive }])} */}
+					<Typography component="div" className={classes.headerContainer}>
+						<Grid container alignItems='center' justify='space-around'>
+							<Typography variant="title" className={classes.headerTitle} gutterBottom>
+								Tutorial pipeline
+							</Typography>
+							<IconButton color="inherit" onClick={() => toggleDrawer(false)}>
+								<CloseIcon />
+							</IconButton>
+						</Grid>
+					</Typography>
+					<Tabs value={tabsValue} onChange={this.handleChange}
+						classes={{ indicator: classes.tabsIndicator }}>
 						<Tab
 							disableRipple
 							classes={{ root: classes.tabRoot, selected: classes.tabSelected }}
@@ -57,11 +66,37 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 							classes={{ root: classes.tabRoot, selected: classes.tabSelected }}
 							label="Activity" />
 					</Tabs>
-					{value === 0 && <TabContainer>
-						Item One
+					{tabsValue === 0 && <TabContainer>
+						<Grid container>
+							<Grid item xs={6} sm={4} className={classes.gridLabel}>
+								<p>Type</p>
+								<p>Size</p>
+								<p>Location</p>
+								<p>Owner</p>
+							</Grid>
+							<Grid item xs={6} sm={4}>								
+								<p>Process</p>
+								<p>---</p>
+								<p>Projects</p>
+								<p>me</p>
+							</Grid>
+						</Grid>
 					</TabContainer>}
-					{value === 1 && <TabContainer>
-						Item Two
+					{tabsValue === 1 && <TabContainer>
+						<Grid container>
+							<Grid item xs={6} sm={4} className={classes.gridLabel}>
+								<p>Type</p>
+								<p>Size</p>
+								<p>Location</p>
+								<p>Owner</p>
+							</Grid>
+							<Grid item xs={6} sm={4}>
+								<p>Process</p>
+								<p>---</p>
+								<p>Projects</p>
+								<p>me</p>
+							</Grid>
+						</Grid>
 					</TabContainer>}
                 </Drawer>
             </div>
@@ -70,9 +105,11 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 
 }
 
-type CssRules = 'drawerPaper' | 'container' | 'title' | 'tabsRoot' | 'tabsIndicator' | 'tabRoot' | 'tabSelected';
+type CssRules = 'drawerPaper' | 'container' | 'headerContainer' | 'headerTitle' 
+	| 'tabsIndicator' | 'tabRoot' | 'tabContainer' | 'tabSelected' | 'gridLabel';
 
 const drawerWidth = 320;
+const purple = '#692498';
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 	container: {
 		position: 'relative',
@@ -82,28 +119,30 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         position: 'relative',
         width: drawerWidth
 	},
-	title: {
-		padding: '10px 0px',
-		fontSize: '20px',
-		fontWeight: 400,
-		fontStyle: 'normal'
+	headerContainer: {
+		color: '#A1A1A1',
+		margin: `${theme.spacing.unit}px 0`
 	},
-	tabsRoot: {
-		borderBottom: '1px solid transparent',
+	headerTitle: {
+		marginBottom: 0
 	},
 	tabsIndicator: {
-		backgroundColor: 'rgb(106, 27, 154)',
+		backgroundColor: purple
 	},
 	tabRoot: {
-		fontSize: '13px',
-		fontWeight: 400,
 		color: '#333333',
 		'&$tabSelected': {
 			fontWeight: 700,
-			color: 'rgb(106, 27, 154)'
-		},
+			color: purple
+		}
 	},
-	tabSelected: {}
+	tabContainer: {
+		padding: theme.spacing.unit * 3
+	},
+	tabSelected: {},
+	gridLabel: {
+		color: '#999999',
+	}
 });
 
 export default withStyles(styles)(DetailsPanel);
