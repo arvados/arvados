@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, StyleRulesCallback, withStyles, WithStyles, Button, MenuItem } from "@material-ui/core";
+import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import PersonIcon from "@material-ui/icons/Person";
 import HelpIcon from "@material-ui/icons/Help";
@@ -38,15 +38,12 @@ export interface MainAppBarActionProps {
     onDetailsPanelToggle: () => void;
 }
 
-type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
+type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
 
 export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
-    return <AppBar className={props.classes.appBar} position="static">
-        <Toolbar className={props.classes.toolbar}>
-            <Grid
-                container
-                justify="space-between"
-            >
+    return <AppBar position="static">
+        <Toolbar>
+            <Grid container justify="space-between">
                 <Grid item xs={3}>
                     <Typography variant="headline" color="inherit" noWrap>
                         Arvados
@@ -120,15 +117,4 @@ const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menu
     ));
 };
 
-type CssRules = "appBar" | "toolbar";
-
-const styles: StyleRulesCallback<CssRules> = theme => ({
-    appBar: {
-        backgroundColor: "#692498"
-    },
-    toolbar: {
-        minHeight: '48px'
-    }
-});
-
-export default withStyles(styles)(MainAppBar);
+export default MainAppBar;

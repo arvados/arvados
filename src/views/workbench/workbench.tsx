@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
 import { Route, Switch, RouteComponentProps, withRouter } from "react-router";
@@ -29,13 +29,14 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 import DetailsPanel from '../../views-components/details-panel/details-panel';
+import { ArvadosTheme } from '../../common/custom-theme';
 
 const drawerWidth = 240;
-const appBarHeight = 116;
+const appBarHeight = 100;
 
 type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         flexGrow: 1,
         zIndex: 1,
@@ -47,7 +48,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     appBar: {
         zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: '#692498',
         position: "absolute",
         width: "100%"
     },
@@ -65,7 +65,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         paddingTop: appBarHeight
     },
     content: {
-        padding: theme.spacing.unit * 3,
+        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
         overflowY: "auto",
         flexGrow: 1
     },
@@ -204,7 +204,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </div>
                     <DetailsPanel 
                         isOpened={this.state.isDetailsPanelOpened} 
-                        closeDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
+                        onCloseDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
                 </main>
             </div>
         );

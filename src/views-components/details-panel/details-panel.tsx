@@ -6,7 +6,8 @@ import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from '@material-ui/icons/Close';
-import { StyleRulesCallback, WithStyles, withStyles, Theme } from "@material-ui/core/styles";
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { ArvadosTheme } from '../../common/custom-theme';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
@@ -14,7 +15,7 @@ import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
 
 export interface DetailsPanelProps {
-    closeDrawer: () => void;
+    onCloseDrawer: () => void;
     isOpened: boolean;
 }
 
@@ -27,16 +28,13 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 		this.setState({ tabsValue: value });
 	}
     
-    renderTabContainer = (children: React.ReactElement<any>) => {
-        return (
-            <Typography className={this.props.classes.tabContainer} component="div">
-                {children}
-            </Typography>
-        );
-    }
+    renderTabContainer = (children: React.ReactElement<any>) => 
+        <Typography className={this.props.classes.tabContainer} component="div">
+            {children}
+        </Typography>
 
 	render() {
-        const { classes, closeDrawer, isOpened } = this.props;
+        const { classes, onCloseDrawer, isOpened } = this.props;
 		const { tabsValue } = this.state;
         return (
             <div className={classnames([classes.container, { [classes.opened]: isOpened }])}>
@@ -46,21 +44,14 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
-                            <IconButton color="inherit" onClick={closeDrawer}>
+                            <IconButton color="inherit" onClick={onCloseDrawer}>
 								<CloseIcon />
 							</IconButton>
 						</Grid>
 					</Typography>
-					<Tabs value={tabsValue} onChange={this.handleChange}
-						classes={{ indicator: classes.tabsIndicator }}>
-						<Tab
-							disableRipple
-							classes={{ root: classes.tabRoot, selected: classes.tabSelected }}
-							label="Details" />
-						<Tab
-							disableRipple
-							classes={{ root: classes.tabRoot, selected: classes.tabSelected }}
-							label="Activity" />
+					<Tabs value={tabsValue} onChange={this.handleChange}>
+						<Tab disableRipple label="Details" />
+						<Tab disableRipple label="Activity" />
 					</Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
 						<Grid container>
@@ -102,15 +93,10 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 }
 
 type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' 
-	| 'tabsIndicator' | 'tabRoot' | 'tabContainer' | 'tabSelected' | 'gridLabel';
+	| 'tabContainer' | 'tabSelected' | 'gridLabel';
 
 const drawerWidth = 320;
-const colorPurple = '#692498';
-const colorLightGray = '#A1A1A1';
-const colorVeryLightGray = '#999999';
-const colorGray = '#333';
-
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 	container: {
         width: 0,
 		position: 'relative',
@@ -126,25 +112,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: drawerWidth
 	},
 	headerContainer: {
-        color: colorLightGray,
+        color: theme.palette.grey["600"],
 		margin: `${theme.spacing.unit}px 0`
-	},
-	tabsIndicator: {
-        backgroundColor: colorPurple
-	},
-	tabRoot: {
-        color: colorGray,
-		'&$tabSelected': {
-			fontWeight: 700,
-            color: colorPurple
-		}
 	},
 	tabContainer: {
 		padding: theme.spacing.unit * 3
 	},
 	tabSelected: {},
 	gridLabel: {
-        color: colorVeryLightGray,
+        color: theme.palette.grey["500"]
 	}
 });
 
