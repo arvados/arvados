@@ -14,11 +14,14 @@ import (
 	"time"
 )
 
+const slurm15NiceLimit int64 = 10000
+
 type slurmJob struct {
 	uuid         string
 	wantPriority int64
 	priority     int64 // current slurm priority (incorporates nice value)
 	nice         int64 // current slurm nice value
+	hitNiceLimit bool
 }
 
 // Squeue implements asynchronous polling monitor of the SLURM queue using the
@@ -103,10 +106,18 @@ func (sqc *SqueueChecker) reniceAll() {
 	})
 	renice := wantNice(jobs, sqc.PrioritySpread)
 	for i, job := range jobs {
-		if renice[i] == job.nice {
+		niceNew := renice[i]
+		if job.hitNiceLimit && niceNew > slurm15NiceLimit {
+			niceNew = slurm15NiceLimit
+		}
+		if niceNew == job.nice {
 			continue
 		}
-		sqc.Slurm.Renice(job.uuid, renice[i])
+		err := sqc.Slurm.Renice(job.uuid, niceNew)
+		if err != nil && niceNew > slurm15NiceLimit && strings.Contains(err.Error(), "Invalid nice value") {
+			log.Printf("container %q clamping nice values at %d, priority order will not be correct", job.uuid, slurm15NiceLimit)
+			job.hitNiceLimit = true
+		}
 	}
 }
 
