@@ -89,7 +89,7 @@ export default class CommonResourceService<T extends Resource> {
         const params = {
             ...other,
             filters: filters ? filters.get() : undefined,
-            order: order ? order.get() : undefined
+            order: order ? order.getOrder() : undefined
         };
         return this.serverApi
             .get(this.resourceType, {

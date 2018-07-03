@@ -38,7 +38,7 @@ export default class GroupsService extends CommonResourceService<GroupResource> 
         const params = {
             ...other,
             filters: filters ? filters.get() : undefined,
-            order: order ? order.get() : undefined
+            order: order ? order.getOrder() : undefined
         };
         return this.serverApi
             .get(this.resourceType + `${uuid}/contents/`, {
