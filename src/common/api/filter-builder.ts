@@ -6,22 +6,14 @@ import * as _ from "lodash";
 import { Resource } from "./common-resource-service";
 
 export default class FilterBuilder<T extends Resource = Resource> {
-    private filters = "";
 
-    static create<T extends Resource = Resource>() {
-        return new FilterBuilder<T>();
+    static create<T extends Resource = Resource>(resourcePrefix = "") {
+        return new FilterBuilder<T>(resourcePrefix);
     }
 
-    private addCondition(field: keyof T, cond: string, value?: string | string[], prefix: string = "", postfix: string = "") {
-        if (value) {
-            value = typeof value === "string"
-                ? `"${prefix}${value}${postfix}"`
-                : `["${value.join(`","`)}"]`;
-
-            this.filters += `["${_.snakeCase(field.toString())}","${cond}",${value}]`;
-        }
-        return this;
-    }
+    constructor(
+        private resourcePrefix = "",
+        private filters = "") { }
 
     public addEqual(field: keyof T, value?: string) {
         return this.addCondition(field, "=", value);
@@ -39,7 +31,38 @@ export default class FilterBuilder<T extends Resource = Resource> {
         return this.addCondition(field, "is_a", value);
     }
 
-    public get() {
+    public addIn(field: keyof T, value?: string | string[]) {
+        return this.addCondition(field, "in", value);
+    }
+
+    public concat<O extends Resource>(filterBuilder: FilterBuilder<O>) {
+        return new FilterBuilder(this.resourcePrefix, this.filters + this.getSeparator() + filterBuilder.getFilters());
+    }
+
+    public getFilters() {
+        return this.filters;
+    }
+
+    public serialize() {
         return "[" + this.filters + "]";
+    }
+
+    private addCondition(field: keyof T, cond: string, value?: string | string[], prefix: string = "", postfix: string = "") {
+        if (value) {
+            value = typeof value === "string"
+                ? `"${prefix}${value}${postfix}"`
+                : `["${value.join(`","`)}"]`;
+
+            const resourcePrefix = this.resourcePrefix
+                ? _.snakeCase(this.resourcePrefix) + "."
+                : "";
+
+            this.filters += `${this.getSeparator()}["${resourcePrefix}${_.snakeCase(field.toString())}","${cond}",${value}]`;
+        }
+        return this;
+    }
+
+    private getSeparator () {
+        return this.filters ? "," : "";
     }
 }

@@ -34,7 +34,7 @@ export default class CollectionService {
             const fb = new FilterBuilder();
             fb.addLike("ownerUuid", parentUuid);
             return serverApi.get<CollectionsResponse>('/collections', { params: {
-                filters: fb.get()
+                filters: fb.serialize()
             }}).then(resp => {
                 const collections = resp.data.items.map(g => ({
                     name: g.name,
