@@ -61,17 +61,9 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                 : dispatch<any>(getProjectList(itemId));
 
             promise
-                .then(() => dispatch<any>(getCollectionList(itemId)))
                 .then(() => dispatch<any>(() => {
-                    const { projects, collections } = getState();
-                    dispatch(dataExplorerActions.SET_ITEMS({
-                        id: PROJECT_PANEL_ID,
-                        items: projectPanelItems(
-                            projects.items,
-                            treeItem.data.uuid,
-                            collections
-                        )
-                    }));
+                    dispatch(dataExplorerActions.RESET_PAGINATION({id: PROJECT_PANEL_ID}));
+                    dispatch(dataExplorerActions.REQUEST_ITEMS({id: PROJECT_PANEL_ID}));
                 }));
 
         }

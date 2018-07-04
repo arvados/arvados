@@ -12,6 +12,7 @@ import sidePanelReducer, { SidePanelState } from './side-panel/side-panel-reduce
 import authReducer, { AuthState } from "./auth/auth-reducer";
 import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
 import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
+import { projectPanelMiddleware } from '../views/project-panel/project-panel-middleware';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -40,7 +41,8 @@ const rootReducer = combineReducers({
 export default function configureStore(history: History) {
     const middlewares: Middleware[] = [
         routerMiddleware(history),
-        thunkMiddleware
+        thunkMiddleware,
+        projectPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);
