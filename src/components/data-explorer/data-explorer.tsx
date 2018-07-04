@@ -7,7 +7,7 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable, { DataColumns } from "../../components/data-table/data-table";
+import DataTable, { DataColumns, DataItem } from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
@@ -15,6 +15,7 @@ import SearchInput from '../search-input/search-input';
 
 interface DataExplorerProps<T> {
     items: T[];
+    itemsAvailable: number;
     columns: DataColumns<T>;
     contextActions: ContextMenuActionGroup[];
     searchValue: string;
@@ -38,7 +39,7 @@ interface DataExplorerState<T> {
     };
 }
 
-class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>, DataExplorerState<T>> {
+class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>, DataExplorerState<T>> {
     state: DataExplorerState<T> = {
         contextMenu: {}
     };
@@ -73,7 +74,7 @@ class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<
                 {this.props.items.length > 0 &&
                     <Grid container justify="flex-end">
                         <TablePagination
-                            count={this.props.items.length}
+                            count={this.props.itemsAvailable}
                             rowsPerPage={this.props.rowsPerPage}
                             rowsPerPageOptions={this.props.rowsPerPageOptions}
                             page={this.props.page}
