@@ -20,8 +20,8 @@ export interface Resource {
 }
 
 export interface ListArguments {
-    limit: number;
-    offset: number;
+    limit?: number;
+    offset?: number;
     filters?: FilterBuilder;
     order?: OrderBuilder;
     select?: string[];
@@ -68,8 +68,10 @@ export default class CommonResourceService<T extends Resource> {
         this.resourceType = '/' + resourceType + '/';
     }
 
-    create() {
-        throw new Error("Not implemented");
+    create(data: Partial<T>) {
+        return this.serverApi
+            .post<T>(this.resourceType, data)
+            .then(CommonResourceService.mapResponseKeys);
     }
 
     delete(uuid: string): Promise<T> {
@@ -84,7 +86,7 @@ export default class CommonResourceService<T extends Resource> {
             .then(CommonResourceService.mapResponseKeys);
     }
 
-    list(args: ListArguments): Promise<ListResults<T>> {
+    list(args: ListArguments = {}): Promise<ListResults<T>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,

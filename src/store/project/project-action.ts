@@ -4,8 +4,9 @@
 import { default as unionize, ofType, UnionOf } from "unionize";
 
 import { Project } from "../../models/project";
-import { projectService } from "../../services/services";
+import { groupsService } from "../../services/services";
 import { Dispatch } from "redux";
+import { getResourceKind } from "../../models/resource";
 
 const actions = unionize({
     CREATE_PROJECT: ofType<Project>(),
@@ -19,15 +20,17 @@ const actions = unionize({
         tag: 'type',
         value: 'payload'
     });
-
-export const getProjectList = (parentUuid?: string) => (dispatch: Dispatch): Promise<Project[]> => {
-    if (parentUuid) {
+ 
+export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) => {
         dispatch(actions.PROJECTS_REQUEST(parentUuid));
-        return projectService.getProjectList(parentUuid).then(projects => {
+        return groupsService.list().then(listResults => {
+            const projects = listResults.items.map(item => ({
+                ...item,
+                kind: getResourceKind(item.kind)
+            }));
             dispatch(actions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
             return projects;
         });
-    } return Promise.resolve([]);
 };
 
 export type ProjectAction = UnionOf<typeof actions>;
