@@ -7,17 +7,11 @@ import CommonResourceService, { Resource, ListResults } from "../../common/api/c
 import FilterBuilder from "../../common/api/filter-builder";
 import OrderBuilder from "../../common/api/order-builder";
 import { AxiosInstance } from "axios";
-
-interface GroupResource extends Resource {
-    name: string;
-    groupClass: string;
-    description: string;
-    properties: string;
-    writeableBy: string[];
-    trashAt: string;
-    deleteAt: string;
-    isTrashed: boolean;
-}
+import { GroupResource } from "../../models/group";
+import { CollectionResource } from "../../models/collection";
+import { ProjectResource } from "../../models/project";
+import { WorkflowResource } from "../../models/workflow";
+import { ProcessResource } from "../../models/process";
 
 interface ContensArguments {
     limit?: number;
@@ -27,13 +21,19 @@ interface ContensArguments {
     recursive?: boolean;
 }
 
+export type GroupContentsResource =
+    CollectionResource |
+    ProjectResource |
+    WorkflowResource |
+    ProcessResource;
+
 export default class GroupsService extends CommonResourceService<GroupResource> {
 
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "groups");
     }
 
-    contents (uuid: string, args: ContensArguments = {}): Promise<ListResults<Resource>> {
+    contents(uuid: string, args: ContensArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,

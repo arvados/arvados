@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "../../common/api/common-resource-service";
 import { DataItem } from "../../components/data-table/data-table";
+import { ResourceKind } from "../../models/kinds";
+import { GroupContentsResource } from "../../services/groups-service/groups-service";
 
 export interface ProjectPanelItem extends DataItem {
     uuid: string;
@@ -16,15 +17,17 @@ export interface ProjectPanelItem extends DataItem {
     status?: string;
 }
 
-export function resourceToDataItem(r: Resource): ProjectPanelItem {
+
+export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
     return {
         key: r.uuid,
         uuid: r.uuid,
-        name: r.uuid,
+        name: r.name,
         kind: r.kind,
         url: "",
         owner: r.ownerUuid,
-        lastModified: r.modifiedAt
+        lastModified: r.modifiedAt,
+        status:  r.kind === ResourceKind.Process ? r.state : undefined
     };
 }
 
