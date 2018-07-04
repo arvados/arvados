@@ -9,11 +9,10 @@ import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
-import actions from "../../store/data-explorer/data-explorer-action";
 import { DataColumns } from '../../components/data-table/data-table';
-import { ResourceKind } from "../../models/resource";
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
+import { ResourceKind } from '../../models/kinds';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
@@ -90,10 +89,13 @@ const renderName = (item: ProjectPanelItem) =>
 
 const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
-        case ResourceKind.PROJECT:
+        case ResourceKind.Project:
             return <i className="fas fa-folder fa-lg" />;
-        case ResourceKind.COLLECTION:
-            return <i className="fas fa-th fa-lg" />;
+        case ResourceKind.Collection:
+            return <i className="fas fa-archive fa-lg" />;
+        case ResourceKind.Process:
+        case ResourceKind.Workflow:
+            return <i className="fas fa-cogs fa-lg" />;
         default:
             return <i />;
     }
@@ -114,10 +116,26 @@ const renderOwner = (owner: string) =>
         {owner}
     </Typography>;
 
-const renderType = (type: string) =>
-    <Typography noWrap>
-        {type}
+const getItemTypeLabel = (type: string) => {
+    switch(type){
+        case ResourceKind.Collection:
+            return "Data collection";
+        case ResourceKind.Project:
+            return "Project";
+        case ResourceKind.Process: 
+            return "Process";
+        case ResourceKind.Workflow:
+            return "Workflow";
+        default:
+            return "Unknown";
+    }
+};
+
+const renderType = (type: string) => {
+    return <Typography noWrap>
+        {getItemTypeLabel(type)}
     </Typography>;
+};
 
 const renderStatus = (item: ProjectPanelItem) =>
     <Typography noWrap align="center">
