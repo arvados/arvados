@@ -36,7 +36,7 @@ describe("CommonResourceService", () => {
 
     it("#list", async () => {
         axiosMock
-            .onGet("/resource")
+            .onGet("/resource/")
             .reply(200, {
                 kind: "kind",
                 offset: 2,
