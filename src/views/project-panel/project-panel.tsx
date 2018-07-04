@@ -7,8 +7,6 @@ import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
-import { DataColumn, toggleSortDirection } from '../../components/data-table/data-column';
-import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import actions from "../../store/data-explorer/data-explorer-action";
@@ -44,19 +42,9 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             <DataExplorer
                 id={PROJECT_PANEL_ID}
                 contextActions={contextMenuActions}
-                onColumnToggle={this.toggleColumn}
-                onFiltersChange={this.changeFilters}
                 onRowClick={this.props.onItemClick}
-                onSortToggle={this.toggleSort}
-                onSearch={this.search}
-                onContextAction={this.executeAction}
-                onChangePage={this.changePage}
-                onChangeRowsPerPage={this.changeRowsPerPage} />;
+                onContextAction={this.executeAction} />;
         </div>;
-    }
-
-    componentDidMount() {
-        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
     componentWillReceiveProps({ match, currentItemId }: ProjectPanelProps) {
@@ -65,32 +53,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
         }
     }
 
-    toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
-    }
-
-    toggleSort = (column: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_PANEL_ID, columnName: column.name }));
-    }
-
-    changeFilters = (filters: DataTableFilterItem[], column: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_PANEL_ID, columnName: column.name, filters }));
-    }
-
     executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
         alert(`Executing ${action.name} on ${item.name}`);
-    }
-
-    search = (searchValue: string) => {
-        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_PANEL_ID, searchValue }));
-    }
-
-    changePage = (page: number) => {
-        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_PANEL_ID, page }));
-    }
-
-    changeRowsPerPage = (rowsPerPage: number) => {
-        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
     }
 
 }
@@ -160,7 +124,7 @@ const renderStatus = (item: ProjectPanelItem) =>
         {item.status || "-"}
     </Typography>;
 
-const columns: DataColumns<ProjectPanelItem> = [{
+export const columns: DataColumns<ProjectPanelItem> = [{
     name: "Name",
     selected: true,
     sortDirection: "desc",
