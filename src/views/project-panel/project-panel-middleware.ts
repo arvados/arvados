@@ -33,6 +33,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             }),
             SET_FILTERS: handleProjectPanelAction(() => {
+                store.dispatch(actions.RESET_PAGINATION({ id: PROJECT_PANEL_ID }));
                 store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             }),
             REQUEST_ITEMS: handleProjectPanelAction(() => {
