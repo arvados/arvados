@@ -3,12 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import AuthService from "./auth-service/auth-service";
-import ProjectService from "./project-service/project-service";
 import CollectionService from "./collection-service/collection-service";
 import GroupsService from "./groups-service/groups-service";
 import { serverApi } from "../common/api/server-api";
 
 export const authService = new AuthService();
-export const projectService = new ProjectService();
 export const collectionService = new CollectionService();
 export const groupsService = new GroupsService(serverApi);
