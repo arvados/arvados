@@ -13,8 +13,13 @@ import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
 import { ResourceKind } from '../../models/kinds';
+import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 
 export const PROJECT_PANEL_ID = "projectPanel";
+
+export interface ProjectPanelFilter extends DataTableFilterItem {
+    type: ResourceKind;
+}
 
 type ProjectPanelProps = {
     currentItemId: string,
@@ -116,7 +121,9 @@ const renderOwner = (owner: string) =>
         {owner}
     </Typography>;
 
-const getItemTypeLabel = (type: string) => {
+
+
+const typeToLabel = (type: string) => {
     switch(type){
         case ResourceKind.Collection:
             return "Data collection";
@@ -124,8 +131,6 @@ const getItemTypeLabel = (type: string) => {
             return "Project";
         case ResourceKind.Process: 
             return "Process";
-        case ResourceKind.Workflow:
-            return "Workflow";
         default:
             return "Unknown";
     }
@@ -133,7 +138,7 @@ const getItemTypeLabel = (type: string) => {
 
 const renderType = (type: string) => {
     return <Typography noWrap>
-        {getItemTypeLabel(type)}
+        {typeToLabel(type)}
     </Typography>;
 };
 
@@ -142,7 +147,9 @@ const renderStatus = (item: ProjectPanelItem) =>
         {item.status || "-"}
     </Typography>;
 
-export const columns: DataColumns<ProjectPanelItem> = [{
+
+
+export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     name: "Name",
     selected: true,
     sortDirection: "desc",
@@ -157,11 +164,17 @@ export const columns: DataColumns<ProjectPanelItem> = [{
     name: "Type",
     selected: true,
     filters: [{
-        name: "Collection",
-        selected: true
+        name: typeToLabel(ResourceKind.Collection),
+        selected: true,
+        type: ResourceKind.Collection
     }, {
-        name: "Project",
-        selected: true
+        name: typeToLabel(ResourceKind.Process),
+        selected: true,
+        type: ResourceKind.Process
+    }, {
+        name: typeToLabel(ResourceKind.Project),
+        selected: true,
+        type: ResourceKind.Project
     }],
     render: item => renderType(item.kind),
     width: "125px"
