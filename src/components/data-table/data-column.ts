@@ -4,13 +4,13 @@
 
 import { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 
-export interface DataColumn<T> {
+export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterItem> {
     name: string;
     selected: boolean;
     configurable?: boolean;
     key?: React.Key;
     sortDirection?: SortDirection;
-    filters?: DataTableFilterItem[];
+    filters?: F[];
     render: (item: T) => React.ReactElement<void>;
     renderHeader?: () => React.ReactElement<void> | null;
     width?: string;

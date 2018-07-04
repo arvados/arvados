@@ -7,7 +7,7 @@ import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, Style
 import { DataColumn, SortDirection } from './data-column';
 import DataTableFilters, { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 
-export type DataColumns<T> = Array<DataColumn<T>>;
+export type DataColumns<T, F extends DataTableFilterItem = DataTableFilterItem> = Array<DataColumn<T, F>>;
 export interface DataItem {
     key: React.Key;
 }
