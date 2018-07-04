@@ -5,12 +5,18 @@
 import { Resource } from "../common/api/common-resource-service";
 import { ResourceKind } from "./kinds";
 
+export enum ContainerRequestState {
+    Uncommitted = "Uncommitted",
+    Committed = "Committed",
+    Final = "Final"
+}
+
 export interface ContainerRequestResource extends Resource {
     kind: ResourceKind.ContainerRequest;
     name: string;
     description: string;
     properties: any;
-    state: string;
+    state: ContainerRequestState;
     requestingContainerUuid: string;
     containerUuid: string;
     containerCountMax: number;

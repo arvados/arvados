@@ -14,11 +14,12 @@ import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
 import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import { ContainerRequestState } from '../../models/container-request';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
-    type: ResourceKind;
+    type: ResourceKind | ContainerRequestState;
 }
 
 type ProjectPanelProps = {
@@ -124,12 +125,12 @@ const renderOwner = (owner: string) =>
 
 
 const typeToLabel = (type: string) => {
-    switch(type){
+    switch (type) {
         case ResourceKind.Collection:
             return "Data collection";
         case ResourceKind.Project:
             return "Project";
-        case ResourceKind.Process: 
+        case ResourceKind.Process:
             return "Process";
         default:
             return "Unknown";
@@ -158,6 +159,19 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
 }, {
     name: "Status",
     selected: true,
+    filters: [{
+        name: ContainerRequestState.Committed,
+        selected: true,
+        type: ContainerRequestState.Committed
+    }, {
+        name: ContainerRequestState.Final,
+        selected: true,
+        type: ContainerRequestState.Final
+    }, {
+        name: ContainerRequestState.Uncommitted,
+        selected: true,
+        type: ContainerRequestState.Uncommitted
+    }],
     render: renderStatus,
     width: "75px"
 }, {

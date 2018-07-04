@@ -11,6 +11,7 @@ import { getDataExplorer, DataExplorerState } from "../../store/data-explorer/da
 import { resourceToDataItem, ProjectPanelItem } from "./project-panel-item";
 import FilterBuilder from "../../common/api/filter-builder";
 import { DataColumns } from "../../components/data-table/data-table";
+import { ProcessResource } from "../../models/process";
 
 export const projectPanelMiddleware: Middleware = store => next => {
     next(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
@@ -39,14 +40,21 @@ export const projectPanelMiddleware: Middleware = store => next => {
             REQUEST_ITEMS: handleProjectPanelAction(() => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, PROJECT_PANEL_ID);
-                const typeColumn = columns.find(c => c.name === "Type");
-                const typeFilters = getSelectedTypeFilters(dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>);
+                const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
+                const typeFilters = getColumnFilters(columns, "Type");
+                const statusFilters = getColumnFilters(columns, "Status");
                 if (typeFilters.length > 0) {
                     groupsService
                         .contents(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                            filters: FilterBuilder.create().addIsA("uuid", typeFilters.map(f => f.type))
+                            filters: FilterBuilder
+                                .create()
+                                .addIsA("uuid", typeFilters.map(f => f.type))
+                                .concat(FilterBuilder
+                                    .create<ProcessResource>("containerRequests")
+                                    .addIn("state", statusFilters.map(f => f.type))
+                                )
                         })
                         .then(response => {
                             store.dispatch(actions.SET_ITEMS({
@@ -72,8 +80,8 @@ export const projectPanelMiddleware: Middleware = store => next => {
     };
 };
 
-const getSelectedTypeFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFilter>) => {
-    const typeColumn = columns.find(c => c.name === "Type");
-    return typeColumn && typeColumn.filters ? typeColumn.filters.filter(f => f.selected) : [];
+const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFilter>, columnName: string) => {
+    const column = columns.find(c => c.name === columnName);
+    return column && column.filters ? column.filters.filter(f => f.selected) : [];
 };
 
