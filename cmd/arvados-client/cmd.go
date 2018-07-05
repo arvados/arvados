@@ -5,24 +5,19 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"os"
-	"regexp"
-	"runtime"
 
 	"git.curoverse.com/arvados.git/lib/cli"
 	"git.curoverse.com/arvados.git/lib/cmd"
 )
 
 var (
-	version                = "dev"
-	cmdVersion cmd.Handler = versionCmd{}
-	handler                = cmd.Multi(map[string]cmd.Handler{
-		"-e":        cmdVersion,
-		"version":   cmdVersion,
-		"-version":  cmdVersion,
-		"--version": cmdVersion,
+	version = "dev"
+	handler = cmd.Multi(map[string]cmd.Handler{
+		"-e":        cmd.Version(version),
+		"version":   cmd.Version(version),
+		"-version":  cmd.Version(version),
+		"--version": cmd.Version(version),
 
 		"copy":     cli.Copy,
 		"create":   cli.Create,
@@ -60,14 +55,6 @@ var (
 		"workflow":                 cli.APICall,
 	})
 )
-
-type versionCmd struct{}
-
-func (versionCmd) RunCommand(prog string, args []string, _ io.Reader, stdout, _ io.Writer) int {
-	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
-	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, version, runtime.Version())
-	return 0
-}
 
 func fixLegacyArgs(args []string) []string {
 	flags, _ := cli.LegacyFlagSet()

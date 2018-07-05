@@ -55,10 +55,10 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
 crunchstat_re = re.compile(r"^\d{4}-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
 timestamp_re = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
 
-def logtail(logcollection, logger, header, maxlen=25):
+def logtail(logcollection, logfunc, header, maxlen=25):
     if len(logcollection) == 0:
-        logger.info(header)
-        logger.info("  ** log is empty **")
+        logfunc(header)
+        logfunc("  ** log is empty **")
         return
 
     containersapi = ("crunch-run.txt" in logcollection)
@@ -95,5 +95,5 @@ def logtail(logcollection, logger, header, maxlen=25):
         loglines = mergelogs.values()[0]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
-    logger.info(header)
-    logger.info("\n  %s", logtxt)
+    logfunc(header)
+    logfunc("\n  %s", logtxt)

@@ -1074,10 +1074,14 @@ func (runner *ContainerRunner) StartContainer() error {
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
+	var runTimeExceeded <-chan time.Time
 	runner.CrunchLog.Print("Waiting for container to finish")
 
 	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, dockercontainer.WaitConditionNotRunning)
 	arvMountExit := runner.ArvMountExit
+	if timeout := runner.Container.SchedulingParameters.MaxRunTime; timeout > 0 {
+		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
+	}
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -1098,6 +1102,11 @@ func (runner *ContainerRunner) WaitFinish() error {
 			// arvMountExit will always be ready now that
 			// it's closed, but that doesn't interest us.
 			arvMountExit = nil
+
+		case <-runTimeExceeded:
+			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
+			runner.stop(nil)
+			runTimeExceeded = nil
 		}
 	}
 }

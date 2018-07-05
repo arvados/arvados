@@ -44,7 +44,7 @@ class ArvPathMapper(PathMapper):
     pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.*)?$')
 
     def __init__(self, arvrunner, referenced_files, input_basedir,
-                 collection_pattern, file_pattern, name=None, single_collection=False, **kwargs):
+                 collection_pattern, file_pattern, name=None, single_collection=False):
         self.arvrunner = arvrunner
         self.input_basedir = input_basedir
         self.collection_pattern = collection_pattern

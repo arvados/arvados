@@ -5,6 +5,8 @@
 package arvados
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -49,48 +51,88 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 }
 
 type Cluster struct {
-	ClusterID       string `json:"-"`
-	ManagementToken string
-	SystemNodes     map[string]SystemNode
-	InstanceTypes   []InstanceType
+	ClusterID          string `json:"-"`
+	ManagementToken    string
+	NodeProfiles       map[string]NodeProfile
+	InstanceTypes      InstanceTypeMap
+	HTTPRequestTimeout Duration
 }
 
 type InstanceType struct {
 	Name         string
 	ProviderType string
 	VCPUs        int
-	RAM          int64
-	Scratch      int64
+	RAM          ByteSize
+	Scratch      ByteSize
 	Price        float64
-	Preemptable  bool
+	Preemptible  bool
 }
 
-// GetThisSystemNode returns a SystemNode for the node we're running
-// on right now.
-func (cc *Cluster) GetThisSystemNode() (*SystemNode, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
+type InstanceTypeMap map[string]InstanceType
+
+var errDuplicateInstanceTypeName = errors.New("duplicate instance type name")
+
+// UnmarshalJSON handles old config files that provide an array of
+// instance types instead of a hash.
+func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '[' {
+		var arr []InstanceType
+		err := json.Unmarshal(data, &arr)
+		if err != nil {
+			return err
+		}
+		if len(arr) == 0 {
+			*it = nil
+			return nil
+		}
+		*it = make(map[string]InstanceType, len(arr))
+		for _, t := range arr {
+			if _, ok := (*it)[t.Name]; ok {
+				return errDuplicateInstanceTypeName
+			}
+			(*it)[t.Name] = t
+		}
+		return nil
 	}
-	return cc.GetSystemNode(hostname)
+	var hash map[string]InstanceType
+	err := json.Unmarshal(data, &hash)
+	if err != nil {
+		return err
+	}
+	// Fill in Name field using hash key.
+	*it = InstanceTypeMap(hash)
+	for name, t := range *it {
+		t.Name = name
+		(*it)[name] = t
+	}
+	return nil
 }
 
-// GetSystemNode returns a SystemNode for the given hostname. An error
-// is returned if the appropriate configuration can't be determined
-// (e.g., this does not appear to be a system node).
-func (cc *Cluster) GetSystemNode(node string) (*SystemNode, error) {
-	if cfg, ok := cc.SystemNodes[node]; ok {
+// GetNodeProfile returns a NodeProfile for the given hostname. An
+// error is returned if the appropriate configuration can't be
+// determined (e.g., this does not appear to be a system node). If
+// node is empty, use the OS-reported hostname.
+func (cc *Cluster) GetNodeProfile(node string) (*NodeProfile, error) {
+	if node == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, err
+		}
+		node = hostname
+	}
+	if cfg, ok := cc.NodeProfiles[node]; ok {
 		return &cfg, nil
 	}
 	// If node is not listed, but "*" gives a default system node
 	// config, use the default config.
-	if cfg, ok := cc.SystemNodes["*"]; ok {
+	if cfg, ok := cc.NodeProfiles["*"]; ok {
 		return &cfg, nil
 	}
 	return nil, fmt.Errorf("config does not provision host %q as a system node", node)
 }
 
-type SystemNode struct {
+type NodeProfile struct {
+	Controller  SystemServiceInstance `json:"arvados-controller"`
 	Health      SystemServiceInstance `json:"arvados-health"`
 	Keepproxy   SystemServiceInstance `json:"keepproxy"`
 	Keepstore   SystemServiceInstance `json:"keepstore"`
@@ -101,20 +143,35 @@ type SystemNode struct {
 	Workbench   SystemServiceInstance `json:"arvados-workbench"`
 }
 
+type ServiceName string
+
+const (
+	ServiceNameRailsAPI    ServiceName = "arvados-api-server"
+	ServiceNameController  ServiceName = "arvados-controller"
+	ServiceNameNodemanager ServiceName = "arvados-node-manager"
+	ServiceNameWorkbench   ServiceName = "arvados-workbench"
+	ServiceNameWebsocket   ServiceName = "arvados-ws"
+	ServiceNameKeepweb     ServiceName = "keep-web"
+	ServiceNameKeepproxy   ServiceName = "keepproxy"
+	ServiceNameKeepstore   ServiceName = "keepstore"
+)
+
 // ServicePorts returns the configured listening address (or "" if
 // disabled) for each service on the node.
-func (sn *SystemNode) ServicePorts() map[string]string {
-	return map[string]string{
-		"arvados-api-server":   sn.RailsAPI.Listen,
-		"arvados-node-manager": sn.Nodemanager.Listen,
-		"arvados-workbench":    sn.Workbench.Listen,
-		"arvados-ws":           sn.Websocket.Listen,
-		"keep-web":             sn.Keepweb.Listen,
-		"keepproxy":            sn.Keepproxy.Listen,
-		"keepstore":            sn.Keepstore.Listen,
+func (np *NodeProfile) ServicePorts() map[ServiceName]string {
+	return map[ServiceName]string{
+		ServiceNameRailsAPI:    np.RailsAPI.Listen,
+		ServiceNameController:  np.Controller.Listen,
+		ServiceNameNodemanager: np.Nodemanager.Listen,
+		ServiceNameWorkbench:   np.Workbench.Listen,
+		ServiceNameWebsocket:   np.Websocket.Listen,
+		ServiceNameKeepweb:     np.Keepweb.Listen,
+		ServiceNameKeepproxy:   np.Keepproxy.Listen,
+		ServiceNameKeepstore:   np.Keepstore.Listen,
 	}
 }
 
 type SystemServiceInstance struct {
 	Listen string
+	TLS    bool
 }

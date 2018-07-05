@@ -70,9 +70,11 @@ apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 cmd/arvados-client
+cmd/arvados-server
 doc
 lib/cli
 lib/cmd
+lib/controller
 lib/crunchstat
 lib/dispatchcloud
 services/api
@@ -347,15 +349,19 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo fail=1) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && python sdk/python/tests/run_test_server.py start_controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && python sdk/python/tests/run_test_server.py start_nginx \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo fail=1) \
         && (env | egrep ^ARVADOS)
+    if [[ -n "$fail" ]]; then
+       return 1
+    fi
 }
 
 stop_services() {
@@ -369,6 +375,7 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop_ws \
         && python sdk/python/tests/run_test_server.py stop_keep-web \
         && python sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python sdk/python/tests/run_test_server.py stop_controller \
         && python sdk/python/tests/run_test_server.py stop
 }
 
@@ -405,6 +412,8 @@ do
         mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
+
+rm -vf "${WORKSPACE}/tmp/*.log"
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
@@ -607,6 +616,12 @@ then
     gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
+# Jenkins config requires that glob tmp/*.log match something. Ensure
+# that happens even if we don't end up running services that set up
+# logging.
+mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
+touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
+
 retry() {
     remain="${repeat}"
     while :
@@ -643,8 +658,9 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-                (-z "${only}" || "${only}" == "${suite}" || \
-                 "${only}" == "${1}") ]]; then
+              (-z "${only}" || "${only}" == "${suite}" || \
+                   "${only}" == "${1}") ||
+                  "${only}" == "${2}" ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
@@ -895,8 +911,10 @@ do_install services/api apiserver
 declare -a gostuff
 gostuff=(
     cmd/arvados-client
+    cmd/arvados-server
     lib/cli
     lib/cmd
+    lib/controller
     lib/crunchstat
     lib/dispatchcloud
     sdk/go/arvados

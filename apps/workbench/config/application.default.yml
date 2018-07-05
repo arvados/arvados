@@ -72,6 +72,7 @@ production:
   i18n.fallbacks: true
   active_support.deprecation: :notify
   profiling_enabled: false
+  log_level: info
 
   arvados_insecure_https: false
 

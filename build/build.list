@@ -49,3 +49,4 @@ all|rdflib-jsonld|0.4.0|2|python|all
 all|futures|3.0.5|2|python|all
 all|future|0.16.0|2|python|all
 all|future|0.16.0|2|python3|all
+all|mypy-extensions|0.3.0|1|python|all

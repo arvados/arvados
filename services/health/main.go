@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nodeCfg, err := clusterCfg.GetThisSystemNode()
+	nodeCfg, err := clusterCfg.GetNodeProfile("")
 	if err != nil {
 		log.Fatal(err)
 	}
