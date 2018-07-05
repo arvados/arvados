@@ -101,7 +101,6 @@ const renderIcon = (item: ProjectPanelItem) => {
         case ResourceKind.Collection:
             return <i className="fas fa-archive fa-lg" />;
         case ResourceKind.Process:
-        case ResourceKind.Workflow:
             return <i className="fas fa-cogs fa-lg" />;
         default:
             return <i />;

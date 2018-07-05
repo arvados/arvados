@@ -10,7 +10,6 @@ import { AxiosInstance } from "axios";
 import { GroupResource } from "../../models/group";
 import { CollectionResource } from "../../models/collection";
 import { ProjectResource } from "../../models/project";
-import { WorkflowResource } from "../../models/workflow";
 import { ProcessResource } from "../../models/process";
 
 interface ContensArguments {
@@ -24,7 +23,6 @@ interface ContensArguments {
 export type GroupContentsResource =
     CollectionResource |
     ProjectResource |
-    WorkflowResource |
     ProcessResource;
 
 export default class GroupsService extends CommonResourceService<GroupResource> {
@@ -51,6 +49,5 @@ export default class GroupsService extends CommonResourceService<GroupResource> 
 export enum GroupContentsResourcePrefix {
     Collection = "collections",
     Project = "groups",
-    Workflow = "workflows",
     Process = "container_requests"
 }
