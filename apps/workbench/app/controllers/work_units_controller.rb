@@ -98,7 +98,7 @@ class WorkUnitsController < ApplicationController
       # runtime constriants
       runtime_constraints = {
         "vcpus" => 1,
-        "ram" => 256000000,
+        "ram" => 1024 * 1024 * 1024,
         "API" => true
       }
 
