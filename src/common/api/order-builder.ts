@@ -15,23 +15,18 @@ export default class OrderBuilder<T extends Resource = Resource> {
         private order: string[] = [], 
         private prefix = ""){}
 
-    private getRule (direction: string, attribute: keyof T) {
+    private addRule (direction: string, attribute: keyof T) {
         const prefix = this.prefix ? this.prefix + "." : "";
-        return `${prefix}${_.snakeCase(attribute.toString())} ${direction}`;
+        const order = [...this.order, `${prefix}${_.snakeCase(attribute.toString())} ${direction}`];
+        return new OrderBuilder<T>(order, prefix);
     }
 
     addAsc(attribute: keyof T) {
-        return new OrderBuilder<T>(
-            [...this.order, this.getRule("asc", attribute)],
-            this.prefix
-        );
+        return this.addRule("asc", attribute);
     }
 
     addDesc(attribute: keyof T) {
-        return new OrderBuilder<T>(
-            [...this.order, this.getRule("desc", attribute)],
-            this.prefix
-        );
+        return this.addRule("desc", attribute);
     }
 
     concat(orderBuilder: OrderBuilder){
