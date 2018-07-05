@@ -15,6 +15,7 @@ import { RootState } from '../../store/store';
 import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '../../models/container-request';
+import { SortDirection } from '../../components/data-table/data-column';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
@@ -148,12 +149,20 @@ const renderStatus = (item: ProjectPanelItem) =>
         {item.status || "-"}
     </Typography>;
 
+export enum ProjectPanelColumnNames {
+    Name = "Name",
+    Status = "Status",
+    Type = "Type",
+    Owner = "Owner",
+    FileSize = "File size",
+    LastModified = "Last modified"
 
+}
 
 export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
-    name: "Name",
+    name: ProjectPanelColumnNames.Name,
     selected: true,
-    sortDirection: "desc",
+    sortDirection: SortDirection.Asc,
     render: renderName,
     width: "450px"
 }, {
@@ -175,7 +184,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     render: renderStatus,
     width: "75px"
 }, {
-    name: "Type",
+    name: ProjectPanelColumnNames.Type,
     selected: true,
     filters: [{
         name: typeToLabel(ResourceKind.Collection),
@@ -193,19 +202,19 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     render: item => renderType(item.kind),
     width: "125px"
 }, {
-    name: "Owner",
+    name: ProjectPanelColumnNames.Owner,
     selected: true,
     render: item => renderOwner(item.owner),
     width: "200px"
 }, {
-    name: "File size",
+    name: ProjectPanelColumnNames.FileSize,
     selected: true,
     render: item => renderFileSize(item.fileSize),
     width: "50px"
 }, {
-    name: "Last modified",
+    name: ProjectPanelColumnNames.LastModified,
     selected: true,
-    sortDirection: "none",
+    sortDirection: SortDirection.None,
     render: item => renderDate(item.lastModified),
     width: "150px"
 }];

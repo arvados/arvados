@@ -4,7 +4,7 @@
 
 import { Middleware } from "redux";
 import actions from "../../store/data-explorer/data-explorer-action";
-import { PROJECT_PANEL_ID, columns, ProjectPanelFilter } from "./project-panel";
+import { PROJECT_PANEL_ID, columns, ProjectPanelFilter, ProjectPanelColumnNames } from "./project-panel";
 import { groupsService } from "../../services/services";
 import { RootState } from "../../store/store";
 import { getDataExplorer, DataExplorerState } from "../../store/data-explorer/data-explorer-reducer";
@@ -15,6 +15,7 @@ import { ProcessResource } from "../../models/process";
 import { CollectionResource } from "../../models/collection";
 import OrderBuilder from "../../common/api/order-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
+import { SortDirection } from "../../components/data-table/data-column";
 
 export const projectPanelMiddleware: Middleware = store => next => {
     next(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
@@ -51,17 +52,17 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, PROJECT_PANEL_ID);
                 const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
-                const typeFilters = getColumnFilters(columns, "Type");
-                const statusFilters = getColumnFilters(columns, "Status");
+                const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.Type);
+                const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.Status);
                 const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
-                const sortDirection = sortColumn && sortColumn.sortDirection === "asc" ? "asc" : "desc";
+                const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.Asc ? SortDirection.Asc : SortDirection.Desc;
                 if (typeFilters.length > 0) {
                     groupsService
                         .contents(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
                             order: sortColumn
-                                ? sortColumn.name === "Name"
+                                ? sortColumn.name === ProjectPanelColumnNames.Name
                                     ? getOrder("name", sortDirection)
                                     : getOrder("createdAt", sortDirection)
                                 : OrderBuilder.create(),
@@ -104,13 +105,13 @@ const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFil
     return column && column.filters ? column.filters.filter(f => f.selected) : [];
 };
 
-const getOrder = (attribute: "name" | "createdAt", direction: "asc" | "desc") =>
+const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
     [
         OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
         OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
         OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
     ].reduce((acc, b) =>
-        acc.concat(direction === "asc"
+        acc.concat(direction === SortDirection.Asc
             ? b.addAsc(attribute)
             : b.addDesc(attribute)), OrderBuilder.create());
 

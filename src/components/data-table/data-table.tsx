@@ -54,8 +54,8 @@ class DataTable<T extends DataItem> extends React.Component<DataTableProps<T> & 
                     </DataTableFilters>
                     : sortDirection
                         ? <TableSortLabel
-                            active={sortDirection !== "none"}
-                            direction={sortDirection !== "none" ? sortDirection : undefined}
+                            active={sortDirection !== SortDirection.None}
+                            direction={sortDirection !== SortDirection.None ? sortDirection : undefined}
                             onClick={() =>
                                 onSortToggle &&
                                 onSortToggle(column)}>
