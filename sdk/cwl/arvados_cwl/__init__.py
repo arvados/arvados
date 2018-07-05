@@ -714,7 +714,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--submit-runner-ram", type=int,
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
-                        default=1024)
+                        default=None)
 
     parser.add_argument("--submit-runner-image", type=str,
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,

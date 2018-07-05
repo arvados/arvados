@@ -377,13 +377,25 @@ class Runner(object):
         self.priority = priority
         self.secret_store = secret_store
 
+        self.submit_runner_cores = 1
+        self.submit_runner_ram = 1024  # defaut 1 GiB
+
+        runner_resource_req, _ = self.tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        if runner_resource_req:
+            if runner_resource_req.get("coresMin"):
+                self.submit_runner_cores = runner_resource_req["coresMin"]
+            if runner_resource_req.get("ramMin"):
+                self.submit_runner_ram = runner_resource_req["ramMin"]
+
         if submit_runner_ram:
+            # Command line / initializer overrides default and/or spec from workflow
             self.submit_runner_ram = submit_runner_ram
-        else:
-            self.submit_runner_ram = 3000
 
         if self.submit_runner_ram <= 0:
-            raise Exception("Value of --submit-runner-ram must be greater than zero")
+            raise Exception("Value of submit-runner-ram must be greater than zero")
+
+        if self.submit_runner_cores <= 0:
+            raise Exception("Value of submit-runner-cores must be greater than zero")
 
         self.merged_map = merged_map or {}
 

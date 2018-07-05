@@ -211,3 +211,25 @@ $graph:
         _type: "@vocab"
     - name: enableReuse
       type: boolean
+
+- name: WorkflowRunnerResources
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify memory or cores resource request for the CWL runner process itself.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:WorkflowRunnerResources'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    ramMin:
+      type: int?
+      doc: Minimum RAM, in mebibytes (2**20)
+      jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/ramMin"
+    coresMin:
+      type: int?
+      doc: Minimum cores allocated to cwl-runner
+      jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/coresMin"

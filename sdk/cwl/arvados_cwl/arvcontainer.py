@@ -385,7 +385,7 @@ class RunnerContainer(Runner):
             },
             "secret_mounts": secret_mounts,
             "runtime_constraints": {
-                "vcpus": 1,
+                "vcpus": self.submit_runner_cores,
                 "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
             },
