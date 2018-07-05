@@ -47,3 +47,10 @@ export default class GroupsService extends CommonResourceService<GroupResource> 
             .then(CommonResourceService.mapResponseKeys);
     }
 }
+
+export enum GroupContentsResourcePrefix {
+    Collection = "collections",
+    Project = "groups",
+    Workflow = "workflows",
+    Process = "container_requests"
+}

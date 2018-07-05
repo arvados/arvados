@@ -14,7 +14,7 @@ import { DataColumns } from "../../components/data-table/data-table";
 import { ProcessResource } from "../../models/process";
 import { CollectionResource } from "../../models/collection";
 import OrderBuilder from "../../common/api/order-builder";
-import { GroupContentsResource } from "../../services/groups-service/groups-service";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
 
 export const projectPanelMiddleware: Middleware = store => next => {
     next(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
@@ -69,10 +69,10 @@ export const projectPanelMiddleware: Middleware = store => next => {
                             filters: FilterBuilder
                                 .create()
                                 .concat(FilterBuilder
-                                    .create<CollectionResource>("collections")
+                                    .create<CollectionResource>(GroupContentsResourcePrefix.Collection)
                                     .addIsA("uuid", typeFilters.map(f => f.type)))
                                 .concat(FilterBuilder
-                                    .create<ProcessResource>("containerRequests")
+                                    .create<ProcessResource>(GroupContentsResourcePrefix.Process)
                                     .addIn("state", statusFilters.map(f => f.type)))
                                 .concat(getSearchFilter(dataExplorer.searchValue))
                         })
@@ -107,9 +107,9 @@ const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFil
 
 const getOrder = (attribute: "name" | "createdAt", direction: "asc" | "desc") =>
     [
-        OrderBuilder.create<GroupContentsResource>("collections"),
-        OrderBuilder.create<GroupContentsResource>("container_requests"),
-        OrderBuilder.create<GroupContentsResource>("groups")
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
     ].reduce((acc, b) =>
         acc.concat(direction === "asc"
             ? b.addAsc(attribute)
@@ -118,9 +118,9 @@ const getOrder = (attribute: "name" | "createdAt", direction: "asc" | "desc") =>
 const getSearchFilter = (searchValue: string) =>
     searchValue
         ? [
-            FilterBuilder.create<GroupContentsResource>("collections"),
-            FilterBuilder.create<GroupContentsResource>("container_requests"),
-            FilterBuilder.create<GroupContentsResource>("groups")]
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)]
             .reduce((acc, b) =>
                 acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
         : FilterBuilder.create();
