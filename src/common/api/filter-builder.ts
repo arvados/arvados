@@ -20,11 +20,11 @@ export default class FilterBuilder<T extends Resource = Resource> {
     }
 
     public addLike(field: keyof T, value?: string) {
-        return this.addCondition(field, "like", value, "", "%");
+        return this.addCondition(field, "like", value, "%", "%");
     }
 
     public addILike(field: keyof T, value?: string) {
-        return this.addCondition(field, "ilike", value, "", "%");
+        return this.addCondition(field, "ilike", value, "%", "%");
     }
 
     public addIsA(field: keyof T, value?: string | string[]) {
@@ -36,7 +36,7 @@ export default class FilterBuilder<T extends Resource = Resource> {
     }
 
     public concat<O extends Resource>(filterBuilder: FilterBuilder<O>) {
-        return new FilterBuilder(this.resourcePrefix, this.filters + this.getSeparator() + filterBuilder.getFilters());
+        return new FilterBuilder(this.resourcePrefix, this.filters + (this.filters && filterBuilder.filters ? "," : "") + filterBuilder.getFilters());
     }
 
     public getFilters() {
@@ -57,12 +57,9 @@ export default class FilterBuilder<T extends Resource = Resource> {
                 ? _.snakeCase(this.resourcePrefix) + "."
                 : "";
 
-            this.filters += `${this.getSeparator()}["${resourcePrefix}${_.snakeCase(field.toString())}","${cond}",${value}]`;
+            this.filters += `${this.filters ? "," : ""}["${resourcePrefix}${_.snakeCase(field.toString())}","${cond}",${value}]`;
         }
         return this;
     }
 
-    private getSeparator () {
-        return this.filters ? "," : "";
-    }
 }
