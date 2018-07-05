@@ -44,6 +44,10 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 store.dispatch(actions.RESET_PAGINATION({ id: PROJECT_PANEL_ID }));
                 store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             }),
+            SET_SEARCH_VALUE: handleProjectPanelAction(() => {
+                store.dispatch(actions.RESET_PAGINATION({ id: PROJECT_PANEL_ID }));
+                store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
+            }),
             REQUEST_ITEMS: handleProjectPanelAction(() => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, PROJECT_PANEL_ID);
@@ -70,6 +74,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                                 .concat(FilterBuilder
                                     .create<ProcessResource>("containerRequests")
                                     .addIn("state", statusFilters.map(f => f.type)))
+                                .concat(getSearchFilter(dataExplorer.searchValue))
                         })
                         .then(response => {
                             store.dispatch(actions.SET_ITEMS({
@@ -105,9 +110,19 @@ const getOrder = (attribute: "name" | "createdAt", direction: "asc" | "desc") =>
         OrderBuilder.create<GroupContentsResource>("collections"),
         OrderBuilder.create<GroupContentsResource>("container_requests"),
         OrderBuilder.create<GroupContentsResource>("groups")
-    ].reduce((acc, b) => acc.concat(direction === "asc"
-        ? b.addAsc(attribute)
-        : b.addDesc(attribute)),
-        OrderBuilder.create());
+    ].reduce((acc, b) =>
+        acc.concat(direction === "asc"
+            ? b.addAsc(attribute)
+            : b.addDesc(attribute)), OrderBuilder.create());
+
+const getSearchFilter = (searchValue: string) =>
+    searchValue
+        ? [
+            FilterBuilder.create<GroupContentsResource>("collections"),
+            FilterBuilder.create<GroupContentsResource>("container_requests"),
+            FilterBuilder.create<GroupContentsResource>("groups")]
+            .reduce((acc, b) =>
+                acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
+        : FilterBuilder.create();
 
 
