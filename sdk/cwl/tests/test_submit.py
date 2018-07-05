@@ -1131,6 +1131,42 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
 
 
+    @stubs
+    def test_submit_wf_runner_resources(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug",
+                 "tests/wf/submit_wf_runner_resources.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["runtime_constraints"] = {
+            "API": True,
+            "vcpus": 2,
+            "ram": 2000 * 2**20
+        }
+        expect_container["name"] = "submit_wf_runner_resources.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+            {
+                "class": "http://arvados.org/cwl#WorkflowRunnerResources",
+                "coresMin": 2,
+                "ramMin": 2000
+            }
+        ]
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+            "arv": "http://arvados.org/cwl#",
+        }
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
     @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")

@@ -426,17 +426,22 @@ module ApplicationHelper
     lt
   end
 
-  def get_cwl_inputs(workflow)
-    if workflow[:inputs]
-      return workflow[:inputs]
+  def get_cwl_main(workflow)
+    if workflow[:"$graph"].nil?
+      return workflow
     else
       workflow[:"$graph"].each do |tool|
         if tool[:id] == "#main"
-          return tool[:inputs]
+          return tool
         end
       end
     end
   end
+
+  def get_cwl_inputs(workflow)
+    get_cwl_main(workflow)[:inputs]
+  end
+
 
   def cwl_shortname(id)
     if id[0] == "#"
