@@ -54,9 +54,9 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
             <Toolbar className={this.props.classes.toolbar}>
                 <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                     <div className={this.props.classes.searchBox}>
-                        {this.props.items.length > 0 && <SearchInput
+                        <SearchInput
                             value={this.props.searchValue}
-                            onSearch={this.props.onSearch} />}
+                            onSearch={this.props.onSearch} />
                     </div>
                     <ColumnSelector
                         columns={this.props.columns}
