@@ -49,6 +49,9 @@ const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorer
         SET_ROWS_PER_PAGE: ({ id, rowsPerPage }) =>
             update(state, id, explorer => ({ ...explorer, rowsPerPage })),
 
+        SET_SEARCH_VALUE: ({ id, searchValue }) =>
+            update(state, id, explorer => ({ ...explorer, searchValue })),
+
         TOGGLE_SORT: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleSort(columnName))),
 
