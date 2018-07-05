@@ -96,6 +96,10 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
                           delay, exc_info=True)
             for conn in self.connections.values():
                 conn.close()
+        except httplib2.SSLHandshakeError as e:
+            # Intercept and re-raise with a better error message.
+            raise httplib2.SSLHandshakeError("Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e))
+
         time.sleep(delay)
         delay = delay * self._retry_delay_backoff
 
@@ -254,9 +258,12 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
     if apiconfig is None:
         apiconfig = config.settings()
 
+    errors = []
     for x in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
         if x not in apiconfig:
-            raise ValueError("%s is not set. Aborting." % x)
+            errors.append(x)
+    if errors:
+        raise ValueError(" and ".join(errors)+" not set.\nPlease set in %s or export environment variable." % config.default_config_file)
     host = apiconfig.get('ARVADOS_API_HOST')
     token = apiconfig.get('ARVADOS_API_TOKEN')
     insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE', apiconfig)
