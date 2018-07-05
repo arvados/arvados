@@ -41,7 +41,6 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             }),
             TOGGLE_SORT: handleProjectPanelAction(() => {
-                store.dispatch(actions.RESET_PAGINATION({ id: PROJECT_PANEL_ID }));
                 store.dispatch(actions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             }),
             SET_SEARCH_VALUE: handleProjectPanelAction(() => {
@@ -69,7 +68,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                             filters: FilterBuilder
                                 .create()
                                 .concat(FilterBuilder
-                                    .create<CollectionResource>(GroupContentsResourcePrefix.Collection)
+                                    .create()
                                     .addIsA("uuid", typeFilters.map(f => f.type)))
                                 .concat(FilterBuilder
                                     .create<ProcessResource>(GroupContentsResourcePrefix.Process)
