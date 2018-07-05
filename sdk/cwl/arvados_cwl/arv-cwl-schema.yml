@@ -47,6 +47,28 @@ $graph:
         "_type": "@id"
         refScope: 0
 
+- name: cwltool:TimeLimit
+  type: record
+  inVocab: false
+  extends: cwl:ProcessRequirement
+  doc: |
+    Set an upper limit on the execution time of a CommandLineTool or
+    ExpressionTool.  A tool execution which exceeds the time limit may
+    be preemptively terminated and considered failed.  May also be
+    used by batch systems to make scheduling decisions.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'TimeLimit'"
+      jsonldPredicate:
+        "_id": "@type"
+        "_type": "@vocab"
+    - name: timelimit
+      type: [long, string]
+      doc: |
+        The time limit, in seconds.  A time limit of zero means no
+        time limit.  Negative time limits are an error.
+
 - name: RunInSingleContainer
   type: record
   extends: cwl:ProcessRequirement

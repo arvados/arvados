@@ -38,6 +38,8 @@ hints:
     enableReuse: false
   cwltool:Secrets:
     secrets: [input1, input2]
+  cwltool:TimeLimit:
+    timelimit: 14400
 </pre>
 
 The one exception to this is @arv:APIRequirement@, see note below.
@@ -111,3 +113,11 @@ Indicate that one or more input parameters are "secret".  Must be applied at the
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |secrets|array<string>|Input parameters which are considered "secret".  Must be strings.|
+
+h2. cwltool:TimeLimit
+
+Set an upper limit on the execution time of a CommandLineTool or ExpressionTool.  A tool execution which exceeds the time limit may be preemptively terminated and considered failed.  May also be used by batch systems to make scheduling decisions.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|timelimit|int|Execution time limit in seconds. If set to zero, no limit is enforced.|
