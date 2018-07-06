@@ -7,17 +7,21 @@ import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
-import { DataColumn, toggleSortDirection } from '../../components/data-table/data-column';
-import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
-import actions from "../../store/data-explorer/data-explorer-action";
 import { DataColumns } from '../../components/data-table/data-table';
-import { ResourceKind } from "../../models/resource";
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
+import { ResourceKind } from '../../models/kinds';
+import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import { ContainerRequestState } from '../../models/container-request';
+import { SortDirection } from '../../components/data-table/data-column';
 
 export const PROJECT_PANEL_ID = "projectPanel";
+
+export interface ProjectPanelFilter extends DataTableFilterItem {
+    type: ResourceKind | ContainerRequestState;
+}
 
 type ProjectPanelProps = {
     currentItemId: string,
@@ -44,19 +48,9 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             <DataExplorer
                 id={PROJECT_PANEL_ID}
                 contextActions={contextMenuActions}
-                onColumnToggle={this.toggleColumn}
-                onFiltersChange={this.changeFilters}
                 onRowClick={this.props.onItemClick}
-                onSortToggle={this.toggleSort}
-                onSearch={this.search}
-                onContextAction={this.executeAction}
-                onChangePage={this.changePage}
-                onChangeRowsPerPage={this.changeRowsPerPage} />;
+                onContextAction={this.executeAction} />;
         </div>;
-    }
-
-    componentDidMount() {
-        this.props.dispatch(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
     }
 
     componentWillReceiveProps({ match, currentItemId }: ProjectPanelProps) {
@@ -65,32 +59,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
         }
     }
 
-    toggleColumn = (toggledColumn: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.TOGGLE_COLUMN({ id: PROJECT_PANEL_ID, columnName: toggledColumn.name }));
-    }
-
-    toggleSort = (column: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.TOGGLE_SORT({ id: PROJECT_PANEL_ID, columnName: column.name }));
-    }
-
-    changeFilters = (filters: DataTableFilterItem[], column: DataColumn<ProjectPanelItem>) => {
-        this.props.dispatch(actions.SET_FILTERS({ id: PROJECT_PANEL_ID, columnName: column.name, filters }));
-    }
-
     executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
         alert(`Executing ${action.name} on ${item.name}`);
-    }
-
-    search = (searchValue: string) => {
-        this.props.dispatch(actions.SET_SEARCH_VALUE({ id: PROJECT_PANEL_ID, searchValue }));
-    }
-
-    changePage = (page: number) => {
-        this.props.dispatch(actions.SET_PAGE({ id: PROJECT_PANEL_ID, page }));
-    }
-
-    changeRowsPerPage = (rowsPerPage: number) => {
-        this.props.dispatch(actions.SET_ROWS_PER_PAGE({ id: PROJECT_PANEL_ID, rowsPerPage }));
     }
 
 }
@@ -126,10 +96,12 @@ const renderName = (item: ProjectPanelItem) =>
 
 const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
-        case ResourceKind.PROJECT:
+        case ResourceKind.Project:
             return <i className="fas fa-folder fa-lg" />;
-        case ResourceKind.COLLECTION:
-            return <i className="fas fa-th fa-lg" />;
+        case ResourceKind.Collection:
+            return <i className="fas fa-archive fa-lg" />;
+        case ResourceKind.Process:
+            return <i className="fas fa-cogs fa-lg" />;
         default:
             return <i />;
     }
@@ -150,53 +122,98 @@ const renderOwner = (owner: string) =>
         {owner}
     </Typography>;
 
-const renderType = (type: string) =>
-    <Typography noWrap>
-        {type}
+
+
+const typeToLabel = (type: string) => {
+    switch (type) {
+        case ResourceKind.Collection:
+            return "Data collection";
+        case ResourceKind.Project:
+            return "Project";
+        case ResourceKind.Process:
+            return "Process";
+        default:
+            return "Unknown";
+    }
+};
+
+const renderType = (type: string) => {
+    return <Typography noWrap>
+        {typeToLabel(type)}
     </Typography>;
+};
 
 const renderStatus = (item: ProjectPanelItem) =>
     <Typography noWrap align="center">
         {item.status || "-"}
     </Typography>;
 
-const columns: DataColumns<ProjectPanelItem> = [{
-    name: "Name",
+export enum ProjectPanelColumnNames {
+    Name = "Name",
+    Status = "Status",
+    Type = "Type",
+    Owner = "Owner",
+    FileSize = "File size",
+    LastModified = "Last modified"
+
+}
+
+export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
+    name: ProjectPanelColumnNames.Name,
     selected: true,
-    sortDirection: "desc",
+    sortDirection: SortDirection.Asc,
     render: renderName,
     width: "450px"
 }, {
     name: "Status",
     selected: true,
+    filters: [{
+        name: ContainerRequestState.Committed,
+        selected: true,
+        type: ContainerRequestState.Committed
+    }, {
+        name: ContainerRequestState.Final,
+        selected: true,
+        type: ContainerRequestState.Final
+    }, {
+        name: ContainerRequestState.Uncommitted,
+        selected: true,
+        type: ContainerRequestState.Uncommitted
+    }],
     render: renderStatus,
     width: "75px"
 }, {
-    name: "Type",
+    name: ProjectPanelColumnNames.Type,
     selected: true,
     filters: [{
-        name: "Collection",
-        selected: true
+        name: typeToLabel(ResourceKind.Collection),
+        selected: true,
+        type: ResourceKind.Collection
     }, {
-        name: "Project",
-        selected: true
+        name: typeToLabel(ResourceKind.Process),
+        selected: true,
+        type: ResourceKind.Process
+    }, {
+        name: typeToLabel(ResourceKind.Project),
+        selected: true,
+        type: ResourceKind.Project
     }],
     render: item => renderType(item.kind),
     width: "125px"
 }, {
-    name: "Owner",
+    name: ProjectPanelColumnNames.Owner,
     selected: true,
     render: item => renderOwner(item.owner),
     width: "200px"
 }, {
-    name: "File size",
+    name: ProjectPanelColumnNames.FileSize,
     selected: true,
     render: item => renderFileSize(item.fileSize),
     width: "50px"
 }, {
-    name: "Last modified",
+    name: ProjectPanelColumnNames.LastModified,
     selected: true,
-    sortDirection: "none",
+    sortDirection: SortDirection.None,
     render: item => renderDate(item.lastModified),
     width: "150px"
 }];

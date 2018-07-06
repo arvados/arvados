@@ -7,8 +7,10 @@ import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, Style
 import { DataColumn, SortDirection } from './data-column';
 import DataTableFilters, { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 
-export type DataColumns<T> = Array<DataColumn<T>>;
-
+export type DataColumns<T, F extends DataTableFilterItem = DataTableFilterItem> = Array<DataColumn<T, F>>;
+export interface DataItem {
+    key: React.Key;
+}
 export interface DataTableProps<T> {
     items: T[];
     columns: DataColumns<T>;
@@ -18,7 +20,7 @@ export interface DataTableProps<T> {
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
 }
 
-class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
+class DataTable<T extends DataItem> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
     render() {
         const { items, classes } = this.props;
         return <div className={classes.tableContainer}>
@@ -52,8 +54,8 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
                     </DataTableFilters>
                     : sortDirection
                         ? <TableSortLabel
-                            active={sortDirection !== "none"}
-                            direction={sortDirection !== "none" ? sortDirection : undefined}
+                            active={sortDirection !== SortDirection.None}
+                            direction={sortDirection !== SortDirection.None ? sortDirection : undefined}
                             onClick={() =>
                                 onSortToggle &&
                                 onSortToggle(column)}>
@@ -66,10 +68,10 @@ class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRul
     }
 
     renderBodyRow = (item: T, index: number) => {
-        const { columns, onRowClick, onRowContextMenu } = this.props;
+        const { onRowClick, onRowContextMenu } = this.props;
         return <TableRow
             hover
-            key={index}
+            key={item.key}
             onClick={event => onRowClick && onRowClick(event, item)}
             onContextMenu={event => onRowContextMenu && onRowContextMenu(event, item)}>
             {this.mapVisibleColumns((column, index) => (
