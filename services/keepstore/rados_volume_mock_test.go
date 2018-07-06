@@ -151,6 +151,10 @@ func (conn *radosMockConn) OpenIOContext(pool string) (ioctx radosIOContext, err
 	return
 }
 
+func (conn *radosMockConn) Shutdown() {
+	radosTracef("radosmock: conn.Shutdown()")
+}
+
 type radosMockIoctx struct {
 	*radosMockConn
 	pool      string
@@ -314,6 +318,11 @@ func (ioctx *radosMockIoctx) Read(oid string, data []byte, offset uint64) (n int
 		return
 	}
 	n = copy(data, obj.data[offset:])
+
+	// pause here to facilitate race tests
+	radosTracef("radosmock: ioctx.Read oid=%s len(data)=%d offset=%d calling unlockAndRace()", oid, len(data), offset)
+	ioctx.b.unlockAndRace()
+
 	radosTracef("radosmock: ioctx.Read oid=%s len(data)=%d offset=%d complete, returning n=%d err=%v", oid, len(data), offset, n, err)
 	return
 }
@@ -457,6 +466,11 @@ func (ioctx *radosMockIoctx) WriteFull(oid string, data []byte) (err error) {
 	if !ok {
 		ioctx.objects[oid] = newRadosStubObj([]byte{})
 	}
+
+	// pause here to facilitate race tests
+	radosTracef("radosmock: ioctx.WriteFull oid=%s len(data)=%d calling unlockAndRace()", oid, len(data))
+	ioctx.b.unlockAndRace()
+
 	obj.data = make([]byte, len(data))
 	n := copy(obj.data, data)
 	if n != len(data) {

@@ -28,10 +28,12 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
@@ -113,68 +115,99 @@ func newRadosStubBackend(numReplicas uint64) *radosStubBackend {
 }
 
 func (h *radosStubBackend) unlockAndRace() {
+	radosTracef("rados stub: unlockAndRace()")
 	if h.race == nil {
+		radosTracef("rados stub: unlockAndRace() race is nil, returning")
 		return
 	}
+
+	radosTracef("rados stub: unlockAndRace() unlocking backend")
 	h.Unlock()
+
 	// Signal caller that race is starting by reading from
 	// h.race. If we get a channel, block until that channel is
 	// ready to receive. If we get nil (or h.race is closed) just
 	// proceed.
-	if c := <-h.race; c != nil {
+	radosTracef("rados stub: unlockAndRace() reading from h.race")
+	c := <-h.race
+	radosTracef("rados stub: unlockAndRace() read from h.race")
+	if c != nil {
+		radosTracef("rados stub: unlockAndRace() blocking while waiting to write to channel received on h.race")
 		c <- struct{}{}
 	}
+
+	radosTracef("rados stub: unlockAndRace() locking backend")
 	h.Lock()
+
+	radosTracef("rados stub: unlockAndRace() completed, returning")
 }
 
 type TestableRadosVolume struct {
 	*RadosVolume
 	radosStubBackend *radosStubBackend
 	t                TB
+	useMock          bool
 }
 
 func NewTestableRadosVolume(t TB, readonly bool, replication int) *TestableRadosVolume {
-	var v *RadosVolume
-	radosTracef("rados test: NewTestableRadosVolume readonly=%v replication=%d", readonly, replication)
+	var tv *TestableRadosVolume
+	radosTracef("radostest: NewTestableRadosVolume readonly=%v replication=%d", readonly, replication)
 	radosStubBackend := newRadosStubBackend(uint64(replication))
 	pool := radosTestPool
-	if pool == "" {
+	useMock := pool == ""
+
+	if useMock {
 		// Connect using mock radosImplementation instead of real Ceph
-		log.Infof("rados test: using mock radosImplementation")
+		log.Infof("radostest: using mock radosImplementation")
 		radosMock := &radosMockImpl{
 			b: radosStubBackend,
 		}
-		v = &RadosVolume{
-			Pool:             RadosMockPool,
-			MonHost:          RadosMockMonHost,
-			ReadOnly:         readonly,
-			RadosReplication: replication,
-			rados:            radosMock,
+		v := &RadosVolume{
+			Pool:              RadosMockPool,
+			MonHost:           RadosMockMonHost,
+			ReadOnly:          readonly,
+			RadosReplication:  replication,
+			RadosIndexWorkers: 4,
+			ReadTimeout:       arvados.Duration(10 * time.Second),
+			WriteTimeout:      arvados.Duration(10 * time.Second),
+			MetadataTimeout:   arvados.Duration(10 * time.Second),
+			rados:             radosMock,
+		}
+		tv = &TestableRadosVolume{
+			RadosVolume:      v,
+			radosStubBackend: radosStubBackend,
+			t:                t,
+			useMock:          useMock,
 		}
 	} else {
 		// Connect to real Ceph using the real radosImplementation
-		log.Infof("rados test: using real radosImplementation")
-		v = &RadosVolume{
-			Pool:             pool,
-			KeyringFile:      radosKeyringFile,
-			MonHost:          radosMonHost,
-			Cluster:          radosCluster,
-			User:             radosUser,
-			ReadOnly:         readonly,
-			RadosReplication: replication,
+		log.Infof("radostest: using real radosImplementation")
+		v := &RadosVolume{
+			Pool:              pool,
+			KeyringFile:       radosKeyringFile,
+			MonHost:           radosMonHost,
+			Cluster:           radosCluster,
+			User:              radosUser,
+			ReadOnly:          readonly,
+			RadosReplication:  replication,
+			RadosIndexWorkers: 4,
+			ReadTimeout:       arvados.Duration(DefaultRadosReadTimeoutSeconds * time.Second),
+			WriteTimeout:      arvados.Duration(DefaultRadosWriteTimeoutSeconds * time.Second),
+			MetadataTimeout:   arvados.Duration(DefaultRadosMetadataTimeoutSeconds * time.Second),
+		}
+		tv = &TestableRadosVolume{
+			RadosVolume: v,
+			t:           t,
+			useMock:     useMock,
 		}
 	}
 
-	tv := &TestableRadosVolume{
-		RadosVolume:      v,
-		radosStubBackend: radosStubBackend,
-		t:                t,
-	}
-
+	// Start
 	err := tv.Start()
 	if err != nil {
 		t.Error(err)
 	}
+
 	return tv
 }
 
@@ -215,139 +248,76 @@ func TestRadosVolumeReplication(t *testing.T) {
 	}
 }
 
-// func TestRadosVolumeCreateBlobRace(t *testing.T) {
-// 	v := NewTestableRadosVolume(t, false, 3)
-// 	defer v.Teardown()
+func TestRadosVolumeContextCancelGet(t *testing.T) {
+	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
+		v.PutRaw(TestHash, TestBlock)
+		_, err := v.Get(ctx, TestHash, make([]byte, BlockSize))
+		return err
+	})
+}
 
-// 	var wg sync.WaitGroup
+func TestRadosVolumeContextCancelPut(t *testing.T) {
+	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
+		return v.Put(ctx, TestHash, make([]byte, BlockSize))
+	})
+}
 
-// 	v.radosStubBackend.race = make(chan chan struct{})
+func TestRadosVolumeContextCancelCompare(t *testing.T) {
+	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
+		v.PutRaw(TestHash, TestBlock)
+		return v.Compare(ctx, TestHash, TestBlock2)
+	})
+}
 
-// 	wg.Add(1)
-// 	go func() {
-// 		defer wg.Done()
-// 		err := v.Put(context.Background(), TestHash, TestBlock)
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 	}()
-// 	continuePut := make(chan struct{})
-// 	// Wait for the stub's Put to create the empty blob
-// 	v.radosStubBackend.race <- continuePut
-// 	wg.Add(1)
-// 	go func() {
-// 		defer wg.Done()
-// 		buf := make([]byte, len(TestBlock))
-// 		_, err := v.Get(context.Background(), TestHash, buf)
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 	}()
-// 	// Wait for the stub's Get to get the empty blob
-// 	close(v.radosStubBackend.race)
-// 	// Allow stub's Put to continue, so the real data is ready
-// 	// when the volume's Get retries
-// 	<-continuePut
-// 	// Wait for Get() and Put() to finish
-// 	wg.Wait()
-// }
+func testRadosVolumeContextCancel(t *testing.T, testFunc func(context.Context, *TestableRadosVolume) error) {
+	v := NewTestableRadosVolume(t, false, 3)
+	defer v.Teardown()
 
-// func TestRadosVolumeCreateBlobRaceDeadline(t *testing.T) {
-// 	v := NewTestableRadosVolume(t, false, 3)
-// 	defer v.Teardown()
+	if v.radosStubBackend == nil {
+		t.Skip("radostest: testRadosVolumeContextCancel can only be run with radosStubBackend")
+	}
+	v.radosStubBackend.race = make(chan chan struct{})
 
-// 	v.PutRaw(TestHash, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	allDone := make(chan struct{})
+	testFuncErr := make(chan error, 1)
+	go func() {
+		defer close(allDone)
+		defer close(testFuncErr)
+		err := testFunc(ctx, v)
+		if err != context.Canceled {
+			err = fmt.Errorf("radostest: testRadosVolumeContextCancel testFunc returned %T %q, expected %q", err, err, context.Canceled)
+			testFuncErr <- err
+		}
+	}()
+	releaseHandler := make(chan struct{})
+	select {
+	case <-allDone:
+		t.Error("radostest: testRadosVolumeContextCancel testFunc finished without waiting for v.radosStubBackend.race")
+	case <-time.After(10 * time.Second):
+		t.Error("radostest: testRadosVolumeContextCancel timed out waiting to enter handler")
+	case v.radosStubBackend.race <- releaseHandler:
+	}
 
-// 	buf := new(bytes.Buffer)
-// 	v.IndexTo("", buf)
-// 	if buf.Len() != 0 {
-// 		t.Errorf("Index %+q should be empty", buf.Bytes())
-// 	}
+	radosTracef("radostest: testRadosVolumeContextCancel cancelling context")
+	cancel()
 
-// 	v.TouchWithDate(TestHash, time.Now().Add(-1982*time.Millisecond))
+	select {
+	case <-time.After(10 * time.Second):
+		t.Error("radostest: testRadosVolumeContextCancel timed out waiting to cancel")
+	case <-allDone:
+	}
 
-// 	allDone := make(chan struct{})
-// 	go func() {
-// 		defer close(allDone)
-// 		buf := make([]byte, BlockSize)
-// 		n, err := v.Get(context.Background(), TestHash, buf)
-// 		if err != nil {
-// 			t.Error(err)
-// 			return
-// 		}
-// 		if n != 0 {
-// 			t.Errorf("Got %+q, expected empty buf", buf[:n])
-// 		}
-// 	}()
-// 	select {
-// 	case <-allDone:
-// 	case <-time.After(time.Second):
-// 		t.Error("Get should have stopped waiting for race when block was 2s old")
-// 	}
+	err := <-testFuncErr
+	if err != nil {
+		t.Errorf("radostest: testRadosVolumeContextCancel error from testFunc: %v", err)
+	}
 
-// 	buf.Reset()
-// 	v.IndexTo("", buf)
-// 	if !bytes.HasPrefix(buf.Bytes(), []byte(TestHash+"+0")) {
-// 		t.Errorf("Index %+q should have %+q", buf.Bytes(), TestHash+"+0")
-// 	}
-// }
-
-// func TestRadosVolumeContextCancelGet(t *testing.T) {
-// 	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
-// 		v.PutRaw(TestHash, TestBlock)
-// 		_, err := v.Get(ctx, TestHash, make([]byte, BlockSize))
-// 		return err
-// 	})
-// }
-
-// func TestRadosVolumeContextCancelPut(t *testing.T) {
-// 	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
-// 		return v.Put(ctx, TestHash, make([]byte, BlockSize))
-// 	})
-// }
-
-// func TestRadosVolumeContextCancelCompare(t *testing.T) {
-// 	testRadosVolumeContextCancel(t, func(ctx context.Context, v *TestableRadosVolume) error {
-// 		v.PutRaw(TestHash, TestBlock)
-// 		return v.Compare(ctx, TestHash, TestBlock2)
-// 	})
-// }
-
-// func testRadosVolumeContextCancel(t *testing.T, testFunc func(context.Context, *TestableRadosVolume) error) {
-// 	v := NewTestableRadosVolume(t, false, 3)
-// 	defer v.Teardown()
-// 	v.radosStubBackend.race = make(chan chan struct{})
-
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	allDone := make(chan struct{})
-// 	go func() {
-// 		defer close(allDone)
-// 		err := testFunc(ctx, v)
-// 		if err != context.Canceled {
-// 			t.Errorf("got %T %q, expected %q", err, err, context.Canceled)
-// 		}
-// 	}()
-// 	releaseHandler := make(chan struct{})
-// 	select {
-// 	case <-allDone:
-// 		t.Error("testFunc finished without waiting for v.radosStubBackend.race")
-// 	case <-time.After(10 * time.Second):
-// 		t.Error("timed out waiting to enter handler")
-// 	case v.radosStubBackend.race <- releaseHandler:
-// 	}
-
-// 	cancel()
-
-// 	select {
-// 	case <-time.After(10 * time.Second):
-// 		t.Error("timed out waiting to cancel")
-// 	case <-allDone:
-// 	}
-
-// 	go func() {
-// 		<-releaseHandler
-// 	}()
-// }
+	go func() {
+		radosTracef("radostest: testRadosVolumeContextCancel receiving from releaseHandler to release the backend from the race")
+		<-releaseHandler
+	}()
+}
 
 func (s *StubbedRadosSuite) TestStats(c *check.C) {
 	stats := func() string {
@@ -391,19 +361,32 @@ Volumes:
 	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
-func (v *TestableRadosVolume) PutRaw(locator string, data []byte) {
-	radosTracef("radostest: PutRaw putting locator=%s len(data)=%d data='%s'", locator, len(data), data)
+func (v *TestableRadosVolume) PutRaw(loc string, data []byte) {
+	radosTracef("radostest: PutRaw loc=%s len(data)=%d data='%s'", loc, len(data), data)
 
-	// need to temporarily disable ReadOnly status and restore it after the call to Put
-	defer func(ro bool) {
-		v.ReadOnly = ro
-	}(v.ReadOnly)
-
-	v.ReadOnly = false
-	err := v.Put(context.Background(), locator, data)
-	if err != nil {
-		v.t.Fatalf("PutRaw failed to put locator %s: %s", locator, err)
+	if v.ReadOnly {
+		// need to temporarily disable ReadOnly status and restore it after the call to Put
+		defer func(ro bool) {
+			v.ReadOnly = ro
+		}(v.ReadOnly)
+		v.ReadOnly = false
 	}
+
+	if v.radosStubBackend != nil && v.radosStubBackend.race != nil {
+		// also need to temporarily disable backend race
+		defer func(race chan chan struct{}) {
+			v.radosStubBackend.race = race
+		}(v.radosStubBackend.race)
+		v.radosStubBackend.race = nil
+	}
+
+	err := v.Put(context.Background(), loc, data)
+	if err != nil {
+		v.t.Fatalf("radostest: PutRaw failed to put loc %s: %s", loc, err)
+	}
+
+	radosTracef("radostest: PutRaw loc=%s len(data)=%d data='%s' complete, returning", loc, len(data), data)
+	return
 }
 
 func (v *TestableRadosVolume) TouchWithDate(loc string, mtime time.Time) {
@@ -417,4 +400,70 @@ func (v *TestableRadosVolume) TouchWithDate(loc string, mtime time.Time) {
 	return
 }
 
-func (v *TestableRadosVolume) Teardown() {}
+func (v *TestableRadosVolume) Teardown() {
+	if !v.useMock {
+		// When using a real Ceph pool we need to clean out all data
+		// after each test.
+		err := v.deleteAllObjects()
+		if err != nil {
+			v.t.Error(err)
+		}
+	}
+	// we also must call conn.Shutdown or else librados will leak threads like crazy every time we abandon a RadosVolume and create a new one
+	v.conn.Shutdown()
+}
+
+type errListEntry struct {
+	err error
+}
+
+func (ile *errListEntry) String() string {
+	return fmt.Sprintf("%s", ile.err)
+}
+
+func (ile *errListEntry) Err() error {
+	return ile.err
+}
+
+func (v *TestableRadosVolume) deleteAllObjects() (err error) {
+	radosTracef("radostest: deleteAllObjects()")
+
+	// filter to include all objects
+	filterFunc := func(loc string) (bool, error) {
+		return true, nil
+	}
+
+	// delete each loc and return empty listEntry
+	mapFunc := func(loc string) listEntry {
+		delErr := v.delete(loc)
+		if delErr != nil {
+			log.Warnf("radostest: deleteAllObjects() failed to delete %s: %v", loc, delErr)
+			return &errListEntry{
+				err: delErr,
+			}
+		}
+		return &errListEntry{}
+	}
+
+	// count number of objects deleted and errors
+	deleted := 0
+	errors := 0
+	reduceFunc := func(le listEntry) {
+		if le.Err() != nil {
+			errors++
+		} else {
+			deleted++
+		}
+	}
+
+	workers := 1
+	err = v.listObjects(filterFunc, mapFunc, reduceFunc, workers)
+	if err != nil {
+		log.Printf("radostest: deleteAllObjects() failed to listObjects: %s", err)
+		return
+	}
+	log.Infof("radostest: deleteAllObjects() deleted %d objects and had %d errors", deleted, errors)
+
+	radosTracef("radostest: deleteAllObjects() finished, returning")
+	return
+}
