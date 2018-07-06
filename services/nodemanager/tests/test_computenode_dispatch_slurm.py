@@ -5,7 +5,7 @@
 
 from __future__ import absolute_import, print_function
 
-import subprocess
+import subprocess32 as subprocess
 import time
 import unittest
 
@@ -18,7 +18,7 @@ from .test_computenode_dispatch import \
     ComputeNodeSetupActorTestCase, \
     ComputeNodeUpdateActorTestCase
 
-@mock.patch('subprocess.check_output')
+@mock.patch('subprocess32.check_output')
 class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
                                             unittest.TestCase):
     ACTOR_CLASS = slurm_dispatch.ComputeNodeShutdownActor
@@ -117,7 +117,7 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         super(SLURMComputeNodeShutdownActorTestCase,
               self).test_uncancellable_shutdown()
 
-@mock.patch('subprocess.check_output')
+@mock.patch('subprocess32.check_output')
 class SLURMComputeNodeUpdateActorTestCase(ComputeNodeUpdateActorTestCase):
     ACTOR_CLASS = slurm_dispatch.ComputeNodeUpdateActor
 
@@ -131,7 +131,7 @@ class SLURMComputeNodeUpdateActorTestCase(ComputeNodeUpdateActorTestCase):
 class SLURMComputeNodeSetupActorTestCase(ComputeNodeSetupActorTestCase):
     ACTOR_CLASS = slurm_dispatch.ComputeNodeSetupActor
 
-    @mock.patch('subprocess.check_output')
+    @mock.patch('subprocess32.check_output')
     def test_update_node_features(self, check_output):
         # `scontrol update` happens only if the Arvados node record
         # has a hostname. ComputeNodeSetupActorTestCase.make_mocks
@@ -142,14 +142,14 @@ class SLURMComputeNodeSetupActorTestCase(ComputeNodeSetupActorTestCase):
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
         check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=1000', 'Features=instancetype=z1.test'])
 
-    @mock.patch('subprocess.check_output')
+    @mock.patch('subprocess32.check_output')
     def test_failed_arvados_calls_retried(self, check_output):
         super(SLURMComputeNodeSetupActorTestCase, self).test_failed_arvados_calls_retried()
 
-    @mock.patch('subprocess.check_output')
+    @mock.patch('subprocess32.check_output')
     def test_subscribe(self, check_output):
         super(SLURMComputeNodeSetupActorTestCase, self).test_subscribe()
 
-    @mock.patch('subprocess.check_output')
+    @mock.patch('subprocess32.check_output')
     def test_creation_with_arvados_node(self, check_output):
         super(SLURMComputeNodeSetupActorTestCase, self).test_creation_with_arvados_node()
