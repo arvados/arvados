@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import GroupsService, { ContensArguments } from "../groups-service/groups-service";
+import GroupsService, { ContentsArguments } from "../groups-service/groups-service";
 import { ProjectResource } from "../../models/project";
 import { GroupClass } from "../../models/group";
 import { ListArguments } from "../../common/api/common-resource-service";

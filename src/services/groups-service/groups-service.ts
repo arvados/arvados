@@ -12,7 +12,7 @@ import { CollectionResource } from "../../models/collection";
 import { ProjectResource } from "../../models/project";
 import { ProcessResource } from "../../models/process";
 
-export interface ContensArguments {
+export interface ContentsArguments {
     limit?: number;
     offset?: number;
     order?: OrderBuilder;
@@ -31,7 +31,7 @@ export default class GroupsService<T extends GroupResource = GroupResource> exte
         super(serverApi, "groups");
     }
 
-    contents(uuid: string, args: ContensArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,
