@@ -176,29 +176,66 @@ func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
 	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer "+arvadostest.ActiveToken)
 }
 
-func (s *FederationSuite) TestUpdateRemoteWorkflow(c *check.C) {
-	updateDescription := func(descr string) *http.Response {
-		req := httptest.NewRequest("PATCH", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, strings.NewReader(url.Values{
-			"workflow": {`{"description":"` + descr + `"}`},
+func (s *FederationSuite) TestWorkflowCRUD(c *check.C) {
+	wf := arvados.Workflow{
+		Description: "TestCRUD",
+	}
+	{
+		body := &strings.Builder{}
+		json.NewEncoder(body).Encode(&wf)
+		req := httptest.NewRequest("POST", "/arvados/v1/workflows", strings.NewReader(url.Values{
+			"workflow": {body.String()},
 		}.Encode()))
+		req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		rec := httptest.NewRecorder()
+		s.remoteServer.Server.Handler.ServeHTTP(rec, req) // direct to remote -- can't proxy a create req because no uuid
+		resp := rec.Result()
+		s.checkResponseOK(c, resp)
+		json.NewDecoder(resp.Body).Decode(&wf)
+
+		defer func() {
+			req := httptest.NewRequest("DELETE", "/arvados/v1/workflows/"+wf.UUID, nil)
+			req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+			s.remoteServer.Server.Handler.ServeHTTP(httptest.NewRecorder(), req)
+		}()
+		c.Check(wf.UUID, check.Not(check.Equals), "")
+
+		c.Assert(wf.ModifiedAt, check.NotNil)
+		c.Logf("wf.ModifiedAt: %v", wf.ModifiedAt)
+		c.Check(time.Since(*wf.ModifiedAt) < time.Minute, check.Equals, true)
+	}
+	for _, method := range []string{"PATCH", "PUT", "POST"} {
+		form := url.Values{
+			"workflow": {`{"description": "Updated with ` + method + `"}`},
+		}
+		if method == "POST" {
+			form["_method"] = []string{"PATCH"}
+		}
+		req := httptest.NewRequest(method, "/arvados/v1/workflows/"+wf.UUID, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 		resp := s.testRequest(req)
 		s.checkResponseOK(c, resp)
-		return resp
+		err := json.NewDecoder(resp.Body).Decode(&wf)
+		c.Check(err, check.IsNil)
+
+		c.Check(wf.Description, check.Equals, "Updated with "+method)
 	}
-
-	// Update description twice so running this test twice in a
-	// row still causes ModifiedAt to change
-	updateDescription("updated once by TestUpdateRemoteWorkflow")
-	resp := updateDescription("updated twice by TestUpdateRemoteWorkflow")
-
-	var wf arvados.Workflow
-	c.Check(json.NewDecoder(resp.Body).Decode(&wf), check.IsNil)
-	c.Check(wf.UUID, check.Equals, arvadostest.WorkflowWithDefinitionYAMLUUID)
-	c.Assert(wf.ModifiedAt, check.NotNil)
-	c.Logf("%s", *wf.ModifiedAt)
-	c.Check(time.Since(*wf.ModifiedAt) < time.Minute, check.Equals, true)
+	{
+		req := httptest.NewRequest("DELETE", "/arvados/v1/workflows/"+wf.UUID, nil)
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp := s.testRequest(req)
+		s.checkResponseOK(c, resp)
+		err := json.NewDecoder(resp.Body).Decode(&wf)
+		c.Check(err, check.IsNil)
+	}
+	{
+		req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+wf.UUID, nil)
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp := s.testRequest(req)
+		c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	}
 }
 
 func (s *FederationSuite) checkResponseOK(c *check.C, resp *http.Response) {
