@@ -92,6 +92,7 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
+    isCreationDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -103,6 +104,7 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
+        isCreationDialogOpen: false,
         anchorEl: null,
         searchText: "",
         breadcrumbs: [],
@@ -152,6 +154,14 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
     }
 
+    handleCreationDialogOpen = () => {
+        this.setState({ isCreationDialogOpen: true });
+    }
+
+    handleCreationDialogClose = () => {
+        this.setState({ isCreationDialogOpen: false });
+    }
+
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
         const breadcrumbs = path.map(item => ({
@@ -182,11 +192,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         <SidePanel
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
-                            sidePanelItems={this.props.sidePanelItems}>
+                            sidePanelItems={this.props.sidePanelItems}
+                            handleCreationDialogOpen={this.handleCreationDialogOpen}
+                            handleCreationDialogClose={this.handleCreationDialogClose}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
                                 toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
+                                handleCreationDialogOpen={this.handleCreationDialogOpen}
+                                handleCreationDialogClose={this.handleCreationDialogClose}
                             />
                         </SidePanel>
                     </Drawer>}
@@ -204,8 +218,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
+        handleCreationDialogOpen={this.handleCreationDialogOpen}
+        handleCreationDialogClose={this.handleCreationDialogClose}
+        isCreationDialogOpen={this.state.isCreationDialogOpen}
         {...props} />
-
+    
 }
 
 export default connect<WorkbenchDataProps>(

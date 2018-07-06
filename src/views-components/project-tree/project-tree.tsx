@@ -16,6 +16,8 @@ export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
     toggleOpen: (id: string, status: TreeItemStatus) => void;
     toggleActive: (id: string, status: TreeItemStatus) => void;
+    handleCreationDialogOpen: () => void;
+    handleCreationDialogClose: () => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {

@@ -3,11 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import TextField from '@material-ui/core/TextField';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
 import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
@@ -21,13 +16,17 @@ import { DataColumns } from '../../components/data-table/data-table';
 import { ResourceKind } from "../../models/resource";
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
+import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
 type ProjectPanelProps = {
     currentItemId: string,
     onItemClick: (item: ProjectPanelItem) => void,
-    onItemRouteChange: (itemId: string) => void
+    onItemRouteChange: (itemId: string) => void,
+    handleCreationDialogOpen: () => void;
+    handleCreationDialogClose: () => void;
+    isCreationDialogOpen: boolean;
 }
     & DispatchProp
     & WithStyles<CssRules>
@@ -36,14 +35,6 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
     state = {
         open: false,
     };
-
-    handleClickOpen = () => {
-        this.setState({ open: true });
-    }
-
-    handleClose = () => {
-        this.setState({ open: false });
-    }
 
     render() {
         return <div>
@@ -54,33 +45,10 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 <Button color="primary" variant="raised" className={this.props.classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" onClick={this.handleClickOpen} variant="raised" className={this.props.classes.button}>
+                <Button color="primary" onClick={this.props.handleCreationDialogOpen} variant="raised" className={this.props.classes.button}>
                     Create a project
                 </Button>
-                <Dialog
-                    open={this.state.open}
-                    onClose={this.handleClose}>
-                    <div className={this.props.classes.dialog}>
-                    <DialogTitle id="form-dialog-title">Create a project</DialogTitle>
-                    <DialogContent className={this.props.classes.dialogContent}>
-                        <TextField
-                            margin="dense"
-                            className={this.props.classes.textField}
-                            id="name"
-                            label="Project name"
-                            fullWidth  />
-                        <TextField
-                            margin="dense"
-                            id="description"
-                            label="Description - optional"
-                            fullWidth />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.handleClose} className={this.props.classes.button} color="primary">CANCEL</Button>
-                        <Button onClick={this.handleClose} className={this.props.classes.lastButton} color="primary" variant="raised">CREATE A PROJECT</Button>
-                    </DialogActions>
-                    </div>
-                </Dialog>
+                <DialogProjectCreate open={this.props.isCreationDialogOpen} handleClose={this.props.handleCreationDialogClose}/>
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
@@ -136,7 +104,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
 
 }
 
-type CssRules = "toolbar" | "button" | "lastButton" | "dialogContent" | "textField" | "dialog";
+type CssRules = "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     toolbar: {
@@ -146,20 +114,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
         marginLeft: theme.spacing.unit
     },
-    lastButton: {
-        marginLeft: theme.spacing.unit,
-        marginRight: "20px",
-    },
-    dialogContent: {
-        marginTop: "20px",
-    },
-    textField: {
-        marginBottom: "32px",
-    },
-    dialog: {
-        minWidth: "550px",
-        minHeight: "320px"
-    }
 });
 
 const renderName = (item: ProjectPanelItem) =>

@@ -27,6 +27,8 @@ interface SidePanelProps {
     toggleOpen: (id: string) => void;
     toggleActive: (id: string) => void;
     sidePanelItems: SidePanelItem[];
+    handleCreationDialogOpen: () => void;
+    handleCreationDialogClose: () => void;
 }
 
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
