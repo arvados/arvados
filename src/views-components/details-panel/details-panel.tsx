@@ -5,8 +5,6 @@
 import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from "@material-ui/core/IconButton";
-import CloseIcon from '@material-ui/icons/Close';
-import FolderIcon from '@material-ui/icons/Folder';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
 import Attribute from '../../components/attribute/attribute';
@@ -15,15 +13,22 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
+import EmptyState from '../../components/empty-state/empty-state';
+import IconBase from '../../components/icon/icon';
 
-export interface DetailsPanelProps {
+export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     isOpened: boolean;
+    renderHeader?: React.ComponentType<{}>;
+    renderDetails?: React.ComponentType<{}>;
+    renderActivity?: React.ComponentType<{}>;
 }
 
-class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRules>, {}> {
+type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
+
+class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
 	state = {
-		tabsValue: 0,
+        tabsValue: 0
 	};
 
 	handleChange = (event: any, value: boolean) => {
@@ -34,21 +39,24 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
         <Typography className={this.props.classes.tabContainer} component="div">
             {children}
         </Typography>
-
+    
 	render() {
-        const { classes, onCloseDrawer, isOpened } = this.props;
-		const { tabsValue } = this.state;
+        const { classes, onCloseDrawer, isOpened, renderHeader, renderDetails, renderActivity } = this.props;
+        const { tabsValue } = this.state;
         return (
-            <div className={classnames([classes.container, { [classes.opened]: isOpened }])}>
+            <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
 					<Typography component="div" className={classes.headerContainer}>
 						<Grid container alignItems='center' justify='space-around'>
-                            <i className="fas fa-cogs fa-lg" />
+                            {renderHeader}
+                            {/* TODO: renderHeader */}
+                            <IconBase icon='process' />
 							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
+                            {/* End */}
                             <IconButton color="inherit" onClick={onCloseDrawer}>
-								<CloseIcon />
+                                <IconBase icon='close' />
 							</IconButton>
 						</Grid>
 					</Typography>
@@ -58,28 +66,27 @@ class DetailsPanel extends React.Component<DetailsPanelProps & WithStyles<CssRul
 					</Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
-                            <Attribute label="Type">Process</Attribute>
-                            <Attribute label="Size">---</Attribute>
+                            {renderDetails}
+                            <EmptyState icon='announcement' 
+                                message='Select a file or folder to view its details.' />
+                            <Attribute label='Type' value='Process' />
+                            <Attribute label='Size' value='---' />
                             <Attribute label="Location">
-                                <FolderIcon />
+                                <IconBase icon='folder' />
                                 Projects
                             </Attribute>
-                            <Attribute label="Owner">me</Attribute>
+                            <Attribute label='Outputs' link='http://www.google.pl' value='New output as link' />
+                            <Attribute label='Owner' value='me' />
 						</Grid>
 					)}
                     {tabsValue === 1 && this.renderTabContainer(
                         <Grid container direction="column">
-                            <Attribute label="Type">Process</Attribute>
-                            <Attribute label="Size">---</Attribute>
-                            <Attribute label="Location">
-                                <FolderIcon />
-                                Projects
-                            </Attribute>
-                            <Attribute label="Owner">me</Attribute>
+                            {renderActivity}
+                            <EmptyState icon='announcement' message='Select a file or folder to view its details.' />
                         </Grid>
 					)}
                 </Drawer>
-            </div>
+            </Typography>
         );
     }
 

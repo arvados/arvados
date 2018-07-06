@@ -9,6 +9,8 @@ import { Provider } from "react-redux";
 import configureStore from "../../store/store";
 import createBrowserHistory from "history/createBrowserHistory";
 import { ConnectedRouter } from "react-router-redux";
+import { MuiThemeProvider } from '@material-ui/core/styles';
+import { CustomTheme } from '../../common/custom-theme';
 
 const history = createBrowserHistory();
 
@@ -25,11 +27,13 @@ it('renders without crashing', () => {
         sidePanel: []
     }, createBrowserHistory());
     ReactDOM.render(
-        <Provider store={store}>
-            <ConnectedRouter history={history}>
-                <Workbench/>
-            </ConnectedRouter>
-        </Provider>,
+        <MuiThemeProvider theme={CustomTheme}>
+            <Provider store={store}>
+                <ConnectedRouter history={history}>
+                    <Workbench/>
+                </ConnectedRouter>
+            </Provider>
+        </MuiThemeProvider>,
     div);
     ReactDOM.unmountComponentAtNode(div);
 });

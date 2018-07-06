@@ -101,7 +101,11 @@ interface WorkbenchState {
         anonymousMenu: NavMenuItem[]
     };
     isDetailsPanelOpened: boolean;
+    detailsPanelHeader: React.ComponentType<{}> | undefined;
+    detailsPanelDetails: React.ComponentType<{}> | undefined;
+    detailsPanelActivity: React.ComponentType<{}> | undefined;
 }
+
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
@@ -132,7 +136,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 }
             ]
         },
-        isDetailsPanelOpened: false
+        isDetailsPanelOpened: false,
+        detailsPanelHeader: undefined,
+        detailsPanelDetails: undefined,
+        detailsPanelActivity: undefined,
     };
 
     mainAppBarActions: MainAppBarActionProps = {
@@ -202,7 +209,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel 
+                    <DetailsPanel
+                        renderHeader={this.state.detailsPanelHeader}
+                        renderDetails={this.state.detailsPanelDetails}
+                        renderActivity={this.state.detailsPanelActivity}
                         isOpened={this.state.isDetailsPanelOpened} 
                         onCloseDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
                 </main>
