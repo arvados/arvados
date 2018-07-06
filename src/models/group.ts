@@ -8,11 +8,15 @@ import { ResourceKind } from "./kinds";
 export interface GroupResource extends Resource {
     kind: ResourceKind.Group;
     name: string;
-    groupClass: string;
+    groupClass: GroupClass | null;
     description: string;
     properties: string;
     writeableBy: string[];
     trashAt: string;
     deleteAt: string;
     isTrashed: boolean;
+}
+
+export enum GroupClass {
+    Project = "project"
 }

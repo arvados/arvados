@@ -12,7 +12,7 @@ import { CollectionResource } from "../../models/collection";
 import { ProjectResource } from "../../models/project";
 import { ProcessResource } from "../../models/process";
 
-interface ContensArguments {
+export interface ContensArguments {
     limit?: number;
     offset?: number;
     order?: OrderBuilder;
@@ -25,7 +25,7 @@ export type GroupContentsResource =
     ProjectResource |
     ProcessResource;
 
-export default class GroupsService extends CommonResourceService<GroupResource> {
+export default class GroupsService<T extends GroupResource = GroupResource> extends CommonResourceService<T> {
 
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "groups");
