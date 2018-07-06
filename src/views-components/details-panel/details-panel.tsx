@@ -14,7 +14,7 @@ import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
 import EmptyState from '../../components/empty-state/empty-state';
-import IconBase from '../../components/icon/icon';
+import IconBase, { IconTypes } from '../../components/icon/icon';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
@@ -50,13 +50,13 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
 						<Grid container alignItems='center' justify='space-around'>
                             {renderHeader}
                             {/* TODO: renderHeader */}
-                            <IconBase icon='process' />
+                            <IconBase icon={IconTypes.PROCESS} />
 							<Typography variant="title">
 								Tutorial pipeline
 							</Typography>
                             {/* End */}
                             <IconButton color="inherit" onClick={onCloseDrawer}>
-                                <IconBase icon='close' />
+                                <IconBase icon={IconTypes.CLOSE} />
 							</IconButton>
 						</Grid>
 					</Typography>
@@ -67,12 +67,12 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderDetails}
-                            <EmptyState icon='announcement' 
+                            <EmptyState icon={IconTypes.ANNOUNCEMENT}
                                 message='Select a file or folder to view its details.' />
                             <Attribute label='Type' value='Process' />
                             <Attribute label='Size' value='---' />
                             <Attribute label="Location">
-                                <IconBase icon='folder' />
+                                <IconBase icon={IconTypes.FOLDER} />
                                 Projects
                             </Attribute>
                             <Attribute label='Outputs' link='http://www.google.pl' value='New output as link' />
@@ -82,7 +82,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     {tabsValue === 1 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderActivity}
-                            <EmptyState icon='announcement' message='Select a file or folder to view its details.' />
+                            <EmptyState icon={IconTypes.ANNOUNCEMENT} message='Select a file or folder to view its details.' />
                         </Grid>
 					)}
                 </Drawer>
