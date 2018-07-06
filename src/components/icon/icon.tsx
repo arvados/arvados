@@ -24,8 +24,8 @@ const getSpecificIcon = (props: any) => ({
     folder: <FolderIcon className={props.className} />,
     close: <CloseIcon className={props.className} />,
     project: <i className={classnames([props.className, 'fas fa-folder fa-lg'])} />,
-    collection: <i className="fas fa-archive fa-lg" />,
-    process: <i className="fas fa-cogs fa-lg" />
+    collection: <i className={classnames([props.className, 'fas fa-archive fa-lg'])} />,
+    process: <i className={classnames([props.className, 'fas fa-cogs fa-lg'])} />
 });
 
 class IconBase extends React.Component<IconBaseProps, IconBaseState> {
