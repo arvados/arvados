@@ -129,12 +129,13 @@ describe('project-reducer', () => {
                     modifiedAt: '2018-01-01',
                     ownerUuid: 'owner-test123',
                     uuid: 'test123',
-                    kind: ResourceKind.PROJECT
+                    kind: ResourceKind.PROJECT,
                 },
                 id: "1",
                 open: true,
                 active: true,
-                status: 1
+                status: 1,
+                toggled: true
             }],
             currentItemId: "1"
         };
