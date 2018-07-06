@@ -10,6 +10,7 @@ import { DataColumns } from "../../components/data-table/data-table";
 interface DataExplorer {
     columns: DataColumns<any>;
     items: any[];
+    itemsAvailable: number;
     page: number;
     rowsPerPage: number;
     rowsPerPageOptions?: number[];
@@ -19,6 +20,7 @@ interface DataExplorer {
 export const initialDataExplorer: DataExplorer = {
     columns: [],
     items: [],
+    itemsAvailable: 0,
     page: 0,
     rowsPerPage: 10,
     rowsPerPageOptions: [5, 10, 25, 50],
@@ -29,20 +31,26 @@ export type DataExplorerState = Record<string, DataExplorer | undefined>;
 
 const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
     actions.match(action, {
+        RESET_PAGINATION: ({ id }) =>
+            update(state, id, explorer => ({ ...explorer, page: 0 })),
+
         SET_COLUMNS: ({ id, columns }) =>
             update(state, id, setColumns(columns)),
 
         SET_FILTERS: ({ id, columnName, filters }) =>
             update(state, id, mapColumns(setFilters(columnName, filters))),
 
-        SET_ITEMS: ({ id, items }) =>
-            update(state, id, explorer => ({ ...explorer, items })),
+        SET_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
+            update(state, id, explorer => ({ ...explorer, items, itemsAvailable, page, rowsPerPage })),
 
         SET_PAGE: ({ id, page }) =>
             update(state, id, explorer => ({ ...explorer, page })),
 
         SET_ROWS_PER_PAGE: ({ id, rowsPerPage }) =>
             update(state, id, explorer => ({ ...explorer, rowsPerPage })),
+
+        SET_SEARCH_VALUE: ({ id, searchValue }) =>
+            update(state, id, explorer => ({ ...explorer, searchValue })),
 
         TOGGLE_SORT: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleSort(columnName))),

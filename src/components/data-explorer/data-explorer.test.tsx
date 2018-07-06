@@ -12,6 +12,7 @@ import ColumnSelector from "../column-selector/column-selector";
 import DataTable from "../data-table/data-table";
 import SearchInput from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
+import { MockItem } from "../data-table/data-table.test";
 
 configure({ adapter: new Adapter() });
 
@@ -23,7 +24,7 @@ describe("<DataExplorer />", () => {
             {...mockDataExplorerProps()}
             contextActions={[]}
             onContextAction={onContextAction}
-            items={["Item 1"]}
+            items={[{ key: "1", name: "item 1" }] as MockItem[]}
             columns={[{ name: "Column 1", render: jest.fn(), selected: true }]} />);
         expect(dataExplorer.find(ContextMenu).prop("actions")).toEqual([]);
         dataExplorer.find(DataTable).prop("onRowContextMenu")({
@@ -38,7 +39,7 @@ describe("<DataExplorer />", () => {
         const onSearch = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            items={["item 1"]}
+            items={[{ key: "1", name: "item 1" }] as MockItem[]}
             searchValue="search value"
             onSearch={onSearch} />);
         expect(dataExplorer.find(SearchInput).prop("value")).toEqual("search value");
@@ -54,7 +55,7 @@ describe("<DataExplorer />", () => {
             columns={columns}
             onColumnToggle={onColumnToggle}
             contextActions={[]}
-            items={["Item 1"]} />);
+            items={[{ key: "1", name: "item 1" }] as MockItem[]} />);
         expect(dataExplorer.find(ColumnSelector).prop("columns")).toBe(columns);
         dataExplorer.find(ColumnSelector).prop("onColumnToggle")("columns");
         expect(onColumnToggle).toHaveBeenCalledWith("columns");
@@ -65,7 +66,7 @@ describe("<DataExplorer />", () => {
         const onSortToggle = jest.fn();
         const onRowClick = jest.fn();
         const columns = [{ name: "Column 1", render: jest.fn(), selected: true }];
-        const items = ["Item 1"];
+        const items = [{ key: "1", name: "item 1" }] as MockItem[];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             columns={columns}
@@ -83,12 +84,11 @@ describe("<DataExplorer />", () => {
         expect(onRowClick).toHaveBeenCalledWith("rowClick");
     });
 
-    it("does not render <SearchInput/>, <ColumnSelector/> and <TablePagination/> if there is no items", () => {
+    it("does not render <TablePagination/> if there is no items", () => {
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             items={[]}
         />);
-        expect(dataExplorer.find(SearchInput)).toHaveLength(0);
         expect(dataExplorer.find(TablePagination)).toHaveLength(0);
     });
 
@@ -97,7 +97,7 @@ describe("<DataExplorer />", () => {
         const onChangeRowsPerPage = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            items={["Item 1"]}
+            items={[{ key: "1", name: "item 1" }] as MockItem[]}
             page={10}
             rowsPerPage={50}
             onChangePage={onChangePage}
@@ -115,6 +115,7 @@ describe("<DataExplorer />", () => {
 const mockDataExplorerProps = () => ({
     columns: [],
     items: [],
+    itemsAvailable: 0,
     contextActions: [],
     searchValue: "",
     page: 0,

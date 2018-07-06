@@ -15,6 +15,8 @@ import ApiToken from "./views-components/api-token/api-token";
 import authActions from "./store/auth/auth-action";
 import { authService } from "./services/services";
 import { getProjectList } from "./store/project/project-action";
+import { MuiThemeProvider } from '@material-ui/core/styles';
+import { CustomTheme } from './common/custom-theme';
 
 const history = createBrowserHistory();
 
@@ -25,14 +27,16 @@ const rootUuid = authService.getRootUuid();
 store.dispatch<any>(getProjectList(rootUuid));
 
 const App = () =>
-    <Provider store={store}>
-        <ConnectedRouter history={history}>
-            <div>
-                <Route path="/" component={Workbench}/>
-                <Route path="/token" component={ApiToken}/>
-            </div>
-        </ConnectedRouter>
-    </Provider>;
+    <MuiThemeProvider theme={CustomTheme}>
+        <Provider store={store}>
+            <ConnectedRouter history={history}>
+                <div>
+                    <Route path="/" component={Workbench}/>
+                    <Route path="/token" component={ApiToken}/>
+                </div>
+            </ConnectedRouter>
+        </Provider>
+    </MuiThemeProvider>;
 
 ReactDOM.render(
     <App/>,

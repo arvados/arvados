@@ -94,7 +94,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         overflowY: 'auto',
         minWidth: '240px',
         whiteSpace: 'nowrap',
-        marginTop: '38px',
+        marginTop: '52px',
         display: 'flex',
         flexGrow: 1,
     },

@@ -28,6 +28,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 user={user}
+                onDetailsPanelToggle={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -41,6 +42,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 menuItems={menuItems}
+                onDetailsPanelToggle={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -57,6 +59,7 @@ describe("<MainAppBar />", () => {
                 searchText="search text"
                 searchDebounce={2000}
                 onSearch={onSearch}
+                onDetailsPanelToggle={jest.fn()}
                 {...{ user, breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -74,6 +77,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 breadcrumbs={items}
                 onBreadcrumbClick={onBreadcrumbClick}
+                onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -90,6 +94,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 menuItems={menuItems}
                 onMenuItemClick={onMenuItemClick}
+                onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn() }}
             />
         );
