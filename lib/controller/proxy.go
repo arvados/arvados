@@ -63,7 +63,7 @@ func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, 
 	}).WithContext(ctx)
 	resp, err := client.Do(reqOut)
 	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
+		httpserver.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 	for k, v := range resp.Header {

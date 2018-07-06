@@ -109,7 +109,7 @@ func (s *FederationSuite) checkHandledLocally(c *check.C, resp *http.Response) {
 	// it doesn't have its own stub/test Rails API, so we rely on
 	// "connection refused" to indicate the controller tried to
 	// proxy the request to its local Rails API.
-	c.Check(resp.StatusCode, check.Equals, http.StatusInternalServerError)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
 	s.checkJSONErrorMatches(c, resp, `.*connection refused`)
 }
 
@@ -152,7 +152,7 @@ func (s *FederationSuite) TestRemoteError(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
-	c.Check(resp.StatusCode, check.Equals, http.StatusInternalServerError)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
 	s.checkJSONErrorMatches(c, resp, `.*HTTP response to HTTPS client`)
 }
 

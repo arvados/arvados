@@ -65,7 +65,7 @@ func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
+	c.Check(resp.Code, check.Equals, http.StatusBadGateway)
 	var jresp httpserver.ErrorResponse
 	err := json.Unmarshal(resp.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
