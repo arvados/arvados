@@ -110,13 +110,15 @@ class WorkUnitsController < ApplicationController
             input_defaults[cwl_shortname(input[:id])] = input[:default]
           end
         end
-        main[:hints].each do |hint|
-          if hint[:class] == "http://arvados.org/cwl#WorkflowRunnerResources"
-            if hint[:coresMin]
-              runtime_constraints["vcpus"] = hint[:coresMin]
-            end
-            if hint[:ramMin]
-              runtime_constraints["ram"] = hint[:ramMin] * 1024 * 1024
+        if main[:hints]
+          main[:hints].each do |hint|
+            if hint[:class] == "http://arvados.org/cwl#WorkflowRunnerResources"
+              if hint[:coresMin]
+                runtime_constraints["vcpus"] = hint[:coresMin]
+              end
+              if hint[:ramMin]
+                runtime_constraints["ram"] = hint[:ramMin] * 1024 * 1024
+              end
             end
           end
         end
