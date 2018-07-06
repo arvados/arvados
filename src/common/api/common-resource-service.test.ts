@@ -7,11 +7,28 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
 describe("CommonResourceService", () => {
-
-    const axiosMock = new MockAdapter(axios);
+    const axiosInstance = axios.create();
+    const axiosMock = new MockAdapter(axiosInstance);
 
     beforeEach(() => {
         axiosMock.reset();
+    });
+
+    it("#create", async () => {
+        axiosMock
+            .onPost("/resource/")
+            .reply(200, { owner_uuid: "ownerUuidValue" });
+
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource");
+        const resource = await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
+        expect(resource).toEqual({ ownerUuid: "ownerUuidValue" });
+    });
+
+    it("#create maps request params to snake case", async () => {
+        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource");
+        await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
+        expect(axiosInstance.post).toHaveBeenCalledWith("/resource/", {owner_uuid: "ownerUuidValue"});
     });
 
     it("#delete", async () => {
@@ -19,7 +36,7 @@ describe("CommonResourceService", () => {
             .onDelete("/resource/uuid")
             .reply(200, { deleted_at: "now" });
 
-        const commonResourceService = new CommonResourceService(axios, "resource");
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource");
         const resource = await commonResourceService.delete("uuid");
         expect(resource).toEqual({ deletedAt: "now" });
     });
@@ -29,7 +46,7 @@ describe("CommonResourceService", () => {
             .onGet("/resource/uuid")
             .reply(200, { modified_at: "now" });
 
-        const commonResourceService = new CommonResourceService(axios, "resource");
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource");
         const resource = await commonResourceService.get("uuid");
         expect(resource).toEqual({ modifiedAt: "now" });
     });
@@ -47,7 +64,7 @@ describe("CommonResourceService", () => {
                 items_available: 20
             });
 
-        const commonResourceService = new CommonResourceService(axios, "resource");
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource");
         const resource = await commonResourceService.list({ limit: 10, offset: 1 });
         expect(resource).toEqual({
             kind: "kind",
