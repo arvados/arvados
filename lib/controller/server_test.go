@@ -22,7 +22,7 @@ type logWriter struct {
 }
 
 func (tl *logWriter) Write(buf []byte) (int, error) {
-	tl.logfunc(string(buf))
+	tl.logfunc(string(bytes.TrimRight(buf, "\n")))
 	return len(buf), nil
 }
 
