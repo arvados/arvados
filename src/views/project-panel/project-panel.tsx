@@ -17,11 +17,20 @@ import { DataTableFilterItem } from '../../components/data-table-filters/data-ta
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
 import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
+import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
+}
+
+interface DataExplorerState<T> {
+    contextMenu: {
+        anchorEl?: HTMLElement;
+        item?: T;
+    };
+    open?: boolean;
 }
 
 type ProjectPanelProps = {
@@ -35,11 +44,13 @@ type ProjectPanelProps = {
     & DispatchProp
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
-class ProjectPanel extends React.Component<ProjectPanelProps> {
-    state = {
+
+class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<any>> {
+    state: DataExplorerState<any> = {
+        contextMenu: {},
         open: false,
     };
-
+    
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -58,7 +69,9 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 id={PROJECT_PANEL_ID}
                 contextActions={contextMenuActions}
                 onRowClick={this.props.onItemClick}
-                onContextAction={this.executeAction} />;
+                onContextAction={this.executeAction}
+                openContextMenu={this.openContextMenu}
+                closeContextMenu={this.closeContextMenu} />;
         </div>;
     }
 
@@ -70,6 +83,21 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
 
     executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
         alert(`Executing ${action.name} on ${item.name}`);
+    }
+
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, item: any) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                item
+            }
+        });
+    }
+
+    closeContextMenu = () => {
+        this.setState({ contextMenu: {} });
     }
 
 }
@@ -228,6 +256,9 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
 }];
 
 const contextMenuActions = [[{
+    icon: "fas fa-plus fa-fw",
+    name: "New project"
+}, {
     icon: "fas fa-users fa-fw",
     name: "Share"
 }, {

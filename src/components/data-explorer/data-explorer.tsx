@@ -30,6 +30,8 @@ interface DataExplorerProps<T> {
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     onChangePage: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
+    openContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
+    closeContextMenu: () => void;
 }
 
 interface DataExplorerState<T> {
