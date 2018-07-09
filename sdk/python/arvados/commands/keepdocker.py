@@ -10,7 +10,7 @@ import errno
 import json
 import os
 import re
-import subprocess
+import subprocess32 as subprocess
 import sys
 import tarfile
 import tempfile

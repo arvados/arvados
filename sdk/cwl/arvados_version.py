@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import subprocess32 as subprocess
+import subprocess
 import time
 import os
 import re
