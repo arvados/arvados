@@ -63,7 +63,7 @@ Edit @/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml@ to authentic
 
 This is the only configuration required by crunch-dispatch-slurm.  The subsections below describe optional configuration flags you can set inside the main configuration object.
 
-h3. Client::KeepServiceURIs
+h3(#KeepServiceURIs). Client::KeepServiceURIs
 
 Override Keep service discovery with a predefined list of Keep URIs. This can be useful if the compute nodes run a local keepstore that should handle all Keep traffic. Example:
 
@@ -76,7 +76,7 @@ Override Keep service discovery with a predefined list of Keep URIs. This can be
 </code></pre>
 </notextile>
 
-h3. PollPeriod
+h3(#PollPeriod). PollPeriod
 
 crunch-dispatch-slurm polls the API server periodically for new containers to run.  The @PollPeriod@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @ns@, @us@, @ms@, @s@, @m@, or @h@.  For example:
 
@@ -85,7 +85,7 @@ crunch-dispatch-slurm polls the API server periodically for new containers to ru
 </code></pre>
 </notextile>
 
-h3. PrioritySpread
+h3(#PrioritySpread). PrioritySpread
 
 crunch-dispatch-slurm adjusts the "nice" values of its SLURM jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
 * If non-Arvados jobs run on your SLURM cluster, and your Arvados containers are waiting too long in the SLURM queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
@@ -99,11 +99,9 @@ The smallest usable value is @1@. The default value of @10@ is used if this opti
 </code></pre>
 </notextile>
 
+h3(#SbatchArguments). SbatchArguments
 
-
-h3. SbatchArguments
-
-When crunch-dispatch-slurm invokes @sbatch@, you can add switches to the command by specifying @SbatchArguments@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @SbatchArguments@ to an array of strings.  For example:
+When crunch-dispatch-slurm invokes @sbatch@, you can add arguments to the command by specifying @SbatchArguments@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @SbatchArguments@ to an array of strings.  For example:
 
 <notextile>
 <pre><code class="userinput">SbatchArguments:
@@ -111,7 +109,9 @@ When crunch-dispatch-slurm invokes @sbatch@, you can add switches to the command
 </code></pre>
 </notextile>
 
-h3. CrunchRunCommand: Dispatch to SLURM cgroups
+Note: If an argument is supplied multiple times, @slurm@ uses the value of the last occurrence of the argument on the command line.  Arguments specified through Arvados are added after the arguments listed in SbatchArguments.  This means, for example, an Arvados container with that specifies @partitions@ in @scheduling_parameter@ will override an occurrence of @--partition@ in SbatchArguments.  As a result, for container parameters that can be specified through Arvados, SbatchArguments can be used to specify defaults but not enforce specific policy.
+
+h3(#CrunchRunCommand-cgroups). CrunchRunCommand: Dispatch to SLURM cgroups
 
 If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside SLURM's cgroups.  This provides consistent enforcement of resource constraints.  To do this, use a crunch-dispatch-slurm configuration like the following:
 
@@ -122,7 +122,7 @@ If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunc
 </code></pre>
 </notextile>
 
-The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in SLURM's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by SLURM.
+The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in SLURM's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by SLURM.  When doing this, you should also set "ReserveExtraRAM":#ReserveExtraRAM .
 
 {% include 'notebox_begin' %}
 
@@ -132,7 +132,7 @@ You can work around this issue by disabling the Docker daemon's systemd integrat
 
 {% include 'notebox_end' %}
 
-h3. CrunchRunCommand: Using host networking for containers
+h3(#CrunchRunCommand-network). CrunchRunCommand: Using host networking for containers
 
 Older Linux kernels (prior to 3.18) have bugs in network namespace handling which can lead to compute node lockups.  This by is indicated by blocked kernel tasks in "Workqueue: netns cleanup_net".   If you are experiencing this problem, as a workaround you can disable use of network namespaces by Docker across the cluster.  Be aware this reduces container isolation, which may be a security risk.
 
@@ -144,12 +144,21 @@ Older Linux kernels (prior to 3.18) have bugs in network namespace handling whic
 </code></pre>
 </notextile>
 
-h3. MinRetryPeriod: Rate-limit repeated attempts to start containers
+h3(#MinRetryPeriod). MinRetryPeriod: Rate-limit repeated attempts to start containers
 
 If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.
 
 <notextile>
 <pre><code class="userinput">MinRetryPeriod: <b>30s</b>
+</code></pre>
+</notextile>
+
+h3(#ReserveExtraRAM). ReserveExtraRAM: Extra RAM for jobs
+
+Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  At least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.  This is especially important when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.
+
+<notextile>
+<pre><code class="userinput">ReserveExtraRAM: <b>268435456</b>
 </code></pre>
 </notextile>
 
