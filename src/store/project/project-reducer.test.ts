@@ -77,7 +77,7 @@ describe('project-reducer', () => {
                 status: 1
             }],
             currentItemId: "1",
-            creator: { opened: false, pending: false },
+            creator: { opened: false, pending: false, ownerUuid: "" },
         };
         const project = {
             items: [{
@@ -120,7 +120,7 @@ describe('project-reducer', () => {
                 status: 1
             }],
             currentItemId: "1",
-            creator: { opened: false, pending: false }
+            creator: { opened: false, pending: false, ownerUuid: "" }
         };
         const project = {
             items: [{
@@ -140,7 +140,7 @@ describe('project-reducer', () => {
                 toggled: true
             }],
             currentItemId: "1",
-            creator: { opened: false, pending: false },
+            creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
         const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
@@ -167,7 +167,7 @@ describe('project-reducer', () => {
                 toggled: false,
             }],
             currentItemId: "1",
-            creator: { opened: false, pending: false }
+            creator: { opened: false, pending: false, ownerUuid: "" }
         };
         const project = {
             items: [{
@@ -187,7 +187,7 @@ describe('project-reducer', () => {
                 toggled: true
             }],
             currentItemId: "1",
-            creator: { opened: false, pending: false },
+            creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
         const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));

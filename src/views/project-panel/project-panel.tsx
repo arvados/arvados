@@ -27,7 +27,7 @@ type ProjectPanelProps = {
     onItemClick: (item: ProjectPanelItem) => void,
     onItemRouteChange: (itemId: string) => void,
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
-    onDialogOpen: () => void;
+    onDialogOpen: (ownerUuid: string) => void;
 }
     & DispatchProp
     & WithStyles<CssRules>
@@ -43,7 +43,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 <Button color="primary" variant="raised" className={this.props.classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" onClick={this.props.onDialogOpen} variant="raised" className={this.props.classes.button}>
+                <Button color="primary" onClick={() => this.props.onDialogOpen(this.props.currentItemId)} variant="raised" className={this.props.classes.button}>
                     New project
                 </Button>
             </div>

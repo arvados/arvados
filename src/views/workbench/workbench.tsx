@@ -29,7 +29,9 @@ import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
 import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
-import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
+import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
+import { authService } from '../../services/services';
+
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -95,8 +97,8 @@ interface NavMenuItem extends MainAppBarMenuItem {
 interface WorkbenchState {
     contextMenu: {
         anchorEl?: HTMLElement;
+        itemUuid?: string;
     };
-    isCreationDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -110,7 +112,8 @@ interface WorkbenchState {
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
         contextMenu: {
-            anchorEl: undefined
+            anchorEl: undefined,
+            itemUuid: undefined
         },
         isCreationDialogOpen: false,
         anchorEl: null,
@@ -155,8 +158,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onDetailsPanelToggle: () => {
             this.setState(prev => ({ isDetailsPanelOpened: !prev.isDetailsPanelOpened }));
         },
-        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => {
-            this.openContextMenu(event, breadcrumb);
+        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
+            this.openContextMenu(event, breadcrumb.itemId);
         }
     };
 
@@ -169,27 +172,32 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
     }
 
-    handleCreationDialogOpen = () => {
+    handleCreationDialogOpen = (itemUuid: string) => {
         this.closeContextMenu();
-        this.setState({ isCreationDialogOpen: true });
+        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
     }
 
-    handleCreationDialogClose = () => {
-        this.setState({ isCreationDialogOpen: false });
-    }
 
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, item: any) => {
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
         event.preventDefault();
-        this.setState({ contextMenu: { anchorEl: mockAnchorFromMouseEvent(event) } });
-        console.log(item);
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                itemUuid
+            }
+        });
     }
 
     closeContextMenu = () => {
         this.setState({ contextMenu: {} });
     }
 
-    openCreateDialog = (item: ContextMenuAction) =>
-        item.openCreateDialog ? this.handleCreationDialogOpen() : void 0
+    openCreateDialog = (item: ContextMenuAction) => {
+        const { itemUuid } = this.state.contextMenu;
+        if (item.openCreateDialog && itemUuid) {
+            this.handleCreationDialogOpen(itemUuid);
+        }
+    }
 
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
@@ -221,12 +229,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
                             sidePanelItems={this.props.sidePanelItems}
-                            onContextMenu={this.openContextMenu}>
+                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "")}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
                                 toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                                onContextMenu={this.openContextMenu} />
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)} />
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
@@ -244,7 +252,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     actions={contextMenuActions}
                     onActionClick={this.openCreateDialog}
                     onClose={this.closeContextMenu} />
-                <DialogProjectCreate open={this.state.isCreationDialogOpen} handleClose={this.handleCreationDialogClose} />
+                <CreateProjectDialog />
             </div>
         );
     }
@@ -252,7 +260,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
-        onContextMenu={this.openContextMenu}
+        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid)}
         onDialogOpen={this.handleCreationDialogOpen}
         {...props} />
 }

@@ -11,7 +11,8 @@ import FilterBuilder from "../../common/api/filter-builder";
 import { ThunkAction } from "../../../node_modules/redux-thunk";
 
 const actions = unionize({
-    OPEN_PROJECT_CREATOR: ofType<{}>(),
+    OPEN_PROJECT_CREATOR: ofType<{ownerUuid: string}>(),
+    CLOSE_PROJECT_CREATOR: ofType<{}>(),
     CREATE_PROJECT: ofType<Partial<ProjectResource>>(),
     CREATE_PROJECT_SUCCESS: ofType<ProjectResource>(),
     CREATE_PROJECT_ERROR: ofType<string>(),
