@@ -4,7 +4,7 @@
 
 import Axios, { AxiosInstance } from "axios";
 
-export const API_HOST = 'https://qr1hi.arvadosapi.com';
+export const API_HOST = process.env.REACT_APP_ARVADOS_API_HOST;
 
 export const serverApi: AxiosInstance = Axios.create({
     baseURL: API_HOST + '/arvados/v1'

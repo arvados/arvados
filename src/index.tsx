@@ -23,22 +23,21 @@ const history = createBrowserHistory();
 const store = configureStore(history);
 
 store.dispatch(authActions.INIT());
-const rootUuid = authService.getRootUuid();
-store.dispatch<any>(getProjectList(rootUuid));
+store.dispatch<any>(getProjectList(authService.getUuid()));
 
 const App = () =>
     <MuiThemeProvider theme={CustomTheme}>
         <Provider store={store}>
             <ConnectedRouter history={history}>
                 <div>
-                    <Route path="/" component={Workbench}/>
-                    <Route path="/token" component={ApiToken}/>
+                    <Route path="/" component={Workbench} />
+                    <Route path="/token" component={ApiToken} />
                 </div>
             </ConnectedRouter>
         </Provider>
     </MuiThemeProvider>;
 
 ReactDOM.render(
-    <App/>,
+    <App />,
     document.getElementById('root') as HTMLElement
 );
