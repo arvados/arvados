@@ -22,8 +22,6 @@ describe("<DataExplorer />", () => {
         const onContextAction = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            contextActions={[]}
-            onContextAction={onContextAction}
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             columns={[{ name: "Column 1", render: jest.fn(), selected: true }]} />);
         expect(dataExplorer.find(ContextMenu).prop("actions")).toEqual([]);
@@ -54,7 +52,6 @@ describe("<DataExplorer />", () => {
             {...mockDataExplorerProps()}
             columns={columns}
             onColumnToggle={onColumnToggle}
-            contextActions={[]}
             items={[{ key: "1", name: "item 1" }] as MockItem[]} />);
         expect(dataExplorer.find(ColumnSelector).prop("columns")).toBe(columns);
         dataExplorer.find(ColumnSelector).prop("onColumnToggle")("columns");
@@ -125,7 +122,7 @@ const mockDataExplorerProps = () => ({
     onSortToggle: jest.fn(),
     onRowClick: jest.fn(),
     onColumnToggle: jest.fn(),
-    onContextAction: jest.fn(),
     onChangePage: jest.fn(),
-    onChangeRowsPerPage: jest.fn()
+    onChangeRowsPerPage: jest.fn(),
+    onContextMenu: jest.fn()
 });

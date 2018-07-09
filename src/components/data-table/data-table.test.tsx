@@ -40,7 +40,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell)).toHaveLength(2);
     });
@@ -58,7 +58,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column 1");
     });
@@ -77,7 +77,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).text()).toBe("Column Header");
     });
@@ -96,7 +96,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableHead).find(TableCell).key()).toBe("column-1-key");
         expect(dataTable.find(TableBody).find(TableCell).key()).toBe("column-1-key");
@@ -120,7 +120,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={jest.fn()} />);
         expect(dataTable.find(TableBody).find(Typography).text()).toBe("item 1");
         expect(dataTable.find(TableBody).find(Button).text()).toBe("item 1");
@@ -139,7 +139,7 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
+            onContextMenu={jest.fn()}
             onSortToggle={onSortToggle} />);
         expect(dataTable.find(TableSortLabel).prop("active")).toBeTruthy();
         dataTable.find(TableSortLabel).at(0).simulate("click");
@@ -160,8 +160,8 @@ describe("<DataTable />", () => {
             items={[{ key: "1", name: "item 1" }] as MockItem[]}
             onFiltersChange={onFiltersChange}
             onRowClick={jest.fn()}
-            onRowContextMenu={jest.fn()}
-            onSortToggle={jest.fn()} />);
+            onSortToggle={jest.fn()}
+            onContextMenu={jest.fn()} />);
         expect(dataTable.find(DataTableFilters).prop("filters")).toBe(columns[0].filters);
         dataTable.find(DataTableFilters).prop("onChange")([]);
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
