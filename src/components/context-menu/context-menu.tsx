@@ -27,7 +27,8 @@ export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps
             open={!!anchorEl}
             onClose={onClose}
             transformOrigin={DefaultTransformOrigin}
-            anchorOrigin={DefaultTransformOrigin}>
+            anchorOrigin={DefaultTransformOrigin}
+            onContextMenu={this.handleContextMenu}>
             <List dense>
                 {actions.map((group, groupIndex) =>
                     <React.Fragment key={groupIndex}>
@@ -47,5 +48,10 @@ export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps
                     </React.Fragment>)}
             </List>
         </Popover>;
+    }
+
+    handleContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        this.props.onClose();
     }
 }
