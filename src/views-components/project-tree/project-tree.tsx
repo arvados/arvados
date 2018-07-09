@@ -16,17 +16,17 @@ export interface ProjectTreeProps {
     projects: Array<TreeItem<Project>>;
     toggleOpen: (id: string, status: TreeItemStatus) => void;
     toggleActive: (id: string, status: TreeItemStatus) => void;
-    handleCreationDialogOpen: () => void;
-    handleCreationDialogClose: () => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<Project>) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
-        const { classes, projects, toggleOpen, toggleActive } = this.props;
+        const { classes, projects, toggleOpen, toggleActive, onContextMenu } = this.props;
         const { active, listItemText, row, treeContainer } = classes;
         return (
             <div className={treeContainer}>
                 <Tree items={projects}
+                    onContextMenu={onContextMenu}
                     toggleItemOpen={toggleOpen}
                     toggleItemActive={toggleActive}
                     render={(project: TreeItem<Project>) =>

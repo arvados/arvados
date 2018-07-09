@@ -217,15 +217,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
                             sidePanelItems={this.props.sidePanelItems}
-                            handleCreationDialogOpen={this.handleCreationDialogOpen}
-                            handleCreationDialogClose={this.handleCreationDialogClose}>
+                            onContextMenu={this.openContextMenu}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
                                 toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                                handleCreationDialogOpen={this.handleCreationDialogOpen}
-                                handleCreationDialogClose={this.handleCreationDialogClose}
-                            />
+                                onContextMenu={this.openContextMenu} />
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
