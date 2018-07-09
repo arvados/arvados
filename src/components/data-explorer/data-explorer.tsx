@@ -7,7 +7,6 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ColumnSelector from "../../components/column-selector/column-selector";
 import DataTable, { DataColumns, DataItem } from "../../components/data-table/data-table";
-import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import SearchInput from '../search-input/search-input';
@@ -28,8 +27,6 @@ interface DataExplorerProps<T> {
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     onChangePage: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
-    openContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
-    closeContextMenu: () => void;
 }
 
 class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {

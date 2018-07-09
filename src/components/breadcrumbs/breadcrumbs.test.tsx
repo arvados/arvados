@@ -24,7 +24,7 @@ describe("<Breadcrumbs />", () => {
         const items = [
             { label: 'breadcrumb 1' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />);
         expect(breadcrumbs.find(Button)).toHaveLength(1);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(0);
     });
@@ -34,7 +34,7 @@ describe("<Breadcrumbs />", () => {
             { label: 'breadcrumb 1' },
             { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />);
         expect(breadcrumbs.find(Button)).toHaveLength(2);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(1);
     });
@@ -44,7 +44,7 @@ describe("<Breadcrumbs />", () => {
             { label: 'breadcrumb 1' },
             { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} />);
+        const breadcrumbs = mount(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />);
         breadcrumbs.find(Button).at(1).simulate('click');
         expect(onClick).toBeCalledWith(items[1]);
     });

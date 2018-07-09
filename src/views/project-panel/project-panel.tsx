@@ -69,9 +69,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<
             <DataExplorer
                 id={PROJECT_PANEL_ID}
                 onRowClick={this.props.onItemClick}
-                onContextMenu={this.props.onContextMenu}
-                openContextMenu={this.openContextMenu}
-                closeContextMenu={this.closeContextMenu} />;
+                onContextMenu={this.props.onContextMenu} />;
         </div>;
     }
 

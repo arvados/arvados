@@ -14,9 +14,10 @@ export interface Breadcrumb {
 interface BreadcrumbsProps {
     items: Breadcrumb[];
     onClick: (breadcrumb: Breadcrumb) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
 }
 
-const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ classes, onClick, items }) => {
+const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ classes, onClick, onContextMenu, items }) => {
     return <Grid container alignItems="center" wrap="nowrap">
         {
             items.map((item, index) => {
@@ -28,12 +29,11 @@ const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ class
                                 color="inherit"
                                 className={isLastItem ? classes.currentItem : classes.item}
                                 onClick={() => onClick(item)}
-                            >
+                                onContextMenu={event => onContextMenu(event, item)}>
                                 <Typography
                                     noWrap
                                     color="inherit"
-                                    className={classes.label}
-                                >
+                                    className={classes.label}>
                                     {item.label}
                                 </Typography>
                             </Button>
