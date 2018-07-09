@@ -156,6 +156,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
         onDetailsPanelToggle: () => {
             this.setState(prev => ({ isDetailsPanelOpened: !prev.isDetailsPanelOpened }));
+        },
+        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => {
+            this.openContextMenu(event, breadcrumb);
         }
     };
 
