@@ -7,7 +7,6 @@ import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
-import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
@@ -16,8 +15,6 @@ import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
-import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
-import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
@@ -25,33 +22,18 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-interface DataExplorerState<T> {
-    contextMenu: {
-        anchorEl?: HTMLElement;
-        item?: T;
-    };
-    open?: boolean;
-}
-
 type ProjectPanelProps = {
     currentItemId: string,
     onItemClick: (item: ProjectPanelItem) => void,
     onItemRouteChange: (itemId: string) => void,
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
-    handleCreationDialogOpen: () => void;
-    handleCreationDialogClose: () => void;
-    isCreationDialogOpen: boolean;
+    onDialogOpen: () => void;
 }
     & DispatchProp
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
 
-class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<any>> {
-    state: DataExplorerState<any> = {
-        contextMenu: {},
-        open: false,
-    };
-    
+class ProjectPanel extends React.Component<ProjectPanelProps> {    
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -61,10 +43,9 @@ class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<
                 <Button color="primary" variant="raised" className={this.props.classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" onClick={this.props.handleCreationDialogOpen} variant="raised" className={this.props.classes.button}>
+                <Button color="primary" onClick={this.props.onDialogOpen} variant="raised" className={this.props.classes.button}>
                     New project
                 </Button>
-                <DialogProjectCreate open={this.props.isCreationDialogOpen} handleClose={this.props.handleCreationDialogClose}/>
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
@@ -78,26 +59,6 @@ class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<
             this.props.onItemRouteChange(match.params.id);
         }
     }
-
-    executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
-        alert(`Executing ${action.name} on ${item.name}`);
-    }
-
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, item: any) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.setState({
-            contextMenu: {
-                anchorEl: mockAnchorFromMouseEvent(event),
-                item
-            }
-        });
-    }
-
-    closeContextMenu = () => {
-        this.setState({ contextMenu: {} });
-    }
-
 }
 
 type CssRules = "toolbar" | "button";

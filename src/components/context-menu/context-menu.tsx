@@ -8,6 +8,7 @@ import { DefaultTransformOrigin } from "../popover/helpers";
 export interface ContextMenuAction {
     name: string;
     icon: string;
+    openCreateDialog?: boolean;
 }
 
 export type ContextMenuActionGroup = ContextMenuAction[];

@@ -6,9 +6,8 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, RouteComponentProps, withRouter } from "react-router";
+import { Route, Switch, RouteComponentProps } from "react-router";
 import authActions from "../../store/auth/auth-action";
-import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import MainAppBar, {
@@ -20,18 +19,17 @@ import { push } from 'react-router-redux';
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { getTreePath, findTreeItem } from '../../store/project/project-reducer';
+import { getTreePath } from '../../store/project/project-reducer';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
-import { ResourceKind } from "../../models/resource";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
-import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
-import ContextMenu from '../../components/context-menu/context-menu';
+import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
+import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -172,6 +170,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     handleCreationDialogOpen = () => {
+        this.closeContextMenu();
         this.setState({ isCreationDialogOpen: true });
     }
 
@@ -188,6 +187,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     closeContextMenu = () => {
         this.setState({ contextMenu: {} });
     }
+
+    openCreateDialog = (item: ContextMenuAction) =>
+        item.openCreateDialog ? this.handleCreationDialogOpen() : void 0
 
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
@@ -206,8 +208,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         searchText={this.state.searchText}
                         user={this.props.user}
                         menuItems={this.state.menuItems}
-                        {...this.mainAppBarActions}
-                    />
+                        {...this.mainAppBarActions} />
                 </div>
                 {user &&
                     <Drawer
@@ -241,8 +242,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                 <ContextMenu
                     anchorEl={this.state.contextMenu.anchorEl}
                     actions={contextMenuActions}
-                    onActionClick={console.log}
+                    onActionClick={this.openCreateDialog}
                     onClose={this.closeContextMenu} />
+                <DialogProjectCreate open={this.state.isCreationDialogOpen} handleClose={this.handleCreationDialogClose} />
             </div>
         );
     }
@@ -251,16 +253,14 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
         onContextMenu={this.openContextMenu}
-        handleCreationDialogOpen={this.handleCreationDialogOpen}
-        handleCreationDialogClose={this.handleCreationDialogClose}
-        isCreationDialogOpen={this.state.isCreationDialogOpen}
+        onDialogOpen={this.handleCreationDialogOpen}
         {...props} />
-
 }
 
 const contextMenuActions = [[{
     icon: "fas fa-plus fa-fw",
-    name: "New project"
+    name: "New project",
+    openCreateDialog: true
 }, {
     icon: "fas fa-users fa-fw",
     name: "Share"
