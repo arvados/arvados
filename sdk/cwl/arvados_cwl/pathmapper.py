@@ -7,8 +7,8 @@ import logging
 import uuid
 import os
 import urllib
-import datetime
 
+from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import arvados.commands.run
 import arvados.collection
 
@@ -155,7 +155,8 @@ class ArvPathMapper(PathMapper):
                 for l in srcobj.get("listing", []):
                     self.addentry(l, c, ".", remap)
 
-                info = self._get_intermediate_collection_info()
+                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,
@@ -173,7 +174,8 @@ class ArvPathMapper(PathMapper):
                                                   num_retries=self.arvrunner.num_retries                                                  )
                 self.addentry(srcobj, c, ".", remap)
 
-                info = self._get_intermediate_collection_info()
+                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,
@@ -211,26 +213,6 @@ class ArvPathMapper(PathMapper):
             return (kp, kp)
         else:
             return None
-
-    def _get_intermediate_collection_info(self):
-            trash_time = None
-            if self.arvrunner.intermediate_output_ttl > 0:
-                trash_time = datetime.datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl)
-
-            current_container_uuid = None
-            try:
-                current_container = self.arvrunner.api.containers().current().execute(num_retries=self.arvrunner.num_retries)
-                current_container_uuid = current_container['uuid']
-            except ApiError as e:
-                # Status code 404 just means we're not running in a container.
-                if e.resp.status != 404:
-                    logger.info("Getting current container: %s", e)
-            props = {"type": "Intermediate",
-                          "container": current_container_uuid}
-
-            return {"name" : "Intermediate collection",
-                    "trash_at" : trash_time,
-                    "properties" : props}
 
 
 class StagingPathMapper(PathMapper):

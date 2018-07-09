@@ -11,6 +11,7 @@ import datetime
 import ciso8601
 import uuid
 
+from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
@@ -21,7 +22,6 @@ from cwltool.job import JobBase
 
 import arvados.collection
 
-from arvados.errors import ApiError
 from .arvdocker import arv_docker_get_image
 from . import done
 from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields
@@ -166,7 +166,9 @@ class ArvadosContainer(JobBase):
 
                 keepemptydirs(vwd)
 
-                info = self._get_intermediate_collection_info()
+                if not runtimeContext.current_container:
+                    runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
                 vwd.save_new(name=info["name"],
                              ensure_unique_name=True,
                              trash_at=info["trash_at"],
@@ -340,26 +342,6 @@ class ArvadosContainer(JobBase):
             processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
-
-    def _get_intermediate_collection_info(self):
-            trash_time = None
-            if self.arvrunner.intermediate_output_ttl > 0:
-                trash_time = datetime.datetime.now() + datetime.timedelta(seconds=self.arvrunner.intermediate_output_ttl)
-
-            current_container_uuid = None
-            try:
-                current_container = self.arvrunner.api.containers().current().execute(num_retries=self.arvrunner.num_retries)
-                current_container_uuid = current_container['uuid']
-            except ApiError as e:
-                # Status code 404 just means we're not running in a container.
-                if e.resp.status != 404:
-                    logger.info("Getting current container: %s", e)
-            props = {"type": "Intermediate",
-                          "container": current_container_uuid}
-
-            return {"name" : "Intermediate collection",
-                    "trash_at" : trash_time,
-                    "properties" : props}
 
 
 class RunnerContainer(Runner):
