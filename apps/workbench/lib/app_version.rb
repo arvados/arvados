@@ -15,6 +15,7 @@ class AppVersion
 
   def self.forget
     @hash = nil
+    @package_version = nil
   end
 
   # Return abbrev commit hash for current code version: "abc1234", or
@@ -53,5 +54,18 @@ class AppVersion
     end
 
     @hash || "unknown"
+  end
+
+  def self.package_version
+    if (cached = Rails.configuration.package_version || @package_version)
+      return cached
+    end
+
+    begin
+      @package_version = IO.read(Rails.root.join("package-build.version")).strip
+    rescue Errno::ENOENT
+    end
+
+    @package_version || "unknown"
   end
 end

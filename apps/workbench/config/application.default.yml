@@ -201,6 +201,11 @@ common:
   # "git log".
   source_version: false
 
+  # Override the automatic package string. With the default value of
+  # false, the package string is read from package-build.version in
+  # Rails.root (included in vendor packages).
+  package_version: false
+
   # report notification to and from addresses
   issue_reporter_email_from: arvados@example.com
   issue_reporter_email_to: arvados@example.com
