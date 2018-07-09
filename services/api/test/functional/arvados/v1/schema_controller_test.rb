@@ -31,6 +31,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_includes discovery_doc, 'defaultTrashLifetime'
     assert_equal discovery_doc['defaultTrashLifetime'], Rails.application.config.default_trash_lifetime
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
+    assert_match(/^unknown$/, discovery_doc['package_version'])
     assert_equal discovery_doc['websocketUrl'], Rails.application.config.websocket_address
     assert_equal discovery_doc['workbenchUrl'], Rails.application.config.workbench_address
     assert_equal('zzzzz', discovery_doc['uuidPrefix'])
@@ -42,6 +43,14 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
     assert_equal 'aaa888fff', discovery_doc['source_version']
+  end
+
+  test "discovery document overrides package_version with config" do
+    Rails.configuration.package_version = '1.0.0-stable'
+    get :index
+    assert_response :success
+    discovery_doc = JSON.parse(@response.body)
+    assert_equal '1.0.0-stable', discovery_doc['package_version']
   end
 
   test "empty disable_api_methods" do
