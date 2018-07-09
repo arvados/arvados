@@ -30,6 +30,8 @@ import ProjectPanel from "../project-panel/project-panel";
 import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
+import ContextMenu from '../../components/context-menu/context-menu';
+import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -93,6 +95,9 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
+    contextMenu: {
+        anchorEl?: HTMLElement;
+    };
     isCreationDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
@@ -106,6 +111,9 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
+        contextMenu: {
+            anchorEl: undefined
+        },
         isCreationDialogOpen: false,
         anchorEl: null,
         searchText: "",
@@ -168,6 +176,16 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         this.setState({ isCreationDialogOpen: false });
     }
 
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, item: any) => {
+        event.preventDefault();
+        this.setState({ contextMenu: { anchorEl: mockAnchorFromMouseEvent(event) } });
+        console.log(item);
+    }
+
+    closeContextMenu = () => {
+        this.setState({ contextMenu: {} });
+    }
+
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
         const breadcrumbs = path.map(item => ({
@@ -216,10 +234,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel 
-                        isOpened={this.state.isDetailsPanelOpened} 
+                    <DetailsPanel
+                        isOpened={this.state.isDetailsPanelOpened}
                         onCloseDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
                 </main>
+                <ContextMenu
+                    anchorEl={this.state.contextMenu.anchorEl}
+                    actions={contextMenuActions}
+                    onActionClick={console.log}
+                    onClose={this.closeContextMenu} />
             </div>
         );
     }
@@ -227,12 +250,40 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
+        onContextMenu={this.openContextMenu}
         handleCreationDialogOpen={this.handleCreationDialogOpen}
         handleCreationDialogClose={this.handleCreationDialogClose}
         isCreationDialogOpen={this.state.isCreationDialogOpen}
         {...props} />
-    
+
 }
+
+const contextMenuActions = [[{
+    icon: "fas fa-plus fa-fw",
+    name: "New project"
+}, {
+    icon: "fas fa-users fa-fw",
+    name: "Share"
+}, {
+    icon: "fas fa-sign-out-alt fa-fw",
+    name: "Move to"
+}, {
+    icon: "fas fa-star fa-fw",
+    name: "Add to favourite"
+}, {
+    icon: "fas fa-edit fa-fw",
+    name: "Rename"
+}, {
+    icon: "fas fa-copy fa-fw",
+    name: "Make a copy"
+}, {
+    icon: "fas fa-download fa-fw",
+    name: "Download"
+}], [{
+    icon: "fas fa-trash-alt fa-fw",
+    name: "Remove"
+}
+]];
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({

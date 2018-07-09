@@ -37,6 +37,7 @@ type ProjectPanelProps = {
     currentItemId: string,
     onItemClick: (item: ProjectPanelItem) => void,
     onItemRouteChange: (itemId: string) => void,
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
     handleCreationDialogOpen: () => void;
     handleCreationDialogClose: () => void;
     isCreationDialogOpen: boolean;
@@ -67,9 +68,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps, DataExplorerState<
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
-                contextActions={contextMenuActions}
                 onRowClick={this.props.onItemClick}
-                onContextAction={this.executeAction}
+                onContextMenu={this.props.onContextMenu}
                 openContextMenu={this.openContextMenu}
                 closeContextMenu={this.closeContextMenu} />;
         </div>;
@@ -255,32 +255,6 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     width: "150px"
 }];
 
-const contextMenuActions = [[{
-    icon: "fas fa-plus fa-fw",
-    name: "New project"
-}, {
-    icon: "fas fa-users fa-fw",
-    name: "Share"
-}, {
-    icon: "fas fa-sign-out-alt fa-fw",
-    name: "Move to"
-}, {
-    icon: "fas fa-star fa-fw",
-    name: "Add to favourite"
-}, {
-    icon: "fas fa-edit fa-fw",
-    name: "Rename"
-}, {
-    icon: "fas fa-copy fa-fw",
-    name: "Make a copy"
-}, {
-    icon: "fas fa-download fa-fw",
-    name: "Download"
-}], [{
-    icon: "fas fa-trash-alt fa-fw",
-    name: "Remove"
-}
-]];
 
 export default withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(

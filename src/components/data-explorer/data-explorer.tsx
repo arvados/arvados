@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, IconButton } from '@material-ui/core';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import ContextMenu, { ContextMenuActionGroup, ContextMenuAction } from "../../components/context-menu/context-menu";
 import ColumnSelector from "../../components/column-selector/column-selector";
 import DataTable, { DataColumns, DataItem } from "../../components/data-table/data-table";
 import { mockAnchorFromMouseEvent } from "../../components/popover/helpers";
@@ -17,7 +16,6 @@ interface DataExplorerProps<T> {
     items: T[];
     itemsAvailable: number;
     columns: DataColumns<T>;
-    contextActions: ContextMenuActionGroup[];
     searchValue: string;
     rowsPerPage: number;
     rowsPerPageOptions?: number[];
@@ -25,7 +23,7 @@ interface DataExplorerProps<T> {
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onColumnToggle: (column: DataColumn<T>) => void;
-    onContextAction: (action: ContextMenuAction, item: T) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     onChangePage: (page: number) => void;
@@ -34,25 +32,10 @@ interface DataExplorerProps<T> {
     closeContextMenu: () => void;
 }
 
-interface DataExplorerState<T> {
-    contextMenu: {
-        anchorEl?: HTMLElement;
-        item?: T;
-    };
-}
-
-class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>, DataExplorerState<T>> {
-    state: DataExplorerState<T> = {
-        contextMenu: {}
-    };
+class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {
 
     render() {
         return <Paper>
-            <ContextMenu
-                anchorEl={this.state.contextMenu.anchorEl}
-                actions={this.props.contextActions}
-                onActionClick={this.callAction}
-                onClose={this.closeContextMenu} />
             <Toolbar className={this.props.classes.toolbar}>
                 <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                     <div className={this.props.classes.searchBox}>
@@ -69,7 +52,7 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
                 columns={[...this.props.columns, this.contextMenuColumn]}
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
-                onRowContextMenu={this.openContextMenu}
+                onContextMenu={this.props.onContextMenu}
                 onFiltersChange={this.props.onFiltersChange}
                 onSortToggle={this.props.onSortToggle} />
             <Toolbar>
@@ -89,29 +72,6 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
         </Paper>;
     }
 
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, item: T) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.setState({
-            contextMenu: {
-                anchorEl: mockAnchorFromMouseEvent(event),
-                item
-            }
-        });
-    }
-
-    closeContextMenu = () => {
-        this.setState({ contextMenu: {} });
-    }
-
-    callAction = (action: ContextMenuAction) => {
-        const { item } = this.state.contextMenu;
-        this.closeContextMenu();
-        if (item) {
-            this.props.onContextAction(action, item);
-        }
-    }
-
     changePage = (event: React.MouseEvent<HTMLButtonElement> | null, page: number) => {
         this.props.onChangePage(page);
     }
@@ -122,20 +82,10 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
 
     renderContextMenuTrigger = (item: T) =>
         <Grid container justify="flex-end">
-            <IconButton onClick={event => this.openContextMenuTrigger(event, item)}>
+            <IconButton onClick={event => this.props.onContextMenu(event, item)}>
                 <MoreVertIcon />
             </IconButton>
         </Grid>
-
-    openContextMenuTrigger = (event: React.MouseEvent<HTMLElement>, item: T) => {
-        event.preventDefault();
-        this.setState({
-            contextMenu: {
-                anchorEl: event.currentTarget,
-                item
-            }
-        });
-    }
 
     contextMenuColumn = {
         name: "Actions",
