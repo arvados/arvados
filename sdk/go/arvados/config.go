@@ -55,7 +55,14 @@ type Cluster struct {
 	InstanceTypes      []InstanceType
 	HTTPRequestTimeout Duration
 	RemoteClusters     map[string]RemoteCluster
+	PostgreSQL         PostgreSQL
 }
+
+type PostgreSQL struct {
+	Connection PostgreSQLConnection
+}
+
+type PostgreSQLConnection map[string]string
 
 type RemoteCluster struct {
 	// API endpoint host or host:port; default is {id}.arvadosapi.com
