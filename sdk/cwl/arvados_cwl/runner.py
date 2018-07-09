@@ -7,7 +7,7 @@ import urlparse
 from functools import partial
 import logging
 import json
-import subprocess
+import subprocess32 as subprocess
 from collections import namedtuple
 
 from StringIO import StringIO
