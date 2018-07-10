@@ -70,7 +70,7 @@ export default class CommonResourceService<T extends Resource> {
 
     create(data: Partial<T>) {
         return this.serverApi
-            .post<T>(this.resourceType, data)
+            .post<T>(this.resourceType, CommonResourceService.mapKeys(_.snakeCase)(data))
             .then(CommonResourceService.mapResponseKeys);
     }
 

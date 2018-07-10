@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { default as unionize, ofType, UnionOf } from "unionize";
 
-import { Project } from "../../models/project";
-import { groupsService } from "../../services/services";
+import { Project, ProjectResource } from "../../models/project";
+import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
 import { getResourceKind } from "../../models/resource";
+import FilterBuilder from "../../common/api/filter-builder";
 
 const actions = unionize({
     CREATE_PROJECT: ofType<Project>(),
@@ -20,17 +21,21 @@ const actions = unionize({
         tag: 'type',
         value: 'payload'
     });
- 
+
 export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) => {
-        dispatch(actions.PROJECTS_REQUEST(parentUuid));
-        return groupsService.list().then(listResults => {
-            const projects = listResults.items.map(item => ({
-                ...item,
-                kind: getResourceKind(item.kind)
-            }));
-            dispatch(actions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
-            return projects;
-        });
+    dispatch(actions.PROJECTS_REQUEST(parentUuid));
+    return projectService.list({
+        filters: FilterBuilder
+            .create<ProjectResource>()
+            .addEqual("ownerUuid", parentUuid)
+    }).then(listResults => {
+        const projects = listResults.items.map(item => ({
+            ...item,
+            kind: getResourceKind(item.kind)
+        }));
+        dispatch(actions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
+        return projects;
+    });
 };
 
 export type ProjectAction = UnionOf<typeof actions>;

@@ -26,6 +26,14 @@ yarn install
 yarn build
 </pre>
 
+### Configuration
+You can customize project global variables using env variables. Default values are placed in the `.env` file.
+
+Example:
+```
+REACT_APP_ARVADOS_API_HOST=localhost:8000 yarn start
+```
+
 ### Licensing
 
 Arvados is Free Software. See COPYING for information about Arvados Free

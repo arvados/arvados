@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource as R } from "./resource";
-import { GroupResource } from "./group";
+import { GroupResource, GroupClass } from "./group";
 
 export interface Project extends R {
 }
 
 export interface ProjectResource extends GroupResource {
-    groupClass: "project";
+    groupClass: GroupClass.Project;
 }
