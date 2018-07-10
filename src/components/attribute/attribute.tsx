@@ -9,26 +9,40 @@ import { ArvadosTheme } from 'src/common/custom-theme';
 
 interface AttributeDataProps {
     label: string;
+    value?: string;
+    link?: string;
 }
 
 type AttributeProps = AttributeDataProps & WithStyles<CssRules>;
 
 class Attribute extends React.Component<AttributeProps> {
 
+    hasLink() {
+        return !!this.props.link;
+    }
+
     render() {
-        const { label, children, classes } = this.props;
+        const { label, link, value, children, classes } = this.props;
         return <Typography component="div" className={classes.attribute}>
-                <span className={classes.label}>{label}</span>
-                <span className={classes.value}>{children}</span>
-            </Typography>;
+                    <Typography component="span" className={classes.label}>{label}</Typography>
+                    { this.hasLink() ? (
+                    <a href='{link}' className={classes.link} target='_blank'>{value}</a>
+                    ) : (
+                        <Typography component="span" className={classes.value}>
+                            {value}
+                            {children}
+                        </Typography>
+                    )}
+                </Typography>;
     }
 
 }
 
-type CssRules = 'attribute' | 'label' | 'value';
+type CssRules = 'attribute' | 'label' | 'value' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
+        height: '24px',
         display: 'flex',
         alignItems: 'center',
         marginBottom: theme.spacing.unit
@@ -40,6 +54,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     value: {
         display: 'flex',
         alignItems: 'center'
+    },
+    link: {
+        color: theme.palette.primary.main,
+        textDecoration: 'none'
     }
 });
 

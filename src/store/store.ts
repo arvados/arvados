@@ -13,6 +13,7 @@ import authReducer, { AuthState } from "./auth/auth-reducer";
 import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
 import collectionsReducer, { CollectionState } from "./collection/collection-reducer";
 import { projectPanelMiddleware } from '../store/project-panel/project-panel-middleware';
+import detailsPanelReducer, { DetailsPanelState } from './details-panel/details-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -26,6 +27,7 @@ export interface RootState {
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
+    detailsPanel: DetailsPanelState;
 }
 
 const rootReducer = combineReducers({
@@ -34,7 +36,8 @@ const rootReducer = combineReducers({
     collections: collectionsReducer,
     router: routerReducer,
     dataExplorer: dataExplorerReducer,
-    sidePanel: sidePanelReducer
+    sidePanel: sidePanelReducer,
+    detailsPanel: detailsPanelReducer
 });
 
 
