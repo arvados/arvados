@@ -5,6 +5,8 @@
 package controller
 
 import (
+	"database/sql"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,6 +17,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	_ "github.com/lib/pq"
 )
 
 type Handler struct {
@@ -26,6 +29,8 @@ type Handler struct {
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
+	pgdb           *sql.DB
+	pgdbMtx        sync.Mutex
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -63,6 +68,31 @@ func (h *Handler) setup() {
 		Name:           "arvados-controller",
 		RequestTimeout: time.Duration(h.Cluster.HTTPRequestTimeout),
 	}
+}
+
+var errDBConnection = errors.New("database connection error")
+
+func (h *Handler) db(req *http.Request) (*sql.DB, error) {
+	h.pgdbMtx.Lock()
+	defer h.pgdbMtx.Unlock()
+	if h.pgdb != nil {
+		return h.pgdb, nil
+	}
+
+	db, err := sql.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
+	if err != nil {
+		httpserver.Logger(req).WithError(err).Error("postgresql connect failed")
+		return nil, errDBConnection
+	}
+	if p := h.Cluster.PostgreSQL.ConnectionPool; p > 0 {
+		db.SetMaxOpenConns(p)
+	}
+	if err := db.Ping(); err != nil {
+		httpserver.Logger(req).WithError(err).Error("postgresql connect succeeded but ping failed")
+		return nil, errDBConnection
+	}
+	h.pgdb = db
+	return db, nil
 }
 
 type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)

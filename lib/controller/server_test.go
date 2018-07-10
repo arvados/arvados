@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -26,6 +27,18 @@ func (tl *logWriter) Write(buf []byte) (int, error) {
 	return len(buf), nil
 }
 
+func integrationTestCluster() *arvados.Cluster {
+	cfg, err := arvados.GetConfig(filepath.Join(os.Getenv("WORKSPACE"), "tmp", "arvados.yml"))
+	if err != nil {
+		panic(err)
+	}
+	cc, err := cfg.GetCluster("zzzzz")
+	if err != nil {
+		panic(err)
+	}
+	return cc
+}
+
 // Return a new unstarted controller server, using the Rails API
 // provided by the integration-testing environment.
 func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
@@ -38,7 +51,8 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 		RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
 	}
 	handler := &Handler{Cluster: &arvados.Cluster{
-		ClusterID: "zzzzz",
+		ClusterID:  "zzzzz",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": nodeProfile,
 		},

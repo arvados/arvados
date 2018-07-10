@@ -59,7 +59,8 @@ type Cluster struct {
 }
 
 type PostgreSQL struct {
-	Connection PostgreSQLConnection
+	Connection     PostgreSQLConnection
+	ConnectionPool int
 }
 
 type PostgreSQLConnection map[string]string

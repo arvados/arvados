@@ -7,10 +7,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	check "gopkg.in/check.v1"
 )
 
@@ -18,30 +20,20 @@ var _ = check.Suite(&eventSourceSuite{})
 
 type eventSourceSuite struct{}
 
-func testDBConfig() pgConfig {
-	var railsDB struct {
-		Test struct {
-			Database string
-			Username string
-			Password string
-			Host     string
-		}
-	}
-	err := config.LoadFile(&railsDB, "../api/config/database.yml")
+func testDBConfig() arvados.PostgreSQLConnection {
+	cfg, err := arvados.GetConfig(filepath.Join(os.Getenv("WORKSPACE"), "tmp", "arvados.yml"))
 	if err != nil {
 		panic(err)
 	}
-	cfg := pgConfig{
-		"dbname":   railsDB.Test.Database,
-		"host":     railsDB.Test.Host,
-		"password": railsDB.Test.Password,
-		"user":     railsDB.Test.Username,
+	cc, err := cfg.GetCluster("zzzzz")
+	if err != nil {
+		panic(err)
 	}
-	return cfg
+	return cc.PostgreSQL.Connection
 }
 
 func testDB() *sql.DB {
-	db, err := sql.Open("postgres", testDBConfig().ConnectionString())
+	db, err := sql.Open("postgres", testDBConfig().String())
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +44,7 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 	cfg := testDBConfig()
 	db := testDB()
 	pges := &pgEventSource{
-		DataSource: cfg.ConnectionString(),
+		DataSource: cfg.String(),
 		QueueSize:  4,
 	}
 	go pges.Run()

@@ -34,7 +34,8 @@ type HandlerSuite struct {
 
 func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
-		ClusterID: "zzzzz",
+		ClusterID:  "zzzzz",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": {
 				Controller: arvados.SystemServiceInstance{Listen: ":"},

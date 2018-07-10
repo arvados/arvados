@@ -408,6 +408,13 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
+    PostgreSQL:
+      ConnectionPool: 32
+      Connection:
+        host: {}
+        dbname: {}
+        user: {}
+        password: {}
     NodeProfiles:
       "*":
         "arvados-controller":
@@ -416,7 +423,14 @@ Clusters:
           Listen: ":{}"
           TLS: true
           Insecure: true
-        """.format(port, rails_api_port))
+        """.format(
+            _dbconfig('host'),
+            _dbconfig('database'),
+            _dbconfig('username'),
+            _dbconfig('password'),
+            port,
+            rails_api_port,
+        ))
     logf = open(_logfilename('controller'), 'a')
     controller = subprocess.Popen(
         ["arvados-server", "controller", "-config", conf],
