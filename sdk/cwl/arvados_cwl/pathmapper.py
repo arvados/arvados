@@ -8,11 +8,13 @@ import uuid
 import os
 import urllib
 
+from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import arvados.commands.run
 import arvados.collection
 
 from schema_salad.sourceline import SourceLine
 
+from arvados.errors import ApiError
 from cwltool.pathmapper import PathMapper, MapperEnt, abspath, adjustFileObjs, adjustDirObjs
 from cwltool.workflow import WorkflowException
 
@@ -153,9 +155,14 @@ class ArvPathMapper(PathMapper):
                 for l in srcobj.get("listing", []):
                     self.addentry(l, c, ".", remap)
 
-                check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
-                if not check["items"]:
-                    c.save_new(owner_uuid=self.arvrunner.project_uuid)
+                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
+
+                c.save_new(name=info["name"],
+                           owner_uuid=self.arvrunner.project_uuid,
+                           ensure_unique_name=True,
+                           trash_at=info["trash_at"],
+                           properties=info["properties"])
 
                 ab = self.collection_pattern % c.portable_data_hash()
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
@@ -167,9 +174,14 @@ class ArvPathMapper(PathMapper):
                                                   num_retries=self.arvrunner.num_retries                                                  )
                 self.addentry(srcobj, c, ".", remap)
 
-                check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
-                if not check["items"]:
-                    c.save_new(owner_uuid=self.arvrunner.project_uuid)
+                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
+
+                c.save_new(name=info["name"],
+                           owner_uuid=self.arvrunner.project_uuid,
+                           ensure_unique_name=True,
+                           trash_at=info["trash_at"],
+                           properties=info["properties"])
 
                 ab = self.file_pattern % (c.portable_data_hash(), srcobj["basename"])
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:%s/%s" % (c.portable_data_hash(), srcobj["basename"]),
@@ -201,6 +213,7 @@ class ArvPathMapper(PathMapper):
             return (kp, kp)
         else:
             return None
+
 
 class StagingPathMapper(PathMapper):
     _follow_dirs = True

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from cwltool.context import LoadingContext, RuntimeContext
 
 class ArvLoadingContext(LoadingContext):
@@ -24,5 +28,6 @@ class ArvRuntimeContext(RuntimeContext):
         self.wait = True
         self.cwl_runner_job = None
         self.storage_classes = "default"
+        self.current_container = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)
