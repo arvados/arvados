@@ -27,6 +27,7 @@ interface SidePanelProps {
     toggleOpen: (id: string) => void;
     toggleActive: (id: string) => void;
     sidePanelItems: SidePanelItem[];
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: SidePanelItem) => void;
 }
 
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
@@ -38,7 +39,7 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                 <List>
                     {sidePanelItems.map(it => (
                         <span key={it.name}>
-                            <ListItem button className={list} onClick={() => toggleActive(it.id)}>
+                            <ListItem button className={list} onClick={() => toggleActive(it.id)} onContextMenu={this.handleRowContextMenu(it)}>
                                 <span className={row}>
                                     {it.openAble ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
                                         ${it.open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} /> : null}
@@ -58,6 +59,11 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
             </div>
         );
     }
+
+    handleRowContextMenu = (item: SidePanelItem) =>
+        (event: React.MouseEvent<HTMLElement>) =>
+            item.openAble ? this.props.onContextMenu(event, item) : null
+
 }
 
 type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 'projectIconMargin' |

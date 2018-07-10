@@ -32,25 +32,18 @@ interface TreeProps<T> {
     toggleItemOpen: (id: string, status: TreeItemStatus) => void;
     toggleItemActive: (id: string, status: TreeItemStatus) => void;
     level?: number;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
 }
 
 class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
-    renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
-        const { arrowTransition, arrowVisibility, arrowRotate } = this.props.classes;
-        return <i onClick={() => this.props.toggleItemOpen(id, status)}
-            className={`
-                    ${arrowClass} 
-                    ${status === TreeItemStatus.Pending ? arrowVisibility : ''} 
-                    ${open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} />;
-    }
     render(): ReactElement<any> {
         const level = this.props.level ? this.props.level : 0;
-        const { classes, render, toggleItemOpen, items, toggleItemActive } = this.props;
+        const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu } = this.props;
         const { list, inactiveArrow, activeArrow, loader } = classes;
         return <List component="div" className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) =>
                 <div key={`item/${level}/${idx}`}>
-                    <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }} onClick={() => toggleItemActive(it.id, it.status)}>
+                    <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }} onClick={() => toggleItemActive(it.id, it.status)} onContextMenu={this.handleRowContextMenu(it)}>
                         {it.status === TreeItemStatus.Pending ? <CircularProgress size={10} className={loader} /> : null}
                         {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open, it.id)}
                         {render(it, level)}
@@ -62,11 +55,24 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
                                 render={render}
                                 toggleItemOpen={toggleItemOpen}
                                 toggleItemActive={toggleItemActive}
-                                level={level + 1} />
+                                level={level + 1}
+                                onContextMenu={onContextMenu} />
                         </Collapse>}
                 </div>)}
         </List>;
     }
+    renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
+        const { arrowTransition, arrowVisibility, arrowRotate } = this.props.classes;
+        return <i onClick={() => this.props.toggleItemOpen(id, status)}
+            className={`
+                    ${arrowClass} 
+                    ${status === TreeItemStatus.Pending ? arrowVisibility : ''} 
+                    ${open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} />;
+    }
+
+    handleRowContextMenu = (item: TreeItem<T>) =>
+        (event: React.MouseEvent<HTMLElement>) =>
+            this.props.onContextMenu(event, item)
 }
 
 type CssRules = 'list' | 'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition' | 'loader' | 'arrowVisibility';

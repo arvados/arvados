@@ -27,6 +27,11 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
+import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
+import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
+import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
+import { authService } from '../../services/services';
+
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
 import { ResourceKind } from '../../models/kinds';
 
@@ -92,6 +97,10 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
+    contextMenu: {
+        anchorEl?: HTMLElement;
+        itemUuid?: string;
+    };
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -104,6 +113,11 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
+        contextMenu: {
+            anchorEl: undefined,
+            itemUuid: undefined
+        },
+        isCreationDialogOpen: false,
         anchorEl: null,
         searchText: "",
         breadcrumbs: [],
@@ -145,6 +159,9 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
         onDetailsPanelToggle: () => {
             this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        },
+        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
+            this.openContextMenu(event, breadcrumb.itemId);
         }
     };
 
@@ -155,6 +172,33 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     toggleSidePanelActive = (itemId: string) => {
         this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
         this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+    }
+
+    handleCreationDialogOpen = (itemUuid: string) => {
+        this.closeContextMenu();
+        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+    }
+
+
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
+        event.preventDefault();
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                itemUuid
+            }
+        });
+    }
+
+    closeContextMenu = () => {
+        this.setState({ contextMenu: {} });
+    }
+
+    openCreateDialog = (item: ContextMenuAction) => {
+        const { itemUuid } = this.state.contextMenu;
+        if (item.openCreateDialog && itemUuid) {
+            this.handleCreationDialogOpen(itemUuid);
+        }
     }
 
     render() {
@@ -174,8 +218,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         searchText={this.state.searchText}
                         user={this.props.user}
                         menuItems={this.state.menuItems}
-                        {...this.mainAppBarActions}
-                    />
+                        {...this.mainAppBarActions} />
                 </div>
                 {user &&
                     <Drawer
@@ -187,15 +230,16 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                         <SidePanel
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
-                            sidePanelItems={this.props.sidePanelItems}>
+                            sidePanelItems={this.props.sidePanelItems}
+                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "")}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)}
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-                                }}
-                            />
+                                }}/>
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
@@ -206,12 +250,20 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </div>
                     <DetailsPanel />
                 </main>
+                <ContextMenu
+                    anchorEl={this.state.contextMenu.anchorEl}
+                    actions={contextMenuActions}
+                    onActionClick={this.openCreateDialog}
+                    onClose={this.closeContextMenu} />
+                <CreateProjectDialog />
             </div>
         );
     }
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
+        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid)}
+        onDialogOpen={this.handleCreationDialogOpen}
         onItemClick={item => {
             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
         }}
@@ -220,8 +272,35 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
         }}
         {...props} />
-
 }
+
+const contextMenuActions = [[{
+    icon: "fas fa-plus fa-fw",
+    name: "New project",
+    openCreateDialog: true
+}, {
+    icon: "fas fa-users fa-fw",
+    name: "Share"
+}, {
+    icon: "fas fa-sign-out-alt fa-fw",
+    name: "Move to"
+}, {
+    icon: "fas fa-star fa-fw",
+    name: "Add to favourite"
+}, {
+    icon: "fas fa-edit fa-fw",
+    name: "Rename"
+}, {
+    icon: "fas fa-copy fa-fw",
+    name: "Make a copy"
+}, {
+    icon: "fas fa-download fa-fw",
+    name: "Download"
+}], [{
+    icon: "fas fa-trash-alt fa-fw",
+    name: "Remove"
+}
+]];
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({

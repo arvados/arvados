@@ -4,10 +4,9 @@
 
 import * as React from 'react';
 import { ProjectPanelItem } from './project-panel-item';
-import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { Grid, Typography, Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
-import { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
@@ -26,13 +25,16 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
 type ProjectPanelProps = {
     currentItemId: string,
     onItemClick: (item: ProjectPanelItem) => void,
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
+    onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: ProjectPanelItem) => void,
     onItemRouteChange: (itemId: string) => void
 }
     & DispatchProp
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
-class ProjectPanel extends React.Component<ProjectPanelProps> {
+
+class ProjectPanel extends React.Component<ProjectPanelProps> {    
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -42,16 +44,15 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 <Button color="primary" variant="raised" className={this.props.classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" variant="raised" className={this.props.classes.button}>
-                    Create a project
+                <Button color="primary" onClick={() => this.props.onDialogOpen(this.props.currentItemId)} variant="raised" className={this.props.classes.button}>
+                    New project
                 </Button>
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
-                contextActions={contextMenuActions}
                 onRowClick={this.props.onItemClick}
                 onRowDoubleClick={this.props.onItemDoubleClick}
-                onContextAction={this.executeAction} />;
+                onContextMenu={this.props.onContextMenu} />
         </div>;
     }
 
@@ -60,11 +61,6 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             this.props.onItemRouteChange(match.params.id);
         }
     }
-
-    executeAction = (action: ContextMenuAction, item: ProjectPanelItem) => {
-        alert(`Executing ${action.name} on ${item.name}`);
-    }
-
 }
 
 type CssRules = "toolbar" | "button";
@@ -76,7 +72,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     button: {
         marginLeft: theme.spacing.unit
-    }
+    },
 });
 
 const renderName = (item: ProjectPanelItem) =>
@@ -220,29 +216,6 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     width: "150px"
 }];
 
-const contextMenuActions = [[{
-    icon: "fas fa-users fa-fw",
-    name: "Share"
-}, {
-    icon: "fas fa-sign-out-alt fa-fw",
-    name: "Move to"
-}, {
-    icon: "fas fa-star fa-fw",
-    name: "Add to favourite"
-}, {
-    icon: "fas fa-edit fa-fw",
-    name: "Rename"
-}, {
-    icon: "fas fa-copy fa-fw",
-    name: "Make a copy"
-}, {
-    icon: "fas fa-download fa-fw",
-    name: "Download"
-}], [{
-    icon: "fas fa-trash-alt fa-fw",
-    name: "Remove"
-}
-]];
 
 export default withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(

@@ -14,16 +14,15 @@ import { ContextMenuAction, ContextMenuActionGroup } from "../../components/cont
 
 interface Props {
     id: string;
-    contextActions: ContextMenuActionGroup[];
     onRowClick: (item: any) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onRowDoubleClick: (item: any) => void;
-    onContextAction: (action: ContextMenuAction, item: any) => void;
 }
 
-const mapStateToProps = (state: RootState, { id, contextActions }: Props) =>
+const mapStateToProps = (state: RootState, { id }: Props) =>
     getDataExplorer(state.dataExplorer, id);
 
-const mapDispatchToProps = (dispatch: Dispatch, { id, contextActions, onRowClick, onRowDoubleClick, onContextAction }: Props) => ({
+const mapDispatchToProps = (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
     onSearch: (searchValue: string) => {
         dispatch(actions.SET_SEARCH_VALUE({ id, searchValue }));
     },
@@ -48,13 +47,11 @@ const mapDispatchToProps = (dispatch: Dispatch, { id, contextActions, onRowClick
         dispatch(actions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
     },
 
-    contextActions,
-
     onRowClick,
 
     onRowDoubleClick,
-
-    onContextAction
+    
+    onContextMenu,
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(DataExplorer);
