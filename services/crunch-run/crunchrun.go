@@ -84,6 +84,10 @@ type ThinDockerClient interface {
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
 }
 
+type PsProcess interface {
+	CmdlineSlice() ([]string, error)
+}
+
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
@@ -119,6 +123,8 @@ type ContainerRunner struct {
 	finalState    string
 	parentTemp    string
 
+	ListProcesses func() ([]PsProcess, error)
+
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
 	hoststatLogger   io.WriteCloser
@@ -145,7 +151,7 @@ type ContainerRunner struct {
 	enableNetwork   string // one of "default" or "always"
 	networkMode     string // passed through to HostConfig.NetworkMode
 	arvMountLog     *ThrottledLogger
-	checkContainerd bool
+	checkContainerd time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -1007,6 +1013,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 	runner.ContainerConfig.Volumes = runner.Volumes
 
 	maxRAM := int64(runner.Container.RuntimeConstraints.RAM)
+	if maxRAM < 4*1024*1024 {
+		// Docker daemon won't let you set a limit less than 4 MiB
+		maxRAM = 4 * 1024 * 1024
+	}
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds: runner.Binds,
 		LogConfig: dockercontainer.LogConfig{
@@ -1079,10 +1089,10 @@ func (runner *ContainerRunner) StartContainer() error {
 
 // checkContainerd checks if "containerd" is present in the process list.
 func (runner *ContainerRunner) CheckContainerd() error {
-	if !runner.checkContainerd {
+	if runner.checkContainerd == 0 {
 		return nil
 	}
-	p, _ := process.Processes()
+	p, _ := runner.ListProcesses()
 	for _, i := range p {
 		e, _ := i.CmdlineSlice()
 		if len(e) > 0 {
@@ -1114,21 +1124,23 @@ func (runner *ContainerRunner) WaitFinish() error {
 	defer func() {
 		close(containerdGone)
 	}()
-	go func() {
-		ticker := time.NewTicker(time.Duration(60 * time.Second))
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				if ck := runner.CheckContainerd(); ck != nil {
-					containerdGone <- ck
-					return
+	if runner.checkContainerd > 0 {
+		go func() {
+			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if ck := runner.CheckContainerd(); ck != nil {
+						containerdGone <- ck
+						return
+					}
+				case <-containerdGone:
+					break
 				}
-			case <-containerdGone:
-				break
 			}
-		}
-	}()
+		}()
+	}
 
 	for {
 		select {
@@ -1584,6 +1596,17 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
+	cr.ListProcesses = func() ([]PsProcess, error) {
+		pr, err := process.Processes()
+		if err != nil {
+			return nil, err
+		}
+		ps := make([]PsProcess, len(pr))
+		for i, j := range pr {
+			ps[i] = j
+		}
+		return ps, nil
+	}
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -1626,7 +1649,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	checkContainerd := flag.Bool("check-containerd", false, "Periodically check if (docker-)containerd is running, cancel if missing.")
+	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running, period in seconds.")
 	flag.Parse()
 
 	// Print version information if requested
