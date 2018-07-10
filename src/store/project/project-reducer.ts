@@ -10,8 +10,15 @@ import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 
 export type ProjectState = {
     items: Array<TreeItem<Project>>,
-    currentItemId: string
+    currentItemId: string,
+    creator: ProjectCreator
 };
+
+interface ProjectCreator {
+    opened: boolean;
+    pending: boolean;
+    ownerUuid: string;
+}
 
 export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
@@ -40,12 +47,12 @@ export function getActiveTreeItem<T>(tree: Array<TreeItem<T>>): TreeItem<T> | un
 }
 
 export function getTreePath<T>(tree: Array<TreeItem<T>>, itemId: string): Array<TreeItem<T>> {
-    for (const item of tree){
-        if(item.id === itemId){
+    for (const item of tree) {
+        if (item.id === itemId) {
             return [item];
         } else {
             const branch = getTreePath(item.items || [], itemId);
-            if(branch.length > 0){
+            if (branch.length > 0) {
                 return [item, ...branch];
             }
         }
@@ -85,20 +92,32 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
     return items;
 }
 
-const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" }, action: ProjectAction) => {
+const updateCreator = (state: ProjectState, creator: Partial<ProjectCreator>) => ({
+    ...state,
+    creator: {
+        ...state.creator,
+        ...creator
+    }
+});
+
+const initialState: ProjectState = {
+    items: [],
+    currentItemId: "",
+    creator: {
+        opened: false,
+        pending: false,
+        ownerUuid: ""
+    }
+};
+
+
+const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
     return actions.match(action, {
-        CREATE_PROJECT: project => ({
-            ...state,
-            items: state.items.concat({
-                id: project.uuid,
-                open: false,
-                active: false,
-                status: TreeItemStatus.Loaded,
-                toggled: false,
-                items: [],
-                data: project
-            })
-        }),
+        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
+        CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
+        CREATE_PROJECT: () => updateCreator(state, { pending: true }),
+        CREATE_PROJECT_SUCCESS: () => updateCreator(state, { ownerUuid: "", pending: false }),
+        CREATE_PROJECT_ERROR: () => updateCreator(state, { ownerUuid: "", pending: false }),
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: itemId => {
             const items = _.cloneDeep(state.items);
@@ -123,6 +142,7 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
                 item.open = !item.open;
             }
             return {
+                ...state,
                 items,
                 currentItemId: itemId
             };
@@ -136,6 +156,7 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
                 item.active = true;
             }
             return {
+                ...state,
                 items,
                 currentItemId: itemId
             };
@@ -144,6 +165,7 @@ const projectsReducer = (state: ProjectState = { items: [], currentItemId: "" },
             const items = _.cloneDeep(state.items);
             resetTreeActivity(items);
             return {
+                ...state,
                 items,
                 currentItemId: ""
             };

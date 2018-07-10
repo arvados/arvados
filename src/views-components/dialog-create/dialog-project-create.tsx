@@ -28,7 +28,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   state: DialogState = {
     name: '',
     description: '',
-    isNameValid: true,
+    isNameValid: false,
     isDescriptionValid: true
   };
 
@@ -70,7 +70,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
                   error={hasError}
                   fullWidth />} />
           </DialogContent>
-          <DialogActions className={classes.dialogActions}>
+          <DialogActions>
             <Button onClick={handleClose} className={classes.button} color="primary">CANCEL</Button>
             <Button onClick={handleClose} className={classes.lastButton} color="primary" disabled={!this.state.isNameValid || (!this.state.isDescriptionValid && description.length > 0)} variant="raised">CREATE A PROJECT</Button>
           </DialogActions>
@@ -104,7 +104,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   }
 }
 
-type CssRules = "button" | "lastButton" | "dialogContent" | "textField" | "dialog" | "dialogTitle" | "dialogActions";
+type CssRules = "button" | "lastButton" | "dialogContent" | "textField" | "dialog" | "dialogTitle";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
   button: {
@@ -119,9 +119,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
   },
   dialogTitle: {
     paddingBottom: "0"
-  },
-  dialogActions: {
-    marginBottom: "5px"
   },
   textField: {
     marginTop: "32px",
