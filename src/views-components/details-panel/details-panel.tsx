@@ -107,8 +107,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["600"],
         margin: `${theme.spacing.unit}px 0`,
         '& .fa-cogs': {
-            fontSize: "24px",
-            color: theme.customs.colors.green700
+            fontSize: "24px"
         }
 	},
 	tabContainer: {
