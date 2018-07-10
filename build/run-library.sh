@@ -317,6 +317,7 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
+        echo $version >package-build.version
         bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
