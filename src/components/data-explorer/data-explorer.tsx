@@ -24,6 +24,7 @@ interface DataExplorerProps<T> {
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
+    onRowDoubleClick: (item: T) => void;
     onColumnToggle: (column: DataColumn<T>) => void;
     onContextAction: (action: ContextMenuAction, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
@@ -67,6 +68,7 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
                 columns={[...this.props.columns, this.contextMenuColumn]}
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
+                onRowDoubleClick={(_, item: T) => this.props.onRowDoubleClick(item)}
                 onRowContextMenu={this.openContextMenu}
                 onFiltersChange={this.props.onFiltersChange}
                 onSortToggle={this.props.onSortToggle} />
