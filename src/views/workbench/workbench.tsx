@@ -29,7 +29,7 @@ import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
 import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
-import DialogProjectCreate from '../../components/dialog-create/dialog-project-create';
+import DialogProjectCreate from '../../views-components/dialog-create/dialog-project-create';
 
 const drawerWidth = 240;
 const appBarHeight = 100;

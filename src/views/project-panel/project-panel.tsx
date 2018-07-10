@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { ProjectPanelItem } from './project-panel-item';
-import { Grid, Typography, Button, Toolbar, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { Grid, Typography, Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
