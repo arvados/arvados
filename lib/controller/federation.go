@@ -6,11 +6,13 @@ package controller
 
 import (
 	"bytes"
+	"database/sql"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
@@ -77,11 +79,27 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) error {
 	}
 	token, err := auth.SaltToken(creds.Tokens[0], remote)
 	if err == auth.ErrObsoleteToken {
-		// FIXME: If the token exists in our own database,
-		// salt it for the remote. Otherwise, assume it was
-		// issued by the remote, and pass it through
-		// unmodified.
-		token = creds.Tokens[0]
+		// If the token exists in our own database, salt it
+		// for the remote. Otherwise, assume it was issued by
+		// the remote, and pass it through unmodified.
+		db, err := h.db(req)
+		if err != nil {
+			return err
+		}
+		aca := arvados.APIClientAuthorization{APIToken: creds.Tokens[0]}
+		err = db.QueryRowContext(req.Context(), `SELECT uuid FROM api_client_authorizations WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, aca.APIToken).Scan(&aca.UUID)
+		if err == sql.ErrNoRows {
+			// Not ours; pass through unmodified.
+			token = aca.APIToken
+		} else if err != nil {
+			return err
+		} else {
+			// Found; make V2 version and salt it.
+			token, err = auth.SaltToken(aca.TokenV2(), remote)
+			if err != nil {
+				return err
+			}
+		}
 	} else if err != nil {
 		return err
 	}

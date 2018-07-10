@@ -55,7 +55,8 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 		RailsAPI:   arvados.SystemServiceInstance{Listen: ":1"}, // local reqs will error "connection refused"
 	}
 	s.testHandler = &Handler{Cluster: &arvados.Cluster{
-		ClusterID: "zhome",
+		ClusterID:  "zhome",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": nodeProfile,
 		},
@@ -77,6 +78,8 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	}
 
 	c.Assert(s.testServer.Start(), check.IsNil)
+
+	s.remoteMockRequests = nil
 }
 
 func (s *FederationSuite) remoteMockHandler(w http.ResponseWriter, req *http.Request) {
@@ -172,8 +175,34 @@ func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
 	s.testRequest(req)
 	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
 	pr := s.remoteMockRequests[0]
+	// Token is salted and moved from query to Authorization header.
 	c.Check(pr.URL.String(), check.Not(check.Matches), `.*api_token=.*`)
-	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer "+arvadostest.ActiveToken)
+	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/7fd31b61f39c0e82a4155592163218272cedacdc")
+}
+
+func (s *FederationSuite) TestLocalTokenSalted(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1), nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	s.testRequest(req)
+	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	pr := s.remoteMockRequests[0]
+	// The salted token here has a "zzzzz-" UUID instead of a
+	// "ztest-" UUID because ztest's local database has the
+	// "zzzzz-" test fixtures. The "secret" part is HMAC(sha1,
+	// arvadostest.ActiveToken, "zmock") = "7fd3...".
+	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/7fd31b61f39c0e82a4155592163218272cedacdc")
+}
+
+func (s *FederationSuite) TestRemoteTokenNotSalted(c *check.C) {
+	// remoteToken can be any v1 token that doesn't appear in
+	// ztest's local db.
+	remoteToken := "abcdef00000000000000000000000000000000000000000000"
+	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1), nil)
+	req.Header.Set("Authorization", "Bearer "+remoteToken)
+	s.testRequest(req)
+	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	pr := s.remoteMockRequests[0]
+	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer "+remoteToken)
 }
 
 func (s *FederationSuite) TestWorkflowCRUD(c *check.C) {
