@@ -16,6 +16,7 @@ export interface DataTableProps<T> {
     columns: DataColumns<T>;
     onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
+    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
 }
@@ -69,12 +70,13 @@ class DataTable<T extends DataItem> extends React.Component<DataTableProps<T> & 
     }
 
     renderBodyRow = (item: T, index: number) => {
-        const { onRowClick, onContextMenu } = this.props;
+        const { onRowClick, onRowDoubleClick, onContextMenu } = this.props;
         return <TableRow
             hover
             key={item.key}
             onClick={event => onRowClick && onRowClick(event, item)}
-            onContextMenu={this.handleRowContextMenu(item)}>
+            onContextMenu={this.handleRowContextMenu(item)}
+            onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item) }>
             {this.mapVisibleColumns((column, index) => (
                 <TableCell key={column.key || index}>
                     {column.render(item)}

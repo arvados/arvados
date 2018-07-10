@@ -32,6 +32,8 @@ import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
 import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
 import { authService } from '../../services/services';
 
+import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
+import { ResourceKind } from '../../models/kinds';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -106,8 +108,8 @@ interface WorkbenchState {
         helpMenu: NavMenuItem[],
         anonymousMenu: NavMenuItem[]
     };
-    isDetailsPanelOpened: boolean;
 }
+
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
@@ -142,13 +144,13 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     action: () => this.props.dispatch(authActions.LOGIN())
                 }
             ]
-        },
-        isDetailsPanelOpened: false
+        }
     };
 
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
+            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -156,7 +158,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         },
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
         onDetailsPanelToggle: () => {
-            this.setState(prev => ({ isDetailsPanelOpened: !prev.isDetailsPanelOpened }));
+            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         },
         onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
             this.openContextMenu(event, breadcrumb.itemId);
@@ -233,8 +235,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)} />
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)}
+                                toggleActive={itemId => {
+                                    this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
+                                    this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+                                }}/>
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
@@ -243,9 +248,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel
-                        isOpened={this.state.isDetailsPanelOpened}
-                        onCloseDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
+                    <DetailsPanel />
                 </main>
                 <ContextMenu
                     anchorEl={this.state.contextMenu.anchorEl}
@@ -259,9 +262,15 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-        onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
         onContextMenu={(event, item) => this.openContextMenu(event, item.uuid)}
         onDialogOpen={this.handleCreationDialogOpen}
+        onItemClick={item => {
+            this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+        }}
+        onItemDoubleClick={item => {
+            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+        }}
         {...props} />
 }
 

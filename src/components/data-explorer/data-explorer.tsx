@@ -21,6 +21,7 @@ interface DataExplorerProps<T> {
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
+    onRowDoubleClick: (item: T) => void;
     onColumnToggle: (column: DataColumn<T>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
@@ -50,6 +51,7 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
                 items={this.props.items}
                 onRowClick={(_, item: T) => this.props.onRowClick(item)}
                 onContextMenu={this.props.onContextMenu}
+                onRowDoubleClick={(_, item: T) => this.props.onRowDoubleClick(item)}
                 onFiltersChange={this.props.onFiltersChange}
                 onSortToggle={this.props.onSortToggle} />
             <Toolbar>

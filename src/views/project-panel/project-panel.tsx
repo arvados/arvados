@@ -25,9 +25,10 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
 type ProjectPanelProps = {
     currentItemId: string,
     onItemClick: (item: ProjectPanelItem) => void,
-    onItemRouteChange: (itemId: string) => void,
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
     onDialogOpen: (ownerUuid: string) => void;
+    onItemDoubleClick: (item: ProjectPanelItem) => void,
+    onItemRouteChange: (itemId: string) => void
 }
     & DispatchProp
     & WithStyles<CssRules>
@@ -50,7 +51,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             <DataExplorer
                 id={PROJECT_PANEL_ID}
                 onRowClick={this.props.onItemClick}
-                onContextMenu={this.props.onContextMenu} />;
+                onRowDoubleClick={this.props.onItemDoubleClick}
+                onContextMenu={this.props.onContextMenu} />
         </div>;
     }
 
