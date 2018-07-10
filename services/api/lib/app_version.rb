@@ -63,8 +63,9 @@ class AppVersion
     begin
       @package_version = IO.read(Rails.root.join("package-build.version")).strip
     rescue Errno::ENOENT
+      @package_version = "unknown"
     end
 
-    @package_version || "unknown"
+    @package_version
   end
 end
