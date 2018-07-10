@@ -209,8 +209,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
         onItemClick={item =>  {
-            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+        }}
+        onItemDoubleClick={item => {
+            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
         }}
         {...props} />
 
