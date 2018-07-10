@@ -190,7 +190,7 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 var errorBlacklist = []string{
 	"(?ms).*[Cc]annot connect to the Docker daemon.*",
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
-	"(?ms).*grpc: the connection is unavailable",
+	"(?ms).*grpc: the connection is unavailable.*",
 }
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
