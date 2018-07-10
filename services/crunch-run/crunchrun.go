@@ -190,6 +190,7 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 var errorBlacklist = []string{
 	"(?ms).*[Cc]annot connect to the Docker daemon.*",
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
+	"(?ms).*grpc: the connection is unavailable",
 }
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
@@ -1649,7 +1650,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running, period in seconds.")
+	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running (use 0s to disable).")
 	flag.Parse()
 
 	// Print version information if requested
