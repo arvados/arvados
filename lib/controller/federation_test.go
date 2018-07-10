@@ -170,6 +170,23 @@ func (s *FederationSuite) TestGetRemoteWorkflow(c *check.C) {
 	c.Check(wf.OwnerUUID, check.Equals, arvadostest.ActiveUserUUID)
 }
 
+func (s *FederationSuite) TestOptionsMethod(c *check.C) {
+	req := httptest.NewRequest("OPTIONS", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, nil)
+	req.Header.Set("Origin", "https://example.com")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	c.Check(string(body), check.Equals, "")
+	c.Check(resp.Header.Get("Access-Control-Allow-Origin"), check.Equals, "*")
+	for _, hdr := range []string{"Authorization", "Content-Type"} {
+		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), check.Matches, ".*"+hdr+".*")
+	}
+	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "DELETE"} {
+		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), check.Matches, ".*"+method+".*")
+	}
+}
+
 func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1)+"?api_token="+arvadostest.ActiveToken, nil)
 	s.testRequest(req)
