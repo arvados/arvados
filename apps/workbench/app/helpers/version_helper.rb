@@ -9,10 +9,10 @@ module VersionHelper
     arvados_api_client.discovery[:source_version]
   end
 
-  # Get the package_version given in the API server's discovery
+  # Get the packageVersion given in the API server's discovery
   # document.
   def api_package_version
-    arvados_api_client.discovery[:package_version]
+    arvados_api_client.discovery[:packageVersion]
   end
 
   # URL for browsing source code for the given version.
