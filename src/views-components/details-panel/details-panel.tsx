@@ -22,13 +22,14 @@ import { ResourceKind } from '../../models/kinds';
 import { ProjectResource } from '../../models/project';
 import { CollectionResource } from '../../models/collection';
 import IconBase, { IconTypes } from '../../components/icon/icon';
+import { ProcessResource } from '../../models/process';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     isOpened: boolean;
-    header: React.ReactElement<any>;
-    renderDetails?: React.ComponentType<{}>;
-    renderActivity?: React.ComponentType<{}>;
+    icon: IconTypes;
+    title: string;
+    details: React.ReactElement<any>;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -48,14 +49,17 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
         </Typography>
 
     render() {
-        const { classes, onCloseDrawer, isOpened, header, renderDetails, renderActivity } = this.props;
+        const { classes, onCloseDrawer, isOpened, icon, title, details } = this.props;
         const { tabsValue } = this.state;
         return (
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                     <Typography component="div" className={classes.headerContainer}>
                         <Grid container alignItems='center' justify='space-around'>
-                            {header}
+                            <IconBase className={classes.headerIcon} icon={icon} />
+                            <Typography variant="title">
+                                {title}
+                            </Typography>
                             <IconButton color="inherit" onClick={onCloseDrawer}>
                                 <IconBase icon={IconTypes.CLOSE} />
                             </IconButton>
@@ -67,24 +71,11 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     </Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
-                            {renderDetails}
-                            <EmptyState icon={IconTypes.ANNOUNCEMENT}
-                                message='Select a file or folder to view its details.' />
-                            <Attribute label='Type' value='Process' />
-                            <Attribute label='Size' value='---' />
-                            <Attribute label="Location">
-                                <IconBase icon={IconTypes.FOLDER} />
-                                Projects
-                            </Attribute>
-                            <Attribute label='Outputs' link='http://www.google.pl' value='New output as link' />
-                            <Attribute label='Owner' value='me' />
+                            {details}
                         </Grid>
                     )}
                     {tabsValue === 1 && this.renderTabContainer(
-                        <Grid container direction="column">
-                            {renderActivity}
-                            <EmptyState icon={IconTypes.ANNOUNCEMENT} message='Select a file or folder to view its details.' />
-                        </Grid>
+                        <Grid container direction="column" />
                     )}
                 </Drawer>
             </Typography>
@@ -93,7 +84,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
 
 }
 
-type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'tabContainer';
+type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -113,48 +104,102 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerContainer: {
         color: theme.palette.grey["600"],
-        margin: `${theme.spacing.unit}px 0`,
-        '& .fa-cogs': {
-            fontSize: "24px",
-            color: theme.customs.colors.green700
-        }
+        margin: `${theme.spacing.unit}px 0`
+    },
+    headerIcon: {
+        fontSize: "34px"
     },
     tabContainer: {
         padding: theme.spacing.unit * 3
     }
 });
 
-const renderCollectionHeader = (collection: CollectionResource) =>
-    <>
-        <IconBase icon={IconTypes.COLLECTION} />
-        <Typography variant="title">
-            {collection.name}
-        </Typography>
-    </>;
+type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource;
 
-const renderProjectHeader = (project: ProjectResource) =>
-    <>
-        <IconBase icon={IconTypes.FOLDER} />
-        <Typography variant="title">
-            {project.name}
-        </Typography>
-    </>;
-
-const renderHeader = (resource: Resource) => {
-    switch(resource.kind) {
+const getIcon = (res: DetailsPanelResource) => {
+    switch (res.kind) {
         case ResourceKind.Project:
-            return renderProjectHeader(resource as ProjectResource);
+            return IconTypes.FOLDER;
         case ResourceKind.Collection:
-            return renderCollectionHeader(resource as CollectionResource);
-        default: 
-            return null;
+            return IconTypes.COLLECTION;
+        case ResourceKind.Process:
+            return IconTypes.PROCESS;
+        default:
+            return IconTypes.FOLDER;
     }
 };
 
-const mapStateToProps = ({detailsPanel}: RootState) => ({
-    isOpened: detailsPanel.isOpened,
-    header: detailsPanel.item ? renderHeader(detailsPanel.item) : null
-});
+const getDetails = (res: DetailsPanelResource) => {
+    switch (res.kind) {
+        case ResourceKind.Project:
+            return <div>
+                <Attribute label='Type' value='Project' />
+                <Attribute label='Size' value='---' />
+                <Attribute label="Location">
+                    <IconBase icon={IconTypes.FOLDER} />
+                    Projects
+                </Attribute>
+                <Attribute label='Owner' value='me' />
+                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
+                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
+                <Attribute label='File size' value='1.4 GB' />
+            </div>;
+        case ResourceKind.Collection:
+            return <div>
+                <Attribute label='Type' value='Data Collection' />
+                <Attribute label='Size' value='---' />
+                <Attribute label="Location">
+                    <IconBase icon={IconTypes.FOLDER} />
+                    Projects
+                </Attribute>
+                <Attribute label='Owner' value='me' />
+                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
+                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
+                <Attribute label='Number of files' value='20' />
+                <Attribute label='Content size' value='54 MB' />
+                <Attribute label='Collection UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
+                <Attribute label='Content address' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
+                <Attribute label='Creator' value='Chrystian' />
+                <Attribute label='Used by' value='---' />
+            </div>;
+        case ResourceKind.Process:
+            return <div>
+                <Attribute label='Type' value='Process' />
+                <Attribute label='Size' value='---' />
+                <Attribute label="Location">
+                    <IconBase icon={IconTypes.FOLDER} />
+                    Projects
+                </Attribute>
+                <Attribute label='Owner' value='me' />
+                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
+                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
+                <Attribute label='Finished at' value='1:25 PM 5/23/2018' />
+                <Attribute label='Outputs' link='http://www.google.pl' value='Container Output' />
+                <Attribute label='UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
+                <Attribute label='Container UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
+                <Attribute label='Priority' value='1' />
+                <Attribute label='Runtime constrains' value='1' />
+                <Attribute label='Docker image locator' link='http://www.google.pl' value='3838388226321' />
+            </div>;
+        default:
+            return getEmptyState();
+    }
+};
+
+const getEmptyState = () => {
+    return <EmptyState icon={ IconTypes.ANNOUNCEMENT } 
+        message='Select a file or folder to view its details.' />;
+};
+
+const mapStateToProps = ({ detailsPanel }: RootState) => {
+    const { isOpened, item } = detailsPanel;
+    return {
+        isOpened,
+        title: item ? (item as DetailsPanelResource).name : 'Projects',
+        icon: item ? getIcon(item as DetailsPanelResource) : IconTypes.FOLDER,
+        details: item ? getDetails(item as DetailsPanelResource) : getEmptyState()
+    };
+};
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {

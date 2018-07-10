@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import { Resource } from "../../common/api/common-resource-service";
+import CommonResourceService, { Resource } from "../../common/api/common-resource-service";
 import { ResourceKind } from "../../models/kinds";
 import { Dispatch } from "redux";
 import { groupsService } from "../../services/services";
+import { serverApi } from "../../common/api/server-api";
 
 const actions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
@@ -21,15 +22,23 @@ export type DetailsPanelAction = UnionOf<typeof actions>;
 export const loadDetails = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch) => {
         dispatch(actions.LOAD_DETAILS({ uuid, kind }));
-        if (kind === ResourceKind.Project) {
-            groupsService
-                .get(uuid)
-                .then(project => {
-                    dispatch(actions.LOAD_DETAILS_SUCCESS({ item: project }));
-                });
-        }
-
+        getService(kind)
+            .get(uuid)
+            .then(project => {
+                dispatch(actions.LOAD_DETAILS_SUCCESS({ item: project }));
+            });
     };
+
+const getService = (kind: ResourceKind) => {
+    switch (kind) {
+        case ResourceKind.Project:
+            return new CommonResourceService(serverApi, "groups");
+        case ResourceKind.Collection:
+            return new CommonResourceService(serverApi, "collections");
+        default:
+            return new CommonResourceService(serverApi, "");
+    }
+};
 
 
 

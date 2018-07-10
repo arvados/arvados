@@ -27,7 +27,8 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
-import detailsPanelActions from "../../store/details-panel/details-panel-action";
+import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
+import { ResourceKind } from '../../models/kinds';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -207,7 +208,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-        onItemClick={item => this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE))}
+        onItemClick={item =>  {
+            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+            this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+        }}
         {...props} />
 
 }

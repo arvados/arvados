@@ -36,8 +36,6 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
-            // TODO: Get correct resource kind
-            dispatch<any>(loadDetails(treeItem.data.uuid, ResourceKind.Project));
 
             dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
             const projectsItem = sidePanelData[0];
