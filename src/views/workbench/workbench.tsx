@@ -136,6 +136,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     mainAppBarActions: MainAppBarActionProps = {
         onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
+            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
         },
         onSearch: searchText => {
             this.setState({ searchText });
@@ -190,7 +191,10 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                toggleActive={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
+                                toggleActive={itemId => {
+                                    this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
+                                    this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+                                }}
                             />
                         </SidePanel>
                     </Drawer>}
@@ -200,7 +204,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel/>
+                    <DetailsPanel />
                 </main>
             </div>
         );
@@ -208,11 +212,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-        onItemClick={item =>  {
+        onItemClick={item => {
             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
         }}
         onItemDoubleClick={item => {
             this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
         }}
         {...props} />
 
