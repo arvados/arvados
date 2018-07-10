@@ -83,7 +83,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	cr.CrunchLog.Print("Goodbye")
 	cr.CrunchLog.Close()
 
-	c.Check(api.Calls > 1, Equals, true)
+	c.Check(api.Calls > 0, Equals, true)
 	c.Check(api.Calls < 2000000, Equals, true)
 
 	mt, err := cr.LogCollection.MarshalManifest(".")

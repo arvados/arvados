@@ -32,6 +32,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"github.com/shirou/gopsutil/process"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -141,9 +142,10 @@ type ContainerRunner struct {
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
 
-	enableNetwork string // one of "default" or "always"
-	networkMode   string // passed through to HostConfig.NetworkMode
-	arvMountLog   *ThrottledLogger
+	enableNetwork   string // one of "default" or "always"
+	networkMode     string // passed through to HostConfig.NetworkMode
+	arvMountLog     *ThrottledLogger
+	checkContainerd bool
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -185,23 +187,27 @@ var errorBlacklist = []string{
 }
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
+func (runner *ContainerRunner) runBrokenNodeHook() {
+	if *brokenNodeHook == "" {
+		runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
+	} else {
+		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+		// run killme script
+		c := exec.Command(*brokenNodeHook)
+		c.Stdout = runner.CrunchLog
+		c.Stderr = runner.CrunchLog
+		err := c.Run()
+		if err != nil {
+			runner.CrunchLog.Printf("Error running broken node hook: %v", err)
+		}
+	}
+}
+
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
 	for _, d := range errorBlacklist {
 		if m, e := regexp.MatchString(d, goterr.Error()); m && e == nil {
 			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
-			if *brokenNodeHook == "" {
-				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
-			} else {
-				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
-				// run killme script
-				c := exec.Command(*brokenNodeHook)
-				c.Stdout = runner.CrunchLog
-				c.Stderr = runner.CrunchLog
-				err := c.Run()
-				if err != nil {
-					runner.CrunchLog.Printf("Error running broken node hook: %v", err)
-				}
-			}
+			runner.runBrokenNodeHook()
 			return true
 		}
 	}
@@ -1071,6 +1077,27 @@ func (runner *ContainerRunner) StartContainer() error {
 	return nil
 }
 
+// checkContainerd checks if "containerd" is present in the process list.
+func (runner *ContainerRunner) CheckContainerd() error {
+	if !runner.checkContainerd {
+		return nil
+	}
+	p, _ := process.Processes()
+	for _, i := range p {
+		e, _ := i.CmdlineSlice()
+		if len(e) > 0 {
+			if strings.Index(e[0], "containerd") > -1 {
+				return nil
+			}
+		}
+	}
+
+	// Not found
+	runner.runBrokenNodeHook()
+	runner.stop(nil)
+	return fmt.Errorf("'containerd' not found in process list.")
+}
+
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
@@ -1082,6 +1109,27 @@ func (runner *ContainerRunner) WaitFinish() error {
 	if timeout := runner.Container.SchedulingParameters.MaxRunTime; timeout > 0 {
 		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
 	}
+
+	containerdGone := make(chan error)
+	defer func() {
+		close(containerdGone)
+	}()
+	go func() {
+		ticker := time.NewTicker(time.Duration(60 * time.Second))
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if ck := runner.CheckContainerd(); ck != nil {
+					containerdGone <- ck
+					return
+				}
+			case <-containerdGone:
+				break
+			}
+		}
+	}()
+
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -1107,6 +1155,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
 			runner.stop(nil)
 			runTimeExceeded = nil
+
+		case err := <-containerdGone:
+			return err
 		}
 	}
 }
@@ -1408,6 +1459,12 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
+	// Sanity check that containerd is running.
+	err = runner.CheckContainerd()
+	if err != nil {
+		return
+	}
+
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
@@ -1569,6 +1626,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
+	checkContainerd := flag.Bool("check-containerd", false, "Periodically check if (docker-)containerd is running, cancel if missing.")
 	flag.Parse()
 
 	// Print version information if requested
@@ -1624,6 +1682,7 @@ func main() {
 	cr.expectCgroupParent = *cgroupParent
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
+	cr.checkContainerd = *checkContainerd
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p
