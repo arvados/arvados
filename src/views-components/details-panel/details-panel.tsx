@@ -15,13 +15,13 @@ import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
 import { connect, Dispatch } from 'react-redux';
 import EmptyState from '../../components/empty-state/empty-state';
-import IconBase from '../../components/icon/icon';
 import { RootState } from '../../store/store';
 import actions from "../../store/details-panel/details-panel-action";
 import { Resource } from '../../common/api/common-resource-service';
 import { ResourceKind } from '../../models/kinds';
 import { ProjectResource } from '../../models/project';
 import { CollectionResource } from '../../models/collection';
+import IconBase, { IconTypes } from '../../components/icon/icon';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
@@ -57,7 +57,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                         <Grid container alignItems='center' justify='space-around'>
                             {header}
                             <IconButton color="inherit" onClick={onCloseDrawer}>
-                                <IconBase icon='close' />
+                                <IconBase icon={IconTypes.CLOSE} />
                             </IconButton>
                         </Grid>
                     </Typography>
@@ -68,12 +68,12 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderDetails}
-                            <EmptyState icon='announcement'
+                            <EmptyState icon={IconTypes.ANNOUNCEMENT}
                                 message='Select a file or folder to view its details.' />
                             <Attribute label='Type' value='Process' />
                             <Attribute label='Size' value='---' />
                             <Attribute label="Location">
-                                <IconBase icon='folder' />
+                                <IconBase icon={IconTypes.FOLDER} />
                                 Projects
                             </Attribute>
                             <Attribute label='Outputs' link='http://www.google.pl' value='New output as link' />
@@ -83,7 +83,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     {tabsValue === 1 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderActivity}
-                            <EmptyState icon='announcement' message='Select a file or folder to view its details.' />
+                            <EmptyState icon={IconTypes.ANNOUNCEMENT} message='Select a file or folder to view its details.' />
                         </Grid>
                     )}
                 </Drawer>
@@ -126,7 +126,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const renderCollectionHeader = (collection: CollectionResource) =>
     <>
-        <IconBase icon="collection" />
+        <IconBase icon={IconTypes.COLLECTION} />
         <Typography variant="title">
             {collection.name}
         </Typography>
@@ -134,7 +134,7 @@ const renderCollectionHeader = (collection: CollectionResource) =>
 
 const renderProjectHeader = (project: ProjectResource) =>
     <>
-        <IconBase icon="project" />
+        <IconBase icon={IconTypes.FOLDER} />
         <Typography variant="title">
             {project.name}
         </Typography>

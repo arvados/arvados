@@ -6,11 +6,11 @@ import * as React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { WithStyles, withStyles, StyleRulesCallback } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'src/common/custom-theme';
-import IconBase from '../icon/icon';
+import IconBase, { IconTypes } from '../icon/icon';
 
 export interface EmptyStateDataProps {
     message: string;
-    icon: string;
+    icon: IconTypes;
     details?: string;
 }
 

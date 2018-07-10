@@ -8,15 +8,24 @@ import CloseAnnouncement from '@material-ui/icons/Announcement';
 import CloseIcon from '@material-ui/icons/Close';
 import FolderIcon from '@material-ui/icons/Folder';
 
+export enum IconTypes {
+    ANNOUNCEMENT = 'announcement',
+    FOLDER = 'folder',
+    CLOSE = 'close',
+    PROJECT  = 'project',
+    COLLECTION = 'collection',
+    PROCESS = 'process'
+}
+
 interface IconBaseDataProps {
-    icon: string;
+    icon: IconTypes;
     className?: string;
 }
 
 type IconBaseProps = IconBaseDataProps;
 
 interface IconBaseState {
-    icon: string;
+    icon: IconTypes;
 }
 
 const getSpecificIcon = (props: any) => ({
@@ -30,7 +39,7 @@ const getSpecificIcon = (props: any) => ({
 
 class IconBase extends React.Component<IconBaseProps, IconBaseState> {
     state = {
-        icon: '',
+        icon: IconTypes.FOLDER,
     };
 
     render() {
