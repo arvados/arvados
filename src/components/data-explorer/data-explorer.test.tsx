@@ -18,21 +18,6 @@ configure({ adapter: new Adapter() });
 
 describe("<DataExplorer />", () => {
 
-    it("communicates with <ContextMenu/>", () => {
-        const onContextAction = jest.fn();
-        const dataExplorer = mount(<DataExplorer
-            {...mockDataExplorerProps()}
-            items={[{ key: "1", name: "item 1" }] as MockItem[]}
-            columns={[{ name: "Column 1", render: jest.fn(), selected: true }]} />);
-        expect(dataExplorer.find(ContextMenu).prop("actions")).toEqual([]);
-        dataExplorer.find(DataTable).prop("onRowContextMenu")({
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn()
-        }, "Item 1");
-        dataExplorer.find(ContextMenu).prop("onActionClick")({ name: "Action 1", icon: "" });
-        expect(onContextAction).toHaveBeenCalledWith({ name: "Action 1", icon: "" }, "Item 1");
-    });
-
     it("communicates with <SearchInput/>", () => {
         const onSearch = jest.fn();
         const dataExplorer = mount(<DataExplorer

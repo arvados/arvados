@@ -8,21 +8,6 @@ import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { ResourceKind } from "../../models/resource";
 
 describe('project-reducer', () => {
-    it('should add new project to the list', () => {
-        const initialState = undefined;
-        const project = {
-            name: 'test',
-            href: 'href',
-            createdAt: '2018-01-01',
-            modifiedAt: '2018-01-01',
-            ownerUuid: 'owner-test123',
-            uuid: 'test123',
-            kind: ResourceKind.PROJECT
-        };
-
-        const state = projectsReducer(initialState, actions.CREATE_PROJECT(project));
-        expect(state.items[0].data).toEqual(project);
-    });
 
     it('should load projects', () => {
         const initialState = undefined;
@@ -55,7 +40,12 @@ describe('project-reducer', () => {
                 status: 0
             }
             ],
-            currentItemId: ""
+            currentItemId: "",
+            creator: {
+                opened: false,
+                ownerUuid: "",
+                pending: false
+            }
         });
     });
 
@@ -95,7 +85,8 @@ describe('project-reducer', () => {
                 active: false,
                 status: 1
             }],
-            currentItemId: ""
+            currentItemId: "",
+            creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
         const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
