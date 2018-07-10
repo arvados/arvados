@@ -9,6 +9,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 )
@@ -33,7 +34,9 @@ func SaltToken(token, remote string) (string, error) {
 	secret := parts[2]
 	if len(secret) != 40 {
 		// not already salted
-		secret = fmt.Sprintf("%x", hmac.New(sha1.New, []byte(secret)).Sum([]byte(remote)))
+		hmac := hmac.New(sha1.New, []byte(secret))
+		io.WriteString(hmac, remote)
+		secret = fmt.Sprintf("%x", hmac.Sum(nil))
 		return "v2/" + uuid + "/" + secret, nil
 	} else if strings.HasPrefix(uuid, remote) {
 		// already salted for the desired remote
