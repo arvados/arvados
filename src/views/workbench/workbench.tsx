@@ -6,9 +6,8 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, RouteComponentProps, withRouter } from "react-router";
+import { Route, Switch, RouteComponentProps } from "react-router";
 import authActions from "../../store/auth/auth-action";
-import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import MainAppBar, {
@@ -20,16 +19,15 @@ import { push } from 'react-router-redux';
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { Project } from "../../models/project";
-import { getTreePath, findTreeItem } from '../../store/project/project-reducer';
+import { getTreePath } from '../../store/project/project-reducer';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
-import { ResourceKind } from "../../models/resource";
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
-import { sidePanelData } from '../../store/side-panel/side-panel-reducer';
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
+import detailsPanelActions from "../../store/details-panel/details-panel-action";
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -100,10 +98,6 @@ interface WorkbenchState {
         helpMenu: NavMenuItem[],
         anonymousMenu: NavMenuItem[]
     };
-    isDetailsPanelOpened: boolean;
-    detailsPanelHeader: React.ComponentType<{}> | undefined;
-    detailsPanelDetails: React.ComponentType<{}> | undefined;
-    detailsPanelActivity: React.ComponentType<{}> | undefined;
 }
 
 
@@ -135,11 +129,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     action: () => this.props.dispatch(authActions.LOGIN())
                 }
             ]
-        },
-        isDetailsPanelOpened: false,
-        detailsPanelHeader: undefined,
-        detailsPanelDetails: undefined,
-        detailsPanelActivity: undefined,
+        }
     };
 
     mainAppBarActions: MainAppBarActionProps = {
@@ -152,7 +142,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         },
         onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
         onDetailsPanelToggle: () => {
-            this.setState(prev => ({ isDetailsPanelOpened: !prev.isDetailsPanelOpened }));
+            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         }
     };
 
@@ -209,12 +199,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel
-                        renderHeader={this.state.detailsPanelHeader}
-                        renderDetails={this.state.detailsPanelDetails}
-                        renderActivity={this.state.detailsPanelActivity}
-                        isOpened={this.state.isDetailsPanelOpened} 
-                        onCloseDrawer={this.mainAppBarActions.onDetailsPanelToggle} />
+                    <DetailsPanel/>
                 </main>
             </div>
         );

@@ -13,13 +13,20 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
+import { connect, Dispatch } from 'react-redux';
 import EmptyState from '../../components/empty-state/empty-state';
 import IconBase from '../../components/icon/icon';
+import { RootState } from '../../store/store';
+import actions from "../../store/details-panel/details-panel-action";
+import { Resource } from '../../common/api/common-resource-service';
+import { ResourceKind } from '../../models/kinds';
+import { ProjectResource } from '../../models/project';
+import { CollectionResource } from '../../models/collection';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     isOpened: boolean;
-    renderHeader?: React.ComponentType<{}>;
+    header: React.ReactElement<any>;
     renderDetails?: React.ComponentType<{}>;
     renderActivity?: React.ComponentType<{}>;
 }
@@ -27,47 +34,41 @@ export interface DetailsPanelDataProps {
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
 
 class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
-	state = {
+    state = {
         tabsValue: 0
-	};
+    };
 
-	handleChange = (event: any, value: boolean) => {
-		this.setState({ tabsValue: value });
-	}
-    
-    renderTabContainer = (children: React.ReactElement<any>) => 
+    handleChange = (event: any, value: boolean) => {
+        this.setState({ tabsValue: value });
+    }
+
+    renderTabContainer = (children: React.ReactElement<any>) =>
         <Typography className={this.props.classes.tabContainer} component="div">
             {children}
         </Typography>
-    
-	render() {
-        const { classes, onCloseDrawer, isOpened, renderHeader, renderDetails, renderActivity } = this.props;
+
+    render() {
+        const { classes, onCloseDrawer, isOpened, header, renderDetails, renderActivity } = this.props;
         const { tabsValue } = this.state;
         return (
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
-					<Typography component="div" className={classes.headerContainer}>
-						<Grid container alignItems='center' justify='space-around'>
-                            {renderHeader}
-                            {/* TODO: renderHeader */}
-                            <IconBase icon='process' />
-							<Typography variant="title">
-								Tutorial pipeline
-							</Typography>
-                            {/* End */}
+                    <Typography component="div" className={classes.headerContainer}>
+                        <Grid container alignItems='center' justify='space-around'>
+                            {header}
                             <IconButton color="inherit" onClick={onCloseDrawer}>
                                 <IconBase icon='close' />
-							</IconButton>
-						</Grid>
-					</Typography>
-					<Tabs value={tabsValue} onChange={this.handleChange}>
-						<Tab disableRipple label="Details" />
-						<Tab disableRipple label="Activity" />
-					</Tabs>
+                            </IconButton>
+                        </Grid>
+                    </Typography>
+                    <Tabs value={tabsValue} onChange={this.handleChange}>
+                        <Tab disableRipple label="Details" />
+                        <Tab disableRipple label="Activity" />
+                    </Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderDetails}
-                            <EmptyState icon='announcement' 
+                            <EmptyState icon='announcement'
                                 message='Select a file or folder to view its details.' />
                             <Attribute label='Type' value='Process' />
                             <Attribute label='Size' value='---' />
@@ -77,14 +78,14 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                             </Attribute>
                             <Attribute label='Outputs' link='http://www.google.pl' value='New output as link' />
                             <Attribute label='Owner' value='me' />
-						</Grid>
-					)}
+                        </Grid>
+                    )}
                     {tabsValue === 1 && this.renderTabContainer(
                         <Grid container direction="column">
                             {renderActivity}
                             <EmptyState icon='announcement' message='Select a file or folder to view its details.' />
                         </Grid>
-					)}
+                    )}
                 </Drawer>
             </Typography>
         );
@@ -96,9 +97,9 @@ type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'ta
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-	container: {
+    container: {
         width: 0,
-		position: 'relative',
+        position: 'relative',
         height: 'auto',
         transition: 'width 0.5s ease',
         '&$opened': {
@@ -109,18 +110,58 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     drawerPaper: {
         position: 'relative',
         width: drawerWidth
-	},
-	headerContainer: {
+    },
+    headerContainer: {
         color: theme.palette.grey["600"],
         margin: `${theme.spacing.unit}px 0`,
         '& .fa-cogs': {
             fontSize: "24px",
             color: theme.customs.colors.green700
         }
-	},
-	tabContainer: {
-		padding: theme.spacing.unit * 3
-	}
+    },
+    tabContainer: {
+        padding: theme.spacing.unit * 3
+    }
 });
 
-export default withStyles(styles)(DetailsPanel);
+const renderCollectionHeader = (collection: CollectionResource) =>
+    <>
+        <IconBase icon="collection" />
+        <Typography variant="title">
+            {collection.name}
+        </Typography>
+    </>;
+
+const renderProjectHeader = (project: ProjectResource) =>
+    <>
+        <IconBase icon="project" />
+        <Typography variant="title">
+            {project.name}
+        </Typography>
+    </>;
+
+const renderHeader = (resource: Resource) => {
+    switch(resource.kind) {
+        case ResourceKind.Project:
+            return renderProjectHeader(resource as ProjectResource);
+        case ResourceKind.Collection:
+            return renderCollectionHeader(resource as CollectionResource);
+        default: 
+            return null;
+    }
+};
+
+const mapStateToProps = ({detailsPanel}: RootState) => ({
+    isOpened: detailsPanel.isOpened,
+    header: detailsPanel.item ? renderHeader(detailsPanel.item) : null
+});
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onCloseDrawer: () => {
+        dispatch(actions.TOGGLE_DETAILS_PANEL());
+    }
+});
+
+const DetailsPanelContainer = connect(mapStateToProps, mapDispatchToProps)(DetailsPanel);
+
+export default withStyles(styles)(DetailsPanelContainer);

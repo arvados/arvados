@@ -7,17 +7,19 @@ import projectActions, { getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
-import { Resource, ResourceKind } from "../../models/resource";
+import { Resource, ResourceKind as R } from "../../models/resource";
 import sidePanelActions from "../side-panel/side-panel-action";
 import dataExplorerActions from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { sidePanelData } from "../side-panel/side-panel-reducer";
+import { loadDetails } from "../details-panel/details-panel-action";
+import { ResourceKind } from "../../models/kinds";
 
 export const getResourceUrl = (resource: Resource): string => {
     switch (resource.kind) {
-        case ResourceKind.PROJECT: return `/projects/${resource.uuid}`;
-        case ResourceKind.COLLECTION: return `/collections/${resource.uuid}`;
+        case R.PROJECT: return `/projects/${resource.uuid}`;
+        case R.COLLECTION: return `/collections/${resource.uuid}`;
         default: return "";
     }
 };
@@ -34,6 +36,8 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
+            // TODO: Get correct resource kind
+            dispatch<any>(loadDetails(treeItem.data.uuid, ResourceKind.Project));
 
             dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
             const projectsItem = sidePanelData[0];
