@@ -714,7 +714,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--submit-runner-ram", type=int,
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
-                        default=1024)
+                        default=None)
 
     parser.add_argument("--submit-runner-image", type=str,
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
@@ -831,6 +831,8 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         if api_client is None:
             api_client = arvados.safeapi.ThreadSafeApiCache(api_params={"model": OrderedJsonModel()}, keep_params={"num_retries": 4})
             keep_client = api_client.keep
+            # Make an API object now so errors are reported early.
+            api_client.users().current().execute()
         if keep_client is None:
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
         runner = ArvCwlRunner(api_client, arvargs, keep_client=keep_client, num_retries=4)

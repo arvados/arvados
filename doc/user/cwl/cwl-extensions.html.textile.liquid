@@ -38,6 +38,11 @@ hints:
     enableReuse: false
   cwltool:Secrets:
     secrets: [input1, input2]
+  cwltool:TimeLimit:
+    timelimit: 14400
+  arv:WorkflowRunnerResources:
+    ramMin: 2048
+    coresMin: 2
 </pre>
 
 The one exception to this is @arv:APIRequirement@, see note below.
@@ -111,3 +116,21 @@ Indicate that one or more input parameters are "secret".  Must be applied at the
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |secrets|array<string>|Input parameters which are considered "secret".  Must be strings.|
+
+
+h2. cwltool:TimeLimit
+
+Set an upper limit on the execution time of a CommandLineTool or ExpressionTool.  A tool execution which exceeds the time limit may be preemptively terminated and considered failed.  May also be used by batch systems to make scheduling decisions.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|timelimit|int|Execution time limit in seconds. If set to zero, no limit is enforced.|
+
+h2. arv:WorkflowRunnerResources
+
+Specify resource requirements for the workflow runner process (arvados-cwl-runner) that manages a workflow run.  Must be applied to the top level workflow.  Will also be set implicitly when using @--submit-runner-ram@ on the command line along with @--create-workflow@ or @--update-workflow@.  Use this to adjust the runner's allocation if the workflow runner is getting "out of memory" exceptions or being killed by the out-of-memory (OOM) killer.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|ramMin|int|RAM, in mebibytes, to reserve for the arvados-cwl-runner process. Default 1 GiB|
+|coresMin|int|Number of cores to reserve to the arvados-cwl-runner process. Default 1 core.|
