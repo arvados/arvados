@@ -15,6 +15,7 @@ import Validator from '../../utils/dialog-validator';
 interface ProjectCreateProps {
   open: boolean;
   handleClose: () => void;
+  onSubmit: (data: { name: string, description: string }) => void;
 }
 
 interface DialogState {
@@ -72,11 +73,18 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose} className={classes.button} color="primary">CANCEL</Button>
-            <Button onClick={handleClose} className={classes.lastButton} color="primary" disabled={!this.state.isNameValid || (!this.state.isDescriptionValid && description.length > 0)} variant="raised">CREATE A PROJECT</Button>
+            <Button onClick={this.handleSubmit} className={classes.lastButton} color="primary" disabled={!this.state.isNameValid || (!this.state.isDescriptionValid && description.length > 0)} variant="raised">CREATE A PROJECT</Button>
           </DialogActions>
         </div>
       </Dialog>
     );
+  }
+
+  handleSubmit = () => {
+    this.props.onSubmit({
+      name: this.state.name,
+      description: this.state.description
+    });
   }
 
   handleProjectName(e: any) {

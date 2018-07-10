@@ -115,7 +115,7 @@ const projectsReducer = (state: ProjectState = initialState, action: ProjectActi
     return actions.match(action, {
         OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
         CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
-        CREATE_PROJECT: () => updateCreator(state, { pending: true }),
+        CREATE_PROJECT: () => updateCreator(state, { opened: false, pending: true }),
         CREATE_PROJECT_SUCCESS: () => updateCreator(state, { ownerUuid: "", pending: false }),
         CREATE_PROJECT_ERROR: () => updateCreator(state, { ownerUuid: "", pending: false }),
         REMOVE_PROJECT: () => state,

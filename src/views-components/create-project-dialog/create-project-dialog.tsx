@@ -6,7 +6,7 @@ import { connect } from "react-redux";
 import { Dispatch } from "../../../node_modules/redux";
 import { RootState } from "../../store/store";
 import DialogProjectCreate from "../dialog-create/dialog-project-create";
-import actions from "../../store/project/project-action";
+import actions, { createProject } from "../../store/project/project-action";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.projects.creator.opened
@@ -15,6 +15,9 @@ const mapStateToProps = (state: RootState) => ({
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleClose: () => {
         dispatch(actions.CLOSE_PROJECT_CREATOR());
+    },
+    onSubmit: (data: { name: string, description: string }) => {
+        dispatch<any>(createProject(data));
     }
 });
 
