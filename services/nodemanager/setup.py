@@ -40,7 +40,8 @@ setup(name='arvados-node-manager',
           'future',
           'pykka',
           'python-daemon',
-          'setuptools'
+          'setuptools',
+          'subprocess32>=3.5.1',
       ],
       dependency_links=[
           "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.3.1.dev1.zip"
@@ -51,6 +52,7 @@ setup(name='arvados-node-manager',
           'pbr<1.7.0',
           'mock>=1.0',
           'apache-libcloud>=2.3.1.dev1',
+          'subprocess32>=3.5.1',
       ],
       zip_safe=False
       )

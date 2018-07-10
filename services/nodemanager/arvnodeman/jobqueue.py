@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function
 
 import logging
 import re
-import subprocess
+import subprocess32 as subprocess
 
 import arvados.util
 
