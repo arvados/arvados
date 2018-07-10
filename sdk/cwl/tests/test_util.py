@@ -19,12 +19,13 @@ datetime.datetime = MockDateTime
 
 class TestUtil(unittest.TestCase):
     def test_get_intermediate_collection_info(self):
+        name = "one"
         current_container = {"uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
         intermediate_output_ttl = 120
 
-        info = get_intermediate_collection_info(current_container, intermediate_output_ttl)
+        info = get_intermediate_collection_info(name, current_container, intermediate_output_ttl)
 
-        self.assertEqual(info["name"], "Intermediate collection")
+        self.assertEqual(info["name"], "Intermediate collection for step one")
         self.assertEqual(info["trash_at"], datetime.datetime(2018, 1, 1, 0, 2, 0, 0))
         self.assertEqual(info["properties"], {"type" : "intermediate", "container" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})
 

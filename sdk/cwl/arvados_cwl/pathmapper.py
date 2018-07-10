@@ -156,7 +156,7 @@ class ArvPathMapper(PathMapper):
                     self.addentry(l, c, ".", remap)
 
                 container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = get_intermediate_collection_info(container, self.arvrunner.intermediate_output_ttl)
+                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,
@@ -175,7 +175,7 @@ class ArvPathMapper(PathMapper):
                 self.addentry(srcobj, c, ".", remap)
 
                 container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = get_intermediate_collection_info(container, self.arvrunner.intermediate_output_ttl)
+                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,

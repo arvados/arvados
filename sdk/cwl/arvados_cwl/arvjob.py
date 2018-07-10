@@ -79,8 +79,9 @@ class ArvadosJob(JobBase):
                     with Perf(metrics, "generatefiles.save_new %s" % self.name):
                         if not runtimeContext.current_container:
                             runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                        info = get_intermediate_collection_info(runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+                        info = get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
                         vwd.save_new(name=info["name"],
+                                     owner_uuid=self.arvrunner.project_uuid,
                                      ensure_unique_name=True,
                                      trash_at=info["trash_at"],
                                      properties=info["properties"])

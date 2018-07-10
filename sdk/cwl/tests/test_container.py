@@ -99,6 +99,7 @@ class TestContainer(unittest.TestCase):
                                                "capacity": 1073741824 }
                         },
                         'state': 'Committed',
+                        'output_name': 'Output for step test_run_'+str(enable_reuse),
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
                         'output_ttl': 0,
@@ -185,6 +186,7 @@ class TestContainer(unittest.TestCase):
                                    "capacity": 5242880000 }
             },
             'state': 'Committed',
+            'output_name': 'Output for step test_resource_requirements',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 7200,
@@ -317,6 +319,7 @@ class TestContainer(unittest.TestCase):
                 }
             },
             'state': 'Committed',
+            'output_name': 'Output for step test_initial_work_dir',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 0,
@@ -404,6 +407,7 @@ class TestContainer(unittest.TestCase):
                         },
                     },
                     'state': 'Committed',
+                    "output_name": "Output for step test_run_redirect",
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -540,6 +544,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
+                    'output_name': 'Output for step test_run_mounts',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -632,6 +637,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
+                    'output_name': 'Output for step test_secrets',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
