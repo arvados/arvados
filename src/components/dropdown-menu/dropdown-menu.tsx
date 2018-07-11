@@ -11,7 +11,6 @@ import IconBase, { IconTypes } from '../icon/icon';
 interface DropdownMenuProps {
     id: string;
     icon: IconTypes;
-    // icon: React.ComponentType;
 }
 
 class DropdownMenu extends React.Component<DropdownMenuProps> {
@@ -34,9 +33,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     aria-owns={anchorEl ? id : undefined}
                     aria-haspopup="true"
                     color="inherit"
-                    onClick={this.handleOpen}
-
-                >
+                    onClick={this.handleOpen}>
                     <IconBase icon={icon} />
                 </IconButton>
                 <Menu

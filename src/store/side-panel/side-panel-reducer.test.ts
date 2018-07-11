@@ -22,7 +22,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.FOLDER,
+                icon: IconTypes.INBOX,
                 open: false,
                 active: true,
             }
@@ -46,7 +46,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.FOLDER,
+                icon: IconTypes.INBOX,
                 open: true,
                 active: false,
             }
@@ -70,7 +70,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.FOLDER,
+                icon: IconTypes.INBOX,
                 open: false,
                 active: false,
             }

@@ -17,7 +17,7 @@ export interface ArvadosTheme extends Theme {
     customs: any;
 }
 
-const purple900 = purple["900"];
+const purple800 = purple["800"];
 const grey600 = grey["600"];
 const themeOptions: ArvadosThemeOptions = {
     customs: {
@@ -28,7 +28,7 @@ const themeOptions: ArvadosThemeOptions = {
     overrides: {
         MuiAppBar: {
             colorPrimary: {
-                backgroundColor: purple900
+                backgroundColor: purple800
             }
         },
         MuiTabs: {
@@ -36,13 +36,13 @@ const themeOptions: ArvadosThemeOptions = {
                 color: grey600
             },
             indicator: {
-                backgroundColor: purple900
+                backgroundColor: purple800
             }
         },
         MuiTab: {
             selected: {
                 fontWeight: 700,
-                color: purple900
+                color: purple800
             }
         }
     },
