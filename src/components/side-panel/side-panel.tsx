@@ -7,13 +7,13 @@ import { ReactElement } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { List, ListItem, ListItemText, ListItemIcon, Collapse, Typography } from "@material-ui/core";
-import IconBase, { IconTypes } from '../icon/icon';
+import { SidePanelRightArrowIcon } from '../icon/icon';
 import * as classnames from "classnames";
 
 export interface SidePanelItem {
     id: string;
     name: string;
-    icon: IconTypes;
+    icon: (className?: string) => React.ReactElement<any>;
     active?: boolean;
     open?: boolean;
     margin?: boolean;
@@ -40,13 +40,11 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                                 <span className={row}>
                                     {it.openAble ? (
                                         <i onClick={() => toggleOpen(it.id)} className={iconArrowContainer}>
-                                            <IconBase icon={IconTypes.PLAY_ARROW} 
-                                                className={this.getIconClassNames(it.open, it.active)}/>
+                                            {SidePanelRightArrowIcon(this.getIconClassNames(it.open, it.active))}
                                         </i>
                                     ) : null}
                                     <ListItemIcon className={it.active ? active : ''}>
-                                        <IconBase icon={it.icon} 
-                                            className={ `${icon} ${it.margin ? projectIconMargin : ''}` } />
+                                        {it.icon(`${icon} ${it.margin ? projectIconMargin : ''}`)}
                                     </ListItemIcon>
                                     <ListItemText className={listItemText} 
                                         primary={renderListItemText(it.name, active, it.active)} />

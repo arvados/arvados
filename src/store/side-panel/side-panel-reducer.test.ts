@@ -4,7 +4,7 @@
 
 import sidePanelReducer from "./side-panel-reducer";
 import actions from "./side-panel-action";
-import { IconTypes } from "../../components/icon/icon";
+import { ProjectsIcon } from "../../components/icon/icon";
 
 describe('side-panel-reducer', () => {
 
@@ -13,7 +13,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }
@@ -22,7 +22,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: false,
                 active: true,
             }
@@ -37,7 +37,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }
@@ -46,7 +46,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: true,
                 active: false,
             }
@@ -61,7 +61,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: false,
                 active: true,
             }
@@ -70,7 +70,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: IconTypes.INBOX,
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }

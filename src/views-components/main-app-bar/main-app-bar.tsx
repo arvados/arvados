@@ -8,7 +8,7 @@ import { User, getUserFullname } from "../../models/user";
 import SearchBar from "../../components/search-bar/search-bar";
 import Breadcrumbs, { Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
 import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
-import IconBase, { IconTypes } from "../../components/icon/icon";
+import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "../../components/icon/icon";
 
 export interface MainAppBarMenuItem {
     label: string;
@@ -74,7 +74,7 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                     onContextMenu={props.onContextMenu} />
             }
             <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <IconBase icon={IconTypes.INFO} />
+                { DetailsIcon() }
             </IconButton>
         </Toolbar>
     </AppBar>;
@@ -86,16 +86,16 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
         <>
             <IconButton color="inherit">
                 <Badge badgeContent={3} color="primary">
-                    <IconBase icon={IconTypes.NOTIFICATIONS} />
+                    {NotificationIcon()}
                 </Badge>
             </IconButton>
-            <DropdownMenu icon={IconTypes.PERSON} id="account-menu">
+            <DropdownMenu icon={UserPanelIcon()} id="account-menu">
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
                 {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
             </DropdownMenu>
-            <DropdownMenu icon={IconTypes.HELP} id="help-menu">
+            <DropdownMenu icon={HelpIcon()} id="help-menu">
                 {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
             </DropdownMenu>
         </>

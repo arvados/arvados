@@ -6,11 +6,10 @@ import * as React from 'react';
 import Menu from '@material-ui/core/Menu';
 import IconButton from '@material-ui/core/IconButton';
 import { PopoverOrigin } from '@material-ui/core/Popover';
-import IconBase, { IconTypes } from '../icon/icon';
 
 interface DropdownMenuProps {
     id: string;
-    icon: IconTypes;
+    icon: React.ReactElement<any>;
 }
 
 class DropdownMenu extends React.Component<DropdownMenuProps> {
@@ -34,7 +33,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     aria-haspopup="true"
                     color="inherit"
                     onClick={this.handleOpen}>
-                    <IconBase icon={icon} />
+                    {icon}
                 </IconButton>
                 <Menu
                     id={id}
@@ -43,8 +42,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     onClose={this.handleClose}
                     onClick={this.handleClose}
                     anchorOrigin={this.transformOrigin}
-                    transformOrigin={this.transformOrigin}
-                >
+                    transformOrigin={this.transformOrigin}>
                     {children}
                 </Menu>
             </div>

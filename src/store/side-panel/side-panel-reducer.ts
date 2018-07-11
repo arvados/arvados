@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-
 import actions, { SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
-import { IconTypes } from "../../components/icon/icon";
+import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -49,7 +48,7 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.Projects,
         name: "Projects",
-        icon: IconTypes.INBOX,
+        icon: ProjectsIcon,
         open: false,
         active: false,
         margin: true,
@@ -58,31 +57,31 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.SharedWithMe,
         name: "Shared with me",
-        icon: IconTypes.PEOPLE,
+        icon: ShareMeIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Workflows,
         name: "Workflows",
-        icon: IconTypes.CODE,
+        icon: WorkflowIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.RecentOpen,
         name: "Recent open",
-        icon: IconTypes.ACCESS_TIME,
+        icon: RecentIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Favourites,
         name: "Favorites",
-        icon: IconTypes.STAR,
+        icon: FavoriteIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Trash,
         name: "Trash",
-        icon: IconTypes.DELETE,
+        icon: TrashIcon,
         active: false,
     }
 ];

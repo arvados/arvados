@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconTypes } from '../../icon/icon';
+import { ProjectIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
@@ -13,8 +13,8 @@ import { resourceLabel } from '../../../common/labels';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
-    getIcon(): IconTypes {
-        return IconTypes.FOLDER;
+    getIcon(className?: string): React.ReactElement<any> {
+        return ProjectIcon(className);
     }
 
     buildDetails(): React.ReactElement<any> {

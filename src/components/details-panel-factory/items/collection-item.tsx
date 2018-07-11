@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconTypes } from '../../icon/icon';
+import { CollectionIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
@@ -13,8 +13,8 @@ import { ResourceKind } from '../../../models/resource';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
 
-    getIcon(): IconTypes {
-        return IconTypes.COLLECTION;
+    getIcon(className?: string): React.ReactElement<any> {
+        return CollectionIcon(className);
     }
 
     buildDetails(): React.ReactElement<any> {

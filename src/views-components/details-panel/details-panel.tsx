@@ -12,7 +12,7 @@ import { RootState } from '../../store/store';
 import actions from "../../store/details-panel/details-panel-action";
 import { ProjectResource } from '../../models/project';
 import { CollectionResource } from '../../models/collection';
-import IconBase, { IconTypes } from '../../components/icon/icon';
+import { CloseIcon } from '../../components/icon/icon';
 import { ProcessResource } from '../../models/process';
 import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
 import AbstractItem from '../../components/details-panel-factory/items/abstract-item';
@@ -49,7 +49,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     <Typography component="div" className={classes.headerContainer}>
                         <Grid container alignItems='center' justify='space-around'>
                             <Grid item xs={2}>
-                                <IconBase className={classes.headerIcon} icon={item.getIcon()} />
+                                {item.getIcon(classes.headerIcon)}
                             </Grid>
                             <Grid item xs={8}>
                                 <Typography variant="title">
@@ -58,7 +58,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                             </Grid>
                             <Grid item>
                                 <IconButton color="inherit" onClick={onCloseDrawer}>
-                                    <IconBase icon={IconTypes.CLOSE} />
+                                    {CloseIcon()}
                                 </IconButton>
                             </Grid>
                         </Grid>

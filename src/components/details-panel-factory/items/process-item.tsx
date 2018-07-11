@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconTypes } from '../../icon/icon';
+import { ProcessIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
@@ -13,8 +13,8 @@ import { resourceLabel } from '../../../common/labels';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
-    getIcon(): IconTypes {
-        return IconTypes.BUBBLE_CHART;
+    getIcon(className?: string): React.ReactElement<any> {
+        return ProcessIcon(className);
     }
 
     buildDetails(): React.ReactElement<any> {

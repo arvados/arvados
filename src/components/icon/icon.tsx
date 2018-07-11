@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import * as classnames from "classnames";
-
 import AccessTime from '@material-ui/icons/AccessTime';
-import Announcement from '@material-ui/icons/Announcement';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
 import BubbleChart from '@material-ui/icons/BubbleChart';
 import Cached from '@material-ui/icons/Cached';
@@ -18,7 +15,7 @@ import ContentCopy from '@material-ui/icons/ContentCopy';
 import CreateNewFolder from '@material-ui/icons/CreateNewFolder';
 import Delete from '@material-ui/icons/Delete';
 import Edit from '@material-ui/icons/Edit';
-import FolderIcon from '@material-ui/icons/Folder';
+import Folder from '@material-ui/icons/Folder';
 import GetApp from '@material-ui/icons/GetApp';
 import Help from '@material-ui/icons/Help';
 import Inbox from '@material-ui/icons/Inbox';
@@ -26,7 +23,7 @@ import Info from '@material-ui/icons/Info';
 import Input from '@material-ui/icons/Input';
 import Menu from '@material-ui/icons/Menu';
 import MoreVert from '@material-ui/icons/MoreVert';
-import NotificationsIcon from '@material-ui/icons/Notifications';
+import Notifications from '@material-ui/icons/Notifications';
 import People from '@material-ui/icons/People';
 import Person from '@material-ui/icons/Person';
 import PersonAdd from '@material-ui/icons/PersonAdd';
@@ -36,93 +33,39 @@ import Search from '@material-ui/icons/Search';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 
-export enum IconTypes {
-    ACCESS_TIME = 'access_time',
-    ANNOUNCEMENT = 'announcement',
-    ARROW_DROP_DOWN = 'arrow_drop_down',
-    BUBBLE_CHART = 'bubble_chart',
-    CACHED = 'cached',
-    CODE = 'code',
-    CHEVRON_LEFT = 'chevron_left',
-    CHEVRON_RIGHT = 'chevron-right',
-    COLLECTION = 'collection',
-    CLOSE = 'close',
-    CONTENT_COPY = 'content_copy',
-    CREATE_NEW_FOLDER = 'create_new_folder',
-    DELETE = 'delete',
-    EDIT = 'edit',
-    FOLDER = 'folder',
-    GET_APP = 'get_app',
-    HELP = 'help',
-    INBOX = 'inbox',
-    INFO = 'info',
-    INPUT = 'input',
-    MENU = 'menu',
-    MORE_VERT = 'more_vert',
-    NOTIFICATIONS = 'notifications',
-    PEOPLE = 'people',
-    PERSON = 'person',
-    PERSON_ADD = 'person_add',
-    PLAY_ARROW = 'play_arrow',
-    RATE_REVIEW = 'rate_review',
-    SEARCH = 'search',
-    STAR = 'star',
-    STAR_BORDER = 'star_border'
-}
-
-interface IconBaseDataProps {
-    icon: IconTypes;
-    className?: string;
-}
-
-type IconBaseProps = IconBaseDataProps;
-
-interface IconBaseState {
-    icon: IconTypes;
-}
-
-const getSpecificIcon = (props: any) => ({
-    [IconTypes.ACCESS_TIME]: <AccessTime className={props.className} />,
-    [IconTypes.ANNOUNCEMENT]: <Announcement className={props.className} />,
-    [IconTypes.ARROW_DROP_DOWN]: <ArrowDropDown className={props.className} />,
-    [IconTypes.BUBBLE_CHART]: <BubbleChart className={props.className} />,
-    [IconTypes.CACHED]: <Cached className={props.className} />,
-    [IconTypes.CODE]: <Code className={props.className} />,
-    [IconTypes.CHEVRON_LEFT]: <ChevronLeft className={props.className} />,
-    [IconTypes.CHEVRON_RIGHT]: <ChevronRight className={props.className} />,
-    [IconTypes.COLLECTION]: <i className={classnames([props.className, 'fas fa-archive fa-lg'])} />,
-    [IconTypes.CLOSE]: <Close className={props.className} />,
-    [IconTypes.CONTENT_COPY]: <ContentCopy className={props.className} />,
-    [IconTypes.CREATE_NEW_FOLDER]: <CreateNewFolder className={props.className} />,
-    [IconTypes.DELETE]: <Delete className={props.className} />,
-    [IconTypes.EDIT]: <Edit className={props.className} />,    
-    [IconTypes.FOLDER]: <FolderIcon className={props.className} />,
-    [IconTypes.GET_APP]: <GetApp className={props.className} />,
-    [IconTypes.HELP]: <Help className={props.className} />,
-    [IconTypes.INBOX]: <Inbox className={props.className} />,
-    [IconTypes.INFO]: <Info className={props.className} />,
-    [IconTypes.INPUT]: <Input className={props.className} />,
-    [IconTypes.MENU]: <Menu className={props.className} />,
-    [IconTypes.MORE_VERT]: <MoreVert className={props.className} />,
-    [IconTypes.NOTIFICATIONS]: <NotificationsIcon className={props.className} />,
-    [IconTypes.PEOPLE]: <People className={props.className} />,
-    [IconTypes.PERSON]: <Person className={props.className} />,
-    [IconTypes.PERSON_ADD]: <PersonAdd className={props.className} />,
-    [IconTypes.PLAY_ARROW]: <PlayArrow className={props.className} />,
-    [IconTypes.RATE_REVIEW]: <RateReview className={props.className} />,
-    [IconTypes.SEARCH]: <Search className={props.className} />,
-    [IconTypes.STAR]: <Star className={props.className} />,
-    [IconTypes.STAR_BORDER]: <StarBorder className={props.className} />
-});
-
-class IconBase extends React.Component<IconBaseProps, IconBaseState> {
-    state = {
-        icon: IconTypes.FOLDER,
-    };
-
-    render() {
-        return getSpecificIcon(this.props)[this.props.icon];
-    }
-}
-
-export default IconBase;
+export const AddFavoriteIcon = (className?: string) => <StarBorder className={className} />;
+export const AdvancedIcon = (className?: string) => <Folder className={className} />;
+export const CustomizeTableIcon = (className?: string) => <Menu className={className} />;
+export const CopyIcon = (className?: string) => <ContentCopy className={className} />;
+export const CollectionIcon = (className?: string) => <Folder className={className} />;
+export const CloseIcon = (className?: string) => <Close className={className} />;
+export const DefaultIcon = (className?: string) => <RateReview className={className} />;
+export const DetailsIcon = (className?: string) => <Info className={className} />;
+export const DownloadIcon = (className?: string) => <GetApp className={className} />;
+export const FavoriteIcon = (className?: string) => <Star className={className} />;
+export const HelpIcon = (className?: string) => <Help className={className} />;
+export const LogIcon = (className?: string) => <Folder className={className} />;
+export const MoreOptionsIcon = (className?: string) => <MoreVert className={className} />;
+export const MoveToIcon = (className?: string) => <Input className={className} />;
+export const NewProjectIcon = (className?: string) => <CreateNewFolder className={className} />;
+export const NotificationIcon = (className?: string) => <Notifications className={className} />;
+export const PaginationDownIcon = (className?: string) => <ArrowDropDown className={className} />;
+export const PaginationLeftArrowIcon = (className?: string) => <ChevronLeft className={className} />;
+export const PaginationRightArrowIcon = (className?: string) => <ChevronRight className={className} />;
+export const ProcessIcon = (className?: string) => <BubbleChart className={className} />;
+export const ProjectIcon = (className?: string) => <Folder className={className} />;
+export const ProjectsIcon = (className?: string) => <Inbox className={className} />;
+export const ProvenanceGraphIcon = (className?: string) => <Folder className={className} />;
+export const RecentIcon = (className?: string) => <AccessTime className={className} />;
+export const RemoveIcon = (className?: string) => <Delete className={className} />;
+export const RemoveFavoriteIcon = (className?: string) => <Star className={className} />;
+export const RenameIcon = (className?: string) => <Edit className={className} />;
+export const ReRunProcessIcon = (className?: string) => <Cached className={className} />;
+export const SearchIcon = (className?: string) => <Search className={className} />;
+export const ShareIcon = (className?: string) => <PersonAdd className={className} />;
+export const ShareMeIcon = (className?: string) => <People className={className} />;
+export const SidePanelRightArrowIcon = (className?: string) => <PlayArrow className={className} />;
+export const TrashIcon = (className?: string) => <Delete className={className} />;
+export const UserPanelIcon = (className?: string) => <Person className={className} />;
+export const UsedByIcon = (className?: string) => <Folder className={className} />;
+export const WorkflowIcon = (className?: string) => <Code className={className} />;
