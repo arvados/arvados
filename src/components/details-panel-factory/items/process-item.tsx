@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import IconBase, { IconTypes } from '../../icon/icon';
+import { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
 import { formatDate } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
+import { resourceLabel } from '../../../common/labels';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
@@ -18,7 +19,7 @@ export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-            <Attribute label='Type' value={ResourceKind.Process} />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Process)} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
 

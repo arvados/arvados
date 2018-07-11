@@ -9,6 +9,7 @@ import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
 import { formatDate } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
+import { resourceLabel } from '../../../common/labels';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
@@ -18,7 +19,7 @@ export default class ProjectItem extends AbstractItem<ProjectResource> {
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-            <Attribute label='Type' value={ResourceKind.Collection} />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Project)} />
             {/* Missing attr */}
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
