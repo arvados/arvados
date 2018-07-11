@@ -32,6 +32,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"github.com/shirou/gopsutil/process"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -83,6 +84,10 @@ type ThinDockerClient interface {
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
 }
 
+type PsProcess interface {
+	CmdlineSlice() ([]string, error)
+}
+
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
@@ -118,6 +123,8 @@ type ContainerRunner struct {
 	finalState    string
 	parentTemp    string
 
+	ListProcesses func() ([]PsProcess, error)
+
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
 	hoststatLogger   io.WriteCloser
@@ -141,9 +148,10 @@ type ContainerRunner struct {
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
 
-	enableNetwork string // one of "default" or "always"
-	networkMode   string // passed through to HostConfig.NetworkMode
-	arvMountLog   *ThrottledLogger
+	enableNetwork   string // one of "default" or "always"
+	networkMode     string // passed through to HostConfig.NetworkMode
+	arvMountLog     *ThrottledLogger
+	checkContainerd time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -182,26 +190,31 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 var errorBlacklist = []string{
 	"(?ms).*[Cc]annot connect to the Docker daemon.*",
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
+	"(?ms).*grpc: the connection is unavailable.*",
 }
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
+
+func (runner *ContainerRunner) runBrokenNodeHook() {
+	if *brokenNodeHook == "" {
+		runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
+	} else {
+		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+		// run killme script
+		c := exec.Command(*brokenNodeHook)
+		c.Stdout = runner.CrunchLog
+		c.Stderr = runner.CrunchLog
+		err := c.Run()
+		if err != nil {
+			runner.CrunchLog.Printf("Error running broken node hook: %v", err)
+		}
+	}
+}
 
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
 	for _, d := range errorBlacklist {
 		if m, e := regexp.MatchString(d, goterr.Error()); m && e == nil {
 			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
-			if *brokenNodeHook == "" {
-				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
-			} else {
-				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
-				// run killme script
-				c := exec.Command(*brokenNodeHook)
-				c.Stdout = runner.CrunchLog
-				c.Stderr = runner.CrunchLog
-				err := c.Run()
-				if err != nil {
-					runner.CrunchLog.Printf("Error running broken node hook: %v", err)
-				}
-			}
+			runner.runBrokenNodeHook()
 			return true
 		}
 	}
@@ -1001,6 +1014,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 	runner.ContainerConfig.Volumes = runner.Volumes
 
 	maxRAM := int64(runner.Container.RuntimeConstraints.RAM)
+	if maxRAM < 4*1024*1024 {
+		// Docker daemon won't let you set a limit less than 4 MiB
+		maxRAM = 4 * 1024 * 1024
+	}
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds: runner.Binds,
 		LogConfig: dockercontainer.LogConfig{
@@ -1071,6 +1088,27 @@ func (runner *ContainerRunner) StartContainer() error {
 	return nil
 }
 
+// checkContainerd checks if "containerd" is present in the process list.
+func (runner *ContainerRunner) CheckContainerd() error {
+	if runner.checkContainerd == 0 {
+		return nil
+	}
+	p, _ := runner.ListProcesses()
+	for _, i := range p {
+		e, _ := i.CmdlineSlice()
+		if len(e) > 0 {
+			if strings.Index(e[0], "containerd") > -1 {
+				return nil
+			}
+		}
+	}
+
+	// Not found
+	runner.runBrokenNodeHook()
+	runner.stop(nil)
+	return fmt.Errorf("'containerd' not found in process list.")
+}
+
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
@@ -1082,6 +1120,28 @@ func (runner *ContainerRunner) WaitFinish() error {
 	if timeout := runner.Container.SchedulingParameters.MaxRunTime; timeout > 0 {
 		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
 	}
+
+	containerdGone := make(chan error)
+	defer close(containerdGone)
+	if runner.checkContainerd > 0 {
+		go func() {
+			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if ck := runner.CheckContainerd(); ck != nil {
+						containerdGone <- ck
+						return
+					}
+				case <-containerdGone:
+					// Channel closed, quit goroutine
+					return
+				}
+			}
+		}()
+	}
+
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -1107,6 +1167,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
 			runner.stop(nil)
 			runTimeExceeded = nil
+
+		case err := <-containerdGone:
+			return err
 		}
 	}
 }
@@ -1408,6 +1471,12 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
+	// Sanity check that containerd is running.
+	err = runner.CheckContainerd()
+	if err != nil {
+		return
+	}
+
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
@@ -1527,6 +1596,17 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
+	cr.ListProcesses = func() ([]PsProcess, error) {
+		pr, err := process.Processes()
+		if err != nil {
+			return nil, err
+		}
+		ps := make([]PsProcess, len(pr))
+		for i, j := range pr {
+			ps[i] = j
+		}
+		return ps, nil
+	}
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -1569,6 +1649,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
+	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running (use 0s to disable).")
 	flag.Parse()
 
 	// Print version information if requested
@@ -1624,6 +1705,7 @@ func main() {
 	cr.expectCgroupParent = *cgroupParent
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
+	cr.checkContainerd = *checkContainerd
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p
