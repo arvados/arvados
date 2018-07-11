@@ -1122,9 +1122,7 @@ func (runner *ContainerRunner) WaitFinish() error {
 	}
 
 	containerdGone := make(chan error)
-	defer func() {
-		close(containerdGone)
-	}()
+	defer close(containerdGone)
 	if runner.checkContainerd > 0 {
 		go func() {
 			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
@@ -1137,7 +1135,8 @@ func (runner *ContainerRunner) WaitFinish() error {
 						return
 					}
 				case <-containerdGone:
-					break
+					// Channel closed, quit goroutine
+					return
 				}
 			}
 		}()
