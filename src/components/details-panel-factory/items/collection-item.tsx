@@ -7,11 +7,13 @@ import IconBase, { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
+import { formatDate } from '../../../common/formatters';
 
-export default class CollectionItem extends AbstractItem {
+export default class CollectionItem extends AbstractItem<CollectionResource> {
     
     constructor(item: CollectionResource) {
         super(item);
+        console.log('Collection item: ', this.item);
     }
 
     getIcon(): IconTypes {
@@ -22,19 +24,15 @@ export default class CollectionItem extends AbstractItem {
         return <div>
            <Attribute label='Type' value='Data Collection' />
             <Attribute label='Size' value='---' />
-            <Attribute label="Location">
-                <IconBase icon={IconTypes.FOLDER} />
-                Collection
-            </Attribute>
-            <Attribute label='Owner' value='me' />
-            <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-            <Attribute label='Created at' value='1:25 PM 5/23/2018' />
+            <Attribute label='Owner' value={this.item.ownerUuid} />
+            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            <Attribute label='Created at' value={formatDate(this.item.createdAt)} />
+            {/* Links but we dont have view */}
+            <Attribute label='Collection UUID' link={this.item.uuid} value={this.item.uuid} />
+            <Attribute label='Content address' link={this.item.portableDataHash} value={this.item.portableDataHash} />
+            {/* Missing attrs */}
             <Attribute label='Number of files' value='20' />
             <Attribute label='Content size' value='54 MB' />
-            <Attribute label='Collection UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-            <Attribute label='Content address' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-            <Attribute label='Creator' value='Chrystian' />
-            <Attribute label='Used by' value='---' />
         </div>;
     }
 }
