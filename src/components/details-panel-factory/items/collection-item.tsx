@@ -8,6 +8,8 @@ import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
 import { formatDate } from '../../../common/formatters';
+import { resourceLabel } from '../../../common/labels';
+import { ResourceKind } from '../../../models/resource';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
 
@@ -17,7 +19,7 @@ export default class CollectionItem extends AbstractItem<CollectionResource> {
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-           <Attribute label='Type' value='Data Collection' />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Collection)} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
             <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />

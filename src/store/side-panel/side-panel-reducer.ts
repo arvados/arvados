@@ -6,6 +6,7 @@ import * as _ from "lodash";
 
 import actions, { SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
+import { IconTypes } from "../../components/icon/icon";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -48,7 +49,7 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.Projects,
         name: "Projects",
-        icon: "fas fa-th fa-fw",
+        icon: IconTypes.INBOX,
         open: false,
         active: false,
         margin: true,
@@ -57,31 +58,31 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.SharedWithMe,
         name: "Shared with me",
-        icon: "fas fa-users fa-fw",
+        icon: IconTypes.PEOPLE,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Workflows,
         name: "Workflows",
-        icon: "fas fa-cogs fa-fw",
+        icon: IconTypes.CODE,
         active: false,
     },
     {
         id: SidePanelIdentifiers.RecentOpen,
         name: "Recent open",
-        icon: "icon-time fa-fw",
+        icon: IconTypes.ACCESS_TIME,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Favourites,
         name: "Favorites",
-        icon: "fas fa-star fa-fw",
+        icon: IconTypes.STAR,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Trash,
         name: "Trash",
-        icon: "fas fa-trash-alt fa-fw",
+        icon: IconTypes.DELETE,
         active: false,
     }
 ];

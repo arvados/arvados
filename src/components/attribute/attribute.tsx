@@ -57,8 +57,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textTransform: 'capitalize'
     },
     link: {
+        width: '60%',
         color: theme.palette.primary.main,
-        textDecoration: 'none'
+        textDecoration: 'none',
+        overflowWrap: 'break-word'
     }
 });
 

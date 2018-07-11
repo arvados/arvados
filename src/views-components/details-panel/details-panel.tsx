@@ -3,14 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import Drawer from '@material-ui/core/Drawer';
-import IconButton from "@material-ui/core/IconButton";
+import { Drawer, IconButton, Tabs, Tab, Typography, Grid } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
-import Tabs from '@material-ui/core/Tabs';
-import Tab from '@material-ui/core/Tab';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
 import { connect, Dispatch } from 'react-redux';
 import { RootState } from '../../store/store';

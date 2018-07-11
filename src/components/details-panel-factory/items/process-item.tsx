@@ -8,6 +8,7 @@ import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
 import { formatDate } from '../../../common/formatters';
+import { ResourceKind } from '../../../models/resource';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
@@ -17,7 +18,7 @@ export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-            <Attribute label='Type' value='Process' />
+            <Attribute label='Type' value={ResourceKind.Process} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
 

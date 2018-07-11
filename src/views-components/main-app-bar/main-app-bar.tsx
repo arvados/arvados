@@ -4,14 +4,11 @@
 
 import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
-import NotificationsIcon from "@material-ui/icons/Notifications";
-import PersonIcon from "@material-ui/icons/Person";
-import HelpIcon from "@material-ui/icons/Help";
-import InfoIcon from '@material-ui/icons/Info';
+import { User, getUserFullname } from "../../models/user";
 import SearchBar from "../../components/search-bar/search-bar";
 import Breadcrumbs, { Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
 import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
-import { User, getUserFullname } from "../../models/user";
+import IconBase, { IconTypes } from "../../components/icon/icon";
 
 export interface MainAppBarMenuItem {
     label: string;
@@ -77,7 +74,7 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                     onContextMenu={props.onContextMenu} />
             }
             <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <InfoIcon />
+                <IconBase icon={IconTypes.INFO} />
             </IconButton>
         </Toolbar>
     </AppBar>;
@@ -89,16 +86,16 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
         <>
             <IconButton color="inherit">
                 <Badge badgeContent={3} color="primary">
-                    <NotificationsIcon />
+                    <IconBase icon={IconTypes.NOTIFICATIONS} />
                 </Badge>
             </IconButton>
-            <DropdownMenu icon={PersonIcon} id="account-menu">
+            <DropdownMenu icon={IconTypes.PERSON} id="account-menu">
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
                 {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
             </DropdownMenu>
-            <DropdownMenu icon={HelpIcon} id="help-menu">
+            <DropdownMenu icon={IconTypes.HELP} id="help-menu">
                 {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
             </DropdownMenu>
         </>

@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Menu, IconButton } from '@material-ui/core';
+import Menu from '@material-ui/core/Menu';
+import IconButton from '@material-ui/core/IconButton';
 import { PopoverOrigin } from '@material-ui/core/Popover';
-
+import IconBase, { IconTypes } from '../icon/icon';
 
 interface DropdownMenuProps {
     id: string;
-    icon: React.ComponentType;
+    icon: IconTypes;
+    // icon: React.ComponentType;
 }
 
 class DropdownMenu extends React.Component<DropdownMenuProps> {
@@ -24,7 +26,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
     };
 
     render() {
-        const { icon: Icon, id, children } = this.props;
+        const { icon, id, children } = this.props;
         const { anchorEl } = this.state;
         return (
             <div>
@@ -35,7 +37,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     onClick={this.handleOpen}
 
                 >
-                    <Icon />
+                    <IconBase icon={icon} />
                 </IconButton>
                 <Menu
                     id={id}
