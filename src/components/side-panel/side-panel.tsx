@@ -8,6 +8,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from '../../common/custom-theme';
 import { List, ListItem, ListItemText, ListItemIcon, Collapse, Typography } from "@material-ui/core";
 import IconBase, { IconTypes } from '../icon/icon';
+import * as classnames from "classnames";
 
 export interface SidePanelItem {
     id: string;
@@ -29,8 +30,7 @@ interface SidePanelProps {
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
-        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, 
-            iconOpen, iconClose, iconArrow, iconArrowContainer } = classes;
+        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, iconArrowContainer } = classes;
         return (
             <div className={leftSidePanelContainer}>
                 <List>
@@ -41,11 +41,7 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                                     {it.openAble ? (
                                         <i onClick={() => toggleOpen(it.id)} className={iconArrowContainer}>
                                             <IconBase icon={IconTypes.PLAY_ARROW} 
-                                                className={`
-                                                    ${iconArrow}
-                                                    ${it.active ? active : ''}
-                                                    ${it.open ? iconOpen : iconClose} 
-                                                `} />
+                                                className={this.getIconClassNames(it.open, it.active)}/>
                                         </i>
                                     ) : null}
                                     <ListItemIcon className={it.active ? active : ''}>
@@ -66,6 +62,15 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                 </List>
             </div>
         );
+    }
+
+    getIconClassNames = (itemOpen ?: boolean, itemActive ?: boolean) => {
+        const { classes } = this.props;
+        return classnames(classes.iconArrow, {
+            [classes.iconOpen]: itemOpen,
+            [classes.iconClose]: !itemOpen,
+            [classes.active]: itemActive
+        });
     }
 
     handleRowContextMenu = (item: SidePanelItem) =>

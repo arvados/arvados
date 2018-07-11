@@ -52,23 +52,23 @@ interface IconBaseState {
 }
 
 const getSpecificIcon = (props: any) => ({
-    access_time: <AccessTime className={props.className} />,
-    announcement: <CloseAnnouncement className={props.className} />,
-    code: <CodeIcon className={props.className} />,
-    collection: <i className={classnames([props.className, 'fas fa-archive fa-lg'])} />,
-    close: <CloseIcon className={props.className} />,
-    delete: <DeleteIcon className={props.className} />,
-    folder: <FolderIcon className={props.className} />,
-    help: <HelpIcon className={props.className} />,
-    info: <InfoIcon className={props.className} />,
-    inbox: <InboxIcon className={props.className} />,
-    notifications: <NotificationsIcon className={props.className} />,
-    people: <PeopleIcon className={props.className} />,
-    person: <PersonIcon className={props.className} />,
-    play_arrow: <PlayArrow className={props.className} />,
-    process: <i className={classnames([props.className, 'fas fa-cogs fa-lg'])} />,
-    project: <i className={classnames([props.className, 'fas fa-folder fa-lg'])} />,
-    star: <StarIcon className={props.className} />
+    [IconTypes.ACCESS_TIME]: <AccessTime className={props.className} />,
+    [IconTypes.ANNOUNCEMENT]: <CloseAnnouncement className={props.className} />,
+    [IconTypes.CODE]: <CodeIcon className={props.className} />,
+    [IconTypes.COLLECTION]: <i className={classnames([props.className, 'fas fa-archive fa-lg'])} />,
+    [IconTypes.CLOSE]: <CloseIcon className={props.className} />,
+    [IconTypes.DELETE]: <DeleteIcon className={props.className} />,
+    [IconTypes.FOLDER]: <FolderIcon className={props.className} />,
+    [IconTypes.HELP]: <HelpIcon className={props.className} />,
+    [IconTypes.INFO]: <InfoIcon className={props.className} />,
+    [IconTypes.INBOX]: <InboxIcon className={props.className} />,
+    [IconTypes.NOTIFICATIONS]: <NotificationsIcon className={props.className} />,
+    [IconTypes.PEOPLE]: <PeopleIcon className={props.className} />,
+    [IconTypes.PERSON]: <PersonIcon className={props.className} />,
+    [IconTypes.PLAY_ARROW]: <PlayArrow className={props.className} />,
+    [IconTypes.PROCESS]: <i className={classnames([props.className, 'fas fa-cogs fa-lg'])} />,
+    [IconTypes.PROJECT]: <i className={classnames([props.className, 'fas fa-folder fa-lg'])} />,
+    [IconTypes.STAR]: <StarIcon className={props.className} />
 });
 
 class IconBase extends React.Component<IconBaseProps, IconBaseState> {
