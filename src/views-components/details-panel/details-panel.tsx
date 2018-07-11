@@ -53,14 +53,20 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                     <Typography component="div" className={classes.headerContainer}>
-                        <Grid container alignItems='center' justify='space-around'>
-                            <IconBase className={classes.headerIcon} icon={item.getIcon()} />
-                            <Typography variant="title">
-                                {item.getTitle()}
-                            </Typography>
-                            <IconButton color="inherit" onClick={onCloseDrawer}>
-                                <IconBase icon={IconTypes.CLOSE} />
-                            </IconButton>
+                        <Grid container wrap="nowrap" alignItems='center' justify='space-around'>
+                            <Grid item>
+                                <IconBase className={classes.headerIcon} icon={item.getIcon()} />
+                            </Grid>
+                            <Grid item xs={8}>
+                                <Typography variant="title">
+                                    {item.getTitle()}
+                                </Typography>
+                            </Grid>
+                            <Grid item>
+                                <IconButton color="inherit" onClick={onCloseDrawer}>
+                                    <IconBase icon={IconTypes.CLOSE} />
+                                </IconButton>
+                            </Grid>
                         </Grid>
                     </Typography>
                     <Tabs value={tabsValue} onChange={this.handleChange}>
@@ -102,7 +108,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerContainer: {
         color: theme.palette.grey["600"],
-        margin: `${theme.spacing.unit}px 0`
+        margin: `${theme.spacing.unit}px 0`,
+        textAlign: 'center'
     },
     headerIcon: {
         fontSize: "34px"
