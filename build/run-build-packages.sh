@@ -569,7 +569,8 @@ if [[ "$?" == "0" ]]; then
   handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
       "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
       --description="Arvados API server - Arvados is a free and open source platform for big data science." \
-      --license="GNU Affero General Public License, version 3.0"
+      --license="GNU Affero General Public License, version 3.0" \
+      --config-files="package-build.version"
 fi
 
 # Build the workbench server package
@@ -609,7 +610,9 @@ if [[ "$?" == "0" ]] ; then
     handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-        --license="GNU Affero General Public License, version 3.0"
+        --license="GNU Affero General Public License, version 3.0" \
+        --config-files="package-build.version"
+
   fi
 fi
 
