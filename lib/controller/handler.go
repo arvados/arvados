@@ -47,6 +47,11 @@ func (h *Handler) setup() {
 	})
 	mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
 	h.handlerStack = mux
+
+	// Changing the global isn't the right way to do this, but a
+	// proper solution would conflict with an impending 13493
+	// merge anyway, so this will do for now.
+	arvados.InsecureHTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 }
 
 // headers that shouldn't be forwarded when proxying. See
@@ -101,6 +106,7 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
+		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
