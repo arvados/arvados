@@ -13,11 +13,11 @@ import { ResourceKind } from '../../../models/resource';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
 
-    getIcon(className?: string): React.ReactElement<any> {
-        return CollectionIcon(className);
+    getIcon(className?: string) {
+        return <CollectionIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <div>
             <Attribute label='Type' value={resourceLabel(ResourceKind.Collection)} />
             <Attribute label='Size' value='---' />

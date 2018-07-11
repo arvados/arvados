@@ -10,11 +10,11 @@ import { EmptyResource } from '../../../models/empty';
 
 export default class EmptyItem extends AbstractItem<EmptyResource> {
     
-    getIcon(className?: string): React.ReactElement<any> {
-        return ProjectsIcon(className);
+    getIcon(className?: string) {
+        return <ProjectsIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <EmptyState icon={DefaultIcon}
             message='Select a file or folder to view its details.' />;
     }

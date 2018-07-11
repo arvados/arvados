@@ -58,7 +58,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                             </Grid>
                             <Grid item>
                                 <IconButton color="inherit" onClick={onCloseDrawer}>
-                                    {CloseIcon()}
+                                    {<CloseIcon />}
                                 </IconButton>
                             </Grid>
                         </Grid>

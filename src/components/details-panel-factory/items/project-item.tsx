@@ -13,11 +13,11 @@ import { resourceLabel } from '../../../common/labels';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
-    getIcon(className?: string): React.ReactElement<any> {
-        return ProjectIcon(className);
+    getIcon(className?: string) {
+        return <ProjectIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <div>
             <Attribute label='Type' value={resourceLabel(ResourceKind.Project)} />
             {/* Missing attr */}

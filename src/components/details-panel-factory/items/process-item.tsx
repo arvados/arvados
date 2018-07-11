@@ -13,11 +13,11 @@ import { resourceLabel } from '../../../common/labels';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
-    getIcon(className?: string): React.ReactElement<any> {
-        return ProcessIcon(className);
+    getIcon(className?: string){
+        return <ProcessIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <div>
             <Attribute label='Type' value={resourceLabel(ResourceKind.Process)} />
             <Attribute label='Size' value='---' />
