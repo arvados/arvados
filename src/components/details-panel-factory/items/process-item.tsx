@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DetailsPanelResource } from "./../details-panel-factory";
 import IconBase, { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
-import { AbstractItem } from './abstract-item';
+import AbstractItem from './abstract-item';
+import { ProcessResource } from '../../../models/process';
 
 export default class ProcessItem extends AbstractItem {
     
-    constructor(item: DetailsPanelResource) {
+    constructor(item: ProcessResource) {
         super(item);
     }
 

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DetailsPanelResource } from "./../details-panel-factory";
 import { IconTypes } from '../../icon/icon';
+import { DetailsPanelResource } from '../../../views-components/details-panel/details-panel';
 
-export abstract class AbstractItem {
+export default abstract class AbstractItem {
     protected item: DetailsPanelResource;
 
     constructor(item: DetailsPanelResource) {

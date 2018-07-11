@@ -13,7 +13,6 @@ import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import * as classnames from "classnames";
 import { connect, Dispatch } from 'react-redux';
-import EmptyState from '../../components/empty-state/empty-state';
 import { RootState } from '../../store/store';
 import actions from "../../store/details-panel/details-panel-action";
 import { ProjectResource } from '../../models/project';
@@ -21,13 +20,14 @@ import { CollectionResource } from '../../models/collection';
 import IconBase, { IconTypes } from '../../components/icon/icon';
 import { ProcessResource } from '../../models/process';
 import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
+import AbstractItem from '../../components/details-panel-factory/items/abstract-item';
+import { ResourceKind } from '../../models/resource';
+import { EmptyResource } from '../../models/empty';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     isOpened: boolean;
-    icon: IconTypes;
-    title: string;
-    details: React.ReactElement<any>;
+    item: AbstractItem;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -47,16 +47,16 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
         </Typography>
 
     render() {
-        const { classes, onCloseDrawer, isOpened, icon, title, details } = this.props;
+        const { classes, onCloseDrawer, isOpened, item } = this.props;
         const { tabsValue } = this.state;
         return (
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                     <Typography component="div" className={classes.headerContainer}>
                         <Grid container alignItems='center' justify='space-around'>
-                            <IconBase className={classes.headerIcon} icon={icon} />
+                            <IconBase className={classes.headerIcon} icon={item.getIcon()} />
                             <Typography variant="title">
-                                {title}
+                                {item.getTitle()}
                             </Typography>
                             <IconButton color="inherit" onClick={onCloseDrawer}>
                                 <IconBase icon={IconTypes.CLOSE} />
@@ -69,7 +69,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     </Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
-                            {details}
+                            {item.buildDetails()}
                         </Grid>
                     )}
                     {tabsValue === 1 && this.renderTabContainer(
@@ -113,36 +113,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 // TODO: move to models
-type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource;
-
-const getEmptyState = () => {
-    return <EmptyState icon={ IconTypes.ANNOUNCEMENT } 
-        message='Select a file or folder to view its details.' />;
-};
+export type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource;
 
 const getItem = (res: DetailsPanelResource) => {
-    const item = DetailsPanelFactory.createItem(res);
-    return {
-        title: item.getTitle(),
-        icon: item.getIcon(),
-        details: item.buildDetails() 
-    };    
+    return DetailsPanelFactory.createItem(res);
 };
 
 const getDefaultItem = () => {
-    return {
-        title: 'Projects',
-        icon: IconTypes.FOLDER,
-        details: getEmptyState()
-    };
+    return DetailsPanelFactory.createItem({ kind: ResourceKind.UNKNOWN, name: 'Projects'});
 };
 
 const mapStateToProps = ({ detailsPanel }: RootState) => {
     const { isOpened, item } = detailsPanel;
-    const newItem = item ? getItem(item as DetailsPanelResource) : getDefaultItem();
     return {
         isOpened,
-        ...newItem
+        item: item ? getItem(item as DetailsPanelResource) : getDefaultItem()
     };
 };
 
