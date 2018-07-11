@@ -155,7 +155,7 @@ If SLURM is unable to run a container, the dispatcher will submit it again after
 
 h3(#ReserveExtraRAM). ReserveExtraRAM: Extra RAM for jobs
 
-Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  At least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.  This is especially important when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.
+Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
 
 <notextile>
 <pre><code class="userinput">ReserveExtraRAM: <b>268435456</b>
