@@ -13,7 +13,7 @@ import { ResourceKind } from '../../../models/resource';
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     getIcon(): IconTypes {
-        return IconTypes.PROCESS;
+        return IconTypes.BUBBLE_CHART;
     }
 
     buildDetails(): React.ReactElement<any> {

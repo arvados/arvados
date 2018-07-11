@@ -15,7 +15,7 @@ export default class EmptyItem extends AbstractItem<EmptyResource> {
     }
 
     buildDetails(): React.ReactElement<any> {
-        return <EmptyState icon={IconTypes.FOLDER}
+        return <EmptyState icon={IconTypes.RATE_REVIEW}
             message='Select a file or folder to view its details.' />;
     }
 }
