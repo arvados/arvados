@@ -570,7 +570,7 @@ if [[ "$?" == "0" ]]; then
       "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
       --description="Arvados API server - Arvados is a free and open source platform for big data science." \
       --license="GNU Affero General Public License, version 3.0" \
-      --config-files="package-build.version"
+      -n "package-build.version" --config-files="/var/www/arvados-api/current/"
 fi
 
 # Build the workbench server package
@@ -611,7 +611,7 @@ if [[ "$?" == "0" ]] ; then
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
         --license="GNU Affero General Public License, version 3.0" \
-        --config-files="package-build.version"
+        -n "package-build.version" --config-files="/var/www/arvados-workbench/current/"
 
   fi
 fi
