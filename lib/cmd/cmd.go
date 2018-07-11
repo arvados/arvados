@@ -52,19 +52,15 @@ func (v Version) RunCommand(prog string, args []string, stdin io.Reader, stdout,
 type Multi map[string]Handler
 
 func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	if len(args) < 1 {
+	_, basename := filepath.Split(prog)
+	basename = strings.TrimPrefix(basename, "arvados-")
+	basename = strings.TrimPrefix(basename, "crunch-")
+	if cmd, ok := m[basename]; ok {
+		return cmd.RunCommand(prog, args, stdin, stdout, stderr)
+	} else if len(args) < 1 {
 		fmt.Fprintf(stderr, "usage: %s command [args]\n", prog)
 		m.Usage(stderr)
 		return 2
-	}
-	_, basename := filepath.Split(prog)
-	if strings.HasPrefix(basename, "arvados-") {
-		basename = basename[8:]
-	} else if strings.HasPrefix(basename, "crunch-") {
-		basename = basename[7:]
-	}
-	if cmd, ok := m[basename]; ok {
-		return cmd.RunCommand(prog, args, stdin, stdout, stderr)
 	} else if cmd, ok = m[args[0]]; ok {
 		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
 	} else {
