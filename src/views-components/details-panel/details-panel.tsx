@@ -23,6 +23,7 @@ import { ProjectResource } from '../../models/project';
 import { CollectionResource } from '../../models/collection';
 import IconBase, { IconTypes } from '../../components/icon/icon';
 import { ProcessResource } from '../../models/process';
+import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
@@ -67,7 +68,7 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
                     </Typography>
                     <Tabs value={tabsValue} onChange={this.handleChange}>
                         <Tab disableRipple label="Details" />
-                        <Tab disableRipple label="Activity" />
+                        <Tab disableRipple label="Activity" disabled />
                     </Tabs>
                     {tabsValue === 0 && this.renderTabContainer(
                         <Grid container direction="column">
@@ -114,90 +115,37 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+// TODO: move to models
 type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource;
-
-const getIcon = (res: DetailsPanelResource) => {
-    switch (res.kind) {
-        case ResourceKind.Project:
-            return IconTypes.FOLDER;
-        case ResourceKind.Collection:
-            return IconTypes.COLLECTION;
-        case ResourceKind.Process:
-            return IconTypes.PROCESS;
-        default:
-            return IconTypes.FOLDER;
-    }
-};
-
-const getDetails = (res: DetailsPanelResource) => {
-    switch (res.kind) {
-        case ResourceKind.Project:
-            return <div>
-                <Attribute label='Type' value='Project' />
-                <Attribute label='Size' value='---' />
-                <Attribute label="Location">
-                    <IconBase icon={IconTypes.FOLDER} />
-                    Projects
-                </Attribute>
-                <Attribute label='Owner' value='me' />
-                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
-                <Attribute label='File size' value='1.4 GB' />
-            </div>;
-        case ResourceKind.Collection:
-            return <div>
-                <Attribute label='Type' value='Data Collection' />
-                <Attribute label='Size' value='---' />
-                <Attribute label="Location">
-                    <IconBase icon={IconTypes.FOLDER} />
-                    Projects
-                </Attribute>
-                <Attribute label='Owner' value='me' />
-                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
-                <Attribute label='Number of files' value='20' />
-                <Attribute label='Content size' value='54 MB' />
-                <Attribute label='Collection UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-                <Attribute label='Content address' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-                <Attribute label='Creator' value='Chrystian' />
-                <Attribute label='Used by' value='---' />
-            </div>;
-        case ResourceKind.Process:
-            return <div>
-                <Attribute label='Type' value='Process' />
-                <Attribute label='Size' value='---' />
-                <Attribute label="Location">
-                    <IconBase icon={IconTypes.FOLDER} />
-                    Projects
-                </Attribute>
-                <Attribute label='Owner' value='me' />
-                <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-                <Attribute label='Created at' value='1:25 PM 5/23/2018' />
-                <Attribute label='Finished at' value='1:25 PM 5/23/2018' />
-                <Attribute label='Outputs' link='http://www.google.pl' value='Container Output' />
-                <Attribute label='UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-                <Attribute label='Container UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-                <Attribute label='Priority' value='1' />
-                <Attribute label='Runtime constrains' value='1' />
-                <Attribute label='Docker image locator' link='http://www.google.pl' value='3838388226321' />
-            </div>;
-        default:
-            return getEmptyState();
-    }
-};
 
 const getEmptyState = () => {
     return <EmptyState icon={ IconTypes.ANNOUNCEMENT } 
         message='Select a file or folder to view its details.' />;
 };
 
+const getItem = (res: DetailsPanelResource) => {
+    const item = DetailsPanelFactory.createItem(res);
+    return {
+        title: item.getTitle(),
+        icon: item.getIcon(),
+        details: item.buildDetails() 
+    };    
+};
+
+const getDefaultItem = () => {
+    return {
+        title: 'Projects',
+        icon: IconTypes.FOLDER,
+        details: getEmptyState()
+    };
+};
+
 const mapStateToProps = ({ detailsPanel }: RootState) => {
     const { isOpened, item } = detailsPanel;
+    const newItem = item ? getItem(item as DetailsPanelResource) : getDefaultItem();
     return {
         isOpened,
-        title: item ? (item as DetailsPanelResource).name : 'Projects',
-        icon: item ? getIcon(item as DetailsPanelResource) : IconTypes.FOLDER,
-        details: item ? getDetails(item as DetailsPanelResource) : getEmptyState()
+        ...newItem
     };
 };
 
