@@ -9,19 +9,19 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados components run on GNU/Linux systems, and do not depend on any particular cloud operating stack.  Arvados supports Debian and derivatives such as Ubuntu, as well as Red Hat and derivatives such as CentOS.
+Arvados components run on GNU/Linux systems, and supports multiple cloud operating stacks.  Arvados supports Debian and derivatives such as Ubuntu, as well as Red Hat and derivatives such as CentOS.
 
 Arvados components can be installed and configured in a number of different ways.
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-||||\6=. _Appropriate for_|
-||_Ease of installation_|_Multiuser/Networked_|_Workflow Development_|_Workflow Testing_|_Large Scale Production_|_Developing Arvados_|_Arvados Software Development Testing_|
-|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|no|no|no|no|yes|yes|
-|"Arvados on Kubernetes":arvados-on-kubernetes.html|Easy ^1^|yes|no ^2^|no ^2^|no ^2^|no|yes|
-|"Manual installation":install-manual-prerequisites.html|Complex|yes|yes|yes|yes|no|no|
-|"Cloud demo":https://cloud.curoverse.com by Veritas Genetics|N/A ^3^|yes|no|no|no|no|no|
-|"Cluster Operation Subscription":https://curoverse.com/products by Veritas Genetics|N/A ^3^|yes|yes|yes|yes|yes|yes|
+|||\5=. Appropriate for|
+||_. Ease of setup|_. Multiuser/networked access|_. Workflow Development and Testing|_. Large Scale Production|_. Development of Arvados|_. Arvados System Testing|
+|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|no|yes|no|yes|yes|
+|"Arvados on Kubernetes":arvados-on-kubernetes.html|Easy ^1^|yes|yes ^2^|no ^2^|no|yes|
+|"Manual installation":install-manual-prerequisites.html|Complicated|yes|yes|yes|no|no|
+|"Cloud demo":https://cloud.curoverse.com by Veritas Genetics|N/A ^3^|yes|yes|no|no|no|
+|"Cluster Operation Subscription":https://curoverse.com/products by Veritas Genetics|N/A ^3^|yes|yes|yes|yes|yes|
 </div>
 
 * ^1^ Assumes a Kubernetes cluster is available
