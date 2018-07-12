@@ -35,47 +35,6 @@ import { authService } from '../../services/services';
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
 import { ResourceKind } from '../../models/kinds';
 
-const drawerWidth = 240;
-const appBarHeight = 100;
-
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
-
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        flexGrow: 1,
-        zIndex: 1,
-        overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
-        width: '100vw',
-        height: '100vh'
-    },
-    appBar: {
-        zIndex: theme.zIndex.drawer + 1,
-        position: "absolute",
-        width: "100%"
-    },
-    drawerPaper: {
-        position: 'relative',
-        width: drawerWidth,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    contentWrapper: {
-        backgroundColor: theme.palette.background.default,
-        display: "flex",
-        flexGrow: 1,
-        minWidth: 0,
-        paddingTop: appBarHeight
-    },
-    content: {
-        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
-        overflowY: "auto",
-        flexGrow: 1
-    },
-    toolbar: theme.mixins.toolbar
-});
-
 interface WorkbenchDataProps {
     projects: Array<TreeItem<Project>>;
     currentProjectId: string;
@@ -146,60 +105,6 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             ]
         }
     };
-
-    mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
-            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-        },
-        onSearch: searchText => {
-            this.setState({ searchText });
-            this.props.dispatch(push(`/search?q=${searchText}`));
-        },
-        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
-        onDetailsPanelToggle: () => {
-            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-        },
-        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-            this.openContextMenu(event, breadcrumb.itemId);
-        }
-    };
-
-    toggleSidePanelOpen = (itemId: string) => {
-        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
-    }
-
-    toggleSidePanelActive = (itemId: string) => {
-        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
-        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
-    }
-
-    handleCreationDialogOpen = (itemUuid: string) => {
-        this.closeContextMenu();
-        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
-    }
-
-
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
-        event.preventDefault();
-        this.setState({
-            contextMenu: {
-                anchorEl: mockAnchorFromMouseEvent(event),
-                itemUuid
-            }
-        });
-    }
-
-    closeContextMenu = () => {
-        this.setState({ contextMenu: {} });
-    }
-
-    openCreateDialog = (item: ContextMenuAction) => {
-        const { itemUuid } = this.state.contextMenu;
-        if (item.openCreateDialog && itemUuid) {
-            this.handleCreationDialogOpen(itemUuid);
-        }
-    }
 
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
@@ -272,6 +177,60 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
         }}
         {...props} />
+
+        mainAppBarActions: MainAppBarActionProps = {
+            onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
+                this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
+                this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+            },
+            onSearch: searchText => {
+                this.setState({ searchText });
+                this.props.dispatch(push(`/search?q=${searchText}`));
+            },
+            onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
+            onDetailsPanelToggle: () => {
+                this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+            },
+            onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
+                this.openContextMenu(event, breadcrumb.itemId);
+            }
+        };
+    
+        toggleSidePanelOpen = (itemId: string) => {
+            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+        }
+    
+        toggleSidePanelActive = (itemId: string) => {
+            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+            this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+        }
+    
+        handleCreationDialogOpen = (itemUuid: string) => {
+            this.closeContextMenu();
+            this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+        }
+    
+    
+        openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
+            event.preventDefault();
+            this.setState({
+                contextMenu: {
+                    anchorEl: mockAnchorFromMouseEvent(event),
+                    itemUuid
+                }
+            });
+        }
+    
+        closeContextMenu = () => {
+            this.setState({ contextMenu: {} });
+        }
+    
+        openCreateDialog = (item: ContextMenuAction) => {
+            const { itemUuid } = this.state.contextMenu;
+            if (item.openCreateDialog && itemUuid) {
+                this.handleCreationDialogOpen(itemUuid);
+            }
+        }
 }
 
 const contextMenuActions = [[{
@@ -301,6 +260,47 @@ const contextMenuActions = [[{
     name: "Remove"
 }
 ]];
+
+const drawerWidth = 240;
+const appBarHeight = 100;
+
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        flexGrow: 1,
+        zIndex: 1,
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        width: '100vw',
+        height: '100vh'
+    },
+    appBar: {
+        zIndex: theme.zIndex.drawer + 1,
+        position: "absolute",
+        width: "100%"
+    },
+    drawerPaper: {
+        position: 'relative',
+        width: drawerWidth,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    contentWrapper: {
+        backgroundColor: theme.palette.background.default,
+        display: "flex",
+        flexGrow: 1,
+        minWidth: 0,
+        paddingTop: appBarHeight
+    },
+    content: {
+        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
+        overflowY: "auto",
+        flexGrow: 1
+    },
+    toolbar: theme.mixins.toolbar
+});
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({

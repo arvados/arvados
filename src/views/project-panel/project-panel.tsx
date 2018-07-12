@@ -34,31 +34,32 @@ type ProjectPanelProps = {
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
 
-class ProjectPanel extends React.Component<ProjectPanelProps> {    
+class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
+        const { classes, currentItemId, onItemClick, onItemDoubleClick, onContextMenu, onDialogOpen } = this.props;
         return <div>
-            <div className={this.props.classes.toolbar}>
-                <Button color="primary" variant="raised" className={this.props.classes.button}>
+            <div className={classes.toolbar}>
+                <Button color="primary" variant="raised" className={classes.button}>
                     Create a collection
                 </Button>
-                <Button color="primary" variant="raised" className={this.props.classes.button}>
+                <Button color="primary" variant="raised" className={classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" onClick={() => this.props.onDialogOpen(this.props.currentItemId)} variant="raised" className={this.props.classes.button}>
+                <Button color="primary" onClick={() => onDialogOpen(currentItemId)} variant="raised" className={classes.button}>
                     New project
                 </Button>
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
-                onRowClick={this.props.onItemClick}
-                onRowDoubleClick={this.props.onItemDoubleClick}
-                onContextMenu={this.props.onContextMenu} />
+                onRowClick={onItemClick}
+                onRowDoubleClick={onItemDoubleClick}
+                onContextMenu={onContextMenu} />
         </div>;
     }
 
-    componentWillReceiveProps({ match, currentItemId }: ProjectPanelProps) {
+    componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
         if (match.params.id !== currentItemId) {
-            this.props.onItemRouteChange(match.params.id);
+            onItemRouteChange(match.params.id);
         }
     }
 }
