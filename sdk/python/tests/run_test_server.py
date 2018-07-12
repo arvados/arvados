@@ -375,7 +375,6 @@ def reset():
         'POST',
         headers={'Authorization': 'OAuth2 {}'.format(token)})
     os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
-    os.environ['ARVADOS_API_HOST'] = existing_api_host
     os.environ['ARVADOS_API_TOKEN'] = token
 
 def stop(force=False):
