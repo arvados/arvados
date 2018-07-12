@@ -566,6 +566,8 @@ done <`dirname "$(readlink -f "$0")"`"/build.list"
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
 if [[ "$?" == "0" ]]; then
+  version_file="$(version_from_git)"
+  echo "$version_file" >"$WORKSPACE/services/api/package-build.version"
   handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
       "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
       --description="Arvados API server - Arvados is a free and open source platform for big data science." \
@@ -606,6 +608,8 @@ if [[ "$?" == "0" ]] ; then
     echo "ERROR: Asset precompilation failed"
     EXITCODE=1
   else
+    version_file="$(version_from_git)"
+    echo "$version_file" >"$WORKSPACE/apps/workbench/package-build.version"
     handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \

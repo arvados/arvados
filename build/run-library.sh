@@ -336,7 +336,7 @@ handle_rails_package() {
         switches+=(--iteration $RAILS_PACKAGE_ITERATION)
     fi
     # For some reason fpm excludes need to not start with /.
-    #local exclude_root="${railsdir#/}"
+    local exclude_root="${railsdir#/}"
     # .git and packages are for the SSO server, which is built from its
     # repository root.
     local -a exclude_list=(.git packages tmp log coverage Capfile\* \
