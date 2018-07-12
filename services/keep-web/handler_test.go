@@ -513,7 +513,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
-	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
+	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
 	u, _ = u.Parse(resp.Header().Get("Location"))
