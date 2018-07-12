@@ -10,13 +10,13 @@ import { Dispatch } from "redux";
 import actions from "../../store/data-explorer/data-explorer-action";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
-import { ContextMenuAction, ContextMenuActionGroup } from "../../components/context-menu/context-menu";
 
 interface Props {
     id: string;
     onRowClick: (item: any) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onRowDoubleClick: (item: any) => void;
+    extractKey?: (item: any) => React.Key;
 }
 
 const mapStateToProps = (state: RootState, { id }: Props) =>

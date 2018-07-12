@@ -2,11 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataItem } from "../../components/data-table/data-table";
 import { ResourceKind } from "../../models/kinds";
 import { GroupContentsResource } from "../../services/groups-service/groups-service";
 
-export interface ProjectPanelItem extends DataItem {
+export interface ProjectPanelItem {
     uuid: string;
     name: string;
     kind: string;
@@ -20,7 +19,6 @@ export interface ProjectPanelItem extends DataItem {
 
 export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
     return {
-        key: r.uuid,
         uuid: r.uuid,
         name: r.name,
         kind: r.kind,

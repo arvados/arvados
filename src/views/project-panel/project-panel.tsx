@@ -34,7 +34,7 @@ type ProjectPanelProps = {
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
 
-class ProjectPanel extends React.Component<ProjectPanelProps> {    
+class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -52,7 +52,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 id={PROJECT_PANEL_ID}
                 onRowClick={this.props.onItemClick}
                 onRowDoubleClick={this.props.onItemDoubleClick}
-                onContextMenu={this.props.onContextMenu} />
+                onContextMenu={this.props.onContextMenu}
+                extractKey={(item: ProjectPanelItem) => item.uuid} />
         </div>;
     }
 
