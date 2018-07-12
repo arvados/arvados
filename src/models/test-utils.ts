@@ -2,21 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupResource } from "./group";
+import { GroupResource, GroupClass } from "./group";
 import { Resource, ResourceKind } from "./resource";
+import { ProjectResource } from "./project";
 
-type ResourceUnion = GroupResource;
-
-export const mockResource = (kind: ResourceKind, data: Partial<Exclude<ResourceUnion, "kind">>) => {
-    switch (kind) {
-        case ResourceKind.Group:
-            return mockGroupResource({ ...data, kind });
-        default:
-            return mockCommonResource({ ...data, kind });
-    }
-};
-
-export const mockGroupResource = (data: Partial<Exclude<GroupResource, "kind">>): GroupResource => ({
+export const mockGroupResource = (data: Partial<GroupResource> = {}): GroupResource => ({
     createdAt: "",
     deleteAt: "",
     description: "",
@@ -33,17 +23,22 @@ export const mockGroupResource = (data: Partial<Exclude<GroupResource, "kind">>)
     properties: "",
     trashAt: "",
     uuid: "",
-    writeableBy: []
+    writeableBy: [],
+    ...data
 });
 
-const mockCommonResource = <T extends Resource>(data: Partial<T> & { kind: ResourceKind }): Resource => ({
+export const mockProjectResource = (data: Partial<ProjectResource> = {}): ProjectResource =>
+    mockGroupResource({ ...data, groupClass: GroupClass.Project }) as ProjectResource;
+
+export const mockCommonResource = (data: Partial<Resource>): Resource => ({
     createdAt: "",
     etag: "",
     href: "",
-    kind: data.kind,
+    kind: "",
     modifiedAt: "",
     modifiedByClientUuid: "",
     modifiedByUserUuid: "",
     ownerUuid: "",
-    uuid: ""
+    uuid: "",
+    ...data
 });

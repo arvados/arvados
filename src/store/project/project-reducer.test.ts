@@ -6,7 +6,7 @@ import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { ResourceKind } from "../../models/kinds";
-import { mockResource } from "../../models/test-utils";
+import { mockProjectResource } from "../../models/test-utils";
 import { ProjectResource } from "../../models/project";
 import { GroupClass } from "../../models/group";
 
@@ -14,24 +14,23 @@ describe('project-reducer', () => {
 
     it('should load projects', () => {
         const initialState = undefined;
-        const project = mockProject({ ownerUuid: "test123" });
 
-        const projects = [project, project];
+        const projects = [mockProjectResource({ uuid: "1" }), mockProjectResource({ uuid: "2" })];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
         expect(state).toEqual({
             items: [{
                 active: false,
                 open: false,
-                id: "test123",
+                id: "1",
                 items: [],
-                data: project,
+                data: mockProjectResource({ uuid: "1" }),
                 status: 0
             }, {
                 active: false,
                 open: false,
-                id: "test123",
+                id: "2",
                 items: [],
-                data: project,
+                data: mockProjectResource({ uuid: "2" }),
                 status: 0
             }
             ],
@@ -47,7 +46,7 @@ describe('project-reducer', () => {
     it('should remove activity on projects list', () => {
         const initialState = {
             items: [{
-                data: mockProject(),
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: true,
@@ -58,7 +57,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: { ...initialState.items[0] },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -75,7 +74,7 @@ describe('project-reducer', () => {
     it('should toggle project tree item activity', () => {
         const initialState = {
             items: [{
-                data: mockProject(),
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -86,7 +85,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: { ...initialState.items[0] },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: true,
@@ -105,7 +104,7 @@ describe('project-reducer', () => {
     it('should close project tree item ', () => {
         const initialState = {
             items: [{
-                data: mockProject(),
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -117,7 +116,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: { ...initialState.items[0] },
+                data: mockProjectResource(),
                 id: "1",
                 open: false,
                 active: false,
@@ -181,5 +180,3 @@ describe("findTreeBranch", () => {
     });
 
 });
-
-const mockProject = (data: Partial<ProjectResource> = {}) => mockResource(ResourceKind.Group, { ...data, groupClass: GroupClass.Project }) as ProjectResource;
