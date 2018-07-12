@@ -310,7 +310,7 @@ handle_rails_package() {
     cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
-    echo "$version" >package-build.version
+    echo "$version" >package_build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
         set -e
