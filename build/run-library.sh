@@ -327,6 +327,7 @@ handle_rails_package() {
         return 1
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
+    echo "$version" >"$railsdir/package-build.version"
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir "$version")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
     local -a switches=(--after-install "$scripts_dir/postinst"
