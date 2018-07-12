@@ -129,9 +129,10 @@ const projectsReducer = (state: ProjectState = initialState, action: ProjectActi
             return state;
         },
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
+            const items = _.cloneDeep(state.items);
             return {
                 ...state,
-                items: updateProjectTree(state.items, projects, parentItemId)
+                items: updateProjectTree(items, projects, parentItemId)
             };
         },
         TOGGLE_PROJECT_TREE_ITEM_OPEN: itemId => {
