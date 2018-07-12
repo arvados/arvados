@@ -126,7 +126,7 @@ const projectsReducer = (state: ProjectState = initialState, action: ProjectActi
                 item.status = TreeItemStatus.Pending;
                 state.items = items;
             }
-            return state;
+            return { ...state, items };
         },
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
             const items = _.cloneDeep(state.items);
