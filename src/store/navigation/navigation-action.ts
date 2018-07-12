@@ -37,12 +37,6 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
 
         if (treeItem) {
 
-            dispatch(sidePanelActions.RESET_SIDE_PANEL_ACTIVITY());
-            const projectsItem = sidePanelData[0];
-            if(sidePanel.some(item => item.id === projectsItem.id && !item.open)){
-                dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(projectsItem.id));
-            }
-
             if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
                 dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
             }

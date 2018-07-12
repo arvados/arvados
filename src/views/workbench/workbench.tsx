@@ -34,6 +34,7 @@ import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
 import { ResourceKind } from '../../models/kinds';
+import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -172,6 +173,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     toggleSidePanelActive = (itemId: string) => {
         this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
         this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+        this.props.dispatch(push("/"));
     }
 
     handleCreationDialogOpen = (itemUuid: string) => {
@@ -239,7 +241,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-                                }}/>
+                                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                                }} />
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
