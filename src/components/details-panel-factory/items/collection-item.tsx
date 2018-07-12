@@ -8,11 +8,7 @@ import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
 
-export default class CollectionItem extends AbstractItem {
-    
-    constructor(item: CollectionResource) {
-        super(item);
-    }
+export default class CollectionItem extends AbstractItem<CollectionResource> {
 
     getIcon(): IconTypes {
         return IconTypes.COLLECTION;

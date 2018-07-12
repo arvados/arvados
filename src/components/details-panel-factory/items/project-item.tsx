@@ -8,11 +8,7 @@ import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
 
-export default class ProjectItem extends AbstractItem {
-
-    constructor(item: ProjectResource) {
-        super(item);
-    }
+export default class ProjectItem extends AbstractItem<ProjectResource> {
 
     getIcon(): IconTypes {
         return IconTypes.PROJECT;

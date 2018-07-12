@@ -8,11 +8,7 @@ import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
 
-export default class ProcessItem extends AbstractItem {
-    
-    constructor(item: ProcessResource) {
-        super(item);
-    }
+export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     getIcon(): IconTypes {
         return IconTypes.PROCESS;

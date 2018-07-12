@@ -6,9 +6,7 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { ProjectResource } from "../../models/project";
 import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
-import { getResourceKind } from "../../models/resource";
 import FilterBuilder from "../../common/api/filter-builder";
-import { ThunkAction } from "../../../node_modules/redux-thunk";
 import { RootState } from "../store";
 
 const actions = unionize({

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import CommonResourceService, { Resource, ListResults } from "../../common/api/common-resource-service";
+import CommonResourceService, { ListResults } from "../../common/api/common-resource-service";
 import FilterBuilder from "../../common/api/filter-builder";
 import OrderBuilder from "../../common/api/order-builder";
 import { AxiosInstance } from "axios";

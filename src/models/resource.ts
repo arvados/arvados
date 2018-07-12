@@ -3,32 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export interface Resource {
-    name: string;
-    createdAt: string;
-    modifiedAt: string;
     uuid: string;
     ownerUuid: string;
+    createdAt: string;
+    modifiedByClientUuid: string;
+    modifiedByUserUuid: string;
+    modifiedAt: string;
     href: string;
-    kind: ResourceKind;
+    kind: string;
+    etag: string;
 }
 
 export enum ResourceKind {
-    PROJECT = "project",
-    COLLECTION = "collection",
-    PIPELINE = "pipeline",
-    UNKNOWN = "unknown"
-}
-
-export function getResourceKind(itemKind: string) {
-    switch (itemKind) {
-        case "arvados#project":
-        case "arvados#group":
-            return ResourceKind.PROJECT;
-        case "arvados#collection":
-            return ResourceKind.COLLECTION;
-        case "arvados#pipeline":
-            return ResourceKind.PIPELINE;
-        default:
-            return ResourceKind.UNKNOWN;
-    }
+    Collection = "arvados#collection",
+    ContainerRequest = "arvados#containerRequest",
+    Group = "arvados#group",
+    Process = "arvados#containerRequest",
+    Project = "arvados#group",
+    Workflow = "arvados#workflow"
 }

@@ -6,12 +6,9 @@ import * as React from 'react';
 import { IconTypes } from '../../icon/icon';
 import { DetailsPanelResource } from '../../../views-components/details-panel/details-panel';
 
-export default abstract class AbstractItem {
-    protected item: DetailsPanelResource;
+export default abstract class AbstractItem<T extends DetailsPanelResource = DetailsPanelResource> {
 
-    constructor(item: DetailsPanelResource) {
-        this.item = item;
-    }
+    constructor(protected item: T) {}
 
     getTitle(): string {
         return this.item.name;

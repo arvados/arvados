@@ -2,9 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupClass, GroupResource } from "./group";
-import { ResourceKind } from "./kinds";
-import { Resource } from "../common/api/common-resource-service";
+import { GroupResource } from "./group";
+import { Resource, ResourceKind } from "./resource";
 
 type ResourceUnion = GroupResource;
 
