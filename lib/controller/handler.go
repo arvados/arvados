@@ -94,6 +94,9 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 		xff = xffIn + "," + xff
 	}
 	hdrOut.Set("X-Forwarded-For", xff)
+	if hdrOut.Get("X-Forwarded-Proto") == "" {
+		hdrOut.Set("X-Forwarded-Proto", reqIn.URL.Scheme)
+	}
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	ctx := reqIn.Context()
