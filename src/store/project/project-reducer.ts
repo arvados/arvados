@@ -4,12 +4,12 @@
 
 import * as _ from "lodash";
 
-import { Project } from "../../models/project";
 import actions, { ProjectAction } from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
+import { ProjectResource } from "../../models/project";
 
 export type ProjectState = {
-    items: Array<TreeItem<Project>>,
+    items: Array<TreeItem<ProjectResource>>,
     currentItemId: string,
     creator: ProjectCreator
 };
@@ -67,7 +67,7 @@ function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
     }
 }
 
-function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], parentItemId?: string): Array<TreeItem<Project>> {
+function updateProjectTree(tree: Array<TreeItem<ProjectResource>>, projects: ProjectResource[], parentItemId?: string): Array<TreeItem<ProjectResource>> {
     let treeItem;
     if (parentItemId) {
         treeItem = findTreeItem(tree, parentItemId);
@@ -82,7 +82,7 @@ function updateProjectTree(tree: Array<TreeItem<Project>>, projects: Project[], 
         status: TreeItemStatus.Initial,
         data: p,
         items: []
-    } as TreeItem<Project>));
+    } as TreeItem<ProjectResource>));
 
     if (treeItem) {
         treeItem.items = items;

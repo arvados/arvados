@@ -2,12 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource as R } from "./resource";
 import { Resource } from "../common/api/common-resource-service";
 import { ResourceKind } from "./kinds";
-
-export interface Collection extends R {
-}
 
 export interface CollectionResource extends Resource {
     kind: ResourceKind.Collection;
