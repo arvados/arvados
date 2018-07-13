@@ -10,8 +10,7 @@ import { findTreeItem } from "../project/project-reducer";
 import dataExplorerActions from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
-import { ResourceKind } from "../../models/kinds";
-import { Resource } from "../../models/resource";
+import { Resource, ResourceKind } from "../../models/resource";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {

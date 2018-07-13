@@ -7,12 +7,10 @@ import { configure, mount } from "enzyme";
 import * as Adapter from 'enzyme-adapter-react-16';
 
 import DataExplorer from "./data-explorer";
-import ContextMenu from "../context-menu/context-menu";
 import ColumnSelector from "../column-selector/column-selector";
 import DataTable from "../data-table/data-table";
 import SearchInput from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
-import { MockItem } from "../data-table/data-table.test";
 
 configure({ adapter: new Adapter() });
 
@@ -22,7 +20,7 @@ describe("<DataExplorer />", () => {
         const onSearch = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            items={[{ key: "1", name: "item 1" }] as MockItem[]}
+            items={[{ name: "item 1" }]}
             searchValue="search value"
             onSearch={onSearch} />);
         expect(dataExplorer.find(SearchInput).prop("value")).toEqual("search value");
@@ -37,7 +35,7 @@ describe("<DataExplorer />", () => {
             {...mockDataExplorerProps()}
             columns={columns}
             onColumnToggle={onColumnToggle}
-            items={[{ key: "1", name: "item 1" }] as MockItem[]} />);
+            items={[{ name: "item 1" }]} />);
         expect(dataExplorer.find(ColumnSelector).prop("columns")).toBe(columns);
         dataExplorer.find(ColumnSelector).prop("onColumnToggle")("columns");
         expect(onColumnToggle).toHaveBeenCalledWith("columns");
@@ -48,7 +46,7 @@ describe("<DataExplorer />", () => {
         const onSortToggle = jest.fn();
         const onRowClick = jest.fn();
         const columns = [{ name: "Column 1", render: jest.fn(), selected: true }];
-        const items = [{ key: "1", name: "item 1" }] as MockItem[];
+        const items = [{ name: "item 1" }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             columns={columns}
@@ -79,7 +77,7 @@ describe("<DataExplorer />", () => {
         const onChangeRowsPerPage = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
-            items={[{ key: "1", name: "item 1" }] as MockItem[]}
+            items={[{ name: "item 1" }]}
             page={10}
             rowsPerPage={50}
             onChangePage={onChangePage}
@@ -106,6 +104,7 @@ const mockDataExplorerProps = () => ({
     onFiltersChange: jest.fn(),
     onSortToggle: jest.fn(),
     onRowClick: jest.fn(),
+    onRowDoubleClick: jest.fn(),
     onColumnToggle: jest.fn(),
     onChangePage: jest.fn(),
     onChangeRowsPerPage: jest.fn(),

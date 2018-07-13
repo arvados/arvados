@@ -5,10 +5,7 @@
 import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { ResourceKind } from "../../models/kinds";
 import { mockProjectResource } from "../../models/test-utils";
-import { ProjectResource } from "../../models/project";
-import { GroupClass } from "../../models/group";
 
 describe('project-reducer', () => {
 

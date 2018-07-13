@@ -11,10 +11,10 @@ import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
-import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
+import { ResourceKind } from '../../models/resource';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 

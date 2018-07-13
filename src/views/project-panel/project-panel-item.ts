@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind } from "../../models/kinds";
 import { GroupContentsResource } from "../../services/groups-service/groups-service";
+import { ResourceKind } from "../../models/resource";
 
 export interface ProjectPanelItem {
     uuid: string;
