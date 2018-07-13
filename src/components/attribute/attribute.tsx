@@ -9,7 +9,7 @@ import { ArvadosTheme } from 'src/common/custom-theme';
 
 interface AttributeDataProps {
     label: string;
-    value?: string;
+    value?: string | number;
     link?: string;
 }
 
@@ -26,7 +26,7 @@ class Attribute extends React.Component<AttributeProps> {
         return <Typography component="div" className={classes.attribute}>
                     <Typography component="span" className={classes.label}>{label}</Typography>
                     { this.hasLink() ? (
-                    <a href='{link}' className={classes.link} target='_blank'>{value}</a>
+                        <a href='{link}' className={classes.link} target='_blank'>{value}</a>
                     ) : (
                         <Typography component="span" className={classes.value}>
                             {value}
@@ -42,9 +42,8 @@ type CssRules = 'attribute' | 'label' | 'value' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
-        height: '24px',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: theme.spacing.unit
     },
     label: {
@@ -52,8 +51,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '40%'
     },
     value: {
+        width: '60%',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'flex-start',
+        textTransform: 'capitalize'
     },
     link: {
         color: theme.palette.primary.main,

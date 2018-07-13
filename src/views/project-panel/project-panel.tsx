@@ -15,6 +15,7 @@ import { DataTableFilterItem } from '../../components/data-table-filters/data-ta
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
 import { ResourceKind } from '../../models/resource';
+import { resourceLabel } from '../../common/labels';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
@@ -121,24 +122,9 @@ const renderOwner = (owner: string) =>
         {owner}
     </Typography>;
 
-
-
-const typeToLabel = (type: string) => {
-    switch (type) {
-        case ResourceKind.Collection:
-            return "Data collection";
-        case ResourceKind.Project:
-            return "Project";
-        case ResourceKind.Process:
-            return "Process";
-        default:
-            return "Unknown";
-    }
-};
-
 const renderType = (type: string) => {
     return <Typography noWrap>
-        {typeToLabel(type)}
+        {resourceLabel(type)}
     </Typography>;
 };
 
@@ -185,15 +171,15 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     name: ProjectPanelColumnNames.Type,
     selected: true,
     filters: [{
-        name: typeToLabel(ResourceKind.Collection),
+        name: resourceLabel(ResourceKind.Collection),
         selected: true,
         type: ResourceKind.Collection
     }, {
-        name: typeToLabel(ResourceKind.Process),
+        name: resourceLabel(ResourceKind.Process),
         selected: true,
         type: ResourceKind.Process
     }, {
-        name: typeToLabel(ResourceKind.Project),
+        name: resourceLabel(ResourceKind.Project),
         selected: true,
         type: ResourceKind.Project
     }],

@@ -13,7 +13,7 @@ export default abstract class AbstractItem<T extends DetailsPanelResource = Deta
     getTitle(): string {
         return this.item.name;
     }
-
+  
     abstract getIcon(): IconTypes;
     abstract buildDetails(): React.ReactElement<any>;
     

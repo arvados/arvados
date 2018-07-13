@@ -52,8 +52,8 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                     <Typography component="div" className={classes.headerContainer}>
-                        <Grid container wrap="nowrap" alignItems='center' justify='space-around'>
-                            <Grid item>
+                        <Grid container alignItems='center' justify='space-around'>
+                            <Grid item xs={2}>
                                 <IconBase className={classes.headerIcon} icon={item.getIcon()} />
                             </Grid>
                             <Grid item xs={8}>
