@@ -34,6 +34,7 @@ import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
 import { ResourceKind } from '../../models/kinds';
+import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 
 interface WorkbenchDataProps {
     projects: Array<TreeItem<Project>>;
@@ -144,7 +145,8 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-                                }}/>
+                                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                                }} />
                         </SidePanel>
                     </Drawer>}
                 <main className={classes.contentWrapper}>
@@ -178,59 +180,60 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         }}
         {...props} />
 
-        mainAppBarActions: MainAppBarActionProps = {
-            onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-                this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
-                this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-            },
-            onSearch: searchText => {
-                this.setState({ searchText });
-                this.props.dispatch(push(`/search?q=${searchText}`));
-            },
-            onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
-            onDetailsPanelToggle: () => {
-                this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-            },
-            onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-                this.openContextMenu(event, breadcrumb.itemId);
+    mainAppBarActions: MainAppBarActionProps = {
+        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
+            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
+            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+        },
+        onSearch: searchText => {
+            this.setState({ searchText });
+            this.props.dispatch(push(`/search?q=${searchText}`));
+        },
+        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
+        onDetailsPanelToggle: () => {
+            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        },
+        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
+            this.openContextMenu(event, breadcrumb.itemId);
+        }
+    };
+
+    toggleSidePanelOpen = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+    }
+
+    toggleSidePanelActive = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+        this.props.dispatch(push("/"));
+    }
+
+    handleCreationDialogOpen = (itemUuid: string) => {
+        this.closeContextMenu();
+        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+    }
+
+
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
+        event.preventDefault();
+        this.setState({
+            contextMenu: {
+                anchorEl: mockAnchorFromMouseEvent(event),
+                itemUuid
             }
-        };
-    
-        toggleSidePanelOpen = (itemId: string) => {
-            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+        });
+    }
+
+    closeContextMenu = () => {
+        this.setState({ contextMenu: {} });
+    }
+
+    openCreateDialog = (item: ContextMenuAction) => {
+        const { itemUuid } = this.state.contextMenu;
+        if (item.openCreateDialog && itemUuid) {
+            this.handleCreationDialogOpen(itemUuid);
         }
-    
-        toggleSidePanelActive = (itemId: string) => {
-            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
-            this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
-        }
-    
-        handleCreationDialogOpen = (itemUuid: string) => {
-            this.closeContextMenu();
-            this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
-        }
-    
-    
-        openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
-            event.preventDefault();
-            this.setState({
-                contextMenu: {
-                    anchorEl: mockAnchorFromMouseEvent(event),
-                    itemUuid
-                }
-            });
-        }
-    
-        closeContextMenu = () => {
-            this.setState({ contextMenu: {} });
-        }
-    
-        openCreateDialog = (item: ContextMenuAction) => {
-            const { itemUuid } = this.state.contextMenu;
-            if (item.openCreateDialog && itemUuid) {
-                this.handleCreationDialogOpen(itemUuid);
-            }
-        }
+    }
 }
 
 const contextMenuActions = [[{

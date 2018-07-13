@@ -35,9 +35,18 @@ const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePan
     }
 };
 
+export enum SidePanelIdentifiers {
+    Projects = "Projects",
+    SharedWithMe = "SharedWithMe",
+    Workflows = "Workflows",
+    RecentOpen = "RecentOpen",
+    Favourites = "Favourites",
+    Trash = "Trash"
+}
+
 export const sidePanelData = [
     {
-        id: "1",
+        id: SidePanelIdentifiers.Projects,
         name: "Projects",
         icon: "fas fa-th fa-fw",
         open: false,
@@ -46,31 +55,31 @@ export const sidePanelData = [
         openAble: true
     },
     {
-        id: "2",
+        id: SidePanelIdentifiers.SharedWithMe,
         name: "Shared with me",
         icon: "fas fa-users fa-fw",
         active: false,
     },
     {
-        id: "3",
+        id: SidePanelIdentifiers.Workflows,
         name: "Workflows",
         icon: "fas fa-cogs fa-fw",
         active: false,
     },
     {
-        id: "4",
+        id: SidePanelIdentifiers.RecentOpen,
         name: "Recent open",
         icon: "icon-time fa-fw",
         active: false,
     },
     {
-        id: "5",
+        id: SidePanelIdentifiers.Favourites,
         name: "Favorites",
         icon: "fas fa-star fa-fw",
         active: false,
     },
     {
-        id: "6",
+        id: SidePanelIdentifiers.Trash,
         name: "Trash",
         icon: "fas fa-trash-alt fa-fw",
         active: false,

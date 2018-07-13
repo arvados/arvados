@@ -28,6 +28,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 user={user}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
@@ -43,6 +44,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 menuItems={menuItems}
                 onDetailsPanelToggle={jest.fn()}
+                onContextMenu={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -58,6 +60,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 searchText="search text"
                 searchDebounce={2000}
+                onContextMenu={jest.fn()}
                 onSearch={onSearch}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
@@ -76,6 +79,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 breadcrumbs={items}
+                onContextMenu={jest.fn()}
                 onBreadcrumbClick={onBreadcrumbClick}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onMenuItemClick: jest.fn() }}
@@ -93,6 +97,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 menuItems={menuItems}
+                onContextMenu={jest.fn()}
                 onMenuItemClick={onMenuItemClick}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn() }}

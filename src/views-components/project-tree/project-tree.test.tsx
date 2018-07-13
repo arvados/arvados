@@ -35,7 +35,7 @@ describe("ProjectTree component", () => {
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree projects={[project]} onContextMenu={jest.fn()} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(1);
     });
@@ -73,7 +73,7 @@ describe("ProjectTree component", () => {
                 status: 1
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree projects={project} onContextMenu={jest.fn()} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(2);
     });
@@ -113,7 +113,7 @@ describe("ProjectTree component", () => {
                 ]
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()}/>);
+        const wrapper = mount(<ProjectTree projects={project} onContextMenu={jest.fn()} toggleOpen={jest.fn()} toggleActive={jest.fn()}/>);
 
         expect(wrapper.find(Collapse)).toHaveLength(1);
     });
@@ -134,7 +134,7 @@ describe("ProjectTree component", () => {
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree projects={[project]} onContextMenu={jest.fn()} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
 
         expect(wrapper.find(CircularProgress)).toHaveLength(1);
     });
