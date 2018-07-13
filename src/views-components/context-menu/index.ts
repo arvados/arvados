@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuHOC, addMenuItemsSet } from "./context-menu";
-import { projectItemSet } from "./project-item-set";
-import { rootProjectItemSet } from "./root-project-item-set";
+import { projectItemSet } from "./item-sets/project-item-set";
+import { rootProjectItemSet } from "./item-sets/root-project-item-set";
 
 export default ContextMenuHOC;
 

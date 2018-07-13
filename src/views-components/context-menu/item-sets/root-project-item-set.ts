@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuItemGroup } from "../../components/context-menu/context-menu";
-import { ContextMenuItemSet } from "./context-menu-item-set";
-import actions from "../../store/project/project-action";
-import { IconTypes } from "../../components/icon/icon";
+import { ContextMenuItemGroup } from "../../../components/context-menu/context-menu";
+import { ContextMenuItemSet } from "../context-menu-item-set";
+import actions from "../../../store/project/project-action";
+import { IconTypes } from "../../../components/icon/icon";
 
 export const rootProjectItemSet: ContextMenuItemSet = {
     getItems: () => items,
