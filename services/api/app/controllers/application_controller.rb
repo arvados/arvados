@@ -81,11 +81,17 @@ class ApplicationController < ActionController::Base
   end
 
   def default_url_options
+    options = {}
     if Rails.configuration.host
-      {:host => Rails.configuration.host}
-    else
-      {}
+      options[:host] = Rails.configuration.host
     end
+    if Rails.configuration.port
+      options[:port] = Rails.configuration.port
+    end
+    if Rails.configuration.protocol
+      options[:protocol] = Rails.configuration.protocol
+    end
+    options
   end
 
   def index
