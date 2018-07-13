@@ -639,7 +639,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['keep-web',
          '-allow-anonymous',
-         '-attachment-only-host=download:'+str(keepwebport),
+         '-attachment-only-host=download',
          '-listen=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
