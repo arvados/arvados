@@ -10,13 +10,13 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import Typography from '@material-ui/core/Typography';
 
 import Tree, { TreeItem, TreeItemStatus } from '../../components/tree/tree';
-import { Project } from '../../models/project';
+import { ProjectResource } from '../../models/project';
 
 export interface ProjectTreeProps {
-    projects: Array<TreeItem<Project>>;
+    projects: Array<TreeItem<ProjectResource>>;
     toggleOpen: (id: string, status: TreeItemStatus) => void;
     toggleActive: (id: string, status: TreeItemStatus) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<Project>) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectResource>) => void;
 }
 
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
@@ -29,7 +29,7 @@ class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRu
                     onContextMenu={onContextMenu}
                     toggleItemOpen={toggleOpen}
                     toggleItemActive={toggleActive}
-                    render={(project: TreeItem<Project>) =>
+                    render={(project: TreeItem<ProjectResource>) =>
                         <span className={row}>
                             <ListItemIcon className={project.active ? active : ''}>
                                 <i className="fas fa-folder" />

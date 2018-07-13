@@ -7,12 +7,9 @@ import IconBase, { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
+import { formatDate } from '../../../common/formatters';
 
-export default class ProcessItem extends AbstractItem {
-    
-    constructor(item: ProcessResource) {
-        super(item);
-    }
+export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     getIcon(): IconTypes {
         return IconTypes.PROCESS;
@@ -20,21 +17,27 @@ export default class ProcessItem extends AbstractItem {
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-            <Attribute label='Type' value='Data Collection' />
+            <Attribute label='Type' value='Process' />
             <Attribute label='Size' value='---' />
-            <Attribute label="Location">
-                <IconBase icon={IconTypes.FOLDER} />
-                Process
-            </Attribute>
-            <Attribute label='Owner' value='me' />
-            <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-            <Attribute label='Created at' value='1:25 PM 5/23/2018' />
-            <Attribute label='Number of files' value='20' />
-            <Attribute label='Content size' value='54 MB' />
-            <Attribute label='Collection UUID' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-            <Attribute label='Content address' link='http://www.google.pl' value='nfnz05wp63ibf8w' />
-            <Attribute label='Creator' value='Chrystian' />
-            <Attribute label='Used by' value='---' />
+            <Attribute label='Owner' value={this.item.ownerUuid} />
+
+            {/* Missing attr */}
+            <Attribute label='Status' value={this.item.state} />
+            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            
+            {/* Missing attrs */}
+            <Attribute label='Started at' value={formatDate(this.item.createdAt)} />
+            <Attribute label='Finished at' value={formatDate(this.item.expiresAt)} />
+
+            {/* Links but we dont have view */}
+            <Attribute label='Outputs' link={this.item.outputPath} value={this.item.outputPath} />
+            <Attribute label='UUID' link={this.item.uuid} value={this.item.uuid} />
+            <Attribute label='Container UUID' link={this.item.containerUuid} value={this.item.containerUuid} />
+            
+            <Attribute label='Priority' value={this.item.priority} />
+            <Attribute label='Runtime Constraints' value={this.item.runtimeConstraints} />
+            {/* Link but we dont have view */}
+            <Attribute label='Docker Image locator' link={this.item.containerImage} value={this.item.containerImage} />
         </div>;
     }
 }

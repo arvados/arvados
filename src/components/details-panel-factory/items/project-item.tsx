@@ -3,33 +3,29 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import IconBase, { IconTypes } from '../../icon/icon';
+import { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
+import { formatDate } from '../../../common/formatters';
 
-export default class ProjectItem extends AbstractItem {
-
-    constructor(item: ProjectResource) {
-        super(item);
-    }
+export default class ProjectItem extends AbstractItem<ProjectResource> {
 
     getIcon(): IconTypes {
-        return IconTypes.PROJECT;
+        return IconTypes.FOLDER;
     }
 
     buildDetails(): React.ReactElement<any> {
         return <div>
-            <Attribute label='Type' value='Project' />
+            <Attribute label='Type' value={this.item.groupClass} />
+            {/* Missing attr */}
             <Attribute label='Size' value='---' />
-            <Attribute label="Location">
-                <IconBase icon={IconTypes.FOLDER} />
-                Projects
-                </Attribute>
-            <Attribute label='Owner' value='me' />
-            <Attribute label='Last modified' value='5:25 PM 5/23/2018' />
-            <Attribute label='Created at' value='1:25 PM 5/23/2018' />
+            <Attribute label='Owner' value={this.item.ownerUuid} />
+            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            <Attribute label='Created at' value={formatDate(this.item.createdAt)} />
+            {/* Missing attr */}
             <Attribute label='File size' value='1.4 GB' />
+            <Attribute label='Description' value={this.item.description} />
         </div>;
     }
 }

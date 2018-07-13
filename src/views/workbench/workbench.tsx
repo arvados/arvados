@@ -18,7 +18,6 @@ import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import ProjectTree from '../../views-components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
-import { Project } from "../../models/project";
 import { getTreePath } from '../../store/project/project-reducer';
 import sidePanelActions from '../../store/side-panel/side-panel-action';
 import SidePanel, { SidePanelItem } from '../../components/side-panel/side-panel';
@@ -33,11 +32,12 @@ import CreateProjectDialog from "../../views-components/create-project-dialog/cr
 import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
-import { ResourceKind } from '../../models/kinds';
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { ProjectResource } from '../../models/project';
+import { ResourceKind } from '../../models/resource';
 
 interface WorkbenchDataProps {
-    projects: Array<TreeItem<Project>>;
+    projects: Array<TreeItem<ProjectResource>>;
     currentProjectId: string;
     user?: User;
     sidePanelItems: SidePanelItem[];

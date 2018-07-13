@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { Resource } from "./common-resource-service";
+import { Resource } from "../../models/resource";
 
 export default class OrderBuilder<T extends Resource = Resource> {
 

@@ -8,9 +8,7 @@ import { DataColumn, SortDirection } from './data-column';
 import DataTableFilters, { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 
 export type DataColumns<T, F extends DataTableFilterItem = DataTableFilterItem> = Array<DataColumn<T, F>>;
-export interface DataItem {
-    key: React.Key;
-}
+
 export interface DataTableProps<T> {
     items: T[];
     columns: DataColumns<T>;
@@ -19,9 +17,10 @@ export interface DataTableProps<T> {
     onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
+    extractKey?: (item: T) => React.Key;
 }
 
-class DataTable<T extends DataItem> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
+class DataTable<T> extends React.Component<DataTableProps<T> & WithStyles<CssRules>> {
     render() {
         const { items, classes } = this.props;
         return <div
@@ -70,10 +69,10 @@ class DataTable<T extends DataItem> extends React.Component<DataTableProps<T> & 
     }
 
     renderBodyRow = (item: T, index: number) => {
-        const { onRowClick, onRowDoubleClick, onContextMenu } = this.props;
+        const { onRowClick, onRowDoubleClick, extractKey } = this.props;
         return <TableRow
             hover
-            key={item.key}
+            key={extractKey ? extractKey(item) : index}
             onClick={event => onRowClick && onRowClick(event, item)}
             onContextMenu={this.handleRowContextMenu(item)}
             onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item) }>

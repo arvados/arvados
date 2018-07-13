@@ -8,12 +8,8 @@ import AbstractItem from './abstract-item';
 import EmptyState from '../../empty-state/empty-state';
 import { EmptyResource } from '../../../models/empty';
 
-export default class EmptyItem extends AbstractItem {
-
-    constructor(item: EmptyResource) {
-        super(item);
-    }
-
+export default class EmptyItem extends AbstractItem<EmptyResource> {
+    
     getIcon(): IconTypes {
         return IconTypes.FOLDER;
     }

@@ -21,7 +21,6 @@ import IconBase, { IconTypes } from '../../components/icon/icon';
 import { ProcessResource } from '../../models/process';
 import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
 import AbstractItem from '../../components/details-panel-factory/items/abstract-item';
-import { ResourceKind } from '../../models/resource';
 import { EmptyResource } from '../../models/empty';
 
 export interface DetailsPanelDataProps {
@@ -53,8 +52,8 @@ class DetailsPanel extends React.Component<DetailsPanelProps, {}> {
             <Typography component="div" className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                 <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                     <Typography component="div" className={classes.headerContainer}>
-                        <Grid container wrap="nowrap" alignItems='center' justify='space-around'>
-                            <Grid item>
+                        <Grid container alignItems='center' justify='space-around'>
+                            <Grid item xs={2}>
                                 <IconBase className={classes.headerIcon} icon={item.getIcon()} />
                             </Grid>
                             <Grid item xs={8}>
@@ -119,7 +118,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-// TODO: move to models
+
 export type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource;
 
 const getItem = (res: DetailsPanelResource) => {
@@ -127,7 +126,7 @@ const getItem = (res: DetailsPanelResource) => {
 };
 
 const getDefaultItem = () => {
-    return DetailsPanelFactory.createItem({ kind: ResourceKind.UNKNOWN, name: 'Projects'});
+    return DetailsPanelFactory.createItem({ kind: undefined, name: 'Projects' });
 };
 
 const mapStateToProps = ({ detailsPanel }: RootState) => {

@@ -11,10 +11,11 @@ import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
-import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
+import { ResourceKind } from '../../models/resource';
+import { resourceLabel } from '../../common/labels';
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
@@ -51,9 +52,10 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
             </div>
             <DataExplorer
                 id={PROJECT_PANEL_ID}
-                onRowClick={onItemClick}
-                onRowDoubleClick={onItemDoubleClick}
-                onContextMenu={onContextMenu} />
+                onRowClick={this.props.onItemClick}
+                onRowDoubleClick={this.props.onItemDoubleClick}
+                onContextMenu={this.props.onContextMenu}
+                extractKey={(item: ProjectPanelItem) => item.uuid} />
         </div>;
     }
 
@@ -121,24 +123,9 @@ const renderOwner = (owner: string) =>
         {owner}
     </Typography>;
 
-
-
-const typeToLabel = (type: string) => {
-    switch (type) {
-        case ResourceKind.Collection:
-            return "Data collection";
-        case ResourceKind.Project:
-            return "Project";
-        case ResourceKind.Process:
-            return "Process";
-        default:
-            return "Unknown";
-    }
-};
-
 const renderType = (type: string) => {
     return <Typography noWrap>
-        {typeToLabel(type)}
+        {resourceLabel(type)}
     </Typography>;
 };
 
@@ -185,15 +172,15 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
     name: ProjectPanelColumnNames.Type,
     selected: true,
     filters: [{
-        name: typeToLabel(ResourceKind.Collection),
+        name: resourceLabel(ResourceKind.Collection),
         selected: true,
         type: ResourceKind.Collection
     }, {
-        name: typeToLabel(ResourceKind.Process),
+        name: resourceLabel(ResourceKind.Process),
         selected: true,
         type: ResourceKind.Process
     }, {
-        name: typeToLabel(ResourceKind.Project),
+        name: resourceLabel(ResourceKind.Project),
         selected: true,
         type: ResourceKind.Project
     }],

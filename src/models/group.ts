@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "../common/api/common-resource-service";
-import { ResourceKind } from "./kinds";
+import { Resource, ResourceKind } from "./resource";
 
 export interface GroupResource extends Resource {
     kind: ResourceKind.Group;

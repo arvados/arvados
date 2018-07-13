@@ -7,20 +7,16 @@ import projectActions, { getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
-import { Resource, ResourceKind as R } from "../../models/resource";
-import sidePanelActions from "../side-panel/side-panel-action";
 import dataExplorerActions from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
-import { sidePanelData } from "../side-panel/side-panel-reducer";
-import { loadDetails } from "../details-panel/details-panel-action";
-import { ResourceKind } from "../../models/kinds";
+import { Resource, ResourceKind } from "../../models/resource";
 
-export const getResourceUrl = (resource: Resource): string => {
+export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
-        case R.PROJECT: return `/projects/${resource.uuid}`;
-        case R.COLLECTION: return `/collections/${resource.uuid}`;
-        default: return "";
+        case ResourceKind.Project: return `/projects/${resource.uuid}`;
+        case ResourceKind.Collection: return `/collections/${resource.uuid}`;
+        default: return resource.href;
     }
 };
 
@@ -32,7 +28,7 @@ export enum ItemMode {
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { projects, router, sidePanel } = getState();
+        const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
@@ -41,7 +37,7 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                 dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
             }
 
-            const resourceUrl = getResourceUrl({ ...treeItem.data });
+            const resourceUrl = getResourceUrl(treeItem.data);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
                 if (router.location && !router.location.pathname.includes(resourceUrl)) {
