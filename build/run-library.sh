@@ -310,9 +310,7 @@ handle_rails_package() {
     cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
-    echo "$version" >package.version
-    echo "lalala" >>package.version
-
+    echo "$version" >package-build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
         set -e
@@ -320,8 +318,6 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
-        echo "222lalala" >>package.version
-
         bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
