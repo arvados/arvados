@@ -10,11 +10,6 @@ import { ProcessResource } from '../../../models/process';
 import { formatDate } from '../../../common/formatters';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
-    
-    constructor(item: ProcessResource) {
-        super(item);
-        console.log('Process item: ', this.item);
-    }
 
     getIcon(): IconTypes {
         return IconTypes.PROCESS;

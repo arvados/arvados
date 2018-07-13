@@ -6,5 +6,5 @@ import { ResourceKind } from "./resource";
 
 export interface EmptyResource {
     name: string;
-    kind: ResourceKind;
+    kind: undefined;
 }

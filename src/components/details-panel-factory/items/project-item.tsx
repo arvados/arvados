@@ -11,11 +11,6 @@ import { formatDate } from '../../../common/formatters';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
-    constructor(item: ProjectResource) {
-        super(item);
-        console.log('item: ', this.item);
-    }
-
     getIcon(): IconTypes {
         return IconTypes.FOLDER;
     }

@@ -11,10 +11,10 @@ import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../store/store';
-import { ResourceKind } from '../../models/kinds';
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
+import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 
 export const PROJECT_PANEL_ID = "projectPanel";
@@ -35,7 +35,7 @@ type ProjectPanelProps = {
     & WithStyles<CssRules>
     & RouteComponentProps<{ id: string }>;
 
-class ProjectPanel extends React.Component<ProjectPanelProps> {    
+class ProjectPanel extends React.Component<ProjectPanelProps> {
     render() {
         return <div>
             <div className={this.props.classes.toolbar}>
@@ -53,7 +53,8 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 id={PROJECT_PANEL_ID}
                 onRowClick={this.props.onItemClick}
                 onRowDoubleClick={this.props.onItemDoubleClick}
-                onContextMenu={this.props.onContextMenu} />
+                onContextMenu={this.props.onContextMenu}
+                extractKey={(item: ProjectPanelItem) => item.uuid} />
         </div>;
     }
 

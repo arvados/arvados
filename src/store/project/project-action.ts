@@ -3,12 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { default as unionize, ofType, UnionOf } from "unionize";
 
-import { Project, ProjectResource } from "../../models/project";
+import { ProjectResource } from "../../models/project";
 import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
-import { getResourceKind } from "../../models/resource";
 import FilterBuilder from "../../common/api/filter-builder";
-import { ThunkAction } from "../../../node_modules/redux-thunk";
 import { RootState } from "../store";
 
 const actions = unionize({
@@ -19,7 +17,7 @@ const actions = unionize({
     CREATE_PROJECT_ERROR: ofType<string>(),
     REMOVE_PROJECT: ofType<string>(),
     PROJECTS_REQUEST: ofType<string>(),
-    PROJECTS_SUCCESS: ofType<{ projects: Project[], parentItemId?: string }>(),
+    PROJECTS_SUCCESS: ofType<{ projects: ProjectResource[], parentItemId?: string }>(),
     TOGGLE_PROJECT_TREE_ITEM_OPEN: ofType<string>(),
     TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ofType<string>(),
     RESET_PROJECT_TREE_ACTIVITY: ofType<string>()
@@ -34,11 +32,7 @@ export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) 
         filters: FilterBuilder
             .create<ProjectResource>()
             .addEqual("ownerUuid", parentUuid)
-    }).then(listResults => {
-        const projects = listResults.items.map(item => ({
-            ...item,
-            kind: getResourceKind(item.kind)
-        }));
+    }).then(({ items: projects }) => {
         dispatch(actions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
         return projects;
     });

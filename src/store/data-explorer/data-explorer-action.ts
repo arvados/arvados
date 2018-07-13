@@ -4,14 +4,14 @@
 
 import { default as unionize, ofType, UnionOf } from "unionize";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
-import { DataColumns, DataItem } from "../../components/data-table/data-table";
+import { DataColumns } from "../../components/data-table/data-table";
 
 const actions = unionize({
     RESET_PAGINATION: ofType<{ id: string }>(),
     REQUEST_ITEMS: ofType<{ id: string }>(),
     SET_COLUMNS: ofType<{ id: string, columns: DataColumns<any> }>(),
     SET_FILTERS: ofType<{ id: string, columnName: string, filters: DataTableFilterItem[] }>(),
-    SET_ITEMS: ofType<{ id: string, items: DataItem[], page: number, rowsPerPage: number, itemsAvailable: number }>(),
+    SET_ITEMS: ofType<{ id: string, items: any[], page: number, rowsPerPage: number, itemsAvailable: number }>(),
     SET_PAGE: ofType<{ id: string, page: number }>(),
     SET_ROWS_PER_PAGE: ofType<{ id: string, rowsPerPage: number }>(),
     TOGGLE_COLUMN: ofType<{ id: string, columnName: string }>(),

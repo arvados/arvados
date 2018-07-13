@@ -29,6 +29,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 user={user}
                 onDetailsPanelToggle={jest.fn()}
+                onContextMenu={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -43,6 +44,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 menuItems={menuItems}
                 onDetailsPanelToggle={jest.fn()}
+                onContextMenu={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
         );
@@ -59,6 +61,7 @@ describe("<MainAppBar />", () => {
                 searchText="search text"
                 searchDebounce={2000}
                 onSearch={onSearch}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
             />
@@ -77,6 +80,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 breadcrumbs={items}
                 onBreadcrumbClick={onBreadcrumbClick}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onMenuItemClick: jest.fn() }}
             />
@@ -94,6 +98,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 menuItems={menuItems}
                 onMenuItemClick={onMenuItemClick}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 {...{ user, searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn() }}
             />

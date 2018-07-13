@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import CommonResourceService, { Resource } from "../../common/api/common-resource-service";
-import { ResourceKind } from "../../models/kinds";
+import CommonResourceService from "../../common/api/common-resource-service";
 import { Dispatch } from "redux";
-import { groupsService } from "../../services/services";
 import { serverApi } from "../../common/api/server-api";
+import { Resource, ResourceKind } from "../../models/resource";
 
 const actions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),

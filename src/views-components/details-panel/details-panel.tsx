@@ -21,7 +21,6 @@ import IconBase, { IconTypes } from '../../components/icon/icon';
 import { ProcessResource } from '../../models/process';
 import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
 import AbstractItem from '../../components/details-panel-factory/items/abstract-item';
-import { ResourceKind, Resource } from '../../models/resource';
 import { EmptyResource } from '../../models/empty';
 
 export interface DetailsPanelDataProps {
@@ -119,7 +118,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-// TODO: move to models
+
 export type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource;
 
 const getItem = (res: DetailsPanelResource) => {
@@ -127,7 +126,7 @@ const getItem = (res: DetailsPanelResource) => {
 };
 
 const getDefaultItem = () => {
-    return DetailsPanelFactory.createItem({ kind: ResourceKind.UNKNOWN, name: 'Projects' } as EmptyResource);
+    return DetailsPanelFactory.createItem({ kind: undefined, name: 'Projects' });
 };
 
 const mapStateToProps = ({ detailsPanel }: RootState) => {

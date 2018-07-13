@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, IconButton } from '@material-ui/core';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable, { DataColumns, DataItem } from "../../components/data-table/data-table";
+import DataTable, { DataColumns } from "../../components/data-table/data-table";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
 import SearchInput from '../search-input/search-input';
@@ -28,9 +28,10 @@ interface DataExplorerProps<T> {
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     onChangePage: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
+    extractKey?: (item: T) => React.Key;
 }
 
-class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {
+class DataExplorer<T> extends React.Component<DataExplorerProps<T> & WithStyles<CssRules>> {
 
     render() {
         return <Paper>
@@ -53,7 +54,8 @@ class DataExplorer<T extends DataItem> extends React.Component<DataExplorerProps
                 onContextMenu={this.props.onContextMenu}
                 onRowDoubleClick={(_, item: T) => this.props.onRowDoubleClick(item)}
                 onFiltersChange={this.props.onFiltersChange}
-                onSortToggle={this.props.onSortToggle} />
+                onSortToggle={this.props.onSortToggle}
+                extractKey={this.props.extractKey} />
             <Toolbar>
                 {this.props.items.length > 0 &&
                     <Grid container justify="flex-end">

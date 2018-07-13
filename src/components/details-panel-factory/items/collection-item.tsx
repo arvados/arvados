@@ -3,18 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import IconBase, { IconTypes } from '../../icon/icon';
+import { IconTypes } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
 import { formatDate } from '../../../common/formatters';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
-    
-    constructor(item: CollectionResource) {
-        super(item);
-        console.log('Collection item: ', this.item);
-    }
 
     getIcon(): IconTypes {
         return IconTypes.COLLECTION;

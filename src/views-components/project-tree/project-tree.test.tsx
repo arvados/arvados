@@ -12,99 +12,67 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 
 import ProjectTree from './project-tree';
 import { TreeItem } from '../../components/tree/tree';
-import { Project } from '../../models/project';
-import { ResourceKind } from "../../models/resource";
+import { ProjectResource } from '../../models/project';
+import { mockProjectResource } from '../../models/test-utils';
 
 Enzyme.configure({ adapter: new Adapter() });
 
 describe("ProjectTree component", () => {
 
     it("should render ListItemIcon", () => {
-        const project: TreeItem<Project> = {
-            data: {
-                name: "sample name",
-                createdAt: "2018-06-12",
-                modifiedAt: "2018-06-13",
-                uuid: "uuid",
-                ownerUuid: "ownerUuid",
-                href: "href",
-                kind: ResourceKind.PROJECT
-            },
+        const project: TreeItem<ProjectResource> = {
+            data: mockProjectResource(),
             id: "3",
             open: true,
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree
+            projects={[project]}
+            toggleOpen={jest.fn()}
+            toggleActive={jest.fn()}
+            onContextMenu={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(1);
     });
 
     it("should render 2 ListItemIcons", () => {
-        const project: Array<TreeItem<Project>> = [
+        const project: Array<TreeItem<ProjectResource>> = [
             {
-                data: {
-                    name: "sample name",
-                    createdAt: "2018-06-12",
-                    modifiedAt: "2018-06-13",
-                    uuid: "uuid",
-                    ownerUuid: "ownerUuid",
-                    href: "href",
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "3",
                 open: false,
                 active: true,
                 status: 1
             },
             {
-                data: {
-                    name: "sample name",
-                    createdAt: "2018-06-12",
-                    modifiedAt: "2018-06-13",
-                    uuid: "uuid",
-                    ownerUuid: "ownerUuid",
-                    href: "href",
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "3",
                 open: false,
                 active: true,
                 status: 1
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree
+            projects={project}
+            toggleOpen={jest.fn()}
+            toggleActive={jest.fn()}
+            onContextMenu={jest.fn()} />);
 
         expect(wrapper.find(ListItemIcon)).toHaveLength(2);
     });
 
     it("should render Collapse", () => {
-        const project: Array<TreeItem<Project>> = [
+        const project: Array<TreeItem<ProjectResource>> = [
             {
-                data: {
-                    name: "sample name",
-                    createdAt: "2018-06-12",
-                    modifiedAt: "2018-06-13",
-                    uuid: "uuid",
-                    ownerUuid: "ownerUuid",
-                    href: "href",
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "3",
                 open: true,
                 active: true,
                 status: 2,
                 items: [
                     {
-                        data: {
-                            name: "sample name",
-                            createdAt: "2018-06-12",
-                            modifiedAt: "2018-06-13",
-                            uuid: "uuid",
-                            ownerUuid: "ownerUuid",
-                            href: "href",
-                            kind: ResourceKind.PROJECT
-                        },
+                        data: mockProjectResource(),
                         id: "3",
                         open: true,
                         active: true,
@@ -113,28 +81,28 @@ describe("ProjectTree component", () => {
                 ]
             }
         ];
-        const wrapper = mount(<ProjectTree projects={project} toggleOpen={jest.fn()} toggleActive={jest.fn()}/>);
+        const wrapper = mount(<ProjectTree 
+            projects={project} 
+            toggleOpen={jest.fn()} 
+            toggleActive={jest.fn()}
+            onContextMenu={jest.fn()} />);
 
         expect(wrapper.find(Collapse)).toHaveLength(1);
     });
 
     it("should render CircularProgress", () => {
-        const project: TreeItem<Project> = {
-            data: {
-                name: "sample name",
-                createdAt: "2018-06-12",
-                modifiedAt: "2018-06-13",
-                uuid: "uuid",
-                ownerUuid: "ownerUuid",
-                href: "href",
-                kind: ResourceKind.PROJECT
-            },
+        const project: TreeItem<ProjectResource> = {
+            data: mockProjectResource(),
             id: "3",
             open: false,
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree projects={[project]} toggleOpen={jest.fn()} toggleActive={jest.fn()} />);
+        const wrapper = mount(<ProjectTree 
+            projects={[project]} 
+            toggleOpen={jest.fn()} 
+            toggleActive={jest.fn()}
+            onContextMenu={jest.fn()} />);
 
         expect(wrapper.find(CircularProgress)).toHaveLength(1);
     });

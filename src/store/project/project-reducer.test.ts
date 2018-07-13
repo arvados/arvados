@@ -5,38 +5,29 @@
 import projectsReducer, { getTreePath } from "./project-reducer";
 import actions from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { ResourceKind } from "../../models/resource";
+import { mockProjectResource } from "../../models/test-utils";
 
 describe('project-reducer', () => {
 
     it('should load projects', () => {
         const initialState = undefined;
-        const project = {
-            name: 'test',
-            href: 'href',
-            createdAt: '2018-01-01',
-            modifiedAt: '2018-01-01',
-            ownerUuid: 'owner-test123',
-            uuid: 'test123',
-            kind: ResourceKind.PROJECT
-        };
 
-        const projects = [project, project];
+        const projects = [mockProjectResource({ uuid: "1" }), mockProjectResource({ uuid: "2" })];
         const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
         expect(state).toEqual({
             items: [{
                 active: false,
                 open: false,
-                id: "test123",
+                id: "1",
                 items: [],
-                data: project,
+                data: mockProjectResource({ uuid: "1" }),
                 status: 0
             }, {
                 active: false,
                 open: false,
-                id: "test123",
+                id: "2",
                 items: [],
-                data: project,
+                data: mockProjectResource({ uuid: "2" }),
                 status: 0
             }
             ],
@@ -52,15 +43,7 @@ describe('project-reducer', () => {
     it('should remove activity on projects list', () => {
         const initialState = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: true,
@@ -71,15 +54,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -96,15 +71,7 @@ describe('project-reducer', () => {
     it('should toggle project tree item activity', () => {
         const initialState = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -115,15 +82,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT,
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: true,
@@ -142,15 +101,7 @@ describe('project-reducer', () => {
     it('should close project tree item ', () => {
         const initialState = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: true,
                 active: false,
@@ -162,15 +113,7 @@ describe('project-reducer', () => {
         };
         const project = {
             items: [{
-                data: {
-                    name: 'test',
-                    href: 'href',
-                    createdAt: '2018-01-01',
-                    modifiedAt: '2018-01-01',
-                    ownerUuid: 'owner-test123',
-                    uuid: 'test123',
-                    kind: ResourceKind.PROJECT
-                },
+                data: mockProjectResource(),
                 id: "1",
                 open: false,
                 active: false,

@@ -6,18 +6,7 @@ import * as _ from "lodash";
 import FilterBuilder from "./filter-builder";
 import OrderBuilder from "./order-builder";
 import { AxiosInstance } from "axios";
-
-export interface Resource {
-    uuid: string;
-    ownerUuid: string;
-    createdAt: string;
-    modifiedByClientUuid: string;
-    modifiedByUserUuid: string;
-    modifiedAt: string;
-    href: string;
-    kind: string;
-    etag: string;
-}
+import { Resource } from "../../models/resource";
 
 export interface ListArguments {
     limit?: number;
