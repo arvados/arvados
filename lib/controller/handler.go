@@ -30,6 +30,20 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h.setupOnce.Do(h.setup)
+	if req.Method != "GET" && req.Method != "HEAD" {
+		// http.ServeMux returns 301 with a cleaned path if
+		// the incoming request has a double slash. Some
+		// clients (including the Go standard library) change
+		// the request method to GET when following a 301
+		// redirect if the original method was not HEAD
+		// (RFC7231 6.4.2 specifically allows this in the case
+		// of POST). Thus "POST //foo" gets misdirected to
+		// "GET /foo". To avoid this, eliminate double slashes
+		// before passing the request to ServeMux.
+		for strings.Contains(req.URL.Path, "//") {
+			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)
+		}
+	}
 	h.handlerStack.ServeHTTP(w, req)
 }
 
@@ -47,6 +61,11 @@ func (h *Handler) setup() {
 	})
 	mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
 	h.handlerStack = mux
+
+	// Changing the global isn't the right way to do this, but a
+	// proper solution would conflict with an impending 13493
+	// merge anyway, so this will do for now.
+	arvados.InsecureHTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 }
 
 // headers that shouldn't be forwarded when proxying. See
@@ -89,6 +108,9 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 		xff = xffIn + "," + xff
 	}
 	hdrOut.Set("X-Forwarded-For", xff)
+	if hdrOut.Get("X-Forwarded-Proto") == "" {
+		hdrOut.Set("X-Forwarded-Proto", reqIn.URL.Scheme)
+	}
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	ctx := reqIn.Context()
@@ -101,6 +123,7 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
+		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)

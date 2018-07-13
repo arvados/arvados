@@ -183,6 +183,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		remoteAddr = xff + "," + remoteAddr
 	}
+	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
+		r.URL.Scheme = xfp
+	}
 
 	w := httpserver.WrapResponseWriter(wOrig)
 	defer func() {
@@ -773,6 +776,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		u = newu
 	}
 	redir := (&url.URL{
+		Scheme:   r.URL.Scheme,
 		Host:     r.Host,
 		Path:     u.Path,
 		RawQuery: redirQuery.Encode(),
