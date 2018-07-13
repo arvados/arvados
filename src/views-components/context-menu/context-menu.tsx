@@ -5,33 +5,31 @@
 import { connect, Dispatch, DispatchProp } from "react-redux";
 import { RootState } from "../../store/store";
 import actions from "../../store/context-menu/context-menu-actions";
-import ContextMenu, { ContextMenuAction, ContextMenuProps } from "../../components/context-menu/context-menu";
+import ContextMenu, { ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
 import { createAnchorAt } from "../../components/popover/helpers";
-import projectActions from "../../store/project/project-action";
-import { ContextMenuResource, ContextMenuKind } from "../../store/context-menu/context-menu-reducer";
+import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
+import { ContextMenuItemSet } from "./context-menu-item-set";
+import { emptyItemSet } from "./empty-item-set";
 
-
-type DataProps = Pick<ContextMenuProps, "anchorEl" | "actions"> & { resource?: ContextMenuResource };
+type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
     const { position, resource } = state.contextMenu;
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
-        actions: resource ? menuActions[resource.kind] : [],
+        items: getMenuItemSet(resource).getItems(),
         resource
     };
 };
 
-type ActionProps = Pick<ContextMenuProps, "onClose"> & { onActionClick: (action: ContextMenuAction, resource?: ContextMenuResource) => void };
+type ActionProps = Pick<ContextMenuProps, "onClose"> & { onItemClick: (item: ContextMenuItem, resource?: ContextMenuResource) => void };
 const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     onClose: () => {
         dispatch(actions.CLOSE_CONTEXT_MENU());
     },
-    onActionClick: (action: ContextMenuAction, resource?: ContextMenuResource) => {
+    onItemClick: (item: ContextMenuItem, resource?: ContextMenuResource) => {
         dispatch(actions.CLOSE_CONTEXT_MENU());
         if (resource) {
-            if (action.name === "New project") {
-                dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
-            }
+            getMenuItemSet(resource).handleItem(dispatch, item, resource);
         }
     }
 });
@@ -39,65 +37,20 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
 const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionProps): ContextMenuProps => ({
     ...dataProps,
     ...actionProps,
-    onActionClick: (action: ContextMenuAction) => {
-        actionProps.onActionClick(action, resource);
+    onItemClick: item => {
+        actionProps.onItemClick(item, resource);
     }
 });
 
-export default connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenu);
+export const ContextMenuHOC = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenu);
 
-const menuActions = {
-    [ContextMenuKind.RootProject]: [[{
-        icon: "fas fa-plus fa-fw",
-        name: "New project"
-    }]],
-    [ContextMenuKind.Project]: [[{
-        icon: "fas fa-plus fa-fw",
-        name: "New project"
-    }, {
-        icon: "fas fa-users fa-fw",
-        name: "Share"
-    }, {
-        icon: "fas fa-sign-out-alt fa-fw",
-        name: "Move to"
-    }, {
-        icon: "fas fa-star fa-fw",
-        name: "Add to favourite"
-    }, {
-        icon: "fas fa-edit fa-fw",
-        name: "Rename"
-    }, {
-        icon: "fas fa-copy fa-fw",
-        name: "Make a copy"
-    }, {
-        icon: "fas fa-download fa-fw",
-        name: "Download"
-    }], [{
-        icon: "fas fa-trash-alt fa-fw",
-        name: "Remove"
-    }
-    ]],
-    [ContextMenuKind.Collection]: [[{
-        icon: "fas fa-users fa-fw",
-        name: "Share"
-    }, {
-        icon: "fas fa-sign-out-alt fa-fw",
-        name: "Move to"
-    }, {
-        icon: "fas fa-star fa-fw",
-        name: "Add to favourite"
-    }, {
-        icon: "fas fa-edit fa-fw",
-        name: "Rename"
-    }, {
-        icon: "fas fa-copy fa-fw",
-        name: "Make a copy"
-    }, {
-        icon: "fas fa-download fa-fw",
-        name: "Download"
-    }], [{
-        icon: "fas fa-trash-alt fa-fw",
-        name: "Remove"
-    }
-    ]]
+const menuItemSets = new Map<string, ContextMenuItemSet>();
+
+export const addMenuItemsSet = (name: string, itemSet: ContextMenuItemSet) => {
+    menuItemSets.set(name, itemSet);
 };
+
+const getMenuItemSet = (resource?: ContextMenuResource): ContextMenuItemSet => {
+    return resource ? menuItemSets.get(resource.kind) || emptyItemSet : emptyItemSet;
+};
+

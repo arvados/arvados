@@ -11,7 +11,7 @@ import projectsReducer, { ProjectState } from "./project/project-reducer";
 import sidePanelReducer, { SidePanelState } from './side-panel/side-panel-reducer';
 import authReducer, { AuthState } from "./auth/auth-reducer";
 import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
-import { projectPanelMiddleware } from '../store/project-panel/project-panel-middleware';
+import { projectPanelMiddleware } from './project-panel/project-panel-middleware';
 import detailsPanelReducer, { DetailsPanelState } from './details-panel/details-panel-reducer';
 import contextMenuReducer, { ContextMenuState } from './context-menu/context-menu-reducer';
 

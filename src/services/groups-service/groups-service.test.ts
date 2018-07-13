@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import MockAdapter from "axios-mock-adapter/types";
 import GroupsService from "./groups-service";
 
 describe("GroupsService", () => {

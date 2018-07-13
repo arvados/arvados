@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import MockAdapter from "axios-mock-adapter/types";
 import ProjectService from "./project-service";
 import FilterBuilder from "../../common/api/filter-builder";
 import { ProjectResource } from "../../models/project";

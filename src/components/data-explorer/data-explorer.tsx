@@ -5,10 +5,10 @@
 import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, Theme, WithStyles, TablePagination, IconButton } from '@material-ui/core';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
-import ColumnSelector from "../../components/column-selector/column-selector";
-import DataTable, { DataColumns } from "../../components/data-table/data-table";
-import { DataColumn } from "../../components/data-table/data-column";
-import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
+import ColumnSelector from "../column-selector/column-selector";
+import DataTable, { DataColumns } from "../data-table/data-table";
+import { DataColumn } from "../data-table/data-column";
+import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import SearchInput from '../search-input/search-input';
 
 interface DataExplorerProps<T> {

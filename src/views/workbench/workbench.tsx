@@ -26,7 +26,7 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
-import ContextMenu from "../../views-components/context-menu/context-menu";
+import ContextMenu, { ContextMenuKind } from "../../views-components/context-menu";
 import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
 import { authService } from '../../services/services';
 
@@ -35,7 +35,6 @@ import contextMenuActions from "../../store/context-menu/context-menu-actions";
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
-import { ContextMenuKind } from '../../store/context-menu/context-menu-reducer';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -217,7 +216,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid,  ContextMenuKind.Project)}
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid, ContextMenuKind.Project)}
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));

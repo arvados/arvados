@@ -5,7 +5,7 @@
 import * as React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from 'src/common/custom-theme';
+import { ArvadosTheme } from '../../common/custom-theme';
 
 interface AttributeDataProps {
     label: string;

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { Dispatch } from "../../../node_modules/redux";
+import { Dispatch } from "redux";
 import { RootState } from "../../store/store";
 import DialogProjectCreate from "../dialog-create/dialog-project-create";
 import actions, { createProject, getProjectList } from "../../store/project/project-action";

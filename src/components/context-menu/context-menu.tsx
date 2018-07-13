@@ -5,24 +5,23 @@ import * as React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
 
-export interface ContextMenuAction {
+export interface ContextMenuItem {
     name: string;
     icon: string;
-    openCreateDialog?: boolean;
 }
 
-export type ContextMenuActionGroup = ContextMenuAction[];
+export type ContextMenuItemGroup = ContextMenuItem[];
 
 export interface ContextMenuProps {
     anchorEl?: HTMLElement;
-    actions: ContextMenuActionGroup[];
-    onActionClick: (action: ContextMenuAction) => void;
+    items: ContextMenuItemGroup[];
+    onItemClick: (action: ContextMenuItem) => void;
     onClose: () => void;
 }
 
 export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, actions, onClose, onActionClick } = this.props;
+        const { anchorEl, items, onClose, onItemClick } = this.props;
         return <Popover
             anchorEl={anchorEl}
             open={!!anchorEl}
@@ -31,21 +30,21 @@ export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
             anchorOrigin={DefaultTransformOrigin}
             onContextMenu={this.handleContextMenu}>
             <List dense>
-                {actions.map((group, groupIndex) =>
+                {items.map((group, groupIndex) =>
                     <React.Fragment key={groupIndex}>
-                        {group.map((action, actionIndex) =>
+                        {group.map((item, actionIndex) =>
                             <ListItem
                                 button
                                 key={actionIndex}
-                                onClick={() => onActionClick(action)}>
+                                onClick={() => onItemClick(item)}>
                                 <ListItemIcon>
-                                    <i className={action.icon} />
+                                    <i className={item.icon} />
                                 </ListItemIcon>
                                 <ListItemText>
-                                    {action.name}
+                                    {item.name}
                                 </ListItemText>
                             </ListItem>)}
-                        {groupIndex < actions.length - 1 && <Divider />}
+                        {groupIndex < items.length - 1 && <Divider />}
                     </React.Fragment>)}
             </List>
         </Popover>;
