@@ -26,12 +26,12 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
-import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
-import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
+import ContextMenu from "../../views-components/context-menu/context-menu";
 import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
 import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
+import contextMenuActions from "../../store/context-menu/context-menu-actions";
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
@@ -98,10 +98,6 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
-    contextMenu: {
-        anchorEl?: HTMLElement;
-        itemUuid?: string;
-    };
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -114,10 +110,6 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
-        contextMenu: {
-            anchorEl: undefined,
-            itemUuid: undefined
-        },
         isCreationDialogOpen: false,
         anchorEl: null,
         searchText: "",
@@ -177,30 +169,18 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     handleCreationDialogOpen = (itemUuid: string) => {
-        this.closeContextMenu();
         this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
     }
 
 
     openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
         event.preventDefault();
-        this.setState({
-            contextMenu: {
-                anchorEl: mockAnchorFromMouseEvent(event),
-                itemUuid
-            }
-        });
-    }
-
-    closeContextMenu = () => {
-        this.setState({ contextMenu: {} });
-    }
-
-    openCreateDialog = (item: ContextMenuAction) => {
-        const { itemUuid } = this.state.contextMenu;
-        if (item.openCreateDialog && itemUuid) {
-            this.handleCreationDialogOpen(itemUuid);
-        }
+        this.props.dispatch(
+            contextMenuActions.OPEN_CONTEXT_MENU({
+                position: { x: event.clientX, y: event.clientY },
+                resource: { uuid: itemUuid, kind: ResourceKind.Project }
+            })
+        );
     }
 
     render() {
@@ -253,11 +233,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </div>
                     <DetailsPanel />
                 </main>
-                <ContextMenu
-                    anchorEl={this.state.contextMenu.anchorEl}
-                    actions={contextMenuActions}
-                    onActionClick={this.openCreateDialog}
-                    onClose={this.closeContextMenu} />
+                <ContextMenu />
                 <CreateProjectDialog />
             </div>
         );
@@ -276,34 +252,6 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         }}
         {...props} />
 }
-
-const contextMenuActions = [[{
-    icon: "fas fa-plus fa-fw",
-    name: "New project",
-    openCreateDialog: true
-}, {
-    icon: "fas fa-users fa-fw",
-    name: "Share"
-}, {
-    icon: "fas fa-sign-out-alt fa-fw",
-    name: "Move to"
-}, {
-    icon: "fas fa-star fa-fw",
-    name: "Add to favourite"
-}, {
-    icon: "fas fa-edit fa-fw",
-    name: "Rename"
-}, {
-    icon: "fas fa-copy fa-fw",
-    name: "Make a copy"
-}, {
-    icon: "fas fa-download fa-fw",
-    name: "Download"
-}], [{
-    icon: "fas fa-trash-alt fa-fw",
-    name: "Remove"
-}
-]];
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({

@@ -13,14 +13,14 @@ export interface ContextMenuAction {
 
 export type ContextMenuActionGroup = ContextMenuAction[];
 
-export interface ContextMenuProps<T> {
+export interface ContextMenuProps {
     anchorEl?: HTMLElement;
     actions: ContextMenuActionGroup[];
     onActionClick: (action: ContextMenuAction) => void;
     onClose: () => void;
 }
 
-export default class ContextMenu<T> extends React.PureComponent<ContextMenuProps<T>> {
+export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
         const { anchorEl, actions, onClose, onActionClick } = this.props;
         return <Popover
