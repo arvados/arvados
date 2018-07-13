@@ -35,6 +35,7 @@ import contextMenuActions from "../../store/context-menu/context-menu-actions";
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
+import { ContextMenuKind } from '../../store/context-menu/context-menu-reducer';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -154,7 +155,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         },
         onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-            this.openContextMenu(event, breadcrumb.itemId);
+            this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
         }
     };
 
@@ -172,13 +173,12 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
         this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
     }
 
-
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
         event.preventDefault();
         this.props.dispatch(
             contextMenuActions.OPEN_CONTEXT_MENU({
                 position: { x: event.clientX, y: event.clientY },
-                resource: { uuid: itemUuid, kind: ResourceKind.Project }
+                resource: { uuid: itemUuid, kind }
             })
         );
     }
@@ -213,11 +213,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
                             sidePanelItems={this.props.sidePanelItems}
-                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "")}>
+                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "", ContextMenuKind.RootProject)}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)}
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid,  ContextMenuKind.Project)}
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
@@ -241,7 +241,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid)}
+        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Project)}
         onDialogOpen={this.handleCreationDialogOpen}
         onItemClick={item => {
             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));

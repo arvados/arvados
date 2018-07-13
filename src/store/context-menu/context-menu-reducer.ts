@@ -17,7 +17,13 @@ export interface ContextMenuPosition {
 
 export interface ContextMenuResource {
     uuid: string;
-    kind: ResourceKind;
+    kind: ContextMenuKind;
+}
+
+export enum ContextMenuKind {
+    RootProject = "RootProject",
+    Project = "Project",
+    Collection = "Collection"
 }
 
 const initialState = {
