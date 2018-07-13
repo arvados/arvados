@@ -5,6 +5,7 @@
 import { ContextMenuItemGroup } from "../../components/context-menu/context-menu";
 import { ContextMenuItemSet } from "./context-menu-item-set";
 import actions from "../../store/project/project-action";
+import { IconTypes } from "../../components/icon/icon";
 
 export const projectItemSet: ContextMenuItemSet = {
     getItems: () => items,
@@ -16,28 +17,9 @@ export const projectItemSet: ContextMenuItemSet = {
 };
 
 const items: ContextMenuItemGroup[] = [[{
-    icon: "fas fa-plus fa-fw",
+    icon: IconTypes.FOLDER,
     name: "New project"
 }, {
-    icon: "fas fa-users fa-fw",
+    icon: IconTypes.ANNOUNCEMENT,
     name: "Share"
-}, {
-    icon: "fas fa-sign-out-alt fa-fw",
-    name: "Move to"
-}, {
-    icon: "fas fa-star fa-fw",
-    name: "Add to favourite"
-}, {
-    icon: "fas fa-edit fa-fw",
-    name: "Rename"
-}, {
-    icon: "fas fa-copy fa-fw",
-    name: "Make a copy"
-}, {
-    icon: "fas fa-download fa-fw",
-    name: "Download"
-}], [{
-    icon: "fas fa-trash-alt fa-fw",
-    name: "Remove"
-}
-]];
+}]];

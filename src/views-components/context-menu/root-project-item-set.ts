@@ -5,6 +5,7 @@
 import { ContextMenuItemGroup } from "../../components/context-menu/context-menu";
 import { ContextMenuItemSet } from "./context-menu-item-set";
 import actions from "../../store/project/project-action";
+import { IconTypes } from "../../components/icon/icon";
 
 export const rootProjectItemSet: ContextMenuItemSet = {
     getItems: () => items,
@@ -16,6 +17,6 @@ export const rootProjectItemSet: ContextMenuItemSet = {
 };
 
 const items: ContextMenuItemGroup[] = [[{
-    icon: "fas fa-plus fa-fw",
+    icon: IconTypes.FOLDER,
     name: "New project"
 }]];
