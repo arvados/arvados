@@ -310,7 +310,9 @@ handle_rails_package() {
     cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
-    echo "$version" >package-build.version
+    echo "$version" >package.version
+    echo "lalala" >>package.version
+
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
         set -e
@@ -318,8 +320,8 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
-        echo "lalala" >>git-commit.version
-        echo "test insert version" >"$railsdir/package-build.version"
+        echo "222lalala" >>package.version
+
         bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
@@ -329,8 +331,6 @@ handle_rails_package() {
         return 1
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
-    echo "$version" >"$railsdir/package-build.version"
-    echo "test insert version" >"$railsdir/package-build.version"
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir "$version")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
     local -a switches=(--after-install "$scripts_dir/postinst"
