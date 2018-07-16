@@ -350,6 +350,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         self.boot_fail_after = boot_fail_after
         self.subscribers = set()
         self.arvados_node = None
+        self.consecutive_idle = 0
         self._later.update_arvados_node(arvados_node)
         self.last_shutdown_opening = None
         self._later.consider_shutdown()
@@ -451,8 +452,14 @@ class ComputeNodeMonitorActor(config.actor_class):
         else:
             boot_grace = "boot exceeded"
 
-        # API server side not implemented yet.
-        idle_grace = 'idle exceeded'
+        if crunch_worker_state == "idle":
+            # Must report as "idle" at least two consecutive times
+            if self.consecutive_idle < 2:
+                idle_grace = 'idle wait'
+            else:
+                idle_grace = 'idle exceeded'
+        else:
+            idle_grace = 'not idle'
 
         node_state = (crunch_worker_state, window, boot_grace, idle_grace)
         t = transitions[node_state]
@@ -512,4 +519,8 @@ class ComputeNodeMonitorActor(config.actor_class):
         if arvados_node is not None:
             self.arvados_node = arvados_node
             self._update.sync_node(self.cloud_node, self.arvados_node)
+            if self.arvados_node['crunch_worker_state'] == "idle":
+                self.consecutive_idle += 1
+            else:
+                self.consecutive_idle = 0
             self._later.consider_shutdown()
