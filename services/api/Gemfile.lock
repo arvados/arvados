@@ -170,7 +170,6 @@ GEM
       multi_xml (~> 0.5)
       rack (>= 1.2, < 3)
     oj (3.6.4)
-    oj_mimic_json (1.0.1)
     omniauth (1.4.3)
       hashie (>= 1.2, < 4)
       rack (>= 1.6.2, < 3)
@@ -293,7 +292,6 @@ DEPENDENCIES
   mocha
   multi_json
   oj
-  oj_mimic_json
   omniauth (~> 1.4.0)
   omniauth-oauth2 (~> 1.1)
   passenger

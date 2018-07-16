@@ -32,7 +32,6 @@ gem 'pg', '~> 0.18'
 
 gem 'multi_json'
 gem 'oj'
-gem 'oj_mimic_json'
 
 # for building assets
 gem 'sass-rails',   '~> 4.0'
