@@ -165,15 +165,11 @@ navbar:
       - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/install-components.html.textile.liquid
+    - Core:
       - install/install-postgresql.html.textile.liquid
-      - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
-      - install/install-ws.html.textile.liquid
-      - install/install-arv-git-httpd.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
-      - install/install-composer.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
-      - install/create-standard-objects.html.textile.liquid
+    - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid
       - install/configure-s3-object-storage.html.textile.liquid
@@ -181,6 +177,14 @@ navbar:
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
       - install/install-keep-balance.html.textile.liquid
+    - User interface:
+      - install/install-sso.html.textile.liquid
+      - install/install-workbench-app.html.textile.liquid
+      - install/install-composer.html.textile.liquid
+    - Additional services:
+      - install/install-ws.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-slurm.html.textile.liquid

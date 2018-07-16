@@ -198,19 +198,52 @@ Repeat the above sections to prepare volumes and bring up supervised services on
 
 h3. Tell the API server about the Keepstore servers
 
-The API server needs to be informed about the presence of your Keepstore servers. For each of the Keepstore servers you have created, please execute the following commands on your <strong>shell server</strong>.
+The API server needs to be informed about the presence of your Keepstore servers.
 
-Make sure to update the @service_host@ value to match each of your Keepstore servers.
+First, if you don't already have an admin token, create a superuser token:
+
+{% include 'create_superuser_token' %}
+
+Configure your environment to run @arv@ using the output of create_superuser_token.rb:
+
+<pre>
+export ARVADOS_API_HOST=zzzzz.example.com
+export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</pre>
+
+Use this command to register each keepstore server you have installed.  Make sure to update the @service_host@ value.
 
 <notextile>
 <pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
 ~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
 ~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
 <span class="userinput">{
- "service_host":"<strong>keep0.$prefix.your.domain</strong>",
+ "service_host":"<strong>keep0.$uuid_prefix.your.domain</strong>",
  "service_port":25107,
  "service_ssl_flag":false,
  "service_type":"disk"
 }
 EOF</span>
 </code></pre></notextile>
+
+h3(#testing). Testing keep
+
+Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+
+@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.
+
+You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections:
+
+<pre>
+$ echo "hello world!" > hello.txt
+
+$ arv-put --portable-data-hash hello.txt
+2018-07-12 13:35:25 arvados.arv_put[28702] INFO: Creating new cache file at /home/example/.cache/arvados/arv-put/1571ec0adb397c6a18d5c74cc95b3a2a
+0M / 0M 100.0% 2018-07-12 13:35:27 arvados.arv_put[28702] INFO:
+
+2018-07-12 13:35:27 arvados.arv_put[28702] INFO: Collection saved as 'Saved at 2018-07-12 17:35:25 UTC by example@example'
+59389a8f9ee9d399be35462a0f92541c+53
+
+$ arv-get 59389a8f9ee9d399be35462a0f92541c+53/hello.txt
+hello world!
+</pre>

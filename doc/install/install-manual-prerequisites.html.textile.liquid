@@ -19,7 +19,7 @@ This guide assumes you have seven systems available in the same network subnet:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|_Function_|_Number of nodes_|
+|_. Function|_. Number of nodes|
 |Arvados API, Crunch dispatcher, Git, Websockets and Workbench|1|
 |Arvados Compute node|1|
 |Arvados Keepproxy and Keep-web server|1|
@@ -33,7 +33,7 @@ The number of Keepstore, shell and compute nodes listed above is a minimum. In a
 h2. Supported GNU/Linux distributions
 
 table(table table-bordered table-condensed).
-|_Distribution_|_State_|_Last supported version_|
+|_. Distribution|_. State|_. Last supported version|
 |CentOS 7|Supported|Latest|
 |Debian 8 ("jessie")|Supported|Latest|
 |Debian 9 ("stretch")|Supported|Latest|
@@ -73,7 +73,7 @@ First, register the Curoverse signing key in apt's database:
 Configure apt to retrieve packages from the Arvados package repository. This command depends on your OS vendor and version:
 
 table(table table-bordered table-condensed).
-|OS version|Command|
+|_. OS version|_. Command|
 |Debian 8 ("jessie")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ jessie main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Debian 9 ("stretch")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ stretch main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 14.04 ("trusty")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ trusty main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
@@ -128,7 +128,7 @@ By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|_Function_|_Hostname_|
+|_. Function|_. Hostname|
 |Arvados API|@uuid_prefix@.your.domain|
 |Arvados Git server|git.@uuid_prefix@.your.domain|
 |Arvados Keepproxy server|keep.@uuid_prefix@.your.domain|
