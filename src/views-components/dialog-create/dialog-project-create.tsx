@@ -73,7 +73,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
                   fullWidth />} />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose} className={classes.button} color="primary">CANCEL</Button>
+            <Button onClick={handleClose} className={classes.button} color="primary" disabled={pending}>CANCEL</Button>
             <Button onClick={this.handleSubmit} 
               className={classes.lastButton} 
               color="primary" 

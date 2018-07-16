@@ -46,7 +46,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
         return projectService
             .create(projectData)
             .then(project => dispatch(actions.CREATE_PROJECT_SUCCESS(project)))
-            .catch(() => dispatch(actions.CREATE_PROJECT_ERROR("Could not create a project")));
+            .catch((response) => dispatch(actions.CREATE_PROJECT_ERROR(response.response.data.errors)));
     };
 
 export type ProjectAction = UnionOf<typeof actions>;
