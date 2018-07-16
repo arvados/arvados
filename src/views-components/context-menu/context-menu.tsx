@@ -8,15 +8,15 @@ import actions from "../../store/context-menu/context-menu-actions";
 import ContextMenu, { ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
 import { createAnchorAt } from "../../components/popover/helpers";
 import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
-import { ContextMenuItemSet } from "./context-menu-item-set";
-import { emptyItemSet } from "./item-sets/empty-item-set";
+import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
+import { emptyActionSet } from "./action-sets/empty-action-set";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
     const { position, resource } = state.contextMenu;
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
-        items: getMenuItemSet(resource).getItems(),
+        items: getMenuItemSet(resource),
         resource
     };
 };
@@ -26,10 +26,10 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     onClose: () => {
         dispatch(actions.CLOSE_CONTEXT_MENU());
     },
-    onItemClick: (item: ContextMenuItem, resource?: ContextMenuResource) => {
+    onItemClick: (action: ContextMenuAction, resource?: ContextMenuResource) => {
         dispatch(actions.CLOSE_CONTEXT_MENU());
         if (resource) {
-            getMenuItemSet(resource).handleItem(dispatch, item, resource);
+            action.execute(dispatch, resource);
         }
     }
 });
@@ -44,13 +44,13 @@ const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionPr
 
 export const ContextMenuHOC = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenu);
 
-const menuItemSets = new Map<string, ContextMenuItemSet>();
+const menuItemSets = new Map<string, ContextMenuActionSet>();
 
-export const addMenuItemsSet = (name: string, itemSet: ContextMenuItemSet) => {
+export const addMenuItemsSet = (name: string, itemSet: ContextMenuActionSet) => {
     menuItemSets.set(name, itemSet);
 };
 
-const getMenuItemSet = (resource?: ContextMenuResource): ContextMenuItemSet => {
-    return resource ? menuItemSets.get(resource.kind) || emptyItemSet : emptyItemSet;
+const getMenuItemSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
+    return resource ? menuItemSets.get(resource.kind) || emptyActionSet : emptyActionSet;
 };
 
