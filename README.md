@@ -26,12 +26,22 @@ yarn install
 yarn build
 </pre>
 
-### Configuration
+### Build time configuration
 You can customize project global variables using env variables. Default values are placed in the `.env` file.
 
 Example:
 ```
-REACT_APP_ARVADOS_API_HOST=localhost:8000 yarn start
+REACT_APP_ARVADOS_CONFIG_URL=config.json yarn build
+```
+
+### Run time configuration
+The app will fetch runtime configuration when starting. By default it will try to fetch `/config.json`. You can customize this url using build time configuration.
+
+Currently this configuration schema is supported:
+```
+{
+    "API_HOST": "string"
+}
 ```
 
 ### Licensing
