@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuHOC, addMenuItemsSet } from "./context-menu";
-import { projectItemSet } from "./item-sets/project-item-set";
-import { rootProjectItemSet } from "./item-sets/root-project-item-set";
+import { ContextMenuHOC, addMenuActionSet } from "./context-menu";
+import { projectActionSet } from "./action-sets/project-action-set";
+import { rootProjectActionSet } from "./action-sets/root-project-action-set";
 
 export default ContextMenuHOC;
 
@@ -13,5 +13,5 @@ export enum ContextMenuKind {
     Project = "Project"
 }
 
-addMenuItemsSet(ContextMenuKind.RootProject, rootProjectItemSet);
-addMenuItemsSet(ContextMenuKind.Project, projectItemSet);
+addMenuActionSet(ContextMenuKind.RootProject, rootProjectActionSet);
+addMenuActionSet(ContextMenuKind.Project, projectActionSet);

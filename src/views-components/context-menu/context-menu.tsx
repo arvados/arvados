@@ -16,7 +16,7 @@ const mapStateToProps = (state: RootState): DataProps => {
     const { position, resource } = state.contextMenu;
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
-        items: getMenuItemSet(resource),
+        items: getMenuActionSet(resource),
         resource
     };
 };
@@ -44,13 +44,13 @@ const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionPr
 
 export const ContextMenuHOC = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenu);
 
-const menuItemSets = new Map<string, ContextMenuActionSet>();
+const menuActionSets = new Map<string, ContextMenuActionSet>();
 
-export const addMenuItemsSet = (name: string, itemSet: ContextMenuActionSet) => {
-    menuItemSets.set(name, itemSet);
+export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) => {
+    menuActionSets.set(name, itemSet);
 };
 
-const getMenuItemSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
-    return resource ? menuItemSets.get(resource.kind) || emptyActionSet : emptyActionSet;
+const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
+    return resource ? menuActionSets.get(resource.kind) || emptyActionSet : emptyActionSet;
 };
 
