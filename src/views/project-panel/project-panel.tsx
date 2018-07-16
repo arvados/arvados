@@ -46,7 +46,7 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 <Button color="primary" variant="raised" className={classes.button}>
                     Run a process
                 </Button>
-                <Button color="primary" onClick={() => onDialogOpen(currentItemId)} variant="raised" className={classes.button}>
+                <Button color="primary" onClick={this.handleNewProjectClick} variant="raised" className={classes.button}>
                     New project
                 </Button>
             </div>
@@ -58,7 +58,10 @@ class ProjectPanel extends React.Component<ProjectPanelProps> {
                 extractKey={(item: ProjectPanelItem) => item.uuid} />
         </div>;
     }
-
+    
+    handleNewProjectClick = () => {
+        this.props.onDialogOpen(this.props.currentItemId);
+    }
     componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
         if (match.params.id !== currentItemId) {
             onItemRouteChange(match.params.id);
