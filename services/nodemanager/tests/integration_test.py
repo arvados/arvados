@@ -12,7 +12,7 @@ events or behaviors for each test.
 
 """
 
-import subprocess
+import subprocess32 as subprocess
 import os
 import sys
 import re

@@ -52,13 +52,24 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
     upload_dependencies(arvRunner, name, tool.doc_loader,
                         packed, tool.tool["id"], False)
 
-    # TODO nowhere for submit_runner_ram to go.
+    if submit_runner_ram:
+        hints = main.get("hints", [])
+        found = False
+        for h in hints:
+            if h["class"] == "http://arvados.org/cwl#WorkflowRunnerResources":
+                h["ramMin"] = submit_runner_ram
+                found = True
+                break
+        if not found:
+            hints.append({"class": "http://arvados.org/cwl#WorkflowRunnerResources",
+                          "ramMin": submit_runner_ram})
+        main["hints"] = hints
 
     body = {
         "workflow": {
             "name": name,
             "description": tool.tool.get("doc", ""),
-            "definition":yaml.round_trip_dump(packed)
+            "definition":json.dumps(packed, sort_keys=True, indent=4, separators=(',',': '))
         }}
     if project_uuid:
         body["workflow"]["owner_uuid"] = project_uuid

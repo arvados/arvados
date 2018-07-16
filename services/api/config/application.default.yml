@@ -466,6 +466,11 @@ common:
   # "git log".
   source_version: false
 
+  # Override the automatic package version string. With the default version of
+  # false, the package version is read from package-build.version in Rails.root
+  # (included in vendor packages).
+  package_version: false
+
   # Enable asynchronous permission graph rebuild.  Must run
   # script/permission-updater.rb as a separate process.  When the permission
   # cache is invalidated, the background process will update the permission

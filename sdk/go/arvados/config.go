@@ -5,6 +5,8 @@
 package arvados
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -52,7 +54,7 @@ type Cluster struct {
 	ClusterID          string `json:"-"`
 	ManagementToken    string
 	NodeProfiles       map[string]NodeProfile
-	InstanceTypes      []InstanceType
+	InstanceTypes      InstanceTypeMap
 	HTTPRequestTimeout Duration
 	RemoteClusters     map[string]RemoteCluster
 	PostgreSQL         PostgreSQL
@@ -81,10 +83,50 @@ type InstanceType struct {
 	Name         string
 	ProviderType string
 	VCPUs        int
-	RAM          int64
-	Scratch      int64
+	RAM          ByteSize
+	Scratch      ByteSize
 	Price        float64
 	Preemptible  bool
+}
+
+type InstanceTypeMap map[string]InstanceType
+
+var errDuplicateInstanceTypeName = errors.New("duplicate instance type name")
+
+// UnmarshalJSON handles old config files that provide an array of
+// instance types instead of a hash.
+func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '[' {
+		var arr []InstanceType
+		err := json.Unmarshal(data, &arr)
+		if err != nil {
+			return err
+		}
+		if len(arr) == 0 {
+			*it = nil
+			return nil
+		}
+		*it = make(map[string]InstanceType, len(arr))
+		for _, t := range arr {
+			if _, ok := (*it)[t.Name]; ok {
+				return errDuplicateInstanceTypeName
+			}
+			(*it)[t.Name] = t
+		}
+		return nil
+	}
+	var hash map[string]InstanceType
+	err := json.Unmarshal(data, &hash)
+	if err != nil {
+		return err
+	}
+	// Fill in Name field using hash key.
+	*it = InstanceTypeMap(hash)
+	for name, t := range *it {
+		t.Name = name
+		(*it)[name] = t
+	}
+	return nil
 }
 
 // GetNodeProfile returns a NodeProfile for the given hostname. An

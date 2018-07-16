@@ -18,6 +18,7 @@ from cwltool.job import JobBase
 
 from schema_salad.sourceline import SourceLine
 
+from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import ruamel.yaml as yaml
 
 import arvados.collection
@@ -76,7 +77,14 @@ class ArvadosJob(JobBase):
 
                 if vwd:
                     with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                        vwd.save_new()
+                        if not runtimeContext.current_container:
+                            runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                        info = get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+                        vwd.save_new(name=info["name"],
+                                     owner_uuid=self.arvrunner.project_uuid,
+                                     ensure_unique_name=True,
+                                     trash_at=info["trash_at"],
+                                     properties=info["properties"])
 
                 for f, p in generatemapper.items():
                     if p.type == "File":

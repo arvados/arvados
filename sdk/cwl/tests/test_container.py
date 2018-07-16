@@ -21,7 +21,6 @@ if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
 
-
 class TestContainer(unittest.TestCase):
 
     def helper(self, runner, enable_reuse=True):
@@ -100,6 +99,7 @@ class TestContainer(unittest.TestCase):
                                                "capacity": 1073741824 }
                         },
                         'state': 'Committed',
+                        'output_name': 'Output for step test_run_'+str(enable_reuse),
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
                         'output_ttl': 0,
@@ -186,6 +186,7 @@ class TestContainer(unittest.TestCase):
                                    "capacity": 5242880000 }
             },
             'state': 'Committed',
+            'output_name': 'Output for step test_resource_requirements',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 7200,
@@ -318,6 +319,7 @@ class TestContainer(unittest.TestCase):
                 }
             },
             'state': 'Committed',
+            'output_name': 'Output for step test_initial_work_dir',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 0,
@@ -405,6 +407,7 @@ class TestContainer(unittest.TestCase):
                         },
                     },
                     'state': 'Committed',
+                    "output_name": "Output for step test_run_redirect",
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -541,6 +544,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
+                    'output_name': 'Output for step test_run_mounts',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -633,6 +637,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
+                    'output_name': 'Output for step test_secrets',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -648,3 +653,46 @@ class TestContainer(unittest.TestCase):
                         }
                     }
                 }))
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_timelimit(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#",
+            "class": "CommandLineTool",
+            "hints": [
+                {
+                    "class": "http://commonwl.org/cwltool#TimeLimit",
+                    "timelimit": 42
+                }
+            ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner)
+        runtimeContext.name = "test_timelimit"
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+
+        _, kwargs = runner.api.container_requests().create.call_args
+        self.assertEqual(42, kwargs['body']['scheduling_parameters'].get('max_run_time'))

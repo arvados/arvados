@@ -174,7 +174,7 @@ def find_available_port():
     sock.close()
     return port
 
-def _wait_until_port_listens(port, timeout=10):
+def _wait_until_port_listens(port, timeout=10, warn=True):
     """Wait for a process to start listening on the given port.
 
     If nothing listens on the port within the specified timeout (given
@@ -196,11 +196,13 @@ def _wait_until_port_listens(port, timeout=10):
         except subprocess.CalledProcessError:
             time.sleep(0.1)
             continue
-        return
-    print(
-        "WARNING: Nothing is listening on port {} (waited {} seconds).".
-        format(port, timeout),
-        file=sys.stderr)
+        return True
+    if warn:
+        print(
+            "WARNING: Nothing is listening on port {} (waited {} seconds).".
+            format(port, timeout),
+            file=sys.stderr)
+    return False
 
 def _logfilename(label):
     """Set up a labelled log file, and return a path to write logs to.
@@ -375,8 +377,11 @@ def reset():
         'POST',
         headers={'Authorization': 'OAuth2 {}'.format(token)})
     os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
-    os.environ['ARVADOS_API_HOST'] = existing_api_host
     os.environ['ARVADOS_API_TOKEN'] = token
+    if _wait_until_port_listens(_getport('controller-ssl'), timeout=0.5, warn=False):
+        os.environ['ARVADOS_API_HOST'] = '0.0.0.0:'+str(_getport('controller-ssl'))
+    else:
+        os.environ['ARVADOS_API_HOST'] = existing_api_host
 
 def stop(force=False):
     """Stop the API server, if one is running.
@@ -649,7 +654,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['keep-web',
          '-allow-anonymous',
-         '-attachment-only-host=download:'+str(keepwebport),
+         '-attachment-only-host=download',
          '-listen=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:

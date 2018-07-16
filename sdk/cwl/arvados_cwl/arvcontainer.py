@@ -11,6 +11,7 @@ import datetime
 import ciso8601
 import uuid
 
+from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
@@ -165,8 +166,14 @@ class ArvadosContainer(JobBase):
 
                 keepemptydirs(vwd)
 
-                with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                    vwd.save_new()
+                if not runtimeContext.current_container:
+                    runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+                vwd.save_new(name=info["name"],
+                             owner_uuid=self.arvrunner.project_uuid,
+                             ensure_unique_name=True,
+                             trash_at=info["trash_at"],
+                             properties=info["properties"])
 
                 prev = None
                 for f, p in sorteditems:
@@ -239,6 +246,10 @@ class ArvadosContainer(JobBase):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
+        if self.timelimit is not None:
+            scheduling_parameters["max_run_time"] = self.timelimit
+
+        container_request["output_name"] = "Output for step %s" % (self.name)
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts
@@ -382,7 +393,7 @@ class RunnerContainer(Runner):
             },
             "secret_mounts": secret_mounts,
             "runtime_constraints": {
-                "vcpus": 1,
+                "vcpus": self.submit_runner_cores,
                 "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
             },

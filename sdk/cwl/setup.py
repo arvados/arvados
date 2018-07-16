@@ -39,12 +39,16 @@ setup(name='arvados-cwl-runner',
           'ruamel.yaml >=0.13.11, <0.15',
           'arvados-python-client>=1.1.4.20180607143841',
           'setuptools',
-          'ciso8601 >=1.0.6, <2.0.0'
+          'ciso8601 >=1.0.6, <2.0.0',
+          'subprocess32>=3.5.1',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       test_suite='tests',
-      tests_require=['mock>=1.0'],
+      tests_require=[
+          'mock>=1.0',
+          'subprocess32>=3.5.1',
+      ],
       zip_safe=True
       )
