@@ -398,14 +398,14 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
-            cloud_size=self.server_calculator.find_size(cloud_size.id)).proxy()
-        self.booting[new_setup.actor_ref.actor_urn] = new_setup
-        self.sizes_booting[new_setup.actor_ref.actor_urn] = cloud_size
+            cloud_size=self.server_calculator.find_size(cloud_size.id))
+        self.booting[new_setup.actor_urn] = new_setup.proxy()
+        self.sizes_booting[new_setup.actor_urn] = cloud_size
 
         if arvados_node is not None:
             self.arvados_nodes[arvados_node['uuid']].assignment_time = (
                 time.time())
-        new_setup.subscribe(self._later.node_setup_finished)
+        new_setup.tell_proxy().subscribe(self._later.node_setup_finished)
         if nodes_wanted > 1:
             self._later.start_node(cloud_size)
 

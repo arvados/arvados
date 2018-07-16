@@ -38,7 +38,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
-        self._sizes_by_id = {sz.id: sz for sz in self.sizes.itervalues()}
         self._disktype_links = {dt.name: self._object_link(dt)
                                 for dt in self.real.ex_list_disktypes()}
 
@@ -120,7 +119,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         # and monkeypatch the results when that's the case.
         if nodelist and not hasattr(nodelist[0].size, 'id'):
             for node in nodelist:
-                node.size = self._sizes_by_id[node.size]
+                node.size = self.sizes()[node.size]
         return nodelist
 
     @classmethod

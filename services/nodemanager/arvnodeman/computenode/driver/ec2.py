@@ -102,7 +102,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         nodes = super(ComputeNodeDriver, self).list_nodes()
         for n in nodes:
             if not n.size:
-                n.size = self.sizes[n.extra["instance_type"]]
+                n.size = self.sizes()[n.extra["instance_type"]]
         return nodes
 
     @classmethod

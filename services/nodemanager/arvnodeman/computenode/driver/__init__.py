@@ -35,8 +35,10 @@ class BaseComputeNodeDriver(RetryMixin):
         return driver_class(**auth_kwargs)
 
     @RetryMixin._retry()
-    def _set_sizes(self):
-        self.sizes = {sz.id: sz for sz in self.real.list_sizes()}
+    def sizes(self):
+        if self._sizes is None:
+            self._sizes = {sz.id: sz for sz in self.real.list_sizes()}
+        return self._sizes
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class, retry_wait=1, max_retry_wait=180):
@@ -73,7 +75,7 @@ class BaseComputeNodeDriver(RetryMixin):
                 if new_pair is not None:
                     self.create_kwargs[new_pair[0]] = new_pair[1]
 
-        self._set_sizes()
+        self._sizes = None
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
