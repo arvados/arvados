@@ -46,6 +46,9 @@ func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, 
 		xff = xffIn + "," + xff
 	}
 	hdrOut.Set("X-Forwarded-For", xff)
+	if hdrOut.Get("X-Forwarded-Proto") == "" {
+		hdrOut.Set("X-Forwarded-Proto", reqIn.URL.Scheme)
+	}
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	ctx := reqIn.Context()
@@ -58,6 +61,7 @@ func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, 
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
+		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)

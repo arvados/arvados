@@ -124,9 +124,9 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 }
 
 func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
-	req := httptest.NewRequest("GET", "https://example.org:1234/login?return_to=foo", nil)
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusFound)
-	c.Check(resp.Header().Get("Location"), check.Matches, `https://example\.org:1234/auth/joshid\?return_to=foo&?`)
+	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=foo&?`)
 }

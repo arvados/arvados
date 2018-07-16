@@ -58,6 +58,8 @@ func (h *Handler) CheckHealth() error {
 	return err
 }
 
+func neverRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
 func (h *Handler) setup() {
 	mux := http.NewServeMux()
 	mux.Handle("/_health/", &health.Handler{
@@ -72,21 +74,18 @@ func (h *Handler) setup() {
 
 	sc := *arvados.DefaultSecureClient
 	sc.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	sc.CheckRedirect = neverRedirect
 	h.secureClient = &sc
 
 	ic := *arvados.InsecureHTTPClient
 	ic.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	ic.CheckRedirect = neverRedirect
 	h.insecureClient = &ic
 
 	h.proxy = &proxy{
 		Name:           "arvados-controller",
 		RequestTimeout: time.Duration(h.Cluster.HTTPRequestTimeout),
 	}
-
-	// Changing the global isn't the right way to do this, but a
-	// proper solution would conflict with an impending 13493
-	// merge anyway, so this will do for now.
-	arvados.InsecureHTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 }
 
 var errDBConnection = errors.New("database connection error")
