@@ -252,26 +252,32 @@
 			"revisionTime": "2018-06-25T08:58:08Z"
 		},
 		{
+			"checksumSHA1": "8UEp6v0Dczw/SlasE0DivB0mAHA=",
+			"path": "github.com/gogo/protobuf/jsonpb",
+			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
+			"revisionTime": "2018-05-09T16:24:41Z"
+		},
+		{
 			"checksumSHA1": "wn2shNJMwRZpvuvkf1s7h0wvqHI=",
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "160de10b2537169b5ae3e7e221d28269ef40d311",
 			"revisionTime": "2018-01-04T10:21:28Z"
 		},
 		{
-			"checksumSHA1": "iVfdaLxIDjfk2KLP8dCMIbsxZZM=",
-			"path": "github.com/golang/protobuf/jsonpb",
-			"revision": "1e59b77b52bf8e4b449a57e6f79f21226d571845",
-			"revisionTime": "2017-11-13T18:07:20Z"
+			"checksumSHA1": "HPVQZu059/Rfw2bAWM538bVTcUc=",
+			"path": "github.com/gogo/protobuf/sortkeys",
+			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
+			"revisionTime": "2018-05-09T16:24:41Z"
+		},
+		{
+			"checksumSHA1": "SkxU1+wPGUJyLyQENrZtr2/OUBs=",
+			"path": "github.com/gogo/protobuf/types",
+			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
+			"revisionTime": "2018-05-09T16:24:41Z"
 		},
 		{
 			"checksumSHA1": "yqF125xVSkmfLpIVGrLlfE05IUk=",
 			"path": "github.com/golang/protobuf/proto",
-			"revision": "1e59b77b52bf8e4b449a57e6f79f21226d571845",
-			"revisionTime": "2017-11-13T18:07:20Z"
-		},
-		{
-			"checksumSHA1": "Ylq6kq3KWBy6mu68oyEwenhNMdg=",
-			"path": "github.com/golang/protobuf/ptypes/struct",
 			"revision": "1e59b77b52bf8e4b449a57e6f79f21226d571845",
 			"revisionTime": "2017-11-13T18:07:20Z"
 		},
