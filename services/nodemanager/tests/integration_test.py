@@ -124,8 +124,11 @@ def node_busy(g):
 
 def node_shutdown(g):
     global compute_nodes
-    del compute_nodes[g.group(1)]
-    return 0
+    if g.group(1) in compute_nodes:
+        del compute_nodes[g.group(1)]
+        return 0
+    else:
+        return 1
 
 def jobs_req(g):
     global all_jobs

@@ -243,12 +243,15 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return super(ComputeNodeShutdownActor, self)._finished()
 
     def cancel_shutdown(self, reason, **kwargs):
+        if not self.cancellable:
+            return False
         if self.cancel_reason is not None:
             # already cancelled
-            return
+            return False
         self.cancel_reason = reason
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
+        return True
 
     def _cancel_on_exception(orig_func):
         @functools.wraps(orig_func)
@@ -282,6 +285,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._logger.info("Starting shutdown")
         arv_node = self._arvados_node()
         if self._cloud.destroy_node(self.cloud_node):
+            self.cancellable = False
             self._logger.info("Shutdown success")
             if arv_node:
                 self._later.clean_arvados_node(arv_node)
