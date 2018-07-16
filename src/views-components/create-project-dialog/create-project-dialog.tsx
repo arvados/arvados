@@ -11,7 +11,8 @@ import dataExplorerActions from "../../store/data-explorer/data-explorer-action"
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 
 const mapStateToProps = (state: RootState) => ({
-    open: state.projects.creator.opened
+    open: state.projects.creator.opened,
+    pending: state.projects.creator.pending,
 });
 
 const submit = (data: { name: string, description: string }) =>

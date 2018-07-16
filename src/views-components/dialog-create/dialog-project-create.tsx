@@ -8,12 +8,13 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
 import Validator from '../../utils/dialog-validator';
 
 interface ProjectCreateProps {
   open: boolean;
+  pending: boolean;
   handleClose: () => void;
   onSubmit: (data: { name: string, description: string }) => void;
 }
@@ -34,8 +35,8 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   };
 
   render() {
-    const { name, description } = this.state;
-    const { classes, open, handleClose } = this.props;
+    const { name, description, isNameValid, isDescriptionValid } = this.state;
+    const { classes, open, handleClose, pending } = this.props;
 
     return (
       <Dialog
@@ -73,7 +74,14 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose} className={classes.button} color="primary">CANCEL</Button>
-            <Button onClick={this.handleSubmit} className={classes.lastButton} color="primary" disabled={!this.state.isNameValid || (!this.state.isDescriptionValid && description.length > 0)} variant="raised">CREATE A PROJECT</Button>
+            <Button onClick={this.handleSubmit} 
+              className={classes.lastButton} 
+              color="primary" 
+              disabled={!isNameValid || (!isDescriptionValid && description.length > 0) || pending} 
+              variant="contained">
+              CREATE A PROJECT
+              </Button>
+              {pending && <CircularProgress size={20} className={classes.createProgress} />}
           </DialogActions>
         </div>
       </Dialog>
@@ -112,7 +120,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   }
 }
 
-type CssRules = "button" | "lastButton" | "dialogContent" | "textField" | "dialog" | "dialogTitle";
+type CssRules = "button" | "lastButton" | "dialogContent" | "textField" | "dialog" | "dialogTitle" | "createProgress";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
   button: {
@@ -134,6 +142,11 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
   dialog: {
     minWidth: "600px",
     minHeight: "320px"
+  },
+  createProgress: {
+    position: "absolute",
+    minWidth: "20px",
+    right: "95px"
   }
 });
 
