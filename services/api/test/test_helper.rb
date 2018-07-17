@@ -143,7 +143,7 @@ class ActiveSupport::TestCase
   end
 
   def self.slow_test(name, &block)
-    define_method(name, block) unless skip_slow_tests?
+    test(name, &block) unless skip_slow_tests?
   end
 end
 
