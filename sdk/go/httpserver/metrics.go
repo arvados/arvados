@@ -19,6 +19,11 @@ import (
 
 type Handler interface {
 	http.Handler
+
+	// Returns an http.Handler that serves the Handler's metrics
+	// data at /metrics and /metrics.json, and passes other
+	// requests through to next.
+	ServeAPI(next http.Handler) http.Handler
 }
 
 type metrics struct {
@@ -34,6 +39,8 @@ func (*metrics) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
 
+// Fire implements logrus.Hook in order to collect data points from
+// request logs.
 func (m *metrics) Fire(ent *logrus.Entry) error {
 	if tts, ok := ent.Data["timeToStatus"].(stats.Duration); !ok {
 	} else if method, ok := ent.Data["reqMethod"].(string); !ok {
@@ -57,19 +64,41 @@ func (m *metrics) exportJSON(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{']'})
 }
 
+// ServeHTTP implements http.Handler.
 func (m *metrics) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	switch {
-	case req.Method != "GET" && req.Method != "HEAD":
-		m.next.ServeHTTP(w, req)
-	case req.URL.Path == "/metrics.json":
-		m.exportJSON(w, req)
-	case req.URL.Path == "/metrics":
-		m.exportProm.ServeHTTP(w, req)
-	default:
-		m.next.ServeHTTP(w, req)
-	}
+	m.next.ServeHTTP(w, req)
 }
 
+// ServeAPI returns a new http.Handler that serves current data at
+// metrics API endpoints (currently "GET /metrics(.json)?") and passes
+// other requests through to next.
+//
+// Typical example:
+//
+//	m := Instrument(...)
+//	srv := http.Server{Handler: m.ServeAPI(m)}
+func (m *metrics) ServeAPI(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch {
+		case req.Method != "GET" && req.Method != "HEAD":
+			next.ServeHTTP(w, req)
+		case req.URL.Path == "/metrics.json":
+			m.exportJSON(w, req)
+		case req.URL.Path == "/metrics":
+			m.exportProm.ServeHTTP(w, req)
+		default:
+			next.ServeHTTP(w, req)
+		}
+	})
+}
+
+// Instrument returns a new Handler that passes requests through to
+// the next handler in the stack, and tracks metrics of those
+// requests.
+//
+// For the metrics to be accurate, the caller must ensure every
+// request passed to the Handler also passes through
+// LogRequests(logger, ...), and vice versa.
 func Instrument(logger *logrus.Logger, next http.Handler) Handler {
 	if logger == nil {
 		logger = logrus.StandardLogger()

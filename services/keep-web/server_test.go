@@ -360,6 +360,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	// must not intercept that route.
 	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
 	req.Host = strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + ".example.com"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)

@@ -88,8 +88,9 @@ func MakeRESTRouter() http.Handler {
 
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
 
-	return httpserver.Instrument(nil,
+	stack := httpserver.Instrument(nil,
 		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
+	return stack.ServeAPI(stack)
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.

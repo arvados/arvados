@@ -31,6 +31,7 @@ import (
 
 type handler struct {
 	Config        *Config
+	MetricsAPI    http.Handler
 	clientPool    *arvadosclient.ClientPool
 	setupOnce     sync.Once
 	healthHandler http.Handler
@@ -258,6 +259,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		credentialsOK = true
 	} else if r.URL.Path == "/status.json" {
 		h.serveStatus(w, r)
+		return
+	} else if strings.HasPrefix(r.URL.Path, "/metrics") {
+		h.MetricsAPI.ServeHTTP(w, r)
 		return
 	} else if siteFSDir[pathParts[0]] {
 		useSiteFS = true
