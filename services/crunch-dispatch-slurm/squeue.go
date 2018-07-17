@@ -115,7 +115,7 @@ func (sqc *SqueueChecker) reniceAll() {
 		}
 		err := sqc.Slurm.Renice(job.uuid, niceNew)
 		if err != nil && niceNew > slurm15NiceLimit && strings.Contains(err.Error(), "Invalid nice value") {
-			log.Printf("container %q clamping nice values at %d, priority order will not be correct", job.uuid, slurm15NiceLimit)
+			log.Printf("container %q clamping nice values at %d, priority order will not be correct -- see https://dev.arvados.org/projects/arvados/wiki/SLURM_integration#Limited-nice-values-SLURM-15", job.uuid, slurm15NiceLimit)
 			job.hitNiceLimit = true
 		}
 	}
