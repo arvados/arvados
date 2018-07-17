@@ -28,6 +28,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 user={user}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 onContextMenu={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
@@ -60,6 +61,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 searchText="search text"
                 searchDebounce={2000}
+                onContextMenu={jest.fn()}
                 onSearch={onSearch}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
@@ -79,6 +81,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 breadcrumbs={items}
+                onContextMenu={jest.fn()}
                 onBreadcrumbClick={onBreadcrumbClick}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
@@ -97,6 +100,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 menuItems={menuItems}
+                onContextMenu={jest.fn()}
                 onMenuItemClick={onMenuItemClick}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}

@@ -36,47 +36,6 @@ import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer'
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 
-const drawerWidth = 240;
-const appBarHeight = 100;
-
-type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
-
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        flexGrow: 1,
-        zIndex: 1,
-        overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
-        width: '100vw',
-        height: '100vh'
-    },
-    appBar: {
-        zIndex: theme.zIndex.drawer + 1,
-        position: "absolute",
-        width: "100%"
-    },
-    drawerPaper: {
-        position: 'relative',
-        width: drawerWidth,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    contentWrapper: {
-        backgroundColor: theme.palette.background.default,
-        display: "flex",
-        flexGrow: 1,
-        minWidth: 0,
-        paddingTop: appBarHeight
-    },
-    content: {
-        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
-        overflowY: "auto",
-        flexGrow: 1
-    },
-    toolbar: theme.mixins.toolbar
-});
-
 interface WorkbenchDataProps {
     projects: Array<TreeItem<ProjectResource>>;
     currentProjectId: string;
@@ -139,48 +98,6 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             ]
         }
     };
-
-    mainAppBarActions: MainAppBarActionProps = {
-        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
-            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-        },
-        onSearch: searchText => {
-            this.setState({ searchText });
-            this.props.dispatch(push(`/search?q=${searchText}`));
-        },
-        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
-        onDetailsPanelToggle: () => {
-            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-        },
-        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-            this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
-        }
-    };
-
-    toggleSidePanelOpen = (itemId: string) => {
-        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
-    }
-
-    toggleSidePanelActive = (itemId: string) => {
-        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
-        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
-        this.props.dispatch(push("/"));
-    }
-
-    handleCreationDialogOpen = (itemUuid: string) => {
-        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
-    }
-
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
-        event.preventDefault();
-        this.props.dispatch(
-            contextMenuActions.OPEN_CONTEXT_MENU({
-                position: { x: event.clientX, y: event.clientY },
-                resource: { uuid: itemUuid, kind }
-            })
-        );
-    }
 
     render() {
         const path = getTreePath(this.props.projects, this.props.currentProjectId);
@@ -250,7 +167,92 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
         }}
         {...props} />
+
+    mainAppBarActions: MainAppBarActionProps = {
+        onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
+            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
+            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+        },
+        onSearch: searchText => {
+            this.setState({ searchText });
+            this.props.dispatch(push(`/search?q=${searchText}`));
+        },
+        onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
+        onDetailsPanelToggle: () => {
+            this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        },
+        onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
+            this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
+        }
+    };
+
+    toggleSidePanelOpen = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(itemId));
+    }
+
+    toggleSidePanelActive = (itemId: string) => {
+        this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
+        this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+        this.props.dispatch(push("/"));
+    }
+
+    handleCreationDialogOpen = (itemUuid: string) => {
+        this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+    }
+
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
+        event.preventDefault();
+        this.props.dispatch(
+            contextMenuActions.OPEN_CONTEXT_MENU({
+                position: { x: event.clientX, y: event.clientY },
+                resource: { uuid: itemUuid, kind }
+            })
+        );
+    }
+
+
 }
+
+const drawerWidth = 240;
+const appBarHeight = 100;
+
+type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        flexGrow: 1,
+        zIndex: 1,
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        width: '100vw',
+        height: '100vh'
+    },
+    appBar: {
+        zIndex: theme.zIndex.drawer + 1,
+        position: "absolute",
+        width: "100%"
+    },
+    drawerPaper: {
+        position: 'relative',
+        width: drawerWidth,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    contentWrapper: {
+        backgroundColor: theme.palette.background.default,
+        display: "flex",
+        flexGrow: 1,
+        minWidth: 0,
+        paddingTop: appBarHeight
+    },
+    content: {
+        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
+        overflowY: "auto",
+        flexGrow: 1
+    },
+    toolbar: theme.mixins.toolbar
+});
 
 export default connect<WorkbenchDataProps>(
     (state: RootState) => ({

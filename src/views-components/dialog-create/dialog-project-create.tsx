@@ -87,13 +87,13 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
     });
   }
 
-  handleProjectName(e: any) {
+  handleProjectName(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
       name: e.target.value,
     });
   }
 
-  handleDescriptionValue(e: any) {
+  handleDescriptionValue(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
       description: e.target.value,
     });
