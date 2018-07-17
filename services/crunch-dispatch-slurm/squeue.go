@@ -168,14 +168,17 @@ func (sqc *SqueueChecker) check() {
 		replacing.nice = n
 		newq[uuid] = replacing
 
-		if state == "PENDING" && ((reason == "BadConstraints" && p == 0) || reason == "launch failed requeued held") && replacing.wantPriority > 0 {
+		if state == "PENDING" && ((reason == "BadConstraints" && p <= 2*slurm15NiceLimit) || reason == "launch failed requeued held") && replacing.wantPriority > 0 {
 			// When using SLURM 14.x or 15.x, our queued
 			// jobs land in this state when "scontrol
 			// reconfigure" invalidates their feature
 			// constraints by clearing all node features.
 			// They stay in this state even after the
 			// features reappear, until we run "scontrol
-			// release {jobid}".
+			// release {jobid}". Priority is usually 0 in
+			// this state, but sometimes (due to a race
+			// with nice adjustments?) it's a small
+			// positive value.
 			//
 			// "scontrol release" is silent and successful
 			// regardless of whether the features have
@@ -186,7 +189,7 @@ func (sqc *SqueueChecker) check() {
 			// "launch failed requeued held" seems to be
 			// another manifestation of this problem,
 			// resolved the same way.
-			log.Printf("releasing held job %q", uuid)
+			log.Printf("releasing held job %q (priority=%d, state=%q, reason=%q)", uuid, p, state, reason)
 			sqc.Slurm.Release(uuid)
 		} else if p < 1<<20 && replacing.wantPriority > 0 {
 			log.Printf("warning: job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
