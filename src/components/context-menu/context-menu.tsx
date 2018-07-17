@@ -4,11 +4,11 @@
 import * as React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
-import IconBase, { IconTypes } from "../icon/icon";
+import { IconType } from "../icon/icon";
 
 export interface ContextMenuItem {
     name: string;
-    icon: IconTypes;
+    icon: IconType;
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];
@@ -22,7 +22,7 @@ export interface ContextMenuProps {
 
 export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, items, onClose, onItemClick } = this.props;
+        const { anchorEl, items, onClose, onItemClick} = this.props;
         return <Popover
             anchorEl={anchorEl}
             open={!!anchorEl}
@@ -39,7 +39,7 @@ export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 key={actionIndex}
                                 onClick={() => onItemClick(item)}>
                                 <ListItemIcon>
-                                    <IconBase icon={item.icon} />
+                                    <item.icon/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     {item.name}

@@ -7,19 +7,19 @@ import { mount, configure, shallow } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 import ContextMenu from "./context-menu";
 import { ListItem } from "@material-ui/core";
-import { IconTypes } from "../icon/icon";
+import { ShareIcon } from "../icon/icon";
 
 configure({ adapter: new Adapter() });
 
 describe("<ContextMenu />", () => {
     const items = [[{
-        icon: IconTypes.ANNOUNCEMENT,
+        icon: ShareIcon,
         name: "Action 1.1"
     }, {
-        icon: IconTypes.ANNOUNCEMENT,
+        icon: ShareIcon,
         name: "Action 1.2"
     },], [{
-        icon: IconTypes.ANNOUNCEMENT,
+        icon: ShareIcon,
         name: "Action 2.1"
     }]];
 
