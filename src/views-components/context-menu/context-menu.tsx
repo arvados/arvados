@@ -9,7 +9,6 @@ import ContextMenu, { ContextMenuProps, ContextMenuItem } from "../../components
 import { createAnchorAt } from "../../components/popover/helpers";
 import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
-import { emptyActionSet } from "./action-sets/empty-action-set";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
@@ -51,6 +50,6 @@ export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) =>
 };
 
 const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
-    return resource ? menuActionSets.get(resource.kind) || emptyActionSet : emptyActionSet;
+    return resource ? menuActionSets.get(resource.kind) || [] : [];
 };
 
