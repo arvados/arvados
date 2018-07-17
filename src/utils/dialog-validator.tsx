@@ -10,7 +10,7 @@ type ValidatorProps = {
   onChange: (isValid: boolean | string) => void;
   render: (hasError: boolean) => React.ReactElement<any>;
   isRequired: boolean;
-  duplicatedName?: string;
+  isUniqName?: boolean;
 };
 
 interface ValidatorState {
@@ -41,14 +41,14 @@ class Validator extends React.Component<ValidatorProps & WithStyles<CssRules>> {
   }
 
   render() {
-    const { classes, isRequired, value, duplicatedName } = this.props;
+    const { classes, isRequired, value, isUniqName } = this.props;
     const { isLengthValid } = this.state;
 
     return (
       <span>
         {this.props.render(!isLengthValid && (isRequired || (!isRequired && value.length > 0)))}
         {!isLengthValid ? <span className={classes.formInputError}>This field should have max 255 characters.</span> : null}
-        {duplicatedName ? <span className={classes.formInputError}>Project with this name already exists</span> : null}
+        {isUniqName ? <span className={classes.formInputError}>Project with this name already exists</span> : null}
       </span>
     );
   }

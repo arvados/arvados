@@ -25,7 +25,7 @@ interface DialogState {
   description: string;
   isNameValid: boolean;
   isDescriptionValid: boolean;
-  duplicatedName: string;
+  isUniqName: boolean;
 }
 
 class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyles<CssRules>> {
@@ -34,19 +34,19 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
     description: '',
     isNameValid: false,
     isDescriptionValid: true,
-    duplicatedName: ''
+    isUniqName: false
   };
 
   componentWillReceiveProps(nextProps: ProjectCreateProps) {
     const { error } = nextProps;
 
     if (this.props.error !== error) {
-      this.setState({ duplicatedName: error });
+      this.setState({ isUniqName: error });
     }
   }
 
   render() {
-    const { name, description, isNameValid, isDescriptionValid, duplicatedName } = this.state;
+    const { name, description, isNameValid, isDescriptionValid, isUniqName } = this.state;
     const { classes, open, handleClose, pending } = this.props;
 
     return (
@@ -60,7 +60,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
               value={name}
               onChange={e => this.isNameValid(e)}
               isRequired={true}
-              duplicatedName={duplicatedName}
+              isUniqName={isUniqName}
               render={hasError =>
                 <TextField
                   margin="dense"
@@ -68,7 +68,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
                   id="name"
                   onChange={e => this.handleProjectName(e)}
                   label="Project name"
-                  error={hasError || !!duplicatedName}
+                  error={hasError || isUniqName}
                   fullWidth />} />
             <Validator
               value={description}
@@ -110,7 +110,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   handleProjectName(e: any) {
     this.setState({
       name: e.target.value,
-      duplicatedName: ''
+      isUniqName: ''
     });
   }
 
