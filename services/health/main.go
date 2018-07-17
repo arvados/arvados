@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package main
 
 import (
@@ -37,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nodeCfg, err := clusterCfg.GetThisSystemNode()
+	nodeCfg, err := clusterCfg.GetNodeProfile("")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 // A Client is an HTTP client with an API endpoint and a set of
@@ -50,6 +53,8 @@ type Client struct {
 	KeepServiceURIs []string `json:",omitempty"`
 
 	dd *DiscoveryDocument
+
+	ctx context.Context
 }
 
 // The default http.Client used by a Client with Insecure==true and
@@ -92,10 +97,25 @@ func NewClientFromEnv() *Client {
 	}
 }
 
-// Do adds authentication headers and then calls (*http.Client)Do().
+var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
+
+// Do adds Authorization and X-Request-Id headers and then calls
+// (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.AuthToken != "" {
 		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
+	}
+
+	if req.Header.Get("X-Request-Id") == "" {
+		reqid, _ := c.context().Value(contextKeyRequestID).(string)
+		if reqid == "" {
+			reqid = reqIDGen.Next()
+		}
+		if req.Header == nil {
+			req.Header = http.Header{"X-Request-Id": {reqid}}
+		} else {
+			req.Header.Set("X-Request-Id", reqid)
+		}
 	}
 	return c.httpClient().Do(req)
 }
@@ -223,6 +243,23 @@ func (c *Client) UpdateBody(rsc resource) io.Reader {
 	}
 	v := url.Values{rsc.resourceName(): {string(j)}}
 	return bytes.NewBufferString(v.Encode())
+}
+
+type contextKey string
+
+var contextKeyRequestID contextKey = "X-Request-Id"
+
+func (c *Client) WithRequestID(reqid string) *Client {
+	cc := *c
+	cc.ctx = context.WithValue(cc.context(), contextKeyRequestID, reqid)
+	return &cc
+}
+
+func (c *Client) context() context.Context {
+	if c.ctx == nil {
+		return context.Background()
+	}
+	return c.ctx
 }
 
 func (c *Client) httpClient() *http.Client {

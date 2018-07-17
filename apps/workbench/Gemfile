@@ -4,9 +4,7 @@
 
 source 'https://rubygems.org'
 
-# Having a dependency '~> 4.1' make rails 4.2.10 to be installed when it's
-# supposed to avoid that.
-gem 'rails', '< 4.2'
+gem 'rails', '~> 4.2.0'
 gem 'arvados', '>= 0.1.20150511150219'
 
 gem 'activerecord-nulldb-adapter'
@@ -14,6 +12,7 @@ gem 'multi_json'
 gem 'oj'
 gem 'sass'
 gem 'mime-types'
+gem 'responders', '~> 2.0'
 
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
@@ -37,6 +36,7 @@ group :development do
   gem 'ruby-debug-passenger'
   gem 'rack-mini-profiler', require: false
   gem 'flamegraph', require: false
+  #gem 'web-console', '~> 2.0'
 end
 
 group :test, :diagnostics, :performance do

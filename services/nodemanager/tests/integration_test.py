@@ -12,7 +12,7 @@ events or behaviors for each test.
 
 """
 
-import subprocess
+import subprocess32 as subprocess
 import os
 import sys
 import re
@@ -21,6 +21,7 @@ import logging
 import stat
 import tempfile
 import shutil
+import errno
 from functools import partial
 import arvados
 import StringIO
@@ -105,18 +106,6 @@ def node_paired(g):
 
     return 0
 
-def remaining_jobs(g):
-    update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
-                  "\n".join("echo '%s|alloc|(null)'" % (v) for k,v in compute_nodes.items()))
-
-    for k,v in all_jobs.items():
-        all_jobs[k] = "Running"
-
-    set_squeue(g)
-
-    return 0
-
-
 def node_busy(g):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n" +
                   "\n".join("echo '%s|idle|(null)'" % (v) for k,v in compute_nodes.items()))
@@ -124,7 +113,8 @@ def node_busy(g):
 
 def node_shutdown(g):
     global compute_nodes
-    del compute_nodes[g.group(1)]
+    if g.group(1) in compute_nodes:
+        del compute_nodes[g.group(1)]
     return 0
 
 def jobs_req(g):
@@ -186,8 +176,8 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                                       driver_class=driver_class,
                                       ssh_key=os.path.join(fake_slurm, "id_rsa.pub")))
 
-    # Tests must complete in less than 3 minutes.
-    timeout = time.time() + 180
+    # Tests must complete in less than 30 seconds.
+    timeout = time.time() + 30
     terminated = False
 
     # Now start node manager
@@ -215,7 +205,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                     if code != 0:
                         detail.error("Check failed")
                         if not terminated:
-                            p.terminate()
+                            p.kill()
                             terminated = True
 
             if terminated:
@@ -225,7 +215,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                 detail.error("Exceeded timeout with actions remaining: %s", actions)
                 code += 1
                 if not terminated:
-                    p.terminate()
+                    p.kill()
                     terminated = True
 
             k, v = actions[0]
@@ -236,11 +226,11 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
                 code += v(g)
                 if code != 0:
                     detail.error("Action failed")
-                    p.terminate()
+                    p.kill()
                     terminated = True
 
             if not actions:
-                p.terminate()
+                p.kill()
                 terminated = True
     except KeyboardInterrupt:
         p.kill()
@@ -256,7 +246,18 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
         logger.info("%s passed", name)
     else:
         if isinstance(detail_content, StringIO.StringIO):
-            sys.stderr.write(detail_content.getvalue())
+            detail_content.seek(0)
+            chunk = detail_content.read(4096)
+            while chunk:
+                try:
+                    sys.stderr.write(chunk)
+                    chunk = detail_content.read(4096)
+                except IOError as e:
+                    if e.errno == errno.EAGAIN:
+                        # try again (probably pipe buffer full)
+                        pass
+                    else:
+                        raise
         logger.info("%s failed", name)
 
     return code
@@ -321,7 +322,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 4),
                 r".*Setting node quota.*": fail,
             },
@@ -341,13 +341,12 @@ def main():
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
-                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", remaining_jobs),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", noop),
                 (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown),
                 (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown)
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 2),
                 r".*Sending create_node request.*": partial(expect_count, 5)
             },
@@ -367,7 +366,7 @@ def main():
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
-                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", remaining_jobs),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", noop),
                 (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown),
                 (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown),
                 (r".*sending request", jobs_req),
@@ -384,7 +383,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 6),
                 r".*Sending create_node request.*": partial(expect_count, 9)
             },
@@ -421,8 +419,8 @@ def main():
             # Actions (pattern -> action)
             [
                 (r".*Daemon started", set_squeue),
-                (r".*Rate limit exceeded - scheduling retry in 12 seconds", noop),
                 (r".*Rate limit exceeded - scheduling retry in 2 seconds", noop),
+                (r".*Rate limit exceeded - scheduling retry in 1 seconds", noop),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", noop),
             ],
             # Checks (things that shouldn't happen)
@@ -444,7 +442,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
                 r".*Setting node quota.*": fail,
             },
@@ -465,7 +462,6 @@ def main():
             ],
             # Checks (things that shouldn't happen)
             {
-                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
                 r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
                 r".*Setting node quota.*": fail,
             },

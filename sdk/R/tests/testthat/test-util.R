@@ -1,4 +1,32 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 context("Utility function")
+
+test_that("listAll always returns all resource items from server", {
+
+    serverResponseLimit <- 3
+    itemsAvailable <- 8
+    items <- list("collection1", "collection2", "collection3", "collection4",
+                  "collection5", "collection6", "collection7", "collection8")
+
+    testFunction <- function(offset, ...)
+    {
+        response <- list()
+        response$items_available <- itemsAvailable
+
+        maxIndex <- offset + serverResponseLimit
+        lastElementIndex <- if(maxIndex < itemsAvailable) maxIndex else itemsAvailable
+
+        response$items <- items[(offset + 1):lastElementIndex]
+        response
+    }
+
+    result <- listAll(testFunction)
+
+    expect_that(length(result), equals(8))
+}) 
 
 test_that("trimFromStart trims string correctly if string starts with trimCharacters", {
 

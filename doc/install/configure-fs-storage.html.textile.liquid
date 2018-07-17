@@ -1,0 +1,56 @@
+---
+layout: default
+navsection: installguide
+title: Filesystem storage
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Keepstore can store data in local and network-attached POSIX filesystems.
+
+h2. Setting up filesystem mounts
+
+Volumes are configured in the @Volumes@ section of the configuration file.  You may provide multiple volumes for a single keepstore process to manage multiple disks.  Keepstore distributes blocks among volumes in round-robin fashion.
+
+<pre>
+Volumes:
+- # The volume type, indicates this is a filesystem directory.
+  Type: Directory
+
+  # The directory that will be used as the backing store.
+  Root: /mnt/local-disk
+
+  # How much replication is performed by the underlying filesystem.
+  # (for example, a network filesystem may provide its own replication).
+  # This is used to inform replication decisions at the Keep layer.
+  DirectoryReplication: 1
+
+  # If true, do not accept write or trash operations, only reads.
+  ReadOnly: false
+
+  # When true, read and write operations (for whole 64MiB blocks) on
+  # an individual volume will queued and issued serially.  When
+  # false, read and write operations will be issued concurrently.
+  #
+  # May improve throughput if you experience contention when there are
+  # multiple requests to the same volume.
+  #
+  # When using SSDs, RAID, or a parallel network filesystem, you probably
+  # don't want this.
+  Serialize: false
+
+  # Storage classes to associate with this volume.  See "Storage
+  # classes" in the "Admin" section of doc.arvados.org.
+  StorageClasses: null
+
+  # Example of a second volume section
+- DirectoryReplication: 2
+  ReadOnly: false
+  Root: /mnt/network-disk
+  Serialize: false
+  StorageClasses: null
+  Type: Directory
+</pre>

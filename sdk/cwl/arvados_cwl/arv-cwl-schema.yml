@@ -47,6 +47,28 @@ $graph:
         "_type": "@id"
         refScope: 0
 
+- name: cwltool:TimeLimit
+  type: record
+  inVocab: false
+  extends: cwl:ProcessRequirement
+  doc: |
+    Set an upper limit on the execution time of a CommandLineTool or
+    ExpressionTool.  A tool execution which exceeds the time limit may
+    be preemptively terminated and considered failed.  May also be
+    used by batch systems to make scheduling decisions.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'TimeLimit'"
+      jsonldPredicate:
+        "_id": "@type"
+        "_type": "@vocab"
+    - name: timelimit
+      type: [long, string]
+      doc: |
+        The time limit, in seconds.  A time limit of zero means no
+        time limit.  Negative time limits are an error.
+
 - name: RunInSingleContainer
   type: record
   extends: cwl:ProcessRequirement
@@ -189,3 +211,25 @@ $graph:
         _type: "@vocab"
     - name: enableReuse
       type: boolean
+
+- name: WorkflowRunnerResources
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify memory or cores resource request for the CWL runner process itself.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:WorkflowRunnerResources'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    ramMin:
+      type: int?
+      doc: Minimum RAM, in mebibytes (2**20)
+      jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/ramMin"
+    coresMin:
+      type: int?
+      doc: Minimum cores allocated to cwl-runner
+      jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/coresMin"

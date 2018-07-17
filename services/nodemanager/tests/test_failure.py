@@ -48,9 +48,12 @@ class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
     def test_nonfatal_error(self):
         status.tracker.update({'actor_exceptions': 0})
         kill_mock = mock.Mock('os.kill')
-        act = BogusActor.start(OSError(errno.ENOENT, ""), killfunc=kill_mock).tell_proxy()
+        bgact = BogusActor.start(OSError(errno.ENOENT, ""), killfunc=kill_mock)
+        act_thread = bgact.proxy().get_thread().get()
+        act = bgact.tell_proxy()
         act.doStuff()
         act.actor_ref.stop(block=True)
+        act_thread.join()
         self.assertFalse(kill_mock.called)
         self.assertEqual(1, status.tracker.get('actor_exceptions'))
 

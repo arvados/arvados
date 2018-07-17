@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -428,7 +429,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	case <-ctx.Done():
 		theConfig.debugLogf("%s: taking PutReader's input away: %s", v, ctx.Err())
 		// Our pipe might be stuck in Write(), waiting for
-		// io.Copy() to read. If so, un-stick it. This means
+		// PutReader() to read. If so, un-stick it. This means
 		// PutReader will get corrupt data, but that's OK: the
 		// size and MD5 won't match, so the write will fail.
 		go io.Copy(ioutil.Discard, bufr)
@@ -437,6 +438,8 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 		theConfig.debugLogf("%s: abandoning PutReader goroutine", v)
 		return ctx.Err()
 	case <-ready:
+		// Unblock pipe in case PutReader did not consume it.
+		io.Copy(ioutil.Discard, bufr)
 		return v.translateError(err)
 	}
 }
@@ -764,26 +767,21 @@ func (v *S3Volume) translateError(err error) error {
 func (v *S3Volume) EmptyTrash() {
 	var bytesInTrash, blocksInTrash, bytesDeleted, blocksDeleted int64
 
-	// Use a merge sort to find matching sets of trash/X and recent/X.
-	trashL := s3Lister{
-		Bucket:   v.bucket.Bucket,
-		Prefix:   "trash/",
-		PageSize: v.IndexPageSize,
-	}
 	// Define "ready to delete" as "...when EmptyTrash started".
 	startT := time.Now()
-	for trash := trashL.First(); trash != nil; trash = trashL.Next() {
+
+	emptyOneKey := func(trash *s3.Key) {
 		loc := trash.Key[6:]
 		if !v.isKeepBlock(loc) {
-			continue
+			return
 		}
-		bytesInTrash += trash.Size
-		blocksInTrash++
+		atomic.AddInt64(&bytesInTrash, trash.Size)
+		atomic.AddInt64(&blocksInTrash, 1)
 
 		trashT, err := time.Parse(time.RFC3339, trash.LastModified)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
-			continue
+			return
 		}
 		recent, err := v.bucket.Head("recent/"+loc, nil)
 		if err != nil && os.IsNotExist(v.translateError(err)) {
@@ -792,15 +790,15 @@ func (v *S3Volume) EmptyTrash() {
 			if err != nil {
 				log.Printf("error: %s: EmptyTrash: Untrash(%q): %s", v, loc, err)
 			}
-			continue
+			return
 		} else if err != nil {
 			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, "recent/"+loc, err)
-			continue
+			return
 		}
 		recentT, err := v.lastModified(recent)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, "recent/"+loc, recent.Header.Get("Last-Modified"), err)
-			continue
+			return
 		}
 		if trashT.Sub(recentT) < theConfig.BlobSignatureTTL.Duration() {
 			if age := startT.Sub(recentT); age >= theConfig.BlobSignatureTTL.Duration()-time.Duration(v.RaceWindow) {
@@ -815,39 +813,67 @@ func (v *S3Volume) EmptyTrash() {
 				log.Printf("notice: %s: EmptyTrash: detected old race for %q, calling fixRace + Touch", v, loc)
 				v.fixRace(loc)
 				v.Touch(loc)
-				continue
+				return
 			}
 			_, err := v.bucket.Head(loc, nil)
 			if os.IsNotExist(err) {
 				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
 				v.fixRace(loc)
-				continue
+				return
 			} else if err != nil {
 				log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
-				continue
+				return
 			}
 		}
 		if startT.Sub(trashT) < theConfig.TrashLifetime.Duration() {
-			continue
+			return
 		}
 		err = v.bucket.Del(trash.Key)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, trash.Key, err)
-			continue
+			return
 		}
-		bytesDeleted += trash.Size
-		blocksDeleted++
+		atomic.AddInt64(&bytesDeleted, trash.Size)
+		atomic.AddInt64(&blocksDeleted, 1)
 
 		_, err = v.bucket.Head(loc, nil)
-		if os.IsNotExist(err) {
-			err = v.bucket.Del("recent/" + loc)
-			if err != nil {
-				log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
-			}
-		} else if err != nil {
-			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, "recent/"+loc, err)
+		if err == nil {
+			log.Printf("warning: %s: EmptyTrash: HEAD %q succeeded immediately after deleting %q", v, loc, loc)
+			return
+		}
+		if !os.IsNotExist(v.translateError(err)) {
+			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
+			return
+		}
+		err = v.bucket.Del("recent/" + loc)
+		if err != nil {
+			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
 		}
 	}
+
+	var wg sync.WaitGroup
+	todo := make(chan *s3.Key, theConfig.EmptyTrashWorkers)
+	for i := 0; i < 1 || i < theConfig.EmptyTrashWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for key := range todo {
+				emptyOneKey(key)
+			}
+		}()
+	}
+
+	trashL := s3Lister{
+		Bucket:   v.bucket.Bucket,
+		Prefix:   "trash/",
+		PageSize: v.IndexPageSize,
+	}
+	for trash := trashL.First(); trash != nil; trash = trashL.Next() {
+		todo <- trash
+	}
+	close(todo)
+	wg.Wait()
+
 	if err := trashL.Error(); err != nil {
 		log.Printf("error: %s: EmptyTrash: lister: %s", v, err)
 	}

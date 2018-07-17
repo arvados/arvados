@@ -117,7 +117,11 @@ common:
   ### New user and & email settings
   ###
 
-  # Config parameters to automatically setup new users.
+  # Config parameters to automatically setup new users.  If enabled,
+  # this users will be able to self-activate.  Enable this if you want
+  # to run an open instance where anyone can create an account and use
+  # the system without requiring manual approval.
+  #
   # The params auto_setup_new_users_with_* are meaningful only when auto_setup_new_users is turned on.
   # auto_setup_name_blacklist is a list of usernames to be blacklisted for auto setup.
   auto_setup_new_users: false
@@ -125,7 +129,9 @@ common:
   auto_setup_new_users_with_repository: false
   auto_setup_name_blacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
 
-  # When new_users_are_active is set to true, the user agreement check is skipped.
+  # When new_users_are_active is set to true, new users will be active
+  # immediately.  This skips the "self-activate" step which enforces
+  # user agreements.  Should only be enabled for development.
   new_users_are_active: false
 
   # The e-mail address of the user you would like to become marked as an admin
@@ -289,6 +295,11 @@ common:
   ### Crunch, DNS & compute node management
   ###
 
+  # Preemptible instance support (e.g. AWS Spot Instances)
+  # When true, child containers will get created with the preemptible
+  # scheduling parameter parameter set.
+  preemptible_instances: false
+
   # Docker image to be used when none found in runtime_constraints of a job
   default_docker_image_for_jobs: false
 
@@ -404,6 +415,12 @@ common:
   # remote_hosts above.
   remote_hosts_via_dns: false
 
+  # List of cluster prefixes.  These are "trusted" clusters, users
+  # from the clusters listed here will be automatically setup and
+  # activated.  This is separate from the settings
+  # auto_setup_new_users and new_users_are_active.
+  auto_activate_users_from: []
+
   ###
   ### Remaining assorted configuration options.
   ###
@@ -448,6 +465,11 @@ common:
   # Rails.root (included in vendor packages) or determined by invoking
   # "git log".
   source_version: false
+
+  # Override the automatic package version string. With the default version of
+  # false, the package version is read from package-build.version in Rails.root
+  # (included in vendor packages).
+  package_version: false
 
   # Enable asynchronous permission graph rebuild.  Must run
   # script/permission-updater.rb as a separate process.  When the permission

@@ -1,0 +1,229 @@
+---
+layout: default
+navsection: admin
+title: User activation
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page describes how new users are created and activated.
+
+"Browser login and management of API tokens is described here.":{{site.baseurl}}/api/tokens.html
+
+h3. Authentication
+
+After completing the authentication process, a callback is made from the SSO server to the API server, providing a user record and @identity_url@ (despite the name, this is actually an Arvados user uuid).
+
+The API server searches for a user record with the @identity_url@ supplied by the SSO.  If found, that user account will be used, unless the account has @redirect_to_user_uuid@ set, in which case it will use the user in @redirect_to_user_uuid@ instead (this is used for the "link account":{{site.baseurl}}/user/topics/link-accounts.html feature).
+
+Next, it searches by email address for a "pre-activated account.":#pre-activated
+
+If no existing user record is found, a new user object will be created.
+
+A federated user follows a slightly different flow, whereby a special token is presented and the API server verifies user's identity with the home cluster, however it also results in a user object (representing the remote user) being created.
+
+h3. User setup
+
+If @auto_setup_new_users@ is true, as part of creating the new user object, the user is immediately set up with:
+
+* @can_login@ @permission@ link going (email address &rarr; user uuid) which records @identity_url_prefix@
+* Membership in the "All users" group (can read all users, all users can see new user)
+* A new git repo and @can_manage@ permission if @auto_setup_new_users_with_repository@ is true
+* @can_login@ permission to a shell node if @auto_setup_new_users_with_vm_uuid@ is set to the uuid of a vm
+
+Otherwise, an admin must explicitly invoke "setup" on the user via workbench or the API.
+
+h3. User activation
+
+A newly created user is inactive (@is_active@ is false) by default unless @new_users_are_active@.
+
+An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read.  This implies that if @auto_setup_new_users@ is true, an "inactive" user who has been set up may still be able to do things, such as read things shared with "All users", clone and push to the git repository, or login to a VM.
+
+{% comment %}
+Maybe these services should check is_active.
+
+I believe that when this was originally designed, being able to access git and VM required an ssh key, and an inactive user could not register an ssh key because that required creating a record.  However, it is now possible to authenticate to shell VMs and http+git with just an API token.
+{% endcomment %}
+
+At this point, there are two ways a user can be activated.
+
+# An admin can set the @is_active@ field directly.  This runs @setup_on_activate@ which sets up oid_login_perm and group membership, but does not set repo or vm (even if if @auto_setup_new_users_with_repository@ and/or @auto_setup_new_users_with_vm_uuid@ are set).
+# Self-activation using the @activate@ method of the users controller.
+
+h3. User agreements
+
+The @activate@ method of the users controller checks if the user @is_invited@ and whether the user has "signed" all the user agreements.
+
+@is_invited@ is true if any of these are true:
+* @is_active@ is true
+* @new_users_are_active@ is true
+* the user account has a permission link to read the system "all users" group.
+
+User agreements are accessed by getting a listing on the @user_agreements@ endpoint.  This returns a list of collection uuids.  This is executed as a system user, so it bypasses normal read permission checks.
+
+The available user agreements are represented in the Links table as
+
+<pre>
+{
+  "link_class": "signature",
+  "name": "require",
+  "tail_uuid": "*system user uuid*",
+  "head_uuid: "*collection uuid*"
+}
+</pre>
+
+The collection contains the user agreement text file.
+
+On workbench, it checks @is_invited@.  If true, it displays the clickthrough agreements which the user can "sign".  If @is_invited@ is false, the user ends up at the "inactive user" page.
+
+The @user_agreements/sign@ endpoint creates a Link object:
+
+<pre>
+{
+  "link_class": "signature"
+  "name": "click",
+  "tail_uuid": "*user uuid*",
+  "head_uuid: "*collection uuid*"
+}
+</pre>
+
+This is executed as a system user, so it bypasses the restriction that inactive users cannot create objects.
+
+The @user_agreements/signatures@ endpoint returns the list of Link objects that represent signatures by the current user (created by @sign@).
+
+h3. User profile
+
+The user profile is checked by workbench after checking if user agreements need to be signed.  The requirement to fill out the user profile is not enforced by the API server.
+
+h3(#pre-activated). Pre-activate user by email address
+
+You may create a user account for a user that has not yet logged in, and identify the user by email address.
+
+1. As an admin, create a user object:
+
+<pre>
+{
+  "email": "foo@example.com",
+  "username": "barney",
+  "is_active": true
+}
+</pre>
+
+2. Create a link object, where @tail_uuid@ is the user's email address, @head_uuid@ is the user object created in the previous step, and @xxxxx@ is the value of @uuid_prefix@ of the SSO server.
+
+<pre>
+{
+  "link_class": "permission",
+  "name": "can_login",
+  "tail_uuid": "email address",
+  "head_uuid: "user uuid",
+  "properties": {
+    "identity_url_prefix": "xxxxx-tpzed-"
+  }
+}
+</pre>
+
+3. When the user logs in the first time, the email address will be recognized and the user will be associated with the linked user object.
+
+h3. Pre-activate federated user
+
+1. As admin, create a user object with the @uuid@ of the federated user (this is the user's uuid on their home cluster):
+
+<pre>
+{
+  "uuid": "home1-tpzed-000000000000000",
+  "email": "foo@example.com",
+  "username": "barney",
+  "is_active": true
+}
+</pre>
+
+2. When the user logs in, they will be associated with the existing user object.
+
+h3. Auto-activate federated users from trusted clusters
+
+In the API server config, configure @auto_activate_users_from@ with a list of one or more five-character cluster ids.  A federated user from one of the listed clusters which @is_active@ on the home cluster will be automatically set up and activated on this cluster.
+
+h3(#deactivating_users). Deactivating users
+
+Setting @is_active@ is not sufficient to lock out a user.  The user can call @activate@ to become active again.  Instead, use @unsetup@:
+
+* Delete oid_login_perms
+* Delete git repository permission links
+* Delete VM login permission links
+* Remove from "All users" group
+* Delete any "signatures"
+* Clear preferences / profile
+* Mark as inactive
+
+{% comment %}
+Does not revoke @is_admin@, so you can't unsetup an admin unless you turn admin off first.
+
+"inactive" does not prevent user from reading things they previously had access to.
+
+Does not revoke API tokens.
+{% endcomment %}
+
+h3. Activation flows
+
+h4. Private instance
+
+Policy: users must be manually approved.
+
+<pre>
+auto_setup_new_users: false
+new_users_are_active: false
+</pre>
+
+# User is created.  Not set up.  @is_active@ is false.
+# Workbench checks @is_invited@ and finds it is false.  User gets "inactive user" page.
+# Admin goes to user page and clicks either "setup user" or manually @is_active@ to true.
+# Clicking "setup user" sets up the user.  This includes adding the user to "All users" which qualifies the user as @is_invited@.
+# On refreshing workbench, the user is still inactive, but is able to self-activate after signing clickthrough agreements (if any).
+# Alternately, directly setting @is_active@ to true also sets up the user, but workbench won't display clickthrough agreements (because the user is already active).
+
+h4. Federated instance
+
+Policy: users from other clusters in the federation are activated, users from outside the federation must be manually approved
+
+<pre>
+auto_setup_new_users: false
+new_users_are_active: false
+auto_activate_users_from: [home1]
+</pre>
+
+# Federated user arrives claiming to be from cluster 'home1'
+# API server authenticates user as being from cluster 'home1'
+# Because 'home1' is in @auto_activate_users_from@ the user is set up and activated.
+# User can immediately start using workbench.
+
+h4. Open instance
+
+Policy: anybody who shows up and signs the agreements is activated.
+
+<pre>
+auto_setup_new_users: true
+new_users_are_active: false
+</pre>
+
+# User is created and auto-setup.  At this point, @is_active@ is false, but user has been added to "All users" group.
+# Workbench checks @is_invited@ and finds it is true, because the user is a member of "All users" group.
+# Workbench presents user with list of user agreements, user reads and clicks "sign" for each one.
+# Workbench tries to activate user.
+# User is activated.
+
+h4. Developer instance
+
+Policy: avoid wasting developer's time during development/testing
+
+<pre>
+auto_setup_new_users: true
+new_users_are_active: true
+</pre>
+
+# User is created, immediately auto-setup, and auto-activated.
+# User can immediately start using workbench.

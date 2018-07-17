@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 source("fakes/FakeRESTService.R")
 
 context("ArvadosFile")
@@ -268,4 +272,4 @@ test_that("move moves arvados file inside collection tree", {
 
     expect_that(dogIsNullOnOldLocation, is_true())
     expect_that(dogExistsOnNewLocation, is_true())
-}) 
+})

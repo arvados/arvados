@@ -5,6 +5,7 @@
 /log/*.log
 /log/*.log.gz
 /tmp
+.byebug_history
 
 /config/.secret_token
 /config/initializers/secret_token.rb

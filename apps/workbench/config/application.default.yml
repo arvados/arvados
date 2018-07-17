@@ -66,12 +66,13 @@ production:
   eager_load: true
   consider_all_requests_local: false
   action_controller.perform_caching: true
-  serve_static_assets: false
+  serve_static_files: false
   assets.compile: false
   assets.digest: true
   i18n.fallbacks: true
   active_support.deprecation: :notify
   profiling_enabled: false
+  log_level: info
 
   arvados_insecure_https: false
 
@@ -88,7 +89,7 @@ production:
 test:
   cache_classes: true
   eager_load: false
-  serve_static_assets: true
+  serve_static_files: true
   static_cache_control: public, max-age=3600
   consider_all_requests_local: true
   action_controller.perform_caching: false
@@ -199,6 +200,11 @@ common:
   # Rails.root (included in vendor packages) or determined by invoking
   # "git log".
   source_version: false
+
+  # Override the automatic package string. With the default value of
+  # false, the package string is read from package-build.version in
+  # Rails.root (included in vendor packages).
+  package_version: false
 
   # report notification to and from addresses
   issue_reporter_email_from: arvados@example.com

@@ -1,0 +1,59 @@
+---
+layout: default
+navsection: installguide
+title: Install Composer
+...
+
+Arvados Composer is a single-page javascript application for building Common Workflow Languge (CWL) Workflows.
+
+h2. Prerequisites
+
+In addition to Arvados core services, Composer requires "Arvados hosted git repositories":install-arv-git-httpd.html which are used for storing workflow files.
+
+h2. Install
+
+Composer may be installed on the same host as Workbench, or on a different host.  Composer communicates directly with the Arvados API server.  It does not require its own backend and should be served as a static file.
+
+On a Debian-based system, install the following package:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-composer</span>
+</code></pre>
+</notextile>
+
+On a Red Hat-based system, install the following package:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-composer</span>
+</code></pre>
+</notextile>
+
+h2. Configure
+
+h3. composer.yml
+
+Edit @/etc/arvados/composer/composer.yml@ and set @apiEndPoint@ to your API server:
+
+<pre>
+apiEndPoint: https://zzzzz.arvadosapi.com
+</pre>
+
+h3. Nginx
+
+Add Composer to your Nginx configuration.  This example will host Composer at @/composer@.
+
+<pre>
+location /composer {
+  root   /var/www/arvados-composer
+  index  index.html
+}
+</pre>
+
+h3. Workbench link to composer
+
+Edit the workbench @application.yml@ and set @composer_url@ to the location from which it is served.
+
+<pre>
+production:
+  composer_url: 'https://workbench.zzzzz.arvadosapi.com/composer'
+</pre>

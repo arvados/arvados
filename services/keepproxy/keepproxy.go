@@ -182,7 +182,7 @@ func main() {
 
 	// Start serving requests.
 	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout), cfg.ManagementToken)
-	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
+	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(nil, router)))
 
 	log.Println("shutting down")
 }
@@ -257,6 +257,7 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	var err error
 	arv := *kc.Arvados
 	arv.ApiToken = tok
+	arv.RequestID = req.Header.Get("X-Request-Id")
 	if op == "read" {
 		err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
 	} else {
@@ -273,6 +274,14 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	return true, tok
 }
 
+// We need to make a private copy of the default http transport early
+// in initialization, then make copies of our private copy later. It
+// won't be safe to copy http.DefaultTransport itself later, because
+// its private mutexes might have already been used. (Without this,
+// the test suite sometimes panics "concurrent map writes" in
+// net/http.(*Transport).removeIdleConnLocked().)
+var defaultTransport = *(http.DefaultTransport.(*http.Transport))
+
 type proxyHandler struct {
 	http.Handler
 	*keepclient.KeepClient
@@ -286,7 +295,7 @@ type proxyHandler struct {
 func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration, mgmtToken string) http.Handler {
 	rest := mux.NewRouter()
 
-	transport := *(http.DefaultTransport.(*http.Transport))
+	transport := defaultTransport
 	transport.DialContext = (&net.Dialer{
 		Timeout:   keepclient.DefaultConnectTimeout,
 		KeepAlive: keepclient.DefaultKeepAlive,
@@ -478,6 +487,15 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	locatorIn := mux.Vars(req)["locator"]
 
+	// Check if the client specified storage classes
+	if req.Header.Get("X-Keep-Storage-Classes") != "" {
+		var scl []string
+		for _, sc := range strings.Split(req.Header.Get("X-Keep-Storage-Classes"), ",") {
+			scl = append(scl, strings.Trim(sc, " "))
+		}
+		kc.StorageClasses = scl
+	}
+
 	_, err = fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
 	if err != nil || expectLength < 0 {
 		err = LengthRequiredError
@@ -621,13 +639,13 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 
 func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient {
 	kc := *h.KeepClient
+	kc.RequestID = req.Header.Get("X-Request-Id")
 	kc.HTTPClient = &proxyClient{
 		client: &http.Client{
 			Timeout:   h.timeout,
 			Transport: h.transport,
 		},
-		proto:     req.Proto,
-		requestID: req.Header.Get("X-Request-Id"),
+		proto: req.Proto,
 	}
 	return &kc
 }

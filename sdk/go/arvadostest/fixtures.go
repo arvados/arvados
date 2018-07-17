@@ -16,6 +16,7 @@ const (
 	FederatedActiveUserUUID = "zbbbb-tpzed-xurymjxw79nv3jz"
 	SpectatorUserUUID       = "zzzzz-tpzed-l1s2piq4t4mps8r"
 	UserAgreementCollection = "zzzzz-4zz18-uukreo9rbgwsujr" // user_agreement_in_anonymously_accessible_project
+	FooCollectionName       = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
 	FooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
 	FooCollectionPDH        = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	NonexistentCollection   = "zzzzz-4zz18-totallynotexist"
@@ -24,6 +25,9 @@ const (
 	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
 	FooPdh                  = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
+
+	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
+	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
 
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
 	FooAndBarFilesInDirPDH  = "6bbac24198d09a93975f60098caf0bdf+62"

@@ -318,7 +318,7 @@ class NodeManagerDaemonActor(actor_class):
         busy_count = counts["busy"]
         wishlist_count = self._size_wishlist(size)
 
-        self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size.name,
+        self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size.id,
                           wishlist_count,
                           up_count,
                           counts["booting"],
@@ -338,7 +338,7 @@ class NodeManagerDaemonActor(actor_class):
             can_boot = int((self.max_total_price - total_price) / size.price)
             if can_boot == 0:
                 self._logger.info("Not booting %s (price %s) because with it would exceed max_total_price of %s (current total_price is %s)",
-                                  size.name, size.price, self.max_total_price, total_price)
+                                  size.id, size.price, self.max_total_price, total_price)
             return can_boot
         else:
             return wanted
@@ -392,7 +392,7 @@ class NodeManagerDaemonActor(actor_class):
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
         self._logger.info("Want %i more %s nodes.  Booting a node.",
-                          nodes_wanted, cloud_size.name)
+                          nodes_wanted, cloud_size.id)
         new_setup = self._node_setup.start(
             timer_actor=self._timer,
             arvados_client=self._new_arvados(),

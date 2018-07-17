@@ -292,7 +292,8 @@ class KeepClient(object):
         def __init__(self, root, user_agent_pool=queue.LifoQueue(),
                      upload_counter=None,
                      download_counter=None,
-                     headers={}):
+                     headers={},
+                     insecure=False):
             self.root = root
             self._user_agent_pool = user_agent_pool
             self._result = {'error': None}
@@ -304,6 +305,7 @@ class KeepClient(object):
             self.put_headers = headers
             self.upload_counter = upload_counter
             self.download_counter = download_counter
+            self.insecure = insecure
 
         def usable(self):
             """Is it worth attempting a request?"""
@@ -371,6 +373,8 @@ class KeepClient(object):
                         '{}: {}'.format(k,v) for k,v in self.get_headers.items()])
                     curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    if self.insecure:
+                        curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     if method == "HEAD":
                         curl.setopt(pycurl.NOBODY, True)
                     self._setcurltimeouts(curl, timeout)
@@ -463,6 +467,8 @@ class KeepClient(object):
                         '{}: {}'.format(k,v) for k,v in self.put_headers.items()])
                     curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    if self.insecure:
+                        curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     self._setcurltimeouts(curl, timeout)
                     try:
                         curl.perform()
@@ -762,6 +768,11 @@ class KeepClient(object):
         if local_store is None:
             local_store = os.environ.get('KEEP_LOCAL_STORE')
 
+        if api_client is None:
+            self.insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        else:
+            self.insecure = api_client.insecure
+
         self.block_cache = block_cache if block_cache else KeepBlockCache()
         self.timeout = timeout
         self.proxy_timeout = proxy_timeout
@@ -934,7 +945,8 @@ class KeepClient(object):
                     root, self._user_agent_pool,
                     upload_counter=self.upload_counter,
                     download_counter=self.download_counter,
-                    headers=headers)
+                    headers=headers,
+                    insecure=self.insecure)
         return local_roots
 
     @staticmethod
@@ -1035,7 +1047,8 @@ class KeepClient(object):
                 root: self.KeepService(root, self._user_agent_pool,
                                        upload_counter=self.upload_counter,
                                        download_counter=self.download_counter,
-                                       headers=headers)
+                                       headers=headers,
+                                       insecure=self.insecure)
                 for root in hint_roots
             }
 

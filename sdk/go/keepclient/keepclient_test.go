@@ -93,16 +93,18 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 }
 
 type StubPutHandler struct {
-	c              *C
-	expectPath     string
-	expectApiToken string
-	expectBody     string
-	handled        chan string
+	c                  *C
+	expectPath         string
+	expectApiToken     string
+	expectBody         string
+	expectStorageClass string
+	handled            chan string
 }
 
 func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
 	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectApiToken))
+	sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
@@ -148,12 +150,13 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
+		"hot",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, upload_status chan uploadStatus) {
-
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), 0)
+			kc.StorageClasses = []string{"hot"}
+			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -170,11 +173,12 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
+		"",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, upload_status chan uploadStatus) {
-			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), upload_status, 3, 0)
+			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), upload_status, 3, kc.getRequestID())
 
 			<-st.handled
 
@@ -195,10 +199,12 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 type FailThenSucceedHandler struct {
 	handled        chan string
 	count          int
-	successhandler StubGetHandler
+	successhandler http.Handler
+	reqIDs         []string
 }
 
 func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
 	if fh.count == 0 {
 		resp.WriteHeader(500)
 		fh.count += 1
@@ -227,7 +233,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc *KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, 0)
+			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -263,6 +269,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -304,6 +311,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -352,6 +360,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 4)}
 
 	fh := FailHandler{
@@ -410,6 +419,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 1)}
 
 	fh := FailHandler{
@@ -560,8 +570,9 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := &FailThenSucceedHandler{make(chan string, 1), 0,
-		StubGetHandler{
+	st := &FailThenSucceedHandler{
+		handled: make(chan string, 1),
+		successhandler: StubGetHandler{
 			c,
 			hash,
 			"abc123",
@@ -585,6 +596,13 @@ func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, []byte("foo"))
+
+	c.Logf("%q", st.reqIDs)
+	c.Assert(len(st.reqIDs) > 1, Equals, true)
+	for _, reqid := range st.reqIDs {
+		c.Check(reqid, Not(Equals), "")
+		c.Check(reqid, Equals, st.reqIDs[0])
+	}
 }
 
 func (s *StandaloneSuite) TestGetNetError(c *C) {
@@ -979,6 +997,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -1017,6 +1036,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -1180,29 +1200,15 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
-type FailThenSucceedPutHandler struct {
-	handled        chan string
-	count          int
-	successhandler StubPutHandler
-}
-
-func (h *FailThenSucceedPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if h.count == 0 {
-		resp.WriteHeader(500)
-		h.count += 1
-		h.handled <- fmt.Sprintf("http://%s", req.Host)
-	} else {
-		h.successhandler.ServeHTTP(resp, req)
-	}
-}
-
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
-	st := &FailThenSucceedPutHandler{make(chan string, 1), 0,
-		StubPutHandler{
+	st := &FailThenSucceedHandler{
+		handled: make(chan string, 1),
+		successhandler: StubPutHandler{
 			c,
 			Md5String("foo"),
 			"abc123",
 			"foo",
+			"",
 			make(chan string, 5)}}
 
 	arv, _ := arvadosclient.MakeArvadosClient()

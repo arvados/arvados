@@ -15,19 +15,23 @@ import (
 
 // Collection is an arvados#collection resource.
 type Collection struct {
-	UUID                   string     `json:"uuid,omitempty"`
-	TrashAt                *time.Time `json:"trash_at,omitempty"`
-	ManifestText           string     `json:"manifest_text,omitempty"`
-	UnsignedManifestText   string     `json:"unsigned_manifest_text,omitempty"`
-	Name                   string     `json:"name,omitempty"`
-	CreatedAt              *time.Time `json:"created_at,omitempty"`
-	ModifiedAt             *time.Time `json:"modified_at,omitempty"`
-	PortableDataHash       string     `json:"portable_data_hash,omitempty"`
-	ReplicationConfirmed   *int       `json:"replication_confirmed,omitempty"`
-	ReplicationConfirmedAt *time.Time `json:"replication_confirmed_at,omitempty"`
-	ReplicationDesired     *int       `json:"replication_desired,omitempty"`
-	DeleteAt               *time.Time `json:"delete_at,omitempty"`
-	IsTrashed              bool       `json:"is_trashed,omitempty"`
+	UUID                      string     `json:"uuid,omitempty"`
+	OwnerUUID                 string     `json:"owner_uuid,omitempty"`
+	TrashAt                   *time.Time `json:"trash_at,omitempty"`
+	ManifestText              string     `json:"manifest_text,omitempty"`
+	UnsignedManifestText      string     `json:"unsigned_manifest_text,omitempty"`
+	Name                      string     `json:"name,omitempty"`
+	CreatedAt                 *time.Time `json:"created_at,omitempty"`
+	ModifiedAt                *time.Time `json:"modified_at,omitempty"`
+	PortableDataHash          string     `json:"portable_data_hash,omitempty"`
+	ReplicationConfirmed      *int       `json:"replication_confirmed,omitempty"`
+	ReplicationConfirmedAt    *time.Time `json:"replication_confirmed_at,omitempty"`
+	ReplicationDesired        *int       `json:"replication_desired,omitempty"`
+	StorageClassesDesired     []string   `json:"storage_classes_desired,omitempty"`
+	StorageClassesConfirmed   []string   `json:"storage_classes_confirmed,omitempty"`
+	StorageClassesConfirmedAt *time.Time `json:"storage_classes_confirmed_at,omitempty"`
+	DeleteAt                  *time.Time `json:"delete_at,omitempty"`
+	IsTrashed                 bool       `json:"is_trashed,omitempty"`
 }
 
 func (c Collection) resourceName() string {

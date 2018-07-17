@@ -32,6 +32,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"github.com/shirou/gopsutil/process"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -57,13 +58,14 @@ var ErrCancelled = errors.New("Cancelled")
 
 // IKeepClient is the minimal Keep API methods used by crunch-run.
 type IKeepClient interface {
-	PutHB(hash string, buf []byte) (string, int, error)
+	PutB(buf []byte) (string, int, error)
+	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	ClearBlockCache()
 }
 
 // NewLogWriter is a factory function to create a new log writer.
-type NewLogWriter func(name string) io.WriteCloser
+type NewLogWriter func(name string) (io.WriteCloser, error)
 
 type RunArvMount func(args []string, tok string) (*exec.Cmd, error)
 
@@ -82,10 +84,15 @@ type ThinDockerClient interface {
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
 }
 
+type PsProcess interface {
+	CmdlineSlice() ([]string, error)
+}
+
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
 	Docker    ThinDockerClient
+	client    *arvados.Client
 	ArvClient IArvadosClient
 	Kc        IKeepClient
 	arvados.Container
@@ -99,7 +106,7 @@ type ContainerRunner struct {
 	CrunchLog     *ThrottledLogger
 	Stdout        io.WriteCloser
 	Stderr        io.WriteCloser
-	LogCollection *CollectionWriter
+	LogCollection arvados.CollectionFileSystem
 	LogsPDH       *string
 	RunArvMount
 	MkTempDir
@@ -115,6 +122,8 @@ type ContainerRunner struct {
 	MkArvClient   func(token string) (IArvadosClient, error)
 	finalState    string
 	parentTemp    string
+
+	ListProcesses func() ([]PsProcess, error)
 
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
@@ -139,9 +148,10 @@ type ContainerRunner struct {
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
 
-	enableNetwork string // one of "default" or "always"
-	networkMode   string // passed through to HostConfig.NetworkMode
-	arvMountLog   *ThrottledLogger
+	enableNetwork   string // one of "default" or "always"
+	networkMode     string // passed through to HostConfig.NetworkMode
+	arvMountLog     *ThrottledLogger
+	checkContainerd time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -180,26 +190,31 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 var errorBlacklist = []string{
 	"(?ms).*[Cc]annot connect to the Docker daemon.*",
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
+	"(?ms).*grpc: the connection is unavailable.*",
 }
 var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
+
+func (runner *ContainerRunner) runBrokenNodeHook() {
+	if *brokenNodeHook == "" {
+		runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
+	} else {
+		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+		// run killme script
+		c := exec.Command(*brokenNodeHook)
+		c.Stdout = runner.CrunchLog
+		c.Stderr = runner.CrunchLog
+		err := c.Run()
+		if err != nil {
+			runner.CrunchLog.Printf("Error running broken node hook: %v", err)
+		}
+	}
+}
 
 func (runner *ContainerRunner) checkBrokenNode(goterr error) bool {
 	for _, d := range errorBlacklist {
 		if m, e := regexp.MatchString(d, goterr.Error()); m && e == nil {
 			runner.CrunchLog.Printf("Error suggests node is unable to run containers: %v", goterr)
-			if *brokenNodeHook == "" {
-				runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
-			} else {
-				runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
-				// run killme script
-				c := exec.Command(*brokenNodeHook)
-				c.Stdout = runner.CrunchLog
-				c.Stderr = runner.CrunchLog
-				err := c.Run()
-				if err != nil {
-					runner.CrunchLog.Printf("Error running broken node hook: %v", err)
-				}
-			}
+			runner.runBrokenNodeHook()
 			return true
 		}
 	}
@@ -275,7 +290,11 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	}
 	c.Env = append(c.Env, "ARVADOS_API_TOKEN="+token)
 
-	runner.arvMountLog = NewThrottledLogger(runner.NewLogWriter("arv-mount"))
+	w, err := runner.NewLogWriter("arv-mount")
+	if err != nil {
+		return nil, err
+	}
+	runner.arvMountLog = NewThrottledLogger(w)
 	c.Stdout = runner.arvMountLog
 	c.Stderr = runner.arvMountLog
 
@@ -696,18 +715,27 @@ func (runner *ContainerRunner) stopHoststat() error {
 	return nil
 }
 
-func (runner *ContainerRunner) startHoststat() {
-	runner.hoststatLogger = NewThrottledLogger(runner.NewLogWriter("hoststat"))
+func (runner *ContainerRunner) startHoststat() error {
+	w, err := runner.NewLogWriter("hoststat")
+	if err != nil {
+		return err
+	}
+	runner.hoststatLogger = NewThrottledLogger(w)
 	runner.hoststatReporter = &crunchstat.Reporter{
 		Logger:     log.New(runner.hoststatLogger, "", 0),
 		CgroupRoot: runner.cgroupRoot,
 		PollPeriod: runner.statInterval,
 	}
 	runner.hoststatReporter.Start()
+	return nil
 }
 
-func (runner *ContainerRunner) startCrunchstat() {
-	runner.statLogger = NewThrottledLogger(runner.NewLogWriter("crunchstat"))
+func (runner *ContainerRunner) startCrunchstat() error {
+	w, err := runner.NewLogWriter("crunchstat")
+	if err != nil {
+		return err
+	}
+	runner.statLogger = NewThrottledLogger(w)
 	runner.statReporter = &crunchstat.Reporter{
 		CID:          runner.ContainerID,
 		Logger:       log.New(runner.statLogger, "", 0),
@@ -716,6 +744,7 @@ func (runner *ContainerRunner) startCrunchstat() {
 		PollPeriod:   runner.statInterval,
 	}
 	runner.statReporter.Start()
+	return nil
 }
 
 type infoCommand struct {
@@ -729,7 +758,10 @@ type infoCommand struct {
 // might differ from what's described in the node record (see
 // LogNodeRecord).
 func (runner *ContainerRunner) LogHostInfo() (err error) {
-	w := runner.NewLogWriter("node-info")
+	w, err := runner.NewLogWriter("node-info")
+	if err != nil {
+		return
+	}
 
 	commands := []infoCommand{
 		{
@@ -802,11 +834,15 @@ func (runner *ContainerRunner) LogNodeRecord() error {
 }
 
 func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}, munge func(interface{})) (logged bool, err error) {
+	writer, err := runner.LogCollection.OpenFile(label+".json", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return false, err
+	}
 	w := &ArvLogWriter{
 		ArvClient:     runner.ArvClient,
 		UUID:          runner.Container.UUID,
 		loggingStream: label,
-		writeCloser:   runner.LogCollection.Open(label + ".json"),
+		writeCloser:   writer,
 	}
 
 	reader, err := runner.ArvClient.CallRaw("GET", path, "", "", arvadosclient.Dict(params))
@@ -893,8 +929,10 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 			return err
 		}
 		runner.Stdout = stdoutFile
+	} else if w, err := runner.NewLogWriter("stdout"); err != nil {
+		return err
 	} else {
-		runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
+		runner.Stdout = NewThrottledLogger(w)
 	}
 
 	if stderrMnt, ok := runner.Container.Mounts["stderr"]; ok {
@@ -903,8 +941,10 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 			return err
 		}
 		runner.Stderr = stderrFile
+	} else if w, err := runner.NewLogWriter("stderr"); err != nil {
+		return err
 	} else {
-		runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+		runner.Stderr = NewThrottledLogger(w)
 	}
 
 	if stdinRdr != nil {
@@ -974,6 +1014,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 	runner.ContainerConfig.Volumes = runner.Volumes
 
 	maxRAM := int64(runner.Container.RuntimeConstraints.RAM)
+	if maxRAM < 4*1024*1024 {
+		// Docker daemon won't let you set a limit less than 4 MiB
+		maxRAM = 4 * 1024 * 1024
+	}
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds: runner.Binds,
 		LogConfig: dockercontainer.LogConfig{
@@ -1044,13 +1088,60 @@ func (runner *ContainerRunner) StartContainer() error {
 	return nil
 }
 
+// checkContainerd checks if "containerd" is present in the process list.
+func (runner *ContainerRunner) CheckContainerd() error {
+	if runner.checkContainerd == 0 {
+		return nil
+	}
+	p, _ := runner.ListProcesses()
+	for _, i := range p {
+		e, _ := i.CmdlineSlice()
+		if len(e) > 0 {
+			if strings.Index(e[0], "containerd") > -1 {
+				return nil
+			}
+		}
+	}
+
+	// Not found
+	runner.runBrokenNodeHook()
+	runner.stop(nil)
+	return fmt.Errorf("'containerd' not found in process list.")
+}
+
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
+	var runTimeExceeded <-chan time.Time
 	runner.CrunchLog.Print("Waiting for container to finish")
 
 	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, dockercontainer.WaitConditionNotRunning)
 	arvMountExit := runner.ArvMountExit
+	if timeout := runner.Container.SchedulingParameters.MaxRunTime; timeout > 0 {
+		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
+	}
+
+	containerdGone := make(chan error)
+	defer close(containerdGone)
+	if runner.checkContainerd > 0 {
+		go func() {
+			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if ck := runner.CheckContainerd(); ck != nil {
+						containerdGone <- ck
+						return
+					}
+				case <-containerdGone:
+					// Channel closed, quit goroutine
+					return
+				}
+			}
+		}()
+	}
+
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -1071,185 +1162,20 @@ func (runner *ContainerRunner) WaitFinish() error {
 			// arvMountExit will always be ready now that
 			// it's closed, but that doesn't interest us.
 			arvMountExit = nil
+
+		case <-runTimeExceeded:
+			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
+			runner.stop(nil)
+			runTimeExceeded = nil
+
+		case err := <-containerdGone:
+			return err
 		}
 	}
 }
 
-var ErrNotInOutputDir = fmt.Errorf("Must point to path within the output directory")
-
-func (runner *ContainerRunner) derefOutputSymlink(path string, startinfo os.FileInfo) (tgt string, readlinktgt string, info os.FileInfo, err error) {
-	// Follow symlinks if necessary
-	info = startinfo
-	tgt = path
-	readlinktgt = ""
-	nextlink := path
-	for followed := 0; info.Mode()&os.ModeSymlink != 0; followed++ {
-		if followed >= limitFollowSymlinks {
-			// Got stuck in a loop or just a pathological number of links, give up.
-			err = fmt.Errorf("Followed more than %v symlinks from path %q", limitFollowSymlinks, path)
-			return
-		}
-
-		readlinktgt, err = os.Readlink(nextlink)
-		if err != nil {
-			return
-		}
-
-		tgt = readlinktgt
-		if !strings.HasPrefix(tgt, "/") {
-			// Relative symlink, resolve it to host path
-			tgt = filepath.Join(filepath.Dir(path), tgt)
-		}
-		if strings.HasPrefix(tgt, runner.Container.OutputPath+"/") && !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
-			// Absolute symlink to container output path, adjust it to host output path.
-			tgt = filepath.Join(runner.HostOutputDir, tgt[len(runner.Container.OutputPath):])
-		}
-		if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
-			// After dereferencing, symlink target must either be
-			// within output directory, or must point to a
-			// collection mount.
-			err = ErrNotInOutputDir
-			return
-		}
-
-		info, err = os.Lstat(tgt)
-		if err != nil {
-			// tgt
-			err = fmt.Errorf("Symlink in output %q points to invalid location %q: %v",
-				path[len(runner.HostOutputDir):], readlinktgt, err)
-			return
-		}
-
-		nextlink = tgt
-	}
-
-	return
-}
-
-var limitFollowSymlinks = 10
-
-// UploadFile uploads files within the output directory, with special handling
-// for symlinks. If the symlink leads to a keep mount, copy the manifest text
-// from the keep mount into the output manifestText.  Ensure that whether
-// symlinks are relative or absolute, every symlink target (even targets that
-// are symlinks themselves) must point to a path in either the output directory
-// or a collection mount.
-//
-// Assumes initial value of "path" is absolute, and located within runner.HostOutputDir.
-func (runner *ContainerRunner) UploadOutputFile(
-	path string,
-	info os.FileInfo,
-	infoerr error,
-	binds []string,
-	walkUpload *WalkUpload,
-	relocateFrom string,
-	relocateTo string,
-	followed int) (manifestText string, err error) {
-
-	if infoerr != nil {
-		return "", infoerr
-	}
-
-	if info.Mode().IsDir() {
-		// if empty, need to create a .keep file
-		dir, direrr := os.Open(path)
-		if direrr != nil {
-			return "", direrr
-		}
-		defer dir.Close()
-		names, eof := dir.Readdirnames(1)
-		if len(names) == 0 && eof == io.EOF && path != runner.HostOutputDir {
-			containerPath := runner.OutputPath + path[len(runner.HostOutputDir):]
-			for _, bind := range binds {
-				mnt := runner.Container.Mounts[bind]
-				// Check if there is a bind for this
-				// directory, in which case assume we don't need .keep
-				if (containerPath == bind || strings.HasPrefix(containerPath, bind+"/")) && mnt.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
-					return
-				}
-			}
-			outputSuffix := path[len(runner.HostOutputDir)+1:]
-			return fmt.Sprintf("./%v d41d8cd98f00b204e9800998ecf8427e+0 0:0:.keep\n", outputSuffix), nil
-		}
-		return
-	}
-
-	if followed >= limitFollowSymlinks {
-		// Got stuck in a loop or just a pathological number of
-		// directory links, give up.
-		err = fmt.Errorf("Followed more than %v symlinks from path %q", limitFollowSymlinks, path)
-		return
-	}
-
-	// "path" is the actual path we are visiting
-	// "tgt" is the target of "path" (a non-symlink) after following symlinks
-	// "relocated" is the path in the output manifest where the file should be placed,
-	// but has HostOutputDir as a prefix.
-
-	// The destination path in the output manifest may need to be
-	// logically relocated to some other path in order to appear
-	// in the correct location as a result of following a symlink.
-	// Remove the relocateFrom prefix and replace it with
-	// relocateTo.
-	relocated := relocateTo + path[len(relocateFrom):]
-
-	tgt, readlinktgt, info, derefErr := runner.derefOutputSymlink(path, info)
-	if derefErr != nil && derefErr != ErrNotInOutputDir {
-		return "", derefErr
-	}
-
-	// go through mounts and try reverse map to collection reference
-	for _, bind := range binds {
-		mnt := runner.Container.Mounts[bind]
-		if (tgt == bind || strings.HasPrefix(tgt, bind+"/")) && !mnt.Writable {
-			// get path relative to bind
-			targetSuffix := tgt[len(bind):]
-
-			// Copy mount and adjust the path to add path relative to the bind
-			adjustedMount := mnt
-			adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
-
-			// Terminates in this keep mount, so add the
-			// manifest text at appropriate location.
-			outputSuffix := relocated[len(runner.HostOutputDir):]
-			manifestText, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
-			return
-		}
-	}
-
-	// If target is not a collection mount, it must be located within the
-	// output directory, otherwise it is an error.
-	if derefErr == ErrNotInOutputDir {
-		err = fmt.Errorf("Symlink in output %q points to invalid location %q, must point to path within the output directory.",
-			path[len(runner.HostOutputDir):], readlinktgt)
-		return
-	}
-
-	if info.Mode().IsRegular() {
-		return "", walkUpload.UploadFile(relocated, tgt)
-	}
-
-	if info.Mode().IsDir() {
-		// Symlink leads to directory.  Walk() doesn't follow
-		// directory symlinks, so we walk the target directory
-		// instead.  Within the walk, file paths are relocated
-		// so they appear under the original symlink path.
-		err = filepath.Walk(tgt, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
-			var m string
-			m, walkerr = runner.UploadOutputFile(walkpath, walkinfo, walkerr,
-				binds, walkUpload, tgt, relocated, followed+1)
-			if walkerr == nil {
-				manifestText = manifestText + m
-			}
-			return walkerr
-		})
-		return
-	}
-
-	return
-}
-
-// HandleOutput sets the output, unmounts the FUSE mount, and deletes temporary directories
+// CaptureOutput saves data from the container's output directory if
+// needed, and updates the container output accordingly.
 func (runner *ContainerRunner) CaptureOutput() error {
 	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		// Output may have been set directly by the container, so
@@ -1266,161 +1192,34 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		}
 	}
 
-	if runner.HostOutputDir == "" {
-		return nil
-	}
-
-	_, err := os.Stat(runner.HostOutputDir)
+	txt, err := (&copier{
+		client:        runner.client,
+		arvClient:     runner.ArvClient,
+		keepClient:    runner.Kc,
+		hostOutputDir: runner.HostOutputDir,
+		ctrOutputDir:  runner.Container.OutputPath,
+		binds:         runner.Binds,
+		mounts:        runner.Container.Mounts,
+		secretMounts:  runner.SecretMounts,
+		logger:        runner.CrunchLog,
+	}).Copy()
 	if err != nil {
-		return fmt.Errorf("While checking host output path: %v", err)
+		return err
 	}
-
-	// Pre-populate output from the configured mount points
-	var binds []string
-	for bind, mnt := range runner.Container.Mounts {
-		if mnt.Kind == "collection" {
-			binds = append(binds, bind)
-		}
-	}
-	sort.Strings(binds)
-
-	// Delete secret mounts so they don't get saved to the output collection.
-	for bind := range runner.SecretMounts {
-		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
-			err = os.Remove(runner.HostOutputDir + bind[len(runner.Container.OutputPath):])
-			if err != nil {
-				return fmt.Errorf("Unable to remove secret mount: %v", err)
-			}
-		}
-	}
-
-	var manifestText string
-
-	collectionMetafile := fmt.Sprintf("%s/.arvados#collection", runner.HostOutputDir)
-	_, err = os.Stat(collectionMetafile)
+	var resp arvados.Collection
+	err = runner.ArvClient.Create("collections", arvadosclient.Dict{
+		"ensure_unique_name": true,
+		"collection": arvadosclient.Dict{
+			"is_trashed":    true,
+			"name":          "output for " + runner.Container.UUID,
+			"manifest_text": txt,
+		},
+	}, &resp)
 	if err != nil {
-		// Regular directory
-
-		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
-		walkUpload := cw.BeginUpload(runner.HostOutputDir, runner.CrunchLog.Logger)
-
-		var m string
-		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
-			m, err = runner.UploadOutputFile(path, info, err, binds, walkUpload, "", "", 0)
-			if err == nil {
-				manifestText = manifestText + m
-			}
-			return err
-		})
-
-		cw.EndUpload(walkUpload)
-
-		if err != nil {
-			return fmt.Errorf("While uploading output files: %v", err)
-		}
-
-		m, err = cw.ManifestText()
-		manifestText = manifestText + m
-		if err != nil {
-			return fmt.Errorf("While uploading output files: %v", err)
-		}
-	} else {
-		// FUSE mount directory
-		file, openerr := os.Open(collectionMetafile)
-		if openerr != nil {
-			return fmt.Errorf("While opening FUSE metafile: %v", err)
-		}
-		defer file.Close()
-
-		var rec arvados.Collection
-		err = json.NewDecoder(file).Decode(&rec)
-		if err != nil {
-			return fmt.Errorf("While reading FUSE metafile: %v", err)
-		}
-		manifestText = rec.ManifestText
+		return fmt.Errorf("error creating output collection: %v", err)
 	}
-
-	for _, bind := range binds {
-		mnt := runner.Container.Mounts[bind]
-
-		bindSuffix := strings.TrimPrefix(bind, runner.Container.OutputPath)
-
-		if bindSuffix == bind || len(bindSuffix) <= 0 {
-			// either does not start with OutputPath or is OutputPath itself
-			continue
-		}
-
-		if mnt.ExcludeFromOutput == true || mnt.Writable {
-			continue
-		}
-
-		// append to manifest_text
-		m, err := runner.getCollectionManifestForPath(mnt, bindSuffix)
-		if err != nil {
-			return err
-		}
-
-		manifestText = manifestText + m
-	}
-
-	// Save output
-	var response arvados.Collection
-	manifest := manifest.Manifest{Text: manifestText}
-	manifestText = manifest.Extract(".", ".").Text
-	err = runner.ArvClient.Create("collections",
-		arvadosclient.Dict{
-			"ensure_unique_name": true,
-			"collection": arvadosclient.Dict{
-				"is_trashed":    true,
-				"name":          "output for " + runner.Container.UUID,
-				"manifest_text": manifestText}},
-		&response)
-	if err != nil {
-		return fmt.Errorf("While creating output collection: %v", err)
-	}
-	runner.OutputPDH = &response.PortableDataHash
+	runner.OutputPDH = &resp.PortableDataHash
 	return nil
-}
-
-var outputCollections = make(map[string]arvados.Collection)
-
-// Fetch the collection for the mnt.PortableDataHash
-// Return the manifest_text fragment corresponding to the specified mnt.Path
-//  after making any required updates.
-//  Ex:
-//    If mnt.Path is not specified,
-//      return the entire manifest_text after replacing any "." with bindSuffix
-//    If mnt.Path corresponds to one stream,
-//      return the manifest_text for that stream after replacing that stream name with bindSuffix
-//    Otherwise, check if a filename in any one stream is being sought. Return the manifest_text
-//      for that stream after replacing stream name with bindSuffix minus the last word
-//      and the file name with last word of the bindSuffix
-//  Allowed path examples:
-//    "path":"/"
-//    "path":"/subdir1"
-//    "path":"/subdir1/subdir2"
-//    "path":"/subdir/filename" etc
-func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, bindSuffix string) (string, error) {
-	collection := outputCollections[mnt.PortableDataHash]
-	if collection.PortableDataHash == "" {
-		err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
-		if err != nil {
-			return "", fmt.Errorf("While getting collection for %v: %v", mnt.PortableDataHash, err)
-		}
-		outputCollections[mnt.PortableDataHash] = collection
-	}
-
-	if collection.ManifestText == "" {
-		runner.CrunchLog.Printf("No manifest text for collection %v", collection.PortableDataHash)
-		return "", nil
-	}
-
-	mft := manifest.Manifest{Text: collection.ManifestText}
-	extracted := mft.Extract(mnt.Path, bindSuffix)
-	if extracted.Err != nil {
-		return "", fmt.Errorf("Error parsing manifest for %v: %v", mnt.PortableDataHash, extracted.Err.Error())
-	}
-	return extracted.Text, nil
 }
 
 func (runner *ContainerRunner) CleanupDirs() {
@@ -1495,8 +1294,12 @@ func (runner *ContainerRunner) CommitLogs() error {
 		// point, but re-open crunch log with ArvClient in case there are any
 		// other further errors (such as failing to write the log to Keep!)
 		// while shutting down
-		runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{ArvClient: runner.ArvClient,
-			UUID: runner.Container.UUID, loggingStream: "crunch-run", writeCloser: nil})
+		runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{
+			ArvClient:     runner.ArvClient,
+			UUID:          runner.Container.UUID,
+			loggingStream: "crunch-run",
+			writeCloser:   nil,
+		})
 		runner.CrunchLog.Immediate = log.New(os.Stderr, runner.Container.UUID+" ", 0)
 	}()
 
@@ -1509,7 +1312,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 		return nil
 	}
 
-	mt, err := runner.LogCollection.ManifestText()
+	mt, err := runner.LogCollection.MarshalManifest(".")
 	if err != nil {
 		return fmt.Errorf("While creating log manifest: %v", err)
 	}
@@ -1584,12 +1387,17 @@ func (runner *ContainerRunner) IsCancelled() bool {
 }
 
 // NewArvLogWriter creates an ArvLogWriter
-func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
+func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, error) {
+	writer, err := runner.LogCollection.OpenFile(name+".txt", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return nil, err
+	}
 	return &ArvLogWriter{
 		ArvClient:     runner.ArvClient,
 		UUID:          runner.Container.UUID,
 		loggingStream: name,
-		writeCloser:   runner.LogCollection.Open(name + ".txt")}
+		writeCloser:   writer,
+	}, nil
 }
 
 // Run the full container lifecycle.
@@ -1658,7 +1466,16 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 	runner.setupSignals()
-	runner.startHoststat()
+	err = runner.startHoststat()
+	if err != nil {
+		return
+	}
+
+	// Sanity check that containerd is running.
+	err = runner.CheckContainerd()
+	if err != nil {
+		return
+	}
 
 	// check for and/or load image
 	err = runner.LoadImage()
@@ -1707,7 +1524,10 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 	runner.finalState = "Cancelled"
 
-	runner.startCrunchstat()
+	err = runner.startCrunchstat()
+	if err != nil {
+		return
+	}
 
 	err = runner.StartContainer()
 	if err != nil {
@@ -1766,15 +1586,27 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 }
 
 // NewContainerRunner creates a new container runner.
-func NewContainerRunner(api IArvadosClient,
-	kc IKeepClient,
-	docker ThinDockerClient,
-	containerUUID string) *ContainerRunner {
-
-	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
+func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClient, docker ThinDockerClient, containerUUID string) (*ContainerRunner, error) {
+	cr := &ContainerRunner{
+		client:    client,
+		ArvClient: api,
+		Kc:        kc,
+		Docker:    docker,
+	}
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
+	cr.ListProcesses = func() ([]PsProcess, error) {
+		pr, err := process.Processes()
+		if err != nil {
+			return nil, err
+		}
+		ps := make([]PsProcess, len(pr))
+		for i, j := range pr {
+			ps[i] = j
+		}
+		return ps, nil
+	}
 	cr.MkArvClient = func(token string) (IArvadosClient, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -1783,14 +1615,22 @@ func NewContainerRunner(api IArvadosClient,
 		cl.ApiToken = token
 		return cl, nil
 	}
-	cr.LogCollection = &CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
+	var err error
+	cr.LogCollection, err = (&arvados.Collection{}).FileSystem(cr.client, cr.Kc)
+	if err != nil {
+		return nil, err
+	}
 	cr.Container.UUID = containerUUID
-	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
+	w, err := cr.NewLogWriter("crunch-run")
+	if err != nil {
+		return nil, err
+	}
+	cr.CrunchLog = NewThrottledLogger(w)
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
 
 	loadLogThrottleParams(api)
 
-	return cr
+	return cr, nil
 }
 
 func main() {
@@ -1809,6 +1649,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
+	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running (use 0s to disable).")
 	flag.Parse()
 
 	// Print version information if requested
@@ -1842,7 +1683,10 @@ func main() {
 	// minimum version we want to support.
 	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 
-	cr := NewContainerRunner(api, kc, docker, containerId)
+	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, docker, containerId)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if dockererr != nil {
 		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
 		cr.checkBrokenNode(dockererr)
@@ -1861,6 +1705,7 @@ func main() {
 	cr.expectCgroupParent = *cgroupParent
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
+	cr.checkContainerd = *checkContainerd
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p
@@ -1872,15 +1717,15 @@ func main() {
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
-			log.Printf("could not create memory profile: ", err)
+			log.Printf("could not create memory profile: %s", err)
 		}
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Printf("could not write memory profile: ", err)
+			log.Printf("could not write memory profile: %s", err)
 		}
 		closeerr := f.Close()
 		if closeerr != nil {
-			log.Printf("closing memprofile file: ", err)
+			log.Printf("closing memprofile file: %s", err)
 		}
 	}
 

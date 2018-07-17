@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados Node Manager provides elastic computing for Arvados and SLURM by creating and destroying virtual machines on demand.  Node Manager currently supports Amazon Web Services (AWS), Google Cloud Platform (GCP) and Microsoft Azure.
 
-Note: node manager is only required for elastic computing cloud environments.  Fixed size clusters do not require node manager.
+Note: node manager is only required for elastic computing cloud environments.  Fixed size clusters (such as on-premise HPC) do not require node manager.
 
 h2. Install
 
@@ -527,11 +527,11 @@ subscription_id = 00000000-0000-0000-0000-000000000000
 
 # The following directions are based on
 # https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
+# and updated for v2 of the Azure cli tool.
 #
-# azure config mode arm
-# azure ad app create --name "<Your Application Display Name>" --home-page "<https://YourApplicationHomePage>" --identifier-uris "<https://YouApplicationUri>" --password <Your_Password>
-# azure ad sp create "<Application_Id>"
-# azure role assignment create --objectId "<Object_Id>" -o Owner -c /subscriptions/{subscriptionId}/
+# az ad app create --display-name "Node Manager" --homepage "https://arvados.org" --identifier-uris "https://<Your_Application_Uri>" --password <Your_Password>
+# az ad sp create "<Application_Id>"
+# az role assignment create --assignee "<Application_Id>" --role Owner --resource-group "<Your_Azure_Arvados_Resource_Group>"
 #
 # Use <Application_Id> for "key" and the <Your_Password> for "secret"
 #

@@ -5,6 +5,7 @@
 require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
+require 'update_priority'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates
@@ -37,6 +38,7 @@ class Container < ArvadosModel
   before_save :scrub_secret_mounts
   after_save :handle_completed
   after_save :propagate_priority
+  after_commit { UpdatePriority.run_update_thread }
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -315,11 +317,7 @@ class Container < ArvadosModel
     # (because state might have changed while acquiring the lock).
     check_lock_fail
     transaction do
-      begin
-        reload(lock: 'FOR UPDATE NOWAIT')
-      rescue
-        raise LockFailedError.new("cannot lock: other transaction in progress")
-      end
+      reload
       check_lock_fail
       update_attributes!(state: Locked)
     end

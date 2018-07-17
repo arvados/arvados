@@ -1,9 +1,13 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 source("./R/util.R")
 
 #' Subcollection
 #' 
 #' Subcollection class represents a folder inside Arvados collection.
-#' It is essentially a composite of ArvadosFiles and other Subcollections.
+#' It is essentially a composite of arvadosFiles and other subcollections.
 #' 
 #' @section Usage:
 #' \preformatted{subcollection = Subcollection$new(name)}

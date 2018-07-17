@@ -1,0 +1,250 @@
+---
+layout: default
+navsection: admin
+title: "Upgrading Arvados and Release notes"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+What you need to know and do in order to upgrade your Arvados installation.
+
+h2. General process
+
+# Wait for the cluster to be idle and stop Arvados services.
+# Install new packages using @apt-get upgrade@ or @yum upgrade@.
+# Package installation scripts will perform any necessary data migrations.
+# Consult upgrade notes below to see if any manual configuration updates are necessary.
+# Restart Arvados services.
+
+h2. Upgrade notes
+
+Some versions introduce changes that require special attention when upgrading: e.g., there is a new service to install, or there is a change to the default configuration that you might need to override in order to preserve the old behavior.
+
+{% comment %}
+Note to developers: Add new items at the top. Include the date, issue number, commit, and considerations/instructions for those about to upgrade.
+
+TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
+{% endcomment %}
+
+h3. 2018-04-05: v1.1.4 regression in arvados-cwl-runner for workflows that rely on implicit discovery of secondaryFiles
+
+h4. Secondary files missing from toplevel workflow inputs
+
+If a workflow input does not declare @secondaryFiles@ corresponding to the @secondaryFiles@ of workflow steps which use the input, the workflow would inconsistently succeed or fail depending on whether the input values were specified as local files or referenced an existing collection (and whether the existing collection contained the secondary files or not).  To ensure consistent behavior, the workflow is now required to declare in the top level workflow inputs any secondaryFiles that are expected by workflow steps.
+
+As an example, the following workflow will fail because the @toplevel_input@ does not declare the @secondaryFiles@ that are expected by @step_input@:
+
+<pre>
+class: Workflow
+cwlVersion: v1.0
+inputs:
+  toplevel_input: File
+outputs: []
+steps:
+  step1:
+    in:
+      step_input: toplevel_input
+    out: []
+    run:
+      id: sub
+      class: CommandLineTool
+      inputs:
+        step_input:
+          type: File
+          secondaryFiles:
+            - .idx
+      outputs: []
+      baseCommand: echo
+</pre>
+
+When run, this produces an error like this:
+
+<pre>
+cwltool ERROR: [step step1] Cannot make job: Missing required secondary file 'hello.txt.idx' from file object: {
+    "basename": "hello.txt",
+    "class": "File",
+    "location": "keep:ade9d0e032044bd7f58daaecc0d06bc6+51/hello.txt",
+    "size": 0,
+    "nameroot": "hello",
+    "nameext": ".txt",
+    "secondaryFiles": []
+}
+</pre>
+
+To fix this error, add the appropriate @secondaryFiles@ section to @toplevel_input@
+
+<notextile>
+<pre><code>class: Workflow
+cwlVersion: v1.0
+inputs:
+  <span class="userinput">toplevel_input:
+    type: File
+    secondaryFiles:
+      - .idx</span>
+outputs: []
+steps:
+  step1:
+    in:
+      step_input: toplevel_input
+    out: []
+    run:
+      id: sub
+      class: CommandLineTool
+      inputs:
+        step_input:
+          type: File
+          secondaryFiles:
+            - .idx
+      outputs: []
+      baseCommand: echo
+</code></pre>
+</notextile>
+
+h4. Secondary files on default file inputs
+
+Due to a bug in Arvados v1.1.4, @File@ inputs that have default values and also expect @secondaryFiles@ and will fail to upload default @secondaryFiles@.  As an example, the following case will fail:
+
+<pre>
+class: CommandLineTool
+inputs:
+  step_input:
+    type: File
+    secondaryFiles:
+      - .idx
+    default:
+      class: File
+      location: hello.txt
+outputs: []
+baseCommand: echo
+</pre>
+
+When run, this produces an error like this:
+
+<pre>
+2018-05-03 10:58:47 cwltool ERROR: Unhandled error, try again with --debug for more information:
+  [Errno 2] File not found: u'hello.txt.idx'
+</pre>
+
+To fix this, manually upload the primary and secondary files to keep and explicitly declare @secondaryFiles@ on the default primary file:
+
+<notextile>
+<pre><code>class: CommandLineTool
+inputs:
+  step_input:
+    type: File
+    secondaryFiles:
+      - .idx
+    <span class="userinput">default:
+      class: File
+      location: keep:4d8a70b1e63b2aad6984e40e338e2373+69/hello.txt
+      secondaryFiles:
+       - class: File
+         location: keep:4d8a70b1e63b2aad6984e40e338e2373+69/hello.txt.idx</span>
+outputs: []
+baseCommand: echo
+</code></pre>
+</notextile>
+
+This bug will be fixed in an upcoming release of Arvados.
+
+h3. 2017-12-08: #11908 commit:8f987a9271 now requires minimum of Postgres 9.4 (previously 9.3)
+* Debian 8 (pg 9.4) and Debian 9 (pg 9.6) do not require an upgrade
+* Ubuntu 16.04 (pg 9.5) does not require an upgrade
+* Ubuntu 14.04 (pg 9.3) requires upgrade to Postgres 9.4: https://www.postgresql.org/download/linux/ubuntu/
+* CentOS 7 and RHEL7 (pg 9.2) require upgrade to Postgres 9.4. It is necessary to migrate of the contents of your database: https://www.postgresql.org/docs/9.0/static/migration.html
+*# Create a database backup using @pg_dump@
+*# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
+*# Restore from the backup using @psql@
+
+h3. 2017-09-25: #12032 commit:68bdf4cbb now requires minimum of Postgres 9.3 (previously 9.1)
+* Debian 8 (pg 9.4) and Debian 9 (pg 9.6) do not require an upgrade
+* Ubuntu 16.04 (pg 9.5) does not require an upgrade
+* Ubuntu 14.04 (pg 9.3) is compatible, however upgrading to Postgres 9.4 is recommended: https://www.postgresql.org/download/linux/ubuntu/
+* CentOS 7 and RHEL7 (pg 9.2) should upgrade to Postgres 9.4. It is necessary to migrate of the contents of your database: https://www.postgresql.org/docs/9.0/static/migration.html
+*# Create a database backup using @pg_dump@
+*# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
+*# Restore from the backup using @psql@
+
+h3. 2017-06-30: #11807 commit:55aafbb converts old "jobs" database records from YAML to JSON, making the upgrade process slower than usual.
+* The migration can take some time if your database contains a substantial number of YAML-serialized rows (i.e., you installed Arvados before March 3, 2017 commit:660a614 and used the jobs/pipelines APIs). Otherwise, the upgrade will be no slower than usual.
+* The conversion runs as a database migration, i.e., during the deb/rpm package upgrade process, while your API server is unavailable.
+* Expect it to take about 1 minute per 20K jobs that have ever been created/run.
+
+h3. 2017-06-05: #9005 commit:cb230b0 reduces service discovery overhead in keep-web requests.
+* When upgrading keep-web _or keepproxy_ to/past this version, make sure to update API server as well. Otherwise, a bad token in a request can cause keep-web to fail future requests until either keep-web restarts or API server gets upgraded.
+
+h3. 2017-04-12: #11349 commit:2c094e2 adds a "management" http server to nodemanager.
+* To enable it, add to your configuration file: <pre>[Manage]
+  address = 127.0.0.1
+  port = 8989</pre> (see example configuration files in source:services/nodemanager/doc or https://doc.arvados.org/install/install-nodemanager.html for more info)
+* The server responds to @http://{address}:{port}/status.json@ with a summary of how many nodes are in each state (booting, busy, shutdown, etc.)
+
+h3. 2017-03-23: #10766 commit:e8cc0d7 replaces puma with arvados-ws as the recommended websocket server.
+* See http://doc.arvados.org/install/install-ws.html for install/upgrade instructions.
+* Remove the old puma server after the upgrade is complete. Example, with runit: <pre>
+$ sudo sv down /etc/sv/puma
+$ sudo rm -r /etc/sv/puma
+</pre> Example, with systemd: <pre>
+$ systemctl disable puma
+$ systemctl stop puma
+</pre>
+
+h3. 2017-03-06: #11168 commit:660a614 uses JSON instead of YAML to encode hashes and arrays in the database.
+* Aside from a slight performance improvement, this should have no externally visible effect.
+* Downgrading past this version is not supported, and is likely to cause errors. If this happens, the solution is to upgrade past this version.
+* After upgrading, make sure to restart puma and crunch-dispatch-* processes.
+
+h3. 2017-02-03: #10969 commit:74a9dec introduces a Docker image format compatibility check: the @arv keep docker@ command prevents users from inadvertently saving docker images that compute nodes won't be able to run.
+* If your compute nodes run a version of *docker older than 1.10* you must override the default by adding to your API server configuration (@/etc/arvados/api/application.yml@): <pre><code class="yaml">docker_image_formats: ["v1"]</code></pre>
+* Refer to the comments above @docker_image_formats@ in @/var/www/arvados-api/current/config/application.default.yml@ or source:services/api/config/application.default.yml or issue #10969 for more detail.
+* *NOTE:* This does *not* include any support for migrating existing Docker images from v1 to v2 format. This will come later: for now, sites running Docker 1.9 or earlier should still *avoid upgrading Docker further than 1.9.*
+
+h3. 2016-09-27: several Debian and RPM packages -- keep-balance (commit:d9eec0b), keep-web (commit:3399e63), keepproxy (commit:6de67b6), and arvados-git-httpd (commit:9e27ddf) -- now enable their respective components using systemd. These components prefer YAML configuration files over command line flags (commit:3bbe1cd).
+* On Debian-based systems using systemd, services are enabled automatically when packages are installed.
+* On RedHat-based systems using systemd, unit files are installed but services must be enabled explicitly: e.g., <code>"sudo systemctl enable keep-web; sudo systemctl start keep-web"</code>.
+* The new systemd-supervised services will not start up successfully until configuration files are installed in /etc/arvados/: e.g., <code>"Sep 26 18:23:55 62751f5bb946 keep-web[74]: 2016/09/26 18:23:55 open /etc/arvados/keep-web/keep-web.yml: no such file or directory"</code>
+* To migrate from runit to systemd after installing the new packages, we recommend the following procedure:
+*# Bring down the runit service: "sv down /etc/sv/keep-web"
+*# Create a JSON configuration file (e.g., /etc/arvados/keep-web/keep-web.yml -- see "keep-web -help")
+*# Ensure the service is running correctly under systemd: "systemctl status keep-web" / "journalctl -u keep-web"
+*# Remove the runit service so it doesn't start at next boot
+* Affected services:
+** keep-balance - /etc/arvados/keep-balance/keep-balance.yml
+** keep-web - /etc/arvados/keep-web/keep-web.yml
+** keepproxy - /etc/arvados/keepproxy/keepproxy.yml
+** arvados-git-httpd - /etc/arvados/arv-git-httpd/arv-git-httpd.yml
+
+h3. 2016-05-31: commit:ae72b172c8 and commit:3aae316c25 install Python modules and scripts to different locations on the filesystem.
+* Previous packages installed these files to the distribution's preferred path under @/usr/local@ (or the equivalent location in a Software Collection).  Now they get installed to a path under @/usr@.  This improves compatibility with other Python packages provided by the distribution.  See #9242 for more background.
+* If you simply import Python modules from scripts, or call Python tools relying on $PATH, you don't need to make any changes.  If you have hardcoded full paths to some of these files (e.g., in symbolic links or configuration files), you will need to update those paths after this upgrade.
+
+h3. 2016-04-25: commit:eebcb5e requires the crunchrunner package to be installed on compute nodes and shell nodes in order to run CWL workflows.
+* On each Debian-based compute node and shell node, run: @sudo apt-get install crunchrunner@
+* On each Red Hat-based compute node and shell node, run: @sudo yum install crunchrunner@
+
+h3. 2016-04-21: commit:3c88abd changes the Keep permission signature algorithm.
+* All software components that generate signatures must be upgraded together. These are: keepstore, API server, keep-block-check, and keep-rsync. For example, if keepstore < 0.1.20160421183420 but API server >= 0.1.20160421183420, clients will not be able to read or write data in Keep.
+* Jobs and client operations that are in progress during the upgrade (including arv-put's "resume cache") will fail.
+
+h3. 2015-01-05: commit:e1276d6e disables Workbench's "Getting Started" popup by default.
+* If you want new users to continue seeing this popup, set @enable_getting_started_popup: true@ in Workbench's @application.yml@ configuration.
+
+h3. 2015-12-03: commit:5590c9ac makes a Keep-backed writable scratch directory available in crunch jobs (see #7751)
+* All compute nodes must be upgraded to arvados-fuse >= 0.1.2015112518060 because crunch-job uses some new arv-mount flags (--mount-tmp, --mount-by-pdh) introduced in merge commit:346a558
+* Jobs will fail if the API server (in particular crunch-job from the arvados-cli gem) is upgraded without upgrading arvados-fuse on compute nodes.
+
+h3. 2015-11-11: commit:1e2ace5 changes recommended config for keep-web (see #5824)
+* proxy/dns/ssl config should be updated to route "https://download.uuid_prefix.arvadosapi.com/" requests to keep-web (alongside the existing "collections" routing)
+* keep-web command line adds @-attachment-only-host download.uuid_prefix.arvadosapi.com@
+* Workbench config adds @keep_web_download_url@
+* More info on the (still beta/non-TOC-linked) "keep-web doc page":http://doc.arvados.org/install/install-keep-web.html
+
+h3. 2015-11-04: commit:1d1c6de removes stopped containers (see #7444)
+* arvados-docker-cleaner removes _all_ docker containers as soon as they exit, effectively making @docker run@ default to @--rm@. If you run arvados-docker-cleaner on a host that does anything other than run crunch-jobs, and you still want to be able to use @docker start@, read the "new doc page":http://doc.arvados.org/install/install-compute-node.html to learn how to turn this off before upgrading.
+
+h3. 2015-11-04: commit:21006cf adds a keep-web service (see #5824)
+* Nothing relies on it yet, but early adopters can install it now by following http://doc.arvados.org/install/install-keep-web.html (it is not yet linked in the TOC).

@@ -85,17 +85,41 @@ class WorkUnitsController < ApplicationController
       attrs['state'] = "Uncommitted"
 
       # required
-      attrs['command'] = ["arvados-cwl-runner", "--local", "--api=containers", "/var/lib/cwl/workflow.json#main", "/var/lib/cwl/cwl.input.json"]
+      attrs['command'] = ["arvados-cwl-runner",
+                          "--local",
+                          "--api=containers",
+                          "--project-uuid=#{params['work_unit']['owner_uuid']}",
+                          "/var/lib/cwl/workflow.json#main",
+                          "/var/lib/cwl/cwl.input.json"]
       attrs['container_image'] = "arvados/jobs"
       attrs['cwd'] = "/var/spool/cwl"
       attrs['output_path'] = "/var/spool/cwl"
 
+      # runtime constriants
+      runtime_constraints = {
+        "vcpus" => 1,
+        "ram" => 1024 * 1024 * 1024,
+        "API" => true
+      }
+
       input_defaults = {}
       if wf_json
-        inputs = get_cwl_inputs(wf_json)
-        inputs.each do |input|
+        main = get_cwl_main(wf_json)
+        main[:inputs].each do |input|
           if input[:default]
             input_defaults[cwl_shortname(input[:id])] = input[:default]
+          end
+        end
+        if main[:hints]
+          main[:hints].each do |hint|
+            if hint[:class] == "http://arvados.org/cwl#WorkflowRunnerResources"
+              if hint[:coresMin]
+                runtime_constraints["vcpus"] = hint[:coresMin]
+              end
+              if hint[:ramMin]
+                runtime_constraints["ram"] = hint[:ramMin] * 1024 * 1024
+              end
+            end
           end
         end
       end
@@ -123,12 +147,6 @@ class WorkUnitsController < ApplicationController
       end
       attrs['mounts'] = mounts
 
-      # runtime constriants
-      runtime_constraints = {
-        "vcpus" => 1,
-        "ram" => 256000000,
-        "API" => true
-      }
       attrs['runtime_constraints'] = runtime_constraints
     else
       raise ArgumentError, "Unsupported template uuid: #{template_uuid}"

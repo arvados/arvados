@@ -10,11 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
 )
 
-type LoggingTestSuite struct{}
+type LoggingTestSuite struct {
+	client *arvados.Client
+}
 
 type TestTimestamper struct {
 	count int
@@ -32,11 +35,16 @@ func (this *TestTimestamper) Timestamp(t time.Time) string {
 // Gocheck boilerplate
 var _ = Suite(&LoggingTestSuite{})
 
+func (s *LoggingTestSuite) SetUpTest(c *C) {
+	s.client = arvados.NewClientFromEnv()
+}
+
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -45,7 +53,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 
 	c.Check(api.Calls, Equals, 1)
 
-	mt, err := cr.LogCollection.ManifestText()
+	mt, err := cr.LogCollection.MarshalManifest(".")
 	c.Check(err, IsNil)
 	c.Check(mt, Equals, ". 74561df9ae65ee9f35d5661d42454264+83 0:83:crunch-run.txt\n")
 
@@ -64,7 +72,8 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
 
@@ -74,10 +83,10 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	cr.CrunchLog.Print("Goodbye")
 	cr.CrunchLog.Close()
 
-	c.Check(api.Calls > 1, Equals, true)
+	c.Check(api.Calls > 0, Equals, true)
 	c.Check(api.Calls < 2000000, Equals, true)
 
-	mt, err := cr.LogCollection.ManifestText()
+	mt, err := cr.LogCollection.MarshalManifest(".")
 	c.Check(err, IsNil)
 	c.Check(mt, Equals, ". 9c2c05d1fae6aaa8af85113ba725716d+67108864 80b821383a07266c2a66a4566835e26e+21780065 0:88888929:crunch-run.txt\n")
 }
@@ -86,10 +95,13 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
-	stdout := NewThrottledLogger(cr.NewLogWriter("stdout"))
+	w, err := cr.NewLogWriter("stdout")
+	c.Assert(err, IsNil)
+	stdout := NewThrottledLogger(w)
 	stdout.Timestamper = ts.Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -112,26 +124,24 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 2015-12-29T15:51:45.000000004Z Blurb
 `)
 
-	mt, err := cr.LogCollection.ManifestText()
+	mt, err := cr.LogCollection.MarshalManifest(".")
 	c.Check(err, IsNil)
-	c.Check(mt, Equals, ""+
-		". 408672f5b5325f7d20edfbf899faee42+83 0:83:crunch-run.txt\n"+
-		". c556a293010069fa79a6790a931531d5+80 0:80:stdout.txt\n")
+	c.Check(mt, Equals, ". 48f9023dc683a850b1c9b482b14c4b97+163 0:83:crunch-run.txt 83:80:stdout.txt\n")
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytes(c *C) {
-	testWriteLogsWithRateLimit(c, "crunchLogThrottleBytes", 50, 65536, "Exceeded rate 50 bytes per 60 seconds")
+	s.testWriteLogsWithRateLimit(c, "crunchLogThrottleBytes", 50, 65536, "Exceeded rate 50 bytes per 60 seconds")
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleLines(c *C) {
-	testWriteLogsWithRateLimit(c, "crunchLogThrottleLines", 1, 1024, "Exceeded rate 1 lines per 60 seconds")
+	s.testWriteLogsWithRateLimit(c, "crunchLogThrottleLines", 1, 1024, "Exceeded rate 1 lines per 60 seconds")
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytesPerEvent(c *C) {
-	testWriteLogsWithRateLimit(c, "crunchLimitLogBytesPerJob", 50, 67108864, "Exceeded log limit 50 bytes (crunch_limit_log_bytes_per_job)")
+	s.testWriteLogsWithRateLimit(c, "crunchLimitLogBytesPerJob", 50, 67108864, "Exceeded log limit 50 bytes (crunch_limit_log_bytes_per_job)")
 }
 
-func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, throttleDefault int, expected string) {
+func (s *LoggingTestSuite) testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, throttleDefault int, expected string) {
 	discoveryMap[throttleParam] = float64(throttleValue)
 	defer func() {
 		discoveryMap[throttleParam] = float64(throttleDefault)
@@ -140,7 +150,8 @@ func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, t
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -149,7 +160,7 @@ func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, t
 
 	c.Check(api.Calls, Equals, 1)
 
-	mt, err := cr.LogCollection.ManifestText()
+	mt, err := cr.LogCollection.MarshalManifest(".")
 	c.Check(err, IsNil)
 	c.Check(mt, Equals, ". 74561df9ae65ee9f35d5661d42454264+83 0:83:crunch-run.txt\n")
 
