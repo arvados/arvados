@@ -19,13 +19,14 @@ import (
 func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 	defer os.Setenv("ARVADOS_KEEP_SERVICES", "")
 
-	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("TestOverrideDiscovery")))
+	data := []byte("TestOverrideDiscovery")
+	hash := fmt.Sprintf("%x+%d", md5.Sum(data), len(data))
 	st := StubGetHandler{
 		c,
 		hash,
 		arvadostest.ActiveToken,
 		http.StatusOK,
-		[]byte("TestOverrideDiscovery")}
+		data}
 	ks := RunSomeFakeKeepServers(st, 2)
 
 	os.Setenv("ARVADOS_KEEP_SERVICES", "")

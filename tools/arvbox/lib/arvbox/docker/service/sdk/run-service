@@ -28,7 +28,7 @@ ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
 # multiple packages, because it will blindly install the latest version of each
 # dependency requested by each package, even if a compatible package version is
 # already installed.
-pip_install pip
+pip_install pip==9.0.3
 
 pip_install wheel
 

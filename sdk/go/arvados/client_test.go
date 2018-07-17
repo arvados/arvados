@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"testing/iotest"
 )
 
 type stubTransport struct {
@@ -49,6 +50,22 @@ type errorTransport struct{}
 
 func (stub *errorTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("something awful happened")
+}
+
+type timeoutTransport struct {
+	response []byte
+}
+
+func (stub *timeoutTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Request:    req,
+		Body:       ioutil.NopCloser(iotest.TimeoutReader(bytes.NewReader(stub.response))),
+	}, nil
 }
 
 func TestCurrentUser(t *testing.T) {

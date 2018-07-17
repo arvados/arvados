@@ -36,7 +36,7 @@ var (
 // existence automatically so sequences like "mkcol foo; put foo/bar"
 // work as expected.
 type webdavFS struct {
-	collfs  arvados.CollectionFileSystem
+	collfs  arvados.FileSystem
 	writing bool
 	// webdav PROPFIND reads the first few bytes of each file
 	// whose filename extension isn't recognized, which is
@@ -47,6 +47,9 @@ type webdavFS struct {
 }
 
 func (fs *webdavFS) makeparents(name string) {
+	if !fs.writing {
+		return
+	}
 	dir, _ := path.Split(name)
 	if dir == "" || dir == "/" {
 		return
@@ -66,7 +69,7 @@ func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) er
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
-	writing := flag&(os.O_WRONLY|os.O_RDWR) != 0
+	writing := flag&(os.O_WRONLY|os.O_RDWR|os.O_TRUNC) != 0
 	if writing {
 		fs.makeparents(name)
 	}
@@ -75,8 +78,13 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 		// webdav module returns 404 on all OpenFile errors,
 		// but returns 405 Method Not Allowed if OpenFile()
 		// succeeds but Write() or Close() fails. We'd rather
-		// have 405.
-		f = writeFailer{File: f, err: errReadOnly}
+		// have 405. writeFailer ensures Close() fails if the
+		// file is opened for writing *or* Write() is called.
+		var err error
+		if writing {
+			err = errReadOnly
+		}
+		f = writeFailer{File: f, err: err}
 	}
 	if fs.alwaysReadEOF {
 		f = readEOF{File: f}
@@ -109,10 +117,15 @@ type writeFailer struct {
 }
 
 func (wf writeFailer) Write([]byte) (int, error) {
+	wf.err = errReadOnly
 	return 0, wf.err
 }
 
 func (wf writeFailer) Close() error {
+	err := wf.File.Close()
+	if err != nil {
+		wf.err = err
+	}
 	return wf.err
 }
 

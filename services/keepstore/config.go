@@ -40,6 +40,11 @@ type Config struct {
 	EnableDelete        bool
 	TrashLifetime       arvados.Duration
 	TrashCheckInterval  arvados.Duration
+	PullWorkers         int
+	TrashWorkers        int
+	EmptyTrashWorkers   int
+	TLSCertificateFile  string
+	TLSKeyFile          string
 
 	Volumes VolumeList
 
@@ -47,7 +52,8 @@ type Config struct {
 	systemAuthToken string
 	debugLogf       func(string, ...interface{})
 
-	ManagementToken string
+	ManagementToken string `doc: The secret key that must be provided by monitoring services
+wishing to access the health check endpoint (/_health).`
 
 	metrics
 }

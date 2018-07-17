@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 results <- devtools::test()
 any_error <- any(as.data.frame(results)$error)
 if (any_error) {

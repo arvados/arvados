@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 source("fakes/FakeRESTService.R")
 
 context("Subcollection")
@@ -353,4 +357,4 @@ test_that(paste("getSizeInBytes delegates size calculation",
     resourceSize <- animal$getSizeInBytes()
 
     expect_that(resourceSize, equals(100))
-}) 
+})

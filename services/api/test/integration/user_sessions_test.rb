@@ -9,7 +9,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     'https://wb.example.com'
   end
 
-  def mock_auth_with(email: nil, username: nil)
+  def mock_auth_with(email: nil, username: nil, identity_url: nil)
     mock = {
       'provider' => 'josh_id',
       'uid' => 'https://edward.example.com',
@@ -22,6 +22,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     }
     mock['info']['email'] = email unless email.nil?
     mock['info']['username'] = username unless username.nil?
+    mock['info']['identity_url'] = identity_url unless identity_url.nil?
     post('/auth/josh_id/callback',
          {return_to: client_url},
          {'omniauth.auth' => mock})
@@ -38,6 +39,24 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     mock_auth_with(email: 'foo@example.com')
     u = assigns(:user)
     assert_equal 'foo', u.username
+  end
+
+  test 'existing user login' do
+    mock_auth_with(identity_url: "https://active-user.openid.local")
+    u = assigns(:user)
+    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+  end
+
+  test 'user redirect_to_user_uuid' do
+    mock_auth_with(identity_url: "https://redirects-to-active-user.openid.local")
+    u = assigns(:user)
+    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+  end
+
+  test 'user double redirect_to_user_uuid' do
+    mock_auth_with(identity_url: "https://double-redirects-to-active-user.openid.local")
+    u = assigns(:user)
+    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
   end
 
   test 'create new user during omniauth callback' do

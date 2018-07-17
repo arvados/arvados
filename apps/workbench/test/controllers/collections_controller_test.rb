@@ -409,7 +409,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal true, files.length>0, "Expected one or more files in collection"
 
     disabled = css_select('[disabled="disabled"]').collect do |el|
-      el.attributes['title'].split[-1]
+      el.attributes['title'].value.split[-1]
     end
 
     assert_equal files.sort, disabled.sort, "Expected to see all collection files in disabled list of files"

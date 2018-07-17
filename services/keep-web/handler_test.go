@@ -12,10 +12,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
@@ -333,7 +335,20 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 		http.StatusOK,
 		"foo",
 	)
-	c.Check(strings.Split(resp.Header().Get("Content-Disposition"), ";")[0], check.Equals, "attachment")
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
+}
+
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		"download.example.com/by_id/"+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"foo",
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
@@ -417,6 +432,38 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	)
 }
 
+func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("https:\\\"odd' path chars", os.O_CREATE, 0777)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	coll := arvados.Collection{ManifestText: mtxt}
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", client.UpdateBody(coll), nil)
+	c.Assert(err, check.IsNil)
+
+	u, _ := url.Parse("http://download.example.com/c=" + coll.UUID + "/")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + client.AuthToken},
+		},
+	}
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
+}
+
 // XHRs can't follow redirect-with-cookie so they rely on method=POST
 // and disposition=attachment (telling us it's acceptable to respond
 // with content instead of a redirect) and an Origin header that gets
@@ -466,7 +513,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
-	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
+	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
 	u, _ = u.Parse(resp.Header().Get("Location"))
@@ -493,10 +540,11 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
 	}
 	for _, trial := range []struct {
-		uri     string
-		header  http.Header
-		expect  []string
-		cutDirs int
+		uri      string
+		header   http.Header
+		expect   []string
+		redirect string
+		cutDirs  int
 	}{
 		{
 			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/",
@@ -508,12 +556,56 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			cutDirs: 1,
 		},
 		{
 			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
 			header:  authHeader,
 			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/users/active/foo_file_in_dir/",
+			header:  authHeader,
+			expect:  []string{"dir1/"},
+			cutDirs: 3,
+		},
+		{
+			uri:     "download.example.com/users/active/foo_file_in_dir/dir1/",
+			header:  authHeader,
+			expect:  []string{"bar"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "download.example.com/",
+			header:  authHeader,
+			expect:  []string{"users/"},
+			cutDirs: 0,
+		},
+		{
+			uri:      "download.example.com/users",
+			header:   authHeader,
+			redirect: "/users/",
+			expect:   []string{"active/"},
+			cutDirs:  1,
+		},
+		{
+			uri:     "download.example.com/users/",
+			header:  authHeader,
+			expect:  []string{"active/"},
+			cutDirs: 1,
+		},
+		{
+			uri:      "download.example.com/users/active",
+			header:   authHeader,
+			redirect: "/users/active/",
+			expect:   []string{"foo_file_in_dir/"},
+			cutDirs:  2,
+		},
+		{
+			uri:     "download.example.com/users/active/",
+			header:  authHeader,
+			expect:  []string{"foo_file_in_dir/"},
 			cutDirs: 2,
 		},
 		{
@@ -541,22 +633,24 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 1,
 		},
 		{
-			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
-			header:  authHeader,
-			expect:  []string{"foo", "bar"},
-			cutDirs: 1,
+			uri:      "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1",
+			header:   authHeader,
+			redirect: "/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
+			expect:   []string{"foo", "bar"},
+			cutDirs:  2,
 		},
 		{
 			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/_/dir1/",
 			header:  authHeader,
 			expect:  []string{"foo", "bar"},
-			cutDirs: 2,
+			cutDirs: 3,
 		},
 		{
-			uri:     arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
-			header:  authHeader,
-			expect:  []string{"foo", "bar"},
-			cutDirs: 0,
+			uri:      arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
+			header:   authHeader,
+			redirect: "/dir1/",
+			expect:   []string{"foo", "bar"},
+			cutDirs:  1,
 		},
 		{
 			uri:    "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/theperthcountyconspiracydoesnotexist/",
@@ -572,7 +666,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 		}
 		s.testServer.Handler.ServeHTTP(resp, req)
 		var cookies []*http.Cookie
@@ -583,7 +677,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 				Host:       u.Host,
 				URL:        u,
 				RequestURI: u.RequestURI(),
-				Header:     trial.header,
+				Header:     copyHeader(trial.header),
 			}
 			cookies = append(cookies, (&http.Response{Header: resp.Header()}).Cookies()...)
 			for _, c := range cookies {
@@ -592,12 +686,15 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			resp = httptest.NewRecorder()
 			s.testServer.Handler.ServeHTTP(resp, req)
 		}
+		if trial.redirect != "" {
+			c.Check(req.URL.Path, check.Equals, trial.redirect)
+		}
 		if trial.expect == nil {
 			c.Check(resp.Code, check.Equals, http.StatusNotFound)
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK)
 			for _, e := range trial.expect {
-				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="`+e+`".*`)
+				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./`+e+`".*`)
 			}
 			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`)
 		}
@@ -608,7 +705,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -624,7 +721,7 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			Host:       u.Host,
 			URL:        u,
 			RequestURI: u.RequestURI(),
-			Header:     trial.header,
+			Header:     copyHeader(trial.header),
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
@@ -659,4 +756,12 @@ func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
+
+func copyHeader(h http.Header) http.Header {
+	hc := http.Header{}
+	for k, v := range h {
+		hc[k] = append([]string(nil), v...)
+	}
+	return hc
 }

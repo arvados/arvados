@@ -22,10 +22,8 @@ EOF
 set -e
 
 if [[ -z "$WORKSPACE" ]] ; then
-    echo "$helpmessage"
-    echo
-    echo "Must set WORKSPACE"
-    exit 1
+    export WORKSPACE=$(readlink -f $(dirname $0)/..)
+    echo "Using WORKSPACE $WORKSPACE"
 fi
 
 if [[ -z "$ARVADOS_API_HOST" || -z "$ARVADOS_API_TOKEN" ]] ; then

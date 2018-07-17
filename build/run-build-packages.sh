@@ -110,9 +110,6 @@ case "$TARGET" in
     debian9)
         FORMAT=deb
         ;;
-    ubuntu1204)
-        FORMAT=deb
-        ;;
     ubuntu1404)
         FORMAT=deb
         ;;
@@ -288,61 +285,16 @@ handle_python_package
     fi
 )
 
-# On older platforms we need to publish a backport of libfuse >=2.9.2,
-# and we need to build and install it here in order to even build an
-# llfuse package.
-cd $WORKSPACE/packages/$TARGET
-if [[ $TARGET =~ ubuntu1204 ]]; then
-    # port libfuse 2.9.2 to Ubuntu 12.04
-    LIBFUSE_DIR=$(mktemp -d)
-    (
-        cd $LIBFUSE_DIR
-        # download fuse 2.9.2 ubuntu 14.04 source package
-        file="fuse_2.9.2.orig.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-        file="fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-        file="fuse_2.9.2-4ubuntu4.14.04.1.dsc" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
-
-        # install dpkg-source and dpkg-buildpackage commands
-        apt-get install -y --no-install-recommends dpkg-dev
-
-        # extract source and apply patches
-        dpkg-source -x fuse_2.9.2-4ubuntu4.14.04.1.dsc
-        rm -f fuse_2.9.2.orig.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.dsc
-
-        # add new version to changelog
-        cd fuse-2.9.2
-        (
-            echo "fuse (2.9.2-5) precise; urgency=low"
-            echo
-            echo "  * Backported from trusty-security to precise"
-            echo
-            echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000"
-            echo
-            cat debian/changelog
-        ) > debian/changelog.new
-        mv debian/changelog.new debian/changelog
-
-        # install build-deps and build
-        apt-get install -y --no-install-recommends debhelper dh-autoreconf libselinux-dev
-        dpkg-buildpackage -rfakeroot -b
-    )
-    fpm_build "$LIBFUSE_DIR/fuse_2.9.2-5_amd64.deb" fuse "Ubuntu Developers" deb "2.9.2" --iteration 5
-    fpm_build "$LIBFUSE_DIR/libfuse2_2.9.2-5_amd64.deb" libfuse2 "Ubuntu Developers" deb "2.9.2" --iteration 5
-    fpm_build "$LIBFUSE_DIR/libfuse-dev_2.9.2-5_amd64.deb" libfuse-dev "Ubuntu Developers" deb "2.9.2" --iteration 5
-    dpkg -i \
-        "$WORKSPACE/packages/$TARGET/fuse_2.9.2-5_amd64.deb" \
-        "$WORKSPACE/packages/$TARGET/libfuse2_2.9.2-5_amd64.deb" \
-        "$WORKSPACE/packages/$TARGET/libfuse-dev_2.9.2-5_amd64.deb"
-    apt-get -y --no-install-recommends -f install
-    rm -rf $LIBFUSE_DIR
-fi
-
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
 go get github.com/kardianos/govendor
 package_go_binary cmd/arvados-client arvados-client \
     "Arvados command line tool (beta)"
+package_go_binary cmd/arvados-server arvados-server \
+    "Arvados server daemons"
+package_go_binary cmd/arvados-server arvados-controller \
+    "Arvados cluster controller daemon"
 package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
@@ -397,14 +349,14 @@ rm -rf "$WORKSPACE/sdk/cwl/build"
 arvados_cwl_runner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)}
 declare -a iterargs=()
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    arvados_cwl_runner_iteration=3
+    arvados_cwl_runner_iteration=4
     iterargs+=(--iteration $arvados_cwl_runner_iteration)
 else
     arvados_cwl_runner_iteration=
 fi
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" "${iterargs[@]}"
+  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" "${iterargs[@]}"
 fi
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
@@ -486,8 +438,30 @@ if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
 fi
 
-## if libcloud becomes our own fork see
-## https://dev.arvados.org/issues/12268#note-27
+# Forked libcloud
+if test_package_presence "$PYTHON2_PKG_PREFIX"-apache-libcloud "$LIBCLOUD_PIN" python 2
+then
+  LIBCLOUD_DIR=$(mktemp -d)
+  (
+      cd $LIBCLOUD_DIR
+      git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
+      git checkout $DASHQ_UNLESS_DEBUG apache-libcloud-$LIBCLOUD_PIN
+      # libcloud is absurdly noisy without -q, so force -q here
+      OLD_DASHQ_UNLESS_DEBUG=$DASHQ_UNLESS_DEBUG
+      DASHQ_UNLESS_DEBUG=-q
+      handle_python_package
+      DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
+  )
+
+  # libcloud >= 2.3.0 now requires python-requests 2.4.3 or higher, otherwise
+  # it throws
+  #   ImportError: No module named packages.urllib3.poolmanager
+  # when loaded. We only see this problem on ubuntu1404, because that is our
+  # only supported distribution that ships with a python-requests older than
+  # 2.4.3.
+  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud "" python "" --iteration 2 --depends 'python-requests >= 2.4.3'
+  rm -rf $LIBCLOUD_DIR
+fi
 
 # Python 2 dependencies
 declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)

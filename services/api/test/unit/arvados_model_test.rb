@@ -99,7 +99,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
                         properties: {'foo' => 'bar'}.with_indifferent_access)
     raw = ActiveRecord::Base.connection.
       select_value("select properties from links where uuid='#{link.uuid}'")
-    assert_equal '{"foo":"bar"}', raw
+    assert_equal '{"foo": "bar"}', raw
   end
 
   test "store long string" do

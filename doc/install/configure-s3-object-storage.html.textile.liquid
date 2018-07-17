@@ -1,0 +1,112 @@
+---
+layout: default
+navsection: installguide
+title: Configure S3 object storage
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, or Ceph RADOS.
+
+h2. Configure keepstore
+
+Copy the "access key" and "secret key" to files where they will be accessible to keepstore at startup time.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sh -c 'cat &gt;/etc/arvados/keepstore/aws_s3_access_key.txt &lt;&lt;EOF'
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
+EOF</span>
+~$ <span class="userinput">sudo chmod 0400 /etc/arvados/keepstore/aws_s3_access_key.txt</span>
+</code></pre>
+</notextile>
+
+Next, edit the @Volumes@ section of the @keepstore.yml@ config file.
+
+h3. Example config for Amazon S3
+
+<pre>
+Volumes:
+- # The volume type, this indicates object storage compatible with the S3 API
+  Type: S3
+
+  # Storage provider.  If blank, uses Amazon S3 by default.
+  # See below for example alternate configuration for Google cloud
+  # storage.
+  Endpoint: ""
+
+  # The bucket to use for the backing store.
+  Bucket: example-bucket-name
+
+  # The region where the bucket is located.
+  Region: us-east-1
+
+  # The credentials to use to access the bucket.
+  AccessKeyFile: /etc/arvados/keepstore/aws_s3_access_key.txt
+  SecretKeyFile: /etc/arvados/keepstore/aws_s3_secret_key.txt
+
+  # Maximum time to wait making the initial connection to the backend before
+  # failing the request.
+  ConnectTimeout: 1m0s
+
+  # Page size for s3 "list bucket contents" requests
+  IndexPageSize: 1000
+
+  # True if the region requires a LocationConstraint declaration
+  LocationConstraint: false
+
+  # Maximum eventual consistency latency
+  RaceWindow: 24h0m0s
+
+  # If true, do not accept write or trash operations, only reads.
+  ReadOnly: false
+
+  # Maximum time to wait for a complete response from the backend before
+  # failing the request.
+  ReadTimeout: 2m0s
+
+  # How much replication is performed by the underlying bucket.
+  # This is used to inform replication decisions at the Keep layer.
+  S3Replication: 2
+
+  # Storage classes to associate with this volume.  See
+  # "Storage classes" in the "Admin" section of doc.arvados.org.
+  StorageClasses: null
+
+  # Enable deletion (garbage collection) even when TrashLifetime is
+  # zero.  WARNING: eventual consistency may result in race conditions
+  # that can cause data loss.  Do not enable this unless you know what
+  # you are doing.
+  UnsafeDelete: false
+</pre>
+
+Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
+
+h3. Example config for Google cloud storage
+
+See previous section for documentation of configuration fields.
+
+<pre>
+Volumes:
+- # Example configuration using alternate storage provider
+  # Configuration for Google cloud storage
+  Endpoint: https://storage.googleapis.com
+  Region: ""
+
+  AccessKeyFile: /etc/arvados/keepstore/gce_s3_access_key.txt
+  SecretKeyFile: /etc/arvados/keepstore/gce_s3_secret_key.txt
+  Bucket: example-bucket-name
+  ConnectTimeout: 1m0s
+  IndexPageSize: 1000
+  LocationConstraint: false
+  RaceWindow: 24h0m0s
+  ReadOnly: false
+  ReadTimeout: 2m0s
+  S3Replication: 2
+  StorageClasses: null
+  UnsafeDelete: false
+</pre>
+
+Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.

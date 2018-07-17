@@ -18,21 +18,39 @@ type Replica struct {
 	Mtime int64
 }
 
-// BlockState indicates the number of desired replicas (according to
-// the collections we know about) and the replicas actually stored
-// (according to the keepstore indexes we know about).
+// BlockState indicates the desired storage class and number of
+// replicas (according to the collections we know about) and the
+// replicas actually stored (according to the keepstore indexes we
+// know about).
 type BlockState struct {
 	Replicas []Replica
-	Desired  int
+	Desired  map[string]int
+	// TODO: Support combinations of classes ("private + durable")
+	// by replacing the map[string]int with a map[*[]string]int
+	// here, where the map keys come from a pool of semantically
+	// distinct class combinations.
+	//
+	// TODO: Use a pool of semantically distinct Desired maps to
+	// conserve memory (typically there are far more BlockState
+	// objects in memory than distinct Desired profiles).
 }
+
+var defaultClasses = []string{"default"}
 
 func (bs *BlockState) addReplica(r Replica) {
 	bs.Replicas = append(bs.Replicas, r)
 }
 
-func (bs *BlockState) increaseDesired(n int) {
-	if bs.Desired < n {
-		bs.Desired = n
+func (bs *BlockState) increaseDesired(classes []string, n int) {
+	if len(classes) == 0 {
+		classes = defaultClasses
+	}
+	for _, class := range classes {
+		if bs.Desired == nil {
+			bs.Desired = map[string]int{class: n}
+		} else if d, ok := bs.Desired[class]; !ok || d < n {
+			bs.Desired[class] = n
+		}
 	}
 }
 
@@ -88,12 +106,12 @@ func (bsm *BlockStateMap) AddReplicas(mnt *KeepMount, idx []arvados.KeepServiceI
 }
 
 // IncreaseDesired updates the map to indicate the desired replication
-// for the given blocks is at least n.
-func (bsm *BlockStateMap) IncreaseDesired(n int, blocks []arvados.SizedDigest) {
+// for the given blocks in the given storage class is at least n.
+func (bsm *BlockStateMap) IncreaseDesired(classes []string, n int, blocks []arvados.SizedDigest) {
 	bsm.mutex.Lock()
 	defer bsm.mutex.Unlock()
 
 	for _, blkid := range blocks {
-		bsm.get(blkid).increaseDesired(n)
+		bsm.get(blkid).increaseDesired(classes, n)
 	}
 }

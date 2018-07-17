@@ -81,6 +81,7 @@ Server::Application.routes.draw do
         post 'setup', on: :collection
         post 'unsetup', on: :member
         post 'update_uuid', on: :member
+        post 'merge', on: :collection
       end
       resources :virtual_machines do
         get 'logins', on: :member

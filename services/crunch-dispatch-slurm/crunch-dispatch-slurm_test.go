@@ -193,10 +193,11 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 	container := s.integrationTest(c,
 		[][]string{{
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
+			fmt.Sprintf("--nice=%d", 10000),
 			fmt.Sprintf("--mem=%d", 11445),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
 			fmt.Sprintf("--tmp=%d", 45777),
-			fmt.Sprintf("--nice=%d", 10000)}},
+		}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -208,7 +209,7 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 func (s *IntegrationSuite) TestSbatchFail(c *C) {
 	s.slurm = slurmFake{errBatch: errors.New("something terrible happened")}
 	container := s.integrationTest(c,
-		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--mem=11445", "--cpus-per-task=4", "--tmp=45777", "--nice=10000"}},
+		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--nice=10000", "--mem=11445", "--cpus-per-task=4", "--tmp=45777"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
@@ -353,7 +354,7 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 		s.disp.SbatchArguments = defaults
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=10000"))
+		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--nice=10000", "--mem=239", "--cpus-per-task=2", "--tmp=0"))
 		c.Check(err, IsNil)
 	}
 }
@@ -366,40 +367,42 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 	}
 
 	for _, trial := range []struct {
-		types      []arvados.InstanceType
+		types      map[string]arvados.InstanceType
 		sbatchArgs []string
 		err        error
 	}{
 		// Choose node type => use --constraint arg
 		{
-			types: []arvados.InstanceType{
-				{Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
-				{Name: "a1.small", Price: 0.04, RAM: 256000000, VCPUs: 2},
-				{Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
-				{Name: "a1.large", Price: 0.16, RAM: 1024000000, VCPUs: 8},
+			types: map[string]arvados.InstanceType{
+				"a1.tiny":   {Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
+				"a1.small":  {Name: "a1.small", Price: 0.04, RAM: 256000000, VCPUs: 2},
+				"a1.medium": {Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
+				"a1.large":  {Name: "a1.large", Price: 0.16, RAM: 1024000000, VCPUs: 8},
 			},
 			sbatchArgs: []string{"--constraint=instancetype=a1.medium"},
 		},
 		// No node types configured => no slurm constraint
 		{
 			types:      nil,
-			sbatchArgs: nil,
+			sbatchArgs: []string{"--mem=239", "--cpus-per-task=2", "--tmp=0"},
 		},
 		// No node type is big enough => error
 		{
-			types: []arvados.InstanceType{
-				{Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
+			types: map[string]arvados.InstanceType{
+				"a1.tiny": {Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
 			},
-			err: dispatchcloud.ErrConstraintsNotSatisfiable,
+			err: dispatchcloud.ConstraintsNotSatisfiableError{},
 		},
 	} {
 		c.Logf("%#v", trial)
 		s.disp.cluster = &arvados.Cluster{InstanceTypes: trial.types}
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(err, Equals, trial.err)
+		c.Check(err == nil, Equals, trial.err == nil)
 		if trial.err == nil {
-			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--nice=10000"}, trial.sbatchArgs...))
+			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--nice=10000"}, trial.sbatchArgs...))
+		} else {
+			c.Check(len(err.(dispatchcloud.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
 		}
 	}
 }
@@ -414,7 +417,8 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 
 	args, err := s.disp.sbatchArgs(container)
 	c.Check(args, DeepEquals, []string{
-		"--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--nice=10000",
+		"--job-name=123", "--nice=10000",
+		"--mem=239", "--cpus-per-task=1", "--tmp=0",
 		"--partition=blurb,b2",
 	})
 	c.Check(err, IsNil)

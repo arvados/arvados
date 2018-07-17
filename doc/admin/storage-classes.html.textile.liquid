@@ -1,0 +1,47 @@
+---
+layout: default
+navsection: admin
+title: Configuring storage classes
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Storage classes (alternately known as "storage tiers") allow you to control which volumes should be used to store particular collection data blocks.  This can be used to implement data storage policies such as moving data to archival storage.
+
+The storage classes for each volume are set in the per-volume "keepstore configuration":{{site.baseurl}}/install/install-keepstore.html
+
+<pre>
+Volumes:
+ - ... Volume configuration ...
+   #
+   # If no storage classes are specified, will use [default]
+   #
+   StorageClasses: null
+
+ - ... Volume configuration ...
+   #
+   # Specify this volume is in the "archival" storage class.
+   #
+   StorageClasses: [archival]
+
+</pre>
+
+Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.
+
+h3. Using storage classes
+
+"Discussed in the user guide":{{site.baseurl}}/user/topics/storage-classes.html
+
+h3. Storage management notes
+
+The "keep-balance":{{site.baseurl}}/install/install-keep-balance.html service is responsible for deciding which blocks should be placed on which keepstore volumes.  As part of the rebalancing behavior, it will determine where a block should go in order to satisfy the desired storage classes, and issue pull requests to copy the block from its original volume to the desired volume.  The block will subsequently be moved to trash on the original volume.
+
+If a block appears in multiple collections with different storage classes, the block will be stored in separate volumes for each storage class, even if that results in overreplication, unless there is a volume which has all the desired storage classes.
+
+If a collection has a desired storage class which is not available in any keepstore volume, the collection's blocks will remain in place, and an error will appear in the @keep-balance@ logs.
+
+This feature does not provide a hard guarantee on where data will be stored.  Data may be written to default storage and moved to the desired storage class later.  If controlling data locality is a hard requirement (such as legal restrictions on the location of data) we recommend setting up multiple Arvados clusters.

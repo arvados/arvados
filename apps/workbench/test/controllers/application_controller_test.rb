@@ -381,7 +381,7 @@ class ApplicationControllerTest < ActionController::TestCase
       get(:show, {id: test_uuid})
       login_link = css_select(css_selector).first
       assert_not_nil(login_link, "failed to select login link")
-      login_href = URI.unescape(login_link.attributes["href"])
+      login_href = URI.unescape(login_link.attributes["href"].value)
       # The parameter needs to include the full URL to work.
       assert_includes(login_href, "://")
       assert_match(/[\?&]return_to=[^&]*\/projects\/#{test_uuid}(&|$)/,

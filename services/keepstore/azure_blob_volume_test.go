@@ -536,9 +536,13 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	azureWriteRaceInterval = time.Second
 	azureWriteRacePollTime = time.Millisecond
 
-	allDone := make(chan struct{})
+	var wg sync.WaitGroup
+
 	v.azHandler.race = make(chan chan struct{})
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		err := v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Error(err)
@@ -547,21 +551,22 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	continuePut := make(chan struct{})
 	// Wait for the stub's Put to create the empty blob
 	v.azHandler.race <- continuePut
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		buf := make([]byte, len(TestBlock))
 		_, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 		}
-		close(allDone)
 	}()
 	// Wait for the stub's Get to get the empty blob
 	close(v.azHandler.race)
 	// Allow stub's Put to continue, so the real data is ready
 	// when the volume's Get retries
 	<-continuePut
-	// Wait for volume's Get to return the real data
-	<-allDone
+	// Wait for Get() and Put() to finish
+	wg.Wait()
 }
 
 func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {

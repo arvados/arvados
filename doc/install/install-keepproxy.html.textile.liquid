@@ -103,7 +103,18 @@ Note: if the Web uploader is failing to upload data and there are no logs from k
 
 h3. Tell the API server about the Keepproxy server
 
-The API server needs to be informed about the presence of your Keepproxy server. Please execute the following commands on your <strong>shell server</strong>.
+The API server needs to be informed about the presence of your Keepproxy server.
+
+First, if you don't already have an admin token, create a superuser token:
+
+{% include 'create_superuser_token' %}
+
+Configure your environment to run @arv@ using the output of create_superuser_token.rb:
+
+<pre>
+export ARVADOS_API_HOST=zzzzz.example.com
+export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</pre>
 
 <notextile>
 <pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
@@ -117,3 +128,13 @@ The API server needs to be informed about the presence of your Keepproxy server.
 }
 EOF</span>
 </code></pre></notextile>
+
+h3. Testing keepproxy
+
+Log into a host that is on an external network from your private Arvados network.  The host should be able to contact your keepproxy server (eg keep.$uuid_prefix.arvadosapi.com), but not your keepstore servers (eg keep[0-9].$uuid_prefix.arvadosapi.com).
+
+Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+
+@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.
+
+You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections, for an example see "Testing keep.":install-keepstore.html#testing on the keepstore install page.

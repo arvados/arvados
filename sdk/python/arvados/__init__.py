@@ -18,9 +18,7 @@ import os
 import pprint
 import re
 import string
-import subprocess
 import sys
-import threading
 import time
 import types
 import zlib

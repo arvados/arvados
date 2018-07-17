@@ -219,7 +219,9 @@ if [[ -n "$test_packages" ]]; then
         fi
         echo
         echo "START: $p test on $IMAGE" >&2
-        if docker run --rm \
+        # ulimit option can be removed when debian8 and ubuntu1404 are retired
+        if docker run --ulimit nofile=4096:4096 \
+            --rm \
             "${docker_volume_args[@]}" \
             --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
             --env "TARGET=$TARGET" \
@@ -245,8 +247,9 @@ else
     set +e
     mv -f ${WORKSPACE}/packages/${TARGET}/* ${WORKSPACE}/packages/${TARGET}/processed/ 2>/dev/null
     set -e
-    # Build packages
-    if docker run --rm \
+    # Build packages. ulimit option can be removed when debian8 and ubuntu1404 are retired
+    if docker run --ulimit nofile=4096:4096 \
+        --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
         --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \

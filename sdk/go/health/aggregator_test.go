@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package health
 
 import (
@@ -30,7 +34,7 @@ func (s *AggregatorSuite) SetUpTest(c *check.C) {
 		Clusters: map[string]arvados.Cluster{
 			"zzzzz": {
 				ManagementToken: arvadostest.ManagementToken,
-				SystemNodes:     map[string]arvados.SystemNode{},
+				NodeProfiles:    map[string]arvados.NodeProfile{},
 			},
 		},
 	}}
@@ -82,7 +86,7 @@ func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 func (s *AggregatorSuite) TestUnhealthy(c *check.C) {
 	srv, listen := s.stubServer(&unhealthyHandler{})
 	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
 		Keepstore: arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
@@ -102,7 +106,8 @@ func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
+		Controller:  arvados.SystemServiceInstance{Listen: listen},
 		Keepproxy:   arvados.SystemServiceInstance{Listen: listen},
 		Keepstore:   arvados.SystemServiceInstance{Listen: listen},
 		Keepweb:     arvados.SystemServiceInstance{Listen: listen},
@@ -125,7 +130,8 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	defer srvH.Close()
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
-	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
+		Controller:  arvados.SystemServiceInstance{Listen: listenH},
 		Keepproxy:   arvados.SystemServiceInstance{Listen: listenH},
 		Keepstore:   arvados.SystemServiceInstance{Listen: listenH},
 		Keepweb:     arvados.SystemServiceInstance{Listen: listenH},
@@ -134,7 +140,7 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 		Websocket:   arvados.SystemServiceInstance{Listen: listenH},
 		Workbench:   arvados.SystemServiceInstance{Listen: listenH},
 	}
-	s.handler.Config.Clusters["zzzzz"].SystemNodes["127.0.0.1"] = arvados.SystemNode{
+	s.handler.Config.Clusters["zzzzz"].NodeProfiles["127.0.0.1"] = arvados.NodeProfile{
 		Keepstore: arvados.SystemServiceInstance{Listen: listenU},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
@@ -188,7 +194,7 @@ func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
 	srv, listen := s.stubServer(&slowHandler{})
 	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].SystemNodes["localhost"] = arvados.SystemNode{
+	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
 		Keepstore: arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)

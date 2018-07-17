@@ -70,9 +70,11 @@ apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 cmd/arvados-client
+cmd/arvados-server
 doc
 lib/cli
 lib/cmd
+lib/controller
 lib/crunchstat
 lib/dispatchcloud
 services/api
@@ -182,8 +184,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
-    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 8 ]] \
-        || fatal "Go >= 1.8 required. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 10 ]] \
+        || fatal "Go >= 1.10 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -246,9 +248,9 @@ sanity_checks() {
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
       echo -n 'R: '
-      which R || fatal "No R. Try: apt-get install r-base"
+      which Rscript || fatal "No Rscript. Try: apt-get install r-base"
       echo -n 'testthat: '
-      R -q -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
+      Rscript -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
       # needed for roxygen2, needed for devtools, needed for R sdk
       pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
       # needed for pkgdown, builds R SDK doc pages
@@ -270,6 +272,8 @@ declare -a failures
 declare -A skip
 declare -A testargs
 skip[apps/workbench_profile]=1
+# nodemanager_integration tests are not reliable, see #12061.
+skip[services/nodemanager_integration]=1
 
 while [[ -n "$1" ]]
 do
@@ -345,15 +349,19 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo fail=1) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && python sdk/python/tests/run_test_server.py start_controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && python sdk/python/tests/run_test_server.py start_nginx \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo fail=1) \
         && (env | egrep ^ARVADOS)
+    if [[ -n "$fail" ]]; then
+       return 1
+    fi
 }
 
 stop_services() {
@@ -367,6 +375,7 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop_ws \
         && python sdk/python/tests/run_test_server.py stop_keep-web \
         && python sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python sdk/python/tests/run_test_server.py stop_controller \
         && python sdk/python/tests/run_test_server.py stop
 }
 
@@ -403,6 +412,8 @@ do
         mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
+
+rm -vf "${WORKSPACE}/tmp/*.log"
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
@@ -489,6 +500,8 @@ setup_virtualenv() {
     local venvdest="$1"; shift
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    elif [[ -n "$short" ]]; then
+        return
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
@@ -506,64 +519,59 @@ export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 export R_LIBS
 
 export GOPATH
-mkdir -p "$GOPATH/src/git.curoverse.com"
-rmdir -v --parents --ignore-fail-on-non-empty "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH"
-for d in \
-    "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
-    "$GOPATH/src/git.curoverse.com/arvados.git"; do
-    [[ -d "$d" ]] && rmdir "$d"
-    [[ -h "$d" ]] && rm "$d"
-done
-ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
-    || fatal "symlink failed"
-go get -v github.com/kardianos/govendor \
-    || fatal "govendor install failed"
-cd "$GOPATH/src/git.curoverse.com/arvados.git" \
-    || fatal
-# Remove cached source dirs in workdir. Otherwise, they won't qualify
-# as +missing or +external below, and we won't be able to detect that
-# they're missing from vendor/vendor.json.
-rm -r vendor/*/
-go get -v -d ...
-"$GOPATH/bin/govendor" sync \
-    || fatal "govendor sync failed"
-[[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
-    || fatal "vendor/vendor.json has unused or missing dependencies -- try:
-* govendor remove +unused
-* govendor add +missing +external
-"
-cd "$WORKSPACE"
+(
+    set -e
+    mkdir -p "$GOPATH/src/git.curoverse.com"
+    rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
+    if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
+        for d in \
+            "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+                "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                "$GOPATH/src/git.curoverse.com/arvados.git"; do
+            [[ -d "$d" ]] && rmdir "$d"
+        done
+    fi
+    for d in \
+        "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
+        "$GOPATH/src/git.curoverse.com/arvados.git"; do
+        [[ -h "$d" ]] && rm "$d"
+    done
+    ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    go get -v github.com/kardianos/govendor
+    cd "$GOPATH/src/git.curoverse.com/arvados.git"
+    if [[ -n "$short" ]]; then
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+    else
+        # Remove cached source dirs in workdir. Otherwise, they will
+        # not qualify as +missing or +external below, and we won't be
+        # able to detect that they're missing from vendor/vendor.json.
+        rm -rf vendor/*/
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+        [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
+            || fatal "vendor/vendor.json has unused or missing dependencies -- try:
 
+(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
+
+";
+    fi
+) || fatal "Go setup failed"
 
 setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install --no-cache-dir PyYAML >/dev/null \
+pip install --no-cache-dir PyYAML \
     || fatal "pip install PyYAML failed"
 
-# Preinstall libcloud, because nodemanager "pip install"
-# won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-    || pip install --pre --ignore-installed --no-cache-dir apache-libcloud>=$LIBCLOUD_PIN >/dev/null \
-    || fatal "pip install apache-libcloud failed"
-
-# We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
-pip freeze | grep -x llfuse==1.2.0 || (
-    set -e
-    yes | pip uninstall llfuse || true
-    cython --version || fatal "no cython; try sudo apt-get install cython"
-    cd "$temp"
-    (cd python-llfuse 2>/dev/null || git clone https://github.com/curoverse/python-llfuse)
-    cd python-llfuse
-    git checkout 620722fd990ea642ddb8e7412676af482c090c0c
-    git checkout setup.py
-    sed -i -e "s:'1\\.2':'1.2.0':" setup.py
-    python setup.py build_cython
-    python setup.py install --force
-) || fatal "llfuse fork failed"
-pip freeze | grep -x llfuse==1.2.0 || fatal "error: installed llfuse 1.2.0 but '$(pip freeze | grep llfuse)' ???"
+# Preinstall libcloud if using a fork; otherwise nodemanager "pip
+# install" won't pick it up by default.
+if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
+    pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
+        || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
+        || fatal "pip install apache-libcloud failed"
+fi
 
 # Deactivate Python 2 virtualenv
 deactivate
@@ -608,6 +616,12 @@ then
     gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
+# Jenkins config requires that glob tmp/*.log match something. Ensure
+# that happens even if we don't end up running services that set up
+# logging.
+mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
+touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
+
 retry() {
     remain="${repeat}"
     while :
@@ -644,8 +658,9 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-                (-z "${only}" || "${only}" == "${suite}" || \
-                 "${only}" == "${1}") ]]; then
+              (-z "${only}" || "${only}" == "${suite}" || \
+                   "${only}" == "${1}") ||
+                  "${only}" == "${2}" ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
@@ -802,7 +817,7 @@ do_install sdk/ruby ruby_sdk
 install_R_sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
-       && R --quiet --vanilla --file=install_deps.R
+       && Rscript --vanilla install_deps.R
   fi
 }
 do_install sdk/R R_sdk
@@ -863,7 +878,7 @@ install_apiserver() {
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
         && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
-        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
@@ -896,8 +911,10 @@ do_install services/api apiserver
 declare -a gostuff
 gostuff=(
     cmd/arvados-client
+    cmd/arvados-server
     lib/cli
     lib/cmd
+    lib/controller
     lib/crunchstat
     lib/dispatchcloud
     sdk/go/arvados
@@ -981,7 +998,7 @@ do_test sdk/ruby ruby_sdk
 test_R_sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
-        && R --quiet --file=run_test.R
+        && Rscript --vanilla run_test.R
   fi
 }
 

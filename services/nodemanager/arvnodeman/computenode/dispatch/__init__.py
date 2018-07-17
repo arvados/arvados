@@ -130,7 +130,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @RetryMixin._retry()
     def create_cloud_node(self):
         self._logger.info("Sending create_node request for node size %s.",
-                          self.cloud_size.name)
+                          self.cloud_size.id)
         try:
             self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                       self.arvados_node)
@@ -437,6 +437,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         the node is candidate for shut down, and the second value is the
         reason for the decision.
         """
+
+        # If this node's size is invalid (because it has a stale arvados_node_size
+        # tag), return True so that it's properly shut down.
+        if self.cloud_node.size.id == 'invalid':
+            return (True, "node's size tag '%s' not recognizable" % (self.cloud_node.extra['arvados_node_size'],))
 
         # Collect states and then consult state transition table whether we
         # should shut down.  Possible states are:

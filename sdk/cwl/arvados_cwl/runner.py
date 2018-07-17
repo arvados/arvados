@@ -7,15 +7,16 @@ import urlparse
 from functools import partial
 import logging
 import json
-import subprocess
+import subprocess32 as subprocess
+from collections import namedtuple
 
 from StringIO import StringIO
 
-from schema_salad.sourceline import SourceLine
+from schema_salad.sourceline import SourceLine, cmap
 
 from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
+from cwltool.process import scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
@@ -45,10 +46,12 @@ def trim_anonymous_location(obj):
     if obj.get("location", "").startswith("_:"):
         del obj["location"]
 
+
 def remove_redundant_fields(obj):
     for field in ("path", "nameext", "nameroot", "dirname"):
         if field in obj:
             del obj[field]
+
 
 def find_defaults(d, op):
     if isinstance(d, list):
@@ -61,8 +64,25 @@ def find_defaults(d, op):
             for i in d.itervalues():
                 find_defaults(i, op)
 
+def setSecondary(t, fileobj, discovered):
+    if isinstance(fileobj, dict) and fileobj.get("class") == "File":
+        if "secondaryFiles" not in fileobj:
+            fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]])
+            if discovered is not None:
+                discovered[fileobj["location"]] = fileobj["secondaryFiles"]
+    elif isinstance(fileobj, list):
+        for e in fileobj:
+            setSecondary(t, e, discovered)
+
+def discover_secondary_files(inputs, job_order, discovered=None):
+    for t in inputs:
+        if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
+            setSecondary(t, job_order[shortname(t["id"])], discovered)
+
+
 def upload_dependencies(arvrunner, name, document_loader,
-                        workflowobj, uri, loadref_run, include_primary=True):
+                        workflowobj, uri, loadref_run,
+                        include_primary=True, discovered_secondaryfiles=None):
     """Upload the dependencies of the workflowobj document to Keep.
 
     Returns a pathmapper object mapping local paths to keep references.  Also
@@ -102,10 +122,17 @@ def upload_dependencies(arvrunner, name, document_loader,
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
 
-    sc = scandeps(uri, scanobj,
+    sc_result = scandeps(uri, scanobj,
                   loadref_fields,
                   set(("$include", "$schemas", "location")),
                   loadref, urljoin=document_loader.fetcher.urljoin)
+
+    sc = []
+    def only_real(obj):
+        if obj.get("location", "").startswith("file:"):
+            sc.append(obj)
+
+    visit_class(sc_result, ("File", "Directory"), only_real)
 
     normalizeFilesDirs(sc)
 
@@ -116,22 +143,33 @@ def upload_dependencies(arvrunner, name, document_loader,
         for s in workflowobj["$schemas"]:
             sc.append({"class": "File", "location": s})
 
-    def capture_default(obj):
+    def visit_default(obj):
         remove = [False]
-        def add_default(f):
+        def ensure_default_location(f):
             if "location" not in f and "path" in f:
                 f["location"] = f["path"]
                 del f["path"]
             if "location" in f and not arvrunner.fs_access.exists(f["location"]):
-                # Remove from sc
+                # Doesn't exist, remove from list of dependencies to upload
                 sc[:] = [x for x in sc if x["location"] != f["location"]]
                 # Delete "default" from workflowobj
                 remove[0] = True
-        visit_class(obj["default"], ("File", "Directory"), add_default)
+        visit_class(obj["default"], ("File", "Directory"), ensure_default_location)
         if remove[0]:
             del obj["default"]
 
-    find_defaults(workflowobj, capture_default)
+    find_defaults(workflowobj, visit_default)
+
+    discovered = {}
+    def discover_default_secondary_files(obj):
+        discover_secondary_files(obj["inputs"],
+                                 {shortname(t["id"]): t["default"] for t in obj["inputs"] if "default" in t},
+                                 discovered)
+
+    visit_class(workflowobj, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
+
+    for d in discovered:
+        sc.extend(discovered[d])
 
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
@@ -142,8 +180,13 @@ def upload_dependencies(arvrunner, name, document_loader,
     def setloc(p):
         if "location" in p and (not p["location"].startswith("_:")) and (not p["location"].startswith("keep:")):
             p["location"] = mapper.mapper(p["location"]).resolved
-    adjustFileObjs(workflowobj, setloc)
-    adjustDirObjs(workflowobj, setloc)
+
+    visit_class(workflowobj, ("File", "Directory"), setloc)
+    visit_class(discovered, ("File", "Directory"), setloc)
+
+    if discovered_secondaryfiles is not None:
+        for d in discovered:
+            discovered_secondaryfiles[mapper.mapper(d).resolved] = discovered[d]
 
     if "$schemas" in workflowobj:
         sch = []
@@ -158,7 +201,7 @@ def upload_docker(arvrunner, tool):
     """Uploads Docker images used in CommandLineTool objects."""
 
     if isinstance(tool, CommandLineTool):
-        (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
+        (docker_req, docker_is_req) = tool.get_requirement("DockerRequirement")
         if docker_req:
             if docker_req.get("dockerOutputDirectory") and arvrunner.work_api != "containers":
                 # TODO: can be supported by containers API, but not jobs API.
@@ -171,6 +214,7 @@ def upload_docker(arvrunner, tool):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
 
+
 def packed_workflow(arvrunner, tool, merged_map):
     """Create a packed workflow.
 
@@ -180,16 +224,18 @@ def packed_workflow(arvrunner, tool, merged_map):
     packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
                   tool.tool["id"], tool.metadata, rewrite_out=rewrites)
 
-    rewrite_to_orig = {}
-    for k,v in rewrites.items():
-        rewrite_to_orig[v] = k
+    rewrite_to_orig = {v: k for k,v in rewrites.items()}
 
     def visit(v, cur_id):
         if isinstance(v, dict):
             if v.get("class") in ("CommandLineTool", "Workflow"):
+                if "id" not in v:
+                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field")
                 cur_id = rewrite_to_orig.get(v["id"], v["id"])
             if "location" in v and not v["location"].startswith("keep:"):
-                v["location"] = merged_map[cur_id][v["location"]]
+                v["location"] = merged_map[cur_id].resolved[v["location"]]
+            if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
+                v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -197,6 +243,7 @@ def packed_workflow(arvrunner, tool, merged_map):
                 visit(l, cur_id)
     visit(packed, None)
     return packed
+
 
 def tag_git_version(packed):
     if tool.tool["id"].startswith("file://"):
@@ -208,20 +255,6 @@ def tag_git_version(packed):
         else:
             packed["http://schema.org/version"] = githash
 
-
-def discover_secondary_files(inputs, job_order):
-    for t in inputs:
-        def setSecondary(fileobj):
-            if isinstance(fileobj, dict) and fileobj.get("class") == "File":
-                if "secondaryFiles" not in fileobj:
-                    fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]]
-
-            if isinstance(fileobj, list):
-                for e in fileobj:
-                    setSecondary(e)
-
-        if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
-            setSecondary(job_order[shortname(t["id"])])
 
 def upload_job_order(arvrunner, name, tool, job_order):
     """Upload local files referenced in the input object and return updated input
@@ -247,6 +280,8 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
     return job_order
 
+FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
+
 def upload_workflow_deps(arvrunner, tool):
     # Ensure that Docker images needed by this workflow are available
 
@@ -258,18 +293,20 @@ def upload_workflow_deps(arvrunner, tool):
 
     def upload_tool_deps(deptool):
         if "id" in deptool:
+            discovered_secondaryfiles = {}
             pm = upload_dependencies(arvrunner,
-                                "%s dependencies" % (shortname(deptool["id"])),
-                                document_loader,
-                                deptool,
-                                deptool["id"],
-                                False,
-                                include_primary=False)
+                                     "%s dependencies" % (shortname(deptool["id"])),
+                                     document_loader,
+                                     deptool,
+                                     deptool["id"],
+                                     False,
+                                     include_primary=False,
+                                     discovered_secondaryfiles=discovered_secondaryfiles)
             document_loader.idx[deptool["id"]] = deptool
             toolmap = {}
             for k,v in pm.items():
                 toolmap[k] = v.resolved
-            merged_map[deptool["id"]] = toolmap
+            merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
 
     tool.visit(upload_tool_deps)
 
@@ -316,8 +353,8 @@ class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
-                 intermediate_output_ttl=0, merged_map=None, priority=None,
-                 secret_store=None):
+                 intermediate_output_ttl=0, merged_map=None,
+                 priority=None, secret_store=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -325,7 +362,7 @@ class Runner(object):
         if enable_reuse:
             # If reuse is permitted by command line arguments but
             # disabled by the workflow itself, disable it.
-            reuse_req, _ = get_feature(self.tool, "http://arvados.org/cwl#ReuseRequirement")
+            reuse_req, _ = self.tool.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
         self.enable_reuse = enable_reuse
@@ -340,13 +377,25 @@ class Runner(object):
         self.priority = priority
         self.secret_store = secret_store
 
+        self.submit_runner_cores = 1
+        self.submit_runner_ram = 1024  # defaut 1 GiB
+
+        runner_resource_req, _ = self.tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        if runner_resource_req:
+            if runner_resource_req.get("coresMin"):
+                self.submit_runner_cores = runner_resource_req["coresMin"]
+            if runner_resource_req.get("ramMin"):
+                self.submit_runner_ram = runner_resource_req["ramMin"]
+
         if submit_runner_ram:
+            # Command line / initializer overrides default and/or spec from workflow
             self.submit_runner_ram = submit_runner_ram
-        else:
-            self.submit_runner_ram = 3000
 
         if self.submit_runner_ram <= 0:
-            raise Exception("Value of --submit-runner-ram must be greater than zero")
+            raise Exception("Value of submit-runner-ram must be greater than zero")
+
+        if self.submit_runner_cores <= 0:
+            raise Exception("Value of submit-runner-cores must be greater than zero")
 
         self.merged_map = merged_map or {}
 
@@ -377,7 +426,7 @@ class Runner(object):
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self), maxlen=40)
+                done.logtail(logc, logger.error, "%s (%s) error log:" % (self.arvrunner.label(self), record["uuid"]), maxlen=40)
 
             self.final_output = record["output"]
             outc = arvados.collection.CollectionReader(self.final_output,
@@ -399,6 +448,3 @@ class Runner(object):
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             self.arvrunner.output_callback(outputs, processStatus)
-        finally:
-            if record["uuid"] in self.arvrunner.processes:
-                del self.arvrunner.processes[record["uuid"]]

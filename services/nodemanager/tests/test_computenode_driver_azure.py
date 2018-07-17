@@ -44,13 +44,24 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         self.assertIn('ping_secret=ssshh',
                       create_method.call_args[1].get('ex_tags', {}).get('arv-ping-url', ""))
 
+    def test_create_includes_arvados_node_size(self):
+        arv_node = testutil.arvados_node_mock()
+        arv_node["hostname"] = None
+        size = testutil.MockSize(1)
+        driver = self.new_driver()
+        driver.create_node(size, arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertTrue(create_method.called)
+        self.assertIn(
+            ('arvados_node_size', size.id),
+            create_method.call_args[1].get('ex_tags', {'tags': 'missing'}).items()
+        )
+
     def test_name_from_new_arvados_node(self):
         arv_node = testutil.arvados_node_mock(hostname=None)
         driver = self.new_driver()
         self.assertEqual('compute-000000000000063-zzzzz',
                          driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['name'])
-
-
 
     def check_node_tagged(self, cloud_node, expected_tags):
         tag_mock = self.driver_mock().ex_create_tags
@@ -90,6 +101,14 @@ echo compute-000000000000063-zzzzz > /var/tmp/arv-node-data/meta-data/instance-i
 echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
 """,
                          driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['ex_customdata'])
+
+    def test_list_nodes_ignores_nodes_without_tags(self):
+        driver = self.new_driver(create_kwargs={"tag_arvados-class": "dynamic-compute"})
+        # Mock cloud node without tags
+        nodelist = [testutil.cloud_node_mock(1)]
+        self.driver_mock().list_nodes.return_value = nodelist
+        n = driver.list_nodes()
+        self.assertEqual([], n)
 
     def test_create_raises_but_actually_succeeded(self):
         arv_node = testutil.arvados_node_mock(1, hostname=None)

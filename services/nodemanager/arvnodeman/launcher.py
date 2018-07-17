@@ -71,7 +71,7 @@ def setup_logging(path, level, **sublevels):
     return root_logger
 
 def build_server_calculator(config):
-    cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
+    cloud_size_list = config.node_sizes()
     if not cloud_size_list:
         abort("No valid node sizes configured")
     return ServerCalculator(cloud_size_list,
@@ -80,7 +80,7 @@ def build_server_calculator(config):
                             config.getfloat('Daemon', 'node_mem_scaling'))
 
 def launch_pollers(config, server_calculator):
-    poll_time = config.getint('Daemon', 'poll_time')
+    poll_time = config.getfloat('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
     timer = TimedCallBackActor.start(poll_time / 10.0).tell_proxy()

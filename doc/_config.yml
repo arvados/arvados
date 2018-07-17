@@ -17,17 +17,6 @@ arvados_workbench_host: http://localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  #start:
-    #- Getting Started:
-      #- start/index.html.textile.liquid
-    #- Quickstart:
-      #- start/getting_started/publicproject.html.textile.liquid
-      #- start/getting_started/firstpipeline.html.textile.liquid
-    #- Common Use Cases:
-      #- start/getting_started/sharedata.html.textile.liquid
-    #- Next Steps:
-      #- start/getting_started/nextsteps.html.textile.liquid
-
   userguide:
     - Welcome:
       - user/index.html.textile.liquid
@@ -48,11 +37,10 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
-      - user/topics/running-pipeline-command-line.html.textile.liquid
-      - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -62,29 +50,26 @@ navbar:
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
-      - user/tutorials/running-external-program.html.textile.liquid
-      - user/topics/crunch-tools-overview.html.textile.liquid
-      - user/tutorials/tutorial-firstscript.html.textile.liquid
-      - user/tutorials/tutorial-submit-job.html.textile.liquid
-      - user/topics/tutorial-parallel.html.textile.liquid
-    - Develop a web service:
-      - user/topics/arv-web.html.textile.liquid
     - Reference:
+      - user/topics/link-accounts.html.textile.liquid
       - user/reference/cookbook.html.textile.liquid
-      - user/topics/run-command.html.textile.liquid
-      - user/reference/job-pipeline-ref.html.textile.liquid
-      - user/examples/crunch-examples.html.textile.liquid
-    - Admin tools:
-      - user/topics/arvados-sync-groups.html.textile.liquid
-      - admin/change-account-owner.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
-    - Query the metadata database:
-      - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
       - user/copying/agpl-3.0.html
       - user/copying/LICENSE-2.0.html
       - user/copying/by-sa-3.0.html
+    - Obsolete documentation:
+      - user/topics/running-pipeline-command-line.html.textile.liquid
+      - user/topics/arv-run.html.textile.liquid
+      - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
+      - user/tutorials/tutorial-firstscript.html.textile.liquid
+      - user/tutorials/tutorial-submit-job.html.textile.liquid
+      - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/run-command.html.textile.liquid
+      - user/reference/job-pipeline-ref.html.textile.liquid
+      - user/examples/crunch-examples.html.textile.liquid
+      - user/topics/tutorial-trait-search.html.textile.liquid
   sdk:
     - Overview:
       - sdk/index.html.textile.liquid
@@ -92,10 +77,10 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
-      - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/events.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
+      - sdk/python/crunch-utility-libraries.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
@@ -105,7 +90,8 @@ navbar:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
     - R:
-      - sdk/R/index.html.textile.liquid
+      - sdk/R/index.html.md
+      - sdk/R/arvados/index.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
       - sdk/perl/example.html.textile.liquid
@@ -122,9 +108,6 @@ navbar:
       - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
-      - api/permission-model.html.textile.liquid
-      - api/storage.html.textile.liquid
-      - api/execution.html.textile.liquid
     - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
@@ -155,26 +138,53 @@ navbar:
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
+  architecture:
+    - Topics:
+      - architecture/index.html.textile.liquid
+      - api/storage.html.textile.liquid
+      - api/execution.html.textile.liquid
+      - api/permission-model.html.textile.liquid
+  admin:
+    - Topics:
+      - admin/index.html.textile.liquid
+      - admin/upgrading.html.textile.liquid
+      - install/cheat_sheet.html.textile.liquid
+      - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/storage-classes.html.textile.liquid
+      - admin/activation.html.textile.liquid
+      - admin/migrating-providers.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
+      - install/migrate-docker19.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Arvados on Kubernetes:
+      - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/install-components.html.textile.liquid
+    - Core:
       - install/install-postgresql.html.textile.liquid
-      - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
-      - install/install-ws.html.textile.liquid
-      - install/install-arv-git-httpd.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
-      - install/create-standard-objects.html.textile.liquid
+    - Keep:
       - install/install-keepstore.html.textile.liquid
+      - install/configure-fs-storage.html.textile.liquid
+      - install/configure-s3-object-storage.html.textile.liquid
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
       - install/install-keep-balance.html.textile.liquid
+    - User interface:
+      - install/install-sso.html.textile.liquid
+      - install/install-workbench-app.html.textile.liquid
+      - install/install-composer.html.textile.liquid
+    - Additional services:
+      - install/install-ws.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-slurm.html.textile.liquid
@@ -186,8 +196,3 @@ navbar:
     - Jobs API support (deprecated):
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
-    - Helpful hints:
-      - install/copy_pipeline_from_curoverse.html.textile.liquid
-      - install/cheat_sheet.html.textile.liquid
-    - Migrating from Docker 1.9:
-      - install/migrate-docker19.html.textile.liquid
