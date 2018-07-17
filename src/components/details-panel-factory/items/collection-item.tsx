@@ -3,21 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconTypes } from '../../icon/icon';
+import { CollectionIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
 import { formatDate } from '../../../common/formatters';
+import { resourceLabel } from '../../../common/labels';
+import { ResourceKind } from '../../../models/resource';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
 
-    getIcon(): IconTypes {
-        return IconTypes.COLLECTION;
+    getIcon(className?: string) {
+        return <CollectionIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <div>
-           <Attribute label='Type' value='Data Collection' />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Collection)} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
             <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />

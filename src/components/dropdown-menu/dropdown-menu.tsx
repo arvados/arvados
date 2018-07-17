@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Menu, IconButton } from '@material-ui/core';
+import Menu from '@material-ui/core/Menu';
+import IconButton from '@material-ui/core/IconButton';
 import { PopoverOrigin } from '@material-ui/core/Popover';
-
 
 interface DropdownMenuProps {
     id: string;
-    icon: React.ComponentType;
+    icon: React.ReactElement<any>;
 }
 
 class DropdownMenu extends React.Component<DropdownMenuProps> {
@@ -24,7 +24,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
     };
 
     render() {
-        const { icon: Icon, id, children } = this.props;
+        const { icon, id, children } = this.props;
         const { anchorEl } = this.state;
         return (
             <div>
@@ -32,10 +32,8 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     aria-owns={anchorEl ? id : undefined}
                     aria-haspopup="true"
                     color="inherit"
-                    onClick={this.handleOpen}
-
-                >
-                    <Icon />
+                    onClick={this.handleOpen}>
+                    {icon}
                 </IconButton>
                 <Menu
                     id={id}
@@ -44,8 +42,7 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
                     onClose={this.handleClose}
                     onClick={this.handleClose}
                     anchorOrigin={this.transformOrigin}
-                    transformOrigin={this.transformOrigin}
-                >
+                    transformOrigin={this.transformOrigin}>
                     {children}
                 </Menu>
             </div>

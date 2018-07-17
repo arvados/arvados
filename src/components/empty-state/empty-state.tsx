@@ -5,12 +5,12 @@
 import * as React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { WithStyles, withStyles, StyleRulesCallback } from '@material-ui/core/styles';
-import { ArvadosTheme } from '../../common/custom-theme';
-import IconBase, { IconTypes } from '../icon/icon';
+import { ArvadosTheme } from 'src/common/custom-theme';
+import { IconType } from '../icon/icon';
 
 export interface EmptyStateDataProps {
     message: string;
-    icon: IconTypes;
+    icon: IconType;
     details?: string;
 }
 
@@ -19,10 +19,10 @@ type EmptyStateProps = EmptyStateDataProps & WithStyles<CssRules>;
 class EmptyState extends React.Component<EmptyStateProps, {}> {
 
     render() {
-        const { classes, message, details, icon, children } = this.props;
+        const { classes, message, details, icon: Icon, children } = this.props;
         return (
             <Typography className={classes.container} component="div">
-                <IconBase icon={icon} className={classes.icon} />
+                <Icon className={classes.icon} />
                 <Typography variant="body1" gutterBottom>{message}</Typography>
                 { details && <Typography gutterBottom>{details}</Typography> }
                 { children && <Typography gutterBottom>{children}</Typography> }

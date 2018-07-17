@@ -4,19 +4,16 @@
 
 import * as React from 'react';
 import { ReactElement } from 'react';
-import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
-import List from "@material-ui/core/List/List";
-import ListItem from "@material-ui/core/ListItem/ListItem";
-import ListItemText from "@material-ui/core/ListItemText/ListItemText";
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Collapse from "@material-ui/core/Collapse/Collapse";
-
-import { Typography } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { ArvadosTheme } from '../../common/custom-theme';
+import { List, ListItem, ListItemText, ListItemIcon, Collapse, Typography } from "@material-ui/core";
+import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
+import * as classnames from "classnames";
 
 export interface SidePanelItem {
     id: string;
     name: string;
-    icon: string;
+    icon: IconType;
     active?: boolean;
     open?: boolean;
     margin?: boolean;
@@ -33,7 +30,7 @@ interface SidePanelProps {
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
-        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, activeArrow, inactiveArrow, arrowTransition, arrowRotate } = classes;
+        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, iconArrowContainer } = classes;
         return (
             <div className={leftSidePanelContainer}>
                 <List>
@@ -41,23 +38,37 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                         <span key={it.name}>
                             <ListItem button className={list} onClick={() => toggleActive(it.id)} onContextMenu={this.handleRowContextMenu(it)}>
                                 <span className={row}>
-                                    {it.openAble ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
-                                        ${it.open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} /> : null}
+                                    {it.openAble ? (
+                                        <i onClick={() => toggleOpen(it.id)} className={iconArrowContainer}>
+                                            <SidePanelRightArrowIcon className={this.getIconClassNames(it.open, it.active)} />
+                                        </i>
+                                    ) : null}
                                     <ListItemIcon className={it.active ? active : ''}>
-                                        <i className={`${it.icon} ${icon} ${it.margin ? projectIconMargin : ''}`} />
+                                        {<it.icon className={`${icon} ${it.margin ? projectIconMargin : ''}`} />}
                                     </ListItemIcon>
-                                    <ListItemText className={listItemText} primary={<Typography className={it.active ? active : ''}>{it.name}</Typography>} />
+                                    <ListItemText className={listItemText} 
+                                        primary={renderListItemText(it.name, active, it.active)} />
                                 </span>
                             </ListItem>
                             {it.openAble ? (
                                 <Collapse in={it.open} timeout="auto" unmountOnExit>
                                     {children}
-                                </Collapse>) : null}
+                                </Collapse>
+                            ) : null}
                         </span>
                     ))}
                 </List>
             </div>
         );
+    }
+
+    getIconClassNames = (itemOpen ?: boolean, itemActive ?: boolean) => {
+        const { classes } = this.props;
+        return classnames(classes.iconArrow, {
+            [classes.iconOpen]: itemOpen,
+            [classes.iconClose]: !itemOpen,
+            [classes.active]: itemActive
+        });
     }
 
     handleRowContextMenu = (item: SidePanelItem) =>
@@ -66,12 +77,15 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
 
 }
 
-type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 'projectIconMargin' |
-    'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition';
+const renderListItemText = (itemName: string, active: string, itemActive?: boolean) =>
+    <Typography className={itemActive ? active : ''}>{itemName}</Typography>;
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 
+    'projectIconMargin' | 'iconClose' | 'iconOpen' | 'iconArrowContainer' | 'iconArrow';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     active: {
-        color: '#4285F6',
+        color: theme.palette.primary.main,
     },
     listItemText: {
         padding: '0px',
@@ -80,19 +94,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         display: 'flex',
         alignItems: 'center',
     },
-    activeArrow: {
-        color: '#4285F6',
-        position: 'absolute',
+    iconArrowContainer: {
+        color: theme.palette.grey["700"],
+        height: '14px',
+        position: 'absolute'
     },
-    inactiveArrow: {
-        position: 'absolute',
+    iconArrow: {
+        fontSize: '14px'
     },
-    arrowTransition: {
+    iconClose: {
         transition: 'all 0.1s ease',
     },
-    arrowRotate: {
+    iconOpen: {
         transition: 'all 0.1s ease',
-        transform: 'rotate(-90deg)',
+        transform: 'rotate(90deg)',
     },
     leftSidePanelContainer: {
         overflowY: 'auto',
@@ -103,13 +118,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         flexGrow: 1,
     },
     list: {
-        paddingBottom: '5px',
-        paddingTop: '5px',
-        paddingLeft: '14px',
+        padding: '5px 0px 5px 14px',
         minWidth: '240px',
     },
     icon: {
-        minWidth: '20px',
+        fontSize: '20px'
     },
     projectIconMargin: {
         marginLeft: '17px',

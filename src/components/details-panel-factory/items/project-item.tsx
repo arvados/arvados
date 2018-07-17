@@ -3,21 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconTypes } from '../../icon/icon';
+import { ProjectIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
 import { formatDate } from '../../../common/formatters';
+import { ResourceKind } from '../../../models/resource';
+import { resourceLabel } from '../../../common/labels';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
-    getIcon(): IconTypes {
-        return IconTypes.FOLDER;
+    getIcon(className?: string) {
+        return <ProjectIcon className={className} />;
     }
 
-    buildDetails(): React.ReactElement<any> {
+    buildDetails() {
         return <div>
-            <Attribute label='Type' value={this.item.groupClass} />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Project)} />
             {/* Missing attr */}
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
