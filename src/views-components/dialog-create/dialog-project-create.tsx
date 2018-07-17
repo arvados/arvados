@@ -41,9 +41,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
     const { error } = nextProps;
 
     if (this.props.error !== error) {
-      this.setState({
-        duplicatedName: error
-      });
+      this.setState({ duplicatedName: error });
     }
   }
 
