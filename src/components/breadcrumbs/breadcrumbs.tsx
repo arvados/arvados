@@ -38,9 +38,7 @@ const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ class
                                 </Typography>
                             </Button>
                         </Tooltip>
-                        {
-                            !isLastItem && <ChevronRightIcon color="inherit" className={classes.item} />
-                        }
+                        {!isLastItem && <ChevronRightIcon color="inherit" className={classes.item} />}
                     </React.Fragment>
                 );
             })
@@ -51,7 +49,6 @@ const Breadcrumbs: React.SFC<BreadcrumbsProps & WithStyles<CssRules>> = ({ class
 type CssRules = "item" | "currentItem" | "label";
 
 const styles: StyleRulesCallback<CssRules> = theme => {
-    const { unit } = theme.spacing;
     return {
         item: {
             opacity: 0.6
