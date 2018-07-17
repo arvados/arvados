@@ -10,19 +10,15 @@ type ValidatorProps = {
   onChange: (isValid: boolean | string) => void;
   render: (hasError: boolean) => React.ReactElement<any>;
   isRequired: boolean;
+  duplicatedName?: string;
 };
 
 interface ValidatorState {
-  isPatternValid: boolean;
   isLengthValid: boolean;
 }
 
-const nameRegEx = /^[a-zA-Z0-9-_ ]+$/;
-const maxInputLength = 60;
-
 class Validator extends React.Component<ValidatorProps & WithStyles<CssRules>> {
   state: ValidatorState = {
-    isPatternValid: true,
     isLengthValid: true
   };
 
@@ -31,33 +27,34 @@ class Validator extends React.Component<ValidatorProps & WithStyles<CssRules>> {
 
     if (this.props.value !== value) {
       this.setState({
-        isPatternValid: value.match(nameRegEx),
-        isLengthValid: value.length < maxInputLength
+        isLengthValid: value.length < MAX_INPUT_LENGTH
       }, () => this.onChange());
     }
   }
 
   onChange() {
     const { value, onChange, isRequired } = this.props;
-    const { isPatternValid, isLengthValid } = this.state;
-    const isValid = value && isPatternValid && isLengthValid && (isRequired || (!isRequired && value.length > 0));
+    const { isLengthValid } = this.state;
+    const isValid = value && isLengthValid && (isRequired || (!isRequired && value.length > 0));
 
     onChange(isValid);
   }
 
   render() {
-    const { classes, isRequired, value } = this.props;
-    const { isPatternValid, isLengthValid } = this.state;
+    const { classes, isRequired, value, duplicatedName } = this.props;
+    const { isLengthValid } = this.state;
 
     return (
       <span>
-        {this.props.render(!(isPatternValid && isLengthValid) && (isRequired || (!isRequired && value.length > 0)))}
-        {!isPatternValid && (isRequired || (!isRequired && value.length > 0)) ? <span className={classes.formInputError}>This field allow only alphanumeric characters, dashes, spaces and underscores.<br /></span> : null}
-        {!isLengthValid ? <span className={classes.formInputError}>This field should have max 60 characters.</span> : null}
+        {this.props.render(!isLengthValid && (isRequired || (!isRequired && value.length > 0)))}
+        {!isLengthValid ? <span className={classes.formInputError}>This field should have max 255 characters.</span> : null}
+        {duplicatedName ? <span className={classes.formInputError}>Project with this name already exists</span> : null}
       </span>
     );
   }
 }
+
+const MAX_INPUT_LENGTH = 255;
 
 type CssRules = "formInputError";
 

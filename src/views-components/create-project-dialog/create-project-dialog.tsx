@@ -13,6 +13,7 @@ import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 const mapStateToProps = (state: RootState) => ({
     open: state.projects.creator.opened,
     pending: state.projects.creator.pending,
+    error: state.projects.creator.error
 });
 
 const submit = (data: { name: string, description: string }) =>

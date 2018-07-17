@@ -8,13 +8,14 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
+import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress, Typography } from '@material-ui/core';
 
 import Validator from '../../utils/dialog-validator';
 
 interface ProjectCreateProps {
   open: boolean;
   pending: boolean;
+  error: string;
   handleClose: () => void;
   onSubmit: (data: { name: string, description: string }) => void;
 }
@@ -24,6 +25,7 @@ interface DialogState {
   description: string;
   isNameValid: boolean;
   isDescriptionValid: boolean;
+  duplicatedName: string;
 }
 
 class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyles<CssRules>> {
@@ -31,11 +33,22 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
     name: '',
     description: '',
     isNameValid: false,
-    isDescriptionValid: true
+    isDescriptionValid: true,
+    duplicatedName: ''
   };
 
+  componentWillReceiveProps(nextProps: ProjectCreateProps) {
+    const { error } = nextProps;
+
+    if (this.props.error !== error) {
+      this.setState({
+        duplicatedName: error
+      });
+    }
+  }
+
   render() {
-    const { name, description, isNameValid, isDescriptionValid } = this.state;
+    const { name, description, isNameValid, isDescriptionValid, duplicatedName } = this.state;
     const { classes, open, handleClose, pending } = this.props;
 
     return (
@@ -49,6 +62,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
               value={name}
               onChange={e => this.isNameValid(e)}
               isRequired={true}
+              duplicatedName={duplicatedName}
               render={hasError =>
                 <TextField
                   margin="dense"
@@ -56,7 +70,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
                   id="name"
                   onChange={e => this.handleProjectName(e)}
                   label="Project name"
-                  error={hasError}
+                  error={hasError || !!duplicatedName}
                   fullWidth />} />
             <Validator
               value={description}
@@ -74,14 +88,14 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose} className={classes.button} color="primary" disabled={pending}>CANCEL</Button>
-            <Button onClick={this.handleSubmit} 
-              className={classes.lastButton} 
-              color="primary" 
-              disabled={!isNameValid || (!isDescriptionValid && description.length > 0) || pending} 
+            <Button onClick={this.handleSubmit}
+              className={classes.lastButton}
+              color="primary"
+              disabled={!isNameValid || (!isDescriptionValid && description.length > 0) || pending}
               variant="contained">
               CREATE A PROJECT
-              </Button>
-              {pending && <CircularProgress size={20} className={classes.createProgress} />}
+            </Button>
+            {pending && <CircularProgress size={20} className={classes.createProgress} />}
           </DialogActions>
         </div>
       </Dialog>
@@ -98,6 +112,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
   handleProjectName(e: any) {
     this.setState({
       name: e.target.value,
+      duplicatedName: ''
     });
   }
 
