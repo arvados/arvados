@@ -18,3 +18,7 @@ export function setServerApiAuthorizationHeader(token: string) {
 export function removeServerApiAuthorizationHeader() {
     delete serverApi.defaults.headers.common.Authorization;
 }
+
+export const setBaseUrl = (url: string) => {
+    serverApi.defaults.baseURL = url + "/arvados/v1";
+};
