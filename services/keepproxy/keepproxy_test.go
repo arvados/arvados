@@ -617,7 +617,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
 
-	// Point keepproxy to a non-existant keepstore
+	// Point keepproxy at a non-existent keepstore
 	locals := map[string]string{
 		TestProxyUUID: "http://localhost:12345",
 	}
