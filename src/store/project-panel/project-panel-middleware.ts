@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Middleware } from "redux";
-import actions from "../../store/data-explorer/data-explorer-action";
+import actions from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID, columns, ProjectPanelFilter, ProjectPanelColumnNames } from "../../views/project-panel/project-panel";
 import { groupsService } from "../../services/services";
-import { RootState } from "../../store/store";
-import { getDataExplorer, DataExplorerState } from "../../store/data-explorer/data-explorer-reducer";
+import { RootState } from "../store";
+import { getDataExplorer, DataExplorerState } from "../data-explorer/data-explorer-reducer";
 import { resourceToDataItem, ProjectPanelItem } from "../../views/project-panel/project-panel-item";
 import FilterBuilder from "../../common/api/filter-builder";
 import { DataColumns } from "../../components/data-table/data-table";

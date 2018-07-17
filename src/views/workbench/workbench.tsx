@@ -26,12 +26,12 @@ import projectActions from "../../store/project/project-action";
 import ProjectPanel from "../project-panel/project-panel";
 import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
-import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
-import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
+import ContextMenu, { ContextMenuKind } from "../../views-components/context-menu";
 import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
 import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
+import contextMenuActions from "../../store/context-menu/context-menu-actions";
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
@@ -57,10 +57,6 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
-    contextMenu: {
-        anchorEl?: HTMLElement;
-        itemUuid?: string;
-    };
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -73,10 +69,6 @@ interface WorkbenchState {
 
 class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     state = {
-        contextMenu: {
-            anchorEl: undefined,
-            itemUuid: undefined
-        },
         isCreationDialogOpen: false,
         anchorEl: null,
         searchText: "",
@@ -137,11 +129,11 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             toggleOpen={this.toggleSidePanelOpen}
                             toggleActive={this.toggleSidePanelActive}
                             sidePanelItems={this.props.sidePanelItems}
-                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "")}>
+                            onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "", ContextMenuKind.RootProject)}>
                             <ProjectTree
                                 projects={this.props.projects}
                                 toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid)}
+                                onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid, ContextMenuKind.Project)}
                                 toggleActive={itemId => {
                                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                     this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
@@ -157,11 +149,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     </div>
                     <DetailsPanel />
                 </main>
-                <ContextMenu
-                    anchorEl={this.state.contextMenu.anchorEl}
-                    actions={contextMenuActions}
-                    onActionClick={this.openCreateDialog}
-                    onClose={this.closeContextMenu} />
+                <ContextMenu />
                 <CreateProjectDialog />
             </div>
         );
@@ -169,7 +157,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
 
     renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
         onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid)}
+        onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Project)}
         onDialogOpen={this.handleCreationDialogOpen}
         onItemClick={item => {
             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
@@ -194,7 +182,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
             this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         },
         onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-            this.openContextMenu(event, breadcrumb.itemId);
+            this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
         }
     };
 
@@ -209,60 +197,21 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
     }
 
     handleCreationDialogOpen = (itemUuid: string) => {
-        this.closeContextMenu();
         this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
     }
 
-
-    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string) => {
+    openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
         event.preventDefault();
-        this.setState({
-            contextMenu: {
-                anchorEl: mockAnchorFromMouseEvent(event),
-                itemUuid
-            }
-        });
+        this.props.dispatch(
+            contextMenuActions.OPEN_CONTEXT_MENU({
+                position: { x: event.clientX, y: event.clientY },
+                resource: { uuid: itemUuid, kind }
+            })
+        );
     }
 
-    closeContextMenu = () => {
-        this.setState({ contextMenu: {} });
-    }
 
-    openCreateDialog = (item: ContextMenuAction) => {
-        const { itemUuid } = this.state.contextMenu;
-        if (item.openCreateDialog && itemUuid) {
-            this.handleCreationDialogOpen(itemUuid);
-        }
-    }
 }
-
-const contextMenuActions = [[{
-    icon: "fas fa-plus fa-fw",
-    name: "New project",
-    openCreateDialog: true
-}, {
-    icon: "fas fa-users fa-fw",
-    name: "Share"
-}, {
-    icon: "fas fa-sign-out-alt fa-fw",
-    name: "Move to"
-}, {
-    icon: "fas fa-star fa-fw",
-    name: "Add to favourite"
-}, {
-    icon: "fas fa-edit fa-fw",
-    name: "Rename"
-}, {
-    icon: "fas fa-copy fa-fw",
-    name: "Make a copy"
-}, {
-    icon: "fas fa-download fa-fw",
-    name: "Download"
-}], [{
-    icon: "fas fa-trash-alt fa-fw",
-    name: "Remove"
-}
-]];
 
 const drawerWidth = 240;
 const appBarHeight = 100;
