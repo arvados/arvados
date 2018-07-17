@@ -4,10 +4,10 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import actions from "../../../store/project/project-action";
-import { IconTypes } from "../../../components/icon/icon";
+import { NewProjectIcon } from "../../../components/icon/icon";
 
 export const rootProjectActionSet: ContextMenuActionSet =  [[{
-    icon: IconTypes.FOLDER,
+    icon: NewProjectIcon,
     name: "New project",
     execute: (dispatch, resource) => {
         dispatch(actions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
