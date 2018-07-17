@@ -112,7 +112,8 @@ class NodeManagerDaemonActor(actor_class):
                  node_setup_class=dispatch.ComputeNodeSetupActor,
                  node_shutdown_class=dispatch.ComputeNodeShutdownActor,
                  node_actor_class=dispatch.ComputeNodeMonitorActor,
-                 max_total_price=0):
+                 max_total_price=0,
+                 consecutive_idle_count=1):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -133,6 +134,7 @@ class NodeManagerDaemonActor(actor_class):
         self.poll_stale_after = poll_stale_after
         self.boot_fail_after = boot_fail_after
         self.node_stale_after = node_stale_after
+        self.consecutive_idle_count = consecutive_idle_count
         self.last_polls = {}
         for poll_name in ['server_wishlist', 'arvados_nodes', 'cloud_nodes']:
             poll_actor = locals()[poll_name + '_actor']
@@ -173,7 +175,8 @@ class NodeManagerDaemonActor(actor_class):
             poll_stale_after=self.poll_stale_after,
             node_stale_after=self.node_stale_after,
             cloud_client=self._cloud_driver,
-            boot_fail_after=self.boot_fail_after)
+            boot_fail_after=self.boot_fail_after,
+            consecutive_idle_count=self.consecutive_idle_count)
         actorTell = actor.tell_proxy()
         actorTell.subscribe(self._later.node_can_shutdown)
         self._cloud_nodes_actor.subscribe_to(cloud_node.id,

@@ -339,7 +339,7 @@ class ComputeNodeMonitorActor(config.actor_class):
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
                  timer_actor, update_actor, cloud_client,
                  arvados_node=None, poll_stale_after=600, node_stale_after=3600,
-                 boot_fail_after=1800
+                 boot_fail_after=1800, consecutive_idle_count=0
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.tell_proxy()
@@ -354,6 +354,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         self.boot_fail_after = boot_fail_after
         self.subscribers = set()
         self.arvados_node = None
+        self.consecutive_idle_count = consecutive_idle_count
         self.consecutive_idle = 0
         self._later.update_arvados_node(arvados_node)
         self.last_shutdown_opening = None
@@ -458,7 +459,7 @@ class ComputeNodeMonitorActor(config.actor_class):
 
         if crunch_worker_state == "idle":
             # Must report as "idle" at least two consecutive times
-            if self.consecutive_idle < 2:
+            if self.consecutive_idle < self.consecutive_idle_count:
                 idle_grace = 'idle wait'
             else:
                 idle_grace = 'idle exceeded'
