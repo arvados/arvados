@@ -478,7 +478,7 @@ class NodeManagerDaemonActor(actor_class):
         for record in self.cloud_nodes.nodes.itervalues():
             try:
                 if (record.shutdown_actor is not None and
-                    record.size.id == size.id and
+                    record.cloud_node.size.id == size.id and
                     record.shutdown_actor.cancel_shutdown("Node size is in wishlist").get(2)):
                         return True
             except (pykka.ActorDeadError, pykka.Timeout) as e:

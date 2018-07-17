@@ -57,7 +57,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'node_stale_after': str(60 * 60 * 2),
                        'watchdog': '600',
                        'node_mem_scaling': '0.95',
-                       'consecutive_idle_count': 2},
+                       'consecutive_idle_count': '2'},
             'Manage': {'address': '127.0.0.1',
                        'port': '-1',
                        'ManagementToken': ''},
