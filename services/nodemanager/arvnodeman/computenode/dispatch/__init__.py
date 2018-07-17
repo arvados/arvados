@@ -458,7 +458,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             boot_grace = "boot exceeded"
 
         if crunch_worker_state == "idle":
-            # Must report as "idle" at least two consecutive times
+            # Must report as "idle" at least "consecutive_idle_count" times
             if self.consecutive_idle < self.consecutive_idle_count:
                 idle_grace = 'idle wait'
             else:
