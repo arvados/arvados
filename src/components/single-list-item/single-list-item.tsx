@@ -23,34 +23,22 @@ class SingleListItem extends React.Component<SingleListItemProps, {}> {
         const { classes, isActive, hasMargin, name, icon: Icon } = this.props;
         return (
             <Typography component='span' className={classes.root}>
-                <ListItemIcon className={this.getListItemIconClassNames(hasMargin, isActive)}>
+                <ListItemIcon className={classnames({
+                        [classes.hasMargin]: hasMargin,
+                        [classes.active]: isActive
+                    })}>
                     <Icon />
                 </ListItemIcon>
                 <ListItemText primary={
-                    <Typography variant='body1' className={this.getListItemTextClassNames(isActive)}>
+                    <Typography variant='body1' className={classnames(classes.listItemText, {
+                            [classes.active]: isActive
+                        })}>
                         {name}
                     </Typography>
                 } />
             </Typography>
         );
     }
-
-    getListItemIconClassNames = (hasMargin?: boolean, isActive?: boolean) => {
-        const { classes } = this.props;
-        return classnames({
-            [classes.hasMargin]: hasMargin,
-            [classes.active]: isActive
-        });
-    }
-
-    getListItemTextClassNames = (isActive?: boolean) => {
-        const { classes } = this.props;
-        return classnames(classes.listItemText, {
-            [classes.active]: isActive
-        });
-    }
-
-
 }
         
 type CssRules = 'root' | 'listItemText' | 'hasMargin' | 'active';
