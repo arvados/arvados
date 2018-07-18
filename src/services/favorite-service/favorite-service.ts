@@ -7,7 +7,12 @@ import GroupsService, { GroupContentsResource } from "../groups-service/groups-s
 import { LinkResource, LinkClass } from "../../models/link";
 import FilterBuilder from "../../common/api/filter-builder";
 import { ListArguments, ListResults } from "../../common/api/common-resource-service";
+import OrderBuilder from "../../common/api/order-builder";
 
+export interface FavoriteListArguments extends ListArguments {
+    filters?: FilterBuilder<LinkResource>;
+    order?: OrderBuilder<LinkResource>;
+}
 export default class FavoriteService {
     constructor(
         private linkService: LinkService,
@@ -37,7 +42,7 @@ export default class FavoriteService {
                 results.items.map(item => this.linkService.delete(item.uuid))));
     }
 
-    list(userUuid: string, args: ListArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    list(userUuid: string, args: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const listFilter = FilterBuilder
             .create<LinkResource>()
             .addEqual('tailUuid', userUuid)
