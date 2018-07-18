@@ -58,6 +58,17 @@ HttpRequest <- R6::R6Class(
             }
 
             return("")
+        },
+
+        getConnection = function(url, headers, openMode) 
+        {
+            h <- curl::new_handle()
+            curl::handle_setheaders(h, .list = headers)
+
+            if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
+               curl::handle_setopt(h, ssl_verifypeer = 0L)
+
+            conn <- curl::curl(url = url, open = openMode, handle = h)
         }
     ),
 

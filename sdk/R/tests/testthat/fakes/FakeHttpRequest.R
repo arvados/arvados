@@ -22,11 +22,12 @@ FakeHttpRequest <- R6::R6Class(
         JSONEncodedBodyIsProvided               = NULL,
         requestBodyIsProvided                   = NULL,
 
-        numberOfGETRequests    = NULL,
-        numberOfDELETERequests = NULL,
-        numberOfPUTRequests    = NULL,
-        numberOfPOSTRequests   = NULL,
-        numberOfMOVERequests   = NULL,
+        numberOfGETRequests        = NULL,
+        numberOfDELETERequests     = NULL,
+        numberOfPUTRequests        = NULL,
+        numberOfPOSTRequests       = NULL,
+        numberOfMOVERequests       = NULL,
+        numberOfgetConnectionCalls = NULL,
 
         initialize = function(expectedURL      = NULL,
                               serverResponse   = NULL,
@@ -56,6 +57,8 @@ FakeHttpRequest <- R6::R6Class(
             self$numberOfPUTRequests    <- 0
             self$numberOfPOSTRequests   <- 0
             self$numberOfMOVERequests   <- 0
+
+            self$numberOfgetConnectionCalls <- 0
 
             self$serverMaxElementsPerRequest <- 5
         },
@@ -87,18 +90,24 @@ FakeHttpRequest <- R6::R6Class(
                 return(private$getElements(offset, limit))
             else
                 return(self$content)
+        },
+
+        getConnection = function(url, headers, openMode)
+        {
+            self$numberOfgetConnectionCalls <- self$numberOfgetConnectionCalls + 1
+            c(url, headers, openMode)
         }
     ),
 
     private = list(
 
-        validateURL = function(url) 
+        validateURL = function(url)
         {
             if(!is.null(self$expectedURL) && url == self$expectedURL)
                 self$URLIsProperlyConfigured <- TRUE
         },
 
-        validateHeaders = function(headers) 
+        validateHeaders = function(headers)
         {
             if(!is.null(headers$Authorization))
                 self$requestHeaderContainsAuthorizationField <- TRUE
@@ -115,11 +124,11 @@ FakeHttpRequest <- R6::R6Class(
 
         validateBody = function(body)
         {
-            if(!is.null(body))           
+            if(!is.null(body))
             {
                 self$requestBodyIsProvided <- TRUE
 
-                if(class(body) == "json")           
+                if(class(body) == "json")
                     self$JSONEncodedBodyIsProvided <- TRUE
             }
         },
@@ -143,7 +152,7 @@ FakeHttpRequest <- R6::R6Class(
             {
                 if(offset > self$content$items_available)
                     stop("Invalid offset")
-                
+
                 start <- offset + 1
             }
 

@@ -144,8 +144,8 @@ ArvadosFile <- R6::R6Class(
             if (rw == "r" || rw == "rb") 
             {
                 REST <- private$collection$getRESTService()
-                return(REST$getConnection(private$collection$uuid,
-                                          self$getRelativePath(),
+                return(REST$getConnection(self$getRelativePath(),
+                                          private$collection$uuid,
                                           rw))
             }
             else if (rw == "w") 
