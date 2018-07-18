@@ -30,7 +30,7 @@ interface SidePanelProps {
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
-        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, iconArrowContainer } = classes;
+        const { leftSidePanelContainer, row, list, toggableIconContainer } = classes;
         return (
             <div className={leftSidePanelContainer}>
                 <List>
@@ -39,15 +39,16 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                             <ListItem button className={list} onClick={() => toggleActive(it.id)} onContextMenu={this.handleRowContextMenu(it)}>
                                 <span className={row}>
                                     {it.openAble ? (
-                                        <i onClick={() => toggleOpen(it.id)} className={iconArrowContainer}>
-                                            <SidePanelRightArrowIcon className={this.getIconClassNames(it.open, it.active)} />
+                                        <i onClick={() => toggleOpen(it.id)} className={toggableIconContainer}>
+                                            <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
+                                                {< SidePanelRightArrowIcon />}
+                                            </ListItemIcon>
                                         </i>
                                     ) : null}
-                                    <ListItemIcon className={it.active ? active : ''}>
-                                        {<it.icon className={`${icon} ${it.margin ? projectIconMargin : ''}`} />}
+                                    <ListItemIcon className={this.getListItemIconClassNames(it.margin, it.active)}>
+                                        {<it.icon />}
                                     </ListItemIcon>
-                                    <ListItemText className={listItemText} 
-                                        primary={renderListItemText(it.name, active, it.active)} />
+                                    <ListItemText primary={this.renderListItemText(it.name, it.active)} />
                                 </span>
                             </ListItem>
                             {it.openAble ? (
@@ -62,12 +63,33 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
         );
     }
 
-    getIconClassNames = (itemOpen ?: boolean, itemActive ?: boolean) => {
+    getToggableIconClassNames = (isOpen?: boolean, isActive ?: boolean) => {
         const { classes } = this.props;
-        return classnames(classes.iconArrow, {
-            [classes.iconOpen]: itemOpen,
-            [classes.iconClose]: !itemOpen,
-            [classes.active]: itemActive
+        return classnames(classes.toggableIcon, {
+            [classes.iconOpen]: isOpen,
+            [classes.iconClose]: !isOpen,
+            [classes.active]: isActive
+        });
+    }
+
+    getListItemIconClassNames = (hasMargin?: boolean, isActive?: boolean) => {
+        const { classes } = this.props;
+        return classnames({
+            [classes.hasMargin]: hasMargin,
+            [classes.active]: isActive
+        });
+    }
+
+    renderListItemText = (name: string, isActive?: boolean) => {
+        return <Typography variant='body1' className={this.getListItemTextClassNames(isActive)}>
+                {name}
+            </Typography>;
+    }
+
+    getListItemTextClassNames = (isActive?: boolean) => {
+        const { classes } = this.props;
+        return classnames(classes.listItemText, {
+            [classes.active]: isActive
         });
     }
 
@@ -77,38 +99,10 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
 
 }
 
-const renderListItemText = (itemName: string, active: string, itemActive?: boolean) =>
-    <Typography className={itemActive ? active : ''}>{itemName}</Typography>;
-
-type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 
-    'projectIconMargin' | 'iconClose' | 'iconOpen' | 'iconArrowContainer' | 'iconArrow';
+type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 
+    'hasMargin' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    active: {
-        color: theme.palette.primary.main,
-    },
-    listItemText: {
-        padding: '0px',
-    },
-    row: {
-        display: 'flex',
-        alignItems: 'center',
-    },
-    iconArrowContainer: {
-        color: theme.palette.grey["700"],
-        height: '14px',
-        position: 'absolute'
-    },
-    iconArrow: {
-        fontSize: '14px'
-    },
-    iconClose: {
-        transition: 'all 0.1s ease',
-    },
-    iconOpen: {
-        transition: 'all 0.1s ease',
-        transform: 'rotate(90deg)',
-    },
     leftSidePanelContainer: {
         overflowY: 'auto',
         minWidth: '240px',
@@ -121,11 +115,33 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '5px 0px 5px 14px',
         minWidth: '240px',
     },
-    icon: {
-        fontSize: '20px'
+    row: {
+        display: 'flex',
+        alignItems: 'center',
     },
-    projectIconMargin: {
-        marginLeft: '17px',
+    toggableIconContainer: {
+        color: theme.palette.grey["700"],
+        height: '14px',
+        position: 'absolute'
+    },
+    toggableIcon: {
+        fontSize: '14px'
+    },
+    listItemText: {
+        fontWeight: 700
+    },
+    active: {
+        color: theme.palette.primary.main,
+    },
+    hasMargin: {
+        marginLeft: '18px',
+    },
+    iconClose: {
+        transition: 'all 0.1s ease',
+    },
+    iconOpen: {
+        transition: 'all 0.1s ease',
+        transform: 'rotate(90deg)',
     }
 });
 
