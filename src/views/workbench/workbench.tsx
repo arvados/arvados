@@ -147,7 +147,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                             <Route path="/projects/:id" render={this.renderProjectPanel} />
                         </Switch>
                     </div>
-                    <DetailsPanel />
+                    { user && <DetailsPanel /> }
                 </main>
                 <ContextMenu />
                 <CreateProjectDialog />
