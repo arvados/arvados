@@ -9,6 +9,7 @@ import { ArvadosTheme } from '../../common/custom-theme';
 import { List, ListItem, ListItemText, ListItemIcon, Collapse, Typography } from "@material-ui/core";
 import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
 import * as classnames from "classnames";
+import SingleListItem from '../single-list-item/single-list-item';
 
 export interface SidePanelItem {
     id: string;
@@ -30,9 +31,9 @@ interface SidePanelProps {
 class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
-        const { leftSidePanelContainer, row, list, toggableIconContainer } = classes;
+        const { root, row, list, toggableIconContainer } = classes;
         return (
-            <div className={leftSidePanelContainer}>
+            <div className={root}>
                 <List>
                     {sidePanelItems.map(it => (
                         <span key={it.name}>
@@ -41,14 +42,11 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                                     {it.openAble ? (
                                         <i onClick={() => toggleOpen(it.id)} className={toggableIconContainer}>
                                             <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                                {< SidePanelRightArrowIcon />}
+                                                < SidePanelRightArrowIcon />
                                             </ListItemIcon>
                                         </i>
                                     ) : null}
-                                    <ListItemIcon className={this.getListItemIconClassNames(it.margin, it.active)}>
-                                        {<it.icon />}
-                                    </ListItemIcon>
-                                    <ListItemText primary={this.renderListItemText(it.name, it.active)} />
+                                    <SingleListItem icon={it.icon} name={it.name} isActive={it.active} hasMargin={it.margin} />
                                 </span>
                             </ListItem>
                             {it.openAble ? (
@@ -72,38 +70,16 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
         });
     }
 
-    getListItemIconClassNames = (hasMargin?: boolean, isActive?: boolean) => {
-        const { classes } = this.props;
-        return classnames({
-            [classes.hasMargin]: hasMargin,
-            [classes.active]: isActive
-        });
-    }
-
-    renderListItemText = (name: string, isActive?: boolean) => {
-        return <Typography variant='body1' className={this.getListItemTextClassNames(isActive)}>
-                {name}
-            </Typography>;
-    }
-
-    getListItemTextClassNames = (isActive?: boolean) => {
-        const { classes } = this.props;
-        return classnames(classes.listItemText, {
-            [classes.active]: isActive
-        });
-    }
-
     handleRowContextMenu = (item: SidePanelItem) =>
         (event: React.MouseEvent<HTMLElement>) =>
             item.openAble ? this.props.onContextMenu(event, item) : null
 
 }
 
-type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 
-    'hasMargin' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
+type CssRules = 'active' | 'row' | 'root' | 'list' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    leftSidePanelContainer: {
+    root: {
         overflowY: 'auto',
         minWidth: '240px',
         whiteSpace: 'nowrap',
@@ -127,14 +103,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toggableIcon: {
         fontSize: '14px'
     },
-    listItemText: {
-        fontWeight: 700
-    },
     active: {
         color: theme.palette.primary.main,
-    },
-    hasMargin: {
-        marginLeft: '18px',
     },
     iconClose: {
         transition: 'all 0.1s ease',
