@@ -53,7 +53,8 @@ export default class FavoriteService {
                 return this.groupsService.contents(userUuid, {
                     limit: args.limit,
                     offset: args.offset,
-                    filters: FilterBuilder.create<GroupContentsResource>().addIn('uuid', uuids)
+                    filters: FilterBuilder.create<GroupContentsResource>().addIn('uuid', uuids),
+                    recursive: true
                 });
             });
     }
