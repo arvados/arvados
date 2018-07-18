@@ -113,6 +113,15 @@ boot_fail_after = 1800
 # an Arvados node that hasn't been updated for this long.
 node_stale_after = 14400
 
+# Number of consecutive times a node must report as "idle" before it
+# will be considered eligible for shutdown.  Node status is checked
+# each poll period, and node can go idle at any point during a poll
+# period (meaning a node could be reported as idle that has only been
+# idle for 1 second).  With a 60 second poll period, three consecutive
+# status updates of "idle" suggests the node has been idle at least
+# 121 seconds.
+consecutive_idle_count = 3
+
 # Scaling factor to be applied to nodes' available RAM size. Usually there's a
 # variable discrepancy between the advertised RAM value on cloud nodes and the
 # actual amount available.
@@ -281,6 +290,15 @@ poll_stale_after = 600
 # 2. When the Node Manager starts a new compute node, it will try to reuse
 # an Arvados node that hasn't been updated for this long.
 node_stale_after = 14400
+
+# Number of consecutive times a node must report as "idle" before it
+# will be considered eligible for shutdown.  Node status is checked
+# each poll period, and node can go idle at any point during a poll
+# period (meaning a node could be reported as idle that has only been
+# idle for 1 second).  With a 60 second poll period, three consecutive
+# status updates of "idle" suggests the node has been idle at least
+# 121 seconds.
+consecutive_idle_count = 3
 
 # Scaling factor to be applied to nodes' available RAM size. Usually there's a
 # variable discrepancy between the advertised RAM value on cloud nodes and the
@@ -469,6 +487,15 @@ boot_fail_after = 1800
 # 2. When the Node Manager starts a new compute node, it will try to reuse
 # an Arvados node that hasn't been updated for this long.
 node_stale_after = 14400
+
+# Number of consecutive times a node must report as "idle" before it
+# will be considered eligible for shutdown.  Node status is checked
+# each poll period, and node can go idle at any point during a poll
+# period (meaning a node could be reported as idle that has only been
+# idle for 1 second).  With a 60 second poll period, three consecutive
+# status updates of "idle" suggests the node has been idle at least
+# 121 seconds.
+consecutive_idle_count = 3
 
 # Scaling factor to be applied to nodes' available RAM size. Usually there's a
 # variable discrepancy between the advertised RAM value on cloud nodes and the

@@ -620,9 +620,25 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.assertTrue(self.node_shutdown.start.called)
+        getmock = mock.MagicMock()
+        getmock.get.return_value = False
+        self.last_shutdown.cancel_shutdown.return_value = getmock
         self.daemon.update_server_wishlist(
             [testutil.MockSize(6)]).get(self.TIMEOUT)
         self.busywait(lambda: self.node_setup.start.called)
+
+    def test_nodes_shutting_down_cancelled(self):
+        size = testutil.MockSize(6)
+        cloud_node = testutil.cloud_node_mock(6, size=size)
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6, crunch_worker_state='down')],
+                         avail_sizes=[(size, {"cores":1})])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(self.node_shutdown.start.called)
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(6)]).get(self.TIMEOUT)
+        self.busywait(lambda: self.last_shutdown.cancel_shutdown.called)
 
     def test_nodes_shutting_down_not_replaced_at_max_nodes(self):
         cloud_node = testutil.cloud_node_mock(7)
