@@ -13,7 +13,7 @@ HttpRequest <- R6::R6Class(
         validContentTypes = NULL,
         validVerbs = NULL,
 
-        initialize = function() 
+        initialize = function()
         {
             self$validContentTypes <- c("text", "raw")
             self$validVerbs <- c("GET", "POST", "PUT", "DELETE", "PROPFIND", "MOVE")
@@ -60,7 +60,7 @@ HttpRequest <- R6::R6Class(
             return("")
         },
 
-        getConnection = function(url, headers, openMode) 
+        getConnection = function(url, headers, openMode)
         {
             h <- curl::new_handle()
             curl::handle_setheaders(h, .list = headers)

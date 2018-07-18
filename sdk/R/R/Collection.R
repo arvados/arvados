@@ -8,9 +8,9 @@ source("./R/RESTService.R")
 source("./R/util.R")
 
 #' Collection
-#' 
+#'
 #' Collection class provides interface for working with Arvados collections.
-#' 
+#'
 #' @section Usage:
 #' \preformatted{collection = Collection$new(arv, uuid)}
 #'
@@ -19,7 +19,7 @@ source("./R/util.R")
 #'   \item{arv}{Arvados object.}
 #'   \item{uuid}{UUID of a collection.}
 #' }
-#' 
+#'
 #' @section Methods:
 #' \describe{
 #'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
@@ -60,7 +60,7 @@ Collection <- R6::R6Class(
 		uuid = NULL,
         # api  = NULL,
 
-		initialize = function(api, uuid) 
+		initialize = function(api, uuid)
         {
             # self$api <- api
             private$REST <- api$getRESTService()
@@ -121,7 +121,7 @@ Collection <- R6::R6Class(
             }
             else
             {
-                relativePath  <- trimFromEnd(relativePath, "/") 
+                relativePath  <- trimFromEnd(relativePath, "/")
                 subcollection <- self$get(relativePath)
             }
 
@@ -148,7 +148,7 @@ Collection <- R6::R6Class(
                 else
                     return(arvadosFiles)
             }
-            else 
+            else
             {
                 stop(paste0("Expected character vector, got ",
                             paste0("(", paste0(class(fileNames), collapse = ", "), ")"),
@@ -181,7 +181,7 @@ Collection <- R6::R6Class(
 
                 "Content removed"
             }
-            else 
+            else
             {
                 stop(paste0("Expected character vector, got ",
                             paste0("(", paste0(class(paths), collapse = ", "), ")"),
@@ -221,14 +221,14 @@ Collection <- R6::R6Class(
             private$tree$getElement(relativePath)
         },
 
-		toJSON = function() 
+		toJSON = function()
         {
 			fields <- sapply(private$classFields, function(field)
 			{
 				self[[field]]
 			}, USE.NAMES = TRUE)
-			
-			jsonlite::toJSON(list("collection" = 
+
+			jsonlite::toJSON(list("collection" =
                      Filter(Negate(is.null), fields)), auto_unbox = TRUE)
 		},
 
@@ -275,7 +275,7 @@ Collection <- R6::R6Class(
 #'
 #' @param x Instance of Collection class
 #' @param ... Optional arguments.
-#' @export 
+#' @export
 print.Collection = function(x, ...)
 {
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")

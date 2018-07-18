@@ -7,7 +7,7 @@ context("CollectionTree")
 test_that("constructor creates file tree from character array properly", {
 
     collection <- "myCollection"
-    characterArray <- c("animal", 
+    characterArray <- c("animal",
                         "animal/dog",
                         "boat")
 
@@ -44,12 +44,12 @@ test_that("constructor creates file tree from character array properly", {
     expect_that(boatIsOfTypeArvadosFile, is_true())
     expect_that(boatsParentIsRoot, is_true())
     expect_that(allElementsBelongToSameCollection, is_true())
-}) 
+})
 
 test_that("getElement returns element from tree if element exists on specified path", {
 
     collection <- "myCollection"
-    characterArray <- c("animal", 
+    characterArray <- c("animal",
                         "animal/dog",
                         "boat")
 
@@ -58,12 +58,12 @@ test_that("getElement returns element from tree if element exists on specified p
     dog <- collectionTree$getElement("animal/dog")
 
     expect_that(dog$getName(), equals("dog"))
-}) 
+})
 
 test_that("getElement returns NULL from tree if element doesn't exists on specified path", {
 
     collection <- "myCollection"
-    characterArray <- c("animal", 
+    characterArray <- c("animal",
                         "animal/dog",
                         "boat")
 
@@ -73,12 +73,12 @@ test_that("getElement returns NULL from tree if element doesn't exists on specif
     fishIsNULL <- is.null(fish)
 
     expect_that(fishIsNULL, is_true())
-}) 
+})
 
 test_that("getElement trims ./ from start of relativePath", {
 
     collection <- "myCollection"
-    characterArray <- c("animal", 
+    characterArray <- c("animal",
                         "animal/dog",
                         "boat")
 
@@ -88,12 +88,12 @@ test_that("getElement trims ./ from start of relativePath", {
     dogWithDotSlash <- collectionTree$getElement("./animal/dog")
 
     expect_that(dogWithDotSlash$getName(), equals(dog$getName()))
-}) 
+})
 
 test_that("getElement trims / from end of relativePath", {
 
     collection <- "myCollection"
-    characterArray <- c("animal", 
+    characterArray <- c("animal",
                         "animal/dog",
                         "boat")
 
@@ -103,4 +103,4 @@ test_that("getElement trims / from end of relativePath", {
     animalWithSlash <- collectionTree$getElement("animal/")
 
     expect_that(animalWithSlash$getName(), equals(animal$getName()))
-}) 
+})

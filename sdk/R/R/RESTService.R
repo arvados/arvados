@@ -66,7 +66,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(), "c=",
                               uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$token)) 
+            headers <- list(Authorization = paste("OAuth2", self$token))
 
             serverResponse <- self$http$exec("DELETE", fileURL, headers,
                                              retryTimes = self$numRetries)
@@ -188,7 +188,7 @@ RESTService <- R6::R6Class(
 
         getConnection = function(relativePath, uuid, openMode)
         {
-            fileURL <- paste0(self$getWebDavHostName(), 
+            fileURL <- paste0(self$getWebDavHostName(),
                               "c=", uuid, "/", relativePath);
             headers <- list(Authorization = paste("OAuth2", self$token))
 
@@ -205,7 +205,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(), "c=",
                               uuid, "/", relativePath)
-            headers <- list(Authorization = paste("OAuth2", self$token), 
+            headers <- list(Authorization = paste("OAuth2", self$token),
                             "Content-Type" = contentType)
             body <- NULL
 
