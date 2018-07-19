@@ -5,10 +5,11 @@
 import * as React from 'react';
 import List from "@material-ui/core/List/List";
 import ListItem from "@material-ui/core/ListItem/ListItem";
-import { StyleRulesCallback, Theme, withStyles, WithStyles } from '@material-ui/core/styles';
+import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
 import Collapse from "@material-ui/core/Collapse/Collapse";
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { ArvadosTheme } from '../../common/custom-theme';
 
 export enum TreeItemStatus {
     Initial,
@@ -61,6 +62,7 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
                 </div>)}
         </List>;
     }
+
     renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
         const { arrowTransition, arrowVisibility, arrowRotate } = this.props.classes;
         return <i onClick={() => this.props.toggleItemOpen(id, status)}
@@ -77,16 +79,17 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
 
 type CssRules = 'list' | 'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition' | 'loader' | 'arrowVisibility';
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         paddingBottom: '3px',
         paddingTop: '3px',
     },
     activeArrow: {
-        color: '#4285F6',
+        color: theme.palette.primary.main,
         position: 'absolute',
     },
     inactiveArrow: {
+        color: theme.palette.grey["700"],
         position: 'absolute',
     },
     arrowTransition: {
