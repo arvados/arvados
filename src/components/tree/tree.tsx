@@ -62,6 +62,7 @@ class Tree<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
                 </div>)}
         </List>;
     }
+
     renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
         const { arrowTransition, arrowVisibility, arrowRotate } = this.props.classes;
         return <i onClick={() => this.props.toggleItemOpen(id, status)}
@@ -88,6 +89,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         position: 'absolute',
     },
     inactiveArrow: {
+        color: theme.palette.grey["700"],
         position: 'absolute',
     },
     arrowTransition: {
