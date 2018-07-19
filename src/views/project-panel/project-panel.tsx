@@ -136,7 +136,7 @@ const RENDER_STATUS = (item: ProjectPanelItem) =>
         {item.status || "-"}
     </Typography>;
 
-export enum ColumnNames {
+export enum ProjectPanelColumnNames {
     NAME = "Name",
     STATUS = "Status",
     TYPE = "Type",
@@ -148,7 +148,7 @@ export enum ColumnNames {
 
 export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     {
-        name: ColumnNames.NAME,
+        name: ProjectPanelColumnNames.NAME,
         selected: true,
         sortDirection: SortDirection.Asc,
         render: RENDER_NAME,
@@ -178,7 +178,7 @@ export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         width: "75px"
     },
     {
-        name: ColumnNames.TYPE,
+        name: ProjectPanelColumnNames.TYPE,
         selected: true,
         filters: [
             {
@@ -201,19 +201,19 @@ export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         width: "125px"
     },
     {
-        name: ColumnNames.OWNER,
+        name: ProjectPanelColumnNames.OWNER,
         selected: true,
         render: item => RENDER_OWNER(item.owner),
         width: "200px"
     },
     {
-        name: ColumnNames.FILE_SIZE,
+        name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         render: item => RENDER_FILE_SIZE(item.fileSize),
         width: "50px"
     },
     {
-        name: ColumnNames.LAST_MODIFIED,
+        name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
         sortDirection: SortDirection.None,
         render: item => RENDER_DATE(item.lastModified),
