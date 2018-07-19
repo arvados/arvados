@@ -7,7 +7,7 @@ import { Drawer, IconButton, Tabs, Tab, Typography, Grid } from '@material-ui/co
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
 import * as classnames from "classnames";
-import { connect, Dispatch } from 'react-redux';
+import { connect } from 'react-redux';
 import { RootState } from '../../store/store';
 import actions from "../../store/details-panel/details-panel-action";
 import { ProjectResource } from '../../models/project';
@@ -17,6 +17,7 @@ import { ProcessResource } from '../../models/process';
 import DetailsPanelFactory from '../../components/details-panel-factory/details-panel-factory';
 import AbstractItem from '../../components/details-panel-factory/items/abstract-item';
 import { EmptyResource } from '../../models/empty';
+import { Dispatch } from "redux";
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
