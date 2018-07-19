@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { connect, Dispatch, DispatchProp } from "react-redux";
+import { connect } from "react-redux";
 import { RootState } from "../../store/store";
 import actions from "../../store/context-menu/context-menu-actions";
 import ContextMenu, { ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
 import { createAnchorAt } from "../../components/popover/helpers";
 import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
+import { Dispatch } from "redux";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
