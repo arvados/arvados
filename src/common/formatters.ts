@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export const formatDate = (isoDate: string) => {
+export const FORMAT_DATE = (isoDate: string) => {
     const date = new Date(isoDate);
     const text = date.toLocaleString();
     return text === 'Invalid Date' ? "" : text;
 };
 
-export const formatFileSize = (size?: number) => {
+export const FORMAT_FILE_SIZE = (size?: number) => {
     if (typeof size === "number") {
-        for (const { base, unit } of fileSizes) {
+        for (const { base, unit } of FILE_SIZES) {
             if (size >= base) {
                 return `${(size / base).toFixed()} ${unit}`;
             }
@@ -19,7 +19,7 @@ export const formatFileSize = (size?: number) => {
     return "";
 };
 
-const fileSizes = [
+const FILE_SIZES = [
     {
         base: 1000000000000,
         unit: "TB"

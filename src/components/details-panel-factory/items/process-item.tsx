@@ -7,9 +7,9 @@ import { ProcessIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProcessResource } from '../../../models/process';
-import { formatDate } from '../../../common/formatters';
+import { FORMAT_DATE } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
-import { resourceLabel } from '../../../common/labels';
+import { RESOURCE_LABEL } from '../../../common/labels';
 
 export default class ProcessItem extends AbstractItem<ProcessResource> {
 
@@ -19,17 +19,17 @@ export default class ProcessItem extends AbstractItem<ProcessResource> {
 
     buildDetails() {
         return <div>
-            <Attribute label='Type' value={resourceLabel(ResourceKind.Process)} />
+            <Attribute label='Type' value={RESOURCE_LABEL(ResourceKind.Process)} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
 
             {/* Missing attr */}
             <Attribute label='Status' value={this.item.state} />
-            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            <Attribute label='Last modified' value={FORMAT_DATE(this.item.modifiedAt)} />
             
             {/* Missing attrs */}
-            <Attribute label='Started at' value={formatDate(this.item.createdAt)} />
-            <Attribute label='Finished at' value={formatDate(this.item.expiresAt)} />
+            <Attribute label='Started at' value={FORMAT_DATE(this.item.createdAt)} />
+            <Attribute label='Finished at' value={FORMAT_DATE(this.item.expiresAt)} />
 
             {/* Links but we dont have view */}
             <Attribute label='Outputs' link={this.item.outputPath} value={this.item.outputPath} />
