@@ -68,7 +68,7 @@ $RAILS_ENV:
   keep_web_service_url: http://$localip:${services[keep-web]}/
 EOF
 
-(cd config && /usr/local/lib/arvbox/application_yml_override.py)
+(cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
 
 if ! test -f /var/lib/arvados/api_database_pw ; then
     ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw

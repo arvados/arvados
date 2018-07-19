@@ -19,7 +19,7 @@ fi
 
 mkdir -p /var/lib/arvados/$1
 
-export ARVADOS_API_HOST=$localip:${services[api]}
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
 
