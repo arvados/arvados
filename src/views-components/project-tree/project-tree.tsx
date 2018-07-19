@@ -9,7 +9,7 @@ import Tree, { TreeItem, TreeItemStatus } from '../../components/tree/tree';
 import { ProjectResource } from '../../models/project';
 import { ProjectIcon } from '../../components/icon/icon';
 import { ArvadosTheme } from '../../common/custom-theme';
-import SingleListItem from '../../components/single-list-item/single-list-item';
+import ListItemTextIcon from '../../components/list-item-text-icon/list-item-text-icon';
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<ProjectResource>>;
@@ -29,7 +29,7 @@ class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRu
                     toggleItemActive={toggleActive}
                     render={
                         (project: TreeItem<ProjectResource>) =>
-                            <SingleListItem icon={ProjectIcon} name={project.data.name} isActive={project.active} hasMargin={true} />
+                            <ListItemTextIcon icon={ProjectIcon} name={project.data.name} isActive={project.active} hasMargin={true} />
                     }/>
             </div>
         );

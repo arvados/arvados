@@ -9,7 +9,7 @@ import { ArvadosTheme } from '../../common/custom-theme';
 import { List, ListItem, ListItemText, ListItemIcon, Collapse, Typography } from "@material-ui/core";
 import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
 import * as classnames from "classnames";
-import SingleListItem from '../single-list-item/single-list-item';
+import ListItemTextIcon from '../list-item-text-icon/list-item-text-icon';
 
 export interface SidePanelItem {
     id: string;
@@ -46,7 +46,7 @@ class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
                                             </ListItemIcon>
                                         </i>
                                     ) : null}
-                                    <SingleListItem icon={it.icon} name={it.name} isActive={it.active} hasMargin={it.margin} />
+                                    <ListItemTextIcon icon={it.icon} name={it.name} isActive={it.active} hasMargin={it.margin} />
                                 </span>
                             </ListItem>
                             {it.openAble ? (

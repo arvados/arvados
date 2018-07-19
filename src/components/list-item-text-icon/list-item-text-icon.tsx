@@ -9,16 +9,16 @@ import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
 import { IconType } from '../icon/icon';
 import * as classnames from "classnames";
 
-export interface SingleListItemDataProps {
+export interface ListItemTextIconDataProps {
     icon: IconType;
     name: string;
     isActive?: boolean;
     hasMargin?: boolean;
 }
 
-type SingleListItemProps = SingleListItemDataProps & WithStyles<CssRules>;
+type ListItemTextIconProps = ListItemTextIconDataProps & WithStyles<CssRules>;
 
-class SingleListItem extends React.Component<SingleListItemProps, {}> {
+class ListItemTextIcon extends React.Component<ListItemTextIconProps, {}> {
     render() {
         const { classes, isActive, hasMargin, name, icon: Icon } = this.props;
         return (
@@ -59,4 +59,4 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export default withStyles(styles)(SingleListItem);
+export default withStyles(styles)(ListItemTextIcon);
