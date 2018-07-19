@@ -4,7 +4,6 @@
 
 import * as React from 'react';
 import { DetailsPanelResource } from '../../../views-components/details-panel/details-panel';
-import { IconType } from '../../icon/icon';
 
 export default abstract class AbstractItem<T extends DetailsPanelResource = DetailsPanelResource> {
 

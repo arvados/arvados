@@ -4,7 +4,7 @@
 
 import { ResourceKind } from "../models/resource";
 
-export const RESOURCE_LABEL = (type: string) => {
+export const resourceLabel = (type: string) => {
     switch (type) {
         case ResourceKind.Collection:
             return "Data collection";

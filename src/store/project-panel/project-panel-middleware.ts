@@ -4,7 +4,7 @@
 
 import { Middleware } from "redux";
 import actions from "../data-explorer/data-explorer-action";
-import { PROJECT_PANEL_ID, ProjectPanelFilter, COLUMNS, ProjectPanelColumnNames } from "../../views/project-panel/project-panel";
+import { PROJECT_PANEL_ID, ProjectPanelFilter, columns, ProjectPanelColumnNames } from "../../views/project-panel/project-panel";
 import { groupsService } from "../../services/services";
 import { RootState } from "../store";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
@@ -17,7 +17,7 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from "../../servic
 import { SortDirection } from "../../components/data-table/data-column";
 
 export const projectPanelMiddleware: Middleware = store => next => {
-    next(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns: COLUMNS }));
+    next(actions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
 
     return action => {
 

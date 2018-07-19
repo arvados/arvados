@@ -7,9 +7,9 @@ import { ProjectIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { ProjectResource } from '../../../models/project';
-import { FORMAT_DATE } from '../../../common/formatters';
+import { formatDate } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
-import { RESOURCE_LABEL } from '../../../common/labels';
+import { resourceLabel } from '../../../common/labels';
 
 export default class ProjectItem extends AbstractItem<ProjectResource> {
 
@@ -19,12 +19,12 @@ export default class ProjectItem extends AbstractItem<ProjectResource> {
 
     buildDetails() {
         return <div>
-            <Attribute label='Type' value={RESOURCE_LABEL(ResourceKind.Project)} />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Project)} />
             {/* Missing attr */}
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
-            <Attribute label='Last modified' value={FORMAT_DATE(this.item.modifiedAt)} />
-            <Attribute label='Created at' value={FORMAT_DATE(this.item.createdAt)} />
+            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            <Attribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Missing attr */}
             <Attribute label='File size' value='1.4 GB' />
             <Attribute label='Description' value={this.item.description} />

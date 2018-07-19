@@ -7,8 +7,8 @@ import { CollectionIcon } from '../../icon/icon';
 import Attribute from '../../attribute/attribute';
 import AbstractItem from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
-import { FORMAT_DATE } from '../../../common/formatters';
-import { RESOURCE_LABEL } from '../../../common/labels';
+import { formatDate } from '../../../common/formatters';
+import { resourceLabel } from '../../../common/labels';
 import { ResourceKind } from '../../../models/resource';
 
 export default class CollectionItem extends AbstractItem<CollectionResource> {
@@ -19,11 +19,11 @@ export default class CollectionItem extends AbstractItem<CollectionResource> {
 
     buildDetails() {
         return <div>
-            <Attribute label='Type' value={RESOURCE_LABEL(ResourceKind.Collection)} />
+            <Attribute label='Type' value={resourceLabel(ResourceKind.Collection)} />
             <Attribute label='Size' value='---' />
             <Attribute label='Owner' value={this.item.ownerUuid} />
-            <Attribute label='Last modified' value={FORMAT_DATE(this.item.modifiedAt)} />
-            <Attribute label='Created at' value={FORMAT_DATE(this.item.createdAt)} />
+            <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
+            <Attribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Links but we dont have view */}
             <Attribute label='Collection UUID' link={this.item.uuid} value={this.item.uuid} />
             <Attribute label='Content address' link={this.item.portableDataHash} value={this.item.portableDataHash} />

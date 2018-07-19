@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { FORMAT_DATE, FORMAT_FILE_SIZE } from '../../common/formatters';
+import { formatDate, formatFileSize } from '../../common/formatters';
 import DataExplorer from "../../views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
@@ -15,7 +15,7 @@ import { DataTableFilterItem } from '../../components/data-table-filters/data-ta
 import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
 import { ResourceKind } from '../../models/resource';
-import { RESOURCE_LABEL } from '../../common/labels';
+import { resourceLabel } from '../../common/labels';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '../../components/icon/icon';
 import { ArvadosTheme } from '../../common/custom-theme';
 
@@ -112,26 +112,26 @@ const RENDER_ICON = (item: ProjectPanelItem) => {
     }
 };
 
-const RENDER_DATE = (date: string) => {
-    return <Typography noWrap>{FORMAT_DATE(date)}</Typography>;
+const renderDate = (date: string) => {
+    return <Typography noWrap>{formatDate(date)}</Typography>;
 };
 
-const RENDER_FILE_SIZE = (fileSize?: number) =>
+const renderFileSize = (fileSize?: number) =>
     <Typography noWrap>
-        {FORMAT_FILE_SIZE(fileSize)}
+        {formatFileSize(fileSize)}
     </Typography>;
 
-const RENDER_OWNER = (owner: string) =>
+const renderOwner = (owner: string) =>
     <Typography noWrap color="primary" >
         {owner}
     </Typography>;
 
-const RENDER_TYPE = (type: string) =>
+const renderType = (type: string) =>
     <Typography noWrap>
-        {RESOURCE_LABEL(type)}
+        {resourceLabel(type)}
     </Typography>;
 
-const RENDER_STATUS = (item: ProjectPanelItem) =>
+const renderStatus = (item: ProjectPanelItem) =>
     <Typography noWrap align="center" >
         {item.status || "-"}
     </Typography>;
@@ -146,7 +146,7 @@ export enum ProjectPanelColumnNames {
 
 }
 
-export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
+export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
@@ -174,7 +174,7 @@ export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
                 type: ContainerRequestState.Uncommitted
             }
         ],
-        render: RENDER_STATUS,
+        render: renderStatus,
         width: "75px"
     },
     {
@@ -182,41 +182,41 @@ export const COLUMNS: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         filters: [
             {
-                name: RESOURCE_LABEL(ResourceKind.Collection),
+                name: resourceLabel(ResourceKind.Collection),
                 selected: true,
                 type: ResourceKind.Collection
             },
             {
-                name: RESOURCE_LABEL(ResourceKind.Process),
+                name: resourceLabel(ResourceKind.Process),
                 selected: true,
                 type: ResourceKind.Process
             },
             {
-                name: RESOURCE_LABEL(ResourceKind.Project),
+                name: resourceLabel(ResourceKind.Project),
                 selected: true,
                 type: ResourceKind.Project
             }
         ],
-        render: item => RENDER_TYPE(item.kind),
+        render: item => renderType(item.kind),
         width: "125px"
     },
     {
         name: ProjectPanelColumnNames.OWNER,
         selected: true,
-        render: item => RENDER_OWNER(item.owner),
+        render: item => renderOwner(item.owner),
         width: "200px"
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
-        render: item => RENDER_FILE_SIZE(item.fileSize),
+        render: item => renderFileSize(item.fileSize),
         width: "50px"
     },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
         sortDirection: SortDirection.None,
-        render: item => RENDER_DATE(item.lastModified),
+        render: item => renderDate(item.lastModified),
         width: "150px"
     }
 ];
