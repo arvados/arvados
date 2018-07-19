@@ -11,13 +11,13 @@ FakeHttpParser <- R6::R6Class(
         validContentTypes = NULL,
         parserCallCount = NULL,
 
-        initialize = function() 
+        initialize = function()
         {
             self$parserCallCount <- 0
             self$validContentTypes <- c("text", "raw")
         },
 
-        parseJSONResponse = function(serverResponse) 
+        parseJSONResponse = function(serverResponse)
         {
             self$parserCallCount <- self$parserCallCount + 1
 
@@ -47,7 +47,7 @@ FakeHttpParser <- R6::R6Class(
             serverResponse
         },
 
-        getFileSizesFromResponse = function(serverResponse, uri)    
+        getFileSizesFromResponse = function(serverResponse, uri)
         {
             self$parserCallCount <- self$parserCallCount + 1
 

@@ -100,7 +100,7 @@ test_that("create raises exception if passed argumet is not character vector", {
     collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$create(10),
-                throws_error("Expected character vector, got (numeric).", 
+                throws_error("Expected character vector, got (numeric).",
                              fixed = TRUE))
 })
 
@@ -156,7 +156,7 @@ test_that("remove raises exception if passed argumet is not character vector", {
     collection <- Collection$new(api, "myUUID")
 
     expect_that(collection$remove(10),
-                throws_error("Expected character vector, got (numeric).", 
+                throws_error("Expected character vector, got (numeric).",
                              fixed = TRUE))
 })
 
@@ -238,7 +238,7 @@ test_that("getFileListing returns sorted collection content received from REST s
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
-    contentMatchExpected <- all(collection$getFileListing() == 
+    contentMatchExpected <- all(collection$getFileListing() ==
                                 c("animal", "animal/fish", "ball"))
 
     expect_that(contentMatchExpected, is_true())

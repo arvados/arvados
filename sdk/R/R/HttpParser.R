@@ -10,12 +10,12 @@ HttpParser <- R6::R6Class(
 
         validContentTypes = NULL,
 
-        initialize = function() 
+        initialize = function()
         {
             self$validContentTypes <- c("text", "raw")
         },
 
-        parseJSONResponse = function(serverResponse) 
+        parseJSONResponse = function(serverResponse)
         {
             parsed_response <- httr::content(serverResponse,
                                              as = "parsed",
@@ -41,7 +41,7 @@ HttpParser <- R6::R6Class(
             result[-1]
         },
 
-        getFileSizesFromResponse = function(response, uri)    
+        getFileSizesFromResponse = function(response, uri)
         {
             text <- rawToChar(response$content)
             doc <- XML::xmlParse(text, asText=TRUE)

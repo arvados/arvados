@@ -343,7 +343,7 @@ genMethodsDoc <- function(methodResources, resourceNames)
     }, methodResources, resourceNames)))
 
     projectDoc <- genProjectMethodsDoc()
-    
+
     c(methodsDoc, projectDoc)
 }
 
@@ -401,10 +401,10 @@ getAPIClassMethodList <- function(methodResources, resourceNames)
                methodNames[!(methodNames %in% c("index", "show", "destroy"))])
 
     }, methodResources, resourceNames)))
-    
+
     hardcodedMethods <- c("projects.create", "projects.get",
                           "projects.list", "projects.update", "projects.delete")
-    paste0("#' \t\\item{}{\\code{\\link{", sort(c(methodList, hardcodedMethods)), "}}}") 
+    paste0("#' \t\\item{}{\\code{\\link{", sort(c(methodList, hardcodedMethods)), "}}}")
 }
 
 getMethodDoc <- function(methodName, methodMetaData)
@@ -447,7 +447,7 @@ getMethodDescription <- function(methodMetaData)
                                  className <- sapply(prop, function(ref) ref)
                                  objectName <- paste0(tolower(substr(className, 1, 1)),
                                                       substr(className, 2, nchar(className)))
-                                 paste("#' @param", objectName, className, "object.") 
+                                 paste("#' @param", objectName, className, "object.")
                              })))
     }
 
@@ -457,7 +457,7 @@ getMethodDescription <- function(methodMetaData)
     {
         arg <- methodMetaData$parameters[[argName]]
         argDescription <- arg$description
-        paste("#' @param", argName, argDescription) 
+        paste("#' @param", argName, argDescription)
     })))
 
     c(requestDoc, argsDoc)
@@ -541,7 +541,7 @@ formatArgs <- function(prependAtStart, prependToEachSplit,
 {
     if(length(args) > 1)
     {
-        args[1:(length(args) - 1)] <- paste0(args[1:(length(args) - 1)], ",") 
+        args[1:(length(args) - 1)] <- paste0(args[1:(length(args) - 1)], ",")
     }
 
     args[1] <- paste0(prependAtStart, args[1])
@@ -564,12 +564,12 @@ formatArgs <- function(prependAtStart, prependToEachSplit,
 
         argLines <- c(argLines, line)
     }
-    
+
     argLines <- unlist(argLines)
     argLinesLen <- length(argLines)
 
     if(argLinesLen > 1)
-        argLines[2:argLinesLen] <- paste0(prependToEachSplit, argLines[2:argLinesLen]) 
+        argLines[2:argLinesLen] <- paste0(prependToEachSplit, argLines[2:argLinesLen])
 
     argLines
 }
