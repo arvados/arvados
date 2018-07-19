@@ -121,7 +121,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             if not hasattr(node.size, 'id'):
                 node.size = self.sizes()[node.size]
             # Get arvados-assigned cloud size id
-            node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size')
+            node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size') or node.size.id
         return nodelist
 
     @classmethod

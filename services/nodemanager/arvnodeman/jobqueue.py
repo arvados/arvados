@@ -37,7 +37,10 @@ class ServerCalculator(object):
             self.scratch = 0
             self.cores = 0
             self.bandwidth = 0
-            self.price = 9999999
+            # price is multiplied by 1000 to get the node weight
+            # the maximum node weight is                  4294967280
+            # so use invalid node weight 4294967 * 1000 = 4294967000
+            self.price = 4294967
             self.preemptible = False
             self.extra = {}
 
