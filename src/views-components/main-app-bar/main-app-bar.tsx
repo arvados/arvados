@@ -74,7 +74,7 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                     onContextMenu={props.onContextMenu} />
             }
             { props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                    { <DetailsIcon /> }
+                    <DetailsIcon />
                 </IconButton>
             }
         </Toolbar>
@@ -87,7 +87,7 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
         <>
             <IconButton color="inherit">
                 <Badge badgeContent={3} color="primary">
-                    {<NotificationIcon />}
+                    <NotificationIcon />
                 </Badge>
             </IconButton>
             <DropdownMenu icon={<UserPanelIcon />} id="account-menu">

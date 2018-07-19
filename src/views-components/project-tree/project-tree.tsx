@@ -21,9 +21,8 @@ export interface ProjectTreeProps {
 class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
     render(): ReactElement<any> {
         const { classes, projects, toggleOpen, toggleActive, onContextMenu } = this.props;
-        const { root } = classes;
         return (
-            <div className={root}>
+            <div className={classes.root}>
                 <Tree items={projects}
                     onContextMenu={onContextMenu}
                     toggleItemOpen={toggleOpen}
