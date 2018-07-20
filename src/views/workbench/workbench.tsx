@@ -28,7 +28,7 @@ import DetailsPanel from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
 import ContextMenu, { ContextMenuAction } from '../../components/context-menu/context-menu';
 import { mockAnchorFromMouseEvent } from '../../components/popover/helpers';
-import CreateProjectDialog from "../../views-components/create-project-dialog/create-project-dialog";
+import DialogProjectCreate from "../../views-components/create-project-dialog/create-project-dialog";
 import { authService } from '../../services/services';
 
 import detailsPanelActions, { loadDetails } from "../../store/details-panel/details-panel-action";
@@ -258,7 +258,7 @@ class Workbench extends React.Component<WorkbenchProps, WorkbenchState> {
                     actions={contextMenuActions}
                     onActionClick={this.openCreateDialog}
                     onClose={this.closeContextMenu} />
-                <CreateProjectDialog />
+                <DialogProjectCreate />
             </div>
         );
     }

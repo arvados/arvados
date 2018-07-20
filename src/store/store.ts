@@ -13,6 +13,7 @@ import authReducer, { AuthState } from "./auth/auth-reducer";
 import dataExplorerReducer, { DataExplorerState } from './data-explorer/data-explorer-reducer';
 import { projectPanelMiddleware } from '../store/project-panel/project-panel-middleware';
 import detailsPanelReducer, { DetailsPanelState } from './details-panel/details-panel-reducer';
+import { reducer as formReducer } from 'redux-form';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -34,7 +35,8 @@ const rootReducer = combineReducers({
     router: routerReducer,
     dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer,
-    detailsPanel: detailsPanelReducer
+    detailsPanel: detailsPanelReducer,
+    form: formReducer
 });
 
 

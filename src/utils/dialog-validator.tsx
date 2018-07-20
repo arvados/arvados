@@ -6,64 +6,45 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 
 type ValidatorProps = {
-  value: string,
-  onChange: (isValid: boolean | string) => void;
-  render: (hasError: boolean) => React.ReactElement<any>;
-  isRequired: boolean;
-  isUniqName?: boolean;
+    value: string,
+    render: (hasError: boolean) => React.ReactElement<any>;
+    isUniqName?: boolean;
+    validators: Array<(value: string) => string>;
 };
 
-interface ValidatorState {
-  isLengthValid: boolean;
-}
-
 class Validator extends React.Component<ValidatorProps & WithStyles<CssRules>> {
-  state: ValidatorState = {
-    isLengthValid: true
-  };
+    render() {
+        const { classes, value, isUniqName } = this.props;
 
-  componentWillReceiveProps(nextProps: ValidatorProps) {
-    const { value } = nextProps;
-
-    if (this.props.value !== value) {
-      this.setState({
-        isLengthValid: value.length < MAX_INPUT_LENGTH
-      }, () => this.onChange());
+        return (
+            <span>
+                {this.props.render(!this.isValid(value))}
+                {isUniqName ? <span className={classes.formInputError}>Project with this name already exists</span> : null}
+                {this.props.validators.map(validate => {
+                    const errorMsg = validate(value);
+                    return errorMsg ? <span className={classes.formInputError}>{errorMsg}</span> : null;
+                })}
+            </span>
+        );
     }
-  }
 
-  onChange() {
-    const { value, onChange, isRequired } = this.props;
-    const { isLengthValid } = this.state;
-    const isValid = value && isLengthValid && (isRequired || (!isRequired && value.length > 0));
-
-    onChange(isValid);
-  }
-
-  render() {
-    const { classes, isRequired, value, isUniqName } = this.props;
-    const { isLengthValid } = this.state;
-
-    return (
-      <span>
-        {this.props.render(!isLengthValid && (isRequired || (!isRequired && value.length > 0)))}
-        {!isLengthValid ? <span className={classes.formInputError}>This field should have max 255 characters.</span> : null}
-        {isUniqName ? <span className={classes.formInputError}>Project with this name already exists</span> : null}
-      </span>
-    );
-  }
+    isValid(value: string) {
+        return this.props.validators.every(validate => validate(value).length === 0);
+    }
 }
 
-const MAX_INPUT_LENGTH = 255;
+export const required = (value: string) => value.length > 0 ? "" : "This value is required";
+export const maxLength = (max: number) => (value: string) => value.length <= max ? "" : `This field should have max ${max} characters.`;
+export const isUniq = (getError: () => string) => (value: string) => getError() ? "Project with this name already exists" : "";
 
 type CssRules = "formInputError";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
-  formInputError: {
-    color: "#ff0000",
-    marginLeft: "5px",
-    fontSize: "11px",
-  }
+    formInputError: {
+        color: "#ff0000",
+        marginLeft: "5px",
+        fontSize: "11px",
+    }
 });
 
 export default withStyles(styles)(Validator);
