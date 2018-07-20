@@ -36,7 +36,7 @@ http {
   }
   server {
     listen *:${services[controller-ssl]} ssl default_server;
-    server_name keepproxy;
+    server_name controller;
     ssl_certificate "/var/lib/arvados/self-signed.pem";
     ssl_certificate_key "/var/lib/arvados/self-signed.key";
     location  / {
