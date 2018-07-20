@@ -68,7 +68,7 @@ window.SessionDB = function() {
                 url = 'https://' + url;
             }
             url = new URL(url);
-            return db.discoveryDoc({baseURL: url.origin}).map(function() {
+            return m.request(url.origin + '/discovery/v1/apis/arvados/v1/rest').then(function() {
                 return url.origin + '/';
             }).catch(function(err) {
                 // If url is a Workbench site (and isn't too old),
@@ -231,9 +231,13 @@ window.SessionDB = function() {
         // discovery doc from a session's API server.
         discoveryDoc: function(session) {
             var cache = db.discoveryCache[session.baseURL];
-            if (!cache) {
+            if (!cache && session) {
                 db.discoveryCache[session.baseURL] = cache = m.stream();
-                m.request(session.baseURL+'discovery/v1/apis/arvados/v1/rest')
+                var baseURL = session.baseURL;
+                if (baseURL[baseURL.length - 1] !== '/') {
+                    baseURL += '/';
+                }
+                m.request(baseURL+'discovery/v1/apis/arvados/v1/rest')
                     .then(function (dd) {
                         // Just in case we're talking with an old API server.
                         dd.remoteHosts = dd.remoteHosts || {};
@@ -293,6 +297,7 @@ window.SessionDB = function() {
         autoLoadRemoteHosts: function() {
             var sessions = db.loadAll();
             var doc = db.discoveryDoc(db.loadLocal());
+            if (doc === undefined) { return; }
             doc.map(function(d) {
                 Object.keys(d.remoteHosts).map(function(uuidPrefix) {
                     if (!(sessions[uuidPrefix])) {
