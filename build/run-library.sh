@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -310,6 +310,7 @@ handle_rails_package() {
     cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
+    echo "$version" >package-build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
         set -e

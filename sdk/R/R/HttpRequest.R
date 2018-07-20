@@ -13,7 +13,7 @@ HttpRequest <- R6::R6Class(
         validContentTypes = NULL,
         validVerbs = NULL,
 
-        initialize = function() 
+        initialize = function()
         {
             self$validContentTypes <- c("text", "raw")
             self$validVerbs <- c("GET", "POST", "PUT", "DELETE", "PROPFIND", "MOVE")
@@ -30,7 +30,7 @@ HttpRequest <- R6::R6Class(
 
             config <- httr::add_headers(unlist(headers))
             if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
-               config$options = list(ssl_verifypeer = FALSE)
+               config$options = list(ssl_verifypeer = 0L)
 
             # times = 1 regular call + numberOfRetries
             response <- httr::RETRY(verb, url = url, body = body,
@@ -58,6 +58,17 @@ HttpRequest <- R6::R6Class(
             }
 
             return("")
+        },
+
+        getConnection = function(url, headers, openMode)
+        {
+            h <- curl::new_handle()
+            curl::handle_setheaders(h, .list = headers)
+
+            if(toString(Sys.getenv("ARVADOS_API_HOST_INSECURE") == "TRUE"))
+               curl::handle_setopt(h, ssl_verifypeer = 0L)
+
+            conn <- curl::curl(url = url, open = openMode, handle = h)
         }
     ),
 

@@ -26,7 +26,7 @@ test_that("listAll always returns all resource items from server", {
     result <- listAll(testFunction)
 
     expect_that(length(result), equals(8))
-}) 
+})
 
 test_that("trimFromStart trims string correctly if string starts with trimCharacters", {
 
@@ -36,7 +36,7 @@ test_that("trimFromStart trims string correctly if string starts with trimCharac
     result <- trimFromStart(sample, trimCharacters)
 
     expect_that(result, equals("random"))
-}) 
+})
 
 test_that("trimFromStart returns original string if string doesn't starts with trimCharacters", {
 
@@ -46,7 +46,7 @@ test_that("trimFromStart returns original string if string doesn't starts with t
     result <- trimFromStart(sample, trimCharacters)
 
     expect_that(result, equals("./something/random"))
-}) 
+})
 
 test_that("trimFromEnd trims string correctly if string ends with trimCharacters", {
 
@@ -56,7 +56,7 @@ test_that("trimFromEnd trims string correctly if string ends with trimCharacters
     result <- trimFromEnd(sample, trimCharacters)
 
     expect_that(result, equals("./something"))
-}) 
+})
 
 test_that("trimFromEnd returns original string if string doesn't end with trimCharacters", {
 
@@ -66,11 +66,11 @@ test_that("trimFromEnd returns original string if string doesn't end with trimCh
     result <- trimFromStart(sample, trimCharacters)
 
     expect_that(result, equals("./something/random"))
-}) 
+})
 
 test_that("RListToPythonList converts nested R list to char representation of Python list", {
 
-    sample <- list("insert", list("random", list("text")), list("here")) 
+    sample <- list("insert", list("random", list("text")), list("here"))
 
     result              <- RListToPythonList(sample)
     resultWithSeparator <- RListToPythonList(sample, separator = ",+")
@@ -78,7 +78,7 @@ test_that("RListToPythonList converts nested R list to char representation of Py
     expect_that(result, equals("[\"insert\", [\"random\", \"text\"], \"here\"]"))
     expect_that(resultWithSeparator,
                 equals("[\"insert\",+[\"random\",+\"text\"],+\"here\"]"))
-}) 
+})
 
 test_that("appendToStartIfNotExist appends characters to beginning of a string", {
 
@@ -88,7 +88,7 @@ test_that("appendToStartIfNotExist appends characters to beginning of a string",
     result <- appendToStartIfNotExist(sample, charactersToAppend)
 
     expect_that(result, equals("Happy New Year"))
-}) 
+})
 
 test_that(paste("appendToStartIfNotExist returns original string if string",
                 "doesn't start with specified characters"), {
@@ -99,7 +99,7 @@ test_that(paste("appendToStartIfNotExist returns original string if string",
     result <- appendToStartIfNotExist(sample, charactersToAppend)
 
     expect_that(result, equals("Happy New Year"))
-}) 
+})
 
 test_that(paste("splitToPathAndName splits relative path to file/folder",
                 "name and rest of the path"), {
@@ -110,4 +110,4 @@ test_that(paste("splitToPathAndName splits relative path to file/folder",
 
     expect_that(result$name, equals("file.exe"))
     expect_that(result$path, equals("path/to/my"))
-}) 
+})

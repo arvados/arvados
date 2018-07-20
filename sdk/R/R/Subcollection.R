@@ -5,10 +5,10 @@
 source("./R/util.R")
 
 #' Subcollection
-#' 
+#'
 #' Subcollection class represents a folder inside Arvados collection.
 #' It is essentially a composite of arvadosFiles and other subcollections.
-#' 
+#'
 #' @section Usage:
 #' \preformatted{subcollection = Subcollection$new(name)}
 #'
@@ -16,7 +16,7 @@ source("./R/util.R")
 #' \describe{
 #'   \item{name}{Name of the subcollection.}
 #' }
-#' 
+#'
 #' @section Methods:
 #' \describe{
 #'   \item{getName()}{Returns name of the subcollection.}
@@ -56,7 +56,7 @@ Subcollection <- R6::R6Class(
         },
 
         getName = function() private$name,
-        
+
         getRelativePath = function()
         {
             relativePath <- c(private$name)
@@ -87,7 +87,7 @@ Subcollection <- R6::R6Class(
                                "or Subcollection with same name."))
 
                 if(!is.null(private$collection))
-                {       
+                {
                     if(self$getRelativePath() != "")
                         contentPath <- paste0(self$getRelativePath(),
                                               "/", content$getFileListing())
@@ -302,7 +302,7 @@ Subcollection <- R6::R6Class(
             content
         }
     ),
-    
+
     cloneable = FALSE
 )
 
@@ -312,7 +312,7 @@ Subcollection <- R6::R6Class(
 #'
 #' @param x Instance of Subcollection class
 #' @param ... Optional arguments.
-#' @export 
+#' @export
 print.Subcollection = function(x, ...)
 {
     collection   <- NULL

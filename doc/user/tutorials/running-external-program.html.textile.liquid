@@ -56,7 +56,7 @@ See the "run-command reference":{{site.baseurl}}/user/topics/run-command.html fo
 <pre><code>~$ <span class="userinput">git rev-parse HEAD</span></code></pre>
 </notextile>
 
-* @"docker_image"@ : The docker image hash used is found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address*.
+* @"docker_image"@ : The docker image hash used is found on the "Collection page":https://playground.arvados.org/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address*.
 
 h2. Running your pipeline
 
@@ -82,4 +82,4 @@ Note: Job reuse can only happen if all input collections do not change.
 <pre><code>~$ <span class="userinput">git rev-parse HEAD</span></code></pre>
 </notextile>
 
-* @"docker_image"@ : This specifies the "Docker":https://www.docker.com/ runtime environment where jobs run their scripts. Docker version control is similar to git, and you can commit and push changes to your images. You must re-use the docker image hash from the previous run to use the same image. It can be found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address* or the *docker_image_locator* in a job's metadata.
+* @"docker_image"@ : This specifies the "Docker":https://www.docker.com/ runtime environment where jobs run their scripts. Docker version control is similar to git, and you can commit and push changes to your images. You must re-use the docker image hash from the previous run to use the same image. It can be found on the "Collection page":https://playground.arvados.org/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address* or the *docker_image_locator* in a job's metadata.

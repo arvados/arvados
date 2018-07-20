@@ -6,10 +6,12 @@ package main
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -292,6 +294,76 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	bodyPart = hdrsAndBody[1]
 	bodySize = int64(len(bodyPart)) + discarded
 	return
+}
+
+func (s *IntegrationSuite) TestMetrics(c *check.C) {
+	origin := "http://" + s.testServer.Addr
+	req, _ := http.NewRequest("GET", origin+"/notfound", nil)
+	_, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	req, _ = http.NewRequest("GET", origin+"/by_id/", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	req, _ = http.NewRequest("GET", origin+"/foo", nil)
+	req.Host = arvadostest.FooCollection + ".example.com"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	buf, _ := ioutil.ReadAll(resp.Body)
+	c.Check(buf, check.DeepEquals, []byte("foo"))
+
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	type summary struct {
+		SampleCount string  `json:"sample_count"`
+		SampleSum   float64 `json:"sample_sum"`
+		Quantile    []struct {
+			Quantile float64
+			Value    float64
+		}
+	}
+	var ents []struct {
+		Name   string
+		Help   string
+		Type   string
+		Metric []struct {
+			Label []struct {
+				Name  string
+				Value string
+			}
+			Summary summary
+		}
+	}
+	json.NewDecoder(resp.Body).Decode(&ents)
+	flat := map[string]summary{}
+	for _, e := range ents {
+		for _, m := range e.Metric {
+			labels := map[string]string{}
+			for _, lbl := range m.Label {
+				labels[lbl.Name] = lbl.Value
+			}
+			flat[e.Name+"/"+labels["method"]+"/"+labels["code"]] = m.Summary
+		}
+	}
+	c.Check(flat["request_duration_seconds/get/200"].SampleSum, check.Not(check.Equals), 0)
+	c.Check(flat["request_duration_seconds/get/200"].SampleCount, check.Equals, "2")
+	c.Check(flat["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
+	c.Check(flat["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
+
+	// If the Host header indicates a collection, /metrics.json
+	// refers to a file in the collection -- the metrics handler
+	// must not intercept that route.
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req.Host = strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + ".example.com"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {

@@ -153,14 +153,14 @@ FakeRESTService <- R6::R6Class(
             self$returnContent
         },
 
-        write = function(uuid, relativePath, content, contentType)
+        write = function(relativePath, uuid, content, contentType)
         {
             self$writeBuffer <- content
             self$writeCallCount <- self$writeCallCount + 1
             self$returnContent
         },
 
-        getConnection = function(relativePath, uuid, openMode)
+        getConnection = function(uuid, relativePath, openMode)
         {
             self$getConnectionCallCount <- self$getConnectionCallCount + 1
             self$returnContent

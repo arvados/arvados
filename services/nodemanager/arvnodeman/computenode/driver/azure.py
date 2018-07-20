@@ -89,8 +89,8 @@ echo %s > /var/tmp/arv-node-data/meta-data/instance-type
         for n in nodes:
             # Need to populate Node.size
             if not n.size:
-                n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
-            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size')
+                n.size = self.sizes()[n.extra["properties"]["hardwareProfile"]["vmSize"]]
+            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size') or n.size.id
         return nodes
 
     def broken(self, cloud_node):

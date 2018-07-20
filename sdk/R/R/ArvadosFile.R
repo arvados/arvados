@@ -5,9 +5,9 @@
 source("./R/util.R")
 
 #' ArvadosFile
-#' 
+#'
 #' ArvadosFile class represents a file inside Arvados collection.
-#' 
+#'
 #' @section Usage:
 #' \preformatted{file = ArvadosFile$new(name)}
 #'
@@ -15,7 +15,7 @@ source("./R/util.R")
 #' \describe{
 #'   \item{name}{Name of the file.}
 #' }
-#' 
+#'
 #' @section Methods:
 #' \describe{
 #'   \item{getName()}{Returns name of the file.}
@@ -37,7 +37,7 @@ source("./R/util.R")
 #' myFile$write("This is new file content")
 #' fileContent <- myFile$read()
 #' fileContent <- myFile$read("text")
-#' fileContent <- myFile$read("raw", offset = 8, length = 4) 
+#' fileContent <- myFile$read("raw", offset = 8, length = 4)
 #'
 #' #Write a table:
 #' arvConnection <- myFile$connection("w")
@@ -141,14 +141,14 @@ ArvadosFile <- R6::R6Class(
 
         connection = function(rw)
         {
-            if (rw == "r" || rw == "rb") 
+            if (rw == "r" || rw == "rb")
             {
                 REST <- private$collection$getRESTService()
-                return(REST$getConnection(private$collection$uuid,
-                                          self$getRelativePath(),
+                return(REST$getConnection(self$getRelativePath(),
+                                          private$collection$uuid,
                                           rw))
             }
-            else if (rw == "w") 
+            else if (rw == "w")
             {
                 private$buffer <- textConnection(NULL, "w")
 
@@ -156,7 +156,7 @@ ArvadosFile <- R6::R6Class(
             }
         },
 
-        flush = function() 
+        flush = function()
         {
             v <- textConnectionValue(private$buffer)
             close(private$buffer)
@@ -255,7 +255,7 @@ ArvadosFile <- R6::R6Class(
 #'
 #' @param x Instance of ArvadosFile class
 #' @param ... Optional arguments.
-#' @export 
+#' @export
 print.ArvadosFile = function(x, ...)
 {
     collection   <- NULL

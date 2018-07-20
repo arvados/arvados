@@ -38,7 +38,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
-        self._sizes_by_id = {sz.id: sz for sz in self.sizes.itervalues()}
         self._disktype_links = {dt.name: self._object_link(dt)
                                 for dt in self.real.ex_list_disktypes()}
 
@@ -120,9 +119,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             # It's supposed to be the actual size object.  Check that it's not,
             # and monkeypatch the results when that's the case.
             if not hasattr(node.size, 'id'):
-                node.size = self._sizes_by_id[node.size]
+                node.size = self.sizes()[node.size]
             # Get arvados-assigned cloud size id
-            node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size')
+            node.extra['arvados_node_size'] = node.extra.get('metadata', {}).get('arvados_node_size') or node.size.id
         return nodelist
 
     @classmethod

@@ -110,8 +110,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         nodes = super(ComputeNodeDriver, self).list_nodes()
         for n in nodes:
             if not n.size:
-                n.size = self.sizes[n.extra["instance_type"]]
-            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size')
+                n.size = self.sizes()[n.extra["instance_type"]]
+            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size') or n.size.id
         return nodes
 
     @classmethod
