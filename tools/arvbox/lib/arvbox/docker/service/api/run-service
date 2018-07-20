@@ -31,6 +31,4 @@ if test "$1" = "--only-setup" ; then
     exit
 fi
 
-exec bundle exec passenger start --port=${services[api]} \
-                  --ssl --ssl-certificate=/var/lib/arvados/self-signed.pem \
-                  --ssl-certificate-key=/var/lib/arvados/self-signed.key
+exec bundle exec passenger start --port=${services[api]}

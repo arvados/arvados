@@ -10,7 +10,7 @@ set -eux -o pipefail
 
 mkdir -p /var/lib/arvados/git
 
-export ARVADOS_API_HOST=$localip:${services[api]}
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
 
@@ -112,7 +112,7 @@ cat > config/arvados-clients.yml <<EOF
 $RAILS_ENV:
   gitolite_url: /var/lib/arvados/git/repositories/gitolite-admin.git
   gitolite_tmp: /var/lib/arvados/git
-  arvados_api_host: $localip:${services[api]}
+  arvados_api_host: $localip:${services[controller-ssl]}
   arvados_api_token: "$ARVADOS_API_TOKEN"
   arvados_api_host_insecure: true
   gitolite_arvados_git_user_key: "$git_user_key"

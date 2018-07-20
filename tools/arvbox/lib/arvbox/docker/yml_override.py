@@ -4,14 +4,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import yaml
+import sys
+
+fn = sys.argv[1]
 
 try:
-    with open("application.yml.override") as f:
+    with open(fn+".override") as f:
         b = yaml.load(f)
 except IOError:
     exit()
 
-with open("application.yml") as f:
+with open(fn) as f:
     a = yaml.load(f)
 
 def recursiveMerge(a, b):
@@ -23,5 +26,5 @@ def recursiveMerge(a, b):
     else:
         return b
 
-with open("application.yml", "w") as f:
+with open(fn, "w") as f:
     yaml.dump(recursiveMerge(a, b), f)
