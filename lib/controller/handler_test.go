@@ -34,11 +34,12 @@ type HandlerSuite struct {
 
 func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
-		ClusterID: "zzzzz",
+		ClusterID:  "zzzzz",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": {
 				Controller: arvados.SystemServiceInstance{Listen: ":"},
-				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true},
+				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
 			},
 		},
 	}
@@ -65,12 +66,12 @@ func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
+	c.Check(resp.Code, check.Equals, http.StatusBadGateway)
 	var jresp httpserver.ErrorResponse
 	err := json.Unmarshal(resp.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
 	c.Assert(len(jresp.Errors), check.Equals, 1)
-	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded`)
+	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded.*`)
 }
 
 func (s *HandlerSuite) TestProxyWithoutToken(c *check.C) {
@@ -101,6 +102,7 @@ func (s *HandlerSuite) TestProxyWithTokenInRequestBody(c *check.C) {
 		"_method":   {"GET"},
 		"api_token": {arvadostest.ActiveToken},
 	}.Encode()))
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
@@ -122,9 +124,9 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 }
 
 func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
-	req := httptest.NewRequest("GET", "https://example.org:1234/login?return_to=foo", nil)
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusFound)
-	c.Check(resp.Header().Get("Location"), check.Matches, `https://example\.org:1234/auth/joshid\?return_to=foo&?`)
+	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=foo&?`)
 }
