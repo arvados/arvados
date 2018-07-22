@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import FilterBuilder from "./filter-builder";
-import OrderBuilder from "./order-builder";
+import { FilterBuilder } from "./filter-builder";
+import { OrderBuilder } from "./order-builder";
 import { AxiosInstance } from "axios";
 import { Resource } from "../../models/resource";
 
@@ -26,7 +26,7 @@ export interface ListResults<T> {
     itemsAvailable: number;
 }
 
-export default class CommonResourceService<T extends Resource> {
+export class CommonResourceService<T extends Resource> {
 
     static mapResponseKeys = (response: any): Promise<any> =>
         CommonResourceService.mapKeys(_.camelCase)(response.data)
@@ -92,6 +92,5 @@ export default class CommonResourceService<T extends Resource> {
     update(uuid: string) {
         throw new Error("Not implemented");
     }
-
 }
 

@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import actions, { SidePanelAction } from './side-panel-action';
+import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
 
 export type SidePanelState = SidePanelItem[];
 
-const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
+export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
     if (state.length === 0) {
         return sidePanelData;
     } else {
-        return actions.match(action, {
+        return sidePanelActions.match(action, {
             TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId => state.map(it => itemId === it.id && it.open === false ? {...it, open: true} : {...it, open: false}),
             TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
                 const sidePanel = _.cloneDeep(state);
@@ -91,5 +91,3 @@ function resetSidePanelActivity(sidePanel: SidePanelItem[]) {
         t.active = false;
     }
 }
-
-export default sidePanelReducer;

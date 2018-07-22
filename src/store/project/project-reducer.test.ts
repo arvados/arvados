@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import projectsReducer, { getTreePath } from "./project-reducer";
-import actions from "./project-action";
+import { projectsReducer, getTreePath } from "./project-reducer";
+import { projectActions } from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { mockProjectResource } from "../../models/test-utils";
 
@@ -13,7 +13,7 @@ describe('project-reducer', () => {
         const initialState = undefined;
 
         const projects = [mockProjectResource({ uuid: "1" }), mockProjectResource({ uuid: "2" })];
-        const state = projectsReducer(initialState, actions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
+        const state = projectsReducer(initialState, projectActions.PROJECTS_SUCCESS({ projects, parentItemId: undefined }));
         expect(state).toEqual({
             items: [{
                 active: false,
@@ -64,7 +64,7 @@ describe('project-reducer', () => {
             creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
-        const state = projectsReducer(initialState, actions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
+        const state = projectsReducer(initialState, projectActions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
@@ -93,7 +93,7 @@ describe('project-reducer', () => {
             creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
+        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 
@@ -124,7 +124,7 @@ describe('project-reducer', () => {
             creator: { opened: false, pending: false, ownerUuid: "" },
         };
 
-        const state = projectsReducer(initialState, actions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
+        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
         expect(state).toEqual(project);
     });
 });

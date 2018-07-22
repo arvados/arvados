@@ -4,10 +4,10 @@
 
 import { connect } from "react-redux";
 import { RootState } from "../../store/store";
-import DataExplorer from "../../components/data-explorer/data-explorer";
+import { DataExplorer as DataExplorerComponent } from "../../components/data-explorer/data-explorer";
 import { getDataExplorer } from "../../store/data-explorer/data-explorer-reducer";
 import { Dispatch } from "redux";
-import actions from "../../store/data-explorer/data-explorer-action";
+import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { DataColumn } from "../../components/data-table/data-column";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 
@@ -24,35 +24,35 @@ const mapStateToProps = (state: RootState, { id }: Props) =>
 
 const mapDispatchToProps = (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
     onSearch: (searchValue: string) => {
-        dispatch(actions.SET_SEARCH_VALUE({ id, searchValue }));
+        dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
     },
 
     onColumnToggle: (column: DataColumn<any>) => {
-        dispatch(actions.TOGGLE_COLUMN({ id, columnName: column.name }));
+        dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
     },
 
     onSortToggle: (column: DataColumn<any>) => {
-        dispatch(actions.TOGGLE_SORT({ id, columnName: column.name }));
+        dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
     },
 
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
-        dispatch(actions.SET_FILTERS({ id, columnName: column.name, filters }));
+        dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
     },
 
     onChangePage: (page: number) => {
-        dispatch(actions.SET_PAGE({ id, page }));
+        dispatch(dataExplorerActions.SET_PAGE({ id, page }));
     },
 
     onChangeRowsPerPage: (rowsPerPage: number) => {
-        dispatch(actions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
+        dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
     },
 
     onRowClick,
 
     onRowDoubleClick,
-    
+
     onContextMenu,
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(DataExplorer);
+export const DataExplorer = connect(mapStateToProps, mapDispatchToProps)(DataExplorerComponent);
 

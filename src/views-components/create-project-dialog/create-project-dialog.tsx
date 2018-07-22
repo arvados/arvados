@@ -5,9 +5,9 @@
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { RootState } from "../../store/store";
-import DialogProjectCreate from "../dialog-create/dialog-project-create";
-import actions, { createProject, getProjectList } from "../../store/project/project-action";
-import dataExplorerActions from "../../store/data-explorer/data-explorer-action";
+import { DialogProjectCreate as DialogProjectCreateComponent } from "../dialog-create/dialog-project-create";
+import { projectActions, createProject, getProjectList } from "../../store/project/project-action";
+import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 
 const mapStateToProps = (state: RootState) => ({
@@ -25,11 +25,11 @@ const submit = (data: { name: string, description: string }) =>
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleClose: () => {
-        dispatch(actions.CLOSE_PROJECT_CREATOR());
+        dispatch(projectActions.CLOSE_PROJECT_CREATOR());
     },
     onSubmit: (data: { name: string, description: string }) => {
         dispatch<any>(submit(data));
     }
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(DialogProjectCreate);
+export const CreateProjectDialog = connect(mapStateToProps, mapDispatchToProps)(DialogProjectCreateComponent);

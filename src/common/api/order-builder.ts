@@ -5,14 +5,14 @@
 import * as _ from "lodash";
 import { Resource } from "../../models/resource";
 
-export default class OrderBuilder<T extends Resource = Resource> {
+export class OrderBuilder<T extends Resource = Resource> {
 
     static create<T extends Resource = Resource>(prefix?: string){
         return new OrderBuilder<T>([], prefix);
     }
 
     private constructor(
-        private order: string[] = [], 
+        private order: string[] = [],
         private prefix = ""){}
 
     private addRule (direction: string, attribute: keyof T) {

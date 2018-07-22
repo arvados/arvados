@@ -13,9 +13,7 @@ export interface PopoverProps {
     closeOnContentClick?: boolean;
 }
 
-
-class Popover extends React.Component<PopoverProps> {
-
+export class Popover extends React.Component<PopoverProps> {
     state = {
         anchorEl: undefined
     };
@@ -57,7 +55,6 @@ class Popover extends React.Component<PopoverProps> {
             this.handleClose();
         }
     }
-
 }
 
 export const DefaultTrigger: React.SFC<IconButtonProps> = (props) => (
@@ -65,5 +62,3 @@ export const DefaultTrigger: React.SFC<IconButtonProps> = (props) => (
         <i className="fas" />
     </IconButton>
 );
-
-export default Popover;

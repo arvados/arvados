@@ -6,7 +6,7 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 import { DataColumns } from "../../components/data-table/data-table";
 
-const actions = unionize({
+export const dataExplorerActions = unionize({
     RESET_PAGINATION: ofType<{ id: string }>(),
     REQUEST_ITEMS: ofType<{ id: string }>(),
     SET_COLUMNS: ofType<{ id: string, columns: DataColumns<any> }>(),
@@ -19,6 +19,4 @@ const actions = unionize({
     SET_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
 }, { tag: "type", value: "payload" });
 
-export type DataExplorerAction = UnionOf<typeof actions>;
-
-export default actions;
+export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
