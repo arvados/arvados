@@ -31,7 +31,7 @@ import { contextMenuActions } from "../../store/context-menu/context-menu-action
 import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
-import { ContextMenuHOC, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -195,7 +195,7 @@ export const Workbench = withStyles(styles)(
                             </div>
                             { user && <DetailsPanel /> }
                         </main>
-                        <ContextMenuHOC />
+                        <ContextMenu />
                         <CreateProjectDialog />
                     </div>
                 );
