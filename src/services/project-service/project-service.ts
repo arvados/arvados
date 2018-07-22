@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import GroupsService, { ContentsArguments } from "../groups-service/groups-service";
+import { GroupsService, ContentsArguments } from "../groups-service/groups-service";
 import { ProjectResource } from "../../models/project";
 import { GroupClass } from "../../models/group";
 import { ListArguments } from "../../common/api/common-resource-service";
-import FilterBuilder from "../../common/api/filter-builder";
+import { FilterBuilder } from "../../common/api/filter-builder";
 
-export default class ProjectService extends GroupsService<ProjectResource> {
+export class ProjectService extends GroupsService<ProjectResource> {
 
     create(data: Partial<ProjectResource>) {
         const projectData = { ...data, groupClass: GroupClass.Project };

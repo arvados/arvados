@@ -4,14 +4,14 @@
 
 import * as React from 'react';
 import { ProjectIcon } from '../../icon/icon';
-import Attribute from '../../attribute/attribute';
-import AbstractItem from './abstract-item';
+import { Attribute } from '../../attribute/attribute';
+import { AbstractItem } from './abstract-item';
 import { ProjectResource } from '../../../models/project';
 import { formatDate } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
 import { resourceLabel } from '../../../common/labels';
 
-export default class ProjectItem extends AbstractItem<ProjectResource> {
+export class ProjectItem extends AbstractItem<ProjectResource> {
 
     getIcon(className?: string) {
         return <ProjectIcon className={className} />;

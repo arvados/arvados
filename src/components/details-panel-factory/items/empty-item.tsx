@@ -4,12 +4,12 @@
 
 import * as React from 'react';
 import { DefaultIcon, ProjectsIcon } from '../../icon/icon';
-import AbstractItem from './abstract-item';
-import EmptyState from '../../empty-state/empty-state';
+import { AbstractItem } from './abstract-item';
+import { EmptyState } from '../../empty-state/empty-state';
 import { EmptyResource } from '../../../models/empty';
 
-export default class EmptyItem extends AbstractItem<EmptyResource> {
-    
+export class EmptyItem extends AbstractItem<EmptyResource> {
+
     getIcon(className?: string) {
         return <ProjectsIcon className={className} />;
     }

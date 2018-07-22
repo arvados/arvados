@@ -8,30 +8,6 @@ import { WithStyles, withStyles, StyleRulesCallback } from '@material-ui/core/st
 import { ArvadosTheme } from 'src/common/custom-theme';
 import { IconType } from '../icon/icon';
 
-export interface EmptyStateDataProps {
-    message: string;
-    icon: IconType;
-    details?: string;
-}
-
-type EmptyStateProps = EmptyStateDataProps & WithStyles<CssRules>;
-
-class EmptyState extends React.Component<EmptyStateProps, {}> {
-
-    render() {
-        const { classes, message, details, icon: Icon, children } = this.props;
-        return (
-            <Typography className={classes.container} component="div">
-                <Icon className={classes.icon} />
-                <Typography variant="body1" gutterBottom>{message}</Typography>
-                { details && <Typography gutterBottom>{details}</Typography> }
-                { children && <Typography gutterBottom>{children}</Typography> }
-            </Typography>
-        );
-    }
-
-}
-
 type CssRules = 'container' | 'icon';
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
@@ -43,4 +19,26 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export default withStyles(styles)(EmptyState);
+export interface EmptyStateDataProps {
+    message: string;
+    icon: IconType;
+    details?: string;
+}
+
+type EmptyStateProps = EmptyStateDataProps & WithStyles<CssRules>;
+
+export const EmptyState = withStyles(styles)(
+    class extends React.Component<EmptyStateProps, {}> {
+        render() {
+            const {classes, message, details, icon: Icon, children} = this.props;
+            return (
+                <Typography className={classes.container} component="div">
+                    <Icon className={classes.icon}/>
+                    <Typography variant="body1" gutterBottom>{message}</Typography>
+                    {details && <Typography gutterBottom>{details}</Typography>}
+                    {children && <Typography gutterBottom>{children}</Typography>}
+                </Typography>
+            );
+        }
+    }
+);

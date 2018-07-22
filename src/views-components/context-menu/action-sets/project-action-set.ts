@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import actions from "../../../store/project/project-action";
+import { projectActions } from "../../../store/project/project-action";
 import { ShareIcon, NewProjectIcon  } from "../../../components/icon/icon";
 
 export const projectActionSet: ContextMenuActionSet = [[{
     icon: NewProjectIcon,
     name: "New project",
     execute: (dispatch, resource) => {
-        dispatch(actions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
+        dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
     }
 }, {
     icon: ShareIcon,

@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import ProjectItem from './items/project-item';
-import CollectionItem from './items/collection-item';
-import ProcessItem from './items/process-item';
-import AbstractItem from './items/abstract-item';
-import EmptyItem from './items/empty-item';
+import { ProjectItem } from './items/project-item';
+import { CollectionItem } from './items/collection-item';
+import { ProcessItem } from './items/process-item';
+import { AbstractItem } from './items/abstract-item';
+import { EmptyItem } from './items/empty-item';
 import { DetailsPanelResource } from '../../views-components/details-panel/details-panel';
 import { EmptyResource } from '../../models/empty';
 import { ResourceKind } from '../../models/resource';
 
-export default class DetailsPanelFactory {
+export class DetailsPanelFactory {
     static createItem(res: DetailsPanelResource): AbstractItem {
         switch (res.kind) {
             case ResourceKind.Project:

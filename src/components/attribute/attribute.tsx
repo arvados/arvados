@@ -7,37 +7,6 @@ import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
 
-interface AttributeDataProps {
-    label: string;
-    value?: string | number;
-    link?: string;
-}
-
-type AttributeProps = AttributeDataProps & WithStyles<CssRules>;
-
-class Attribute extends React.Component<AttributeProps> {
-
-    hasLink() {
-        return !!this.props.link;
-    }
-
-    render() {
-        const { label, link, value, children, classes } = this.props;
-        return <Typography component="div" className={classes.attribute}>
-                    <Typography component="span" className={classes.label}>{label}</Typography>
-                    { this.hasLink() ? (
-                        <a href='{link}' className={classes.link} target='_blank'>{value}</a>
-                    ) : (
-                        <Typography component="span" className={classes.value}>
-                            {value}
-                            {children}
-                        </Typography>
-                    )}
-                </Typography>;
-    }
-
-}
-
 type CssRules = 'attribute' | 'label' | 'value' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -64,4 +33,23 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export default withStyles(styles)(Attribute);
+interface AttributeDataProps {
+    label: string;
+    value?: string | number;
+    link?: string;
+    children?: React.ReactNode;
+}
+
+type AttributeProps = AttributeDataProps & WithStyles<CssRules>;
+
+export const Attribute = withStyles(styles)(({ label, link, value, children, classes }: AttributeProps) =>
+    <Typography component="div" className={classes.attribute}>
+        <Typography component="span" className={classes.label}>{label}</Typography>
+        { link
+            ? <a href={link} className={classes.link} target='_blank'>{value}</a>
+            : <Typography component="span" className={classes.value}>
+                {value}
+                {children}
+            </Typography> }
+    </Typography>
+);

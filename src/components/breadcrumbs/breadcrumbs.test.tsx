@@ -6,7 +6,7 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 
 import * as Adapter from "enzyme-adapter-react-16";
-import Breadcrumbs from "./breadcrumbs";
+import { Breadcrumbs } from "./breadcrumbs";
 import { Button } from "@material-ui/core";
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 

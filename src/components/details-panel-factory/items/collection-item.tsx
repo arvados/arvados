@@ -4,14 +4,14 @@
 
 import * as React from 'react';
 import { CollectionIcon } from '../../icon/icon';
-import Attribute from '../../attribute/attribute';
-import AbstractItem from './abstract-item';
+import { Attribute } from '../../attribute/attribute';
+import { AbstractItem } from './abstract-item';
 import { CollectionResource } from '../../../models/collection';
 import { formatDate } from '../../../common/formatters';
 import { resourceLabel } from '../../../common/labels';
 import { ResourceKind } from '../../../models/resource';
 
-export default class CollectionItem extends AbstractItem<CollectionResource> {
+export class CollectionItem extends AbstractItem<CollectionResource> {
 
     getIcon(className?: string) {
         return <CollectionIcon className={className} />;

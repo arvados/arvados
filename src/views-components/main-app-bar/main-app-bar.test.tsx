@@ -5,10 +5,10 @@
 import * as React from "react";
 import { mount, configure, ReactWrapper } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
-import MainAppBar from "./main-app-bar";
-import SearchBar from "../../components/search-bar/search-bar";
-import Breadcrumbs from "../../components/breadcrumbs/breadcrumbs";
-import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
+import { MainAppBar } from "./main-app-bar";
+import { SearchBar } from "../../components/search-bar/search-bar";
+import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
+import { DropdownMenu } from "../../components/dropdown-menu/dropdown-menu";
 import { Button, MenuItem, IconButton } from "@material-ui/core";
 import { User } from "../../models/user";
 

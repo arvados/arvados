@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import actions, { DetailsPanelAction } from "./details-panel-action";
+import { detailsPanelActions, DetailsPanelAction } from "./details-panel-action";
 import { Resource } from "../../models/resource";
 
 export interface DetailsPanelState {
@@ -15,12 +15,10 @@ const initialState = {
     isOpened: false
 };
 
-const reducer = (state: DetailsPanelState = initialState, action: DetailsPanelAction) =>
-    actions.match(action, {
+export const detailsPanelReducer = (state: DetailsPanelState = initialState, action: DetailsPanelAction) =>
+    detailsPanelActions.match(action, {
         default: () => state,
         LOAD_DETAILS: () => state,
         LOAD_DETAILS_SUCCESS: ({ item }) => ({ ...state, item }),
         TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened })
     });
-
-export default reducer;

@@ -4,14 +4,14 @@
 
 import * as React from 'react';
 import { ProcessIcon } from '../../icon/icon';
-import Attribute from '../../attribute/attribute';
-import AbstractItem from './abstract-item';
+import { Attribute } from '../../attribute/attribute';
+import { AbstractItem } from './abstract-item';
 import { ProcessResource } from '../../../models/process';
 import { formatDate } from '../../../common/formatters';
 import { ResourceKind } from '../../../models/resource';
 import { resourceLabel } from '../../../common/labels';
 
-export default class ProcessItem extends AbstractItem<ProcessResource> {
+export class ProcessItem extends AbstractItem<ProcessResource> {
 
     getIcon(className?: string){
         return <ProcessIcon className={className} />;
@@ -26,7 +26,7 @@ export default class ProcessItem extends AbstractItem<ProcessResource> {
             {/* Missing attr */}
             <Attribute label='Status' value={this.item.state} />
             <Attribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
-            
+
             {/* Missing attrs */}
             <Attribute label='Started at' value={formatDate(this.item.createdAt)} />
             <Attribute label='Finished at' value={formatDate(this.item.expiresAt)} />
@@ -35,7 +35,7 @@ export default class ProcessItem extends AbstractItem<ProcessResource> {
             <Attribute label='Outputs' link={this.item.outputPath} value={this.item.outputPath} />
             <Attribute label='UUID' link={this.item.uuid} value={this.item.uuid} />
             <Attribute label='Container UUID' link={this.item.containerUuid} value={this.item.containerUuid} />
-            
+
             <Attribute label='Priority' value={this.item.priority} />
             <Attribute label='Runtime Constraints' value={this.item.runtimeConstraints} />
             {/* Link but we dont have view */}
