@@ -35,5 +35,4 @@ export interface ContainerRequestResource extends Resource {
     logUuid: string;
     outputUuid: string;
     filters: string;
-
 }

@@ -10,14 +10,16 @@ import * as classnames from "classnames";
 import { connect } from 'react-redux';
 import { RootState } from '../../store/store';
 import { detailsPanelActions } from "../../store/details-panel/details-panel-action";
-import { ProjectResource } from '../../models/project';
-import { CollectionResource } from '../../models/collection';
 import { CloseIcon } from '../../components/icon/icon';
-import { ProcessResource } from '../../models/process';
-import { DetailsPanelFactory } from '../../components/details-panel-factory/details-panel-factory';
-import { AbstractItem } from '../../components/details-panel-factory/items/abstract-item';
 import { EmptyResource } from '../../models/empty';
 import { Dispatch } from "redux";
+import { ResourceKind } from "../../models/resource";
+import { ProjectDetails } from "./project-details";
+import { CollectionDetails } from "./collection-details";
+import { ProcessDetails } from "./process-details";
+import { EmptyDetails } from "./empty-details";
+import { DetailsData } from "./details-data";
+import { DetailsResource } from "../../models/details";
 
 type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -50,24 +52,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-
-export type DetailsPanelResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource;
-
-const getItem = (res: DetailsPanelResource) => {
-    return DetailsPanelFactory.createItem(res);
+const getItem = (resource: DetailsResource): DetailsData => {
+    const res = resource || { kind: undefined, name: 'Projects' };
+    switch (res.kind) {
+        case ResourceKind.Project:
+            return new ProjectDetails(res);
+        case ResourceKind.Collection:
+            return new CollectionDetails(res);
+        case ResourceKind.Process:
+            return new ProcessDetails(res);
+        default:
+            return new EmptyDetails(res as EmptyResource);
+    }
 };
 
-const getDefaultItem = () => {
-    return DetailsPanelFactory.createItem({ kind: undefined, name: 'Projects' });
-};
-
-const mapStateToProps = ({ detailsPanel }: RootState) => {
-    const { isOpened, item } = detailsPanel;
-    return {
-        isOpened,
-        item: item ? getItem(item as DetailsPanelResource) : getDefaultItem()
-    };
-};
+const mapStateToProps = ({ detailsPanel }: RootState) => ({
+    isOpened: detailsPanel.isOpened,
+    item: getItem(detailsPanel.item as DetailsResource)
+});
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {
@@ -78,14 +80,14 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     isOpened: boolean;
-    item: AbstractItem;
+    item: DetailsData;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
 
 export const DetailsPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
-        class extends React.Component<DetailsPanelProps, {}> {
+        class extends React.Component<DetailsPanelProps> {
             state = {
                 tabsValue: 0
             };
@@ -129,7 +131,7 @@ export const DetailsPanel = withStyles(styles)(
                             </Tabs>
                             {tabsValue === 0 && this.renderTabContainer(
                                 <Grid container direction="column">
-                                    {item.buildDetails()}
+                                    {item.getDetails()}
                                 </Grid>
                             )}
                             {tabsValue === 1 && this.renderTabContainer(

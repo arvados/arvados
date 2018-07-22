@@ -33,16 +33,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-interface AttributeDataProps {
+interface DetailsAttributeDataProps {
     label: string;
     value?: string | number;
     link?: string;
     children?: React.ReactNode;
 }
 
-type AttributeProps = AttributeDataProps & WithStyles<CssRules>;
+type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
-export const Attribute = withStyles(styles)(({ label, link, value, children, classes }: AttributeProps) =>
+export const DetailsAttribute = withStyles(styles)(({ label, link, value, children, classes }: DetailsAttributeProps) =>
     <Typography component="div" className={classes.attribute}>
         <Typography component="span" className={classes.label}>{label}</Typography>
         { link
