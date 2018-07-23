@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import CommonResourceService from "./common-resource-service";
+import { CommonResourceService } from "./common-resource-service";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 

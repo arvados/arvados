@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { authService } from "../../services/services";
 import { User } from "../../models/user";
 
-const actions = unionize({
+export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
     LOGIN: {},
     LOGOUT: {},
@@ -20,13 +20,11 @@ const actions = unionize({
 });
 
 export const getUserDetails = () => (dispatch: Dispatch): Promise<User> => {
-    dispatch(actions.USER_DETAILS_REQUEST());
+    dispatch(authActions.USER_DETAILS_REQUEST());
     return authService.getUserDetails().then(details => {
-        dispatch(actions.USER_DETAILS_SUCCESS(details));
+        dispatch(authActions.USER_DETAILS_SUCCESS(details));
         return details;
     });
 };
 
-
-export type AuthAction = UnionOf<typeof actions>;
-export default actions;
+export type AuthAction = UnionOf<typeof authActions>;

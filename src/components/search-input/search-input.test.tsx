@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { mount, configure } from "enzyme";
-import SearchInput, { DEFAULT_SEARCH_DEBOUNCE } from "./search-input";
+import { SearchInput, DEFAULT_SEARCH_DEBOUNCE } from "./search-input";
 
 import * as Adapter from 'enzyme-adapter-react-16';
 
@@ -61,7 +61,7 @@ describe("<SearchInput />", () => {
             jest.advanceTimersByTime(DEFAULT_SEARCH_DEBOUNCE);
             expect(onSearch).toBeCalledWith("current value");
         });
-        
+
         it("calls onSearch after the time specified in props has passed", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={2000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
@@ -70,7 +70,7 @@ describe("<SearchInput />", () => {
             jest.advanceTimersByTime(1000);
             expect(onSearch).toBeCalledWith("current value");
         });
-        
+
         it("calls onSearch only once after no change happened during the specified time", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
@@ -79,7 +79,7 @@ describe("<SearchInput />", () => {
             jest.advanceTimersByTime(1000);
             expect(onSearch).toHaveBeenCalledTimes(1);
         });
-        
+
         it("calls onSearch again after the specified time has passed since previous call", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
@@ -91,7 +91,7 @@ describe("<SearchInput />", () => {
             jest.advanceTimersByTime(1000);
             expect(onSearch).toBeCalledWith("latest value");
             expect(onSearch).toHaveBeenCalledTimes(2);
-            
+
         });
 
     });

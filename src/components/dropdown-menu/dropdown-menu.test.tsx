@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { shallow, configure } from "enzyme";
-import DropdownMenu from "./dropdown-menu";
+import { DropdownMenu } from "./dropdown-menu";
 import * as Adapter from 'enzyme-adapter-react-16';
 import { MenuItem, IconButton, Menu } from "@material-ui/core";
 import { PaginationRightArrowIcon } from "../icon/icon";
@@ -32,7 +32,7 @@ describe("<DropdownMenu />", () => {
         dropdownMenu.find(IconButton).simulate("click", {currentTarget: {}});
         expect(dropdownMenu.state().anchorEl).toBeDefined();
     });
-    
+
     it("closes on menu click", () => {
         const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
         dropdownMenu.find(Menu).simulate("click", {currentTarget: {}});

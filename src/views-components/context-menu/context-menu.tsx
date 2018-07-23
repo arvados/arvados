@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { connect, Dispatch, DispatchProp } from "react-redux";
+import { connect } from "react-redux";
 import { RootState } from "../../store/store";
-import actions from "../../store/context-menu/context-menu-actions";
-import ContextMenu, { ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
+import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
+import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
 import { createAnchorAt } from "../../components/popover/helpers";
 import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
+import { Dispatch } from "redux";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
@@ -23,10 +24,10 @@ const mapStateToProps = (state: RootState): DataProps => {
 type ActionProps = Pick<ContextMenuProps, "onClose"> & { onItemClick: (item: ContextMenuItem, resource?: ContextMenuResource) => void };
 const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     onClose: () => {
-        dispatch(actions.CLOSE_CONTEXT_MENU());
+        dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
     },
     onItemClick: (action: ContextMenuAction, resource?: ContextMenuResource) => {
-        dispatch(actions.CLOSE_CONTEXT_MENU());
+        dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
         if (resource) {
             action.execute(dispatch, resource);
         }
@@ -41,7 +42,7 @@ const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionPr
     }
 });
 
-export const ContextMenuHOC = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenu);
+export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
 
 const menuActionSets = new Map<string, ContextMenuActionSet>();
 
@@ -53,3 +54,7 @@ const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet 
     return resource ? menuActionSets.get(resource.kind) || [] : [];
 };
 
+export enum ContextMenuKind {
+    RootProject = "RootProject",
+    Project = "Project"
+}

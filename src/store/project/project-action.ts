@@ -6,10 +6,10 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { ProjectResource } from "../../models/project";
 import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
-import FilterBuilder from "../../common/api/filter-builder";
+import { FilterBuilder } from "../../common/api/filter-builder";
 import { RootState } from "../store";
 
-const actions = unionize({
+export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
     CLOSE_PROJECT_CREATOR: ofType<{}>(),
     CREATE_PROJECT: ofType<Partial<ProjectResource>>(),
@@ -27,13 +27,13 @@ const actions = unionize({
     });
 
 export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) => {
-    dispatch(actions.PROJECTS_REQUEST(parentUuid));
+    dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
     return projectService.list({
         filters: FilterBuilder
             .create<ProjectResource>()
             .addEqual("ownerUuid", parentUuid)
     }).then(({ items: projects }) => {
-        dispatch(actions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
+        dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
         return projects;
     });
 };
@@ -42,12 +42,11 @@ export const createProject = (project: Partial<ProjectResource>) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { ownerUuid } = getState().projects.creator;
         const projectData = { ownerUuid, ...project };
-        dispatch(actions.CREATE_PROJECT(projectData));
+        dispatch(projectActions.CREATE_PROJECT(projectData));
         return projectService
             .create(projectData)
-            .then(project => dispatch(actions.CREATE_PROJECT_SUCCESS(project)))
-            .catch(() => dispatch(actions.CREATE_PROJECT_ERROR("Could not create a project")));
+            .then(project => dispatch(projectActions.CREATE_PROJECT_SUCCESS(project)))
+            .catch(() => dispatch(projectActions.CREATE_PROJECT_ERROR("Could not create a project")));
     };
 
-export type ProjectAction = UnionOf<typeof actions>;
-export default actions;
+export type ProjectAction = UnionOf<typeof projectActions>;

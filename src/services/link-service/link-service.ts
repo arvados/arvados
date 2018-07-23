@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import CommonResourceService from "../../common/api/common-resource-service";
+import { CommonResourceService } from "../../common/api/common-resource-service";
 import { LinkResource } from "../../models/link";
 import { AxiosInstance } from "axios";
 
-export default class LinkService extends CommonResourceService<LinkResource> {
+export class LinkService extends CommonResourceService<LinkResource> {
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "links");
     }

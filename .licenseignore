@@ -10,3 +10,5 @@ cc-by-sa-3.0.txt
 README.md
 public/*
 .licenseignore
+.yarnrc
+.npmrc

@@ -12,8 +12,11 @@ interface DropdownMenuProps {
     icon: React.ReactElement<any>;
 }
 
-class DropdownMenu extends React.Component<DropdownMenuProps> {
+interface DropdownMenuState {
+    anchorEl: any;
+}
 
+export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMenuState> {
     state = {
         anchorEl: undefined
     };
@@ -57,6 +60,3 @@ class DropdownMenu extends React.Component<DropdownMenuProps> {
         this.setState({ anchorEl: event.currentTarget });
     }
 }
-
-
-export default DropdownMenu;

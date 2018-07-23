@@ -22,7 +22,7 @@ export interface UserDetailsResponse {
     is_admin: boolean;
 }
 
-export default class AuthService {
+export class AuthService {
 
     constructor(protected serverApi: AxiosInstance) { }
 

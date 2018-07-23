@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import LinkService from "../link-service/link-service";
-import GroupsService, { GroupContentsResource } from "../groups-service/groups-service";
+import { LinkService } from "../link-service/link-service";
+import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
 import { LinkResource, LinkClass } from "../../models/link";
-import FilterBuilder from "../../common/api/filter-builder";
+import { FilterBuilder } from "../../common/api/filter-builder";
 import { ListArguments, ListResults } from "../../common/api/common-resource-service";
-import OrderBuilder from "../../common/api/order-builder";
+import { OrderBuilder } from "../../common/api/order-builder";
 
 export interface FavoriteListArguments extends ListArguments {
     filters?: FilterBuilder<LinkResource>;
     order?: OrderBuilder<LinkResource>;
 }
-export default class FavoriteService {
+export class FavoriteService {
     constructor(
         private linkService: LinkService,
         private groupsService: GroupsService

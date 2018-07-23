@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataColumn, toggleSortDirection, resetSortDirection } from "../../components/data-table/data-column";
-import actions, { DataExplorerAction } from "./data-explorer-action";
+import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 import { DataColumns } from "../../components/data-table/data-table";
 
@@ -29,8 +29,8 @@ export const initialDataExplorer: DataExplorer = {
 
 export type DataExplorerState = Record<string, DataExplorer | undefined>;
 
-const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
-    actions.match(action, {
+export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
+    dataExplorerActions.match(action, {
         RESET_PAGINATION: ({ id }) =>
             update(state, id, explorer => ({ ...explorer, page: 0 })),
 
@@ -60,8 +60,6 @@ const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorer
 
         default: () => state
     });
-
-export default dataExplorerReducer;
 
 export const getDataExplorer = (state: DataExplorerState, id: string) =>
     state[id] || initialDataExplorer;

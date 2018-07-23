@@ -6,7 +6,7 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 
-import Popover, { DefaultTrigger } from "./popover";
+import { Popover, DefaultTrigger } from "./popover";
 import Button, { ButtonProps } from "@material-ui/core/Button";
 
 configure({ adapter: new Adapter() });
@@ -38,7 +38,7 @@ describe("<Popover />", () => {
         popover.find(DefaultTrigger).simulate("click");
         expect(popover.find(CustomTrigger)).toHaveLength(1);
     });
-    
+
     it("does not close if closeOnContentClick is not set", () => {
         const popover = mount(
             <Popover>
