@@ -5,8 +5,7 @@
 import * as _ from "lodash";
 import { Resource } from "../../models/resource";
 
-export default class FilterBuilder<T extends Resource = Resource> {
-
+export class FilterBuilder<T extends Resource = Resource> {
     static create<T extends Resource = Resource>(resourcePrefix = "") {
         return new FilterBuilder<T>(resourcePrefix);
     }
@@ -61,5 +60,4 @@ export default class FilterBuilder<T extends Resource = Resource> {
         }
         return this;
     }
-
 }

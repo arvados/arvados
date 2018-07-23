@@ -20,7 +20,7 @@ export interface ContextMenuProps {
     onClose: () => void;
 }
 
-export default class ContextMenu extends React.PureComponent<ContextMenuProps> {
+export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
         const { anchorEl, items, onClose, onItemClick} = this.props;
         return <Popover

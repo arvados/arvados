@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import FilterBuilder from "./filter-builder";
+import { FilterBuilder } from "./filter-builder";
 
 describe("FilterBuilder", () => {
 

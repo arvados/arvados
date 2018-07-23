@@ -7,7 +7,7 @@ import * as Enzyme from 'enzyme';
 import * as Adapter from 'enzyme-adapter-react-16';
 import ListItem from "@material-ui/core/ListItem/ListItem";
 
-import Tree, { TreeItem } from './tree';
+import { Tree, TreeItem } from './tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
 

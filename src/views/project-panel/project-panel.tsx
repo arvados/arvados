@@ -6,7 +6,7 @@ import * as React from 'react';
 import { ProjectPanelItem } from './project-panel-item';
 import { Grid, Typography, Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from '../../common/formatters';
-import DataExplorer from "../../views-components/data-explorer/data-explorer";
+import { DataExplorer } from "../../views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '../../components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
@@ -18,61 +18,6 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '../../components/icon/icon';
 import { ArvadosTheme } from '../../common/custom-theme';
-
-export const PROJECT_PANEL_ID = "projectPanel";
-
-export interface ProjectPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ContainerRequestState;
-}
-
-interface ProjectPanelDataProps {
-    currentItemId: string;
-}
-
-interface ProjectPanelActionProps {
-    onItemClick: (item: ProjectPanelItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: ProjectPanelItem) => void;
-    onItemRouteChange: (itemId: string) => void;
-}
-
-type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp
-                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
-
-class ProjectPanel extends React.Component<ProjectPanelProps> {
-    render() {
-        const { classes } = this.props;
-        return <div>
-            <div className={classes.toolbar}>
-                <Button color="primary" variant="raised" className={classes.button}>
-                    Create a collection
-                </Button>
-                <Button color="primary" variant="raised" className={classes.button}>
-                    Run a process
-                </Button>
-                <Button color="primary" onClick={this.handleNewProjectClick} variant="raised" className={classes.button}>
-                    New project
-                </Button>
-            </div>
-            <DataExplorer
-                id={PROJECT_PANEL_ID}
-                onRowClick={this.props.onItemClick}
-                onRowDoubleClick={this.props.onItemDoubleClick}
-                onContextMenu={this.props.onContextMenu}
-                extractKey={(item: ProjectPanelItem) => item.uuid} />
-        </div>;
-    }
-    
-    handleNewProjectClick = () => {
-        this.props.onDialogOpen(this.props.currentItemId);
-    }
-    componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
-        if (match.params.id !== currentItemId) {
-            onItemRouteChange(match.params.id);
-        }
-    }
-}
 
 type CssRules = "toolbar" | "button";
 
@@ -143,7 +88,10 @@ export enum ProjectPanelColumnNames {
     OWNER = "Owner",
     FILE_SIZE = "File size",
     LAST_MODIFIED = "Last modified"
+}
 
+export interface ProjectPanelFilter extends DataTableFilterItem {
+    type: ResourceKind | ContainerRequestState;
 }
 
 export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
@@ -221,5 +169,57 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     }
 ];
 
-export default withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(ProjectPanel));
+export const PROJECT_PANEL_ID = "projectPanel";
+
+interface ProjectPanelDataProps {
+    currentItemId: string;
+}
+
+interface ProjectPanelActionProps {
+    onItemClick: (item: ProjectPanelItem) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
+    onDialogOpen: (ownerUuid: string) => void;
+    onItemDoubleClick: (item: ProjectPanelItem) => void;
+    onItemRouteChange: (itemId: string) => void;
+}
+
+type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp
+                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+
+export const ProjectPanel = withStyles(styles)(
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+        class extends React.Component<ProjectPanelProps> {
+            render() {
+                const { classes } = this.props;
+                return <div>
+                    <div className={classes.toolbar}>
+                        <Button color="primary" variant="raised" className={classes.button}>
+                            Create a collection
+                        </Button>
+                        <Button color="primary" variant="raised" className={classes.button}>
+                            Run a process
+                        </Button>
+                        <Button color="primary" onClick={this.handleNewProjectClick} variant="raised" className={classes.button}>
+                            New project
+                        </Button>
+                    </div>
+                    <DataExplorer
+                        id={PROJECT_PANEL_ID}
+                        onRowClick={this.props.onItemClick}
+                        onRowDoubleClick={this.props.onItemDoubleClick}
+                        onContextMenu={this.props.onContextMenu}
+                        extractKey={(item: ProjectPanelItem) => item.uuid} />
+                </div>;
+            }
+
+            handleNewProjectClick = () => {
+                this.props.onDialogOpen(this.props.currentItemId);
+            }
+            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
+                if (match.params.id !== currentItemId) {
+                    onItemRouteChange(match.params.id);
+                }
+            }
+        }
+    )
+);

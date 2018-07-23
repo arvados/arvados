@@ -10,7 +10,7 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import { Collapse } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import ProjectTree from './project-tree';
+import { ProjectTree } from './project-tree';
 import { TreeItem } from '../../components/tree/tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
@@ -81,9 +81,9 @@ describe("ProjectTree component", () => {
                 ]
             }
         ];
-        const wrapper = mount(<ProjectTree 
-            projects={project} 
-            toggleOpen={jest.fn()} 
+        const wrapper = mount(<ProjectTree
+            projects={project}
+            toggleOpen={jest.fn()}
             toggleActive={jest.fn()}
             onContextMenu={jest.fn()} />);
 
@@ -98,9 +98,9 @@ describe("ProjectTree component", () => {
             active: true,
             status: 1
         };
-        const wrapper = mount(<ProjectTree 
-            projects={[project]} 
-            toggleOpen={jest.fn()} 
+        const wrapper = mount(<ProjectTree
+            projects={[project]}
+            toggleOpen={jest.fn()}
             toggleActive={jest.fn()}
             onContextMenu={jest.fn()} />);
 

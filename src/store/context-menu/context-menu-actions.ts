@@ -5,7 +5,7 @@
 import { default as unionize, ofType, UnionOf } from "unionize";
 import { ContextMenuPosition, ContextMenuResource } from "./context-menu-reducer";
 
-const actions = unionize({
+export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
     CLOSE_CONTEXT_MENU: ofType<{}>()
 }, {
@@ -13,5 +13,4 @@ const actions = unionize({
         value: 'payload'
     });
 
-export type ContextMenuAction = UnionOf<typeof actions>;
-export default actions;
+export type ContextMenuAction = UnionOf<typeof contextMenuActions>;
