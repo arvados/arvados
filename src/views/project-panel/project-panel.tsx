@@ -16,8 +16,9 @@ import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
 import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '../../components/icon/icon';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, FavoriteIcon } from '../../components/icon/icon';
 import { ArvadosTheme } from '../../common/custom-theme';
+import { FavoriteStar } from '../../views-components/favorite-star/favorite-star';
 
 type CssRules = "toolbar" | "button";
 
@@ -39,6 +40,11 @@ const renderName = (item: ProjectPanelItem) =>
         <Grid item>
             <Typography color="primary">
                 {item.name}
+            </Typography>
+        </Grid>
+        <Grid item>
+            <Typography variant="caption" style={{fontSize: '8px'}}>
+                <FavoriteStar resourceUuid={item.uuid} />
             </Typography>
         </Grid>
     </Grid>;
@@ -184,7 +190,7 @@ interface ProjectPanelActionProps {
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp
-                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
