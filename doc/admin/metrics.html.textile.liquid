@@ -10,4 +10,82 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados services support endpoints for monitoring the performance of a cluster.
+Metrics endpoints are found at @/status.json@ on many Arvados services.  The purpose of metrics are to provide statistics about the operation of a service, suitable for diagnosing how well a service is performing under load.
+
+Metrics endpoints must be configured with a "management token":management-token.html .
+
+h2. Keepstore
+
+h3. Root
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Volumes|         array of "volumeStatusEnt":#volumeStatusEnt ||
+|BufferPool|      "PoolStatus":#PoolStatus ||
+|PullQueue|       "WorkQueueStatus":#WorkQueueStatus ||
+|TrashQueue|      "WorkQueueStatus":#WorkQueueStatus ||
+|RequestsCurrent| int ||
+|RequestsMax|     int ||
+|Version|         string ||
+
+h3(#volumeStatusEnt). volumeStatusEnt
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Label|         string||
+|Status|        "VolumeStatus":#VolumeStatus ||
+|VolumeStats|   "ioStats":#ioStats ||
+
+h3(#VolumeStatus). VolumeStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|MountPoint| string||
+|DeviceNum|  uint64||
+|BytesFree|  uint64||
+|BytesUsed|  uint64||
+
+h3(#ioStats). ioStats
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Errors|     uint64||
+|Ops|        uint64||
+|CompareOps| uint64||
+|GetOps|     uint64||
+|PutOps|     uint64||
+|TouchOps|   uint64||
+|InBytes|    uint64||
+|OutBytes|   uint64||
+
+h3(#PoolStatus). PoolStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|BytesAllocatedCumulative|	 uint64||
+|BuffersMax|	int||
+|BuffersInUse|	int||
+
+h3(#WorkQueueStatus). WorkQueueStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|InProgress| int||
+|Queued|     int||
+
+h2. Node manager
+
+The node manager status end point provides a snapshot of internal status at the time of the most recent wishlist update.
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|nodes_booting|int|Number of nodes in booting state|
+|nodes_unpaired|int|Number of nodes in unpaired state|
+|nodes_busy|int|Number of nodes in busy state|
+|nodes_idle|int|Number of nodes in idle state|
+|nodes_fail|int|Number of nodes in fail state|
+|nodes_down|int|Number of nodes in down state|
+|nodes_shutdown|int|Number of nodes in shutdown state|
+|nodes_wish|int|Number of nodes in the current wishlist|
+|node_quota|int|Current node count ceiling due to cloud quota limits|
+|config_max_nodes|int|Configured max node count|

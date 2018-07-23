@@ -10,45 +10,24 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados services support endpoints for monitoring the status of a cluster.
+Health check endpoints are found at @/_health/ping@ on many Arvados services.  The purpose of the health check is to be a simple method of determining if a service can be contacted and if it believes it is functioning properly, suitable for integrating into operational alert systems.
 
-Health check endpoints are found at @/_health/ping@ for many Arvados services.
+Health check endpoints must be configured with a "management token":management-token.html .
 
-Services must have ManagementToken configured.  This is used to authorize access to the health check endpoint.  If ManagementToken is not configured, health checks will return the error @404 disabled@.
-
-The requester must provide the HTTP header @Authorization: Bearer (ManagementToken)@.
-
-This endpoint returns a JSON object with the field @health@.  This has a value of either @OK@ or @ERROR@.  On error, it may also include a  field @error@ with additional information.
-
-h2. How to enable health checks on each service.
-
-h3. API server
-
-Set @MangementToken@ in @application.yml@
+This endpoint returns a JSON object with the field @health@.  This has a value of either @OK@ or @ERROR@.  On error, it may also include a  field @error@ with additional information.  Examples:
 
 <pre>
-  # Token to be included in all healthcheck requests. Disabled by default.
-  # Server expects request header of the format "Authorization: Bearer xxx"
-  ManagementToken: ...
+{
+  "health": "OK"
+}
 </pre>
-
-h3. Node Manager
-
-Set @port@ (the listen port) and @MangementToken@ in the @Manage@ section of @node-manager.ini@ .
 
 <pre>
-[Manage]
-port=8888
-ManagementToken=...
+{
+  "health": "ERROR"
+  "error": "Inverted polarity of the warp core"
+}
 </pre>
-
-
-*
-* keepstore
-* keep-web
-* keepproxy
-* arv-git-httpd
-* websockets
 
 h2. Healthcheck aggregator
 
