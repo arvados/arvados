@@ -16,7 +16,7 @@ const mapStateToProps = (state: RootState) => ({
     open: state.projects.creator.opened
 });
 
-export const addProject = (data: { name: string, description: string }) =>
+const addProject = (data: { name: string, description: string }) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { ownerUuid } = getState().projects.creator;
         return dispatch<any>(createProject(data)).then(() => {
