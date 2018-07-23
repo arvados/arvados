@@ -20,5 +20,3 @@ fi
 
 cd /usr/src/arvados/doc
 bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip
-
-sv stop doc >/dev/null
