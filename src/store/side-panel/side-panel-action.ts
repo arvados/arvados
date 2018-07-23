@@ -4,7 +4,7 @@
 
 import { default as unionize, ofType, UnionOf } from "unionize";
 
-const actions = unionize({
+export const sidePanelActions = unionize({
     TOGGLE_SIDE_PANEL_ITEM_OPEN: ofType<string>(),
     TOGGLE_SIDE_PANEL_ITEM_ACTIVE: ofType<string>(),
     RESET_SIDE_PANEL_ACTIVITY: ofType<{}>(),
@@ -13,5 +13,4 @@ const actions = unionize({
     value: 'payload'
 });
 
-export type SidePanelAction = UnionOf<typeof actions>;
-export default actions;
+export type SidePanelAction = UnionOf<typeof sidePanelActions>;

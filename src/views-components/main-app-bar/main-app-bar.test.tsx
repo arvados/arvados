@@ -5,10 +5,10 @@
 import * as React from "react";
 import { mount, configure, ReactWrapper } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
-import MainAppBar from "./main-app-bar";
-import SearchBar from "../../components/search-bar/search-bar";
-import Breadcrumbs from "../../components/breadcrumbs/breadcrumbs";
-import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
+import { MainAppBar } from "./main-app-bar";
+import { SearchBar } from "../../components/search-bar/search-bar";
+import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
+import { DropdownMenu } from "../../components/dropdown-menu/dropdown-menu";
 import { Button, MenuItem, IconButton } from "@material-ui/core";
 import { User } from "../../models/user";
 
@@ -28,6 +28,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 user={user}
+                onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
                 onContextMenu={jest.fn()}
                 {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
@@ -60,6 +61,7 @@ describe("<MainAppBar />", () => {
             <MainAppBar
                 searchText="search text"
                 searchDebounce={2000}
+                onContextMenu={jest.fn()}
                 onSearch={onSearch}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
@@ -79,6 +81,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 breadcrumbs={items}
+                onContextMenu={jest.fn()}
                 onBreadcrumbClick={onBreadcrumbClick}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}
@@ -97,6 +100,7 @@ describe("<MainAppBar />", () => {
         const mainAppBar = mount(
             <MainAppBar
                 menuItems={menuItems}
+                onContextMenu={jest.fn()}
                 onMenuItemClick={onMenuItemClick}
                 onContextMenu={jest.fn()}
                 onDetailsPanelToggle={jest.fn()}

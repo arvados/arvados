@@ -2,31 +2,32 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// import actions, { DetailsPanelAction } from "./details-panel-action";
-// import { Resource, ResourceKind } from "../../models/resource";
+import { ResourceKind } from "../../models/resource";
+import { contextMenuActions, ContextMenuAction } from "./context-menu-actions";
 
-// export interface ContextMenuState {
-//     position: {
-//         x: number;
-//         y: number;
-//     },
-//     resource: {
-//         uuid: string;
-//         kind: ResourceKind.
-//     }
-// }
+export interface ContextMenuState {
+    position: ContextMenuPosition;
+    resource?: ContextMenuResource;
+}
 
-// const initialState = {
-//     item: null,
-//     isOpened: false
-// };
+export interface ContextMenuPosition {
+    x: number;
+    y: number;
+}
 
-// const reducer = (state: DetailsPanelState = initialState, action: DetailsPanelAction) =>
-//     actions.match(action, {
-//         default: () => state,
-//         LOAD_DETAILS: () => state,
-//         LOAD_DETAILS_SUCCESS: ({ item }) => ({ ...state, item }),
-//         TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened })
-//     });
+export interface ContextMenuResource {
+    uuid: string;
+    kind: string;
+}
 
-// export default reducer;
+const initialState = {
+    position: { x: 0, y: 0 }
+};
+
+export const contextMenuReducer = (state: ContextMenuState = initialState, action: ContextMenuAction) =>
+    contextMenuActions.match(action, {
+        default: () => state,
+        OPEN_CONTEXT_MENU: ({resource, position}) => ({ resource, position }),
+        CLOSE_CONTEXT_MENU: () => ({ position: state.position })
+    });
+

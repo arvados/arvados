@@ -84,7 +84,7 @@ $(DEB_FILE): build
 	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
-	 --deb-no-default-config-files \
+	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
 	$(WORKSPACE)/build/=$(DEST_DIR)
 
 $(RPM_FILE): build
@@ -96,6 +96,7 @@ $(RPM_FILE): build
 	 --iteration "$(ITERATION)" \
 	 --maintainer="$(MAINTAINER)" \
 	 --description="$(DESCRIPTION)" \
+	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
 	 $(WORKSPACE)/build/=$(DEST_DIR)
 
 copy: $(DEB_FILE) $(RPM_FILE)

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import OrderBuilder from "./order-builder";
+import { OrderBuilder } from "./order-builder";
 
 describe("OrderBuilder", () => {
     it("should build correct order query", () => {

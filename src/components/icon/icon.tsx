@@ -3,48 +3,71 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import * as classnames from "classnames";
-import CloseAnnouncement from '@material-ui/icons/Announcement';
-import CloseIcon from '@material-ui/icons/Close';
-import FolderIcon from '@material-ui/icons/Folder';
+import AccessTime from '@material-ui/icons/AccessTime';
+import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
+import BubbleChart from '@material-ui/icons/BubbleChart';
+import Cached from '@material-ui/icons/Cached';
+import Code from '@material-ui/icons/Code';
+import ChevronLeft from '@material-ui/icons/ChevronLeft';
+import ChevronRight from '@material-ui/icons/ChevronRight';
+import Close from '@material-ui/icons/Close';
+import ContentCopy from '@material-ui/icons/ContentCopy';
+import CreateNewFolder from '@material-ui/icons/CreateNewFolder';
+import Delete from '@material-ui/icons/Delete';
+import Edit from '@material-ui/icons/Edit';
+import Folder from '@material-ui/icons/Folder';
+import GetApp from '@material-ui/icons/GetApp';
+import Help from '@material-ui/icons/Help';
+import Inbox from '@material-ui/icons/Inbox';
+import Info from '@material-ui/icons/Info';
+import Input from '@material-ui/icons/Input';
+import Menu from '@material-ui/icons/Menu';
+import MoreVert from '@material-ui/icons/MoreVert';
+import Notifications from '@material-ui/icons/Notifications';
+import People from '@material-ui/icons/People';
+import Person from '@material-ui/icons/Person';
+import PersonAdd from '@material-ui/icons/PersonAdd';
+import PlayArrow from '@material-ui/icons/PlayArrow';
+import RateReview from '@material-ui/icons/RateReview';
+import Search from '@material-ui/icons/Search';
+import Star from '@material-ui/icons/Star';
+import StarBorder from '@material-ui/icons/StarBorder';
 
-export enum IconTypes {
-    ANNOUNCEMENT = 'announcement',
-    FOLDER = 'folder',
-    CLOSE = 'close',
-    PROJECT  = 'project',
-    COLLECTION = 'collection',
-    PROCESS = 'process'
-}
+export type IconType = React.SFC<{ className?: string }>;
 
-interface IconBaseDataProps {
-    icon: IconTypes;
-    className?: string;
-}
-
-type IconBaseProps = IconBaseDataProps;
-
-interface IconBaseState {
-    icon: IconTypes;
-}
-
-const getSpecificIcon = (props: any) => ({
-    announcement: <CloseAnnouncement className={props.className} />,
-    folder: <FolderIcon className={props.className} />,
-    close: <CloseIcon className={props.className} />,
-    project: <i className={classnames([props.className, 'fas fa-folder fa-lg'])} />,
-    collection: <i className={classnames([props.className, 'fas fa-archive fa-lg'])} />,
-    process: <i className={classnames([props.className, 'fas fa-cogs fa-lg'])} />
-});
-
-class IconBase extends React.Component<IconBaseProps, IconBaseState> {
-    state = {
-        icon: IconTypes.FOLDER,
-    };
-
-    render() {
-        return getSpecificIcon(this.props)[this.props.icon];
-    }
-}
-
-export default IconBase;
+export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
+export const AdvancedIcon: IconType = (props) => <Folder {...props} />;
+export const CustomizeTableIcon: IconType = (props) => <Menu {...props} />;
+export const CopyIcon: IconType = (props) => <ContentCopy {...props} />;
+export const CollectionIcon: IconType = (props) => <Folder {...props} />;
+export const CloseIcon: IconType = (props) => <Close {...props} />;
+export const DefaultIcon: IconType = (props) => <RateReview {...props} />;
+export const DetailsIcon: IconType = (props) => <Info {...props} />;
+export const DownloadIcon: IconType = (props) => <GetApp {...props} />;
+export const FavoriteIcon: IconType = (props) => <Star {...props} />;
+export const HelpIcon: IconType = (props) => <Help {...props} />;
+export const LogIcon: IconType = (props) => <Folder {...props} />;
+export const MoreOptionsIcon: IconType = (props) => <MoreVert {...props} />;
+export const MoveToIcon: IconType = (props) => <Input {...props} />;
+export const NewProjectIcon: IconType = (props) => <CreateNewFolder {...props} />;
+export const NotificationIcon: IconType = (props) => <Notifications {...props} />;
+export const PaginationDownIcon: IconType = (props) => <ArrowDropDown {...props} />;
+export const PaginationLeftArrowIcon: IconType = (props) => <ChevronLeft {...props} />;
+export const PaginationRightArrowIcon: IconType = (props) => <ChevronRight {...props} />;
+export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
+export const ProjectIcon: IconType = (props) => <Folder {...props} />;
+export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
+export const ProvenanceGraphIcon: IconType = (props) => <Folder {...props} />;
+export const RecentIcon: IconType = (props) => <AccessTime {...props} />;
+export const RemoveIcon: IconType = (props) => <Delete {...props} />;
+export const RemoveFavoriteIcon: IconType = (props) => <Star {...props} />;
+export const RenameIcon: IconType = (props) => <Edit {...props} />;
+export const ReRunProcessIcon: IconType = (props) => <Cached {...props} />;
+export const SearchIcon: IconType = (props) => <Search {...props} />;
+export const ShareIcon: IconType = (props) => <PersonAdd {...props} />;
+export const ShareMeIcon: IconType = (props) => <People {...props} />;
+export const SidePanelRightArrowIcon: IconType = (props) => <PlayArrow {...props} />;
+export const TrashIcon: IconType = (props) => <Delete {...props} />;
+export const UserPanelIcon: IconType = (props) => <Person {...props} />;
+export const UsedByIcon: IconType = (props) => <Folder {...props} />;
+export const WorkflowIcon: IconType = (props) => <Code {...props} />;

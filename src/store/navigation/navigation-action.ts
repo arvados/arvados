@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import projectActions, { getProjectList } from "../project/project-action";
+import { projectActions, getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
-import dataExplorerActions from "../data-explorer/data-explorer-action";
+import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { Resource, ResourceKind } from "../../models/resource";

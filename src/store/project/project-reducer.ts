@@ -4,7 +4,7 @@
 
 import * as _ from "lodash";
 
-import actions, { ProjectAction } from "./project-action";
+import { projectActions, ProjectAction } from "./project-action";
 import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
 import { ProjectResource } from "../../models/project";
 
@@ -112,9 +112,9 @@ const initialState: ProjectState = {
 };
 
 
-const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
-    return actions.match(action, {
-        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
+export const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
+    return projectActions.match(action, {
+        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
         CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
         CREATE_PROJECT: () => updateCreator(state, { error: undefined }),
         CREATE_PROJECT_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
@@ -174,5 +174,3 @@ const projectsReducer = (state: ProjectState = initialState, action: ProjectActi
         default: () => state
     });
 };
-
-export default projectsReducer;

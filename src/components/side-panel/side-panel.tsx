@@ -4,97 +4,17 @@
 
 import * as React from 'react';
 import { ReactElement } from 'react';
-import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
-import List from "@material-ui/core/List/List";
-import ListItem from "@material-ui/core/ListItem/ListItem";
-import ListItemText from "@material-ui/core/ListItemText/ListItemText";
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Collapse from "@material-ui/core/Collapse/Collapse";
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { ArvadosTheme } from '../../common/custom-theme';
+import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
+import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
+import * as classnames from "classnames";
+import { ListItemTextIcon } from '../list-item-text-icon/list-item-text-icon';
 
-import { Typography } from '@material-ui/core';
+type CssRules = 'active' | 'row' | 'root' | 'list' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
 
-export interface SidePanelItem {
-    id: string;
-    name: string;
-    icon: string;
-    active?: boolean;
-    open?: boolean;
-    margin?: boolean;
-    openAble?: boolean;
-}
-
-interface SidePanelProps {
-    toggleOpen: (id: string) => void;
-    toggleActive: (id: string) => void;
-    sidePanelItems: SidePanelItem[];
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: SidePanelItem) => void;
-}
-
-class SidePanel extends React.Component<SidePanelProps & WithStyles<CssRules>> {
-    render(): ReactElement<any> {
-        const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
-        const { listItemText, leftSidePanelContainer, row, list, icon, projectIconMargin, active, activeArrow, inactiveArrow, arrowTransition, arrowRotate } = classes;
-        return (
-            <div className={leftSidePanelContainer}>
-                <List>
-                    {sidePanelItems.map(it => (
-                        <span key={it.name}>
-                            <ListItem button className={list} onClick={() => toggleActive(it.id)} onContextMenu={this.handleRowContextMenu(it)}>
-                                <span className={row}>
-                                    {it.openAble ? <i onClick={() => toggleOpen(it.id)} className={`${it.active ? activeArrow : inactiveArrow} 
-                                        ${it.open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`} /> : null}
-                                    <ListItemIcon className={it.active ? active : ''}>
-                                        <i className={`${it.icon} ${icon} ${it.margin ? projectIconMargin : ''}`} />
-                                    </ListItemIcon>
-                                    <ListItemText className={listItemText} primary={<Typography className={it.active ? active : ''}>{it.name}</Typography>} />
-                                </span>
-                            </ListItem>
-                            {it.openAble ? (
-                                <Collapse in={it.open} timeout="auto" unmountOnExit>
-                                    {children}
-                                </Collapse>) : null}
-                        </span>
-                    ))}
-                </List>
-            </div>
-        );
-    }
-
-    handleRowContextMenu = (item: SidePanelItem) =>
-        (event: React.MouseEvent<HTMLElement>) =>
-            item.openAble ? this.props.onContextMenu(event, item) : null
-
-}
-
-type CssRules = 'active' | 'listItemText' | 'row' | 'leftSidePanelContainer' | 'list' | 'icon' | 'projectIconMargin' |
-    'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition';
-
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    active: {
-        color: '#4285F6',
-    },
-    listItemText: {
-        padding: '0px',
-    },
-    row: {
-        display: 'flex',
-        alignItems: 'center',
-    },
-    activeArrow: {
-        color: '#4285F6',
-        position: 'absolute',
-    },
-    inactiveArrow: {
-        position: 'absolute',
-    },
-    arrowTransition: {
-        transition: 'all 0.1s ease',
-    },
-    arrowRotate: {
-        transition: 'all 0.1s ease',
-        transform: 'rotate(-90deg)',
-    },
-    leftSidePanelContainer: {
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
         overflowY: 'auto',
         minWidth: '240px',
         whiteSpace: 'nowrap',
@@ -103,17 +23,100 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         flexGrow: 1,
     },
     list: {
-        paddingBottom: '5px',
-        paddingTop: '5px',
-        paddingLeft: '14px',
+        padding: '5px 0px 5px 14px',
         minWidth: '240px',
     },
-    icon: {
-        minWidth: '20px',
+    row: {
+        display: 'flex',
+        alignItems: 'center',
     },
-    projectIconMargin: {
-        marginLeft: '17px',
+    toggableIconContainer: {
+        color: theme.palette.grey["700"],
+        height: '14px',
+        position: 'absolute'
+    },
+    toggableIcon: {
+        fontSize: '14px'
+    },
+    active: {
+        color: theme.palette.primary.main,
+    },
+    iconClose: {
+        transition: 'all 0.1s ease',
+    },
+    iconOpen: {
+        transition: 'all 0.1s ease',
+        transform: 'rotate(90deg)',
     }
 });
 
-export default withStyles(styles)(SidePanel);
+export interface SidePanelItem {
+    id: string;
+    name: string;
+    icon: IconType;
+    active?: boolean;
+    open?: boolean;
+    margin?: boolean;
+    openAble?: boolean;
+}
+
+interface SidePanelDataProps {
+    toggleOpen: (id: string) => void;
+    toggleActive: (id: string) => void;
+    sidePanelItems: SidePanelItem[];
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: SidePanelItem) => void;
+}
+
+type SidePanelProps = SidePanelDataProps & WithStyles<CssRules>;
+
+export const SidePanel = withStyles(styles)(
+    class extends React.Component<SidePanelProps> {
+        render(): ReactElement<any> {
+            const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
+            const { root, row, list, toggableIconContainer } = classes;
+            return (
+                <div className={root}>
+                    <List>
+                        {sidePanelItems.map(it => (
+                            <span key={it.name}>
+                                <ListItem button className={list} onClick={() => toggleActive(it.id)}
+                                          onContextMenu={this.handleRowContextMenu(it)}>
+                                    <span className={row}>
+                                        {it.openAble ? (
+                                            <i onClick={() => toggleOpen(it.id)} className={toggableIconContainer}>
+                                                <ListItemIcon
+                                                    className={this.getToggableIconClassNames(it.open, it.active)}>
+                                                    < SidePanelRightArrowIcon/>
+                                                </ListItemIcon>
+                                            </i>
+                                        ) : null}
+                                        <ListItemTextIcon icon={it.icon} name={it.name} isActive={it.active}
+                                                          hasMargin={it.margin}/>
+                                    </span>
+                                </ListItem>
+                                {it.openAble ? (
+                                    <Collapse in={it.open} timeout="auto" unmountOnExit>
+                                        {children}
+                                    </Collapse>
+                                ) : null}
+                            </span>
+                        ))}
+                    </List>
+                </div>
+            );
+        }
+
+        getToggableIconClassNames = (isOpen?: boolean, isActive ?: boolean) => {
+            const { classes } = this.props;
+            return classnames(classes.toggableIcon, {
+                [classes.iconOpen]: isOpen,
+                [classes.iconClose]: !isOpen,
+                [classes.active]: isActive
+            });
+        }
+
+        handleRowContextMenu = (item: SidePanelItem) =>
+            (event: React.MouseEvent<HTMLElement>) =>
+                item.openAble ? this.props.onContextMenu(event, item) : null
+    }
+);

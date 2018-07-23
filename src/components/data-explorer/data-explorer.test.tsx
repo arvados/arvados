@@ -6,10 +6,10 @@ import * as React from "react";
 import { configure, mount } from "enzyme";
 import * as Adapter from 'enzyme-adapter-react-16';
 
-import DataExplorer from "./data-explorer";
-import ColumnSelector from "../column-selector/column-selector";
-import DataTable from "../data-table/data-table";
-import SearchInput from "../search-input/search-input";
+import { DataExplorer } from "./data-explorer";
+import { ColumnSelector } from "../column-selector/column-selector";
+import { DataTable } from "../data-table/data-table";
+import { SearchInput } from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
 
 configure({ adapter: new Adapter() });

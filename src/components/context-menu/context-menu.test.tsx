@@ -5,31 +5,32 @@
 import * as React from "react";
 import { mount, configure, shallow } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
-import ContextMenu from "./context-menu";
+import { ContextMenu } from "./context-menu";
 import { ListItem } from "@material-ui/core";
+import { ShareIcon } from "../icon/icon";
 
 configure({ adapter: new Adapter() });
 
 describe("<ContextMenu />", () => {
-    const actions = [[{
-        icon: "",
+    const items = [[{
+        icon: ShareIcon,
         name: "Action 1.1"
     }, {
-        icon: "",
+        icon: ShareIcon,
         name: "Action 1.2"
     },], [{
-        icon: "",
+        icon: ShareIcon,
         name: "Action 2.1"
     }]];
 
-    it("calls onActionClick with clicked action", () => {
-        const onActionClick = jest.fn();
+    it("calls onItemClick with clicked action", () => {
+        const onItemClick = jest.fn();
         const contextMenu = mount(<ContextMenu
             anchorEl={document.createElement("div")}
             onClose={jest.fn()}
-            onActionClick={onActionClick}
-            actions={actions} />);
+            onItemClick={onItemClick}
+            items={items} />);
         contextMenu.find(ListItem).at(2).simulate("click");
-        expect(onActionClick).toHaveBeenCalledWith(actions[1][0]);
+        expect(onItemClick).toHaveBeenCalledWith(items[1][0]);
     });
 });

@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import sidePanelReducer from "./side-panel-reducer";
-import actions from "./side-panel-action";
+import { sidePanelReducer } from "./side-panel-reducer";
+import { sidePanelActions } from "./side-panel-action";
+import { ProjectsIcon } from "../../components/icon/icon";
 
 describe('side-panel-reducer', () => {
 
@@ -12,7 +13,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }
@@ -21,13 +22,13 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: false,
                 active: true,
             }
         ];
 
-        const state = sidePanelReducer(initialState, actions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(initialState[0].id));
+        const state = sidePanelReducer(initialState, sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(initialState[0].id));
         expect(state).toEqual(project);
     });
 
@@ -36,7 +37,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }
@@ -45,13 +46,13 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: true,
                 active: false,
             }
         ];
 
-        const state = sidePanelReducer(initialState, actions.TOGGLE_SIDE_PANEL_ITEM_OPEN(initialState[0].id));
+        const state = sidePanelReducer(initialState, sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(initialState[0].id));
         expect(state).toEqual(project);
     });
 
@@ -60,7 +61,7 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: false,
                 active: true,
             }
@@ -69,13 +70,13 @@ describe('side-panel-reducer', () => {
             {
                 id: "1",
                 name: "Projects",
-                icon: "fas fa-th fa-fw",
+                icon: ProjectsIcon,
                 open: false,
                 active: false,
             }
         ];
 
-        const state = sidePanelReducer(initialState, actions.RESET_SIDE_PANEL_ACTIVITY(initialState[0].id));
+        const state = sidePanelReducer(initialState, sidePanelActions.RESET_SIDE_PANEL_ACTIVITY(initialState[0].id));
         expect(state).toEqual(project);
     });
 });

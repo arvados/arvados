@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-
-import actions, { SidePanelAction } from './side-panel-action';
+import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
+import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
 
 export type SidePanelState = SidePanelItem[];
 
-const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
+export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
     if (state.length === 0) {
         return sidePanelData;
     } else {
-        return actions.match(action, {
+        return sidePanelActions.match(action, {
             TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId => state.map(it => itemId === it.id && it.open === false ? {...it, open: true} : {...it, open: false}),
             TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
                 const sidePanel = _.cloneDeep(state);
@@ -48,7 +48,7 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.Projects,
         name: "Projects",
-        icon: "fas fa-th fa-fw",
+        icon: ProjectsIcon,
         open: false,
         active: false,
         margin: true,
@@ -57,31 +57,31 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.SharedWithMe,
         name: "Shared with me",
-        icon: "fas fa-users fa-fw",
+        icon: ShareMeIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Workflows,
         name: "Workflows",
-        icon: "fas fa-cogs fa-fw",
+        icon: WorkflowIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.RecentOpen,
         name: "Recent open",
-        icon: "icon-time fa-fw",
+        icon: RecentIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Favourites,
         name: "Favorites",
-        icon: "fas fa-star fa-fw",
+        icon: FavoriteIcon,
         active: false,
     },
     {
         id: SidePanelIdentifiers.Trash,
         name: "Trash",
-        icon: "fas fa-trash-alt fa-fw",
+        icon: TrashIcon,
         active: false,
     }
 ];
@@ -91,5 +91,3 @@ function resetSidePanelActivity(sidePanel: SidePanelItem[]) {
         t.active = false;
     }
 }
-
-export default sidePanelReducer;

@@ -4,14 +4,11 @@
 
 import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
-import NotificationsIcon from "@material-ui/icons/Notifications";
-import PersonIcon from "@material-ui/icons/Person";
-import HelpIcon from "@material-ui/icons/Help";
-import InfoIcon from '@material-ui/icons/Info';
-import SearchBar from "../../components/search-bar/search-bar";
-import Breadcrumbs, { Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
-import DropdownMenu from "../../components/dropdown-menu/dropdown-menu";
 import { User, getUserFullname } from "../../models/user";
+import { SearchBar } from "../../components/search-bar/search-bar";
+import { Breadcrumbs, Breadcrumb } from "../../components/breadcrumbs/breadcrumbs";
+import { DropdownMenu } from "../../components/dropdown-menu/dropdown-menu";
+import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "../../components/icon/icon";
 
 export interface MainAppBarMenuItem {
     label: string;
@@ -76,29 +73,29 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
                     onClick={props.onBreadcrumbClick}
                     onContextMenu={props.onContextMenu} />
             }
-            <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <InfoIcon />
-            </IconButton>
+            { props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
+                    <DetailsIcon />
+                </IconButton>
+            }
         </Toolbar>
     </AppBar>;
 };
-
 
 const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
     return (
         <>
             <IconButton color="inherit">
                 <Badge badgeContent={3} color="primary">
-                    <NotificationsIcon />
+                    <NotificationIcon />
                 </Badge>
             </IconButton>
-            <DropdownMenu icon={PersonIcon} id="account-menu">
+            <DropdownMenu icon={<UserPanelIcon />} id="account-menu">
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
                 {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
             </DropdownMenu>
-            <DropdownMenu icon={HelpIcon} id="help-menu">
+            <DropdownMenu icon={<HelpIcon />} id="help-menu">
                 {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
             </DropdownMenu>
         </>
@@ -120,5 +117,3 @@ const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menu
         </MenuItem>
     ));
 };
-
-export default MainAppBar;

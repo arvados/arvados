@@ -3,19 +3,32 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, StyleRulesCallback, Theme, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
+import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
 import { DataColumn, isColumnConfigurable } from '../data-table/data-column';
-import Popover from "../popover/popover";
+import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
+import { ArvadosTheme } from "../../common/custom-theme";
 
-export interface ColumnSelectorProps {
+interface ColumnSelectorDataProps {
     columns: DataColumns<any>;
     onColumnToggle: (column: DataColumn<any>) => void;
 }
 
-const ColumnSelector: React.SFC<ColumnSelectorProps & WithStyles<CssRules>> = ({ columns, onColumnToggle, classes }) =>
+type CssRules = "checkbox";
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    checkbox: {
+        width: 24,
+        height: 24
+    }
+});
+
+export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>;
+
+export const ColumnSelector = withStyles(styles)(
+    ({ columns, onColumnToggle, classes }: ColumnSelectorProps) =>
     <Popover triggerComponent={ColumnSelectorTrigger}>
         <Paper>
             <List dense>
@@ -38,20 +51,10 @@ const ColumnSelector: React.SFC<ColumnSelectorProps & WithStyles<CssRules>> = ({
                     ))}
             </List>
         </Paper>
-    </Popover>;
+    </Popover>
+);
 
-export const ColumnSelectorTrigger: React.SFC<IconButtonProps> = (props) =>
+export const ColumnSelectorTrigger = (props: IconButtonProps) =>
     <IconButton {...props}>
         <MenuIcon />
     </IconButton>;
-
-type CssRules = "checkbox";
-
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    checkbox: {
-        width: 24,
-        height: 24
-    }
-});
-
-export default withStyles(styles)(ColumnSelector);

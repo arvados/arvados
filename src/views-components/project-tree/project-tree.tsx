@@ -5,12 +5,19 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
 import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
-import ListItemText from "@material-ui/core/ListItemText/ListItemText";
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Typography from '@material-ui/core/Typography';
-
-import Tree, { TreeItem, TreeItemStatus } from '../../components/tree/tree';
+import { Tree, TreeItem, TreeItemStatus } from '../../components/tree/tree';
 import { ProjectResource } from '../../models/project';
+import { ProjectIcon } from '../../components/icon/icon';
+import { ArvadosTheme } from '../../common/custom-theme';
+import { ListItemTextIcon } from '../../components/list-item-text-icon/list-item-text-icon';
+
+type CssRules = 'root';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        marginLeft: `${theme.spacing.unit * 1.5}px`,
+    }
+});
 
 export interface ProjectTreeProps {
     projects: Array<TreeItem<ProjectResource>>;
@@ -19,50 +26,26 @@ export interface ProjectTreeProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectResource>) => void;
 }
 
-class ProjectTree<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
-    render(): ReactElement<any> {
-        const { classes, projects, toggleOpen, toggleActive, onContextMenu } = this.props;
-        const { active, listItemText, row, treeContainer } = classes;
-        return (
-            <div className={treeContainer}>
-                <Tree items={projects}
-                    onContextMenu={onContextMenu}
-                    toggleItemOpen={toggleOpen}
-                    toggleItemActive={toggleActive}
-                    render={(project: TreeItem<ProjectResource>) =>
-                        <span className={row}>
-                            <ListItemIcon className={project.active ? active : ''}>
-                                <i className="fas fa-folder" />
-                            </ListItemIcon>
-                            <ListItemText className={listItemText} primary={
-                                <Typography className={project.active ? active : ''}>{project.data.name}</Typography>
-                            } />
-                        </span>
-                    } />
-            </div>
-        );
+export const ProjectTree = withStyles(styles)(
+    class ProjectTreeGeneric<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
+        render(): ReactElement<any> {
+            const { classes, projects, toggleOpen, toggleActive, onContextMenu } = this.props;
+            return (
+                <div className={classes.root}>
+                    <Tree items={projects}
+                        onContextMenu={onContextMenu}
+                        toggleItemOpen={toggleOpen}
+                        toggleItemActive={toggleActive}
+                        render={
+                            (project: TreeItem<ProjectResource>) =>
+                                <ListItemTextIcon
+                                    icon={ProjectIcon}
+                                    name={project.data.name}
+                                    isActive={project.active}
+                                    hasMargin={true}/>
+                        }/>
+                </div>
+            );
+        }
     }
-}
-
-type CssRules = 'active' | 'listItemText' | 'row' | 'treeContainer';
-
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    active: {
-        color: '#4285F6',
-    },
-    listItemText: {
-        padding: '0px',
-    },
-    row: {
-        display: 'flex',
-        alignItems: 'center',
-        marginLeft: '20px',
-    },
-    treeContainer: {
-        minWidth: '240px',
-        whiteSpace: 'nowrap',
-        marginLeft: '13px',
-    }
-});
-
-export default withStyles(styles)(ProjectTree);
+);

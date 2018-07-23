@@ -5,7 +5,7 @@
 import * as React from "react";
 import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
-import ColumnSelector, { ColumnSelectorProps, ColumnSelectorTrigger } from "./column-selector";
+import { ColumnSelector, ColumnSelectorTrigger } from "./column-selector";
 import { ListItem, Checkbox } from "@material-ui/core";
 import { DataColumns } from "../data-table/data-table";
 

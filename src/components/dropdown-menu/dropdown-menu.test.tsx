@@ -4,23 +4,22 @@
 
 import * as React from "react";
 import { shallow, configure } from "enzyme";
-import DropdownMenu from "./dropdown-menu";
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-
+import { DropdownMenu } from "./dropdown-menu";
 import * as Adapter from 'enzyme-adapter-react-16';
 import { MenuItem, IconButton, Menu } from "@material-ui/core";
+import { PaginationRightArrowIcon } from "../icon/icon";
 
 configure({ adapter: new Adapter() });
 
 describe("<DropdownMenu />", () => {
     it("renders menu icon", () => {
-        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={ChevronRightIcon} />);
-        expect(dropdownMenu.find(ChevronRightIcon)).toHaveLength(1);
+        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
+        expect(dropdownMenu.find(PaginationRightArrowIcon)).toHaveLength(1);
     });
 
     it("render menu items", () => {
         const dropdownMenu = shallow(
-            <DropdownMenu id="test-menu" icon={ChevronRightIcon}>
+            <DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />}>
                 <MenuItem>Item 1</MenuItem>
                 <MenuItem>Item 2</MenuItem>
             </DropdownMenu>
@@ -29,13 +28,13 @@ describe("<DropdownMenu />", () => {
     });
 
     it("opens on menu icon click", () => {
-        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={ChevronRightIcon} />);
+        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
         dropdownMenu.find(IconButton).simulate("click", {currentTarget: {}});
         expect(dropdownMenu.state().anchorEl).toBeDefined();
     });
-    
+
     it("closes on menu click", () => {
-        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={ChevronRightIcon} />);
+        const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
         dropdownMenu.find(Menu).simulate("click", {currentTarget: {}});
         expect(dropdownMenu.state().anchorEl).toBeUndefined();
     });

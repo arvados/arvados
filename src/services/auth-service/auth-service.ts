@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_HOST, serverApi } from "../../common/api/server-api";
+import { API_HOST } from "../../common/api/server-api";
 import { User } from "../../models/user";
+import { AxiosInstance } from "../../../node_modules/axios";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -21,7 +22,9 @@ export interface UserDetailsResponse {
     is_admin: boolean;
 }
 
-export default class AuthService {
+export class AuthService {
+
+    constructor(protected serverApi: AxiosInstance) { }
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
@@ -82,7 +85,7 @@ export default class AuthService {
     }
 
     public getUserDetails = (): Promise<User> => {
-        return serverApi
+        return this.serverApi
             .get<UserDetailsResponse>('/users/current')
             .then(resp => ({
                 email: resp.data.email,

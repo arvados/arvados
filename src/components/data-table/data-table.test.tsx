@@ -6,8 +6,8 @@ import * as React from "react";
 import { mount, configure } from "enzyme";
 import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
 import * as Adapter from "enzyme-adapter-react-16";
-import DataTable, { DataColumns } from "./data-table";
-import DataTableFilters from "../data-table-filters/data-table-filters";
+import { DataTable, DataColumns } from "./data-table";
+import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { SortDirection } from "./data-column";
 
 configure({ adapter: new Adapter() });
@@ -169,6 +169,4 @@ describe("<DataTable />", () => {
         dataTable.find(DataTableFilters).prop("onChange")([]);
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
     });
-
-
 });

@@ -10,7 +10,7 @@ export const formatDate = (isoDate: string) => {
 
 export const formatFileSize = (size?: number) => {
     if (typeof size === "number") {
-        for (const { base, unit } of fileSizes) {
+        for (const { base, unit } of FILE_SIZES) {
             if (size >= base) {
                 return `${(size / base).toFixed()} ${unit}`;
             }
@@ -19,7 +19,7 @@ export const formatFileSize = (size?: number) => {
     return "";
 };
 
-const fileSizes = [
+const FILE_SIZES = [
     {
         base: 1000000000000,
         unit: "TB"
