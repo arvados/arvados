@@ -86,10 +86,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const RENDER_NAME = (item: ProjectPanelItem) =>
+const renderName = (item: ProjectPanelItem) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
-            {RENDER_ICON(item)}
+            {renderIcon(item)}
         </Grid>
         <Grid item>
             <Typography color="primary">
@@ -99,7 +99,7 @@ const RENDER_NAME = (item: ProjectPanelItem) =>
     </Grid>;
 
 
-const RENDER_ICON = (item: ProjectPanelItem) => {
+const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
         case ResourceKind.Project:
             return <ProjectIcon />;
@@ -151,7 +151,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.NAME,
         selected: true,
         sortDirection: SortDirection.Asc,
-        render: RENDER_NAME,
+        render: renderName,
         width: "450px"
     },
     {
