@@ -43,7 +43,7 @@ const renderName = (item: ProjectPanelItem) =>
             </Typography>
         </Grid>
         <Grid item>
-            <Typography variant="caption" style={{fontSize: '8px'}}>
+            <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.uuid} />
             </Typography>
         </Grid>
