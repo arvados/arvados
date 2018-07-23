@@ -19,7 +19,7 @@ export interface ArvadosTheme extends Theme {
     customs: any;
 }
 
-// const red = 
+const red900 = red["900"];
 const yellow700 = yellow["700"];
 const purple800 = purple["800"];
 const grey200 = grey["200"];
