@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { SubmissionError } from "redux-form";
 
 import { RootState } from "../../store/store";
-import  DialogProjectCreate from "../dialog-create/dialog-project-create";
+import { DialogProjectCreate } from "../dialog-create/dialog-project-create";
 import { projectActions, createProject, getProjectList } from "../../store/project/project-action";
 import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
