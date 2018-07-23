@@ -16,10 +16,12 @@ import { ContainerRequestState } from '../../models/container-request';
 import { SortDirection } from '../../components/data-table/data-column';
 import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '../../components/icon/icon';
+import { ArvadosTheme } from '../../common/custom-theme';
 
 type CssRules = "toolbar" | "button";
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
         paddingBottom: theme.spacing.unit * 3,
         textAlign: "right"
@@ -30,11 +32,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 });
 
 const renderName = (item: ProjectPanelItem) =>
-    <Grid
-        container
-        alignItems="center"
-        wrap="nowrap"
-        spacing={16}>
+    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item)}
         </Grid>
@@ -49,20 +47,19 @@ const renderName = (item: ProjectPanelItem) =>
 const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
         case ResourceKind.Project:
-            return <i className="fas fa-folder fa-lg" />;
+            return <ProjectIcon />;
         case ResourceKind.Collection:
-            return <i className="fas fa-archive fa-lg" />;
+            return <CollectionIcon />;
         case ResourceKind.Process:
-            return <i className="fas fa-cogs fa-lg" />;
+            return <ProcessIcon />;
         default:
-            return <i />;
+            return <DefaultIcon />;
     }
 };
 
-const renderDate = (date: string) =>
-    <Typography noWrap>
-        {formatDate(date)}
-    </Typography>;
+const renderDate = (date: string) => {
+    return <Typography noWrap>{formatDate(date)}</Typography>;
+};
 
 const renderFileSize = (fileSize?: number) =>
     <Typography noWrap>
@@ -70,107 +67,124 @@ const renderFileSize = (fileSize?: number) =>
     </Typography>;
 
 const renderOwner = (owner: string) =>
-    <Typography noWrap color="primary">
+    <Typography noWrap color="primary" >
         {owner}
     </Typography>;
 
-const renderType = (type: string) => {
-    return <Typography noWrap>
+const renderType = (type: string) =>
+    <Typography noWrap>
         {resourceLabel(type)}
     </Typography>;
-};
 
 const renderStatus = (item: ProjectPanelItem) =>
-    <Typography noWrap align="center">
+    <Typography noWrap align="center" >
         {item.status || "-"}
     </Typography>;
 
 export enum ProjectPanelColumnNames {
-    Name = "Name",
-    Status = "Status",
-    Type = "Type",
-    Owner = "Owner",
-    FileSize = "File size",
-    LastModified = "Last modified"
+    NAME = "Name",
+    STATUS = "Status",
+    TYPE = "Type",
+    OWNER = "Owner",
+    FILE_SIZE = "File size",
+    LAST_MODIFIED = "Last modified"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [{
-    name: ProjectPanelColumnNames.Name,
-    selected: true,
-    sortDirection: SortDirection.Asc,
-    render: renderName,
-    width: "450px"
-}, {
-    name: "Status",
-    selected: true,
-    filters: [{
-        name: ContainerRequestState.Committed,
+export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
+    {
+        name: ProjectPanelColumnNames.NAME,
         selected: true,
-        type: ContainerRequestState.Committed
-    }, {
-        name: ContainerRequestState.Final,
+        sortDirection: SortDirection.Asc,
+        render: renderName,
+        width: "450px"
+    },
+    {
+        name: "Status",
         selected: true,
-        type: ContainerRequestState.Final
-    }, {
-        name: ContainerRequestState.Uncommitted,
+        filters: [
+            {
+                name: ContainerRequestState.Committed,
+                selected: true,
+                type: ContainerRequestState.Committed
+            },
+            {
+                name: ContainerRequestState.Final,
+                selected: true,
+                type: ContainerRequestState.Final
+            },
+            {
+                name: ContainerRequestState.Uncommitted,
+                selected: true,
+                type: ContainerRequestState.Uncommitted
+            }
+        ],
+        render: renderStatus,
+        width: "75px"
+    },
+    {
+        name: ProjectPanelColumnNames.TYPE,
         selected: true,
-        type: ContainerRequestState.Uncommitted
-    }],
-    render: renderStatus,
-    width: "75px"
-}, {
-    name: ProjectPanelColumnNames.Type,
-    selected: true,
-    filters: [{
-        name: resourceLabel(ResourceKind.Collection),
+        filters: [
+            {
+                name: resourceLabel(ResourceKind.Collection),
+                selected: true,
+                type: ResourceKind.Collection
+            },
+            {
+                name: resourceLabel(ResourceKind.Process),
+                selected: true,
+                type: ResourceKind.Process
+            },
+            {
+                name: resourceLabel(ResourceKind.Project),
+                selected: true,
+                type: ResourceKind.Project
+            }
+        ],
+        render: item => renderType(item.kind),
+        width: "125px"
+    },
+    {
+        name: ProjectPanelColumnNames.OWNER,
         selected: true,
-        type: ResourceKind.Collection
-    }, {
-        name: resourceLabel(ResourceKind.Process),
+        render: item => renderOwner(item.owner),
+        width: "200px"
+    },
+    {
+        name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
-        type: ResourceKind.Process
-    }, {
-        name: resourceLabel(ResourceKind.Project),
+        render: item => renderFileSize(item.fileSize),
+        width: "50px"
+    },
+    {
+        name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
-        type: ResourceKind.Project
-    }],
-    render: item => renderType(item.kind),
-    width: "125px"
-}, {
-    name: ProjectPanelColumnNames.Owner,
-    selected: true,
-    render: item => renderOwner(item.owner),
-    width: "200px"
-}, {
-    name: ProjectPanelColumnNames.FileSize,
-    selected: true,
-    render: item => renderFileSize(item.fileSize),
-    width: "50px"
-}, {
-    name: ProjectPanelColumnNames.LastModified,
-    selected: true,
-    sortDirection: SortDirection.None,
-    render: item => renderDate(item.lastModified),
-    width: "150px"
-}];
+        sortDirection: SortDirection.None,
+        render: item => renderDate(item.lastModified),
+        width: "150px"
+    }
+];
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
-type ProjectPanelProps = {
-    currentItemId: string,
-    onItemClick: (item: ProjectPanelItem) => void,
+interface ProjectPanelDataProps {
+    currentItemId: string;
+}
+
+interface ProjectPanelActionProps {
+    onItemClick: (item: ProjectPanelItem) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
     onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: ProjectPanelItem) => void,
-    onItemRouteChange: (itemId: string) => void
+    onItemDoubleClick: (item: ProjectPanelItem) => void;
+    onItemRouteChange: (itemId: string) => void;
 }
-    & DispatchProp
-    & WithStyles<CssRules>
-    & RouteComponentProps<{ id: string }>;
+
+type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp
+                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(

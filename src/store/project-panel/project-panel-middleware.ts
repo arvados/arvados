@@ -51,8 +51,8 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, PROJECT_PANEL_ID);
                 const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
-                const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.Type);
-                const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.Status);
+                const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
+                const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
                 const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
                 const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.Asc ? SortDirection.Asc : SortDirection.Desc;
                 if (typeFilters.length > 0) {
@@ -61,7 +61,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
                             order: sortColumn
-                                ? sortColumn.name === ProjectPanelColumnNames.Name
+                                ? sortColumn.name === ProjectPanelColumnNames.NAME
                                     ? getOrder("name", sortDirection)
                                     : getOrder("createdAt", sortDirection)
                                 : OrderBuilder.create(),
