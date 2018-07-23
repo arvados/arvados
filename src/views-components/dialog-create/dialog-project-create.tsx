@@ -14,6 +14,40 @@ import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } 
 
 import { NAME, DESCRIPTION } from '../../validators/create-project/create-project-validator';
 
+type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    button: {
+        marginLeft: theme.spacing.unit
+    },
+    lastButton: {
+        marginLeft: theme.spacing.unit,
+        marginRight: "20px",
+    },
+    formContainer: {
+        display: "flex",
+        flexDirection: "column",
+        marginTop: "20px",
+    },
+    dialogTitle: {
+        paddingBottom: "0"
+    },
+    textField: {
+        marginTop: "32px",
+    },
+    dialog: {
+        minWidth: "600px",
+        minHeight: "320px"
+    },
+    createProgress: {
+        position: "absolute",
+        minWidth: "20px",
+        right: "95px"
+    },
+    dialogActions: {
+        marginBottom: "24px"
+    }
+});
 interface DialogProjectProps {
     open: boolean;
     handleClose: () => void;
@@ -86,41 +120,6 @@ class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyle
         />
     )
 }
-
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
-
-const styles: StyleRulesCallback<CssRules> = theme => ({
-    button: {
-        marginLeft: theme.spacing.unit
-    },
-    lastButton: {
-        marginLeft: theme.spacing.unit,
-        marginRight: "20px",
-    },
-    formContainer: {
-        display: "flex",
-        flexDirection: "column",
-        marginTop: "20px",
-    },
-    dialogTitle: {
-        paddingBottom: "0"
-    },
-    textField: {
-        marginTop: "32px",
-    },
-    dialog: {
-        minWidth: "600px",
-        minHeight: "320px"
-    },
-    createProgress: {
-        position: "absolute",
-        minWidth: "20px",
-        right: "95px"
-    },
-    dialogActions: {
-        marginBottom: "24px"
-    }
-});
 
 export default compose(
     reduxForm({ form: 'projectCreateDialog' }),
