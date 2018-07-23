@@ -147,15 +147,21 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
+    - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
-      - install/cheat_sheet.html.textile.liquid
-      - user/topics/arvados-sync-groups.html.textile.liquid
-      - admin/storage-classes.html.textile.liquid
-      - admin/activation.html.textile.liquid
-      - admin/migrating-providers.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
-      - admin/spot-instances.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
+    - Users and Groups:
+      - install/cheat_sheet.html.textile.liquid
+      - admin/activation.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
+      - admin/migrating-providers.html.textile.liquid
+      - user/topics/arvados-sync-groups.html.textile.liquid
+    - Monitoring:
+      - admin/health-checks.html.textile.liquid
+      - admin/metrics.html.textile.liquid
+    - Cloud:
+      - admin/storage-classes.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
