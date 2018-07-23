@@ -4,7 +4,8 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions } from "../../../store/project/project-action";
-import { ShareIcon, NewProjectIcon  } from "../../../components/icon/icon";
+import { ShareIcon, NewProjectIcon } from "../../../components/icon/icon";
+import { FavoriteActionText, FavoriteActionIcon } from "./favorite-action";
 
 export const projectActionSet: ContextMenuActionSet = [[{
     icon: NewProjectIcon,
@@ -13,7 +14,7 @@ export const projectActionSet: ContextMenuActionSet = [[{
         dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
     }
 }, {
-    icon: ShareIcon,
-    name: "Share",
-    execute: () => { return; }
+    name: FavoriteActionText,
+    icon: FavoriteActionIcon,
+    execute: (dispatch, resource) => { alert(resource); }
 }]];
