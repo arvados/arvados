@@ -14,7 +14,6 @@ const actions = unionize({
     CLOSE_PROJECT_CREATOR: ofType<{}>(),
     CREATE_PROJECT: ofType<Partial<ProjectResource>>(),
     CREATE_PROJECT_SUCCESS: ofType<ProjectResource>(),
-    CREATE_PROJECT_ERROR: ofType<string>(),
     REMOVE_PROJECT: ofType<string>(),
     PROJECTS_REQUEST: ofType<string>(),
     PROJECTS_SUCCESS: ofType<{ projects: ProjectResource[], parentItemId?: string }>(),
@@ -45,8 +44,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
         dispatch(actions.CREATE_PROJECT(projectData));
         return projectService
             .create(projectData)
-            .then(project => dispatch(actions.CREATE_PROJECT_SUCCESS(project)))
-            .catch(errors => dispatch(actions.CREATE_PROJECT_ERROR(errors.errors.join(''))));
+            .then(project => dispatch(actions.CREATE_PROJECT_SUCCESS(project)));
     };
 
 export type ProjectAction = UnionOf<typeof actions>;

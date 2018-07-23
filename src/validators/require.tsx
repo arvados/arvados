@@ -10,7 +10,7 @@ interface RequireProps {
 
 // TODO types for require
 const require: any = (value: string, errorMessage = ERROR_MESSAGE) => {
-    return value && value.toString().length > 0 ? void 0 : ERROR_MESSAGE;
+    return value && value.toString().length > 0 ? undefined : ERROR_MESSAGE;
 };
 
 export default require;

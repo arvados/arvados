@@ -13,14 +13,13 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
 import { NAME, DESCRIPTION } from '../../validators/create-project/create-project-validator';
-import { isUniqName } from '../../validators/is-uniq-name';
 
-interface ProjectCreateProps {
+interface DialogProjectProps {
     open: boolean;
-    pending: boolean;
     handleClose: () => void;
     onSubmit: (data: { name: string, description: string }) => void;
     handleSubmit: any;
+    submitting: boolean;
 }
 
 interface TextFieldProps {
@@ -31,23 +30,16 @@ interface TextFieldProps {
     meta?: any;
 }
 
-class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyles<CssRules>> {
-    /*componentWillReceiveProps(nextProps: ProjectCreateProps) {
-        const { error } = nextProps;
-
-        TODO: Validation for other errors
-        if (this.props.error !== error && error && error.includes("UniqueViolation")) {
-            this.setState({ isUniqName: error });
-        }
-}*/
-
+class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyles<CssRules>> {
     render() {
-        const { classes, open, handleClose, pending, handleSubmit, onSubmit } = this.props;
+        const { classes, open, handleClose, handleSubmit, onSubmit, submitting } = this.props;
 
         return (
             <Dialog
                 open={open}
-                onClose={handleClose}>
+                onClose={handleClose}
+                disableBackdropClick={true}
+                disableEscapeKeyDown={true}>
                 <div className={classes.dialog}>
                     <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
                         <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a project</DialogTitle>
@@ -60,21 +52,21 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
                                 label="Project Name" />
                             <Field name="description"
                                 component={this.renderTextField}
-                                floatinglabeltext="Description"
+                                floatinglabeltext="Description - optional"
                                 validate={DESCRIPTION}
                                 className={classes.textField}
-                                label="Description" />
+                                label="Description - optional" />
                         </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleClose} className={classes.button} color="primary" disabled={pending}>CANCEL</Button>
+                        <DialogActions className={classes.dialogActions}>
+                            <Button onClick={handleClose} className={classes.button} color="primary" disabled={submitting}>CANCEL</Button>
                             <Button type="submit"
                                 className={classes.lastButton}
                                 color="primary"
-                                disabled={pending}
+                                disabled={submitting}
                                 variant="contained">
                                 CREATE A PROJECT
                             </Button>
-                            {pending && <CircularProgress size={20} className={classes.createProgress} />}
+                            {submitting && <CircularProgress size={20} className={classes.createProgress} />}
                         </DialogActions>
                     </form>
                 </div>
@@ -82,13 +74,12 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
         );
     }
 
-    // TODO Make it separate file
     renderTextField = ({ input, label, meta: { touched, error }, ...custom }: TextFieldProps) => (
         <TextField
-            helperText={touched && error ? error : void 0}
+            helperText={touched && error}
             label={label}
             className={this.props.classes.textField}
-            error={touched && !!error} 
+            error={touched && !!error}
             autoComplete='off'
             {...input}
             {...custom}
@@ -96,7 +87,7 @@ class DialogProjectCreate extends React.Component<ProjectCreateProps & WithStyle
     )
 }
 
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress";
+type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -126,9 +117,12 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         minWidth: "20px",
         right: "95px"
     },
+    dialogActions: {
+        marginBottom: "24px"
+    }
 });
 
 export default compose(
-    reduxForm({ form: 'projectCreateDialog',/* asyncValidate: isUniqName, asyncBlurFields: ["name"] */}),
+    reduxForm({ form: 'projectCreateDialog' }),
     withStyles(styles)
 )(DialogProjectCreate);
