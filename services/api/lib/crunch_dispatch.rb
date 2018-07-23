@@ -29,6 +29,7 @@ class CrunchDispatch
     @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
     @docker_run_args = ENV['CRUNCH_JOB_DOCKER_RUN_ARGS']
     @cgroup_root = ENV['CRUNCH_CGROUP_ROOT']
+    @srun_sync_timeout = ENV['CRUNCH_SRUN_SYNC_TIMEOUT']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exist? @arvados_internal
@@ -417,6 +418,10 @@ class CrunchDispatch
 
       if @docker_run_args
         cmd_args += ['--docker-run-args', @docker_run_args]
+      end
+
+      if @srun_sync_timeout
+        cmd_args += ['--srun-sync-timeout', @srun_sync_timeout]
       end
 
       if have_job_lock?(job)
