@@ -18,7 +18,7 @@ import { TreeItem } from "../../components/tree/tree";
 import { getTreePath } from '../../store/project/project-reducer';
 import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
-import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
+import { ItemMode, setFavoriteItem, setProjectItem } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
 import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
@@ -28,10 +28,11 @@ import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { FavoritePanel } from "../favorite-panel/favorite-panel";
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -191,6 +192,7 @@ export const Workbench = withStyles(styles)(
                             <div className={classes.content}>
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
+                                    <Route path="/favorites" render={this.renderFavoritePanel} />
                                 </Switch>
                             </div>
                             { user && <DetailsPanel /> }
@@ -210,6 +212,19 @@ export const Workbench = withStyles(styles)(
                 }}
                 onItemDoubleClick={item => {
                     this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                }}
+                {...props} />
+
+            renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
+                onItemRouteChange={itemId => this.props.dispatch<any>(setFavoriteItem(itemId, ItemMode.ACTIVE))}
+                onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Favorite)}
+                onDialogOpen={this.handleCreationDialogOpen}
+                onItemClick={item => {
+                    this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                }}
+                onItemDoubleClick={item => {
+                    this.props.dispatch<any>(setFavoriteItem(item.uuid, ItemMode.ACTIVE));
                     this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
                 }}
                 {...props} />
@@ -239,7 +254,8 @@ export const Workbench = withStyles(styles)(
             toggleSidePanelActive = (itemId: string) => {
                 this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
-                this.props.dispatch(push("/"));
+                const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
+                this.props.dispatch(push(panelItem && panelItem.path ? panelItem.path : "/"));
             }
 
             handleCreationDialogOpen = (itemUuid: string) => {

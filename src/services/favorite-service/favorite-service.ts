@@ -10,9 +10,12 @@ import { ListArguments, ListResults } from "../../common/api/common-resource-ser
 import { OrderBuilder } from "../../common/api/order-builder";
 
 export interface FavoriteListArguments extends ListArguments {
+    limit?: number;
+    offset?: number;
     filters?: FilterBuilder<LinkResource>;
     order?: OrderBuilder<LinkResource>;
 }
+
 export class FavoriteService {
     constructor(
         private linkService: LinkService,
@@ -63,6 +66,4 @@ export class FavoriteService {
                 });
             });
     }
-
-
 }

@@ -58,6 +58,7 @@ export interface SidePanelItem {
     open?: boolean;
     margin?: boolean;
     openAble?: boolean;
+    path?: string;
 }
 
 interface SidePanelDataProps {

@@ -58,3 +58,8 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
 
         }
     };
+
+export const setFavoriteItem = (itemId: string, itemMode: ItemMode) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const a = 1;
+    };

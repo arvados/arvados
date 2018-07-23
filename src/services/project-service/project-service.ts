@@ -32,5 +32,4 @@ export class ProjectService extends GroupsService<ProjectResource> {
                 .create<ProjectResource>()
                 .addEqual("groupClass", GroupClass.Project));
     }
-
 }

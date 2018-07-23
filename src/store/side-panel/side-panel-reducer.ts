@@ -14,11 +14,12 @@ export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: 
         return sidePanelData;
     } else {
         return sidePanelActions.match(action, {
-            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId => state.map(it => itemId === it.id && it.open === false ? {...it, open: true} : {...it, open: false}),
+            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
+                state.map(it => ({...it, open: itemId === it.id && it.open === false})),
             TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
                 const sidePanel = _.cloneDeep(state);
                 resetSidePanelActivity(sidePanel);
-                sidePanel.map(it => {
+                sidePanel.forEach(it => {
                     if (it.id === itemId) {
                         it.active = true;
                     }
@@ -77,6 +78,7 @@ export const sidePanelData = [
         name: "Favorites",
         icon: FavoriteIcon,
         active: false,
+        path: '/favorites'
     },
     {
         id: SidePanelIdentifiers.Trash,

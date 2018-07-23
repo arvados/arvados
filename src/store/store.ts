@@ -14,6 +14,7 @@ import { dataExplorerReducer, DataExplorerState } from './data-explorer/data-exp
 import { projectPanelMiddleware } from './project-panel/project-panel-middleware';
 import { detailsPanelReducer, DetailsPanelState } from './details-panel/details-panel-reducer';
 import { contextMenuReducer, ContextMenuState } from './context-menu/context-menu-reducer';
+import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middleware";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -45,7 +46,8 @@ export function configureStore(history: History) {
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware,
-        projectPanelMiddleware
+        projectPanelMiddleware,
+        favoritePanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);
