@@ -33,7 +33,7 @@ export interface EmptyStateDataProps {
 type EmptyStateProps = EmptyStateDataProps & WithStyles<CssRules>;
 
 const EmptyState = withStyles(styles)(
-    ({ classes, details, message, children }: EmptyStateProps) =>
+    ({ classes, details, message, children, icon: Icon }: EmptyStateProps) =>
         <Typography className={classes.container} component="div">
             <Icon className={classes.icon}/>
             <Typography variant="body1" gutterBottom>{message}</Typography>
