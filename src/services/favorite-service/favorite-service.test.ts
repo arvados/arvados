@@ -74,4 +74,20 @@ describe("FavoriteService", () => {
         expect(favorites).toEqual({ items: [{ uuid: "resourceUuid" }] });
     });
 
+    it("checks if resources are present in favorites", async () => {
+        const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "foo" }] }));
+        const listFilters = FilterBuilder
+            .create<LinkResource>()
+            .addIn("headUuid", ["foo", "oof"])
+            .addEqual("tailUuid", "userUuid")
+            .addEqual("linkClass", LinkClass.STAR);
+        linkService.list = list;
+        const favoriteService = new FavoriteService(linkService, groupService);
+
+        const favorites = await favoriteService.checkPresenceInFavorites("userUuid", ["foo", "oof"]);
+
+        expect(list.mock.calls[0][0].filters.getFilters()).toEqual(listFilters.getFilters());
+        expect(favorites).toEqual({ foo: true, oof: false });
+    });
+
 });

@@ -64,5 +64,20 @@ export class FavoriteService {
             });
     }
 
+    checkPresenceInFavorites(userUuid: string, resourceUuids: string[]): Promise<Record<string, boolean>> {
+        return this.linkService
+            .list({
+                filters: FilterBuilder
+                    .create<LinkResource>()
+                    .addIn("headUuid", resourceUuids)
+                    .addEqual("tailUuid", userUuid)
+                    .addEqual("linkClass", LinkClass.STAR)
+            })
+            .then(({items}) => resourceUuids.reduce((results, uuid) => {
+                const isFavorite = items.some(item => item.headUuid === uuid);
+                return {...results, [uuid]: isFavorite};
+            }, {}));
+    }
+
 
 }
