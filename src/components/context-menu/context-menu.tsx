@@ -7,8 +7,8 @@ import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 
 export interface ContextMenuItem {
-    name: string;
-    icon: IconType;
+    name: string | React.ComponentType;
+    icon: React.ComponentType<any>;
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];
@@ -22,7 +22,7 @@ export interface ContextMenuProps {
 
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, items, onClose, onItemClick} = this.props;
+        const { anchorEl, items, onClose, onItemClick } = this.props;
         return <Popover
             anchorEl={anchorEl}
             open={!!anchorEl}
@@ -39,10 +39,12 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 key={actionIndex}
                                 onClick={() => onItemClick(item)}>
                                 <ListItemIcon>
-                                    <item.icon/>
+                                    <item.icon />
                                 </ListItemIcon>
                                 <ListItemText>
-                                    {item.name}
+                                    {typeof item.name === "string"
+                                        ? item.name
+                                        : <item.name />}
                                 </ListItemText>
                             </ListItem>)}
                         {groupIndex < items.length - 1 && <Divider />}
