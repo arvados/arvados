@@ -12,4 +12,4 @@ export const favoritesReducer = (state: FavoritesState = {}, action: FavoritesAc
         default: () => state
     });
 
-export const isFavorite = (uuid: string, state: FavoritesState) => state[uuid] === true;
+export const checkFavorite = (uuid: string, state: FavoritesState) => state[uuid] === true;

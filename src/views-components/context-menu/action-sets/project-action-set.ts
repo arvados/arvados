@@ -6,6 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions } from "../../../store/project/project-action";
 import { ShareIcon, NewProjectIcon } from "../../../components/icon/icon";
 import { FavoriteActionText, FavoriteActionIcon } from "./favorite-action";
+import { favoritesActions, toggleFavorite } from "../../../store/favorites/favorites-actions";
 
 export const projectActionSet: ContextMenuActionSet = [[{
     icon: NewProjectIcon,
@@ -16,5 +17,7 @@ export const projectActionSet: ContextMenuActionSet = [[{
 }, {
     name: FavoriteActionText,
     icon: FavoriteActionIcon,
-    execute: (dispatch, resource) => { alert(resource); }
+    execute: (dispatch, resource) => {
+        dispatch<any>(toggleFavorite(resource.uuid));
+    }
 }]];

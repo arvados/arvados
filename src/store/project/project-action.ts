@@ -35,8 +35,7 @@ export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, 
             .addEqual("ownerUuid", parentUuid)
     }).then(({ items: projects }) => {
         dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
-        const { user } = getState().auth;
-        dispatch<any>(checkPresenceInFavorites(user ? user.uuid : "", projects.map(project => project.uuid)));
+        dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
         return projects;
     });
 };

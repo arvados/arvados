@@ -5,16 +5,35 @@
 import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "../../../node_modules/redux";
 import { favoriteService } from "../../services/services";
+import { RootState } from "../store";
+import { checkFavorite } from "./favorites-reducer";
 
 export const favoritesActions = unionize({
+    TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
     CHECK_PRESENCE_IN_FAVORITES: ofType<string[]>(),
     UPDATE_FAVORITES: ofType<Record<string, boolean>>()
 }, { tag: 'type', value: 'payload' });
 
 export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
-export const checkPresenceInFavorites = (userUuid: string, resourceUuids: string[]) =>
-    (dispatch: Dispatch) => {
+export const toggleFavorite = (resourceUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const userUuid = getState().auth.user!.uuid;
+        dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid }));
+        const isFavorite = checkFavorite(resourceUuid, getState().favorites);
+        const promise = isFavorite
+            ? favoriteService.delete({ userUuid, resourceUuid })
+            : favoriteService.create({ userUuid, resourceUuid });
+
+        promise
+            .then(fav => {
+                dispatch(favoritesActions.UPDATE_FAVORITES({ [resourceUuid]: !isFavorite }));
+            });
+    };
+
+export const checkPresenceInFavorites = (resourceUuids: string[]) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
         favoriteService
             .checkPresenceInFavorites(userUuid, resourceUuids)
