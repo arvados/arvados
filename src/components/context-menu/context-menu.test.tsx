@@ -27,6 +27,7 @@ describe("<ContextMenu />", () => {
         const onItemClick = jest.fn();
         const contextMenu = mount(<ContextMenu
             anchorEl={document.createElement("div")}
+            open={true}
             onClose={jest.fn()}
             onItemClick={onItemClick}
             items={items} />);

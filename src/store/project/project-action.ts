@@ -8,6 +8,7 @@ import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { RootState } from "../store";
+import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 
 export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -26,7 +27,7 @@ export const projectActions = unionize({
         value: 'payload'
     });
 
-export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) => {
+export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
     dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
     return projectService.list({
         filters: FilterBuilder
@@ -34,6 +35,7 @@ export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch) 
             .addEqual("ownerUuid", parentUuid)
     }).then(({ items: projects }) => {
         dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
+        dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
         return projects;
     });
 };
