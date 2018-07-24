@@ -5,7 +5,6 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions } from "../../../store/project/project-action";
 import { NewProjectIcon } from "../../../components/icon/icon";
-import { FavoriteActionText, FavoriteActionIcon } from "./favorite-action";
 
 export const rootProjectActionSet: ContextMenuActionSet =  [[{
     icon: NewProjectIcon,

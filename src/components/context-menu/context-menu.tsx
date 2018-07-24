@@ -7,8 +7,9 @@ import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 
 export interface ContextMenuItem {
-    name: string | React.ComponentType;
-    icon: React.ComponentType<any>;
+    name?: string | React.ComponentType;
+    icon?: IconType;
+    component?: React.ComponentType<any>;
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];
@@ -39,14 +40,16 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 button
                                 key={actionIndex}
                                 onClick={() => onItemClick(item)}>
-                                <ListItemIcon>
-                                    <item.icon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    {typeof item.name === "string"
-                                        ? item.name
-                                        : <item.name />}
-                                </ListItemText>
+                                {item.icon &&
+                                    <ListItemIcon>
+                                        <item.icon />
+                                    </ListItemIcon>}
+                                {item.name &&
+                                    <ListItemText>
+                                        {item.name}
+                                    </ListItemText>}
+                                {item.component &&
+                                    <item.component />}
                             </ListItem>)}
                         {groupIndex < items.length - 1 && <Divider />}
                     </React.Fragment>)}

@@ -12,12 +12,16 @@ const mapStateToProps = (state: RootState) => ({
     isFavorite: state.contextMenu.resource && state.favorites[state.contextMenu.resource.uuid] === true
 });
 
-export const FavoriteActionText = connect(mapStateToProps)((props: { isFavorite: boolean }) =>
-    props.isFavorite
-        ? <>Remove from favorites</>
-        : <>Add to favorites</>);
-
-export const FavoriteActionIcon = connect(mapStateToProps)((props: { isFavorite: boolean }) =>
-    props.isFavorite
-        ? <RemoveFavoriteIcon />
-        : <AddFavoriteIcon />);
+export const ToggleFavoriteAction = connect(mapStateToProps)((props: { isFavorite: boolean }) =>
+    <>
+        <ListItemIcon>
+            {props.isFavorite
+                ? <RemoveFavoriteIcon />
+                : <AddFavoriteIcon />}
+        </ListItemIcon>
+        <ListItemText>
+            {props.isFavorite
+                ? <>Remove from favorites</>
+                : <>Add to favorites</>}
+        </ListItemText>
+    </>);
