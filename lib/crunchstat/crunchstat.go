@@ -53,6 +53,9 @@ type Reporter struct {
 	// Interval between samples. Must be positive.
 	PollPeriod time.Duration
 
+	// Temporary directory, will be monitored for available, used & total space.
+	TempDir string
+
 	// Where to write statistics. Must not be nil.
 	Logger *log.Logger
 
@@ -314,7 +317,7 @@ type diskSpaceSample struct {
 
 func (r *Reporter) doDiskSpaceStats() {
 	s := syscall.Statfs_t{}
-	err := syscall.Statfs("/tmp", &s)
+	err := syscall.Statfs(r.TempDir, &s)
 	if err != nil {
 		return
 	}
@@ -323,7 +326,7 @@ func (r *Reporter) doDiskSpaceStats() {
 		hasData:    true,
 		sampleTime: time.Now(),
 		total:      s.Blocks * bs,
-		used:       (s.Blocks - s.Bavail) * bs,
+		used:       (s.Blocks - s.Bfree) * bs,
 		available:  s.Bavail * bs,
 	}
 
@@ -335,7 +338,7 @@ func (r *Reporter) doDiskSpaceStats() {
 			interval,
 			int64(nextSample.used-prev.used))
 	}
-	r.Logger.Printf("tmpdir available:%d used:%d total:%d%s\n",
+	r.Logger.Printf("statfs %d available %d used %d total%s\n",
 		nextSample.available, nextSample.used, nextSample.total, delta)
 	r.lastDiskSpaceSample = nextSample
 }
@@ -421,6 +424,14 @@ func (r *Reporter) run() {
 
 	r.lastNetSample = make(map[string]ioSample)
 	r.lastDiskIOSample = make(map[string]ioSample)
+
+	if len(r.TempDir) == 0 {
+		// Temporary dir not provided, try to get it from the environment.
+		r.TempDir = os.Getenv("TMPDIR")
+	}
+	if len(r.TempDir) > 0 {
+		r.Logger.Printf("notice: monitoring temp dir %s\n", r.TempDir)
+	}
 
 	ticker := time.NewTicker(r.PollPeriod)
 	for {
