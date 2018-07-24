@@ -21,6 +21,7 @@ import {
 } from "../../views/favorite-panel/favorite-panel";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { LinkResource } from "../../models/link";
+import { ResourceKind } from "../../models/resource";
 
 export const favoritePanelMiddleware: Middleware = store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: FAVORITE_PANEL_ID, columns }));
@@ -58,28 +59,14 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                 const dataExplorer = getDataExplorer(state.dataExplorer, FAVORITE_PANEL_ID);
                 const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
                 const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
-                const statusFilters = getColumnFilters(columns, FavoritePanelColumnNames.STATUS);
-                const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
-                const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.Asc ? SortDirection.Asc : SortDirection.Desc;
                 if (typeFilters.length > 0) {
                     favoriteService
                         .list(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                            order: sortColumn
-                                ? sortColumn.name === FavoritePanelColumnNames.NAME
-                                    ? getOrder("name", sortDirection)
-                                    : getOrder("createdAt", sortDirection)
-                                : OrderBuilder.create(),
                             filters: FilterBuilder
-                                .create()
-                                .concat(FilterBuilder
-                                    .create()
-                                    .addIsA("uuid", typeFilters.map(f => f.type)))
-                                .concat(FilterBuilder
-                                    .create<ProcessResource>(GroupContentsResourcePrefix.Process)
-                                    .addIn("state", statusFilters.map(f => f.type)))
-                                .concat(getSearchFilter(dataExplorer.searchValue))
+                                .create<LinkResource>()
+                                .addIsA("headUuid", typeFilters.map(filter => filter.type))
                         })
                         .then(response => {
                             store.dispatch(dataExplorerActions.SET_ITEMS({
@@ -110,24 +97,5 @@ const getColumnFilters = (columns: DataColumns<FavoritePanelItem, FavoritePanelF
     return column && column.filters ? column.filters.filter(f => f.selected) : [];
 };
 
-const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
-    [
-        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Collection),
-        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Process),
-        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Project)
-    ].reduce((acc, b) =>
-        acc.concat(direction === SortDirection.Asc
-            ? b.addAsc(attribute)
-            : b.addDesc(attribute)), OrderBuilder.create());
-
-const getSearchFilter = (searchValue: string) =>
-    searchValue
-        ? [
-            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Collection),
-            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Process),
-            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Project)]
-            .reduce((acc, b) =>
-                acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
-        : FilterBuilder.create();
 
 
