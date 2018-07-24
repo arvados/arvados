@@ -10,6 +10,7 @@ import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
 import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
 import * as classnames from "classnames";
 import { ListItemTextIcon } from '../list-item-text-icon/list-item-text-icon';
+import { Dispatch } from "redux";
 
 type CssRules = 'active' | 'row' | 'root' | 'list' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
 
@@ -58,7 +59,7 @@ export interface SidePanelItem {
     open?: boolean;
     margin?: boolean;
     openAble?: boolean;
-    path?: string;
+    activeAction?: (dispatch: Dispatch) => void;
 }
 
 interface SidePanelDataProps {

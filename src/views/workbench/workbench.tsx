@@ -255,7 +255,9 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
-                this.props.dispatch(push(panelItem && panelItem.path ? panelItem.path : "/"));
+                if (panelItem && panelItem.activeAction) {
+                    panelItem.activeAction(this.props.dispatch);
+                }
             }
 
             handleCreationDialogOpen = (itemUuid: string) => {
