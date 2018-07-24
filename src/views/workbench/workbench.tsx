@@ -32,6 +32,7 @@ import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer'
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -78,6 +79,7 @@ interface WorkbenchDataProps {
     projects: Array<TreeItem<ProjectResource>>;
     currentProjectId: string;
     user?: User;
+    currentToken?: string;
     sidePanelItems: SidePanelItem[];
 }
 
@@ -95,6 +97,7 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
+    isCurrentTokenDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -110,17 +113,23 @@ export const Workbench = withStyles(styles)(
             projects: state.projects.items,
             currentProjectId: state.projects.currentItemId,
             user: state.auth.user,
+            currentToken: state.auth.apiToken,
             sidePanelItems: state.sidePanel
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
             state = {
                 isCreationDialogOpen: false,
+                isCurrentTokenDialogOpen: false,
                 anchorEl: null,
                 searchText: "",
                 breadcrumbs: [],
                 menuItems: {
                     accountMenu: [
+                        {
+                            label: 'Current token',
+                            action: () => this.toggleCurrentTokenModal()
+                        },
                         {
                             label: "Logout",
                             action: () => this.props.dispatch(authActions.LOGOUT())
@@ -197,6 +206,10 @@ export const Workbench = withStyles(styles)(
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
+                        <CurrentTokenDialog 
+                            currentToken={this.props.currentToken}
+                            open={this.state.isCurrentTokenDialogOpen} 
+                            handleClose={this.toggleCurrentTokenModal} />
                     </div>
                 );
             }
@@ -254,6 +267,10 @@ export const Workbench = withStyles(styles)(
                         resource: { uuid: itemUuid, kind }
                     })
                 );
+            }
+
+            toggleCurrentTokenModal = () => {
+                this.setState({ isCurrentTokenDialogOpen: !this.state.isCurrentTokenDialogOpen });
             }
         }
     )
