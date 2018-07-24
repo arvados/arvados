@@ -11,12 +11,13 @@ import { ContextMenuResource } from "../../store/context-menu/context-menu-reduc
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 
-type DataProps = Pick<ContextMenuProps, "anchorEl" | "items"> & { resource?: ContextMenuResource };
+type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
-    const { position, resource } = state.contextMenu;
+    const { open, position, resource } = state.contextMenu;
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
         items: getMenuActionSet(resource),
+        open,
         resource
     };
 };
@@ -56,5 +57,6 @@ const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet 
 
 export enum ContextMenuKind {
     RootProject = "RootProject",
-    Project = "Project"
+    Project = "Project",
+    Resource = "Resource"
 }

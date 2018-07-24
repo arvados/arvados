@@ -32,6 +32,7 @@ import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer'
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -78,6 +79,7 @@ interface WorkbenchDataProps {
     projects: Array<TreeItem<ProjectResource>>;
     currentProjectId: string;
     user?: User;
+    currentToken?: string;
     sidePanelItems: SidePanelItem[];
 }
 
@@ -95,6 +97,7 @@ interface NavMenuItem extends MainAppBarMenuItem {
 }
 
 interface WorkbenchState {
+    isCurrentTokenDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
     menuItems: {
@@ -110,17 +113,23 @@ export const Workbench = withStyles(styles)(
             projects: state.projects.items,
             currentProjectId: state.projects.currentItemId,
             user: state.auth.user,
+            currentToken: state.auth.apiToken,
             sidePanelItems: state.sidePanel
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
             state = {
                 isCreationDialogOpen: false,
+                isCurrentTokenDialogOpen: false,
                 anchorEl: null,
                 searchText: "",
                 breadcrumbs: [],
                 menuItems: {
                     accountMenu: [
+                        {
+                            label: 'Current token',
+                            action: () => this.toggleCurrentTokenModal()
+                        },
                         {
                             label: "Logout",
                             action: () => this.props.dispatch(authActions.LOGOUT())
@@ -175,11 +184,19 @@ export const Workbench = withStyles(styles)(
                                     toggleOpen={this.toggleSidePanelOpen}
                                     toggleActive={this.toggleSidePanelActive}
                                     sidePanelItems={this.props.sidePanelItems}
-                                    onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "", ContextMenuKind.RootProject)}>
+                                    onContextMenu={(event) => this.openContextMenu(event, {
+                                        uuid: authService.getUuid() || "",
+                                        name: "",
+                                        kind: ContextMenuKind.RootProject
+                                    })}>
                                     <ProjectTree
                                         projects={this.props.projects}
                                         toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                        onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid, ContextMenuKind.Project)}
+                                        onContextMenu={(event, item) => this.openContextMenu(event, {
+                                            uuid: item.data.uuid,
+                                            name: item.data.name,
+                                            kind: ContextMenuKind.Project
+                                        })}
                                         toggleActive={itemId => {
                                             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                             this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
@@ -197,13 +214,24 @@ export const Workbench = withStyles(styles)(
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
+                        <CurrentTokenDialog 
+                            currentToken={this.props.currentToken}
+                            open={this.state.isCurrentTokenDialogOpen} 
+                            handleClose={this.toggleCurrentTokenModal} />
                     </div>
                 );
             }
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Project)}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind
+                    });
+                }}
                 onDialogOpen={this.handleCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
@@ -228,7 +256,11 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
                 },
                 onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-                    this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
+                    this.openContextMenu(event, {
+                        uuid: breadcrumb.itemId,
+                        name: breadcrumb.label,
+                        kind: ContextMenuKind.Project
+                    });
                 }
             };
 
@@ -246,14 +278,18 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
             }
 
-            openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
+            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; kind: ContextMenuKind; }) => {
                 event.preventDefault();
                 this.props.dispatch(
                     contextMenuActions.OPEN_CONTEXT_MENU({
                         position: { x: event.clientX, y: event.clientY },
-                        resource: { uuid: itemUuid, kind }
+                        resource
                     })
                 );
+            }
+
+            toggleCurrentTokenModal = () => {
+                this.setState({ isCurrentTokenDialogOpen: !this.state.isCurrentTokenDialogOpen });
             }
         }
     )
