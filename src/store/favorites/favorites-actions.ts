@@ -17,7 +17,7 @@ export const favoritesActions = unionize({
 export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
 export const toggleFavorite = (resource: { uuid: string; name: string }) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch, getState: () => RootState): Promise<any> => {
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
@@ -25,7 +25,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
             ? favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
             : favoriteService.create({ userUuid, resource });
 
-        promise
+        return promise
             .then(fav => {
                 dispatch(favoritesActions.UPDATE_FAVORITES({ [resource.uuid]: !isFavorite }));
             });

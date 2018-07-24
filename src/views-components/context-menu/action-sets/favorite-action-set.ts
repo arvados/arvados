@@ -3,20 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions } from "../../../store/project/project-action";
-import { NewProjectIcon } from "../../../components/icon/icon";
 import { ToggleFavoriteAction } from "./favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
 import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
 import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel";
 
-export const projectActionSet: ContextMenuActionSet = [[{
-    icon: NewProjectIcon,
-    name: "New project",
-    execute: (dispatch, resource) => {
-        dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
-    }
-}, {
+export const favoriteActionSet: ContextMenuActionSet = [[{
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
         dispatch<any>(toggleFavorite(resource)).then(() => {
