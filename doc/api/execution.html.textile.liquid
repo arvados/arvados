@@ -22,13 +22,33 @@ h2. Container API
 
 !(full-width){{site.baseurl}}/images/Crunch_dispatch.svg!
 
-h2. Requesting RAM for containers
+h2(#RAM). Understanding RAM requests for containers
 
 The @runtime_constraints@ section of a container specifies working RAM (@ram@) and keep cache (@keep_cache_ram@).  If not specified, containers get a default keep cache (@container_default_keep_cache_ram@, default 256 MiB).  The total RAM requested for a container is the sum of working RAM, keep cache, and an additional RAM reservation configured by the admin (@ReserveExtraRAM@ in the dispatcher configuration, default zero).
 
-The total RAM request is used to schedule containers onto compute nodes.  RAM allocations are enforced using kernel controls such as cgroups.
+The total RAM request is used to schedule containers onto compute nodes.  On HPC systems, multiple containers may run on a multi-core node.  RAM allocation limits may be enforced using kernel controls such as cgroups.
 
-When running on the cloud, the memory request (along with CPU and disk) is used to select (and possibly boot) an instance type with adequate resources to run the container.  Instance type RAM is derated 5% from the published specification to accomodate virtual machine, kernel and system services overhead.  This means, for example, a node with a published size of 4 GiB is assumed to only have 3891 MiB available for running containers.
+When running on the cloud, the memory request (along with CPU and disk) is used to select (and possibly boot) an instance type with adequate resources to run the container.  Instance type RAM is derated 5% from the published specification to accomodate virtual machine, kernel and system services overhead.
+
+h3. Calculate minimum instance type RAM for a container
+
+    (RAM request + keep cache + ReserveExtraRAM) * (100/95)
+
+For example, for a 3 GiB request, default keep cache, and no extra RAM reserved:
+
+    (3072 + 256) * 1.0526 = 3494 MiB
+
+To run this container, the instance type must have a published RAM size of at least 3494 MiB.
+
+h3. Calculate the maximum requestable RAM for an instance type
+
+    (Instance type RAM * (95/100)) - keep cache - ReserveExtraRAM
+
+For example, for a 3.75 GiB node, default keep cache, and no extra RAM reserved:
+
+    (3840 * 0.95) - 256 = 3392 MiB
+
+To run on this instance type, the container can request at most 3392 MiB of working RAM.
 
 h2. Job API (deprecated)
 
