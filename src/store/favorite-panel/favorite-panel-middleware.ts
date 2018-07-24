@@ -9,10 +9,6 @@ import { RootState } from "../store";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { DataColumns } from "../../components/data-table/data-table";
-import { ProcessResource } from "../../models/process";
-import { OrderBuilder } from "../../common/api/order-builder";
-import { GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
-import { SortDirection } from "../../components/data-table/data-column";
 import {
     columns,
     FAVORITE_PANEL_ID,
@@ -21,7 +17,6 @@ import {
 } from "../../views/favorite-panel/favorite-panel";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { LinkResource } from "../../models/link";
-import { ResourceKind } from "../../models/resource";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 
 export const favoritePanelMiddleware: Middleware = store => next => {
@@ -68,6 +63,7 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                             filters: FilterBuilder
                                 .create<LinkResource>()
                                 .addIsA("headUuid", typeFilters.map(filter => filter.type))
+                                .addILike("name", dataExplorer.searchValue)
                         })
                         .then(response => {
                             store.dispatch(dataExplorerActions.SET_ITEMS({
