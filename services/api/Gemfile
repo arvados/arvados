@@ -21,6 +21,9 @@ group :test, :development do
   gem 'mocha', require: false
 end
 
+# We need this dependency because of crunchv1
+gem 'arvados-cli'
+
 # We'll need to update related code prior to Rails 5.
 # See: https://github.com/rails/activerecord-deprecated_finders
 gem 'activerecord-deprecated_finders', require: 'active_record/deprecated_finders'
