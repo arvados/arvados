@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Metrics endpoints are found at @/status.json@ on many Arvados services.  The purpose of metrics are to provide statistics about the operation of a service, suitable for diagnosing how well a service is performing under load.
 
-Metrics endpoints must be configured with a "management token":management-token.html .
+To access metrics endpoints, services must be configured with a "management token":management-token.html .
 
 h2. Keepstore
 
@@ -73,6 +73,53 @@ table(table table-bordered table-condensed).
 |InProgress| int||
 |Queued|     int||
 
+h3. Example response
+
+<pre>
+{
+  "Volumes": [
+    {
+      "Label": "[UnixVolume /var/lib/arvados/keep0]",
+      "Status": {
+        "MountPoint": "/var/lib/arvados/keep0",
+        "DeviceNum": 65029,
+        "BytesFree": 222532972544,
+        "BytesUsed": 435456679936
+      },
+      "InternalStats": {
+        "Errors": 0,
+        "InBytes": 1111,
+        "OutBytes": 0,
+        "OpenOps": 1,
+        "StatOps": 4,
+        "FlockOps": 0,
+        "UtimesOps": 0,
+        "CreateOps": 0,
+        "RenameOps": 0,
+        "UnlinkOps": 0,
+        "ReaddirOps": 0
+      }
+    }
+  ],
+  "BufferPool": {
+    "BytesAllocatedCumulative": 67108864,
+    "BuffersMax": 20,
+    "BuffersInUse": 0
+  },
+  "PullQueue": {
+    "InProgress": 0,
+    "Queued": 0
+  },
+  "TrashQueue": {
+    "InProgress": 0,
+    "Queued": 0
+  },
+  "RequestsCurrent": 1,
+  "RequestsMax": 40,
+  "Version": "dev"
+}
+</pre>
+
 h2. Node manager
 
 The node manager status end point provides a snapshot of internal status at the time of the most recent wishlist update.
@@ -89,3 +136,28 @@ table(table table-bordered table-condensed).
 |nodes_wish|int|Number of nodes in the current wishlist|
 |node_quota|int|Current node count ceiling due to cloud quota limits|
 |config_max_nodes|int|Configured max node count|
+
+h3. Example
+
+<pre>
+{
+  "actor_exceptions": 0,
+  "idle_times": {
+    "compute1": 0,
+    "compute3": 0,
+    "compute2": 0,
+    "compute4": 0
+  },
+  "create_node_errors": 0,
+  "destroy_node_errors": 0,
+  "nodes_idle": 0,
+  "config_max_nodes": 8,
+  "list_nodes_errors": 0,
+  "node_quota": 8,
+  "Version": "1.1.4.20180719160944",
+  "nodes_wish": 0,
+  "nodes_unpaired": 0,
+  "nodes_busy": 4,
+  "boot_failures": 0
+}
+</pre>

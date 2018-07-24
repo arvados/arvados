@@ -18,12 +18,13 @@ To access a monitoring endpoint, the requester must provide the HTTP header @Aut
 
 h2. API server
 
-Set @MangementToken@ in @application.yml@
+Set @MangementToken@ in the appropriate section of @application.yml@
 
 <pre>
+production:
   # Token to be included in all healthcheck requests. Disabled by default.
   # Server expects request header of the format "Authorization: Bearer xxx"
-  ManagementToken: ...
+  ManagementToken: xxx
 </pre>
 
 h2. Node Manager
@@ -32,13 +33,21 @@ Set @port@ (the listen port) and @MangementToken@ in the @Manage@ section of @no
 
 <pre>
 [Manage]
-port=8888
-ManagementToken=...
+# The management server responds to http://addr:port/status.json with
+# a snapshot of internal state.
+
+# Management server listening address (default 127.0.0.1)
+#address = 0.0.0.0
+
+# Management server port number (default -1, server is disabled)
+#port = 8989
+
+ManagementToken = xxx
 </pre>
 
 h2. Other services
 
-The following services also support health check.  Set @MangementToken@ in the respective yaml config file for each service.
+The following services also support monitoring.  Set @MangementToken@ in the respective yaml config file for each service.
 
 * keepstore
 * keep-web
