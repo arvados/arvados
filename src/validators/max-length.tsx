@@ -11,14 +11,12 @@ interface MaxLengthProps {
 }
 
 // TODO types for maxLength
-const maxLength: any = (maxLengthValue = DEFAULT_MAX_VALUE, errorMessage = ERROR_MESSAGE) => {
+export const maxLength: any = (maxLengthValue = DEFAULT_MAX_VALUE, errorMessage = ERROR_MESSAGE) => {
     return (value: string) => {
         if (value) {
-            return  value && value && value.length <= maxLengthValue ? undefined : `${errorMessage || ERROR_MESSAGE} ${maxLengthValue}`;
+            return  value && value.length <= maxLengthValue ? undefined : `${errorMessage || ERROR_MESSAGE} ${maxLengthValue}`;
         }
 
         return undefined;
     };
 };
-
-export default maxLength;

@@ -12,7 +12,7 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { NAME, DESCRIPTION } from '../../validators/create-project/create-project-validator';
+import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
@@ -85,13 +85,13 @@ export const DialogProjectCreate = compose(
                                 <Field name="name"
                                        component={this.renderTextField}
                                        floatinglabeltext="Project Name"
-                                       validate={NAME}
+                                       validate={PROJECT_NAME_VALIDATION}
                                        className={classes.textField}
                                        label="Project Name"/>
                                 <Field name="description"
                                        component={this.renderTextField}
                                        floatinglabeltext="Description - optional"
-                                       validate={DESCRIPTION}
+                                       validate={PROJECT_DESCRIPTION_VALIDATION}
                                        className={classes.textField}
                                        label="Description - optional"/>
                             </DialogContent>

@@ -4,13 +4,11 @@
 
 export const ERROR_MESSAGE = 'This field is required.';
 
-interface RequireProps {
+interface RequiredProps {
     value: string;
 }
 
 // TODO types for require
-const require: any = (value: string, errorMessage = ERROR_MESSAGE) => {
-    return value && value.toString().length > 0 ? undefined : ERROR_MESSAGE;
+export const require: any = (value: string) => {
+    return value && value.length > 0 ? undefined : ERROR_MESSAGE;
 };
-
-export default require;
