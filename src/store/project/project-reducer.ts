@@ -18,6 +18,7 @@ interface ProjectCreator {
     opened: boolean;
     pending: boolean;
     ownerUuid: string;
+    error?: string;
 }
 
 export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
@@ -115,9 +116,8 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
     return projectActions.match(action, {
         OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
         CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
-        CREATE_PROJECT: () => updateCreator(state, { opened: false, pending: true }),
-        CREATE_PROJECT_SUCCESS: () => updateCreator(state, { ownerUuid: "", pending: false }),
-        CREATE_PROJECT_ERROR: () => updateCreator(state, { ownerUuid: "", pending: false }),
+        CREATE_PROJECT: () => updateCreator(state, { error: undefined }),
+        CREATE_PROJECT_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: itemId => {
             const items = _.cloneDeep(state.items);

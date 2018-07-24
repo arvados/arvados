@@ -21,12 +21,12 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
-        const promise = isFavorite
+        const promise: (any) = isFavorite
             ? favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
             : favoriteService.create({ userUuid, resource });
 
         promise
-            .then(fav => {
+            .then(() => {
                 dispatch(favoritesActions.UPDATE_FAVORITES({ [resource.uuid]: !isFavorite }));
             });
     };

@@ -14,6 +14,7 @@ import { dataExplorerReducer, DataExplorerState } from './data-explorer/data-exp
 import { projectPanelMiddleware } from './project-panel/project-panel-middleware';
 import { detailsPanelReducer, DetailsPanelState } from './details-panel/details-panel-reducer';
 import { contextMenuReducer, ContextMenuState } from './context-menu/context-menu-reducer';
+import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 
 const composeEnhancers =
@@ -40,6 +41,7 @@ const rootReducer = combineReducers({
     sidePanel: sidePanelReducer,
     detailsPanel: detailsPanelReducer,
     contextMenu: contextMenuReducer,
+    form: formReducer,
     favorites: favoritesReducer,
 });
 

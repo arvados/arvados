@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { reduxForm, Field } from 'redux-form';
+import { compose } from 'redux';
 import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { Validator } from '../../utils/dialog-validator';
+import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
 
-type CssRules = "button" | "lastButton" | "dialogContent" | "textField" | "dialog" | "dialogTitle";
+type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -22,7 +24,9 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         marginLeft: theme.spacing.unit,
         marginRight: "20px",
     },
-    dialogContent: {
+    formContainer: {
+        display: "flex",
+        flexDirection: "column",
         marginTop: "20px",
     },
     dialogTitle: {
@@ -34,109 +38,91 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     dialog: {
         minWidth: "600px",
         minHeight: "320px"
+    },
+    createProgress: {
+        position: "absolute",
+        minWidth: "20px",
+        right: "95px"
+    },
+    dialogActions: {
+        marginBottom: "24px"
     }
 });
-
-interface ProjectCreateProps {
+interface DialogProjectProps {
     open: boolean;
     handleClose: () => void;
     onSubmit: (data: { name: string, description: string }) => void;
+    handleSubmit: any;
+    submitting: boolean;
 }
 
-interface DialogState {
-    name: string;
-    description: string;
-    isNameValid: boolean;
-    isDescriptionValid: boolean;
+interface TextFieldProps {
+    label: string;
+    floatinglabeltext: string;
+    className?: string;
+    input?: string;
+    meta?: any;
 }
 
-export const DialogProjectCreate = withStyles(styles)(
-    class extends React.Component<ProjectCreateProps & WithStyles<CssRules>> {
-        state: DialogState = {
-            name: '',
-            description: '',
-            isNameValid: false,
-            isDescriptionValid: true
-        };
-
+export const DialogProjectCreate = compose(
+    reduxForm({ form: 'projectCreateDialog' }),
+    withStyles(styles))(
+    class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyles<CssRules>> {
         render() {
-            const { name, description } = this.state;
-            const { classes, open, handleClose } = this.props;
+            const { classes, open, handleClose, handleSubmit, onSubmit, submitting } = this.props;
 
             return (
                 <Dialog
                     open={open}
-                    onClose={handleClose}>
+                    onClose={handleClose}
+                    disableBackdropClick={true}
+                    disableEscapeKeyDown={true}>
                     <div className={classes.dialog}>
-                        <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a project</DialogTitle>
-                        <DialogContent className={classes.dialogContent}>
-                            <Validator
-                                value={name}
-                                onChange={e => this.isNameValid(e)}
-                                isRequired={true}
-                                render={hasError =>
-                                    <TextField
-                                        margin="dense"
-                                        className={classes.textField}
-                                        id="name"
-                                        onChange={e => this.handleProjectName(e)}
-                                        label="Project name"
-                                        error={hasError}
-                                        fullWidth/>}/>
-                            <Validator
-                                value={description}
-                                onChange={e => this.isDescriptionValid(e)}
-                                isRequired={false}
-                                render={hasError =>
-                                    <TextField
-                                        margin="dense"
-                                        className={classes.textField}
-                                        id="description"
-                                        onChange={e => this.handleDescriptionValue(e)}
-                                        label="Description - optional"
-                                        error={hasError}
-                                        fullWidth/>}/>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleClose} className={classes.button} color="primary">CANCEL</Button>
-                            <Button onClick={this.handleSubmit} className={classes.lastButton} color="primary"
-                                    disabled={!this.state.isNameValid || (!this.state.isDescriptionValid && description.length > 0)}
-                                    variant="raised">CREATE A PROJECT</Button>
-                        </DialogActions>
+                        <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
+                            <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a
+                                project</DialogTitle>
+                            <DialogContent className={classes.formContainer}>
+                                <Field name="name"
+                                       component={this.renderTextField}
+                                       floatinglabeltext="Project Name"
+                                       validate={PROJECT_NAME_VALIDATION}
+                                       className={classes.textField}
+                                       label="Project Name"/>
+                                <Field name="description"
+                                       component={this.renderTextField}
+                                       floatinglabeltext="Description - optional"
+                                       validate={PROJECT_DESCRIPTION_VALIDATION}
+                                       className={classes.textField}
+                                       label="Description - optional"/>
+                            </DialogContent>
+                            <DialogActions className={classes.dialogActions}>
+                                <Button onClick={handleClose} className={classes.button} color="primary"
+                                        disabled={submitting}>CANCEL</Button>
+                                <Button type="submit"
+                                        className={classes.lastButton}
+                                        color="primary"
+                                        disabled={submitting}
+                                        variant="contained">
+                                    CREATE A PROJECT
+                                </Button>
+                                {submitting && <CircularProgress size={20} className={classes.createProgress}/>}
+                            </DialogActions>
+                        </form>
                     </div>
                 </Dialog>
             );
         }
 
-        handleSubmit = () => {
-            this.props.onSubmit({
-                name: this.state.name,
-                description: this.state.description
-            });
-        }
-
-        handleProjectName(e: React.ChangeEvent<HTMLInputElement>) {
-            this.setState({
-                name: e.target.value,
-            });
-        }
-
-        handleDescriptionValue(e: React.ChangeEvent<HTMLInputElement>) {
-            this.setState({
-                description: e.target.value,
-            });
-        }
-
-        isNameValid(value: boolean | string) {
-            this.setState({
-                isNameValid: value,
-            });
-        }
-
-        isDescriptionValid(value: boolean | string) {
-            this.setState({
-                isDescriptionValid: value,
-            });
-        }
+        renderTextField = ({ input, label, meta: { touched, error }, ...custom }: TextFieldProps) => (
+            <TextField
+                helperText={touched && error}
+                label={label}
+                className={this.props.classes.textField}
+                error={touched && !!error}
+                autoComplete='off'
+                {...input}
+                {...custom}
+            />
+        )
     }
 );
