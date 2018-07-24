@@ -196,31 +196,15 @@ export const FavoritePanel = withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
         class extends React.Component<FavoritePanelProps> {
             render() {
-                const { classes } = this.props;
-                return <div>
-                    <div className={classes.toolbar}>
-                        <Button color="primary" variant="raised" className={classes.button}>
-                            Create a collection
-                        </Button>
-                        <Button color="primary" variant="raised" className={classes.button}>
-                            Run a process
-                        </Button>
-                        <Button color="primary" onClick={this.handleNewProjectClick} variant="raised" className={classes.button}>
-                            New project
-                        </Button>
-                    </div>
-                    <DataExplorer
-                        id={FAVORITE_PANEL_ID}
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu}
-                        extractKey={(item: FavoritePanelItem) => item.uuid} />
-                </div>;
+                return <DataExplorer
+                    id={FAVORITE_PANEL_ID}
+                    onRowClick={this.props.onItemClick}
+                    onRowDoubleClick={this.props.onItemDoubleClick}
+                    onContextMenu={this.props.onContextMenu}
+                    extractKey={(item: FavoritePanelItem) => item.uuid} />
+                ;
             }
 
-            handleNewProjectClick = () => {
-                this.props.onDialogOpen(this.props.currentItemId);
-            }
             componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: FavoritePanelProps) {
                 if (match.params.id !== currentItemId) {
                     onItemRouteChange(match.params.id);
