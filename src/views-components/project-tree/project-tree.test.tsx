@@ -33,32 +33,6 @@ describe("ProjectTree component", () => {
             toggleActive={jest.fn()}
             onContextMenu={jest.fn()} />);
 
-        expect(wrapper.find(ListItemIcon)).toHaveLength(1);
-    });
-
-    it("should render 2 ListItemIcons", () => {
-        const project: Array<TreeItem<ProjectResource>> = [
-            {
-                data: mockProjectResource(),
-                id: "3",
-                open: false,
-                active: true,
-                status: 1
-            },
-            {
-                data: mockProjectResource(),
-                id: "3",
-                open: false,
-                active: true,
-                status: 1
-            }
-        ];
-        const wrapper = mount(<ProjectTree
-            projects={project}
-            toggleOpen={jest.fn()}
-            toggleActive={jest.fn()}
-            onContextMenu={jest.fn()} />);
-
         expect(wrapper.find(ListItemIcon)).toHaveLength(2);
     });
 
