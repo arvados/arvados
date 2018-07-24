@@ -11,7 +11,7 @@ export interface Config {
 }
 
 const defaultConfig: Config = {
-    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || ""
+    API_HOST: "https://workbench2.c97qk.arvadosapi.com" // process.env.REACT_APP_ARVADOS_API_HOST || ""
 };
 
 export const fetchConfig = () => {

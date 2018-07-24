@@ -35,6 +35,7 @@ import { ContextMenu, ContextMenuKind } from "../../views-components/context-men
 import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
+import { Snackbar } from '../../views-components/snackbar/snackbar';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -216,6 +217,7 @@ export const Workbench = withStyles(styles)(
                             {user && <DetailsPanel />}
                         </main>
                         <ContextMenu />
+                        <Snackbar />
                         <CreateProjectDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
