@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import { Dispatch } from "../../../node_modules/redux";
+import { Dispatch } from "redux";
 import { favoriteService } from "../../services/services";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
