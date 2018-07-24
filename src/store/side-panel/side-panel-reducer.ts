@@ -6,6 +6,10 @@ import * as _ from "lodash";
 import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
+import { dataExplorerActions } from "../data-explorer/data-explorer-action";
+import { Dispatch } from "react-redux";
+import { FAVORITE_PANEL_ID } from "../../views/favorite-panel/favorite-panel";
+import { push } from "react-router-redux";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -14,11 +18,12 @@ export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: 
         return sidePanelData;
     } else {
         return sidePanelActions.match(action, {
-            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId => state.map(it => itemId === it.id && it.open === false ? {...it, open: true} : {...it, open: false}),
+            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
+                state.map(it => ({...it, open: itemId === it.id && it.open === false})),
             TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
                 const sidePanel = _.cloneDeep(state);
                 resetSidePanelActivity(sidePanel);
-                sidePanel.map(it => {
+                sidePanel.forEach(it => {
                     if (it.id === itemId) {
                         it.active = true;
                     }
@@ -77,6 +82,11 @@ export const sidePanelData = [
         name: "Favorites",
         icon: FavoriteIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/favorites"));
+            dispatch(dataExplorerActions.RESET_PAGINATION({id: FAVORITE_PANEL_ID}));
+            dispatch(dataExplorerActions.REQUEST_ITEMS({id: FAVORITE_PANEL_ID}));
+        }
     },
     {
         id: SidePanelIdentifiers.Trash,

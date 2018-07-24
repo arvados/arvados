@@ -28,11 +28,13 @@ import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
+import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -208,15 +210,16 @@ export const Workbench = withStyles(styles)(
                             <div className={classes.content}>
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
+                                    <Route path="/favorites" render={this.renderFavoritePanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
-                        <CurrentTokenDialog 
+                        <CurrentTokenDialog
                             currentToken={this.props.currentToken}
-                            open={this.state.isCurrentTokenDialogOpen} 
+                            open={this.state.isCurrentTokenDialogOpen}
                             handleClose={this.toggleCurrentTokenModal} />
                     </div>
                 );
@@ -239,6 +242,27 @@ export const Workbench = withStyles(styles)(
                 onItemDoubleClick={item => {
                     this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
                     this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                }}
+                {...props} />
+
+            renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
+                onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind,
+                    });
+                }}
+                onDialogOpen={this.handleCreationDialogOpen}
+                onItemClick={item => {
+                    this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                }}
+                onItemDoubleClick={item => {
+                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
                 }}
                 {...props} />
 
@@ -271,7 +295,10 @@ export const Workbench = withStyles(styles)(
             toggleSidePanelActive = (itemId: string) => {
                 this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
-                this.props.dispatch(push("/"));
+                const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
+                if (panelItem && panelItem.activeAction) {
+                    panelItem.activeAction(this.props.dispatch);
+                }
             }
 
             handleCreationDialogOpen = (itemUuid: string) => {
