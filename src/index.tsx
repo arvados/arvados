@@ -33,7 +33,7 @@ addMenuActionSet(ContextMenuKind.Favorite, favoriteActionSet);
 fetchConfig()
     .then(config => {
 
-        setBaseUrl(config.API_HOST);
+        setBaseUrl("https://workbench2.c97qk.arvadosapi.com");
 
         const history = createBrowserHistory();
         const store = configureStore(history);
