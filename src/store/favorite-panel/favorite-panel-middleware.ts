@@ -22,6 +22,7 @@ import {
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { LinkResource } from "../../models/link";
 import { ResourceKind } from "../../models/resource";
+import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 
 export const favoritePanelMiddleware: Middleware = store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: FAVORITE_PANEL_ID, columns }));
@@ -76,6 +77,7 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                                 page: Math.floor(response.offset / response.limit),
                                 rowsPerPage: response.limit
                             }));
+                            store.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                         });
                 } else {
                     store.dispatch(dataExplorerActions.SET_ITEMS({

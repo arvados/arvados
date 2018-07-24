@@ -233,7 +233,14 @@ export const Workbench = withStyles(styles)(
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setFavoriteItem(itemId, ItemMode.ACTIVE))}
-                onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Favorite)}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind,
+                    });
+                }}
                 onDialogOpen={this.handleCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
