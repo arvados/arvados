@@ -18,6 +18,10 @@ import {
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { LinkResource } from "../../models/link";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { OrderBuilder } from "../../common/api/order-builder";
+import { SortDirection } from "../../components/data-table/data-column";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
+import { FavoriteOrderBuilder } from "../../services/favorite-service/favorite-order-builder";
 
 export const favoritePanelMiddleware: Middleware = store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: FAVORITE_PANEL_ID, columns }));
@@ -54,12 +58,19 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, FAVORITE_PANEL_ID);
                 const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
+                const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
                 const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
+                const order = FavoriteOrderBuilder.create();
                 if (typeFilters.length > 0) {
                     favoriteService
                         .list(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                            order: sortColumn!.name === FavoritePanelColumnNames.NAME
+                                ? sortColumn!.sortDirection === SortDirection.Asc
+                                    ? order.addDesc("name")
+                                    : order.addAsc("name")
+                                : order,
                             filters: FilterBuilder
                                 .create<LinkResource>()
                                 .addIsA("headUuid", typeFilters.map(filter => filter.type))
@@ -88,6 +99,21 @@ export const favoritePanelMiddleware: Middleware = store => next => {
             default: () => next(action)
         });
     };
+};
+
+const getOrder = (direction: SortDirection) => {
+    const order = OrderBuilder.create<LinkResource>();
+    const addRule = (builder: OrderBuilder<GroupContentsResource | LinkResource>, direction: SortDirection) =>
+        direction === SortDirection.Asc
+            ? builder.addAsc("name")
+            : builder.addDesc("name");
+
+    return [
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
+    ].reduce((acc, b) =>
+        acc.concat(addRule(b, direction)), addRule(OrderBuilder.create(), direction));
 };
 
 const getColumnFilters = (columns: DataColumns<FavoritePanelItem, FavoritePanelFilter>, columnName: string) => {

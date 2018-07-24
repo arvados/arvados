@@ -7,13 +7,14 @@ import { GroupsService, GroupContentsResource } from "../groups-service/groups-s
 import { LinkResource, LinkClass } from "../../models/link";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { ListArguments, ListResults } from "../../common/api/common-resource-service";
+import { FavoriteOrderBuilder } from "./favorite-order-builder";
 import { OrderBuilder } from "../../common/api/order-builder";
 
-export interface FavoriteListArguments extends ListArguments {
+export interface FavoriteListArguments {
     limit?: number;
     offset?: number;
     filters?: FilterBuilder<LinkResource>;
-    order?: OrderBuilder<LinkResource>;
+    order?: FavoriteOrderBuilder;
 }
 
 export class FavoriteService {
@@ -45,7 +46,7 @@ export class FavoriteService {
                 results.items.map(item => this.linkService.delete(item.uuid))));
     }
 
-    list(userUuid: string, args: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    list(userUuid: string, { filters, limit, offset, order }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const listFilter = FilterBuilder
             .create<LinkResource>()
             .addEqual('tailUuid', userUuid)
@@ -53,14 +54,17 @@ export class FavoriteService {
 
         return this.linkService
             .list({
-                ...args,
-                filters: args.filters ? args.filters.concat(listFilter) : listFilter
+                filters: filters ? filters.concat(listFilter) : listFilter,
+                limit,
+                offset,
+                order: order ? order.getLinkOrder() : OrderBuilder.create<LinkResource>()
             })
             .then(results => {
                 const uuids = results.items.map(item => item.headUuid);
                 return this.groupsService.contents(userUuid, {
-                    limit: args.limit,
-                    offset: args.offset,
+                    limit,
+                    offset,
+                    order: order ? order.getContentOrder() : OrderBuilder.create<GroupContentsResource>(),
                     filters: FilterBuilder.create<GroupContentsResource>().addIn('uuid', uuids),
                     recursive: true
                 });
