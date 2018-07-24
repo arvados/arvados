@@ -1,0 +1,9 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import { require } from '../require';
+import { maxLength } from '../max-length';
+
+export const PROJECT_NAME_VALIDATION = [require, maxLength(255)];
+export const PROJECT_DESCRIPTION_VALIDATION = [maxLength(255)];

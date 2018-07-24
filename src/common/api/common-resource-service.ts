@@ -5,7 +5,7 @@
 import * as _ from "lodash";
 import { FilterBuilder } from "./filter-builder";
 import { OrderBuilder } from "./order-builder";
-import { AxiosInstance } from "axios";
+import { AxiosInstance, AxiosPromise } from "axios";
 import { Resource } from "../../models/resource";
 
 export interface ListArguments {
@@ -24,6 +24,11 @@ export interface ListResults<T> {
     limit: number;
     items: T[];
     itemsAvailable: number;
+}
+
+export interface Errors {
+    errors: string[];
+    errorToken: string;
 }
 
 export class CommonResourceService<T extends Resource> {
@@ -49,6 +54,12 @@ export class CommonResourceService<T extends Resource> {
             }
         }
 
+    static defaultResponse<R>(promise: AxiosPromise<R>): Promise<R> {
+        return promise
+            .then(CommonResourceService.mapResponseKeys)
+            .catch(({ response }) => Promise.reject<Errors>(CommonResourceService.mapResponseKeys(response)));
+    }
+
     protected serverApi: AxiosInstance;
     protected resourceType: string;
 
@@ -58,21 +69,21 @@ export class CommonResourceService<T extends Resource> {
     }
 
     create(data: Partial<T>) {
-        return this.serverApi
-            .post<T>(this.resourceType, CommonResourceService.mapKeys(_.snakeCase)(data))
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .post<T>(this.resourceType, CommonResourceService.mapKeys(_.snakeCase)(data)));
     }
 
     delete(uuid: string): Promise<T> {
-        return this.serverApi
-            .delete(this.resourceType + uuid)
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .delete(this.resourceType + uuid));
     }
 
     get(uuid: string) {
-        return this.serverApi
-            .get<T>(this.resourceType + uuid)
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get<T>(this.resourceType + uuid));
     }
 
     list(args: ListArguments = {}): Promise<ListResults<T>> {
@@ -82,11 +93,11 @@ export class CommonResourceService<T extends Resource> {
             filters: filters ? filters.serialize() : undefined,
             order: order ? order.getOrder() : undefined
         };
-        return this.serverApi
-            .get(this.resourceType, {
-                params: CommonResourceService.mapKeys(_.snakeCase)(params)
-            })
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get(this.resourceType, {
+                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                }));
     }
 
     update(uuid: string) {
