@@ -15,6 +15,7 @@ import { projectPanelMiddleware } from './project-panel/project-panel-middleware
 import { detailsPanelReducer, DetailsPanelState } from './details-panel/details-panel-reducer';
 import { contextMenuReducer, ContextMenuState } from './context-menu/context-menu-reducer';
 import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middleware";
+import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -29,6 +30,7 @@ export interface RootState {
     sidePanel: SidePanelState;
     detailsPanel: DetailsPanelState;
     contextMenu: ContextMenuState;
+    favorites: FavoritesState;
 }
 
 const rootReducer = combineReducers({
@@ -38,7 +40,8 @@ const rootReducer = combineReducers({
     dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer,
     detailsPanel: detailsPanelReducer,
-    contextMenu: contextMenuReducer
+    contextMenu: contextMenuReducer,
+    favorites: favoritesReducer,
 });
 
 

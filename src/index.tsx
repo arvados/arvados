@@ -22,9 +22,11 @@ import { setBaseUrl } from './common/api/server-api';
 import { addMenuActionSet, ContextMenuKind } from "./views-components/context-menu/context-menu";
 import { rootProjectActionSet } from "./views-components/context-menu/action-sets/root-project-action-set";
 import { projectActionSet } from "./views-components/context-menu/action-sets/project-action-set";
+import { resourceActionSet } from './views-components/context-menu/action-sets/resource-action-set';
 
 addMenuActionSet(ContextMenuKind.RootProject, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.Project, projectActionSet);
+addMenuActionSet(ContextMenuKind.Resource, resourceActionSet);
 
 fetchConfig()
     .then(config => {

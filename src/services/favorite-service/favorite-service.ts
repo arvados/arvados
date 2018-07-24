@@ -22,13 +22,13 @@ export class FavoriteService {
         private groupsService: GroupsService
     ) { }
 
-    create(data: { userUuid: string; resourceUuid: string; }) {
+    create(data: { userUuid: string; resource: { uuid: string; name: string } }) {
         return this.linkService.create({
             ownerUuid: data.userUuid,
             tailUuid: data.userUuid,
-            headUuid: data.resourceUuid,
+            headUuid: data.resource.uuid,
             linkClass: LinkClass.STAR,
-            name: data.resourceUuid
+            name: data.resource.name
         });
     }
 
@@ -66,4 +66,20 @@ export class FavoriteService {
                 });
             });
     }
+
+    checkPresenceInFavorites(userUuid: string, resourceUuids: string[]): Promise<Record<string, boolean>> {
+        return this.linkService
+            .list({
+                filters: FilterBuilder
+                    .create<LinkResource>()
+                    .addIn("headUuid", resourceUuids)
+                    .addEqual("tailUuid", userUuid)
+                    .addEqual("linkClass", LinkClass.STAR)
+            })
+            .then(({ items }) => resourceUuids.reduce((results, uuid) => {
+                const isFavorite = items.some(item => item.headUuid === uuid);
+                return { ...results, [uuid]: isFavorite };
+            }, {}));
+    }
+
 }
