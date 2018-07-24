@@ -18,7 +18,7 @@ import { TreeItem } from "../../components/tree/tree";
 import { getTreePath } from '../../store/project/project-reducer';
 import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
-import { ItemMode, setFavoriteItem, setProjectItem } from "../../store/navigation/navigation-action";
+import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
 import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
@@ -32,8 +32,9 @@ import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
-import { FavoritePanel } from "../favorite-panel/favorite-panel";
+import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
+import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -216,9 +217,9 @@ export const Workbench = withStyles(styles)(
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
-                        <CurrentTokenDialog 
+                        <CurrentTokenDialog
                             currentToken={this.props.currentToken}
-                            open={this.state.isCurrentTokenDialogOpen} 
+                            open={this.state.isCurrentTokenDialogOpen}
                             handleClose={this.toggleCurrentTokenModal} />
                     </div>
                 );
@@ -245,12 +246,13 @@ export const Workbench = withStyles(styles)(
                 {...props} />
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
-                onItemRouteChange={itemId => this.props.dispatch<any>(setFavoriteItem(itemId, ItemMode.ACTIVE))}
+                onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
                 onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
-                        kind: ContextMenuKind.Favorite,
+                        kind,
                     });
                 }}
                 onDialogOpen={this.handleCreationDialogOpen}
@@ -258,8 +260,9 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    this.props.dispatch<any>(setFavoriteItem(item.uuid, ItemMode.ACTIVE));
                     this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
                 }}
                 {...props} />
 
