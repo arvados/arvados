@@ -9,6 +9,6 @@ import { toggleFavorite } from "../../../store/favorites/favorites-actions";
 export const resourceActionSet: ContextMenuActionSet = [[{
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
-        dispatch<any>(toggleFavorite(resource.uuid));
+        dispatch<any>(toggleFavorite(resource));
     }
 }]];

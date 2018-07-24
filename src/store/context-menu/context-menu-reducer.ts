@@ -19,6 +19,7 @@ export interface ContextMenuPosition {
 export interface ContextMenuResource {
     uuid: string;
     kind: string;
+    name: string;
 }
 
 const initialState = {

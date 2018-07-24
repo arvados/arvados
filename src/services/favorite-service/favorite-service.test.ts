@@ -23,14 +23,14 @@ describe("FavoriteService", () => {
         linkService.create = jest.fn().mockReturnValue(Promise.resolve({ uuid: "newUuid" }));
         const favoriteService = new FavoriteService(linkService, groupService);
 
-        const newFavorite = await favoriteService.create({ userUuid: "userUuid", resourceUuid: "resourceUuid" });
+        const newFavorite = await favoriteService.create({ userUuid: "userUuid", resource: { uuid: "resourceUuid", name: "resource" } });
 
         expect(linkService.create).toHaveBeenCalledWith({
             ownerUuid: "userUuid",
             tailUuid: "userUuid",
             headUuid: "resourceUuid",
             linkClass: LinkClass.STAR,
-            name: "resourceUuid"
+            name: "resource"
         });
         expect(newFavorite.uuid).toEqual("newUuid");
 

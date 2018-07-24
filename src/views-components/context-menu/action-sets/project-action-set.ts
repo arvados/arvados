@@ -17,6 +17,6 @@ export const projectActionSet: ContextMenuActionSet = [[{
 }, {
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
-        dispatch<any>(toggleFavorite(resource.uuid));
+        dispatch<any>(toggleFavorite(resource));
     }
 }]];
