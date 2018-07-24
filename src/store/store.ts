@@ -17,6 +17,7 @@ import { contextMenuReducer, ContextMenuState } from './context-menu/context-men
 import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middleware";
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
+import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -32,6 +33,7 @@ export interface RootState {
     detailsPanel: DetailsPanelState;
     contextMenu: ContextMenuState;
     favorites: FavoritesState;
+    snackbar: SnackbarState;
 }
 
 const rootReducer = combineReducers({
@@ -44,6 +46,7 @@ const rootReducer = combineReducers({
     contextMenu: contextMenuReducer,
     form: formReducer,
     favorites: favoritesReducer,
+    snackbar: snackbarReducer,
 });
 
 
