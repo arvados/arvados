@@ -193,7 +193,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                 </Switch>
                             </div>
-                            { user && <DetailsPanel /> }
+                            {user && <DetailsPanel />}
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
@@ -203,7 +203,10 @@ export const Workbench = withStyles(styles)(
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Project)}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    this.openContextMenu(event, item.uuid, kind);
+                }}
                 onDialogOpen={this.handleCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
