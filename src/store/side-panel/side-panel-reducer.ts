@@ -7,7 +7,7 @@ import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
 import { dataExplorerActions } from "../data-explorer/data-explorer-action";
-import { Dispatch } from "react-redux";
+import { Dispatch } from "redux";
 import { FAVORITE_PANEL_ID } from "../../views/favorite-panel/favorite-panel";
 import { push } from "react-router-redux";
 
