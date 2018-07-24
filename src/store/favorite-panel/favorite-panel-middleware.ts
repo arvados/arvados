@@ -4,14 +4,14 @@
 
 import { Middleware } from "redux";
 import { dataExplorerActions } from "../data-explorer/data-explorer-action";
-import { favoriteService, groupsService } from "../../services/services";
+import { favoriteService } from "../../services/services";
 import { RootState } from "../store";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { DataColumns } from "../../components/data-table/data-table";
 import { ProcessResource } from "../../models/process";
 import { OrderBuilder } from "../../common/api/order-builder";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
+import { GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
 import { SortDirection } from "../../components/data-table/data-column";
 import {
     columns,
@@ -20,13 +20,14 @@ import {
     FavoritePanelFilter
 } from "../../views/favorite-panel/favorite-panel";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
+import { LinkResource } from "../../models/link";
 
 export const favoritePanelMiddleware: Middleware = store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: FAVORITE_PANEL_ID, columns }));
 
     return action => {
 
-        const handleProjectPanelAction = <T extends { id: string }>(handler: (data: T) => void) =>
+        const handlePanelAction = <T extends { id: string }>(handler: (data: T) => void) =>
             (data: T) => {
                 next(action);
                 if (data.id === FAVORITE_PANEL_ID) {
@@ -35,24 +36,24 @@ export const favoritePanelMiddleware: Middleware = store => next => {
             };
 
         dataExplorerActions.match(action, {
-            SET_PAGE: handleProjectPanelAction(() => {
+            SET_PAGE: handlePanelAction(() => {
                 store.dispatch(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }));
             }),
-            SET_ROWS_PER_PAGE: handleProjectPanelAction(() => {
+            SET_ROWS_PER_PAGE: handlePanelAction(() => {
                 store.dispatch(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }));
             }),
-            SET_FILTERS: handleProjectPanelAction(() => {
+            SET_FILTERS: handlePanelAction(() => {
                 store.dispatch(dataExplorerActions.RESET_PAGINATION({ id: FAVORITE_PANEL_ID }));
                 store.dispatch(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }));
             }),
-            TOGGLE_SORT: handleProjectPanelAction(() => {
+            TOGGLE_SORT: handlePanelAction(() => {
                 store.dispatch(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }));
             }),
-            SET_SEARCH_VALUE: handleProjectPanelAction(() => {
+            SET_SEARCH_VALUE: handlePanelAction(() => {
                 store.dispatch(dataExplorerActions.RESET_PAGINATION({ id: FAVORITE_PANEL_ID }));
                 store.dispatch(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }));
             }),
-            REQUEST_ITEMS: handleProjectPanelAction(() => {
+            REQUEST_ITEMS: handlePanelAction(() => {
                 const state = store.getState() as RootState;
                 const dataExplorer = getDataExplorer(state.dataExplorer, FAVORITE_PANEL_ID);
                 const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
@@ -65,11 +66,11 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                         .list(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                            order: /*sortColumn
+                            order: sortColumn
                                 ? sortColumn.name === FavoritePanelColumnNames.NAME
                                     ? getOrder("name", sortDirection)
                                     : getOrder("createdAt", sortDirection)
-                                : */OrderBuilder.create(),
+                                : OrderBuilder.create(),
                             filters: FilterBuilder
                                 .create()
                                 .concat(FilterBuilder
@@ -111,9 +112,9 @@ const getColumnFilters = (columns: DataColumns<FavoritePanelItem, FavoritePanelF
 
 const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
     [
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
+        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Collection),
+        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Process),
+        OrderBuilder.create<LinkResource>(GroupContentsResourcePrefix.Project)
     ].reduce((acc, b) =>
         acc.concat(direction === SortDirection.Asc
             ? b.addAsc(attribute)
@@ -122,9 +123,9 @@ const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
 const getSearchFilter = (searchValue: string) =>
     searchValue
         ? [
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)]
+            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Collection),
+            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Process),
+            FilterBuilder.create<LinkResource>(GroupContentsResourcePrefix.Project)]
             .reduce((acc, b) =>
                 acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
         : FilterBuilder.create();
