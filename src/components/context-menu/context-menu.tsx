@@ -16,16 +16,17 @@ export type ContextMenuItemGroup = ContextMenuItem[];
 export interface ContextMenuProps {
     anchorEl?: HTMLElement;
     items: ContextMenuItemGroup[];
+    open: boolean;
     onItemClick: (action: ContextMenuItem) => void;
     onClose: () => void;
 }
 
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, items, onClose, onItemClick } = this.props;
+        const { anchorEl, items, open, onClose, onItemClick } = this.props;
         return <Popover
             anchorEl={anchorEl}
-            open={!!anchorEl}
+            open={open}
             onClose={onClose}
             transformOrigin={DefaultTransformOrigin}
             anchorOrigin={DefaultTransformOrigin}

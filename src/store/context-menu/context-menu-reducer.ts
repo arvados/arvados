@@ -6,6 +6,7 @@ import { ResourceKind } from "../../models/resource";
 import { contextMenuActions, ContextMenuAction } from "./context-menu-actions";
 
 export interface ContextMenuState {
+    open: boolean;
     position: ContextMenuPosition;
     resource?: ContextMenuResource;
 }
@@ -21,13 +22,14 @@ export interface ContextMenuResource {
 }
 
 const initialState = {
+    open: false,
     position: { x: 0, y: 0 }
 };
 
 export const contextMenuReducer = (state: ContextMenuState = initialState, action: ContextMenuAction) =>
     contextMenuActions.match(action, {
         default: () => state,
-        OPEN_CONTEXT_MENU: ({resource, position}) => ({ resource, position }),
-        CLOSE_CONTEXT_MENU: () => ({ position: state.position })
+        OPEN_CONTEXT_MENU: ({ resource, position }) => ({ open: true, resource, position }),
+        CLOSE_CONTEXT_MENU: () => ({ ...state, open: false })
     });
 
