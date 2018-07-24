@@ -10,15 +10,17 @@ import { Dispatch } from "redux";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState): SnackbarProps => ({
-    anchorOrigin: { vertical: "bottom", horizontal: "left" },
+    anchorOrigin: { vertical: "bottom", horizontal: "center" },
     open: state.snackbar.open,
     message: <span>{state.snackbar.message}</span>,
     autoHideDuration: state.snackbar.hideDuration
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<SnackbarProps, "onClose"> => ({
-    onClose: () => {
-        dispatch(snackbarActions.CLOSE_SNACKBAR());
+    onClose: (event: any, reason: string) => {
+        if (reason !== "clickaway") {
+            dispatch(snackbarActions.CLOSE_SNACKBAR());
+        }
     }
 });
 
