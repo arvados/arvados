@@ -15,6 +15,7 @@ import { ProcessResource } from "../../models/process";
 import { OrderBuilder } from "../../common/api/order-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
 import { SortDirection } from "../../components/data-table/data-column";
+import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 
 export const projectPanelMiddleware: Middleware = store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
@@ -83,6 +84,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                                 page: Math.floor(response.offset / response.limit),
                                 rowsPerPage: response.limit
                             }));
+                            store.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                         });
                 } else {
                     store.dispatch(dataExplorerActions.SET_ITEMS({

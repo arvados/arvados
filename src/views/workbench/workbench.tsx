@@ -175,11 +175,19 @@ export const Workbench = withStyles(styles)(
                                     toggleOpen={this.toggleSidePanelOpen}
                                     toggleActive={this.toggleSidePanelActive}
                                     sidePanelItems={this.props.sidePanelItems}
-                                    onContextMenu={(event) => this.openContextMenu(event, authService.getUuid() || "", ContextMenuKind.RootProject)}>
+                                    onContextMenu={(event) => this.openContextMenu(event, {
+                                        uuid: authService.getUuid() || "",
+                                        name: "",
+                                        kind: ContextMenuKind.RootProject
+                                    })}>
                                     <ProjectTree
                                         projects={this.props.projects}
                                         toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
-                                        onContextMenu={(event, item) => this.openContextMenu(event, item.data.uuid, ContextMenuKind.Project)}
+                                        onContextMenu={(event, item) => this.openContextMenu(event, {
+                                            uuid: item.data.uuid,
+                                            name: item.data.name,
+                                            kind: ContextMenuKind.Project
+                                        })}
                                         toggleActive={itemId => {
                                             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
                                             this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
@@ -193,7 +201,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                 </Switch>
                             </div>
-                            { user && <DetailsPanel /> }
+                            {user && <DetailsPanel />}
                         </main>
                         <ContextMenu />
                         <CreateProjectDialog />
@@ -203,7 +211,14 @@ export const Workbench = withStyles(styles)(
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
-                onContextMenu={(event, item) => this.openContextMenu(event, item.uuid, ContextMenuKind.Project)}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind
+                    });
+                }}
                 onDialogOpen={this.handleCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
@@ -228,7 +243,11 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
                 },
                 onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-                    this.openContextMenu(event, breadcrumb.itemId, ContextMenuKind.Project);
+                    this.openContextMenu(event, {
+                        uuid: breadcrumb.itemId,
+                        name: breadcrumb.label,
+                        kind: ContextMenuKind.Project
+                    });
                 }
             };
 
@@ -246,12 +265,12 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
             }
 
-            openContextMenu = (event: React.MouseEvent<HTMLElement>, itemUuid: string, kind: ContextMenuKind) => {
+            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; kind: ContextMenuKind; }) => {
                 event.preventDefault();
                 this.props.dispatch(
                     contextMenuActions.OPEN_CONTEXT_MENU({
                         position: { x: event.clientX, y: event.clientY },
-                        resource: { uuid: itemUuid, kind }
+                        resource
                     })
                 );
             }

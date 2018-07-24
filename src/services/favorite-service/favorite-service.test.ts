@@ -23,14 +23,14 @@ describe("FavoriteService", () => {
         linkService.create = jest.fn().mockReturnValue(Promise.resolve({ uuid: "newUuid" }));
         const favoriteService = new FavoriteService(linkService, groupService);
 
-        const newFavorite = await favoriteService.create({ userUuid: "userUuid", resourceUuid: "resourceUuid" });
+        const newFavorite = await favoriteService.create({ userUuid: "userUuid", resource: { uuid: "resourceUuid", name: "resource" } });
 
         expect(linkService.create).toHaveBeenCalledWith({
             ownerUuid: "userUuid",
             tailUuid: "userUuid",
             headUuid: "resourceUuid",
             linkClass: LinkClass.STAR,
-            name: "resourceUuid"
+            name: "resource"
         });
         expect(newFavorite.uuid).toEqual("newUuid");
 
@@ -72,6 +72,22 @@ describe("FavoriteService", () => {
         expect(contents.mock.calls[0][0]).toEqual("userUuid");
         expect(contents.mock.calls[0][1].filters.getFilters()).toEqual(contentFilters.getFilters());
         expect(favorites).toEqual({ items: [{ uuid: "resourceUuid" }] });
+    });
+
+    it("checks if resources are present in favorites", async () => {
+        const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "foo" }] }));
+        const listFilters = FilterBuilder
+            .create<LinkResource>()
+            .addIn("headUuid", ["foo", "oof"])
+            .addEqual("tailUuid", "userUuid")
+            .addEqual("linkClass", LinkClass.STAR);
+        linkService.list = list;
+        const favoriteService = new FavoriteService(linkService, groupService);
+
+        const favorites = await favoriteService.checkPresenceInFavorites("userUuid", ["foo", "oof"]);
+
+        expect(list.mock.calls[0][0].filters.getFilters()).toEqual(listFilters.getFilters());
+        expect(favorites).toEqual({ foo: true, oof: false });
     });
 
 });

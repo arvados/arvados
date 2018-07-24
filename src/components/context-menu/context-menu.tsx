@@ -7,8 +7,9 @@ import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 
 export interface ContextMenuItem {
-    name: string;
-    icon: IconType;
+    name?: string | React.ComponentType;
+    icon?: IconType;
+    component?: React.ComponentType<any>;
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];
@@ -16,16 +17,17 @@ export type ContextMenuItemGroup = ContextMenuItem[];
 export interface ContextMenuProps {
     anchorEl?: HTMLElement;
     items: ContextMenuItemGroup[];
+    open: boolean;
     onItemClick: (action: ContextMenuItem) => void;
     onClose: () => void;
 }
 
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, items, onClose, onItemClick} = this.props;
+        const { anchorEl, items, open, onClose, onItemClick } = this.props;
         return <Popover
             anchorEl={anchorEl}
-            open={!!anchorEl}
+            open={open}
             onClose={onClose}
             transformOrigin={DefaultTransformOrigin}
             anchorOrigin={DefaultTransformOrigin}
@@ -38,12 +40,16 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 button
                                 key={actionIndex}
                                 onClick={() => onItemClick(item)}>
-                                <ListItemIcon>
-                                    <item.icon/>
-                                </ListItemIcon>
-                                <ListItemText>
-                                    {item.name}
-                                </ListItemText>
+                                {item.icon &&
+                                    <ListItemIcon>
+                                        <item.icon />
+                                    </ListItemIcon>}
+                                {item.name &&
+                                    <ListItemText>
+                                        {item.name}
+                                    </ListItemText>}
+                                {item.component &&
+                                    <item.component />}
                             </ListItem>)}
                         {groupIndex < items.length - 1 && <Divider />}
                     </React.Fragment>)}
