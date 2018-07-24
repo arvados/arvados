@@ -7,6 +7,8 @@ import { projectActions } from "../../../store/project/project-action";
 import { NewProjectIcon } from "../../../components/icon/icon";
 import { ToggleFavoriteAction } from "./favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
+import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
+import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel";
 
 export const projectActionSet: ContextMenuActionSet = [[{
     icon: NewProjectIcon,
@@ -17,6 +19,8 @@ export const projectActionSet: ContextMenuActionSet = [[{
 }, {
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
-        dispatch<any>(toggleFavorite(resource));
+        dispatch<any>(toggleFavorite(resource)).then(() => {
+            dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id : FAVORITE_PANEL_ID }));
+        });
     }
 }]];

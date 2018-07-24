@@ -11,7 +11,6 @@ import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel"
 export const favoriteActionSet: ContextMenuActionSet = [[{
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
-        debugger;
         dispatch<any>(toggleFavorite(resource)).then(() => {
             dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id : FAVORITE_PANEL_ID }));
         });
