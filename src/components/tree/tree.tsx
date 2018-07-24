@@ -3,43 +3,43 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import List from "@material-ui/core/List/List";
-import ListItem from "@material-ui/core/ListItem/ListItem";
+import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
-import Collapse from "@material-ui/core/Collapse/Collapse";
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { ArvadosTheme } from '../../common/custom-theme';
+import * as classnames from "classnames";
 
-type CssRules = 'list' | 'activeArrow' | 'inactiveArrow' | 'arrowRotate' | 'arrowTransition' | 'loader' | 'arrowVisibility';
+import { ArvadosTheme } from '../../common/custom-theme';
+import { SidePanelRightArrowIcon } from '../icon/icon';
+
+type CssRules = 'list' | 'active' | 'loader' | 'toggableIconContainer' | 'iconClose' | 'iconOpen' | 'toggableIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
-        paddingBottom: '3px',
-        paddingTop: '3px',
-    },
-    activeArrow: {
-        color: theme.palette.primary.main,
-        position: 'absolute',
-    },
-    inactiveArrow: {
-        color: theme.palette.grey["700"],
-        position: 'absolute',
-    },
-    arrowTransition: {
-        transition: 'all 0.1s ease',
-    },
-    arrowRotate: {
-        transition: 'all 0.1s ease',
-        transform: 'rotate(-90deg)',
-    },
-    arrowVisibility: {
-        opacity: 0,
+        padding: '3px 0px'
     },
     loader: {
         position: 'absolute',
         transform: 'translate(0px)',
         top: '3px'
+    },
+    toggableIconContainer: {
+        color: theme.palette.grey["700"],
+        height: '14px',
+        position: 'absolute'
+    },
+    toggableIcon: {
+        fontSize: '14px'
+    },
+    active: {
+        color: theme.palette.primary.main,
+    },
+    iconClose: {
+        transition: 'all 0.1s ease',
+    },
+    iconOpen: {
+        transition: 'all 0.1s ease',
+        transform: 'rotate(90deg)',
     }
 });
 
@@ -73,39 +73,44 @@ export const Tree = withStyles(styles)(
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
             const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu } = this.props;
-            const { list, inactiveArrow, activeArrow, loader } = classes;
+            const { list, loader, toggableIconContainer } = classes;
             return <List component="div" className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
                         <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }}
-                                  onClick={() => toggleItemActive(it.id, it.status)}
-                                  onContextMenu={this.handleRowContextMenu(it)}>
+                            onClick={() => toggleItemActive(it.id, it.status)}
+                            onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.Pending ?
-                                <CircularProgress size={10} className={loader}/> : null}
-                            {it.toggled && it.items && it.items.length === 0 ? null : this.renderArrow(it.status, it.active ? activeArrow : inactiveArrow, it.open, it.id)}
+                                <CircularProgress size={10} className={loader} /> : null}
+                            <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
+                                className={toggableIconContainer}>
+                                <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
+                                    {it.toggled && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
+                                </ListItemIcon>
+                            </i>
                             {render(it, level)}
                         </ListItem>
                         {it.items && it.items.length > 0 &&
-                        <Collapse in={it.open} timeout="auto" unmountOnExit>
-                            <Tree
-                                items={it.items}
-                                render={render}
-                                toggleItemOpen={toggleItemOpen}
-                                toggleItemActive={toggleItemActive}
-                                level={level + 1}
-                                onContextMenu={onContextMenu}/>
-                        </Collapse>}
+                            <Collapse in={it.open} timeout="auto" unmountOnExit>
+                                <Tree
+                                    items={it.items}
+                                    render={render}
+                                    toggleItemOpen={toggleItemOpen}
+                                    toggleItemActive={toggleItemActive}
+                                    level={level + 1}
+                                    onContextMenu={onContextMenu} />
+                            </Collapse>}
                     </div>)}
             </List>;
         }
 
-        renderArrow(status: TreeItemStatus, arrowClass: string, open: boolean, id: string) {
-            const { arrowTransition, arrowVisibility, arrowRotate } = this.props.classes;
-            return <i onClick={() => this.props.toggleItemOpen(id, status)}
-                      className={`
-                        ${arrowClass}
-                        ${status === TreeItemStatus.Pending ? arrowVisibility : ''}
-                        ${open ? `fas fa-caret-down ${arrowTransition}` : `fas fa-caret-down ${arrowRotate}`}`}/>;
+        getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {
+            const { iconOpen, iconClose, active, toggableIcon } = this.props.classes;
+            return classnames(toggableIcon, {
+                [iconOpen]: isOpen,
+                [iconClose]: !isOpen,
+                [active]: isActive
+            });
         }
 
         handleRowContextMenu = (item: TreeItem<T>) =>

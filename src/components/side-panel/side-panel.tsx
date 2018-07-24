@@ -107,11 +107,11 @@ export const SidePanel = withStyles(styles)(
         }
 
         getToggableIconClassNames = (isOpen?: boolean, isActive ?: boolean) => {
-            const { classes } = this.props;
-            return classnames(classes.toggableIcon, {
-                [classes.iconOpen]: isOpen,
-                [classes.iconClose]: !isOpen,
-                [classes.active]: isActive
+            const { iconOpen, iconClose, active, toggableIcon } = this.props.classes;
+            return classnames(toggableIcon, {
+                [iconOpen]: isOpen,
+                [iconClose]: !isOpen,
+                [active]: isActive
             });
         }
 
