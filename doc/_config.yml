@@ -157,9 +157,9 @@ navbar:
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
     - Monitoring:
-      - admin/management-token.html.textile.liquid
       - admin/health-checks.html.textile.liquid
       - admin/metrics.html.textile.liquid
+      - admin/management-token.html.textile.liquid
     - Cloud:
       - admin/storage-classes.html.textile.liquid
       - admin/spot-instances.html.textile.liquid
