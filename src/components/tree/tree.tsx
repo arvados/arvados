@@ -3,14 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import List from "@material-ui/core/List/List";
-import ListItem from "@material-ui/core/ListItem/ListItem";
+import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
-import Collapse from "@material-ui/core/Collapse/Collapse";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import * as classnames from "classnames";
-import { ListItemIcon } from '@material-ui/core/';
 
 import { ArvadosTheme } from '../../common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
@@ -19,8 +16,7 @@ type CssRules = 'list' | 'active' | 'loader' | 'toggableIconContainer' | 'iconCl
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
-        paddingBottom: '3px',
-        paddingTop: '3px',
+        padding: '3px 0px'
     },
     loader: {
         position: 'absolute',
