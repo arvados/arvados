@@ -33,10 +33,6 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
 
         if (treeItem) {
 
-            if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
-            }
-
             const resourceUrl = getResourceUrl(treeItem.data);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
@@ -52,6 +48,9 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
 
             promise
                 .then(() => dispatch<any>(() => {
+                    if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
+                        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
+                    }
                     dispatch(dataExplorerActions.RESET_PAGINATION({id: PROJECT_PANEL_ID}));
                     dispatch(dataExplorerActions.REQUEST_ITEMS({id: PROJECT_PANEL_ID}));
                 }));
