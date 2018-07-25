@@ -7,7 +7,7 @@ import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action"
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 import { DataColumns } from "../../components/data-table/data-table";
 
-interface DataExplorer {
+export interface DataExplorer {
     columns: DataColumns<any>;
     items: any[];
     itemsAvailable: number;
