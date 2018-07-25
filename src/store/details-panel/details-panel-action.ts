@@ -28,9 +28,9 @@ export const loadDetails = (uuid: string, kind: ResourceKind) =>
 
 const getService = (kind: ResourceKind) => {
     switch (kind) {
-        case ResourceKind.Project:
+        case ResourceKind.PROJECT:
             return new CommonResourceService(serverApi, "groups");
-        case ResourceKind.Collection:
+        case ResourceKind.COLLECTION:
             return new CommonResourceService(serverApi, "collections");
         default:
             return new CommonResourceService(serverApi, "");

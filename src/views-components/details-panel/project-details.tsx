@@ -19,7 +19,7 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
 
     getDetails() {
         return <div>
-            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.Project)} />
+            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
             {/* Missing attr */}
             <DetailsAttribute label='Size' value='---' />
             <DetailsAttribute label='Owner' value={this.item.ownerUuid} />

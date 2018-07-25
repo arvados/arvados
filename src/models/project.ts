@@ -5,5 +5,5 @@
 import { GroupResource, GroupClass } from "./group";
 
 export interface ProjectResource extends GroupResource {
-    groupClass: GroupClass.Project;
+    groupClass: GroupClass.PROJECT;
 }

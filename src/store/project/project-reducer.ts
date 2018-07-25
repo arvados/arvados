@@ -73,14 +73,14 @@ function updateProjectTree(tree: Array<TreeItem<ProjectResource>>, projects: Pro
     if (parentItemId) {
         treeItem = findTreeItem(tree, parentItemId);
         if (treeItem) {
-            treeItem.status = TreeItemStatus.Loaded;
+            treeItem.status = TreeItemStatus.LOADED;
         }
     }
     const items = projects.map(p => ({
         id: p.uuid,
         open: false,
         active: false,
-        status: TreeItemStatus.Initial,
+        status: TreeItemStatus.INITIAL,
         data: p,
         items: []
     } as TreeItem<ProjectResource>));
@@ -123,7 +123,7 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
             const items = _.cloneDeep(state.items);
             const item = findTreeItem(items, itemId);
             if (item) {
-                item.status = TreeItemStatus.Pending;
+                item.status = TreeItemStatus.PENDING;
                 state.items = items;
             }
             return { ...state, items };

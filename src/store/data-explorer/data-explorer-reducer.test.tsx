@@ -25,12 +25,12 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
-            sortDirection: SortDirection.Asc
+            sortDirection: SortDirection.ASC
         }, {
             name: "Column 2",
             render: jest.fn(),
             selected: true,
-            sortDirection: SortDirection.None,
+            sortDirection: SortDirection.NONE,
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));

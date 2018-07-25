@@ -67,7 +67,7 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
                             order: sortColumn!.name === FavoritePanelColumnNames.NAME
-                                ? sortColumn!.sortDirection === SortDirection.Asc
+                                ? sortColumn!.sortDirection === SortDirection.ASC
                                     ? order.addDesc("name")
                                     : order.addAsc("name")
                                 : order,
@@ -104,14 +104,14 @@ export const favoritePanelMiddleware: Middleware = store => next => {
 const getOrder = (direction: SortDirection) => {
     const order = OrderBuilder.create<LinkResource>();
     const addRule = (builder: OrderBuilder<GroupContentsResource | LinkResource>, direction: SortDirection) =>
-        direction === SortDirection.Asc
+        direction === SortDirection.ASC
             ? builder.addAsc("name")
             : builder.addDesc("name");
 
     return [
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT)
     ].reduce((acc, b) =>
         acc.concat(addRule(b, direction)), addRule(OrderBuilder.create(), direction));
 };
