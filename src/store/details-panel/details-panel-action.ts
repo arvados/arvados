@@ -5,7 +5,7 @@
 import { unionize, ofType, UnionOf } from "unionize";
 import { CommonResourceService } from "../../common/api/common-resource-service";
 import { Dispatch } from "redux";
-import { serverApi } from "../../common/api/server-api";
+import { apiClient } from "../../common/api/server-api";
 import { Resource, ResourceKind } from "../../models/resource";
 
 export const detailsPanelActions = unionize({
@@ -29,11 +29,11 @@ export const loadDetails = (uuid: string, kind: ResourceKind) =>
 const getService = (kind: ResourceKind) => {
     switch (kind) {
         case ResourceKind.Project:
-            return new CommonResourceService(serverApi, "groups");
+            return new CommonResourceService(apiClient, "groups");
         case ResourceKind.Collection:
-            return new CommonResourceService(serverApi, "collections");
+            return new CommonResourceService(apiClient, "collections");
         default:
-            return new CommonResourceService(serverApi, "");
+            return new CommonResourceService(apiClient, "");
     }
 };
 
