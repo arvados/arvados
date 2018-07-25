@@ -24,7 +24,9 @@ export interface UserDetailsResponse {
 
 export class AuthService {
 
-    constructor(protected serverApi: AxiosInstance) { }
+    constructor(
+        protected authClient: AxiosInstance,
+        protected apiClient: AxiosInstance) { }
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
@@ -76,16 +78,16 @@ export class AuthService {
 
     public login() {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        window.location.assign(`${API_HOST}/login?return_to=${currentUrl}`);
+        window.location.assign(`${this.authClient.defaults.baseURL || ""}/login?return_to=${currentUrl}`);
     }
 
     public logout() {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        window.location.assign(`${API_HOST}/logout?return_to=${currentUrl}`);
+        window.location.assign(`${this.authClient.defaults.baseURL || ""}/logout?return_to=${currentUrl}`);
     }
 
     public getUserDetails = (): Promise<User> => {
-        return this.serverApi
+        return this.apiClient
             .get<UserDetailsResponse>('/users/current')
             .then(resp => ({
                 email: resp.data.email,
