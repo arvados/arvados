@@ -6,11 +6,6 @@
 \usage{
 arv$users.update_uuid(uuid, new_uuid)
 }
-\arguments{
-\item{uuid}{}
-
-\item{new_uuid}{}
-}
 \value{
 User object.
 }

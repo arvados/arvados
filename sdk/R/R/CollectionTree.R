@@ -121,3 +121,24 @@ CollectionTree <- R6::R6Class(
         }
     )
 )
+
+# deepCopyArvadosComposite = function(composite) 
+# {
+    # if("ArvadosFile" %in% class(content))
+    # {
+        # newFile <- ArvadosFile$new(content$name)
+        # newFile$setCollection(content$getCollection())
+
+        # return(newFile)
+    # }
+    # else if("Subcollection" %in% class(content))
+    # {
+        # root <- Subcollection$new(content$name)
+        # root$setCollection(content$getCollection())
+    # }
+    # else
+        # stop("Arvados composite is corrupted. It can contain only ArvadosFile or Subcollection.")
+    
+    
+
+# }

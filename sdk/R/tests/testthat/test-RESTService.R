@@ -135,6 +135,40 @@ test_that("move raises exception if server response code is not between 200 and 
                 throws_error("Server code: 404"))
 })
 
+test_that("copy calls REST service properly", {
+
+    uuid <- "aaaaa-j7d0g-ccccccccccccccc"
+    expectedURL <- "https://webDavHost/c=aaaaa-j7d0g-ccccccccccccccc/file"
+    fakeHttp <- FakeHttpRequest$new(expectedURL)
+    fakeHttpParser <- FakeHttpParser$new()
+
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, fakeHttpParser,
+                            0, "https://webDavHost/")
+
+    REST$copy("file", "newDestination/file", uuid)
+
+    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
+    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
+    expect_that(fakeHttp$requestHeaderContainsDestinationField, is_true())
+    expect_that(fakeHttp$numberOfCOPYRequests, equals(1))
+})
+
+test_that("copy raises exception if server response code is not between 200 and 300", {
+
+    uuid <- "aaaaa-j7d0g-ccccccccccccccc"
+    response <- list()
+    response$status_code <- 404
+    fakeHttp <- FakeHttpRequest$new(serverResponse = response)
+
+    REST <- RESTService$new("token", "https://host/",
+                            fakeHttp, HttpParser$new(),
+                            0, "https://webDavHost/")
+
+    expect_that(REST$copy("file", "newDestination/file", uuid),
+                throws_error("Server code: 404"))
+})
+
 test_that("getCollectionContent retreives correct content from WebDAV server", {
 
     uuid <- "aaaaa-j7d0g-ccccccccccccccc"

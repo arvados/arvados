@@ -6,11 +6,6 @@
 \usage{
 arv$nodes.ping(uuid, ping_secret)
 }
-\arguments{
-\item{uuid}{}
-
-\item{ping_secret}{}
-}
 \value{
 Node object.
 }

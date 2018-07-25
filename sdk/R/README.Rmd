@@ -259,6 +259,28 @@ subcollection$move("newDestination/folder")
 Make sure to include new file name in destination.
 In second example file$move("newDestination/") will not work.
 
+* Copy file or folder inside collection:
+
+Directley from collection
+
+```{r}
+collection$copy("folder/file.cpp", "file.cpp")
+```
+
+Or from file
+
+```{r}
+file <- collection$get("location/to/my/file.cpp")
+file$copy("destination/file.cpp")
+```
+
+Or from subcollection
+
+```{r}
+subcollection <- collection$get("location/to/folder")
+subcollection$copy("destination/folder")
+```
+
 #### Working with Aravdos projects
 
 * Get a project:

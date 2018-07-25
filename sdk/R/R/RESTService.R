@@ -81,12 +81,30 @@ RESTService <- R6::R6Class(
         {
             collectionURL <- paste0(self$getWebDavHostName(), "c=", uuid, "/")
             fromURL <- paste0(collectionURL, from)
-            toURL <- paste0(collectionURL, to)
+            toURL <- paste0(collectionURL, trimFromStart(to, "/"))
 
             headers <- list("Authorization" = paste("OAuth2", self$token),
-                           "Destination" = toURL)
+                            "Destination" = toURL)
 
             serverResponse <- self$http$exec("MOVE", fromURL, headers,
+                                             retryTimes = self$numRetries)
+
+            if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)
+                stop(paste("Server code:", serverResponse$status_code))
+
+            serverResponse
+        },
+
+        copy = function(from, to, uuid)
+        {
+            collectionURL <- paste0(self$getWebDavHostName(), "c=", uuid, "/")
+            fromURL <- paste0(collectionURL, from)
+            toURL <- paste0(collectionURL, trimFromStart(to, "/"))
+
+            headers <- list("Authorization" = paste("OAuth2", self$token),
+                            "Destination" = toURL)
+
+            serverResponse <- self$http$exec("COPY", fromURL, headers,
                                              retryTimes = self$numRetries)
 
             if(serverResponse$status_code < 200 || serverResponse$status_code >= 300)

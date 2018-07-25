@@ -58,23 +58,17 @@ Collection <- R6::R6Class(
     public = list(
 
 		uuid = NULL,
-        # api  = NULL,
 
 		initialize = function(api, uuid)
         {
-            # self$api <- api
             private$REST <- api$getRESTService()
-
             self$uuid <- uuid
-
-            private$fileContent <- private$REST$getCollectionContent(uuid)
-            private$tree <- CollectionTree$new(private$fileContent, self)
         },
 
         add = function(content, relativePath = "")
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             if(relativePath == ""  ||
                relativePath == "." ||
@@ -111,7 +105,7 @@ Collection <- R6::R6Class(
         create = function(fileNames, relativePath = "")
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             if(relativePath == ""  ||
                relativePath == "." ||
@@ -159,7 +153,7 @@ Collection <- R6::R6Class(
         remove = function(paths)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             if(is.character(paths))
             {
@@ -189,10 +183,10 @@ Collection <- R6::R6Class(
             }
         },
 
-        move = function(content, newLocation)
+        move = function(content, destination)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             content <- trimFromEnd(content, "/")
 
@@ -201,13 +195,34 @@ Collection <- R6::R6Class(
             if(is.null(elementToMove))
                 stop("Content you want to move doesn't exist in the collection.")
 
-            elementToMove$move(newLocation)
+            elementToMove$move(destination)
+        },
+
+        copy = function(content, destination)
+        {
+            if(is.null(private$tree))
+                private$generateCollectionTreeStructure()
+
+            content <- trimFromEnd(content, "/")
+
+            elementToCopy <- self$get(content)
+
+            if(is.null(elementToCopy))
+                stop("Content you want to copy doesn't exist in the collection.")
+
+            elementToCopy$copy(destination)
+        },
+
+        refresh = function()
+        {
+            private$tree$getTree()$setCollection(NULL, setRecursively = TRUE)
+            private$tree <- NULL
         },
 
         getFileListing = function()
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             content <- private$REST$getCollectionContent(self$uuid)
             content[order(tolower(content))]
@@ -216,31 +231,10 @@ Collection <- R6::R6Class(
         get = function(relativePath)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             private$tree$getElement(relativePath)
         },
-
-		toJSON = function()
-        {
-			fields <- sapply(private$classFields, function(field)
-			{
-				self[[field]]
-			}, USE.NAMES = TRUE)
-
-			jsonlite::toJSON(list("collection" =
-                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)
-		},
-
-		isEmpty = function() {
-			fields <- sapply(private$classFields,
-			                 function(field) self[[field]])
-
-			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
-				FALSE
-			else
-				TRUE
-		},
 
         getRESTService = function() private$REST,
         setRESTService = function(newRESTService) private$REST <- newRESTService
@@ -251,9 +245,8 @@ Collection <- R6::R6Class(
         REST        = NULL,
         tree        = NULL,
         fileContent = NULL,
-        classFields = NULL,
 
-        genereateCollectionTreeStructure = function()
+        generateCollectionTreeStructure = function()
         {
             if(is.null(self$uuid))
                 stop("Collection uuid is not defined.")

@@ -27,6 +27,7 @@ FakeHttpRequest <- R6::R6Class(
         numberOfPUTRequests        = NULL,
         numberOfPOSTRequests       = NULL,
         numberOfMOVERequests       = NULL,
+        numberOfCOPYRequests       = NULL,
         numberOfgetConnectionCalls = NULL,
 
         initialize = function(expectedURL      = NULL,
@@ -57,6 +58,7 @@ FakeHttpRequest <- R6::R6Class(
             self$numberOfPUTRequests    <- 0
             self$numberOfPOSTRequests   <- 0
             self$numberOfMOVERequests   <- 0
+            self$numberOfCOPYRequests   <- 0
 
             self$numberOfgetConnectionCalls <- 0
 
@@ -81,6 +83,8 @@ FakeHttpRequest <- R6::R6Class(
                 self$numberOfDELETERequests <- self$numberOfDELETERequests + 1
             else if(verb == "MOVE")
                 self$numberOfMOVERequests <- self$numberOfMOVERequests + 1
+            else if(verb == "COPY")
+                self$numberOfCOPYRequests <- self$numberOfCOPYRequests + 1
             else if(verb == "PROPFIND")
             {
                 return(self$content)

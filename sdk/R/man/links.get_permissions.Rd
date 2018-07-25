@@ -6,9 +6,6 @@
 \usage{
 arv$links.get_permissions(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 Link object.
 }

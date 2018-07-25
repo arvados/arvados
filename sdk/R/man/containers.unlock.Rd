@@ -6,9 +6,6 @@
 \usage{
 arv$containers.unlock(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 Container object.
 }

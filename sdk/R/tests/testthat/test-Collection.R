@@ -262,3 +262,37 @@ test_that("get returns arvados file or subcollection from internal tree structur
     expect_that(fishIsNotNull, is_true())
     expect_that(fish$getName(), equals("fish"))
 })
+
+test_that(paste("copy copies content to a new location inside file tree",
+                "and on REST service"), {
+
+    collectionContent <- c("animal", "animal/dog", "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+
+    collection$copy("animal/dog", "dog")
+
+    dogExistsOnOldLocation <- !is.null(collection$get("animal/dog"))
+    dogExistsOnNewLocation <- !is.null(collection$get("dog"))
+
+    expect_that(dogExistsOnOldLocation, is_true())
+    expect_that(dogExistsOnNewLocation, is_true())
+    expect_that(fakeREST$copyCallCount, equals(1))
+})
+
+test_that("copy raises exception if new location is not valid", {
+
+    collectionContent <- c("animal", "animal/fish", "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+
+    expect_that(collection$copy("fish", "object"),
+                throws_error("Content you want to copy doesn't exist in the collection.",
+                             fixed = TRUE))
+})

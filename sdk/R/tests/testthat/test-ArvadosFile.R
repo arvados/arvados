@@ -81,7 +81,6 @@ test_that("read raises exception if file doesn't belong to a collection", {
 
 test_that("read raises exception offset or length is negative number", {
 
-
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
@@ -156,7 +155,6 @@ test_that(paste("connection returns textConnection opened",
 
 test_that("flush sends data stored in a connection to a REST server", {
 
-
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
@@ -204,12 +202,11 @@ test_that(paste("move raises exception if arvados file",
     animal <- ArvadosFile$new("animal")
 
     expect_that(animal$move("new/location"),
-                throws_error("ArvadosFile doesn't belong to any collection"))
+                throws_error("ArvadosFile doesn't belong to any collection."))
 })
 
 test_that(paste("move raises exception if newLocationInCollection",
                 "parameter is invalid"), {
-
 
     collectionContent <- c("animal",
                            "animal/fish",
@@ -226,7 +223,7 @@ test_that(paste("move raises exception if newLocationInCollection",
     dog <- collection$get("animal/dog")
 
     expect_that(dog$move("objects/dog"),
-                throws_error("Unable to get destination subcollection"))
+                throws_error("Unable to get destination subcollection."))
 })
 
 test_that("move raises exception if new location contains content with the same name", {
@@ -252,7 +249,6 @@ test_that("move raises exception if new location contains content with the same 
 
 test_that("move moves arvados file inside collection tree", {
 
-
     collectionContent <- c("animal",
                            "animal/fish",
                            "animal/dog",
@@ -272,4 +268,86 @@ test_that("move moves arvados file inside collection tree", {
 
     expect_that(dogIsNullOnOldLocation, is_true())
     expect_that(dogExistsOnNewLocation, is_true())
+})
+
+test_that(paste("copy raises exception if arvados file",
+                "doesn't belong to any collection"), {
+
+    animal <- ArvadosFile$new("animal")
+
+    expect_that(animal$copy("new/location"),
+                throws_error("ArvadosFile doesn't belong to any collection."))
+})
+
+test_that(paste("copy raises exception if location parameter is invalid"), {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+
+    collection <- Collection$new(api, "myUUID")
+    dog <- collection$get("animal/dog")
+
+    expect_that(dog$copy("objects/dog"),
+                throws_error("Unable to get destination subcollection."))
+})
+
+test_that("copy raises exception if new location contains content with the same name", {
+
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "dog")
+
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    dog <- collection$get("animal/dog")
+
+    expect_that(dog$copy("dog"),
+                throws_error("Destination already contains content with same name."))
+
+})
+
+test_that("copy copies arvados file inside collection tree", {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    dog <- collection$get("animal/dog")
+
+    dog$copy("dog")
+    dogExistsOnOldLocation <- !is.null(collection$get("animal/dog"))
+    dogExistsOnNewLocation <- !is.null(collection$get("dog"))
+
+    expect_that(dogExistsOnOldLocation, is_true())
+    expect_that(dogExistsOnNewLocation, is_true())
+})
+
+test_that("duplicate performs deep cloning of Arvados file", {
+    arvFile <- ArvadosFile$new("foo")
+    newFile1 <- arvFile$duplicate()
+    newFile2 <- arvFile$duplicate("bar")
+
+    expect_that(newFile1$getFileListing(), equals(arvFile$getFileListing()))
+    expect_that(newFile2$getFileListing(), equals(c("bar")))
 })

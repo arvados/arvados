@@ -309,7 +309,7 @@ test_that(paste("move raises exception if newLocationInCollection",
     fish <- collection$get("animal/fish")
 
     expect_that(fish$move("objects/dog"),
-                throws_error("Unable to get destination subcollection"))
+                throws_error("Unable to get destination subcollection."))
 })
 
 test_that("move moves subcollection inside collection tree", {
@@ -357,4 +357,88 @@ test_that(paste("getSizeInBytes delegates size calculation",
     resourceSize <- animal$getSizeInBytes()
 
     expect_that(resourceSize, equals(100))
+})
+
+#########################
+test_that(paste("copy raises exception if subcollection",
+                "doesn't belong to any collection"), {
+
+    animal <- Subcollection$new("animal")
+
+    expect_that(animal$copy("new/location"),
+                throws_error("Subcollection doesn't belong to any collection."))
+})
+
+test_that("copy raises exception if new location contains content with the same name", {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "fish")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    expect_that(fish$copy("fish"),
+                throws_error("Destination already contains content with same name."))
+
+})
+
+test_that(paste("copy raises exception if location parameter is invalid"), {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    expect_that(fish$copy("objects/dog"),
+                throws_error("Unable to get destination subcollection."))
+})
+
+test_that("copy copies subcollection inside collection tree", {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    fish$copy("fish")
+    fishExistsOnOldLocation <- !is.null(collection$get("animal/fish"))
+    fishExistsOnNewLocation <- !is.null(collection$get("fish"))
+
+    expect_that(fishExistsOnOldLocation, is_true())
+    expect_that(fishExistsOnNewLocation, is_true())
+})
+
+test_that("duplicate performs deep cloning of Subcollection", {
+    foo <- ArvadosFile$new("foo")
+    bar <- ArvadosFile$new("bar")
+    sub <- Subcollection$new("qux")
+    sub$add(foo)
+    sub$add(bar)
+
+    newSub1 <- sub$duplicate()
+    newSub2 <- sub$duplicate("quux")
+
+    expect_that(newSub1$getFileListing(), equals(sub$getFileListing()))
+    expect_that(sort(newSub2$getFileListing()), equals(c("quux/bar", "quux/foo")))
 })

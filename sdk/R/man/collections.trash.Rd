@@ -6,9 +6,6 @@
 \usage{
 arv$collections.trash(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 Collection object.
 }

@@ -6,9 +6,6 @@
 \usage{
 arv$collections.provenance(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 Collection object.
 }

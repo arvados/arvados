@@ -6,9 +6,6 @@
 \usage{
 arv$virtual_machines.logins(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 VirtualMachine object.
 }

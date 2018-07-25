@@ -7,11 +7,6 @@
 arv$api_client_authorizations.create_system_auth(api_client_id = NULL,
 	scopes = NULL)
 }
-\arguments{
-\item{api_client_id}{}
-
-\item{scopes}{}
-}
 \value{
 ApiClientAuthorization object.
 }

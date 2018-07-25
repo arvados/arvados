@@ -6,9 +6,6 @@
 \usage{
 arv$pipeline_instances.cancel(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 PipelineInstance object.
 }

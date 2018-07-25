@@ -8,21 +8,6 @@ arv$keep_disks.ping(uuid = NULL,
 	ping_secret, node_uuid = NULL, filesystem_uuid = NULL,
 	service_host = NULL, service_port, service_ssl_flag)
 }
-\arguments{
-\item{uuid}{}
-
-\item{ping_secret}{}
-
-\item{node_uuid}{}
-
-\item{filesystem_uuid}{}
-
-\item{service_host}{}
-
-\item{service_port}{}
-
-\item{service_ssl_flag}{}
-}
 \value{
 KeepDisk object.
 }

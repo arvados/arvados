@@ -6,9 +6,6 @@
 \usage{
 arv$containers.auth(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 Container object.
 }

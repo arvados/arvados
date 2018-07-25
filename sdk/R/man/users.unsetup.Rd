@@ -6,9 +6,6 @@
 \usage{
 arv$users.unsetup(uuid)
 }
-\arguments{
-\item{uuid}{}
-}
 \value{
 User object.
 }
