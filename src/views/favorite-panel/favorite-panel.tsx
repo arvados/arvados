@@ -17,6 +17,7 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
+import { FavoritePanelMiddlewareService } from '../../store/favorite-panel/favorite-panel-middleware-service';
 
 type CssRules = "toolbar" | "button";
 
@@ -118,8 +119,6 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
     }
 ];
 
-export const FAVORITE_PANEL_ID = "favoritePanel";
-
 interface FavoritePanelDataProps {
     currentItemId: string;
 }
@@ -140,7 +139,7 @@ export const FavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
             render() {
                 return <DataExplorer
-                    id={FAVORITE_PANEL_ID}
+                    id={FavoritePanelMiddlewareService.getInstance().Id}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}

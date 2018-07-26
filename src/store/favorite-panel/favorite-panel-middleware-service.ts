@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { FAVORITE_PANEL_ID, columns, FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
+import { columns, FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
@@ -13,8 +13,8 @@ import { favoriteService } from "../../services/services";
 import { SortDirection } from "../../components/data-table/data-column";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { LinkResource } from "../../models/link";
-import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { favoritePanelActions } from "./favorite-panel-action";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -31,7 +31,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
     }
 
     get Id() {
-        return FAVORITE_PANEL_ID;
+        return "favoritePanel";
     }
 
     get Columns() {
@@ -40,7 +40,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = getDataExplorer(state.dataExplorer, FAVORITE_PANEL_ID);
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.Id);
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
@@ -61,8 +61,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                         .addILike("name", dataExplorer.searchValue)
                 })
                 .then(response => {
-                    this.api.dispatch(dataExplorerActions.SET_ITEMS({
-                        id: FAVORITE_PANEL_ID,
+                    this.api.dispatch(favoritePanelActions.SET_ITEMS({
                         items: response.items.map(resourceToDataItem),
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
@@ -71,8 +70,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     this.api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                 });
         } else {
-            this.api.dispatch(dataExplorerActions.SET_ITEMS({
-                id: FAVORITE_PANEL_ID,
+            this.api.dispatch(favoritePanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,

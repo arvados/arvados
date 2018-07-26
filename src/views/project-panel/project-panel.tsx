@@ -17,6 +17,7 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
+import { ProjectPanelMiddlewareService } from '../../store/project-panel/project-panel-middleware-service';
 
 type CssRules = "toolbar" | "button";
 
@@ -118,8 +119,6 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     }
 ];
 
-export const PROJECT_PANEL_ID = "projectPanel";
-
 interface ProjectPanelDataProps {
     currentItemId: string;
 }
@@ -153,7 +152,7 @@ export const ProjectPanel = withStyles(styles)(
                         </Button>
                     </div>
                     <DataExplorer
-                        id={PROJECT_PANEL_ID}
+                        id={ProjectPanelMiddlewareService.getInstance().Id}
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}

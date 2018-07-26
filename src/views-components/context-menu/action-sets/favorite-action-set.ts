@@ -5,14 +5,13 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "./favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
-import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
-import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel";
+import { favoritePanelActions } from "../../../store/favorite-panel/favorite-panel-action";
 
 export const favoriteActionSet: ContextMenuActionSet = [[{
     component: ToggleFavoriteAction,
     execute: (dispatch, resource) => {
         dispatch<any>(toggleFavorite(resource)).then(() => {
-            dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id : FAVORITE_PANEL_ID }));
+            dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
         });
     }
 }]];

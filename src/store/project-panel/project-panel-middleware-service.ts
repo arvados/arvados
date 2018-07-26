@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { PROJECT_PANEL_ID, columns, ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
+import { columns, ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
@@ -14,8 +14,8 @@ import { OrderBuilder } from "../../common/api/order-builder";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { ProcessResource } from "../../models/process";
 import { GroupContentsResourcePrefix, GroupContentsResource } from "../../services/groups-service/groups-service";
-import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { projectPanelActions } from "./project-panel-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -32,7 +32,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
     }
 
     get Id() {
-        return PROJECT_PANEL_ID;
+        return "projectPanel";
     }
 
     get Columns() {
@@ -41,7 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = getDataExplorer(state.dataExplorer, PROJECT_PANEL_ID);
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.Id);
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
@@ -68,8 +68,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         .concat(getSearchFilter(dataExplorer.searchValue))
                 })
                 .then(response => {
-                    this.api.dispatch(dataExplorerActions.SET_ITEMS({
-                        id: PROJECT_PANEL_ID,
+                    this.api.dispatch(projectPanelActions.SET_ITEMS({
                         items: response.items.map(resourceToDataItem),
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
@@ -78,8 +77,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     this.api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                 });
         } else {
-            this.api.dispatch(dataExplorerActions.SET_ITEMS({
-                id: PROJECT_PANEL_ID,
+            this.api.dispatch(projectPanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,

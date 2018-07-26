@@ -7,10 +7,9 @@ import { projectActions, getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
-import { dataExplorerActions } from "../data-explorer/data-explorer-action";
-import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { Resource, ResourceKind } from "../../models/resource";
+import { projectPanelActions } from "../project-panel/project-panel-action";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
@@ -51,8 +50,8 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                     if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
                         dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
                     }
-                    dispatch(dataExplorerActions.RESET_PAGINATION({id: PROJECT_PANEL_ID}));
-                    dispatch(dataExplorerActions.REQUEST_ITEMS({id: PROJECT_PANEL_ID}));
+                    dispatch(projectPanelActions.RESET_PAGINATION());
+                    dispatch(projectPanelActions.REQUEST_ITEMS());
                 }));
 
         }

@@ -28,14 +28,14 @@ import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
-import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-panel";
+import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
-import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { favoritePanelActions } from '../../store/favorite-panel/favorite-panel-action';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -248,7 +248,7 @@ export const Workbench = withStyles(styles)(
                 {...props} />
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
-                onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
+                onItemRouteChange={() => this.props.dispatch<any>(favoritePanelActions.REQUEST_ITEMS())}
                 onContextMenu={(event, item) => {
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
