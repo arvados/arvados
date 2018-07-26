@@ -1,0 +1,107 @@
+---
+layout: default
+navsection: userguide
+title: Create a Workflow with Composer
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Arvados Workflow Composer is a graphical interface for building Common Workflow Language (CWL) analysis workflows to run on Arvados.
+
+This tutorial will demonstrate:
+
+# Creating a new git repository through Arvados to store the workflow
+# Creating CommandLineTools for "sort" and "uniq"
+# Creating a Workflow which uses "sort" and "uniq" to remove duplicate lines from a text file
+# Submitting the Workflow to run on Arvados
+
+h3. 1. Access from workbench
+
+!(screenshot)c1.png!
+
+h3. 2. Composer starting page
+
+!(screenshot)c2.png!
+
+h3. 3. Manage git repositories (opens Workbench in new tab)
+
+!(screenshot)c2b.png!
+
+h3. 4. Add a new repository
+
+!(screenshot)c4.png!
+
+!(screenshot)c3.png!
+
+h3. 5. Return to Composer.  Use refresh button to discover new repository (may take a few moments to show up).
+
+!(screenshot)c2c.png!
+
+h3. 6. Create a new Command Line Tool
+
+!(screenshot)c5.png!
+
+!(screenshot)c20.png!
+
+h3. 7. Set Docker image, base command, and input port for "sort" tool
+
+You may need to "upload a Docker image":{{site.baseurl}}/user/topics/arv-docker.html (@arv-keepdocker debian:8@)
+
+!(screenshot)c6.png!
+
+h3. 8. Redirect stdout to a file
+
+!(screenshot)c7.png!
+
+h3. 9. Capture output file
+
+!(screenshot)c8.png!
+
+h3. 10. Repeat steps 6-9 for "uniq" tool
+
+h3. 11. Create workflow
+
+!(screenshot)c9.png!
+
+!(screenshot)c10.png!
+
+h3. 12. Drag and drop tools into Workflow
+
+!(screenshot)c11.png!
+
+h3. 13. Drag and from input port of "sort" to empty space to create workflow input
+
+!(screenshot)c21.png!
+
+h3. 14. Drag from output port of "sort" to input port of "uniq"
+
+!(screenshot)c13.png!
+
+h3. 15. Drag and from output port of "uniq" to empty space to create workflow output
+
+!(screenshot)c14.png!
+
+h3. 16. Click on "Test" tab then click "Run"
+
+!(screenshot)c15.png!
+
+h3. 17. Choose input file
+
+You may need to "upload an input file":{{site.baseurl}}/user/tutorials/tutorial-keep.html
+
+!(screenshot)c16.png!
+
+h3. 18. Run the workflow
+
+!(screenshot)c17.png!
+
+h3. 19. Monitor progress
+
+!(screenshot)c18.png!
+
+h3. 20. Get workflow output
+
+!(screenshot)c19.png!
