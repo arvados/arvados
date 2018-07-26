@@ -139,7 +139,6 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
             const items = _.cloneDeep(state.items);
             const item = findTreeItem(items, itemId);
             if (item) {
-                item.toggled = true;
                 item.open = !item.open;
             }
             return {
@@ -153,7 +152,6 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
             resetTreeActivity(items);
             const item = findTreeItem(items, itemId);
             if (item) {
-                item.toggled = true;
                 item.active = true;
             }
             return {
