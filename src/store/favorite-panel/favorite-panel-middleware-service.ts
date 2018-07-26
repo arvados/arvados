@@ -9,7 +9,7 @@ import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { FavoriteOrderBuilder } from "../../services/favorite-service/favorite-order-builder";
-import { favoriteService } from "../../services/services";
+import { favoriteService, authService } from "../../services/services";
 import { SortDirection } from "../../components/data-table/data-column";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { LinkResource } from "../../models/link";
@@ -47,7 +47,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         const order = FavoriteOrderBuilder.create();
         if (typeFilters.length > 0) {
             favoriteService
-                .list(state.projects.currentItemId, {
+                .list(authService.getUuid()!, {
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     order: sortColumn!.name === FavoritePanelColumnNames.NAME
