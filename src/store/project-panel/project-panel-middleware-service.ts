@@ -41,7 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = getDataExplorer(state.dataExplorer, this.Id);
+        const dataExplorer = this.DataExplorer;
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);

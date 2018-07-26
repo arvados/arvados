@@ -40,7 +40,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = getDataExplorer(state.dataExplorer, this.Id);
+        const dataExplorer = this.DataExplorer;
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);

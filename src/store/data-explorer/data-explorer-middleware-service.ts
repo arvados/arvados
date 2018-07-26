@@ -10,13 +10,14 @@ export abstract class DataExplorerMiddlewareService {
 
     abstract get Id(): string;
     abstract get Columns(): DataColumns<any>;
-    abstract requestItems (api: MiddlewareAPI): void;
-    
+    abstract requestItems(api: MiddlewareAPI): void;
+
     protected api: MiddlewareAPI;
     set Api(value: MiddlewareAPI) {
         this.api = value;
     }
-    get DataExplorer () {
-        return getDataExplorer(this.api.getState(), this.Id);
+    get DataExplorer() {
+        const { dataExplorer } = this.api.getState();
+        return getDataExplorer(dataExplorer, this.Id);
     }
 }
