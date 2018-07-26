@@ -23,9 +23,10 @@ Collection class provides interface for working with Arvados collections.
 
 \describe{
   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
-  \item{create(fileNames, relativePath = "")}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
+  \item{create(files)}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
   \item{remove(fileNames)}{Remove one or more files from the collection.}
-  \item{move(content, newLocation)}{Moves ArvadosFile or Subcollection to another location in the collection.}
+  \item{move(content, destination)}{Moves ArvadosFile or Subcollection to another location in the collection.}
+  \item{copy(content, destination)}{Copies ArvadosFile or Subcollection to another location in the collection.}
   \item{getFileListing()}{Returns collections file content as character vector.}
   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
 }
@@ -35,9 +36,6 @@ Collection class provides interface for working with Arvados collections.
 \dontrun{
 arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 collection <- Collection$new(arv, "uuid")
-
-newFile <- ArvadosFile$new("myFile")
-collection$add(newFile, "myFolder")
 
 createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
 

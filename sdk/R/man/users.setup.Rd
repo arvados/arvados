@@ -7,6 +7,17 @@
 arv$users.setup(user = NULL, openid_prefix = NULL,
 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
 }
+\arguments{
+\item{user}{}
+
+\item{openid_prefix}{}
+
+\item{repo_name}{}
+
+\item{vm_uuid}{}
+
+\item{send_notification_email}{}
+}
 \value{
 User object.
 }

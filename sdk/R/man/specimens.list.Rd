@@ -9,6 +9,23 @@ arv$specimens.list(filters = NULL,
 	distinct = NULL, limit = "100", offset = "0",
 	count = "exact")
 }
+\arguments{
+\item{filters}{}
+
+\item{where}{}
+
+\item{order}{}
+
+\item{select}{}
+
+\item{distinct}{}
+
+\item{limit}{}
+
+\item{offset}{}
+
+\item{count}{}
+}
 \value{
 SpecimenList object.
 }

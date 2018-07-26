@@ -6,6 +6,9 @@
 \usage{
 arv$containers.lock(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Container object.
 }

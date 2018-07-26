@@ -79,6 +79,9 @@ Subcollection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
+                if(!is.null(content$getCollection()))
+                    stop("Content already belongs to a collection.")
+
                 if(content$getName() == "")
                     stop("Content has invalid name.")
 
@@ -298,18 +301,23 @@ Subcollection <- R6::R6Class(
 
         attachToNewParent = function(content, newParent)
         {
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      add method doesn't post this file on REST.
+            # We temporary set parents collection to NULL. This will ensure that
+            # add method doesn't post this subcollection to REST.
+            # We also need to set content's collection to NULL because
+            # add method throws exception if we try to add content that already
+            # belongs to a collection.
             parentsCollection <- newParent$getCollection()
+            content$setCollection(NULL, setRecursively = FALSE)
             newParent$setCollection(NULL, setRecursively = FALSE)
             newParent$add(content)
+            content$setCollection(parentsCollection, setRecursively = FALSE)
             newParent$setCollection(parentsCollection, setRecursively = FALSE)
         },
 
         dettachFromCurrentParent = function()
         {
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      remove method doesn't remove this subcollection from REST.
+            # We temporary set parents collection to NULL. This will ensure that
+            # remove method doesn't remove this subcollection from REST.
             parent <- private$parent
             parentsCollection <- parent$getCollection()
             parent$setCollection(NULL, setRecursively = FALSE)

@@ -7,6 +7,13 @@
 arv$users.merge(new_owner_uuid,
 	new_user_token, redirect_to_new_user = NULL)
 }
+\arguments{
+\item{new_owner_uuid}{}
+
+\item{new_user_token}{}
+
+\item{redirect_to_new_user}{}
+}
 \value{
 User object.
 }

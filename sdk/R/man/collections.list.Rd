@@ -10,6 +10,22 @@ arv$collections.list(filters = NULL,
 	count = "exact", include_trash = NULL)
 }
 \arguments{
+\item{filters}{}
+
+\item{where}{}
+
+\item{order}{}
+
+\item{select}{}
+
+\item{distinct}{}
+
+\item{limit}{}
+
+\item{offset}{}
+
+\item{count}{}
+
 \item{include_trash}{Include collections whose is_trashed attribute is true.}
 }
 \value{

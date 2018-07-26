@@ -6,6 +6,9 @@
 \usage{
 arv$users.activate(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 User object.
 }

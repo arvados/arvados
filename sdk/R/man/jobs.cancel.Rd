@@ -6,6 +6,9 @@
 \usage{
 arv$jobs.cancel(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Job object.
 }

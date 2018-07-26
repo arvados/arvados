@@ -6,6 +6,9 @@
 \usage{
 arv$collections.used_by(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Collection object.
 }

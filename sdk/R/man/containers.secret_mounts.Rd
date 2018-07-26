@@ -6,6 +6,9 @@
 \usage{
 arv$containers.secret_mounts(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Container object.
 }

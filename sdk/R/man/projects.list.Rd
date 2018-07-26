@@ -10,7 +10,23 @@ arv$projects.list(filters = NULL,
 	include_trash = NULL, uuid = NULL, recursive = NULL)
 }
 \arguments{
+\item{filters}{}
+
+\item{where}{}
+
+\item{order}{}
+
+\item{distinct}{}
+
+\item{limit}{}
+
+\item{offset}{}
+
+\item{count}{}
+
 \item{include_trash}{Include items whose is_trashed attribute is true.}
+
+\item{uuid}{}
 
 \item{recursive}{Include contents from child groups recursively.}
 }

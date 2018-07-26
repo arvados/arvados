@@ -6,6 +6,9 @@
 \usage{
 arv$jobs.lock(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Job object.
 }

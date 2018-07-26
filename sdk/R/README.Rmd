@@ -186,30 +186,15 @@ size <- arvadosSubcollection$getSizeInBytes()
 * Create new file in a collection:
 
 ```{r}
-collection$create(fileNames, optionalRelativePath)
+collection$create(files)
 ```
 
     Example:
 
 ```{r}
-mainFile <- collection$create("main.cpp", "cpp/src/")
-fileList <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
+mainFile <- collection$create("cpp/src/main.cpp")
+fileList <- collection$create(c("cpp/src/main.cpp", "cpp/src/util.h"))
 ```
-
-* Add existing ArvadosFile or Subcollection to a collection:
-
-```{r}
-folder <- Subcollection$new("src")
-file   <- ArvadosFile$new("main.cpp")
-folder$add(file)
-```
-
-```{r}
-collection$add(folder, "cpp")
-```
-
-This examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.
-If subcollection contains more files or folders they will be added recursively.
 
 * Delete file from a collection:
 

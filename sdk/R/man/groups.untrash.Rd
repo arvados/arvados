@@ -6,6 +6,9 @@
 \usage{
 arv$groups.untrash(uuid)
 }
+\arguments{
+\item{uuid}{}
+}
 \value{
 Group object.
 }

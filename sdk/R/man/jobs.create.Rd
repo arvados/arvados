@@ -12,6 +12,14 @@ arv$jobs.create(job, ensure_unique_name = "false",
 \item{job}{Job object.}
 
 \item{ensure_unique_name}{Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.}
+
+\item{find_or_create}{}
+
+\item{filters}{}
+
+\item{minimum_script_version}{}
+
+\item{exclude_script_versions}{}
 }
 \value{
 Job object.
