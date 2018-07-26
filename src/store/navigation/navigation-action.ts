@@ -14,8 +14,8 @@ import { Resource, ResourceKind } from "../../models/resource";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
-        case ResourceKind.Project: return `/projects/${resource.uuid}`;
-        case ResourceKind.Collection: return `/collections/${resource.uuid}`;
+        case ResourceKind.PROJECT: return `/projects/${resource.uuid}`;
+        case ResourceKind.COLLECTION: return `/collections/${resource.uuid}`;
         default: return resource.href;
     }
 };
@@ -42,7 +42,7 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                 dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
             }
 
-            const promise = treeItem.status === TreeItemStatus.Loaded
+            const promise = treeItem.status === TreeItemStatus.LOADED
                 ? Promise.resolve()
                 : dispatch<any>(getProjectList(itemId));
 

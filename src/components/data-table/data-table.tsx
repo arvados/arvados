@@ -74,8 +74,8 @@ export const DataTable = withStyles(styles)(
                         </DataTableFilters>
                         : sortDirection
                             ? <TableSortLabel
-                                active={sortDirection !== SortDirection.None}
-                                direction={sortDirection !== SortDirection.None ? sortDirection : undefined}
+                                active={sortDirection !== SortDirection.NONE}
+                                direction={sortDirection !== SortDirection.NONE ? sortDirection : undefined}
                                 onClick={() =>
                                     onSortToggle &&
                                     onSortToggle(column)}>

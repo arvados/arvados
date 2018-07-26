@@ -55,11 +55,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 const getItem = (resource: DetailsResource): DetailsData => {
     const res = resource || { kind: undefined, name: 'Projects' };
     switch (res.kind) {
-        case ResourceKind.Project:
+        case ResourceKind.PROJECT:
             return new ProjectDetails(res);
-        case ResourceKind.Collection:
+        case ResourceKind.COLLECTION:
             return new CollectionDetails(res);
-        case ResourceKind.Process:
+        case ResourceKind.PROCESS:
             return new ProcessDetails(res);
         default:
             return new EmptyDetails(res as EmptyResource);

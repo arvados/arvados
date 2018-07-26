@@ -6,19 +6,24 @@ import Axios, { AxiosInstance } from "axios";
 
 export const API_HOST = process.env.REACT_APP_ARVADOS_API_HOST;
 
-export const serverApi: AxiosInstance = Axios.create({
-    baseURL: API_HOST + '/arvados/v1'
-});
+export const authClient: AxiosInstance = Axios.create();
+export const apiClient: AxiosInstance = Axios.create();
 
 export function setServerApiAuthorizationHeader(token: string) {
-    serverApi.defaults.headers.common = {
-        'Authorization': `OAuth2 ${token}`
-    };}
+    [authClient, apiClient].forEach(client => {
+        client.defaults.headers.common = {
+            Authorization: `OAuth2 ${token}`
+        };
+    });
+}
 
 export function removeServerApiAuthorizationHeader() {
-    delete serverApi.defaults.headers.common.Authorization;
+    [authClient, apiClient].forEach(client => {
+        delete client.defaults.headers.common.Authorization;
+    });
 }
 
 export const setBaseUrl = (url: string) => {
-    serverApi.defaults.baseURL = url + "/arvados/v1";
+    authClient.defaults.baseURL = url;
+    apiClient.defaults.baseURL = url + "/arvados/v1";
 };

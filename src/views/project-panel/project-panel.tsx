@@ -52,11 +52,11 @@ const renderName = (item: ProjectPanelItem) =>
 
 const renderIcon = (item: ProjectPanelItem) => {
     switch (item.kind) {
-        case ResourceKind.Project:
+        case ResourceKind.PROJECT:
             return <ProjectIcon />;
-        case ResourceKind.Collection:
+        case ResourceKind.COLLECTION:
             return <CollectionIcon />;
-        case ResourceKind.Process:
+        case ResourceKind.PROCESS:
             return <ProcessIcon />;
         default:
             return <DefaultIcon />;
@@ -104,7 +104,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
-        sortDirection: SortDirection.Asc,
+        sortDirection: SortDirection.ASC,
         render: renderName,
         width: "450px"
     },
@@ -113,19 +113,19 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         filters: [
             {
-                name: ContainerRequestState.Committed,
+                name: ContainerRequestState.COMMITTED,
                 selected: true,
-                type: ContainerRequestState.Committed
+                type: ContainerRequestState.COMMITTED
             },
             {
-                name: ContainerRequestState.Final,
+                name: ContainerRequestState.FINAL,
                 selected: true,
-                type: ContainerRequestState.Final
+                type: ContainerRequestState.FINAL
             },
             {
-                name: ContainerRequestState.Uncommitted,
+                name: ContainerRequestState.UNCOMMITTED,
                 selected: true,
-                type: ContainerRequestState.Uncommitted
+                type: ContainerRequestState.UNCOMMITTED
             }
         ],
         render: renderStatus,
@@ -136,19 +136,19 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         filters: [
             {
-                name: resourceLabel(ResourceKind.Collection),
+                name: resourceLabel(ResourceKind.COLLECTION),
                 selected: true,
-                type: ResourceKind.Collection
+                type: ResourceKind.COLLECTION
             },
             {
-                name: resourceLabel(ResourceKind.Process),
+                name: resourceLabel(ResourceKind.PROCESS),
                 selected: true,
-                type: ResourceKind.Process
+                type: ResourceKind.PROCESS
             },
             {
-                name: resourceLabel(ResourceKind.Project),
+                name: resourceLabel(ResourceKind.PROJECT),
                 selected: true,
-                type: ResourceKind.Project
+                type: ResourceKind.PROJECT
             }
         ],
         render: item => renderType(item.kind),
@@ -169,7 +169,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
-        sortDirection: SortDirection.None,
+        sortDirection: SortDirection.NONE,
         render: item => renderDate(item.lastModified),
         width: "150px"
     }

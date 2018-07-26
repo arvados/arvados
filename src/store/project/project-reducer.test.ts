@@ -133,7 +133,7 @@ describe("findTreeBranch", () => {
         active: false,
         data: "",
         open: false,
-        status: TreeItemStatus.Initial
+        status: TreeItemStatus.INITIAL
     });
 
     it("should return an array that matches path to the given item", () => {
