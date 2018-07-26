@@ -4,13 +4,13 @@
 
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
-import { serverApi } from "../common/api/server-api";
+import { authClient, apiClient } from "../common/api/server-api";
 import { ProjectService } from "./project-service/project-service";
 import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
 
-export const authService = new AuthService(serverApi);
-export const groupsService = new GroupsService(serverApi);
-export const projectService = new ProjectService(serverApi);
-export const linkService = new LinkService(serverApi);
+export const authService = new AuthService(authClient, apiClient);
+export const groupsService = new GroupsService(apiClient);
+export const projectService = new ProjectService(apiClient);
+export const linkService = new LinkService(apiClient);
 export const favoriteService = new FavoriteService(linkService, groupsService);

@@ -12,7 +12,6 @@ import {
     USER_OWNER_UUID_KEY,
     USER_UUID_KEY
 } from "../../services/auth-service/auth-service";
-import { API_HOST } from "../../common/api/server-api";
 
 import 'jest-localstorage-mock';
 
@@ -96,7 +95,7 @@ describe('auth-reducer', () => {
         window.location.assign = jest.fn();
         authReducer(initialState, authActions.LOGIN());
         expect(window.location.assign).toBeCalledWith(
-            `${API_HOST}/login?return_to=${window.location.protocol}//${window.location.host}/token`
+            `/login?return_to=${window.location.protocol}//${window.location.host}/token`
         );
     });
 
@@ -105,7 +104,7 @@ describe('auth-reducer', () => {
         window.location.assign = jest.fn();
         authReducer(initialState, authActions.LOGOUT());
         expect(window.location.assign).toBeCalledWith(
-            `${API_HOST}/logout?return_to=${location.protocol}//${location.host}`
+            `/logout?return_to=${location.protocol}//${location.host}`
         );
     });
 });
