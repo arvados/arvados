@@ -5,6 +5,7 @@
 import { default as unionize, ofType, UnionOf } from "unionize";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 import { DataColumns } from "../../components/data-table/data-table";
+import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 
 export const dataExplorerActions = unionize({
     RESET_PAGINATION: ofType<{ id: string }>(),
@@ -21,7 +22,7 @@ export const dataExplorerActions = unionize({
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
 
-export const bindDataExplorerActions = (id: string) => ({
+export const bindDataExplorerActions = ({ Id: id }: DataExplorerMiddlewareService) => ({
     ...dataExplorerActions,
     RESET_PAGINATION: () =>
         dataExplorerActions.RESET_PAGINATION({ id }),
