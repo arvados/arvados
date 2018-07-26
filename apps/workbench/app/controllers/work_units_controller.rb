@@ -86,6 +86,7 @@ class WorkUnitsController < ApplicationController
 
       # required
       attrs['command'] = ["arvados-cwl-runner",
+			  "--debug",
                           "--local",
                           "--api=containers",
                           "--project-uuid=#{params['work_unit']['owner_uuid']}",
