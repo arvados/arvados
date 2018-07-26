@@ -28,7 +28,7 @@ describe('project-reducer', () => {
                 id: "2",
                 items: [],
                 data: mockProjectResource({ uuid: "2" }),
-                status: 0
+                status: TreeItemStatus.INITIAL
             }
             ],
             currentItemId: "",
@@ -47,7 +47,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: true,
                 active: true,
-                status: 1
+                status: TreeItemStatus.PENDING
             }],
             currentItemId: "1",
             creator: { opened: false, pending: false, ownerUuid: "" },
@@ -58,7 +58,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: true,
                 active: false,
-                status: 1
+                status: TreeItemStatus.PENDING
             }],
             currentItemId: "",
             creator: { opened: false, pending: false, ownerUuid: "" },
@@ -75,7 +75,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: true,
                 active: false,
-                status: 1
+                status: TreeItemStatus.PENDING
             }],
             currentItemId: "1",
             creator: { opened: false, pending: false, ownerUuid: "" }
@@ -86,8 +86,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: true,
                 active: true,
-                status: 1,
-                toggled: true
+                status: TreeItemStatus.PENDING,
             }],
             currentItemId: "1",
             creator: { opened: false, pending: false, ownerUuid: "" },
@@ -105,8 +104,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: true,
                 active: false,
-                status: 1,
-                toggled: false,
+                status: TreeItemStatus.PENDING,
             }],
             currentItemId: "1",
             creator: { opened: false, pending: false, ownerUuid: "" }
@@ -117,8 +115,7 @@ describe('project-reducer', () => {
                 id: "1",
                 open: false,
                 active: false,
-                status: 1,
-                toggled: true
+                status: TreeItemStatus.PENDING,
             }],
             currentItemId: "1",
             creator: { opened: false, pending: false, ownerUuid: "" },
@@ -136,7 +133,7 @@ describe("findTreeBranch", () => {
         active: false,
         data: "",
         open: false,
-        status: TreeItemStatus.Initial
+        status: TreeItemStatus.INITIAL
     });
 
     it("should return an array that matches path to the given item", () => {

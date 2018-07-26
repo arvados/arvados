@@ -44,9 +44,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum TreeItemStatus {
-    Initial,
-    Pending,
-    Loaded
+    INITIAL,
+    PENDING,
+    LOADED
 }
 
 export interface TreeItem<T> {
@@ -55,7 +55,6 @@ export interface TreeItem<T> {
     open: boolean;
     active: boolean;
     status: TreeItemStatus;
-    toggled?: boolean;
     items?: Array<TreeItem<T>>;
 }
 
@@ -80,12 +79,12 @@ export const Tree = withStyles(styles)(
                         <ListItem button className={list} style={{ paddingLeft: (level + 1) * 20 }}
                             onClick={() => toggleItemActive(it.id, it.status)}
                             onContextMenu={this.handleRowContextMenu(it)}>
-                            {it.status === TreeItemStatus.Pending ?
+                            {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
                             <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {it.toggled && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
+                                    {it.status !== TreeItemStatus.INITIAL && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
                                 </ListItemIcon>
                             </i>
                             {render(it, level)}
