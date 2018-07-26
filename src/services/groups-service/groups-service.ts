@@ -47,7 +47,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Comm
 }
 
 export enum GroupContentsResourcePrefix {
-    Collection = "collections",
-    Project = "groups",
-    Process = "container_requests"
+    COLLECTION = "collections",
+    PROJECT = "groups",
+    PROCESS = "container_requests"
 }

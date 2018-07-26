@@ -55,7 +55,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
                 const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
                 const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
-                const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.Asc ? SortDirection.Asc : SortDirection.Desc;
+                const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC;
                 if (typeFilters.length > 0) {
                     groupsService
                         .contents(state.projects.currentItemId, {
@@ -72,7 +72,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                                     .create()
                                     .addIsA("uuid", typeFilters.map(f => f.type)))
                                 .concat(FilterBuilder
-                                    .create<ProcessResource>(GroupContentsResourcePrefix.Process)
+                                    .create<ProcessResource>(GroupContentsResourcePrefix.PROCESS)
                                     .addIn("state", statusFilters.map(f => f.type)))
                                 .concat(getSearchFilter(dataExplorer.searchValue))
                         })
@@ -108,20 +108,20 @@ const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFil
 
 const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
     [
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS),
+        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT)
     ].reduce((acc, b) =>
-        acc.concat(direction === SortDirection.Asc
+        acc.concat(direction === SortDirection.ASC
             ? b.addAsc(attribute)
             : b.addDesc(attribute)), OrderBuilder.create());
 
 const getSearchFilter = (searchValue: string) =>
     searchValue
         ? [
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project)]
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION),
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS),
+            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT)]
             .reduce((acc, b) =>
                 acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
         : FilterBuilder.create();

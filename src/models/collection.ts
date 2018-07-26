@@ -5,7 +5,7 @@
 import { Resource, ResourceKind } from "./resource";
 
 export interface CollectionResource extends Resource {
-    kind: ResourceKind.Collection;
+    kind: ResourceKind.COLLECTION;
     name: string;
     description: string;
     properties: any;

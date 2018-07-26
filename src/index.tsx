@@ -25,10 +25,10 @@ import { projectActionSet } from "./views-components/context-menu/action-sets/pr
 import { resourceActionSet } from './views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "./views-components/context-menu/action-sets/favorite-action-set";
 
-addMenuActionSet(ContextMenuKind.RootProject, rootProjectActionSet);
-addMenuActionSet(ContextMenuKind.Project, projectActionSet);
-addMenuActionSet(ContextMenuKind.Resource, resourceActionSet);
-addMenuActionSet(ContextMenuKind.Favorite, favoriteActionSet);
+addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
+addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
+addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
+addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 
 fetchConfig()
     .then(config => {

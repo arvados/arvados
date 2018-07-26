@@ -17,9 +17,9 @@ export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterIt
 }
 
 export enum SortDirection {
-    Asc = "asc",
-    Desc = "desc",
-    None = "none"
+    ASC = "asc",
+    DESC = "desc",
+    NONE = "none"
 }
 
 export const isColumnConfigurable = <T>(column: DataColumn<T>) => {
@@ -28,12 +28,12 @@ export const isColumnConfigurable = <T>(column: DataColumn<T>) => {
 
 export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
     return column.sortDirection
-        ? column.sortDirection === SortDirection.Asc
-            ? { ...column, sortDirection: SortDirection.Desc }
-            : { ...column, sortDirection: SortDirection.Asc }
+        ? column.sortDirection === SortDirection.ASC
+            ? { ...column, sortDirection: SortDirection.DESC }
+            : { ...column, sortDirection: SortDirection.ASC }
         : column;
 };
 
 export const resetSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
-    return column.sortDirection ? { ...column, sortDirection: SortDirection.None } : column;
+    return column.sortDirection ? { ...column, sortDirection: SortDirection.NONE } : column;
 };

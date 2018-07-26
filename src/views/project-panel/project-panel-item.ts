@@ -25,7 +25,7 @@ export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
         url: "",
         owner: r.ownerUuid,
         lastModified: r.modifiedAt,
-        status:  r.kind === ResourceKind.Process ? r.state : undefined
+        status:  r.kind === ResourceKind.PROCESS ? r.state : undefined
     };
 }
 
