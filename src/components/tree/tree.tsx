@@ -84,7 +84,7 @@ export const Tree = withStyles(styles)(
                             <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {it.status !== TreeItemStatus.Initial && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
+                                    {it.status !== TreeItemStatus.INITIAL && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
                                 </ListItemIcon>
                             </i>
                             {render(it, level)}
