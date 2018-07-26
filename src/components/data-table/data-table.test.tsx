@@ -130,7 +130,7 @@ describe("<DataTable />", () => {
     it("passes sorting props to <TableSortLabel />", () => {
         const columns: DataColumns<string> = [{
             name: "Column 1",
-            sortDirection: SortDirection.Asc,
+            sortDirection: SortDirection.ASC,
             selected: true,
             render: (item) => <Typography>{item}</Typography>
         }];
@@ -151,7 +151,7 @@ describe("<DataTable />", () => {
     it("passes filter props to <DataTableFilter />", () => {
         const columns: DataColumns<string> = [{
             name: "Column 1",
-            sortDirection: SortDirection.Asc,
+            sortDirection: SortDirection.ASC,
             selected: true,
             filters: [{ name: "Filter 1", selected: true }],
             render: (item) => <Typography>{item}</Typography>
