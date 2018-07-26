@@ -18,7 +18,7 @@ To access a monitoring endpoint, the requester must provide the HTTP header @Aut
 
 h2. API server
 
-Set @MangementToken@ in the appropriate section of @application.yml@
+Set @ManagementToken@ in the appropriate section of @application.yml@
 
 <pre>
 production:
@@ -29,7 +29,7 @@ production:
 
 h2. Node Manager
 
-Set @port@ (the listen port) and @MangementToken@ in the @Manage@ section of @node-manager.ini@ .
+Set @port@ (the listen port) and @ManagementToken@ in the @Manage@ section of @node-manager.ini@.
 
 <pre>
 [Manage]
@@ -47,7 +47,7 @@ ManagementToken = xxx
 
 h2. Other services
 
-The following services also support monitoring.  Set @MangementToken@ in the respective yaml config file for each service.
+The following services also support monitoring.  Set @ManagementToken@ in the respective yaml config file for each service.
 
 * keepstore
 * keep-web
