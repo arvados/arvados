@@ -36,6 +36,7 @@ import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-pan
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { CollectionPanelFiles, collectionPanelItems } from '../../components/collection-panel-files/collection-panel-files';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -212,6 +213,14 @@ export const Workbench = withStyles(styles)(
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
+                                    <Route path="/" render={() => 
+                                    <CollectionPanelFiles 
+                                        items={collectionPanelItems} 
+                                        onCollapseToggle={console.log}
+                                        onSelectionToggle={console.log}
+                                        onItemContextMenu={console.log}
+                                        onCommonContextMenu={console.log}
+                                        />} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
