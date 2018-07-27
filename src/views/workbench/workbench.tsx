@@ -20,6 +20,7 @@ import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
+import { collectionCreateActions } from '../../store/collections/creator/collection-creator-action';
 import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
@@ -36,6 +37,7 @@ import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-pan
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -219,6 +221,7 @@ export const Workbench = withStyles(styles)(
                         <ContextMenu />
                         <Snackbar />
                         <CreateProjectDialog />
+                        <CreateCollectionDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
                             open={this.state.isCurrentTokenDialogOpen}
@@ -237,7 +240,8 @@ export const Workbench = withStyles(styles)(
                         kind
                     });
                 }}
-                onDialogOpen={this.handleCreationDialogOpen}
+                onProjectCreationDialogOpen={this.handleProjectCreationDialogOpen}
+                onCollectionCreationDialogOpen={this.handleCollectionCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
@@ -257,7 +261,7 @@ export const Workbench = withStyles(styles)(
                         kind,
                     });
                 }}
-                onDialogOpen={this.handleCreationDialogOpen}
+                onDialogOpen={this.handleProjectCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
@@ -303,8 +307,12 @@ export const Workbench = withStyles(styles)(
                 }
             }
 
-            handleCreationDialogOpen = (itemUuid: string) => {
+            handleProjectCreationDialogOpen = (itemUuid: string) => {
                 this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+            }
+
+            handleCollectionCreationDialogOpen = (itemUuid: string) => {
+                this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
             }
 
             openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; kind: ContextMenuKind; }) => {

@@ -12,7 +12,7 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
@@ -48,7 +48,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         marginBottom: "24px"
     }
 });
-interface DialogProjectProps {
+interface DialogCollectionCreateProps {
     open: boolean;
     handleClose: () => void;
     onSubmit: (data: { name: string, description: string }) => void;
@@ -66,10 +66,10 @@ interface TextFieldProps {
     meta?: any;
 }
 
-export const DialogProjectCreate = compose(
-    reduxForm({ form: 'projectCreateDialog' }),
+export const DialogCollectionCreate = compose(
+    reduxForm({ form: 'collectionCreateDialog' }),
     withStyles(styles))(
-    class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyles<CssRules>> {
+    class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & WithStyles<CssRules>> {
         render() {
             const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine } = this.props;
 
@@ -81,19 +81,18 @@ export const DialogProjectCreate = compose(
                     disableEscapeKeyDown={true}>
                     <div className={classes.dialog}>
                         <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
-                            <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a
-                                project</DialogTitle>
+                            <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a collection</DialogTitle>
                             <DialogContent className={classes.formContainer}>
                                 <Field name="name"
                                        component={this.renderTextField}
-                                       floatinglabeltext="Project Name"
-                                       validate={PROJECT_NAME_VALIDATION}
+                                       floatinglabeltext="Collection Name"
+                                       validate={COLLECTION_NAME_VALIDATION}
                                        className={classes.textField}
-                                       label="Project Name"/>
+                                       label="Collection Name"/>
                                 <Field name="description"
                                        component={this.renderTextField}
                                        floatinglabeltext="Description - optional"
-                                       validate={PROJECT_DESCRIPTION_VALIDATION}
+                                       validate={COLLECTION_DESCRIPTION_VALIDATION}
                                        className={classes.textField}
                                        label="Description - optional"/>
                             </DialogContent>
@@ -105,7 +104,7 @@ export const DialogProjectCreate = compose(
                                         color="primary"
                                         disabled={invalid|| submitting || pristine}
                                         variant="contained">
-                                    CREATE A PROJECT
+                                    CREATE A COLLECTION
                                 </Button>
                                 {submitting && <CircularProgress size={20} className={classes.createProgress}/>}
                             </DialogActions>
