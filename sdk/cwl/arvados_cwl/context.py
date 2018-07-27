@@ -28,6 +28,9 @@ class ArvRuntimeContext(RuntimeContext):
         self.wait = True
         self.cwl_runner_job = None
         self.storage_classes = "default"
+        self.output_properties = None
+        self.output_properties_yaml = None
+        self.output_collection_properties = None
         self.current_container = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)

@@ -453,6 +453,12 @@ class RunnerContainer(Runner):
         if self.on_error:
             command.append("--on-error=" + self.on_error)
 
+        if runtimeContext.output_properties:
+            command.append("--output-properties=" + runtimeContext.output_properties)
+
+        if runtimeContext.output_properties_yaml:
+            command.append("--output-properties-yaml=" + runtimeContext.output_properties_yaml)
+
         if self.intermediate_output_ttl:
             command.append("--intermediate-output-ttl=%d" % self.intermediate_output_ttl)
 

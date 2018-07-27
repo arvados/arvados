@@ -21,6 +21,7 @@ import Queue
 import time
 import signal
 import thread
+import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
 import cwltool.main
@@ -46,6 +47,7 @@ from .perf import Perf
 from .pathmapper import NoFollowPathMapper
 from .task_queue import TaskQueue
 from .context import ArvLoadingContext, ArvRuntimeContext
+from .util import merge_dict
 from ._version import __version__
 
 from cwltool.pack import pack
@@ -289,7 +291,7 @@ class ArvCwlRunner(object):
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v)
 
-    def make_output_collection(self, name, storage_classes, tagsString, outputObj):
+    def make_output_collection(self, name, storage_classes, properties, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -340,7 +342,8 @@ class ArvCwlRunner(object):
         with final.open("cwl.output.json", "w") as f:
             json.dump(outputObj, f, sort_keys=True, indent=4, separators=(',',': '))
 
-        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
+        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes,
+                       properties=properties, ensure_unique_name=True)
 
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
@@ -613,7 +616,8 @@ class ArvCwlRunner(object):
                 self.output_tags = ""
 
             storage_classes = runtimeContext.storage_classes.strip().split(",")
-            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,
+                                                                                      runtimeContext.output_collection_properties, self.output_tags, self.final_output)
             self.set_crunch_output()
 
         if runtimeContext.compute_checksum:
@@ -738,6 +742,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument('--storage-classes', default="default", type=str,
                         help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
+    parser.add_argument('--output-properties', type=str,
+                        help="Tag final output collection using properties, e.g., '--output-properties 'foo:bar,baz:qux'.")
+
+    parser.add_argument('--output-properties-yaml', type=str,
+                        help="Tag final output collection using properties from YAML file.")
+
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
                         default=0)
@@ -790,6 +800,16 @@ def add_arv_hints():
 def exit_signal_handler(sigcode, frame):
     logger.error("Caught signal {}, exiting.".format(sigcode))
     sys.exit(-sigcode)
+
+def split_output_properties(props):
+    if props:
+        return dict((k.strip(), v.strip()) for k,v in
+                    (pairs.split(":") for pairs in props.split(",")))
+
+def parse_output_properties_yaml(yaml_file):
+    if yaml_file:
+        with open(yaml_file) as f:
+            return yaml.safe_load(f)
 
 def main(args, stdout, stderr, api_client=None, keep_client=None,
          install_sig_handlers=True):
@@ -867,6 +887,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     runtimeContext = ArvRuntimeContext(vars(arvargs))
     runtimeContext.make_fs_access = partial(CollectionFsAccess,
                              collection_cache=runner.collection_cache)
+
+    output_props = split_output_properties(arvargs.output_properties)
+    output_props_yaml = parse_output_properties_yaml(arvargs.output_properties_yaml)
+    runtimeContext.output_collection_properties = merge_dict(output_props_yaml, output_props)
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
