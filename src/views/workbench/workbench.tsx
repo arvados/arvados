@@ -36,6 +36,9 @@ import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-pan
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { CollectionPanel } from '../collection-panel/collection-panel';
+import { goToCollection } from '../../common/actions';
+import { loadCollection } from '../../store/collection-panel/collection-panel-action';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -212,6 +215,7 @@ export const Workbench = withStyles(styles)(
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
+                                    <Route path="/collections/:id" render={this.renderCollectionPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
@@ -226,6 +230,10 @@ export const Workbench = withStyles(styles)(
                     </div>
                 );
             }
+
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+                onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.Collection))}
+                {...props} />
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
@@ -242,8 +250,14 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                    switch (item.kind) {
+                        case ResourceKind.Collection:
+                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(push(goToCollection(item.uuid)));
+                        default: 
+                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                    }
                 }}
                 {...props} />
 

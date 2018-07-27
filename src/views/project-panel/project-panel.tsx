@@ -38,7 +38,7 @@ const renderName = (item: ProjectPanelItem) =>
             {renderIcon(item)}
         </Grid>
         <Grid item>
-            <Typography color="primary">
+            <Typography color="default">
                 {item.name}
             </Typography>
         </Grid>
