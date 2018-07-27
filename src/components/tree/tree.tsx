@@ -133,7 +133,8 @@ export const Tree = withStyles(styles)(
                                     toggleItemOpen={toggleItemOpen}
                                     toggleItemActive={toggleItemActive}
                                     level={level + 1}
-                                    onContextMenu={onContextMenu} />
+                                    onContextMenu={onContextMenu}
+                                    onSelectionChange={this.props.onSelectionChange} />
                             </Collapse>}
                     </div>)}
             </List>;
