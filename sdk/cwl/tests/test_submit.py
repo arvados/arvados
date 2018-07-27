@@ -11,6 +11,7 @@ import logging
 import mock
 import sys
 import unittest
+import tempfile
 
 import arvados
 import arvados.collection
@@ -341,6 +342,32 @@ class TestSubmit(unittest.TestCase):
                 sys.stdin, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 1)
 
+    def test_split_output_properties(self):
+        output_props = "foo:bar,baz:qux"
+        result = arvados_cwl.split_output_properties(output_props)
+
+        self.assertEqual(result, {'foo':'bar', 'baz':'qux'})
+
+    def test_parse_output_properties_yaml(self):
+        tmp = tempfile.NamedTemporaryFile()
+        with open(tmp.name, 'a') as f:
+            f.write("foo: 111\n") 
+            f.write("bar: 222\n") 
+            f.write("baz: 333") 
+
+        result = arvados_cwl.parse_output_properties_yaml(tmp.name)
+
+        self.assertEqual(result, {'foo':111, 'bar':222, 'baz':333})
+
+    @stubs
+    def test_error_when_invalid_yaml_file_path_specified(self, stubs):
+        file_path = "foo.txt"
+        with self.assertRaises(SystemExit):
+            arvados_cwl.main(
+                    ["--debug", "--output-properties-yaml", file_path,
+                     "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                    sys.stdin, sys.stderr, api_client=stubs.api)
+
     @mock.patch("time.sleep")
     @stubs
     def test_submit_on_error(self, stubs, tm):
@@ -613,6 +640,58 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
+    def test_submit_output_properties(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                 ["--debug", "--submit", "--no-wait", "--api=containers", "--output-properties=foo:bar,baz:qux",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', "--debug", '--on-error=continue',
+                                       "--output-properties=foo:bar,baz:qux", 
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @mock.patch("arvados_cwl.parse_output_properties_yaml", return_value = {'foo':'bar', 'baz':'quz'})
+    @stubs
+    def test_submit_output_properties_yaml(self, stubs, split_props):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                 ["--debug", "--submit", "--no-wait", "--api=containers", "--output-properties-yaml=config.yaml",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', "--debug", '--on-error=continue',
+                                       "--output-properties-yaml=config.yaml", 
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+    @stubs
     def test_submit_storage_classes(self, stubs):
         capture_stdout = cStringIO.StringIO()
         try:
@@ -641,7 +720,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
     @stubs
-    def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
+    def test_collection_content_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
             return []
@@ -649,14 +728,14 @@ class TestSubmit(unittest.TestCase):
 
         try:
             exited = arvados_cwl.main(
-                ["--debug", "--local", "--storage-classes=foo",
+                    ["--debug", "--local", "--storage-classes=foo", "--output-properties=foo:bar,baz:qux",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
                 sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
             logging.exception("")
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], {"foo" : "bar", "baz" : "qux"}, '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
@@ -677,7 +756,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], None, '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
 
     @stubs
     def test_submit_container_output_ttl(self, stubs):

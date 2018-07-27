@@ -43,3 +43,17 @@ class TestUtil(unittest.TestCase):
         logger = mock.MagicMock()
 
         self.assertRaises(ApiError, get_current_container(api, num_retries=0, logger=logger))
+
+    def test_merge_dict(self):
+        a = {"a":1, "b":2}
+        b = {"b":3000, "c":4000}
+        c = merge_dict(a, b)
+
+        self.assertEqual(c, {"a":1, "b":3000, "c":4000})
+
+    def test_merge_dict_none_input(self):
+        a = None
+        b = None
+        c = merge_dict(a, b)
+
+        self.assertEqual(c, None)
