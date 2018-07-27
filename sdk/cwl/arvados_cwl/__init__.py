@@ -808,8 +808,13 @@ def split_output_properties(props):
 
 def parse_output_properties_yaml(yaml_file):
     if yaml_file:
-        with open(yaml_file) as f:
-            return yaml.safe_load(f)
+        try:
+            with open(yaml_file) as f:
+                return yaml.safe_load(f)
+        except IOError as e:
+            logger.error("Error while opening yaml file: %s" % e)
+            sys.exit(1)
+
 
 def main(args, stdout, stderr, api_client=None, keep_client=None,
          install_sig_handlers=True):

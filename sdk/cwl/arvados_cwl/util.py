@@ -33,6 +33,9 @@ def get_current_container(api, num_retries=0, logger=None):
 def merge_dict(*dict_args):
     result = {}
     for d in dict_args:
-        result.update(d)
-    return result
-
+        if d:
+            result.update(d)
+    if len(result) > 0:
+        return result
+    else:
+        return None
