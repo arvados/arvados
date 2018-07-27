@@ -19,7 +19,7 @@ fi
 
 mkdir -p /var/lib/arvados/$1
 
-export ARVADOS_API_HOST=$localip:${services[api]}
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
 
@@ -42,13 +42,20 @@ else
     echo $UUID > /var/lib/arvados/$1-uuid
 fi
 
+management_token=$(cat /var/lib/arvados/management_token)
+
 set +e
 killall -HUP keepproxy
 
-exec /usr/local/bin/keepstore \
-     -listen=:$2 \
-     -enforce-permissions=true \
-     -blob-signing-key-file=/var/lib/arvados/blob_signing_key \
-     -data-manager-token-file=/var/lib/arvados/superuser_token \
-     -max-buffers=20 \
-     -volume=/var/lib/arvados/$1
+cat >/var/lib/arvados/$1.yml <<EOF
+Listen: ":$2"
+BlobSigningKeyFile: /var/lib/arvados/blob_signing_key
+SystemAuthTokenFile: /var/lib/arvados/superuser_token
+ManagementToken: $management_token
+MaxBuffers: 20
+Volumes:
+  - Type: Directory
+    Root: /var/lib/arvados/$1
+EOF
+
+exec /usr/local/bin/keepstore -config=/var/lib/arvados/$1.yml

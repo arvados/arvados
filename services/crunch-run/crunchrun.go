@@ -742,6 +742,7 @@ func (runner *ContainerRunner) startCrunchstat() error {
 		CgroupParent: runner.expectCgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
 		PollPeriod:   runner.statInterval,
+		TempDir:      runner.parentTemp,
 	}
 	runner.statReporter.Start()
 	return nil

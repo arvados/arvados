@@ -12,7 +12,7 @@ import (
 
 type wsConfig struct {
 	Client       arvados.Client
-	Postgres     pgConfig
+	Postgres     arvados.PostgreSQLConnection
 	PostgresPool int
 	Listen       string
 	LogLevel     string
@@ -30,7 +30,7 @@ func defaultConfig() wsConfig {
 		Client: arvados.Client{
 			APIHost: "localhost:443",
 		},
-		Postgres: pgConfig{
+		Postgres: arvados.PostgreSQLConnection{
 			"dbname":                    "arvados_production",
 			"user":                      "arvados",
 			"password":                  "xyzzy",

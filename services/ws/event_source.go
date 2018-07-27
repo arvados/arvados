@@ -8,7 +8,6 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,21 +15,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/stats"
 	"github.com/lib/pq"
 )
-
-type pgConfig map[string]string
-
-func (c pgConfig) ConnectionString() string {
-	s := ""
-	for k, v := range c {
-		s += k
-		s += "='"
-		s += strings.Replace(
-			strings.Replace(v, `\`, `\\`, -1),
-			`'`, `\'`, -1)
-		s += "' "
-	}
-	return s
-}
 
 type pgEventSource struct {
 	DataSource   string

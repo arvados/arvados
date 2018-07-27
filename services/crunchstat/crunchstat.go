@@ -107,7 +107,7 @@ func runCommand(argv []string, logger *log.Logger) error {
 	}
 
 	// Funnel stderr through our channel
-	stderr_pipe, err := cmd.StderrPipe()
+	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		logger.Fatalln("error in StderrPipe:", err)
 	}
@@ -121,7 +121,7 @@ func runCommand(argv []string, logger *log.Logger) error {
 	os.Stdin.Close()
 	os.Stdout.Close()
 
-	copyPipeToChildLog(stderr_pipe, log.New(os.Stderr, "", 0))
+	copyPipeToChildLog(stderrPipe, log.New(os.Stderr, "", 0))
 
 	return cmd.Wait()
 }

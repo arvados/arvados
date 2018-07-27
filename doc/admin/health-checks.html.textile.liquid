@@ -1,0 +1,70 @@
+---
+layout: default
+navsection: admin
+title: Health checks
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Health check endpoints are found at @/_health/ping@ on many Arvados services.  The purpose of the health check is to offer a simple method of determining if a service can be reached and allow the service to self-report any problems, suitable for integrating into operational alert systems.
+
+To access health check endpoints, services must be configured with a "management token":management-token.html .
+
+Health check endpoints return a JSON object with the field @health@.  This has a value of either @OK@ or @ERROR@.  On error, it may also include a  field @error@ with additional information.  Examples:
+
+<pre>
+{
+  "health": "OK"
+}
+</pre>
+
+<pre>
+{
+  "health": "ERROR"
+  "error": "Inverted polarity in the warp core"
+}
+</pre>
+
+h2. Healthcheck aggregator
+
+The service @arvados-health@ performs health checks on all configured services and returns a single value of @OK@ or @ERROR@ for the entire cluster.  It exposes the endpoint @/_health/all@ .
+
+The healthcheck aggregator uses the @NodeProfile@ section of the cluster-wide @arvados.yml@ configuration file.  Here is an example.
+
+<pre>
+Cluster:
+  # The cluster uuid prefix
+  zzzzz:
+    NodeProfile:
+      # For each node, the profile name corresponds to a
+      # locally-resolvable hostname, and describes which Arvados
+      # services are available on that machine.
+      api:
+        arvados-controller:
+          Listen: 8000
+        arvados-api-server:
+          Listen: 8001
+      manage:
+	arvados-node-manager:
+	  Listen: 8002
+      workbench:
+	arvados-workbench:
+	  Listen: 8003
+	arvados-ws:
+	  Listen: 8004
+      keep:
+	keep-web:
+	  Listen: 8005
+	keepproxy:
+	  Listen: 8006
+      keep0:
+        keepstore:
+	  Listen: 25701
+      keep1:
+        keepstore:
+	  Listen: 25701
+</pre>

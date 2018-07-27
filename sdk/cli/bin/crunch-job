@@ -132,6 +132,7 @@ my $resume_stash;
 my $cgroup_root = "/sys/fs/cgroup";
 my $docker_bin = "docker.io";
 my $docker_run_args = "";
+my $srun_sync_timeout = 15*60;
 GetOptions('force-unlock' => \$force_unlock,
            'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
@@ -141,6 +142,7 @@ GetOptions('force-unlock' => \$force_unlock,
            'cgroup-root=s' => \$cgroup_root,
            'docker-bin=s' => \$docker_bin,
            'docker-run-args=s' => \$docker_run_args,
+           'srun-sync-timeout=i' => \$srun_sync_timeout,
     );
 
 if (defined $job_api_token) {
@@ -2007,6 +2009,8 @@ sub srun_sync
   my ($stdout_r, $stdout_w);
   pipe $stdout_r, $stdout_w or croak("pipe() failed: $!");
 
+  my $started_srun = scalar time;
+
   my $srunpid = fork();
   if ($srunpid == 0)
   {
@@ -2049,6 +2053,12 @@ sub srun_sync
     }
     if (!$busy) {
       select(undef, undef, undef, 0.1);
+    }
+    if (($started_srun + $srun_sync_timeout) < scalar time) {
+      # Exceeded general timeout for "srun_sync" operations, likely
+      # means something got stuck on the remote node.
+      Log(undef, "srun_sync exceeded timeout, will fail.");
+      $main::please_freeze = 1;
     }
     killem(keys %proc) if $main::please_freeze;
   }

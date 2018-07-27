@@ -36,11 +36,11 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
   ['/arvados/v1/collections',
    '/arvados/v1/users',
    '/arvados/v1/api_client_authorizations'].each do |path|
-    test "CORS headers are set and body is stub at OPTIONS #{path}" do
+    test "CORS headers are set and body is empty at OPTIONS #{path}" do
       options path, {}, {}
       assert_response :success
       assert_cors_headers
-      assert_equal '-', response.body
+      assert_equal '', response.body
     end
 
     test "CORS headers are set at authenticated GET #{path}" do

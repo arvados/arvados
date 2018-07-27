@@ -89,7 +89,7 @@ ADD fuse.conf /etc/
 ADD crunch-setup.sh gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
-    application_yml_override.py api-setup.sh \
+    yml_override.py api-setup.sh \
     go-setup.sh \
     /usr/local/lib/arvbox/
 

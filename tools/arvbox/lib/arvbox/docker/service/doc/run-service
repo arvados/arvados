@@ -18,34 +18,5 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
-set -u
-
-cat <<EOF >/var/lib/arvados/doc-nginx.conf
-worker_processes auto;
-pid /var/lib/arvados/doc-nginx.pid;
-
-error_log stderr;
-daemon off;
-
-events {
-	worker_connections 64;
-}
-
-http {
-     access_log off;
-     include /etc/nginx/mime.types;
-     default_type application/octet-stream;
-     server {
-            listen ${services[doc]} default_server;
-            listen [::]:${services[doc]} default_server;
-            root /usr/src/arvados/doc/.site;
-            index index.html;
-            server_name _;
-     }
-}
-EOF
-
 cd /usr/src/arvados/doc
-bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[api]} arvados_workbench_host=http://$localip
-
-exec nginx -c /var/lib/arvados/doc-nginx.conf
+bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip

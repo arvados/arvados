@@ -5,8 +5,8 @@
 package controller
 
 import (
-	"context"
-	"io"
+	"database/sql"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,15 +17,20 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	_ "github.com/lib/pq"
 )
 
 type Handler struct {
 	Cluster     *arvados.Cluster
 	NodeProfile *arvados.NodeProfile
 
-	setupOnce    sync.Once
-	handlerStack http.Handler
-	proxyClient  *arvados.Client
+	setupOnce      sync.Once
+	handlerStack   http.Handler
+	proxy          *proxy
+	secureClient   *http.Client
+	insecureClient *http.Client
+	pgdb           *sql.DB
+	pgdbMtx        sync.Mutex
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -49,9 +54,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	_, _, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	return err
 }
+
+func neverRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 
 func (h *Handler) setup() {
 	mux := http.NewServeMux()
@@ -59,30 +66,63 @@ func (h *Handler) setup() {
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
 	})
-	mux.Handle("/", http.HandlerFunc(h.proxyRailsAPI))
+	hs := http.NotFoundHandler()
+	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.proxyRemoteCluster)
+	mux.Handle("/", hs)
 	h.handlerStack = mux
 
-	// Changing the global isn't the right way to do this, but a
-	// proper solution would conflict with an impending 13493
-	// merge anyway, so this will do for now.
-	arvados.InsecureHTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	sc := *arvados.DefaultSecureClient
+	sc.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	sc.CheckRedirect = neverRedirect
+	h.secureClient = &sc
+
+	ic := *arvados.InsecureHTTPClient
+	ic.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
+	ic.CheckRedirect = neverRedirect
+	h.insecureClient = &ic
+
+	h.proxy = &proxy{
+		Name:           "arvados-controller",
+		RequestTimeout: time.Duration(h.Cluster.HTTPRequestTimeout),
+	}
 }
 
-// headers that shouldn't be forwarded when proxying. See
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
-var dropHeaders = map[string]bool{
-	"Connection":          true,
-	"Keep-Alive":          true,
-	"Proxy-Authenticate":  true,
-	"Proxy-Authorization": true,
-	"TE":                true,
-	"Trailer":           true,
-	"Transfer-Encoding": true,
-	"Upgrade":           true,
+var errDBConnection = errors.New("database connection error")
+
+func (h *Handler) db(req *http.Request) (*sql.DB, error) {
+	h.pgdbMtx.Lock()
+	defer h.pgdbMtx.Unlock()
+	if h.pgdb != nil {
+		return h.pgdb, nil
+	}
+
+	db, err := sql.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
+	if err != nil {
+		httpserver.Logger(req).WithError(err).Error("postgresql connect failed")
+		return nil, errDBConnection
+	}
+	if p := h.Cluster.PostgreSQL.ConnectionPool; p > 0 {
+		db.SetMaxOpenConns(p)
+	}
+	if err := db.Ping(); err != nil {
+		httpserver.Logger(req).WithError(err).Error("postgresql connect succeeded but ping failed")
+		return nil, errDBConnection
+	}
+	h.pgdb = db
+	return db, nil
 }
 
-func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
-	urlOut, err := findRailsAPI(h.Cluster, h.NodeProfile)
+type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)
+
+func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		middleware(w, req, next)
+	})
+}
+
+func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,63 +130,20 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, reqIn *http.Request) {
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
 		Host:     urlOut.Host,
-		Path:     reqIn.URL.Path,
-		RawPath:  reqIn.URL.RawPath,
-		RawQuery: reqIn.URL.RawQuery,
+		Path:     req.URL.Path,
+		RawPath:  req.URL.RawPath,
+		RawQuery: req.URL.RawQuery,
 	}
-
-	// Copy headers from incoming request, then add/replace proxy
-	// headers like Via and X-Forwarded-For.
-	hdrOut := http.Header{}
-	for k, v := range reqIn.Header {
-		if !dropHeaders[k] {
-			hdrOut[k] = v
-		}
+	client := h.secureClient
+	if insecure {
+		client = h.insecureClient
 	}
-	xff := reqIn.RemoteAddr
-	if xffIn := reqIn.Header.Get("X-Forwarded-For"); xffIn != "" {
-		xff = xffIn + "," + xff
-	}
-	hdrOut.Set("X-Forwarded-For", xff)
-	if hdrOut.Get("X-Forwarded-Proto") == "" {
-		hdrOut.Set("X-Forwarded-Proto", reqIn.URL.Scheme)
-	}
-	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
-
-	ctx := reqIn.Context()
-	if timeout := h.Cluster.HTTPRequestTimeout; timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(timeout)))
-		defer cancel()
-	}
-
-	reqOut := (&http.Request{
-		Method: reqIn.Method,
-		URL:    urlOut,
-		Host:   reqIn.Host,
-		Header: hdrOut,
-		Body:   reqIn.Body,
-	}).WithContext(ctx)
-	resp, err := arvados.InsecureHTTPClient.Do(reqOut)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for k, v := range resp.Header {
-		for _, v := range v {
-			w.Header().Add(k, v)
-		}
-	}
-	w.WriteHeader(resp.StatusCode)
-	n, err := io.Copy(w, resp.Body)
-	if err != nil {
-		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
-	}
+	h.proxy.Do(w, req, urlOut, client)
 }
 
 // For now, findRailsAPI always uses the rails API running on this
 // node.
-func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, error) {
+func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, bool, error) {
 	hostport := np.RailsAPI.Listen
 	if len(hostport) > 1 && hostport[0] == ':' && strings.TrimRight(hostport[1:], "0123456789") == "" {
 		// ":12345" => connect to indicated port on localhost
@@ -154,11 +151,12 @@ func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, 
 	} else if _, _, err := net.SplitHostPort(hostport); err == nil {
 		// "[::1]:12345" => connect to indicated address & port
 	} else {
-		return nil, err
+		return nil, false, err
 	}
 	proto := "http"
 	if np.RailsAPI.TLS {
 		proto = "https"
 	}
-	return url.Parse(proto + "://" + hostport)
+	url, err := url.Parse(proto + "://" + hostport)
+	return url, np.RailsAPI.Insecure, err
 }

@@ -10,10 +10,12 @@
 # a snapshot of internal state.
 
 # Management server listening address (default 127.0.0.1)
-#address = 0.0.0.0
+address = 0.0.0.0
 
 # Management server port number (default -1, server is disabled)
-#port = 8989
+port = 8989
+
+MangementToken = xxx
 
 [Daemon]
 # The dispatcher can customize the start and stop procedure for

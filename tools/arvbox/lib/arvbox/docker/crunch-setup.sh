@@ -19,7 +19,7 @@ else
   RAILS_ENV=development
 fi
 
-export ARVADOS_API_HOST=$localip:${services[api]}
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=$(cat /usr/src/arvados/services/api/superuser_token)
 export CRUNCH_JOB_BIN=/usr/src/arvados/sdk/cli/bin/crunch-job

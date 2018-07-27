@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -52,13 +53,17 @@ type Reporter struct {
 	// Interval between samples. Must be positive.
 	PollPeriod time.Duration
 
+	// Temporary directory, will be monitored for available, used & total space.
+	TempDir string
+
 	// Where to write statistics. Must not be nil.
 	Logger *log.Logger
 
-	reportedStatFile map[string]string
-	lastNetSample    map[string]ioSample
-	lastDiskSample   map[string]ioSample
-	lastCPUSample    cpuSample
+	reportedStatFile    map[string]string
+	lastNetSample       map[string]ioSample
+	lastDiskIOSample    map[string]ioSample
+	lastCPUSample       cpuSample
+	lastDiskSpaceSample diskSpaceSample
 
 	done    chan struct{} // closed when we should stop reporting
 	flushed chan struct{} // closed when we have made our last report
@@ -216,14 +221,14 @@ func (r *Reporter) doBlkIOStats() {
 			continue
 		}
 		delta := ""
-		if prev, ok := r.lastDiskSample[dev]; ok {
+		if prev, ok := r.lastDiskIOSample[dev]; ok {
 			delta = fmt.Sprintf(" -- interval %.4f seconds %d write %d read",
 				sample.sampleTime.Sub(prev.sampleTime).Seconds(),
 				sample.txBytes-prev.txBytes,
 				sample.rxBytes-prev.rxBytes)
 		}
 		r.Logger.Printf("blkio:%s %d write %d read%s\n", dev, sample.txBytes, sample.rxBytes, delta)
-		r.lastDiskSample[dev] = sample
+		r.lastDiskIOSample[dev] = sample
 	}
 }
 
@@ -300,6 +305,42 @@ func (r *Reporter) doNetworkStats() {
 		r.Logger.Printf("net:%s %d tx %d rx%s\n", ifName, tx, rx, delta)
 		r.lastNetSample[ifName] = nextSample
 	}
+}
+
+type diskSpaceSample struct {
+	hasData    bool
+	sampleTime time.Time
+	total      uint64
+	used       uint64
+	available  uint64
+}
+
+func (r *Reporter) doDiskSpaceStats() {
+	s := syscall.Statfs_t{}
+	err := syscall.Statfs(r.TempDir, &s)
+	if err != nil {
+		return
+	}
+	bs := uint64(s.Bsize)
+	nextSample := diskSpaceSample{
+		hasData:    true,
+		sampleTime: time.Now(),
+		total:      s.Blocks * bs,
+		used:       (s.Blocks - s.Bfree) * bs,
+		available:  s.Bavail * bs,
+	}
+
+	var delta string
+	if r.lastDiskSpaceSample.hasData {
+		prev := r.lastDiskSpaceSample
+		interval := nextSample.sampleTime.Sub(prev.sampleTime).Seconds()
+		delta = fmt.Sprintf(" -- interval %.4f seconds %d used",
+			interval,
+			int64(nextSample.used-prev.used))
+	}
+	r.Logger.Printf("statfs %d available %d used %d total%s\n",
+		nextSample.available, nextSample.used, nextSample.total, delta)
+	r.lastDiskSpaceSample = nextSample
 }
 
 type cpuSample struct {
@@ -382,7 +423,15 @@ func (r *Reporter) run() {
 	}
 
 	r.lastNetSample = make(map[string]ioSample)
-	r.lastDiskSample = make(map[string]ioSample)
+	r.lastDiskIOSample = make(map[string]ioSample)
+
+	if len(r.TempDir) == 0 {
+		// Temporary dir not provided, try to get it from the environment.
+		r.TempDir = os.Getenv("TMPDIR")
+	}
+	if len(r.TempDir) > 0 {
+		r.Logger.Printf("notice: monitoring temp dir %s\n", r.TempDir)
+	}
 
 	ticker := time.NewTicker(r.PollPeriod)
 	for {
@@ -390,6 +439,7 @@ func (r *Reporter) run() {
 		r.doCPUStats()
 		r.doBlkIOStats()
 		r.doNetworkStats()
+		r.doDiskSpaceStats()
 		select {
 		case <-r.done:
 			return

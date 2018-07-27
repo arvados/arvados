@@ -56,6 +56,27 @@ type Cluster struct {
 	NodeProfiles       map[string]NodeProfile
 	InstanceTypes      InstanceTypeMap
 	HTTPRequestTimeout Duration
+	RemoteClusters     map[string]RemoteCluster
+	PostgreSQL         PostgreSQL
+}
+
+type PostgreSQL struct {
+	Connection     PostgreSQLConnection
+	ConnectionPool int
+}
+
+type PostgreSQLConnection map[string]string
+
+type RemoteCluster struct {
+	// API endpoint host or host:port; default is {id}.arvadosapi.com
+	Host string
+	// Perform a proxy request when a local client requests an
+	// object belonging to this remote.
+	Proxy bool
+	// Scheme, default "https". Can be set to "http" for testing.
+	Scheme string
+	// Disable TLS verify. Can be set to true for testing.
+	Insecure bool
 }
 
 type InstanceType struct {
@@ -172,6 +193,7 @@ func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 }
 
 type SystemServiceInstance struct {
-	Listen string
-	TLS    bool
+	Listen   string
+	TLS      bool
+	Insecure bool
 }

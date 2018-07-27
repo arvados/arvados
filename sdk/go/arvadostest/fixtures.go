@@ -46,6 +46,8 @@ const (
 
 	FooCollectionSharingTokenUUID = "zzzzz-gj3su-gf02tdm4g1z3e3u"
 	FooCollectionSharingToken     = "iknqgmunrhgsyfok8uzjlwun9iscwm3xacmzmg65fa1j1lpdss"
+
+	WorkflowWithDefinitionYAMLUUID = "zzzzz-7fd4e-validworkfloyml"
 )
 
 // PathologicalManifest : A valid manifest designed to test

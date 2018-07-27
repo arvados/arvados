@@ -34,7 +34,7 @@ var EncodeTokenCookie func([]byte) string = base64.URLEncoding.EncodeToString
 // token.
 var DecodeTokenCookie func(string) ([]byte, error) = base64.URLEncoding.DecodeString
 
-// LoadTokensFromHttpRequest loads all tokens it can find in the
+// LoadTokensFromHTTPRequest loads all tokens it can find in the
 // headers and query string of an http query.
 func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 	// Load plain token from "Authorization: OAuth2 ..." header
@@ -83,7 +83,21 @@ func (a *Credentials) loadTokenFromCookie(r *http.Request) {
 	a.Tokens = append(a.Tokens, string(token))
 }
 
-// TODO: LoadTokensFromHttpRequestBody(). We can't assume in
-// LoadTokensFromHttpRequest() that [or how] we should read and parse
-// the request body. This has to be requested explicitly by the
-// application.
+// LoadTokensFromHTTPRequestBody() loads credentials from the request
+// body.
+//
+// This is separate from LoadTokensFromHTTPRequest() because it's not
+// always desirable to read the request body. This has to be requested
+// explicitly by the application.
+func (a *Credentials) LoadTokensFromHTTPRequestBody(r *http.Request) error {
+	if r.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
+		return nil
+	}
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+	if t := r.PostFormValue("api_token"); t != "" {
+		a.Tokens = append(a.Tokens, t)
+	}
+	return nil
+}

@@ -1,1 +1,9 @@
-/usr/local/lib/arvbox/runsu.sh
+#!/bin/sh
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+set -e
+
+/usr/local/lib/arvbox/runsu.sh $0-service
+sv stop doc

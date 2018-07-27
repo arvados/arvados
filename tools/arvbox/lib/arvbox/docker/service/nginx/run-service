@@ -1,0 +1,54 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
+
+cat <<EOF >/var/lib/arvados/nginx.conf
+worker_processes auto;
+pid /var/lib/arvados/nginx.pid;
+
+error_log stderr;
+daemon off;
+
+events {
+	worker_connections 64;
+}
+
+http {
+     access_log off;
+     include /etc/nginx/mime.types;
+     default_type application/octet-stream;
+     server {
+            listen ${services[doc]} default_server;
+            listen [::]:${services[doc]} default_server;
+            root /usr/src/arvados/doc/.site;
+            index index.html;
+            server_name _;
+     }
+
+  upstream controller {
+    server localhost:${services[controller]};
+  }
+  server {
+    listen *:${services[controller-ssl]} ssl default_server;
+    server_name controller;
+    ssl_certificate "/var/lib/arvados/self-signed.pem";
+    ssl_certificate_key "/var/lib/arvados/self-signed.key";
+    location  / {
+      proxy_pass http://controller;
+      proxy_set_header Host \$http_host;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_redirect off;
+    }
+  }
+}
+
+EOF
+
+exec nginx -c /var/lib/arvados/nginx.conf
