@@ -86,7 +86,7 @@ describe("Tree component", () => {
             onContextMenu={jest.fn()}
             onSelectionChange={onSelectionChanged}
             items={[project]} />);
-        wrapper.find(Checkbox).prop('onChange')();
+        wrapper.find(Checkbox).prop('onClick')();
         expect(spy).toHaveBeenLastCalledWith({
             data: mockProjectResource(),
             id: "3",

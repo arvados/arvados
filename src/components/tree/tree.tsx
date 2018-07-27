@@ -88,19 +88,21 @@ interface TreeProps<T> {
     level?: number;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     showSelection?: boolean;
-    onSelectionChange?: (event: React.ChangeEvent<HTMLInputElement>, item: TreeItem<T>) => void;
+    onSelectionChange?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    disableRipple?: boolean;
 }
 
 export const Tree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
-            const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu } = this.props;
+            const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu, disableRipple } = this.props;
             const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
             return <List component="div" className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
                         <ListItem button className={listItem} style={{ paddingLeft: (level + 1) * 20 }}
+                            disableRipple={disableRipple}
                             onClick={() => toggleItemActive(it.id, it.status)}
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
@@ -116,7 +118,7 @@ export const Tree = withStyles(styles)(
                                     checked={it.selected}
                                     className={classes.checkbox}
                                     color="primary"
-                                    onChange={this.handleCheckboxChange(it)} />}
+                                    onClick={this.handleCheckboxChange(it)} />}
                             <div className={renderContainer}>
                                 {render(it, level)}
                             </div>
@@ -127,6 +129,7 @@ export const Tree = withStyles(styles)(
                                     showSelection={this.props.showSelection}
                                     items={it.items}
                                     render={render}
+                                    disableRipple={disableRipple}
                                     toggleItemOpen={toggleItemOpen}
                                     toggleItemActive={toggleItemActive}
                                     level={level + 1}
@@ -152,7 +155,7 @@ export const Tree = withStyles(styles)(
         handleCheckboxChange = (item: TreeItem<T>) => {
             const { onSelectionChange } = this.props;
             return onSelectionChange
-                ? (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+                ? (event: React.MouseEvent<HTMLElement>) => {
                     onSelectionChange(event, item);
                 }
                 : undefined;
