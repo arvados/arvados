@@ -13,7 +13,7 @@ import { configureStore } from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "./views-components/api-token/api-token";
 import { authActions } from "./store/auth/auth-action";
-import { authService } from "./services/services";
+import { createServices } from "./services/services";
 import { getProjectList } from "./store/project/project-action";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from './common/custom-theme';
@@ -36,10 +36,13 @@ fetchConfig()
         setBaseUrl(config.API_HOST);
 
         const history = createBrowserHistory();
-        const store = configureStore(history);
+        const services = createServices();
+        const store = configureStore(history, services);
 
         store.dispatch(authActions.INIT());
-        store.dispatch<any>(getProjectList(authService.getUuid()));
+        store.dispatch<any>(getProjectList(services.authService.getUuid()));
+
+        const Token = (props: any) => <ApiToken authService={services.authService} {...props}/>;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
@@ -47,7 +50,7 @@ fetchConfig()
                     <ConnectedRouter history={history}>
                         <div>
                             <Route path="/" component={Workbench} />
-                            <Route path="/token" component={ApiToken} />
+                            <Route path="/token" component={Token} />
                         </div>
                     </ConnectedRouter>
                 </Provider>

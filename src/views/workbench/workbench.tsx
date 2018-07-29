@@ -24,7 +24,6 @@ import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { CreateProjectDialog } from "../../views-components/create-project-dialog/create-project-dialog";
-import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
@@ -36,6 +35,7 @@ import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-pan
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { AuthService } from "../../services/auth-service/auth-service";
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -86,10 +86,14 @@ interface WorkbenchDataProps {
     sidePanelItems: SidePanelItem[];
 }
 
+interface WorkbenchServiceProps {
+    authService: AuthService;
+}
+
 interface WorkbenchActionProps {
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchServiceProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
@@ -188,7 +192,7 @@ export const Workbench = withStyles(styles)(
                                     toggleActive={this.toggleSidePanelActive}
                                     sidePanelItems={this.props.sidePanelItems}
                                     onContextMenu={(event) => this.openContextMenu(event, {
-                                        uuid: authService.getUuid() || "",
+                                        uuid: this.props.authService.getUuid() || "",
                                         name: "",
                                         kind: ContextMenuKind.ROOT_PROJECT
                                     })}>

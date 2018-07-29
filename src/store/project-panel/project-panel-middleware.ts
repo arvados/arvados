@@ -5,7 +5,6 @@
 import { Middleware } from "redux";
 import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID, columns, ProjectPanelFilter, ProjectPanelColumnNames } from "../../views/project-panel/project-panel";
-import { groupsService } from "../../services/services";
 import { RootState } from "../store";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { resourceToDataItem, ProjectPanelItem } from "../../views/project-panel/project-panel-item";
@@ -16,8 +15,9 @@ import { OrderBuilder } from "../../common/api/order-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
 import { SortDirection } from "../../components/data-table/data-column";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { ServiceRepository } from "../../services/services";
 
-export const projectPanelMiddleware: Middleware = store => next => {
+export const projectPanelMiddleware = (services: ServiceRepository): Middleware => store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: PROJECT_PANEL_ID, columns }));
 
     return action => {
@@ -57,7 +57,7 @@ export const projectPanelMiddleware: Middleware = store => next => {
                 const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
                 const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC;
                 if (typeFilters.length > 0) {
-                    groupsService
+                    services.groupsService
                         .contents(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,

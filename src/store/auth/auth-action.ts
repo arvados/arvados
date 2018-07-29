@@ -4,8 +4,9 @@
 
 import { ofType, default as unionize, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { authService } from "../../services/services";
 import { User } from "../../models/user";
+import { RootState } from "../store";
+import { ServiceRepository } from "../../services/services";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -19,9 +20,9 @@ export const authActions = unionize({
     value: 'payload'
 });
 
-export const getUserDetails = () => (dispatch: Dispatch): Promise<User> => {
+export const getUserDetails = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<User> => {
     dispatch(authActions.USER_DETAILS_REQUEST());
-    return authService.getUserDetails().then(details => {
+    return services.authService.getUserDetails().then(details => {
         dispatch(authActions.USER_DETAILS_SUCCESS(details));
         return details;
     });

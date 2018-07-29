@@ -18,6 +18,7 @@ import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middlew
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
+import { ServiceRepository } from "../services/services";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -36,26 +37,25 @@ export interface RootState {
     snackbar: SnackbarState;
 }
 
-const rootReducer = combineReducers({
-    auth: authReducer,
-    projects: projectsReducer,
-    router: routerReducer,
-    dataExplorer: dataExplorerReducer,
-    sidePanel: sidePanelReducer,
-    detailsPanel: detailsPanelReducer,
-    contextMenu: contextMenuReducer,
-    form: formReducer,
-    favorites: favoritesReducer,
-    snackbar: snackbarReducer,
-});
+export function configureStore(history: History, services: ServiceRepository) {
+    const rootReducer = combineReducers({
+        auth: authReducer(services),
+        projects: projectsReducer,
+        router: routerReducer,
+        dataExplorer: dataExplorerReducer,
+        sidePanel: sidePanelReducer,
+        detailsPanel: detailsPanelReducer,
+        contextMenu: contextMenuReducer,
+        form: formReducer,
+        favorites: favoritesReducer,
+        snackbar: snackbarReducer,
+    });
 
-
-export function configureStore(history: History) {
     const middlewares: Middleware[] = [
         routerMiddleware(history),
-        thunkMiddleware,
-        projectPanelMiddleware,
-        favoritePanelMiddleware
+        thunkMiddleware.withExtraArgument(services),
+        projectPanelMiddleware(services),
+        favoritePanelMiddleware(services)
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

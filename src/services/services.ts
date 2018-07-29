@@ -9,8 +9,26 @@ import { ProjectService } from "./project-service/project-service";
 import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
 
-export const authService = new AuthService(authClient, apiClient);
-export const groupsService = new GroupsService(apiClient);
-export const projectService = new ProjectService(apiClient);
-export const linkService = new LinkService(apiClient);
-export const favoriteService = new FavoriteService(linkService, groupsService);
+export interface ServiceRepository {
+    authService: AuthService;
+    groupsService: GroupsService;
+    projectService: ProjectService;
+    linkService: LinkService;
+    favoriteService: FavoriteService;
+}
+
+export const createServices = (): ServiceRepository => {
+    const authService = new AuthService(authClient, apiClient);
+    const groupsService = new GroupsService(apiClient);
+    const projectService = new ProjectService(apiClient);
+    const linkService = new LinkService(apiClient);
+    const favoriteService = new FavoriteService(linkService, groupsService);
+
+    return {
+        authService,
+        groupsService,
+        projectService,
+        linkService,
+        favoriteService
+    };
+};

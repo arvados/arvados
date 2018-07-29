@@ -4,7 +4,6 @@
 
 import { Middleware } from "redux";
 import { dataExplorerActions } from "../data-explorer/data-explorer-action";
-import { favoriteService } from "../../services/services";
 import { RootState } from "../store";
 import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { FilterBuilder } from "../../common/api/filter-builder";
@@ -22,8 +21,9 @@ import { OrderBuilder } from "../../common/api/order-builder";
 import { SortDirection } from "../../components/data-table/data-column";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "../../services/groups-service/groups-service";
 import { FavoriteOrderBuilder } from "../../services/favorite-service/favorite-order-builder";
+import { ServiceRepository } from "../../services/services";
 
-export const favoritePanelMiddleware: Middleware = store => next => {
+export const favoritePanelMiddleware = (services: ServiceRepository): Middleware => store => next => {
     next(dataExplorerActions.SET_COLUMNS({ id: FAVORITE_PANEL_ID, columns }));
 
     return action => {
@@ -62,7 +62,7 @@ export const favoritePanelMiddleware: Middleware = store => next => {
                 const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
                 const order = FavoriteOrderBuilder.create();
                 if (typeFilters.length > 0) {
-                    favoriteService
+                    services.favoriteService
                         .list(state.projects.currentItemId, {
                             limit: dataExplorer.rowsPerPage,
                             offset: dataExplorer.page * dataExplorer.rowsPerPage,
