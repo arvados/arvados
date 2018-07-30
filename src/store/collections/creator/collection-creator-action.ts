@@ -6,7 +6,7 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
-import { collectionCreationService } from '../../../services/services';
+import { collectionService } from '../../../services/services';
 import { CollectionResource } from '../../../models/collection';
 
 export const collectionCreateActions = unionize({
@@ -24,7 +24,7 @@ export const createCollection = (collection: Partial<CollectionResource>) =>
         const { ownerUuid } = getState().collectionCreation.creator;
         const collectiontData = { ownerUuid, ...collection };
         dispatch(collectionCreateActions.CREATE_COLLECTION(collectiontData));
-        return collectionCreationService
+        return collectionService
             .create(collectiontData)
             .then(collection => dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection)));
     };

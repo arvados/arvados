@@ -6,7 +6,7 @@ import { CommonResourceService } from "../../common/api/common-resource-service"
 import { CollectionResource } from "../../models/collection";
 import { AxiosInstance } from "axios";
 
-export class CollectionCreationService extends CommonResourceService<CollectionResource> {
+export class CollectionService extends CommonResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "collections");
     }
