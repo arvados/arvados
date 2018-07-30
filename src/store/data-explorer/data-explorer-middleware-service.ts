@@ -25,6 +25,6 @@ export abstract class DataExplorerMiddlewareService {
         this.api = api;
     }
     getDataExplorer() {
-        return getDataExplorer(this.api.getState(), this.id);
+        return getDataExplorer(this.api.getState().dataExplorer, this.id);
     }
 }
