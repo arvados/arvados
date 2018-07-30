@@ -1,30 +1,15 @@
-import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
-import { dataExplorerMiddleware } from "./data-explorer-middleware";
-import { MiddlewareAPI } from "../../../node_modules/redux";
-import { columns } from "../../views/project-panel/project-panel";
-import { DataColumns } from "../../components/data-table/data-table";
-import { dataExplorerActions } from "./data-explorer-action";
-
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
+import { dataExplorerMiddleware } from "./data-explorer-middleware";
+import { MiddlewareAPI } from "../../../node_modules/redux";
+import { DataColumns } from "../../components/data-table/data-table";
+import { dataExplorerActions } from "./data-explorer-action";
+
+
 describe("DataExplorerMiddleware", () => {
-    it("initializes service with middleware api", () => {
-        const config = {
-            id: "",
-            columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
-        };
-        const service = new ServiceMock(config);
-        const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
-        };
-        dataExplorerMiddleware(service)(api)(jest.fn());
-        expect(config.setApi).toHaveBeenCalled();
-    });
 
     it("initializes columns in the store", () => {
         const config = {
@@ -163,15 +148,8 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_PAGE({ id: service.getId(), page: 0 }));
         middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.getId(), rowsPerPage: 0 }));
-        middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: [] }));
-        middleware(dataExplorerActions.TOGGLE_SORT({ id: service.getId(), columnName: "" }));
-        middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.getId(), columnName: "" }));
-        middleware(dataExplorerActions.REQUEST_ITEMS({ id: service.getId() }));
-        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
-        middleware(dataExplorerActions.RESET_PAGINATION({ id: service.getId() }));
-        expect(api.dispatch).toHaveBeenCalledTimes(7);
+        expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
     it("handles TOGGLE_SORT action", () => {
@@ -247,12 +225,7 @@ class ServiceMock extends DataExplorerMiddlewareService {
         return this.config.columns;
     }
 
-    requestItems() {
-        this.config.requestItems(this.api);
-    }
-
-    setApi(api: MiddlewareAPI) {
-        this.config.setApi();
-        this.api = api;
+    requestItems(api: MiddlewareAPI) {
+        this.config.requestItems(api);
     }
 }

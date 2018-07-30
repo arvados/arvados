@@ -7,7 +7,6 @@ import { MiddlewareAPI } from "redux";
 import { DataColumns } from "../../components/data-table/data-table";
 
 export abstract class DataExplorerMiddlewareService {
-    protected api: MiddlewareAPI;
     protected readonly id: string;
 
     protected constructor(id: string) {
@@ -21,10 +20,7 @@ export abstract class DataExplorerMiddlewareService {
     abstract getColumns(): DataColumns<any>;
     abstract requestItems(api: MiddlewareAPI): void;
 
-    setApi(api: MiddlewareAPI) {
-        this.api = api;
-    }
-    getDataExplorer() {
-        return getDataExplorer(this.api.getState().dataExplorer, this.id);
+    getDataExplorer(api: MiddlewareAPI) {
+        return getDataExplorer(api.getState().dataExplorer, this.id);
     }
 }

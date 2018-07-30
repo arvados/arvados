@@ -14,6 +14,7 @@ import { FilterBuilder } from "../../common/api/filter-builder";
 import { LinkResource } from "../../models/link";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
+import { MiddlewareAPI } from "../../../node_modules/redux";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
@@ -24,9 +25,9 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         return columns;
     }
 
-    requestItems() {
-        const state = this.api.getState() as RootState;
-        const dataExplorer = this.getDataExplorer();
+    requestItems(api: MiddlewareAPI) {
+        const state = api.getState() as RootState;
+        const dataExplorer = this.getDataExplorer(api);
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
@@ -47,16 +48,16 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                         .addILike("name", dataExplorer.searchValue)
                 })
                 .then(response => {
-                    this.api.dispatch(favoritePanelActions.SET_ITEMS({
+                    api.dispatch(favoritePanelActions.SET_ITEMS({
                         items: response.items.map(resourceToDataItem),
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
                         rowsPerPage: response.limit
                     }));
-                    this.api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
+                    api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                 });
         } else {
-            this.api.dispatch(favoritePanelActions.SET_ITEMS({
+            api.dispatch(favoritePanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,

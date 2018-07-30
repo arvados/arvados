@@ -15,6 +15,7 @@ import { ProcessResource } from "../../models/process";
 import { GroupContentsResourcePrefix, GroupContentsResource } from "../../services/groups-service/groups-service";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
+import { MiddlewareAPI } from "../../../node_modules/redux";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
@@ -25,9 +26,9 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         return columns;
     }
 
-    requestItems() {
-        const state = this.api.getState() as RootState;
-        const dataExplorer = this.getDataExplorer();
+    requestItems(api: MiddlewareAPI) {
+        const state = api.getState() as RootState;
+        const dataExplorer = this.getDataExplorer(api);
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
@@ -54,16 +55,16 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         .concat(getSearchFilter(dataExplorer.searchValue))
                 })
                 .then(response => {
-                    this.api.dispatch(projectPanelActions.SET_ITEMS({
+                    api.dispatch(projectPanelActions.SET_ITEMS({
                         items: response.items.map(resourceToDataItem),
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
                         rowsPerPage: response.limit
                     }));
-                    this.api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
+                    api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
                 });
         } else {
-            this.api.dispatch(projectPanelActions.SET_ITEMS({
+            api.dispatch(projectPanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,
