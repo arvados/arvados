@@ -9,7 +9,7 @@ import { FileTreeItem } from "./file-tree-item";
 
 export interface FileTreeProps {
     items: Array<TreeItem<FileTreeData>>;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
+    onMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
 }
@@ -29,7 +29,7 @@ export class FileTree extends React.Component<FileTreeProps> {
 
     handleContextMenu = (event: React.MouseEvent<any>, item: TreeItem<FileTreeData>) => {
         event.stopPropagation();
-        this.props.onContextMenu(event, item);
+        this.props.onMenuOpen(event, item);
     }
 
     handleToggle = (id: string, status: TreeItemStatus) => {

@@ -218,8 +218,8 @@ export const Workbench = withStyles(styles)(
                                         items={collectionPanelItems} 
                                         onCollapseToggle={console.log}
                                         onSelectionToggle={console.log}
-                                        onItemContextMenu={console.log}
-                                        onCommonContextMenu={console.log}
+                                        onItemMenuOpen={console.log}
+                                        onOptionsMenuOpen={console.log}
                                         />} />
                                 </Switch>
                             </div>

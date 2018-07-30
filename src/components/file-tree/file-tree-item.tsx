@@ -16,7 +16,7 @@ const fileTreeItemStyle: StyleRulesCallback<CssRules> = theme => ({
     root: {
         display: "flex",
         alignItems: "center",
-        paddingRight: `${theme.spacing.unit}px`
+        paddingRight: `${theme.spacing.unit * 1.5}px`
     },
     spacer: {
         flex: "1"
