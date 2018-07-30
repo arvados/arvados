@@ -42,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     createProgress: {
         position: "absolute",
         minWidth: "20px",
-        right: "95px"
+        right: "110px"
     },
     dialogActions: {
         marginBottom: "24px"
@@ -102,7 +102,7 @@ export const DialogCollectionCreate = compose(
                                 <Button type="submit"
                                         className={classes.lastButton}
                                         color="primary"
-                                        disabled={invalid|| submitting || pristine}
+                                        disabled={invalid || submitting || pristine}
                                         variant="contained">
                                     CREATE A COLLECTION
                                 </Button>

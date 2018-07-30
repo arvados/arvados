@@ -103,7 +103,7 @@ export const DialogProjectCreate = compose(
                                 <Button type="submit"
                                         className={classes.lastButton}
                                         color="primary"
-                                        disabled={invalid|| submitting || pristine}
+                                        disabled={invalid || submitting || pristine}
                                         variant="contained">
                                     CREATE A PROJECT
                                 </Button>

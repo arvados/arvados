@@ -10,11 +10,10 @@ export type CollectionCreatorState = {
 
 interface CollectionCreator {
     opened: boolean;
-    pending: boolean;
     ownerUuid: string;
 }
 
-const updateCreator = (state: CollectionCreatorState, creator: Partial<CollectionCreator>) => ({
+const updateCreator = (state: CollectionCreatorState, creator?: Partial<CollectionCreator>) => ({
     ...state,
     creator: {
         ...state.creator,
@@ -25,16 +24,15 @@ const updateCreator = (state: CollectionCreatorState, creator: Partial<Collectio
 const initialState: CollectionCreatorState = {
     creator: {
         opened: false,
-        pending: false,
         ownerUuid: ""
     }
 };
 
 export const collectionCreationReducer = (state: CollectionCreatorState = initialState, action: CollectionCreateAction) => {
     return collectionCreateActions.match(action, {
-        OPEN_COLLECTION_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
+        OPEN_COLLECTION_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
         CLOSE_COLLECTION_CREATOR: () => updateCreator(state, { opened: false }),
-        CREATE_COLLECTION: () => updateCreator(state, { opened: true }),
+        CREATE_COLLECTION: () => updateCreator(state),
         CREATE_COLLECTION_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
         default: () => state
     });
