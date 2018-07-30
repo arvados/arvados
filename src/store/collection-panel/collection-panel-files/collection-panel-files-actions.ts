@@ -8,7 +8,9 @@ import { CollectionPanelFilesState, CollectionPanelFile } from "./collection-pan
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<{ files: CollectionPanelFilesState }>(),
     TOGGLE_COLLECTION_FILE_COLLAPSE: ofType<{ id: string }>(),
-    TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>()
+    TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>(),
+    SELECT_ALL_COLLECTION_FILES: ofType<{}>(),
+    UNSELECT_ALL_COLLECTION_FILES: ofType<{}>(),
 }, { tag: 'type', value: 'payload' });
 
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;

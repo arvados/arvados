@@ -60,6 +60,8 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = i
         SET_COLLECTION_FILES: data => data.files,
         TOGGLE_COLLECTION_FILE_COLLAPSE: data => toggleCollapsed(state, data.id),
         TOGGLE_COLLECTION_FILE_SELECTION: data => toggleSelected(state, data.id),
+        SELECT_ALL_COLLECTION_FILES: () => state.map(file => ({...file, selected: true})),
+        UNSELECT_ALL_COLLECTION_FILES: () => state.map(file => ({...file, selected: false})),
         default: () => state
     });
 };
