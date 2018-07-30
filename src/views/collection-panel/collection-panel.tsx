@@ -4,17 +4,14 @@
 
 import * as React from 'react';
 import { 
-    StyleRulesCallback, WithStyles, withStyles, Card, CardHeader, IconButton, 
-    CardContent, Grid, MenuItem, Menu, ListItemIcon, ListItemText, Typography 
+    StyleRulesCallback, WithStyles, withStyles, Card, 
+    CardHeader, IconButton, CardContent, Grid
 } from '@material-ui/core';
 import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { RootState } from '../../store/store';
-import { 
-    MoreOptionsIcon, CollectionIcon, ShareIcon, RenameIcon, AddFavoriteIcon, MoveToIcon, 
-    CopyIcon, ProvenanceGraphIcon, DetailsIcon, AdvancedIcon, RemoveIcon 
-} from '../../components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon } from '../../components/icon/icon';
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
 
@@ -30,51 +27,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-const MENU_OPTIONS = [
-    {
-        title: 'Edit collection',
-        icon: RenameIcon
-    },
-    {
-        title: 'Share',
-        icon: ShareIcon
-    },
-    {
-        title: 'Move to',
-        icon: MoveToIcon
-    },
-    {
-        title: 'Add to favorites',
-        icon: AddFavoriteIcon
-    },
-    {
-        title: 'Copy to project',
-        icon: CopyIcon
-    },
-    {
-        title: 'View details',
-        icon: DetailsIcon
-    },
-    {
-        title: 'Provenance graph',
-        icon: ProvenanceGraphIcon
-    },
-    {
-        title: 'Advanced',
-        icon: AdvancedIcon
-    },
-    {
-        title: 'Remove',
-        icon: RemoveIcon
-    }
-];
-
 interface CollectionPanelDataProps {
     item: CollectionResource;
 }
 
 interface CollectionPanelActionProps {
     onItemRouteChange: (collectionId: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: CollectionResource) => void;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps 
@@ -84,32 +43,8 @@ export const CollectionPanel = withStyles(styles)(
     connect((state: RootState) => ({ item: state.collectionPanel.item }))(
         class extends React.Component<CollectionPanelProps> { 
 
-            state = {
-                anchorEl: undefined,
-                open: false
-            };
-
-            showMenu = (event: any) => {
-                this.setState({ anchorEl: event.currentTarget, open: true });
-            }
-
-            closeMenu = () => {
-                this.setState({ anchorEl: undefined, open: false });
-            }
-
-            displayMenuAction = () => {
-                return <IconButton
-                    aria-label="More options"
-                    aria-owns={this.state.anchorEl ? 'submenu' : undefined}
-                    aria-haspopup="true"
-                    onClick={this.showMenu}>
-                    <MoreOptionsIcon />
-                </IconButton>;
-            }
-
             render() {
-                const { anchorEl, open } = this.state;
-                const { classes, item } = this.props;
+                const { classes, item, onContextMenu } = this.props;
                 return <div>
                         <Card className={classes.card}>
                             <CardHeader 
@@ -117,32 +52,12 @@ export const CollectionPanel = withStyles(styles)(
                                 action={ 
                                     <IconButton
                                         aria-label="More options"
-                                        aria-owns={anchorEl ? 'submenu' : undefined}
-                                        aria-haspopup="true"
-                                        onClick={this.showMenu}>
+                                        onClick={event => onContextMenu(event, item)}>
                                         <MoreOptionsIcon />
                                     </IconButton> 
                                 }
                                 title={item && item.name } />
                             <CardContent>
-                                <Menu
-                                    id="submenu"
-                                    anchorEl={anchorEl}
-                                    open={open}
-                                    onClose={this.closeMenu}>
-                                    {MENU_OPTIONS.map((option) => (
-                                        <MenuItem key={option.title}>
-                                            <ListItemIcon>
-                                                <option.icon />
-                                            </ListItemIcon>
-                                            <ListItemText inset primary={
-                                                <Typography variant='body1'>
-                                                    {option.title}
-                                                </Typography>
-                                            }/>
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
                                     <DetailsAttribute label='Collection UUID' value={item && item.uuid} />

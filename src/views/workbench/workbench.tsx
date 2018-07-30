@@ -193,7 +193,7 @@ export const Workbench = withStyles(styles)(
                                     onContextMenu={(event) => this.openContextMenu(event, {
                                         uuid: authService.getUuid() || "",
                                         name: "",
-                                        kind: ContextMenuKind.RootProject
+                                        kind: ContextMenuKind.ROOT_PROJECT
                                     })}>
                                     <ProjectTree
                                         projects={this.props.projects}
@@ -201,7 +201,7 @@ export const Workbench = withStyles(styles)(
                                         onContextMenu={(event, item) => this.openContextMenu(event, {
                                             uuid: item.data.uuid,
                                             name: item.data.name,
-                                            kind: ContextMenuKind.Project
+                                            kind: ContextMenuKind.PROJECT
                                         })}
                                         toggleActive={itemId => {
                                             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
@@ -233,12 +233,19 @@ export const Workbench = withStyles(styles)(
 
             renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
                 onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.Collection))}
+                onContextMenu={(event, item) => {
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind: ContextMenuKind.COLLECTION
+                    });
+                }}
                 {...props} />
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
                 onContextMenu={(event, item) => {
-                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
@@ -264,7 +271,7 @@ export const Workbench = withStyles(styles)(
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
                 onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
                 onContextMenu={(event, item) => {
-                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.Project : ContextMenuKind.Resource;
+                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
@@ -276,9 +283,15 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
-                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                    switch (item.kind) {
+                        case ResourceKind.Collection:
+                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
+                        default:
+                            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                    }
                 }}
                 {...props} />
 
@@ -299,7 +312,7 @@ export const Workbench = withStyles(styles)(
                     this.openContextMenu(event, {
                         uuid: breadcrumb.itemId,
                         name: breadcrumb.label,
-                        kind: ContextMenuKind.Project
+                        kind: ContextMenuKind.PROJECT
                     });
                 }
             };

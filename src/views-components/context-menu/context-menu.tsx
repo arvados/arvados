@@ -56,8 +56,9 @@ const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet 
 };
 
 export enum ContextMenuKind {
-    RootProject = "RootProject",
-    Project = "Project",
-    Resource = "Resource",
-    Favorite = "Favorite"
+    ROOT_PROJECT = "RootProject",
+    PROJECT = "Project",
+    RESOURCE = "Resource",
+    FAVORITE = "Favorite",
+    COLLECTION = 'Collection'
 }

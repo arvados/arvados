@@ -14,6 +14,7 @@ import Close from '@material-ui/icons/Close';
 import ContentCopy from '@material-ui/icons/ContentCopy';
 import CreateNewFolder from '@material-ui/icons/CreateNewFolder';
 import Delete from '@material-ui/icons/Delete';
+import DeviceHub from '@material-ui/icons/DeviceHub';
 import Edit from '@material-ui/icons/Edit';
 import Folder from '@material-ui/icons/Folder';
 import GetApp from '@material-ui/icons/GetApp';
@@ -31,13 +32,14 @@ import PersonAdd from '@material-ui/icons/PersonAdd';
 import PlayArrow from '@material-ui/icons/PlayArrow';
 import RateReview from '@material-ui/icons/RateReview';
 import Search from '@material-ui/icons/Search';
+import SettingsApplications from '@material-ui/icons/SettingsApplications';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 
 export type IconType = React.SFC<{ className?: string }>;
 
 export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
-export const AdvancedIcon: IconType = (props) => <Folder {...props} />;
+export const AdvancedIcon: IconType = (props) => <SettingsApplications {...props} />;
 export const CustomizeTableIcon: IconType = (props) => <Menu {...props} />;
 export const CopyIcon: IconType = (props) => <ContentCopy {...props} />;
 export const CollectionIcon: IconType = (props) => <LibraryBooks {...props} />;
@@ -58,7 +60,7 @@ export const PaginationRightArrowIcon: IconType = (props) => <ChevronRight {...p
 export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
 export const ProjectIcon: IconType = (props) => <Folder {...props} />;
 export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
-export const ProvenanceGraphIcon: IconType = (props) => <Folder {...props} />;
+export const ProvenanceGraphIcon: IconType = (props) => <DeviceHub {...props} />;
 export const RecentIcon: IconType = (props) => <AccessTime {...props} />;
 export const RemoveIcon: IconType = (props) => <Delete {...props} />;
 export const RemoveFavoriteIcon: IconType = (props) => <Star {...props} />;
