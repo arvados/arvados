@@ -85,15 +85,16 @@ export const CollectionPanel = withStyles(styles)(
         class extends React.Component<CollectionPanelProps> { 
 
             state = {
-                anchorEl: undefined
+                anchorEl: undefined,
+                open: false
             };
 
             showMenu = (event: any) => {
-                this.setState({ anchorEl: event.currentTarget });
+                this.setState({ anchorEl: event.currentTarget, open: true });
             }
 
             closeMenu = () => {
-                this.setState({ anchorEl: undefined });
+                this.setState({ anchorEl: undefined, open: false });
             }
 
             displayMenuAction = () => {
@@ -107,7 +108,7 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             render() {
-                const { anchorEl } = this.state;
+                const { anchorEl, open } = this.state;
                 const { classes, item } = this.props;
                 return <div>
                         <Card className={classes.card}>
@@ -127,7 +128,7 @@ export const CollectionPanel = withStyles(styles)(
                                 <Menu
                                     id="submenu"
                                     anchorEl={anchorEl}
-                                    open={Boolean(anchorEl)}
+                                    open={open}
                                     onClose={this.closeMenu}>
                                     {MENU_OPTIONS.map((option) => (
                                         <MenuItem key={option.title}>

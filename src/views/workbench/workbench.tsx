@@ -28,7 +28,7 @@ import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
@@ -37,8 +37,8 @@ import { CurrentTokenDialog } from '../../views-components/current-token-dialog/
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
 import { CollectionPanel } from '../collection-panel/collection-panel';
-import { goToCollection } from '../../common/actions';
 import { loadCollection } from '../../store/collection-panel/collection-panel-action';
+import { getCollectionUrl } from '../../models/collection';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -253,7 +253,7 @@ export const Workbench = withStyles(styles)(
                     switch (item.kind) {
                         case ResourceKind.Collection:
                             this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
-                            this.props.dispatch(push(goToCollection(item.uuid)));
+                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default: 
                             this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));

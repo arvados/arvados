@@ -18,3 +18,7 @@ export interface CollectionResource extends Resource {
     deleteAt: string;
     isTrashed: boolean;
 }
+
+export const getCollectionUrl = (uuid: string) => {
+    return `/collections/${uuid}`;
+};
