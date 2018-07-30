@@ -732,7 +732,7 @@ do_test_once() {
 do_install() {
   skipit=false
 
-  if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
+  if [[ -z "${only_install}" || "${only_install}" == "${1}" || "${only_install}" == "${2}" ]]; then
       retry do_install_once ${@}
   else
       skipit=true
