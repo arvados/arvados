@@ -19,6 +19,7 @@ import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
 import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
+import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -32,6 +33,7 @@ export interface RootState {
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
+    collectionPanel: CollectionPanelState;
     detailsPanel: DetailsPanelState;
     contextMenu: ContextMenuState;
     favorites: FavoritesState;
@@ -45,6 +47,7 @@ const rootReducer = combineReducers({
     router: routerReducer,
     dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer,
+    collectionPanel: collectionPanelReducer,
     detailsPanel: detailsPanelReducer,
     contextMenu: contextMenuReducer,
     form: formReducer,
