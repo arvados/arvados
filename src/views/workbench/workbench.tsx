@@ -213,11 +213,7 @@ export const Workbench = withStyles(styles)(
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
-                                    <Route path="/" render={() => 
-                                    <CollectionPanelFiles 
-                                        onItemMenuOpen={console.log}
-                                        onOptionsMenuOpen={console.log}
-                                        />} />
+                                    <Route path="/" render={() => <CollectionPanelFiles />} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}

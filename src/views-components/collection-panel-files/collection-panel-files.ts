@@ -10,6 +10,8 @@ import { CollectionPanelFile } from "../../store/collection-panel/collection-pan
 import { FileTreeData } from "../../components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
+import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
+import { ContextMenuKind } from "../context-menu/context-menu";
 
 const mapStateToProps = (state: RootState): Pick<CollectionPanelFilesProps, "items"> => ({
     items: state.collectionPanelFiles
@@ -17,9 +19,21 @@ const mapStateToProps = (state: RootState): Pick<CollectionPanelFilesProps, "ite
         .map(fileToTreeItem(state.collectionPanelFiles))
 });
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onCollapseToggle' | 'onSelectionToggle'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
     onCollapseToggle: (id) => dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id })),
-    onSelectionToggle: (event, item) => dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({id: item.id})),
+    onSelectionToggle: (event, item) => dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id })),
+    onItemMenuOpen: (event, item) => {
+        event.preventDefault();
+        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
+            position: { x: event.clientX, y: event.clientY },
+            resource: { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }
+        }));
+    },
+    onOptionsMenuOpen: (event) =>
+        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
+            position: { x: event.clientX, y: event.clientY },
+            resource: { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }
+        }))
 });
 
 

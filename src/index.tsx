@@ -24,11 +24,15 @@ import { rootProjectActionSet } from "./views-components/context-menu/action-set
 import { projectActionSet } from "./views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from './views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "./views-components/context-menu/action-sets/favorite-action-set";
+import { collectionFilesActionSet } from './views-components/context-menu/action-sets/collection-files-action-set';
+import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
 
 fetchConfig()
     .then(config => {
