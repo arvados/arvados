@@ -11,6 +11,7 @@ import { DialogCollectionCreate } from "../dialog-create/dialog-collection-creat
 import { collectionCreateActions, createCollection } from "../../store/collections/creator/collection-creator-action";
 import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
+import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.collectionCreation.creator.opened
@@ -31,6 +32,10 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 const addCollection = (data: { name: string, description: string }) =>
     (dispatch: Dispatch) => {
         return dispatch<any>(createCollection(data)).then(() => {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Created a new collection",
+                hideDuration: 2000
+            }));
             dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
         });
     };
