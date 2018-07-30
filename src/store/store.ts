@@ -18,6 +18,8 @@ import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middlew
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
+import { CollectionPanelFilesState } from './collection-panel/collection-panel-files/collection-panel-files-state';
+import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collections-panel-files-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -34,6 +36,7 @@ export interface RootState {
     contextMenu: ContextMenuState;
     favorites: FavoritesState;
     snackbar: SnackbarState;
+    collectionPanelFiles: CollectionPanelFilesState;
 }
 
 const rootReducer = combineReducers({
@@ -47,6 +50,7 @@ const rootReducer = combineReducers({
     form: formReducer,
     favorites: favoritesReducer,
     snackbar: snackbarReducer,
+    collectionPanelFiles: collectionPanelFilesReducer,
 });
 
 

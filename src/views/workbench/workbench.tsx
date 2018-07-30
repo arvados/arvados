@@ -215,8 +215,6 @@ export const Workbench = withStyles(styles)(
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/" render={() => 
                                     <CollectionPanelFiles 
-                                        onCollapseToggle={console.log}
-                                        onSelectionToggle={console.log}
                                         onItemMenuOpen={console.log}
                                         onOptionsMenuOpen={console.log}
                                         />} />

@@ -5,10 +5,10 @@
 export type CollectionPanelFilesState = Array<CollectionPanelFile>;
 
 export interface CollectionPanelFile {
-    parentId: string;
+    parentId?: string;
     id: string;
     name: string;
-    size: number;
+    size?: number;
     collapsed: boolean;
     selected: boolean;
     type: string;
