@@ -177,6 +177,7 @@ navbar:
     - Core:
       - install/install-postgresql.html.textile.liquid
       - install/install-api-server.html.textile.liquid
+      - install/install-controller.html.textile.liquid
     - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid

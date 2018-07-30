@@ -1,0 +1,180 @@
+---
+layout: default
+navsection: installguide
+title: Install the controller
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The arvados-controller service must be installed on your API server node.
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-controller</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-controller</span>
+</code></pre>
+</notextile>
+
+Verify the @arvados-controller@ program is functional:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-controller -h</span>
+Usage:
+  -config file
+[...]
+</code></pre>
+</notextile>
+
+h3. Configure Nginx to route requests to the controller
+
+Add @upstream@ and @server@ definitions inside the @http@ section of your Nginx configuration using the following template.
+
+{% include 'notebox_begin' %}
+
+If you are adding arvados-controller to an existing system as part of the upgrade procedure, do not add a new "server" part here. Instead, add only the "upstream" part as shown here, and update your existing "server" section by changing its @proxy_pass@ directive from @http://api@ to @http://controller@.
+
+{% include 'notebox_end' %}
+
+<notextile>
+<pre><code>upstream controller {
+  server     127.0.0.1:9004  fail_timeout=10s;
+}
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  # Refer to the comment about this setting in the passenger (arvados
+  # api server) section of your Nginx configuration.
+  client_max_body_size 128m;
+
+  location / {
+    proxy_pass            http://controller;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</notextile>
+
+Restart Nginx to apply the new configuration.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo nginx -s reload</span>
+</code></pre>
+</notextile>
+
+h3. Configure arvados-controller
+
+Create the cluster configuration file @/etc/arvados/config.yml@ using the following template.
+
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    NodeProfiles:
+      apiserver:
+        arvados-controller:
+          Listen: ":<span class="userinput">9004</span>" # must match the "upstream controller" section of your Nginx config
+        arvados-api-server:
+          Listen: ":<span class="userinput">8000</span>" # must match the "upstream api" section of your Nginx config
+    PostgreSQL:
+      ConnectionPool: 128
+      Connection:
+        host: localhost
+        dbname: arvados_production
+        user: arvados
+        password: <span class="userinput">xxxxxxxx</span>
+        sslmode: require
+</code></pre>
+</notextile>
+
+Create the host configuration file @/etc/arvados/environment@.
+
+<notextile>
+<pre><code>ARVADOS_NODE_PROFILE=apiserver
+</code></pre>
+</notextile>
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the arvados-controller service should already be set up. Restart it to load the new configuration file, and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart arvados-controller</span>
+~$ <span class="userinput">sudo systemctl status arvados-controller</span>
+&#x25cf; arvados-controller.service - Arvados controller
+   Loaded: loaded (/lib/systemd/system/arvados-controller.service; enabled; vendor preset: enabled)
+   Active: active (running) since Tue 2018-07-31 13:17:44 UTC; 3s ago
+     Docs: https://doc.arvados.org/
+ Main PID: 25066 (arvados-control)
+   CGroup: /system.slice/arvados-controller.service
+           └─25066 /usr/bin/arvados-controller
+
+Jul 31 13:17:44 zzzzz systemd[1]: Starting Arvados controller...
+Jul 31 13:17:44 zzzzz arvados-controller[25191]: {"Listen":"[::]:9004","Service":"arvados-controller","level":"info","msg":"listening","time":"2018-07-31T13:17:44.521694195Z"}
+Jul 31 13:17:44 zzzzz systemd[1]: Started Arvados controller.
+</code></pre>
+</notextile>
+
+Skip ahead to "confirm the service is working":#confirm.
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the arvados-controller daemon.  {% include 'install_runit' %}
+
+Create a supervised service.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir /etc/service/arvados-controller</span>
+~$ <span class="userinput">cd /etc/service/arvados-controller</span>
+~$ <span class="userinput">sudo mkdir log log/main</span>
+~$ <span class="userinput">printf '#!/bin/sh\nset -a\n. /etc/arvados/environment\nexec arvados-controller 2>&1\n' | sudo tee run</span>
+~$ <span class="userinput">printf '#!/bin/sh\nexec svlogd main\n' | sudo tee log/run</span>
+~$ <span class="userinput">sudo chmod +x run log/run</span>
+~$ <span class="userinput">sudo sv exit .</span>
+~$ <span class="userinput">cd -</span>
+</code></pre>
+</notextile>
+
+Use @sv stat@ and check the log file to verify the service is running.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sv stat /etc/service/arvados-controller</span>
+run: /etc/service/arvados-controller: (pid 12520) 2s; run: log: (pid 12519) 2s
+~$ <span class="userinput">tail /etc/service/arvados-controller/log/main/current</span>
+{"Listen":"[::]:9004","Service":"arvados-controller","level":"info","msg":"listening","time":"2018-07-31T13:17:44.521694195Z"}
+</code></pre>
+</notextile>
+
+h3(#confirm). Confirm the service is working
+
+Confirm the service is listening on its assigned port and responding to requests.
+
+<notextile>
+<pre><code>~$ <span class="userinput">curl -X OPTIONS http://0.0.0.0:<b>9004</b>/login</span>
+{"errors":["Forbidden"],"error_token":"1533044555+684b532c"}
+</code></pre>
+</notextile>
