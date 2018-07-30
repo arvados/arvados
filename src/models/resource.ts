@@ -15,10 +15,10 @@ export interface Resource {
 }
 
 export enum ResourceKind {
-    Collection = "arvados#collection",
-    ContainerRequest = "arvados#containerRequest",
-    Group = "arvados#group",
-    Process = "arvados#containerRequest",
-    Project = "arvados#group",
-    Workflow = "arvados#workflow"
+    COLLECTION = "arvados#collection",
+    CONTAINER_REQUEST = "arvados#containerRequest",
+    GROUP = "arvados#group",
+    PROCESS = "arvados#containerRequest",
+    PROJECT = "arvados#group",
+    WORKFLOW = "arvados#workflow"
 }

@@ -19,7 +19,7 @@ export class ProcessDetails extends DetailsData<ProcessResource> {
 
     getDetails() {
         return <div>
-            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.Process)} />
+            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
             <DetailsAttribute label='Size' value='---' />
             <DetailsAttribute label='Owner' value={this.item.ownerUuid} />
 

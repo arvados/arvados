@@ -22,18 +22,18 @@ export class FavoriteOrderBuilder {
     addAsc(attribute: "name") {
         const linkOrder = this.linkOrder.addAsc(attribute);
         const contentOrder = this.contentOrder
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection).addAsc(attribute))
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process).addAsc(attribute))
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project).addAsc(attribute));
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION).addAsc(attribute))
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS).addAsc(attribute))
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT).addAsc(attribute));
         return FavoriteOrderBuilder.create(linkOrder, contentOrder);
     }
 
     addDesc(attribute: "name") {
         const linkOrder = this.linkOrder.addDesc(attribute);
         const contentOrder = this.contentOrder
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Collection).addDesc(attribute))
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Process).addDesc(attribute))
-            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.Project).addDesc(attribute));
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION).addDesc(attribute))
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS).addDesc(attribute))
+            .concat(OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT).addDesc(attribute));
         return FavoriteOrderBuilder.create(linkOrder, contentOrder);
     }
 

@@ -14,7 +14,7 @@ export const mockGroupResource = (data: Partial<GroupResource> = {}): GroupResou
     groupClass: null,
     href: "",
     isTrashed: false,
-    kind: ResourceKind.Group,
+    kind: ResourceKind.GROUP,
     modifiedAt: "",
     modifiedByClientUuid: "",
     modifiedByUserUuid: "",
@@ -28,7 +28,7 @@ export const mockGroupResource = (data: Partial<GroupResource> = {}): GroupResou
 });
 
 export const mockProjectResource = (data: Partial<ProjectResource> = {}): ProjectResource =>
-    mockGroupResource({ ...data, groupClass: GroupClass.Project }) as ProjectResource;
+    mockGroupResource({ ...data, groupClass: GroupClass.PROJECT }) as ProjectResource;
 
 export const mockCommonResource = (data: Partial<Resource>): Resource => ({
     createdAt: "",

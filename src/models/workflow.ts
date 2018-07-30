@@ -5,7 +5,7 @@
 import { Resource, ResourceKind } from "./resource";
 
 export interface WorkflowResource extends Resource {
-    kind: ResourceKind.Workflow;
+    kind: ResourceKind.WORKFLOW;
     name: string;
     description: string;
     definition: string;

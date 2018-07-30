@@ -205,8 +205,8 @@ export const Workbench = withStyles(styles)(
                                         })}
                                         toggleActive={itemId => {
                                             this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
-                                            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
-                                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                                            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.PROJECT));
+                                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                                         }} />
                                 </SidePanel>
                             </Drawer>}
@@ -232,7 +232,7 @@ export const Workbench = withStyles(styles)(
             }
 
             renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
-                onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.Collection))}
+                onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION))}
                 onContextMenu={(event, item) => {
                     this.openContextMenu(event, {
                         uuid: item.uuid,
@@ -245,7 +245,8 @@ export const Workbench = withStyles(styles)(
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
                 onContextMenu={(event, item) => {
-                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
+
+                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
@@ -258,20 +259,21 @@ export const Workbench = withStyles(styles)(
                 }}
                 onItemDoubleClick={item => {
                     switch (item.kind) {
-                        case ResourceKind.Collection:
+                        case ResourceKind.COLLECTION:
                             this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default: 
                             this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
+
                 }}
                 {...props} />
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
                 onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
                 onContextMenu={(event, item) => {
-                    const kind = item.kind === ResourceKind.Project ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
+                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
@@ -284,21 +286,22 @@ export const Workbench = withStyles(styles)(
                 }}
                 onItemDoubleClick={item => {
                     switch (item.kind) {
-                        case ResourceKind.Collection:
+                        case ResourceKind.COLLECTION:
                             this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default:
-                            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.Project));
+                            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.PROJECT));
                             this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.Projects));
+                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     }
+
                 }}
                 {...props} />
 
             mainAppBarActions: MainAppBarActionProps = {
                 onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
                     this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
-                    this.props.dispatch<any>(loadDetails(itemId, ResourceKind.Project));
+                    this.props.dispatch<any>(loadDetails(itemId, ResourceKind.PROJECT));
                 },
                 onSearch: searchText => {
                     this.setState({ searchText });

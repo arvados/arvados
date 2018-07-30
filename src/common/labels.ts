@@ -6,11 +6,11 @@ import { ResourceKind } from "../models/resource";
 
 export const resourceLabel = (type: string) => {
     switch (type) {
-        case ResourceKind.Collection:
+        case ResourceKind.COLLECTION:
             return "Data collection";
-        case ResourceKind.Project:
+        case ResourceKind.PROJECT:
             return "Project";
-        case ResourceKind.Process:
+        case ResourceKind.PROCESS:
             return "Process";
         default:
             return "Unknown";

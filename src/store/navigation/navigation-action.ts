@@ -16,8 +16,8 @@ import { getProjectUrl } from "../../models/project";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
-        case ResourceKind.Project: return getProjectUrl(resource.uuid);
-        case ResourceKind.Collection: return getCollectionUrl(resource.uuid);
+        case ResourceKind.PROJECT: return getProjectUrl(resource.uuid);
+        case ResourceKind.COLLECTION: return getCollectionUrl(resource.uuid);
         default: return resource.href;
     }
 };
@@ -35,10 +35,6 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
 
         if (treeItem) {
 
-            if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
-            }
-
             const resourceUrl = getResourceUrl(treeItem.data);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
@@ -48,12 +44,15 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                 dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
             }
 
-            const promise = treeItem.status === TreeItemStatus.Loaded
+            const promise = treeItem.status === TreeItemStatus.LOADED
                 ? Promise.resolve()
                 : dispatch<any>(getProjectList(itemId));
 
             promise
                 .then(() => dispatch<any>(() => {
+                    if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
+                        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
+                    }
                     dispatch(dataExplorerActions.RESET_PAGINATION({id: PROJECT_PANEL_ID}));
                     dispatch(dataExplorerActions.REQUEST_ITEMS({id: PROJECT_PANEL_ID}));
                 }));

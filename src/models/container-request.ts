@@ -5,13 +5,13 @@
 import { Resource, ResourceKind } from "./resource";
 
 export enum ContainerRequestState {
-    Uncommitted = "Uncommitted",
-    Committed = "Committed",
-    Final = "Final"
+    UNCOMMITTED = "Uncommitted",
+    COMMITTED = "Committed",
+    FINAL = "Final"
 }
 
 export interface ContainerRequestResource extends Resource {
-    kind: ResourceKind.ContainerRequest;
+    kind: ResourceKind.CONTAINER_REQUEST;
     name: string;
     description: string;
     properties: any;

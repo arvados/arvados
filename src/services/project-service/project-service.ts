@@ -11,7 +11,7 @@ import { FilterBuilder } from "../../common/api/filter-builder";
 export class ProjectService extends GroupsService<ProjectResource> {
 
     create(data: Partial<ProjectResource>) {
-        const projectData = { ...data, groupClass: GroupClass.Project };
+        const projectData = { ...data, groupClass: GroupClass.PROJECT };
         return super.create(projectData);
     }
 
@@ -30,6 +30,6 @@ export class ProjectService extends GroupsService<ProjectResource> {
                 : FilterBuilder.create())
             .concat(FilterBuilder
                 .create<ProjectResource>()
-                .addEqual("groupClass", GroupClass.Project));
+                .addEqual("groupClass", GroupClass.PROJECT));
     }
 }

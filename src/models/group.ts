@@ -5,7 +5,7 @@
 import { Resource, ResourceKind } from "./resource";
 
 export interface GroupResource extends Resource {
-    kind: ResourceKind.Group;
+    kind: ResourceKind.GROUP;
     name: string;
     groupClass: GroupClass | null;
     description: string;
@@ -17,5 +17,5 @@ export interface GroupResource extends Resource {
 }
 
 export enum GroupClass {
-    Project = "project"
+    PROJECT = "project"
 }

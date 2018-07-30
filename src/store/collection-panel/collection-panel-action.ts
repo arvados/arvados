@@ -4,8 +4,8 @@
 
 import { unionize, ofType, UnionOf } from "unionize";
 import { CommonResourceService } from "../../common/api/common-resource-service";
+import { apiClient } from "../../common/api/server-api";
 import { Dispatch } from "redux";
-import { serverApi } from "../../common/api/server-api";
 import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
 
@@ -19,7 +19,7 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
-        return new CommonResourceService(serverApi, "collections")
+        return new CommonResourceService(apiClient, "collections")
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: item as CollectionResource }));
