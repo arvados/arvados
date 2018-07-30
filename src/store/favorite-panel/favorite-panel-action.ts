@@ -3,6 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { bindDataExplorerActions } from "../data-explorer/data-explorer-action";
-import { FavoritePanelMiddlewareService } from "./favorite-panel-middleware-service";
 
-export const favoritePanelActions = bindDataExplorerActions(FavoritePanelMiddlewareService.getInstance());
+export const FAVORITE_PANEL_ID = "favoritePanel";
+export const favoritePanelActions = bindDataExplorerActions(FAVORITE_PANEL_ID);

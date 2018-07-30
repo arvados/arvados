@@ -4,7 +4,6 @@
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
 import { columns, FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
-import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
@@ -17,30 +16,17 @@ import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
-
-    private static instance: FavoritePanelMiddlewareService;
-
-    static getInstance() {
-        return FavoritePanelMiddlewareService.instance
-            ? FavoritePanelMiddlewareService.instance
-            : new FavoritePanelMiddlewareService();
+    constructor(id: string) {
+        super(id);
     }
 
-    private constructor() {
-        super();
-    }
-
-    get Id() {
-        return "favoritePanel";
-    }
-
-    get Columns() {
+    getColumns() {
         return columns;
     }
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = this.DataExplorer;
+        const dataExplorer = this.getDataExplorer();
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);

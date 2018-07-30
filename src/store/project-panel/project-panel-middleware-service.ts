@@ -4,7 +4,6 @@
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
 import { columns, ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
-import { getDataExplorer } from "../data-explorer/data-explorer-reducer";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { groupsService } from "../../services/services";
@@ -18,30 +17,17 @@ import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
-
-    private static instance: ProjectPanelMiddlewareService;
-
-    static getInstance() {
-        return ProjectPanelMiddlewareService.instance
-            ? ProjectPanelMiddlewareService.instance
-            : new ProjectPanelMiddlewareService();
+    constructor(id: string) {
+        super(id);
     }
 
-    private constructor() {
-        super();
-    }
-
-    get Id() {
-        return "projectPanel";
-    }
-
-    get Columns() {
+    getColumns() {
         return columns;
     }
 
     requestItems() {
         const state = this.api.getState() as RootState;
-        const dataExplorer = this.DataExplorer;
+        const dataExplorer = this.getDataExplorer();
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);

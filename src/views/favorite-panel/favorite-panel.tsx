@@ -17,7 +17,7 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
-import { FavoritePanelMiddlewareService } from '../../store/favorite-panel/favorite-panel-middleware-service';
+import { FAVORITE_PANEL_ID } from "../../store/favorite-panel/favorite-panel-action";
 
 type CssRules = "toolbar" | "button";
 
@@ -139,7 +139,7 @@ export const FavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
             render() {
                 return <DataExplorer
-                    id={FavoritePanelMiddlewareService.getInstance().Id}
+                    id={FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}

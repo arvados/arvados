@@ -45,7 +45,7 @@ describe("DataExplorerMiddleware", () => {
         const next = jest.fn();
         dataExplorerMiddleware(service)(api)(next);
         expect(next)
-            .toHaveBeenCalledWith(dataExplorerActions.SET_COLUMNS({ id: service.Id, columns: service.Columns }));
+            .toHaveBeenCalledWith(dataExplorerActions.SET_COLUMNS({ id: service.getId(), columns: service.getColumns() }));
     });
 
     it("handles only actions that are identified by service id", () => {
@@ -109,7 +109,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_PAGE({ id: service.Id, page: 0 }));
+        middleware(dataExplorerActions.SET_PAGE({ id: service.getId(), page: 0 }));
         expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
@@ -127,7 +127,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.Id, rowsPerPage: 0 }));
+        middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.getId(), rowsPerPage: 0 }));
         expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
@@ -145,7 +145,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_FILTERS({ id: service.Id, columnName: "", filters: [] }));
+        middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: [] }));
         expect(api.dispatch).toHaveBeenCalledTimes(2);
     });
 
@@ -163,14 +163,14 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_PAGE({ id: service.Id, page: 0 }));
-        middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.Id, rowsPerPage: 0 }));
-        middleware(dataExplorerActions.SET_FILTERS({ id: service.Id, columnName: "", filters: [] }));
-        middleware(dataExplorerActions.TOGGLE_SORT({ id: service.Id, columnName: "" }));
-        middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.Id, columnName: "" }));
-        middleware(dataExplorerActions.REQUEST_ITEMS({ id: service.Id }));
-        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.Id, searchValue: "" }));
-        middleware(dataExplorerActions.RESET_PAGINATION({ id: service.Id }));
+        middleware(dataExplorerActions.SET_PAGE({ id: service.getId(), page: 0 }));
+        middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.getId(), rowsPerPage: 0 }));
+        middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: [] }));
+        middleware(dataExplorerActions.TOGGLE_SORT({ id: service.getId(), columnName: "" }));
+        middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.getId(), columnName: "" }));
+        middleware(dataExplorerActions.REQUEST_ITEMS({ id: service.getId() }));
+        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
+        middleware(dataExplorerActions.RESET_PAGINATION({ id: service.getId() }));
         expect(api.dispatch).toHaveBeenCalledTimes(7);
     });
 
@@ -188,7 +188,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.TOGGLE_SORT({ id: service.Id, columnName: "" }));
+        middleware(dataExplorerActions.TOGGLE_SORT({ id: service.getId(), columnName: "" }));
         expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
@@ -206,7 +206,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.Id, searchValue: "" }));
+        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
         expect(api.dispatch).toHaveBeenCalledTimes(2);
     });
 
@@ -224,9 +224,9 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_COLUMNS({ id: service.Id, columns: [] }));
-        middleware(dataExplorerActions.SET_ITEMS({ id: service.Id, items: [], rowsPerPage: 0, itemsAvailable: 0, page: 0 }));
-        middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.Id, columnName: "" }));
+        middleware(dataExplorerActions.SET_COLUMNS({ id: service.getId(), columns: [] }));
+        middleware(dataExplorerActions.SET_ITEMS({ id: service.getId(), items: [], rowsPerPage: 0, itemsAvailable: 0, page: 0 }));
+        middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.getId(), columnName: "" }));
         expect(api.dispatch).toHaveBeenCalledTimes(0);
         expect(next).toHaveBeenCalledTimes(4);
     });
@@ -240,14 +240,10 @@ class ServiceMock extends DataExplorerMiddlewareService {
         requestItems: (api: MiddlewareAPI) => void;
         setApi: () => void;
     }) {
-        super();
+        super(config.id);
     }
 
-    get Id() {
-        return this.config.id;
-    }
-
-    get Columns() {
+    getColumns() {
         return this.config.columns;
     }
 
@@ -255,9 +251,8 @@ class ServiceMock extends DataExplorerMiddlewareService {
         this.config.requestItems(this.api);
     }
 
-    set Api(value: MiddlewareAPI) {
+    setApi(api: MiddlewareAPI) {
         this.config.setApi();
-        this.api = value;
+        this.api = api;
     }
-
 }
