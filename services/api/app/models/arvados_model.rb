@@ -764,8 +764,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def is_audit_logging_enabled?
-    return Rails.configuration.max_audit_log_age == 0 &&
-           Rails.configuration.max_audit_log_delete_batch > 0
+    return !(Rails.configuration.max_audit_log_age.to_i == 0 &&
+             Rails.configuration.max_audit_log_delete_batch.to_i > 0)
   end
 
   def log_start_state
