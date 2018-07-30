@@ -5,7 +5,7 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions } from "../../../store/project/project-action";
 import { NewProjectIcon } from "../../../components/icon/icon";
-import { ToggleFavoriteAction } from "./favorite-action";
+import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
 import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
 import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel";

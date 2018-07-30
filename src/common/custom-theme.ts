@@ -16,11 +16,17 @@ interface ArvadosThemeOptions extends ThemeOptions {
 }
 
 export interface ArvadosTheme extends Theme {
-    customs: any;
+    customs: {
+        colors: Colors
+    };
+}
+
+interface Colors {
+    green700: string;
+    yellow700: string;
 }
 
 const red900 = red["900"];
-const yellow700 = yellow["700"];
 const purple800 = purple["800"];
 const grey200 = grey["200"];
 const grey300 = grey["300"];
@@ -32,7 +38,8 @@ const grey900 = grey["900"];
 const themeOptions: ArvadosThemeOptions = {
     customs: {
         colors: {
-            green700: green["700"]
+            green700: green["700"],
+            yellow700: yellow["700"]
         }
     },
     overrides: {
@@ -73,6 +80,21 @@ const themeOptions: ArvadosThemeOptions = {
         MuiListItemIcon: {
             root: {
                 fontSize: '1.25rem'
+            }
+        },
+        MuiCardHeader: {
+            avatar: {
+                display: 'flex',
+                alignItems: 'center'
+            },
+            title: {
+                color: grey700,
+                fontSize: '1.25rem'
+            }
+        },
+        MuiMenuItem: {
+            root: {
+                padding: '8px 16px'
             }
         }
     },
