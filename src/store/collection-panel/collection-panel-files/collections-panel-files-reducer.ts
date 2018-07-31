@@ -2,74 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionPanelFilesState, CollectionPanelFile } from "./collection-panel-files-state";
+import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, CollectionPanelItem, mapManifestToItems } from "./collection-panel-files-state";
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { stat } from "fs";
 
-const initialState: CollectionPanelFilesState = [{
-    collapsed: true,
-    id: 'Directory 1',
-    name: 'Directory 1',
-    selected: false,
-    type: 'directory',
-}, {
-    parentId: 'Directory 1',
-    collapsed: true,
-    id: 'Directory 1.1',
-    name: 'Directory 1.1',
-    selected: false,
-    type: 'directory',
-}, {
-    parentId: 'Directory 1',
-    collapsed: true,
-    id: 'File 1.1',
-    name: 'File 1.1',
-    selected: false,
-    type: 'file',
-}, {
-    collapsed: true,
-    id: 'Directory 2',
-    name: 'Directory 2',
-    selected: false,
-    type: 'directory',
-}, {
-    parentId: 'Directory 2',
-    collapsed: true,
-    id: 'Directory 2.1',
-    name: 'Directory 2.1',
-    selected: false,
-    type: 'directory',
-}, {
-    parentId: 'Directory 2.1',
-    collapsed: true,
-    id: 'Directory 2.1.1',
-    name: 'Directory 2.1.1',
-    selected: false,
-    type: 'directory',
-}, {
-    parentId: 'Directory 2.1.1',
-    collapsed: true,
-    id: 'Directory 2.1.1.1',
-    name: 'Directory 2.1.1.1',
-    selected: false,
-    type: 'directory',
-}];
-
-export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = initialState, action: CollectionPanelFilesAction) => {
+export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = [], action: CollectionPanelFilesAction) => {
     return collectionPanelFilesAction.match(action, {
-        SET_COLLECTION_FILES: data => data.files,
+        SET_COLLECTION_FILES: ({manifest}) => mapManifestToItems(manifest),
         TOGGLE_COLLECTION_FILE_COLLAPSE: data => toggleCollapsed(state, data.id),
         TOGGLE_COLLECTION_FILE_SELECTION: data => toggleSelected(state, data.id),
-        SELECT_ALL_COLLECTION_FILES: () => state.map(file => ({...file, selected: true})),
-        UNSELECT_ALL_COLLECTION_FILES: () => state.map(file => ({...file, selected: false})),
+        SELECT_ALL_COLLECTION_FILES: () => state.map(file => ({ ...file, selected: true })),
+        UNSELECT_ALL_COLLECTION_FILES: () => state.map(file => ({ ...file, selected: false })),
         default: () => state
     });
 };
 
 const toggleCollapsed = (state: CollectionPanelFilesState, id: string) =>
-    state.map(file => file.id === id
-        ? { ...file, collapsed: !file.collapsed }
-        : file);
+    state.map((item: CollectionPanelItem) =>
+        item.type === 'directory' && item.id === id
+            ? { ...item, collapsed: !item.collapsed }
+            : item);
 
 const toggleSelected = (state: CollectionPanelFilesState, id: string) =>
     toggleAncestors(toggleDescendants(state, id), id);
@@ -83,7 +34,7 @@ const toggleDescendants = (state: CollectionPanelFilesState, id: string) => {
     return state;
 };
 
-const toggleAncestors = (state: CollectionPanelFilesState, id: string): CollectionPanelFile[] => {
+const toggleAncestors = (state: CollectionPanelFilesState, id: string): CollectionPanelItem[] => {
     const file = state.find(f => f.id === id);
     if (file) {
         const selected = state
@@ -97,10 +48,10 @@ const toggleAncestors = (state: CollectionPanelFilesState, id: string): Collecti
     return state;
 };
 
-const getDescendants = (state: CollectionPanelFilesState) => ({ id }: { id: string }): CollectionPanelFile[] => {
-    const root = state.find(f => f.id === id);
+const getDescendants = (state: CollectionPanelFilesState) => ({ id }: { id: string }): CollectionPanelItem[] => {
+    const root = state.find(item => item.id === id);
     if (root) {
-        return [root].concat(...state.filter(f => f.parentId === id).map(getDescendants(state)));
+        return [root].concat(...state.filter(item => item.parentId === id).map(getDescendants(state)));
     } else { return []; }
 };
 

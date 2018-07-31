@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { default as unionize, ofType, UnionOf } from "unionize";
-import { CollectionPanelFilesState, CollectionPanelFile } from "./collection-panel-files-state";
+import { KeepManifest } from "../../../models/keep-manifest";
 
 export const collectionPanelFilesAction = unionize({
-    SET_COLLECTION_FILES: ofType<{ files: CollectionPanelFilesState }>(),
+    SET_COLLECTION_FILES: ofType<{ manifest: KeepManifest }>(),
     TOGGLE_COLLECTION_FILE_COLLAPSE: ofType<{ id: string }>(),
     TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>(),
     SELECT_ALL_COLLECTION_FILES: ofType<{}>(),
