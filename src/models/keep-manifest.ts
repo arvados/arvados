@@ -5,13 +5,13 @@
 export type KeepManifest = KeepManifestStream[];
 
 export interface KeepManifestStream {
-    streamName: string;
+    name: string;
     locators: string[];
     files: Array<KeepManifestStreamFile>;
 }
 
 export interface KeepManifestStreamFile {
-    fileName: string;
+    name: string;
     position: string;
     size: number;
 }
@@ -20,7 +20,10 @@ export interface KeepManifestStreamFile {
  * Documentation [http://doc.arvados.org/api/storage.html](http://doc.arvados.org/api/storage.html)
  */
 export const parseKeepManifestText = (text: string) =>
-    text.split(/\n/).map(parseKeepManifestStream);
+    text
+        .split(/\n/)
+        .filter(streamText => streamText.length > 0)
+        .map(parseKeepManifestStream);
 
 /**
  * Documentation [http://doc.arvados.org/api/storage.html](http://doc.arvados.org/api/storage.html)
@@ -28,7 +31,7 @@ export const parseKeepManifestText = (text: string) =>
 export const parseKeepManifestStream = (stream: string): KeepManifestStream => {
     const tokens = stream.split(' ');
     return {
-        streamName: streamName(tokens),
+        name: streamName(tokens),
         locators: locators(tokens),
         files: files(tokens)
     };
@@ -38,7 +41,7 @@ const FILE_LOCATOR_REGEXP = /^([0-9a-f]{32})\+([0-9]+)(\+[A-Z][-A-Za-z0-9@_]*)*$
 
 const FILE_REGEXP = /([0-9]+):([0-9]+):(.*)/;
 
-const streamName = (tokens: string[]) => tokens[0];
+const streamName = (tokens: string[]) => tokens[0].slice(1);
 
 const locators = (tokens: string[]) => tokens.filter(isFileLocator);
 
@@ -50,6 +53,6 @@ const isFile = (token: string) => FILE_REGEXP.test(token);
 
 const parseFile = (token: string): KeepManifestStreamFile => {
     const match = FILE_REGEXP.exec(token);
-    const [position, size, fileName] = match!.slice(1);
-    return { fileName, position, size: parseInt(size, 10) };
+    const [position, size, name] = match!.slice(1);
+    return { name, position, size: parseInt(size, 10) };
 };
