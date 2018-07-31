@@ -26,6 +26,7 @@ import { resourceActionSet } from './views-components/context-menu/action-sets/r
 import { favoriteActionSet } from "./views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet } from './views-components/context-menu/action-sets/collection-files-action-set';
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
+import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
@@ -33,6 +34,7 @@ addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet); 
 
 fetchConfig()
     .then(config => {

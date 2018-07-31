@@ -20,6 +20,8 @@ import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer'
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
 import { CollectionPanelFilesState } from './collection-panel/collection-panel-files/collection-panel-files-state';
 import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collections-panel-files-reducer';
+import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
+import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -29,9 +31,11 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
+    collectionCreation: CollectionCreatorState;
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
+    collectionPanel: CollectionPanelState;
     detailsPanel: DetailsPanelState;
     contextMenu: ContextMenuState;
     favorites: FavoritesState;
@@ -42,9 +46,11 @@ export interface RootState {
 const rootReducer = combineReducers({
     auth: authReducer,
     projects: projectsReducer,
+    collectionCreation: collectionCreationReducer,
     router: routerReducer,
     dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer,
+    collectionPanel: collectionPanelReducer,
     detailsPanel: detailsPanelReducer,
     contextMenu: contextMenuReducer,
     form: formReducer,

@@ -62,4 +62,5 @@ export enum ContextMenuKind {
     FAVORITE = "Favorite",
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_ITEM = "CollectionFilesItem",
+    COLLECTION = 'Collection'
 }

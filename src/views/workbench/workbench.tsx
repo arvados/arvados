@@ -20,6 +20,7 @@ import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
 import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
+import { collectionCreateActions } from '../../store/collections/creator/collection-creator-action';
 import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
@@ -28,7 +29,7 @@ import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { sidePanelData, SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
+import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
@@ -37,6 +38,10 @@ import { CurrentTokenDialog } from '../../views-components/current-token-dialog/
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
 import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
+import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
+import { CollectionPanel } from '../collection-panel/collection-panel';
+import { loadCollection } from '../../store/collection-panel/collection-panel-action';
+import { getCollectionUrl } from '../../models/collection';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -213,6 +218,7 @@ export const Workbench = withStyles(styles)(
                                 <Switch>
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
+                                    <Route path="/collections/:id" render={this.renderCollectionPanel} />
                                     <Route path="/" render={() => <CollectionPanelFiles />} />
                                 </Switch>
                             </div>
@@ -221,6 +227,7 @@ export const Workbench = withStyles(styles)(
                         <ContextMenu />
                         <Snackbar />
                         <CreateProjectDialog />
+                        <CreateCollectionDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
                             open={this.state.isCurrentTokenDialogOpen}
@@ -229,9 +236,21 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+                onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION))}
+                onContextMenu={(event, item) => {
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind: ContextMenuKind.COLLECTION
+                    });
+                }}
+                {...props} />
+
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
                 onContextMenu={(event, item) => {
+
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
@@ -239,13 +258,21 @@ export const Workbench = withStyles(styles)(
                         kind
                     });
                 }}
-                onDialogOpen={this.handleCreationDialogOpen}
+                onProjectCreationDialogOpen={this.handleProjectCreationDialogOpen}
+                onCollectionCreationDialogOpen={this.handleCollectionCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.PROJECT));
+                    switch (item.kind) {
+                        case ResourceKind.COLLECTION:
+                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
+                        default: 
+                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                    }
+
                 }}
                 {...props} />
 
@@ -259,14 +286,21 @@ export const Workbench = withStyles(styles)(
                         kind,
                     });
                 }}
-                onDialogOpen={this.handleCreationDialogOpen}
+                onDialogOpen={this.handleProjectCreationDialogOpen}
                 onItemClick={item => {
                     this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.PROJECT));
-                    this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                    switch (item.kind) {
+                        case ResourceKind.COLLECTION:
+                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
+                        default:
+                            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.PROJECT));
+                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                    }
+
                 }}
                 {...props} />
 
@@ -305,8 +339,12 @@ export const Workbench = withStyles(styles)(
                 }
             }
 
-            handleCreationDialogOpen = (itemUuid: string) => {
+            handleProjectCreationDialogOpen = (itemUuid: string) => {
                 this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+            }
+
+            handleCollectionCreationDialogOpen = (itemUuid: string) => {
+                this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
             }
 
             openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; kind: ContextMenuKind; }) => {

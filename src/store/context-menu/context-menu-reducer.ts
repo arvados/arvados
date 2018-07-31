@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind } from "../../models/resource";
 import { contextMenuActions, ContextMenuAction } from "./context-menu-actions";
 
 export interface ContextMenuState {

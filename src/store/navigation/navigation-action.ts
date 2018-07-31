@@ -11,11 +11,13 @@ import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { Resource, ResourceKind } from "../../models/resource";
+import { getCollectionUrl } from "../../models/collection";
+import { getProjectUrl } from "../../models/project";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
-        case ResourceKind.PROJECT: return `/projects/${resource.uuid}`;
-        case ResourceKind.COLLECTION: return `/collections/${resource.uuid}`;
+        case ResourceKind.PROJECT: return getProjectUrl(resource.uuid);
+        case ResourceKind.COLLECTION: return getCollectionUrl(resource.uuid);
         default: return resource.href;
     }
 };

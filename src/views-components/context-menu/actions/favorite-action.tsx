@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { ListItemIcon, ListItemText } from "@material-ui/core";
-import { FavoriteIcon, AddFavoriteIcon, RemoveFavoriteIcon } from "../../../components/icon/icon";
+import { AddFavoriteIcon, RemoveFavoriteIcon } from "../../../components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 
