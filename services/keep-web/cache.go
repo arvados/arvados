@@ -12,7 +12,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"github.com/hashicorp/golang-lru"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+const metricsUpdateInterval = time.Second / 10
 
 type cache struct {
 	TTL                  arvados.Duration
@@ -22,13 +25,16 @@ type cache struct {
 	MaxPermissionEntries int
 	MaxUUIDEntries       int
 
+	registry    *prometheus.Registry
 	stats       cacheStats
+	metrics     cacheMetrics
 	pdhs        *lru.TwoQueueCache
 	collections *lru.TwoQueueCache
 	permissions *lru.TwoQueueCache
 	setupOnce   sync.Once
 }
 
+// cacheStats is EOL - add new metrics to cacheMetrics instead
 type cacheStats struct {
 	Requests          uint64 `json:"Cache.Requests"`
 	CollectionBytes   uint64 `json:"Cache.CollectionBytes"`
@@ -37,6 +43,68 @@ type cacheStats struct {
 	PDHHits           uint64 `json:"Cache.UUIDHits"`
 	PermissionHits    uint64 `json:"Cache.PermissionHits"`
 	APICalls          uint64 `json:"Cache.APICalls"`
+}
+
+type cacheMetrics struct {
+	requests          prometheus.Counter
+	collectionBytes   prometheus.Gauge
+	collectionEntries prometheus.Gauge
+	collectionHits    prometheus.Counter
+	pdhHits           prometheus.Counter
+	permissionHits    prometheus.Counter
+	apiCalls          prometheus.Counter
+}
+
+func (m *cacheMetrics) setup(reg *prometheus.Registry) {
+	m.requests = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "requests",
+		Help:      "Number of targetID-to-manifest lookups handled.",
+	})
+	reg.MustRegister(m.requests)
+	m.collectionHits = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "hits",
+		Help:      "Number of pdh-to-manifest cache hits.",
+	})
+	reg.MustRegister(m.collectionHits)
+	m.pdhHits = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "pdh_hits",
+		Help:      "Number of uuid-to-pdh cache hits.",
+	})
+	reg.MustRegister(m.pdhHits)
+	m.permissionHits = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "permission_hits",
+		Help:      "Number of targetID-to-permission cache hits.",
+	})
+	reg.MustRegister(m.permissionHits)
+	m.apiCalls = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "api_calls",
+		Help:      "Number of outgoing API calls made by cache.",
+	})
+	reg.MustRegister(m.apiCalls)
+	m.collectionBytes = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "cached_manifest_bytes",
+		Help:      "Total size of all manifests in cache.",
+	})
+	reg.MustRegister(m.collectionBytes)
+	m.collectionEntries = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "keepweb_collectioncache",
+		Name:      "cached_manifests",
+		Help:      "Number of manifests in cache.",
+	})
+	reg.MustRegister(m.collectionEntries)
 }
 
 type cachedPDH struct {
@@ -67,6 +135,22 @@ func (c *cache) setup() {
 	if err != nil {
 		panic(err)
 	}
+
+	reg := c.registry
+	if reg == nil {
+		reg = prometheus.NewRegistry()
+	}
+	c.metrics.setup(reg)
+	go func() {
+		for range time.Tick(metricsUpdateInterval) {
+			c.updateGauges()
+		}
+	}()
+}
+
+func (c *cache) updateGauges() {
+	c.metrics.collectionBytes.Set(float64(c.collectionBytes()))
+	c.metrics.collectionEntries.Set(float64(c.collections.Len()))
 }
 
 var selectPDH = map[string]interface{}{
@@ -113,6 +197,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	c.setupOnce.Do(c.setup)
 
 	atomic.AddUint64(&c.stats.Requests, 1)
+	c.metrics.requests.Inc()
 
 	permOK := false
 	permKey := arv.ApiToken + "\000" + targetID
@@ -124,6 +209,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		} else {
 			permOK = true
 			atomic.AddUint64(&c.stats.PermissionHits, 1)
+			c.metrics.permissionHits.Inc()
 		}
 	}
 
@@ -137,6 +223,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		} else {
 			pdh = ent.pdh
 			atomic.AddUint64(&c.stats.PDHHits, 1)
+			c.metrics.pdhHits.Inc()
 		}
 	}
 
@@ -153,6 +240,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		// _and_ the current token has permission, we can
 		// use our cached manifest.
 		atomic.AddUint64(&c.stats.APICalls, 1)
+		c.metrics.apiCalls.Inc()
 		var current arvados.Collection
 		err := arv.Get("collections", targetID, selectPDH, &current)
 		if err != nil {
@@ -181,6 +269,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 
 	// Collection manifest is not cached.
 	atomic.AddUint64(&c.stats.APICalls, 1)
+	c.metrics.apiCalls.Inc()
 	err := arv.Get("collections", targetID, nil, &collection)
 	if err != nil {
 		return nil, err
@@ -261,16 +350,16 @@ func (c *cache) collectionBytes() uint64 {
 }
 
 func (c *cache) lookupCollection(key string) *arvados.Collection {
-	if ent, cached := c.collections.Get(key); !cached {
+	e, cached := c.collections.Get(key)
+	if !cached {
 		return nil
-	} else {
-		ent := ent.(*cachedCollection)
-		if ent.expire.Before(time.Now()) {
-			c.collections.Remove(key)
-			return nil
-		} else {
-			atomic.AddUint64(&c.stats.CollectionHits, 1)
-			return ent.collection
-		}
 	}
+	ent := e.(*cachedCollection)
+	if ent.expire.Before(time.Now()) {
+		c.collections.Remove(key)
+		return nil
+	}
+	atomic.AddUint64(&c.stats.CollectionHits, 1)
+	c.metrics.collectionHits.Inc()
+	return ent.collection
 }

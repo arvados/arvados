@@ -88,7 +88,7 @@ func MakeRESTRouter() http.Handler {
 
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
 
-	stack := httpserver.Instrument(nil,
+	stack := httpserver.Instrument(nil, nil,
 		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
 	return stack.ServeAPI(stack)
 }

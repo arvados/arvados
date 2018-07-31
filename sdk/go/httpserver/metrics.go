@@ -99,9 +99,16 @@ func (m *metrics) ServeAPI(next http.Handler) http.Handler {
 // For the metrics to be accurate, the caller must ensure every
 // request passed to the Handler also passes through
 // LogRequests(logger, ...), and vice versa.
-func Instrument(logger *logrus.Logger, next http.Handler) Handler {
+//
+// If registry is nil, a new registry is created.
+//
+// If logger is nil, logrus.StandardLogger() is used.
+func Instrument(registry *prometheus.Registry, logger *logrus.Logger, next http.Handler) Handler {
 	if logger == nil {
 		logger = logrus.StandardLogger()
+	}
+	if registry == nil {
+		registry = prometheus.NewRegistry()
 	}
 	reqDuration := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "request_duration_seconds",
@@ -111,7 +118,6 @@ func Instrument(logger *logrus.Logger, next http.Handler) Handler {
 		Name: "time_to_status_seconds",
 		Help: "Summary of request TTFB.",
 	}, []string{"code", "method"})
-	registry := prometheus.NewRegistry()
 	registry.MustRegister(timeToStatus)
 	registry.MustRegister(reqDuration)
 	m := &metrics{
