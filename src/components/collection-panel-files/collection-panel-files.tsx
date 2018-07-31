@@ -6,7 +6,7 @@ import * as React from 'react';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { FileTree } from '../file-tree/file-tree';
-import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, CardContent, Card } from '@material-ui/core';
 import { CustomizeTableIcon } from '../icon/icon';
 
 export interface CollectionPanelFilesProps {
@@ -17,9 +17,12 @@ export interface CollectionPanelFilesProps {
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
 }
 
-type CssRules = 'nameHeader' | 'fileSizeHeader';
+type CssRules = 'root' | 'nameHeader' | 'fileSizeHeader';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
+    root: {
+        paddingBottom: theme.spacing.unit
+    },
     nameHeader: {
         marginLeft: '75px'
     },
@@ -30,20 +33,22 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 export const CollectionPanelFiles = withStyles(styles)(
     ({ onItemMenuOpen, onOptionsMenuOpen, classes, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
-        <div>
-            <Grid container justify="flex-end">
-                <IconButton onClick={onOptionsMenuOpen}>
-                    <CustomizeTableIcon />
-                </IconButton>
-            </Grid>
+        <Card className={classes.root}>
+            <CardHeader
+                title="Files"
+                action={
+                    <IconButton onClick={onOptionsMenuOpen}>
+                        <CustomizeTableIcon />
+                    </IconButton>
+                } />
             <Grid container justify="space-between">
                 <Typography variant="caption" className={classes.nameHeader}>
                     Name
-                </Typography>
+                    </Typography>
                 <Typography variant="caption" className={classes.fileSizeHeader}>
                     File size
-            </Typography>
+                    </Typography>
             </Grid>
             <FileTree onMenuOpen={onItemMenuOpen} {...treeProps} />
-        </div>);
+        </Card>);
 

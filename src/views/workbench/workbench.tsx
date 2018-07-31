@@ -37,7 +37,6 @@ import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-pan
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
-import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
 import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection } from '../../store/collection-panel/collection-panel-action';
@@ -219,7 +218,6 @@ export const Workbench = withStyles(styles)(
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
-                                    <Route path="/" render={() => <CollectionPanelFiles />} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}

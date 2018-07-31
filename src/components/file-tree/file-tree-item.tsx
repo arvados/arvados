@@ -26,7 +26,8 @@ const fileTreeItemStyle: StyleRulesCallback<CssRules> = theme => ({
     },
     button: {
         width: theme.spacing.unit * 3,
-        height: theme.spacing.unit * 3
+        height: theme.spacing.unit * 3,
+        marginRight: theme.spacing.unit
     }
 });
 
