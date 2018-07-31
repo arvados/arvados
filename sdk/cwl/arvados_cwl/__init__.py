@@ -135,6 +135,21 @@ class ArvCwlRunner(object):
             else:
                 raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
 
+        if self.work_api == "jobs":
+            logger.warn("""
+*******************************
+Using the deprecated 'jobs' API.
+
+To get rid of this warning:
+
+Users: read about migrating at
+http://doc.arvados.org/user/cwl/cwl-style.html#migrate
+and use the option --api=containers
+
+Admins: configure the cluster to disable the 'jobs' API as described at:
+http://doc.arvados.org/install/install-api-server.html#disable_api_methods
+*******************************""")
+
         self.loadingContext = ArvLoadingContext(vars(arvargs))
         self.loadingContext.fetcher_constructor = self.fetcher_constructor
         self.loadingContext.resolver = partial(collectionResolver, self.api, num_retries=self.num_retries)

@@ -158,6 +158,42 @@ Example @application.yml@:
 </code></pre>
 </notextile>
 
+h3(#disable_api_methods). disable_api_methods
+
+Set the @disable_api_methods@ configuration option to disable the deprecated @jobs@ API.  This will prevent users from accidentally submitting jobs that won't run.  "All new installations should use the containers API.":crunch2-slurm/install-prerequisites.html
+
+<notextile>
+<pre><code>
+  disable_api_methods:
+    - jobs.create
+    - pipeline_instances.create
+    - pipeline_templates.create
+    - jobs.get
+    - pipeline_instances.get
+    - pipeline_templates.get
+    - jobs.list
+    - pipeline_instances.list
+    - pipeline_templates.list
+    - jobs.index
+    - pipeline_instances.index
+    - pipeline_templates.index
+    - jobs.update
+    - pipeline_instances.update
+    - pipeline_templates.update
+    - jobs.queue
+    - jobs.queue_size
+    - job_tasks.create
+    - job_tasks.get
+    - job_tasks.list
+    - job_tasks.index
+    - job_tasks.update
+    - jobs.show
+    - pipeline_instances.show
+    - pipeline_templates.show
+    - job_tasks.show
+</code></pre>
+</notextile>
+
 h2(#set_up). Set up Nginx and Passenger
 
 The Nginx server will serve API requests using Passenger. It will also be used to proxy SSL requests to other services which are covered later in this guide.
