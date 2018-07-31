@@ -164,7 +164,33 @@ Set the @disable_api_methods@ configuration option to disable the deprecated @jo
 
 <notextile>
 <pre><code>
-  disable_api_methods: ["jobs.create", "pipeline_instances.create"]
+  disable_api_methods:
+    - jobs.create
+    - pipeline_instances.create
+    - pipeline_templates.create
+    - jobs.get
+    - pipeline_instances.get
+    - pipeline_templates.get
+    - jobs.list
+    - pipeline_instances.list
+    - pipeline_templates.list
+    - jobs.index
+    - pipeline_instances.index
+    - pipeline_templates.index
+    - jobs.update
+    - pipeline_instances.update
+    - pipeline_templates.update
+    - jobs.queue
+    - jobs.queue_size
+    - job_tasks.create
+    - job_tasks.get
+    - job_tasks.list
+    - job_tasks.index
+    - job_tasks.update
+    - jobs.show
+    - pipeline_instances.show
+    - pipeline_templates.show
+    - job_tasks.show
 </code></pre>
 </notextile>
 
