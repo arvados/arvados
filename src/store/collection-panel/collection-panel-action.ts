@@ -20,6 +20,7 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
+        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ manifest: [] }));
         return collectionService
             .get(uuid)
             .then(item => {
