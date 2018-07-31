@@ -29,7 +29,7 @@ interface DataExplorerDataProps<T> {
     columns: DataColumns<T>;
     searchValue: string;
     rowsPerPage: number;
-    rowsPerPageOptions?: number[];
+    rowsPerPageOptions: number[];
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;

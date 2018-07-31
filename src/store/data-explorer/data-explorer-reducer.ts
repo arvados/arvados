@@ -13,7 +13,7 @@ export interface DataExplorer {
     itemsAvailable: number;
     page: number;
     rowsPerPage: number;
-    rowsPerPageOptions?: number[];
+    rowsPerPageOptions: number[];
     searchValue: string;
 }
 
