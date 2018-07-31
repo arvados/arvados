@@ -184,7 +184,8 @@ interface ProjectPanelDataProps {
 interface ProjectPanelActionProps {
     onItemClick: (item: ProjectPanelItem) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
-    onDialogOpen: (ownerUuid: string) => void;
+    onProjectCreationDialogOpen: (ownerUuid: string) => void;
+    onCollectionCreationDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: ProjectPanelItem) => void;
     onItemRouteChange: (itemId: string) => void;
 }
@@ -199,7 +200,7 @@ export const ProjectPanel = withStyles(styles)(
                 const { classes } = this.props;
                 return <div>
                     <div className={classes.toolbar}>
-                        <Button color="primary" variant="raised" className={classes.button}>
+                        <Button color="primary" onClick={this.handleNewCollectionClick} variant="raised" className={classes.button}>
                             Create a collection
                         </Button>
                         <Button color="primary" variant="raised" className={classes.button}>
@@ -219,7 +220,11 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleNewProjectClick = () => {
-                this.props.onDialogOpen(this.props.currentItemId);
+                this.props.onProjectCreationDialogOpen(this.props.currentItemId);
+            }
+
+            handleNewCollectionClick = () => {
+                this.props.onCollectionCreationDialogOpen(this.props.currentItemId);
             }
             componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
                 if (match.params.id !== currentItemId) {
