@@ -27,7 +27,7 @@ export const initialDataExplorer: DataExplorer = {
     searchValue: ""
 };
 
-export type DataExplorerState = Record<string, DataExplorer | undefined>;
+export type DataExplorerState = Record<string, DataExplorer>;
 
 export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
     dataExplorerActions.match(action, {

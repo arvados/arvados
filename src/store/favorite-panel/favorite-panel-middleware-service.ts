@@ -14,7 +14,7 @@ import { FilterBuilder } from "../../common/api/filter-builder";
 import { LinkResource } from "../../models/link";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
-import { MiddlewareAPI } from "../../../node_modules/redux";
+import { Dispatch, MiddlewareAPI } from "redux";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
@@ -25,11 +25,12 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         return columns;
     }
 
-    requestItems(api: MiddlewareAPI) {
-        const state = api.getState() as RootState;
-        const dataExplorer = this.getDataExplorer(api);
+    requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+        const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
-        const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
+        const sortColumn = dataExplorer.columns.find(
+            ({ sortDirection }) => sortDirection !== undefined && sortDirection !== "none"
+        );
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
         const order = FavoriteOrderBuilder.create();
         if (typeFilters.length > 0) {

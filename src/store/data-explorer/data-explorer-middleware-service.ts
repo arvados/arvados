@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getDataExplorer } from "./data-explorer-reducer";
-import { MiddlewareAPI } from "redux";
+import { Dispatch, MiddlewareAPI } from "redux";
 import { DataColumns } from "../../components/data-table/data-table";
+import { RootState } from "../store";
 
 export abstract class DataExplorerMiddlewareService {
     protected readonly id: string;
@@ -18,9 +18,5 @@ export abstract class DataExplorerMiddlewareService {
     }
 
     abstract getColumns(): DataColumns<any>;
-    abstract requestItems(api: MiddlewareAPI): void;
-
-    getDataExplorer(api: MiddlewareAPI) {
-        return getDataExplorer(api.getState().dataExplorer, this.id);
-    }
+    abstract requestItems(api: MiddlewareAPI<Dispatch, RootState>): void;
 }

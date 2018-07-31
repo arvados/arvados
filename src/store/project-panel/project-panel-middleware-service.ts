@@ -15,7 +15,7 @@ import { ProcessResource } from "../../models/process";
 import { GroupContentsResourcePrefix, GroupContentsResource } from "../../services/groups-service/groups-service";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
-import { MiddlewareAPI } from "../../../node_modules/redux";
+import { Dispatch, MiddlewareAPI } from "redux";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
@@ -26,9 +26,9 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         return columns;
     }
 
-    requestItems(api: MiddlewareAPI) {
-        const state = api.getState() as RootState;
-        const dataExplorer = this.getDataExplorer(api);
+    requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+        const state = api.getState();
+        const dataExplorer = state.dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);

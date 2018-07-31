@@ -17,6 +17,7 @@ describe("DataExplorerMiddleware", () => {
             columns: [{
                 name: "Column",
                 selected: true,
+                configurable: false,
                 render: jest.fn()
             }],
             requestItems: jest.fn(),
@@ -39,6 +40,7 @@ describe("DataExplorerMiddleware", () => {
             columns: [{
                 name: "Column",
                 selected: true,
+                configurable: false,
                 render: jest.fn()
             }],
             requestItems: jest.fn(),
@@ -64,6 +66,7 @@ describe("DataExplorerMiddleware", () => {
             columns: [{
                 name: "Column",
                 selected: true,
+                configurable: false,
                 render: jest.fn()
             }],
             requestItems: jest.fn(),

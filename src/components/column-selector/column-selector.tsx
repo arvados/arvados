@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
-import { DataColumn, isColumnConfigurable } from '../data-table/data-column';
+import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
@@ -33,8 +33,8 @@ export const ColumnSelector = withStyles(styles)(
         <Paper>
             <List dense>
                 {columns
-                    .filter(isColumnConfigurable)
-                    .map((column, index) => (
+                    .filter(column => column.configurable)
+                    .map((column, index) =>
                         <ListItem
                             button
                             key={index}
@@ -48,7 +48,7 @@ export const ColumnSelector = withStyles(styles)(
                                 {column.name}
                             </ListItemText>
                         </ListItem>
-                    ))}
+                    )}
             </List>
         </Paper>
     </Popover>

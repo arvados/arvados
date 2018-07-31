@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Middleware } from "../../../node_modules/redux";
+import { Middleware } from "redux";
 import { dataExplorerActions, bindDataExplorerActions } from "./data-explorer-action";
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 

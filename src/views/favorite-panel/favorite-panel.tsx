@@ -48,6 +48,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
+        configurable: true,
         sortDirection: SortDirection.ASC,
         render: renderName,
         width: "450px"
@@ -55,6 +56,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
     {
         name: "Status",
         selected: true,
+        configurable: true,
         filters: [
             {
                 name: ContainerRequestState.COMMITTED,
@@ -78,6 +80,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
     {
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
+        configurable: true,
         filters: [
             {
                 name: resourceLabel(ResourceKind.COLLECTION),
@@ -101,18 +104,21 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
     {
         name: FavoritePanelColumnNames.OWNER,
         selected: true,
+        configurable: true,
         render: item => renderOwner(item.owner),
         width: "200px"
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
+        configurable: true,
         render: item => renderFileSize(item.fileSize),
         width: "50px"
     },
     {
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
+        configurable: true,
         sortDirection: SortDirection.NONE,
         render: item => renderDate(item.lastModified),
         width: "150px"
