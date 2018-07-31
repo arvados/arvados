@@ -23,6 +23,7 @@ class Container < ArvadosModel
   serialize :command, Array
   serialize :scheduling_parameters, Hash
   serialize :secret_mounts, Hash
+  serialize :runtime_status, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
@@ -36,6 +37,7 @@ class Container < ArvadosModel
   before_save :sort_serialized_attrs
   before_save :update_secret_mounts_md5
   before_save :scrub_secret_mounts
+  before_save :clear_runtime_status_when_queued
   after_save :handle_completed
   after_save :propagate_priority
   after_commit { UpdatePriority.run_update_thread }
@@ -412,11 +414,14 @@ class Container < ArvadosModel
     end
 
     case self.state
-    when Queued, Locked
+    when Locked
+      permitted.push :priority, :runtime_status
+
+    when Queued
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :progress, :output
+      permitted.push :priority, :progress, :output, :runtime_status
       if self.state_changed?
         permitted.push :started_at
       end
@@ -530,6 +535,13 @@ class Container < ArvadosModel
     # scrubbed here.
     if self.state_changed? && self.final?
       self.secret_mounts = {}
+    end
+  end
+
+  def clear_runtime_status_when_queued
+    # Avoid leaking status messages between different dispatch attempts
+    if self.state_was == Locked && self.state == Queued
+      self.runtime_status = {}
     end
   end
 
