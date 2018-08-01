@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, MiddlewareAPI } from "redux";
-import { DataColumns } from "../../components/data-table/data-table";
 import { RootState } from "../store";
 
 export abstract class DataExplorerMiddlewareService {
@@ -17,6 +16,5 @@ export abstract class DataExplorerMiddlewareService {
         return this.id;
     }
 
-    abstract getColumns(): DataColumns<any>;
     abstract requestItems(api: MiddlewareAPI<Dispatch, RootState>): void;
 }

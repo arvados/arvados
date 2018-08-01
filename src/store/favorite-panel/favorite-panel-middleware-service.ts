@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { columns, FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
+import { FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
@@ -19,10 +19,6 @@ import { Dispatch, MiddlewareAPI } from "redux";
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
         super(id);
-    }
-
-    getColumns() {
-        return columns;
     }
 
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {

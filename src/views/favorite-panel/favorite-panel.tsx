@@ -146,6 +146,7 @@ export const FavoritePanel = withStyles(styles)(
             render() {
                 return <DataExplorer
                     id={FAVORITE_PANEL_ID}
+                    columns={columns}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}

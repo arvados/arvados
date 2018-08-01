@@ -159,6 +159,7 @@ export const ProjectPanel = withStyles(styles)(
                     </div>
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
+                        columns={columns}
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}

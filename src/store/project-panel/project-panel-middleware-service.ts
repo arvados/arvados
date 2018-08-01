@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { columns, ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
+import { ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { groupsService } from "../../services/services";
@@ -20,10 +20,6 @@ import { Dispatch, MiddlewareAPI } from "redux";
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(id: string) {
         super(id);
-    }
-
-    getColumns() {
-        return columns;
     }
 
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
