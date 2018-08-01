@@ -6,18 +6,29 @@ import { connect } from "react-redux";
 import { CollectionPanelFiles as Component, CollectionPanelFilesProps } from "../../components/collection-panel-files/collection-panel-files";
 import { RootState } from "../../store/store";
 import { TreeItemStatus, TreeItem } from "../../components/tree/tree";
-import { CollectionPanelItem } from "../../store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { CollectionPanelItem, CollectionPanelFilesState } from "../../store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { FileTreeData } from "../../components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
 
-const mapStateToProps = (state: RootState): Pick<CollectionPanelFilesProps, "items"> => ({
-    items: state.collectionPanelFiles
-        .filter(item => item.parentId === '')
-        .map(collectionItemToTreeItem(state.collectionPanelFiles))
-});
+const mapStateToProps = () => {
+    let lastState: CollectionPanelFilesState;
+    let lastTree: Array<TreeItem<FileTreeData>>;
+
+    return (state: RootState): Pick<CollectionPanelFilesProps, "items"> => {
+        if (lastState !== state.collectionPanelFiles) {
+            lastState = state.collectionPanelFiles;
+            lastTree = state.collectionPanelFiles
+                .filter(item => item.parentId === '')
+                .map(collectionItemToTreeItem(state.collectionPanelFiles));
+        }
+        return {
+            items: lastTree
+        };
+    };
+};
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
     onCollapseToggle: (id) => {
@@ -41,7 +52,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
 });
 
 
-export const CollectionPanelFiles = connect(mapStateToProps, mapDispatchToProps)(Component);
+export const CollectionPanelFiles = connect(mapStateToProps(), mapDispatchToProps)(Component);
 
 const collectionItemToTreeItem = (items: CollectionPanelItem[]) => (item: CollectionPanelItem): TreeItem<FileTreeData> => {
     return {
