@@ -165,7 +165,13 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}, todo map[string]*r
 	offset := 0
 	for {
 		params["offset"] = offset
+
+		// This list variable must be a new one declared
+		// inside the loop: otherwise, items in the API
+		// response would get deep-merged into the items
+		// loaded in previous iterations.
 		var list arvados.ContainerList
+
 		err := d.Arv.List("containers", params, &list)
 		if err != nil {
 			log.Printf("Error getting list of containers: %q", err)
