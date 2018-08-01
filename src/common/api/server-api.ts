@@ -22,8 +22,3 @@ export function removeServerApiAuthorizationHeader() {
         delete client.defaults.headers.common.Authorization;
     });
 }
-
-export const setBaseUrl = (url: string) => {
-    authClient.defaults.baseURL = url;
-    apiClient.defaults.baseURL = url + "/arvados/v1";
-};

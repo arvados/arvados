@@ -17,7 +17,10 @@ export interface ServiceRepository {
     favoriteService: FavoriteService;
 }
 
-export const createServices = (): ServiceRepository => {
+export const createServices = (baseUrl: string): ServiceRepository => {
+    authClient.defaults.baseURL = baseUrl;
+    apiClient.defaults.baseURL = baseUrl + "/arvados/v1";
+
     const authService = new AuthService(authClient, apiClient);
     const groupsService = new GroupsService(apiClient);
     const projectService = new ProjectService(apiClient);

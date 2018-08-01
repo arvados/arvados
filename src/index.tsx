@@ -18,7 +18,6 @@ import { getProjectList } from "./store/project/project-action";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from './common/custom-theme';
 import { fetchConfig } from './common/config';
-import { setBaseUrl } from './common/api/server-api';
 import { addMenuActionSet, ContextMenuKind } from "./views-components/context-menu/context-menu";
 import { rootProjectActionSet } from "./views-components/context-menu/action-sets/root-project-action-set";
 import { projectActionSet } from "./views-components/context-menu/action-sets/project-action-set";
@@ -33,10 +32,8 @@ addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 fetchConfig()
     .then(config => {
 
-        setBaseUrl(config.API_HOST);
-
         const history = createBrowserHistory();
-        const services = createServices();
+        const services = createServices(config.API_HOST);
         const store = configureStore(history, services);
 
         store.dispatch(authActions.INIT());

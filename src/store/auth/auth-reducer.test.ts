@@ -21,7 +21,7 @@ describe('auth-reducer', () => {
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices());
+        reducer = authReducer(createServices("/arvados/v1"));
     });
 
     it('should return default state on initialisation', () => {
