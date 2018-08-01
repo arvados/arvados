@@ -6,26 +6,27 @@ import { connect } from "react-redux";
 import { CollectionPanelFiles as Component, CollectionPanelFilesProps } from "../../components/collection-panel-files/collection-panel-files";
 import { RootState } from "../../store/store";
 import { TreeItemStatus, TreeItem } from "../../components/tree/tree";
-import { CollectionPanelItem, CollectionPanelFilesState } from "../../store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFile } from "../../store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { FileTreeData } from "../../components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
+import { Tree, getNodeChildren, getNode } from "../../models/tree";
+import { CollectionFileType } from "../../models/collection-file";
 
-const mapStateToProps = () => {
-    let lastState: CollectionPanelFilesState;
-    let lastTree: Array<TreeItem<FileTreeData>>;
+const memoizedMapStateToProps = () => {
+    let prevState: CollectionPanelFilesState;
+    let prevTree: Array<TreeItem<FileTreeData>>;
 
     return (state: RootState): Pick<CollectionPanelFilesProps, "items"> => {
-        if (lastState !== state.collectionPanelFiles) {
-            lastState = state.collectionPanelFiles;
-            lastTree = state.collectionPanelFiles
-                .filter(item => item.parentId === '')
+        if (prevState !== state.collectionPanelFiles) {
+            prevState = state.collectionPanelFiles;
+            prevTree = getNodeChildren('')(state.collectionPanelFiles)
                 .map(collectionItemToTreeItem(state.collectionPanelFiles));
         }
         return {
-            items: lastTree
+            items: prevTree
         };
     };
 };
@@ -52,22 +53,33 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
 });
 
 
-export const CollectionPanelFiles = connect(mapStateToProps(), mapDispatchToProps)(Component);
+export const CollectionPanelFiles = connect(memoizedMapStateToProps(), mapDispatchToProps)(Component);
 
-const collectionItemToTreeItem = (items: CollectionPanelItem[]) => (item: CollectionPanelItem): TreeItem<FileTreeData> => {
-    return {
-        active: false,
-        data: {
-            name: item.name,
-            size: item.type === 'file' ? item.size : undefined,
-            type: item.type
-        },
-        id: item.id,
-        items: items
-            .filter(i => i.parentId === item.id)
-            .map(collectionItemToTreeItem(items)),
-        open: item.type === 'directory' ? !item.collapsed : false,
-        selected: item.selected,
-        status: TreeItemStatus.LOADED
+const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | CollectionPanelFile>) =>
+    (id: string): TreeItem<FileTreeData> => {
+        const node = getNode(id)(tree) || {
+            id: '',
+            children: [],
+            parent: '',
+            value: {
+                name: 'Invalid node',
+                type: CollectionFileType.DIRECTORY,
+                selected: false,
+                collapsed: true
+            }
+        };
+        return {
+            active: false,
+            data: {
+                name: node.value.name,
+                size: node.value.type === CollectionFileType.FILE ? node.value.size : undefined,
+                type: node.value.type
+            },
+            id: node.id,
+            items: getNodeChildren(node.id)(tree)
+                .map(collectionItemToTreeItem(tree)),
+            open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
+            selected: node.value.selected,
+            status: TreeItemStatus.LOADED
+        };
     };
-};

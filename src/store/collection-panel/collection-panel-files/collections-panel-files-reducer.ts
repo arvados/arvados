@@ -2,56 +2,74 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, CollectionPanelItem, mapManifestToItems } from "./collection-panel-files-state";
+import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile } from "./collection-panel-files-state";
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
+import { createTree, mapTree, TreeNode, mapNodes, getNode, setNode, getNodeAncestors, getNodeDescendants, mapNodeValue } from "../../../models/tree";
+import { CollectionFileType } from "../../../models/collection-file";
 
-export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = [], action: CollectionPanelFilesAction) => {
+export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
     return collectionPanelFilesAction.match(action, {
-        SET_COLLECTION_FILES: ({manifest}) => mapManifestToItems(manifest),
-        TOGGLE_COLLECTION_FILE_COLLAPSE: data => toggleCollapsed(state, data.id),
-        TOGGLE_COLLECTION_FILE_SELECTION: data => toggleSelected(state, data.id),
-        SELECT_ALL_COLLECTION_FILES: () => state.map(file => ({ ...file, selected: true })),
-        UNSELECT_ALL_COLLECTION_FILES: () => state.map(file => ({ ...file, selected: false })),
+        SET_COLLECTION_FILES: ({ files }) =>
+            mapTree(mapCollectionFileToCollectionPanelFile)(files),
+
+        TOGGLE_COLLECTION_FILE_COLLAPSE: data =>
+            toggleCollapse(data.id)(state),
+
+        TOGGLE_COLLECTION_FILE_SELECTION: data => [state]
+            .map(toggleSelected(data.id))
+            .map(toggleAncestors(data.id))
+            .map(toggleDescendants(data.id))[0],
+
+        SELECT_ALL_COLLECTION_FILES: () =>
+            mapTree(mapNodeValue(v => ({ ...v, selected: true })))(state),
+
+        UNSELECT_ALL_COLLECTION_FILES: () =>
+            mapTree(mapNodeValue(v => ({ ...v, selected: false })))(state),
+            
         default: () => state
     });
 };
 
-const toggleCollapsed = (state: CollectionPanelFilesState, id: string) =>
-    state.map((item: CollectionPanelItem) =>
-        item.type === 'directory' && item.id === id
-            ? { ...item, collapsed: !item.collapsed }
-            : item);
+const toggleCollapse = (id: string) => (tree: CollectionPanelFilesState) =>
+    mapNodes
+        ([id])
+        (mapNodeValue((v: CollectionPanelDirectory | CollectionPanelFile) =>
+            v.type === CollectionFileType.DIRECTORY
+                ? { ...v, collapsed: !v.collapsed }
+                : v))
+        (tree);
 
-const toggleSelected = (state: CollectionPanelFilesState, id: string) =>
-    toggleAncestors(toggleDescendants(state, id), id);
+const toggleSelected = (id: string) => (tree: CollectionPanelFilesState) =>
+    mapNodes
+        ([id])
+        (mapNodeValue((v: CollectionPanelDirectory | CollectionPanelFile) => ({ ...v, selected: !v.selected })))
+        (tree);
 
-const toggleDescendants = (state: CollectionPanelFilesState, id: string) => {
-    const ids = getDescendants(state)({ id }).map(file => file.id);
-    if (ids.length > 0) {
-        const selected = !state.find(f => f.id === ids[0])!.selected;
-        return state.map(file => ids.some(id => file.id === id) ? { ...file, selected } : file);
+
+const toggleDescendants = (id: string) => (tree: CollectionPanelFilesState) => {
+    const node = getNode(id)(tree);
+    if (node && node.value.type === CollectionFileType.DIRECTORY) {
+        return mapNodes(getNodeDescendants(id)(tree))(mapNodeValue(v => ({ ...v, selected: node.value.selected })))(tree);
     }
-    return state;
+    return tree;
 };
 
-const toggleAncestors = (state: CollectionPanelFilesState, id: string): CollectionPanelItem[] => {
-    const file = state.find(f => f.id === id);
-    if (file) {
-        const selected = state
-            .filter(f => f.parentId === file.parentId)
-            .every(f => f.selected);
-        if (!selected) {
-            const newState = state.map(f => f.id === file.parentId ? { ...f, selected } : f);
-            return toggleAncestors(newState, file.parentId || "");
-        }
+const toggleAncestors = (id: string) => (tree: CollectionPanelFilesState) => {
+    const ancestors = getNodeAncestors(id)(tree)
+        .map(id => getNode(id)(tree))
+        .reverse();
+    return ancestors.reduce((newTree, parent) => parent !== undefined ? toggleParentNode(parent)(newTree) : newTree, tree);
+};
+
+const toggleParentNode = (node: TreeNode<CollectionPanelDirectory | CollectionPanelFile>) => (tree: CollectionPanelFilesState) => {
+    const parentNode = getNode(node.id)(tree);
+    if (parentNode) {
+        const selected = parentNode.children
+            .map(id => getNode(id)(tree))
+            .every(node => node !== undefined && node.value.selected);
+        return setNode(mapNodeValue(v => ({ ...v, selected }))(parentNode))(tree);
     }
-    return state;
+    return setNode(node)(tree);
 };
 
-const getDescendants = (state: CollectionPanelFilesState) => ({ id }: { id: string }): CollectionPanelItem[] => {
-    const root = state.find(item => item.id === id);
-    if (root) {
-        return [root].concat(...state.filter(item => item.parentId === id).map(getDescendants(state)));
-    } else { return []; }
-};
 

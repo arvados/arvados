@@ -9,6 +9,8 @@ import { CollectionResource } from "../../models/collection";
 import { collectionService } from "../../services/services";
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
 import { parseKeepManifestText } from "../../models/keep-manifest";
+import { mapManifestToCollectionFilesTree } from "../../models/collection-file";
+import { getNodeChildren, createTree } from "../../models/tree";
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
@@ -20,13 +22,13 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
-        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ manifest: [] }));
+        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         return collectionService
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
-                const manifest = parseKeepManifestText(item.manifestText);
-                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ manifest }));
+                const files = mapManifestToCollectionFilesTree(parseKeepManifestText(item.manifestText));
+                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files }));
             });
     };
 
