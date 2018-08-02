@@ -9,24 +9,25 @@ import { RootState } from "../../store";
 import { collectionService } from '../../../services/services';
 import { CollectionResource } from '../../../models/collection';
 
-export const collectionCreateActions = unionize({
-    OPEN_COLLECTION_CREATOR: ofType<{ ownerUuid: string }>(),
-    CLOSE_COLLECTION_CREATOR: ofType<{}>(),
-    CREATE_COLLECTION: ofType<{}>(),
-    CREATE_COLLECTION_SUCCESS: ofType<{}>(),
+export const collectionUpdatorActions = unionize({
+    OPEN_COLLECTION_UPDATOR: ofType<{ ownerUuid: string }>(),
+    CLOSE_COLLECTION_UPDATOR: ofType<{}>(),
+    UPDATE_COLLECTION: ofType<{}>(),
+    UPDATE_COLLECTION_SUCCESS: ofType<{}>(),
 }, {
         tag: 'type',
         value: 'payload'
     });
 
-export const createCollection = (collection: Partial<CollectionResource>) =>
+export const updateCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { ownerUuid } = getState().collections.creator;
         const collectiontData = { ownerUuid, ...collection };
-        dispatch(collectionCreateActions.CREATE_COLLECTION(collectiontData));
+        dispatch(collectionUpdatorActions.UPDATE_COLLECTION(collectiontData));
         return collectionService
+            // change for update
             .create(collectiontData)
-            .then(collection => dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection)));
+            .then(collection => dispatch(collectionUpdatorActions.UPDATE_COLLECTION_SUCCESS(collection)));
     };
 
-export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;
+export type CollectionUpdatorAction = UnionOf<typeof collectionUpdatorActions>;

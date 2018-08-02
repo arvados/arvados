@@ -18,8 +18,8 @@ import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middlew
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
-import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
+import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -29,7 +29,7 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
-    collectionCreation: CollectionCreatorState;
+    collections: CollectionsState;
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
@@ -43,7 +43,7 @@ export interface RootState {
 const rootReducer = combineReducers({
     auth: authReducer,
     projects: projectsReducer,
-    collectionCreation: collectionCreationReducer,
+    collections: collectionsReducer,
     router: routerReducer,
     dataExplorer: dataExplorerReducer,
     sidePanel: sidePanelReducer,

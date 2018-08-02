@@ -8,13 +8,14 @@ import { toggleFavorite } from "../../../store/favorites/favorites-actions";
 import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
 import { FAVORITE_PANEL_ID } from "../../../views/favorite-panel/favorite-panel";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "../../../components/icon/icon";
+import { collectionUpdatorActions } from "../../../store/collections/updator/collection-updator-action";
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch(collectionUpdatorActions.OPEN_COLLECTION_UPDATOR({ ownerUuid: resource.uuid }));
         }
     },
     {

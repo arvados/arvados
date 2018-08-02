@@ -41,6 +41,7 @@ import { CreateCollectionDialog } from '../../views-components/create-collection
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection } from '../../store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '../../models/collection';
+import { UpdateCollectionDialog } from '../../views-components/update-collection-dialog/update-collection-dialog.';
 
 const drawerWidth = 240;
 const appBarHeight = 100;
@@ -226,6 +227,7 @@ export const Workbench = withStyles(styles)(
                         <Snackbar />
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
+                        <UpdateCollectionDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
                             open={this.state.isCurrentTokenDialogOpen}
