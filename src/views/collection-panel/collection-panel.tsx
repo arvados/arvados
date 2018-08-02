@@ -11,11 +11,12 @@ import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { RootState } from '../../store/store';
-import { MoreOptionsIcon, CollectionIcon } from '../../components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon/icon';
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
+import * as CopyToClipboard from 'react-copy-to-clipboard';
 
-type CssRules = 'card' | 'iconHeader' | 'tag';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -27,6 +28,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tag: {
         marginRight: theme.spacing.unit
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        fontSize: '1.125rem',
+        cursor: 'pointer'
     }
 });
 
@@ -41,6 +47,7 @@ interface CollectionPanelActionProps {
 
 type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps 
                             & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+
 
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState) => ({ item: state.collectionPanel.item }))(
@@ -64,7 +71,11 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid} />
+                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid}>
+                                        <CopyToClipboard text={item && item.uuid}>
+                                            <CopyIcon className={classes.copyIcon} />
+                                        </CopyToClipboard>
+                                    </DetailsAttribute>
                                     <DetailsAttribute label='Content size' value='54 MB' />
                                     <DetailsAttribute label='Owner' value={item && item.ownerUuid} />
                                     </Grid>
