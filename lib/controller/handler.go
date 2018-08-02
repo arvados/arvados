@@ -68,6 +68,7 @@ func (h *Handler) setup() {
 	})
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.handleGoAPI)
 	hs = prepend(hs, h.proxyRemoteCluster)
 	mux.Handle("/", hs)
 	h.handlerStack = mux

@@ -54,6 +54,19 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 	h.proxy.Do(w, req, urlOut, client)
 }
 
+type CurrentUser struct {
+	Authorization arvados.APIClientAuthorization
+	UUID          string
+}
+
+func (h *Handler) validateAPItoken(req *http.Request, user *CurrentUser) error {
+	db, err := h.db(req)
+	if err != nil {
+		return err
+	}
+	return db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, user.Authorization.APIToken).Scan(&user.Authorization.UUID, &user.UUID)
+}
+
 // Extract the auth token supplied in req, and replace it with a
 // salted token for the remote cluster.
 func (h *Handler) saltAuthToken(req *http.Request, remote string) error {
@@ -82,20 +95,16 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) error {
 		// If the token exists in our own database, salt it
 		// for the remote. Otherwise, assume it was issued by
 		// the remote, and pass it through unmodified.
-		db, err := h.db(req)
-		if err != nil {
-			return err
-		}
-		aca := arvados.APIClientAuthorization{APIToken: creds.Tokens[0]}
-		err = db.QueryRowContext(req.Context(), `SELECT uuid FROM api_client_authorizations WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, aca.APIToken).Scan(&aca.UUID)
+		currentUser := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: creds.Tokens[0]}}
+		err = h.validateAPItoken(req, &currentUser)
 		if err == sql.ErrNoRows {
 			// Not ours; pass through unmodified.
-			token = aca.APIToken
+			token = currentUser.Authorization.APIToken
 		} else if err != nil {
 			return err
 		} else {
 			// Found; make V2 version and salt it.
-			token, err = auth.SaltToken(aca.TokenV2(), remote)
+			token, err = auth.SaltToken(currentUser.Authorization.TokenV2(), remote)
 			if err != nil {
 				return err
 			}
