@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_HOST } from "../../common/api/server-api";
 import { User } from "../../models/user";
 import { AxiosInstance } from "../../../node_modules/axios";
 

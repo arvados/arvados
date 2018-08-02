@@ -12,7 +12,7 @@ import createBrowserHistory from "history/createBrowserHistory";
 import { configureStore } from "./store/store";
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "./views-components/api-token/api-token";
-import { authActions } from "./store/auth/auth-action";
+import { initAuth } from "./store/auth/auth-action";
 import { createServices } from "./services/services";
 import { getProjectList } from "./store/project/project-action";
 import { MuiThemeProvider } from '@material-ui/core/styles';
@@ -31,13 +31,12 @@ addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 
 fetchConfig()
     .then(config => {
-
         const history = createBrowserHistory();
         const services = createServices(config.API_HOST);
         const store = configureStore(history, services);
 
-        store.dispatch(authActions.INIT());
-        store.dispatch<any>(getProjectList(services.authService.getUuid()));
+        store.dispatch(initAuth());
+        store.dispatch(getProjectList(services.authService.getUuid()));
 
         const Token = (props: any) => <ApiToken authService={services.authService} {...props}/>;
 

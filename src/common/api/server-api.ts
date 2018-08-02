@@ -2,23 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import Axios, { AxiosInstance } from "axios";
+import { AxiosInstance } from "axios";
 
-export const API_HOST = process.env.REACT_APP_ARVADOS_API_HOST;
-
-export const authClient: AxiosInstance = Axios.create();
-export const apiClient: AxiosInstance = Axios.create();
-
-export function setServerApiAuthorizationHeader(token: string) {
-    [authClient, apiClient].forEach(client => {
+export function setServerApiAuthorizationHeader(clients: AxiosInstance[], token: string) {
+    clients.forEach(client => {
         client.defaults.headers.common = {
             Authorization: `OAuth2 ${token}`
         };
     });
 }
 
-export function removeServerApiAuthorizationHeader() {
-    [authClient, apiClient].forEach(client => {
+export function removeServerApiAuthorizationHeader(clients: AxiosInstance[]) {
+    clients.forEach(client => {
         delete client.defaults.headers.common.Authorization;
     });
 }

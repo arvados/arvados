@@ -7,7 +7,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
 import { Route, Switch, RouteComponentProps } from "react-router";
-import { authActions } from "../../store/auth/auth-action";
+import { authActions, login, logout } from "../../store/auth/auth-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
@@ -139,7 +139,7 @@ export const Workbench = withStyles(styles)(
                         },
                         {
                             label: "Logout",
-                            action: () => this.props.dispatch(authActions.LOGOUT())
+                            action: () => this.props.dispatch<any>(logout())
                         },
                         {
                             label: "My account",
@@ -155,7 +155,7 @@ export const Workbench = withStyles(styles)(
                     anonymousMenu: [
                         {
                             label: "Sign in",
-                            action: () => this.props.dispatch(authActions.LOGIN())
+                            action: () => this.props.dispatch<any>(login())
                         }
                     ]
                 }

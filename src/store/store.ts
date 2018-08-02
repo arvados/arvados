@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createStore, applyMiddleware, compose, Middleware, combineReducers } from 'redux';
+import { createStore, applyMiddleware, compose, Middleware, combineReducers, Store, Action, Dispatch } from 'redux';
 import { routerMiddleware, routerReducer, RouterState } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
@@ -37,7 +37,9 @@ export interface RootState {
     snackbar: SnackbarState;
 }
 
-export function configureStore(history: History, services: ServiceRepository) {
+export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
+
+export function configureStore(history: History, services: ServiceRepository): RootStore {
     const rootReducer = combineReducers({
         auth: authReducer(services),
         projects: projectsReducer,

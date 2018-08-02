@@ -17,7 +17,7 @@ const history = createBrowserHistory();
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
-    const store = configureStore(createBrowserHistory(), createServices());
+    const store = configureStore(createBrowserHistory(), createServices("/arvados/v1"));
     ReactDOM.render(
         <MuiThemeProvider theme={CustomTheme}>
             <Provider store={store}>

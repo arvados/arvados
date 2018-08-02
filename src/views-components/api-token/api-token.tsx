@@ -5,7 +5,7 @@
 import { Redirect, RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import { authActions, getUserDetails } from "../../store/auth/auth-action";
+import { getUserDetails, saveApiToken } from "../../store/auth/auth-action";
 import { getProjectList } from "../../store/project/project-action";
 import { getUrlParameter } from "../../common/url";
 import { AuthService } from "../../services/auth-service/auth-service";
@@ -19,7 +19,7 @@ export const ApiToken = connect()(
         componentDidMount() {
             const search = this.props.location ? this.props.location.search : "";
             const apiToken = getUrlParameter(search, 'api_token');
-            this.props.dispatch(authActions.SAVE_API_TOKEN(apiToken));
+            this.props.dispatch(saveApiToken(apiToken));
             this.props.dispatch<any>(getUserDetails()).then(() => {
                 const rootUuid = this.props.authService.getRootUuid();
                 this.props.dispatch(getProjectList(rootUuid));

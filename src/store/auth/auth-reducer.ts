@@ -15,31 +15,18 @@ export interface AuthState {
 export const authReducer = (services: ServiceRepository) => (state: AuthState = {}, action: AuthAction) => {
     return authActions.match(action, {
         SAVE_API_TOKEN: (token: string) => {
-            services.authService.saveApiToken(token);
-            setServerApiAuthorizationHeader(token);
             return {...state, apiToken: token};
         },
-        INIT: () => {
-            const user = services.authService.getUser();
-            const token = services.authService.getApiToken();
-            if (token) {
-                setServerApiAuthorizationHeader(token);
-            }
-            return {user, apiToken: token};
+        INIT: ({ user, token }) => {
+            return { user, apiToken: token };
         },
         LOGIN: () => {
-            services.authService.login();
             return state;
         },
         LOGOUT: () => {
-            services.authService.removeApiToken();
-            services.authService.removeUser();
-            removeServerApiAuthorizationHeader();
-            services.authService.logout();
             return {...state, apiToken: undefined};
         },
         USER_DETAILS_SUCCESS: (user: User) => {
-            services.authService.saveUser(user);
             return {...state, user};
         },
         default: () => state
