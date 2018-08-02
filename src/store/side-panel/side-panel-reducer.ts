@@ -6,10 +6,9 @@ import * as _ from "lodash";
 import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '../../components/side-panel/side-panel';
 import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
-import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { Dispatch } from "redux";
-import { FAVORITE_PANEL_ID } from "../../views/favorite-panel/favorite-panel";
 import { push } from "react-router-redux";
+import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -84,8 +83,8 @@ export const sidePanelData = [
         active: false,
         activeAction: (dispatch: Dispatch) => {
             dispatch(push("/favorites"));
-            dispatch(dataExplorerActions.RESET_PAGINATION({id: FAVORITE_PANEL_ID}));
-            dispatch(dataExplorerActions.REQUEST_ITEMS({id: FAVORITE_PANEL_ID}));
+            dispatch(favoritePanelActions.RESET_PAGINATION());
+            dispatch(favoritePanelActions.REQUEST_ITEMS());
         }
     },
     {

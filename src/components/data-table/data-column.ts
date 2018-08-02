@@ -7,12 +7,12 @@ import { DataTableFilterItem } from "../data-table-filters/data-table-filters";
 export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterItem> {
     name: string;
     selected: boolean;
-    configurable?: boolean;
+    configurable: boolean;
     key?: React.Key;
     sortDirection?: SortDirection;
     filters?: F[];
-    render: (item: T) => React.ReactElement<void>;
-    renderHeader?: () => React.ReactElement<void> | null;
+    render: (item: T) => React.ReactElement<any>;
+    renderHeader?: () => React.ReactElement<any>;
     width?: string;
 }
 
@@ -21,10 +21,6 @@ export enum SortDirection {
     DESC = "desc",
     NONE = "none"
 }
-
-export const isColumnConfigurable = <T>(column: DataColumn<T>) => {
-    return column.configurable === undefined || column.configurable;
-};
 
 export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
     return column.sortDirection
