@@ -22,6 +22,7 @@ import { CollectionPanelFilesState } from './collection-panel/collection-panel-f
 import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collections-panel-files-reducer';
 import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
+import { DialogState, dialogReducer } from './dialog/dialog-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -41,6 +42,7 @@ export interface RootState {
     favorites: FavoritesState;
     snackbar: SnackbarState;
     collectionPanelFiles: CollectionPanelFilesState;
+    dialog: DialogState;
 }
 
 const rootReducer = combineReducers({
@@ -57,6 +59,7 @@ const rootReducer = combineReducers({
     favorites: favoritesReducer,
     snackbar: snackbarReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
+    dialog: dialogReducer
 });
 
 
