@@ -29,7 +29,7 @@ interface DataExplorerDataProps<T> {
     columns: DataColumns<T>;
     searchValue: string;
     rowsPerPage: number;
-    rowsPerPageOptions?: number[];
+    rowsPerPageOptions: number[];
     page: number;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
@@ -105,8 +105,8 @@ export const DataExplorer = withStyles(styles)(
         contextMenuColumn = {
             name: "Actions",
             selected: true,
+            configurable: false,
             key: "context-actions",
-            renderHeader: () => null,
             render: this.renderContextMenuTrigger,
             width: "auto"
         };

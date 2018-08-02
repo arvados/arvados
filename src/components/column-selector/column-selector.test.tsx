@@ -17,7 +17,8 @@ describe("<ColumnSelector />", () => {
             {
                 name: "Column 1",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             },
             {
                 name: "Column 2",
@@ -42,17 +43,20 @@ describe("<ColumnSelector />", () => {
             {
                 name: "Column 1",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             },
             {
                 name: "Column 2",
                 render: () => <span />,
-                selected: false
+                selected: false,
+                configurable: true
             },
             {
                 name: "Column 3",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const columnsConfigurator = mount(<ColumnSelector columns={columns} onColumnToggle={jest.fn()} />);
@@ -67,7 +71,8 @@ describe("<ColumnSelector />", () => {
             {
                 name: "Column 1",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const onColumnToggle = jest.fn();
