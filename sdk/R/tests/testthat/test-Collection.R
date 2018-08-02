@@ -104,37 +104,15 @@ test_that("create raises exception if passed argumet is not character vector", {
                              fixed = TRUE))
 })
 
-test_that("create raises exception if relative path is not valid", {
-
-    collectionContent <- c("animal",
-                           "animal/fish",
-                           "ball")
-
-    fakeREST <- FakeRESTService$new(collectionContent)
-
-    api <- Arvados$new("myToken", "myHostName")
-    api$setRESTService(fakeREST)
-    collection <- Collection$new(api, "myUUID")
-
-    newPen <- ArvadosFile$new("pen")
-
-    expect_that(collection$create(newPen, "objects"),
-                throws_error("Subcollection objects doesn't exist.",
-                              fixed = TRUE))
-})
-
 test_that(paste("create adds files specified by fileNames",
                 "to local tree structure and remote REST service"), {
 
-    collectionContent <- c("animal", "animal/fish", "ball")
-    fakeREST <- FakeRESTService$new(collectionContent)
-
+    fakeREST <- FakeRESTService$new()
     api <- Arvados$new("myToken", "myHostName")
     api$setRESTService(fakeREST)
     collection <- Collection$new(api, "myUUID")
 
-    files <- c("dog", "cat")
-    collection$create(files, "animal")
+    collection$create(c("animal/dog", "animal/cat"))
 
     dog <- collection$get("animal/dog")
     cat <- collection$get("animal/cat")
@@ -261,4 +239,59 @@ test_that("get returns arvados file or subcollection from internal tree structur
 
     expect_that(fishIsNotNull, is_true())
     expect_that(fish$getName(), equals("fish"))
+})
+
+test_that(paste("copy copies content to a new location inside file tree",
+                "and on REST service"), {
+
+    collectionContent <- c("animal", "animal/dog", "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+
+    collection$copy("animal/dog", "dog")
+
+    dogExistsOnOldLocation <- !is.null(collection$get("animal/dog"))
+    dogExistsOnNewLocation <- !is.null(collection$get("dog"))
+
+    expect_that(dogExistsOnOldLocation, is_true())
+    expect_that(dogExistsOnNewLocation, is_true())
+    expect_that(fakeREST$copyCallCount, equals(1))
+})
+
+test_that("copy raises exception if new location is not valid", {
+
+    collectionContent <- c("animal", "animal/fish", "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+
+    expect_that(collection$copy("fish", "object"),
+                throws_error("Content you want to copy doesn't exist in the collection.",
+                             fixed = TRUE))
+})
+
+test_that("refresh invalidates current tree structure", {
+
+    collectionContent <- c("animal", "animal/fish", "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "aaaaa-j7d0g-ccccccccccccccc")
+
+    # Before refresh
+    fish <- collection$get("animal/fish")
+    expect_that(fish$getName(), equals("fish"))
+    expect_that(fish$getCollection()$uuid, equals("aaaaa-j7d0g-ccccccccccccccc"))
+
+    collection$refresh()
+
+    # After refresh
+    expect_that(fish$getName(), equals("fish"))
+    expect_true(is.null(fish$getCollection()))
 })

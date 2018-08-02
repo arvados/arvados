@@ -26,7 +26,8 @@ source("./R/util.R")
 #'   \item{flush()}{Write connections content to a file (override current content of the file).}
 #'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
 #'   \item{getSizeInBytes()}{Returns file size in bytes.}
-#'   \item{move(newLocation)}{Moves file to a new location inside collection.}
+#'   \item{move(destination)}{Moves file to a new location inside collection.}
+#'   \item{copy(destination)}{Copies file to a new location inside collection.}
 #' }
 #'
 #' @name ArvadosFile
@@ -49,6 +50,7 @@ source("./R/util.R")
 #' mytable <- read.table(arvConnection)
 #'
 #' myFile$move("newFolder/myFile")
+#' myFile$copy("newFolder/myFile")
 #' }
 NULL
 
@@ -83,7 +85,6 @@ ArvadosFile <- R6::R6Class(
 
             fileSize <- REST$getResourceSize(self$getRelativePath(),
                                              private$collection$uuid)
-
             fileSize
         },
 
@@ -99,7 +100,7 @@ ArvadosFile <- R6::R6Class(
 
         getCollection = function() private$collection,
 
-        setCollection = function(collection)
+        setCollection = function(collection, setRecursively = TRUE)
         {
             private$collection <- collection
         },
@@ -176,20 +177,18 @@ ArvadosFile <- R6::R6Class(
             writeResult
         },
 
-        move = function(newLocation)
+        move = function(destination)
         {
             if(is.null(private$collection))
-                stop("ArvadosFile doesn't belong to any collection")
+                stop("ArvadosFile doesn't belong to any collection.")
 
-            newLocation <- trimFromEnd(newLocation, "/")
-            nameAndPath <- splitToPathAndName(newLocation)
+            destination <- trimFromEnd(destination, "/")
+            nameAndPath <- splitToPathAndName(destination)
 
             newParent <- private$collection$get(nameAndPath$path)
 
             if(is.null(newParent))
-            {
-                stop("Unable to get destination subcollection")
-            }
+                stop("Unable to get destination subcollection.")
 
             childWithSameName <- newParent$get(nameAndPath$name)
 
@@ -202,11 +201,50 @@ ArvadosFile <- R6::R6Class(
                       private$collection$uuid)
 
             private$dettachFromCurrentParent()
-            private$attachToNewParent(newParent)
+            private$attachToNewParent(self, newParent)
 
+            private$parent <- newParent
             private$name <- nameAndPath$name
 
-            "Content moved successfully."
+            self
+        },
+
+        copy = function(destination)
+        {
+            if(is.null(private$collection))
+                stop("ArvadosFile doesn't belong to any collection.")
+
+            destination <- trimFromEnd(destination, "/")
+            nameAndPath <- splitToPathAndName(destination)
+
+            newParent <- private$collection$get(nameAndPath$path)
+
+            if(is.null(newParent))
+                stop("Unable to get destination subcollection.")
+
+            childWithSameName <- newParent$get(nameAndPath$name)
+
+            if(!is.null(childWithSameName))
+                stop("Destination already contains content with same name.")
+
+            REST <- private$collection$getRESTService()
+            REST$copy(self$getRelativePath(),
+                      paste0(newParent$getRelativePath(), "/", nameAndPath$name),
+                      private$collection$uuid)
+
+            newFile <- self$duplicate(nameAndPath$name)
+            newFile$setCollection(self$getCollection())
+            private$attachToNewParent(newFile, newParent)
+            newFile$setParent(newParent)
+
+            newFile
+        },
+
+        duplicate = function(newName = NULL)
+        {
+            name <- if(!is.null(newName)) newName else private$name
+            newFile <- ArvadosFile$new(name)
+            newFile
         }
     ),
 
@@ -218,30 +256,29 @@ ArvadosFile <- R6::R6Class(
         collection = NULL,
         buffer     = NULL,
 
-        attachToNewParent = function(newParent)
+        attachToNewParent = function(content, newParent)
         {
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      add method doesn't post file on REST.
+            # We temporary set parents collection to NULL. This will ensure that
+            # add method doesn't post this file on REST.
+            # We also need to set content's collection to NULL because
+            # add method throws exception if we try to add content that already
+            # belongs to a collection.
             parentsCollection <- newParent$getCollection()
+            content$setCollection(NULL, setRecursively = FALSE)
             newParent$setCollection(NULL, setRecursively = FALSE)
-
-            newParent$add(self)
-
+            newParent$add(content)
+            content$setCollection(parentsCollection, setRecursively = FALSE)
             newParent$setCollection(parentsCollection, setRecursively = FALSE)
-
-            private$parent <- newParent
         },
 
         dettachFromCurrentParent = function()
         {
-            #Note: We temporary set parents collection to NULL. This will ensure that
-            #      remove method doesn't remove this subcollection from REST.
+            # We temporary set parents collection to NULL. This will ensure that
+            # remove method doesn't remove this file from REST.
             parent <- private$parent
             parentsCollection <- parent$getCollection()
             parent$setCollection(NULL, setRecursively = FALSE)
-
             parent$remove(private$name)
-
             parent$setCollection(parentsCollection, setRecursively = FALSE)
         }
     ),
@@ -267,8 +304,8 @@ print.ArvadosFile = function(x, ...)
         relativePath <- paste0("/", relativePath)
     }
 
-    cat(paste0("Type:          ", "\"", "ArvadosFile",         "\""), sep = "\n")
-    cat(paste0("Name:          ", "\"", x$getName(),           "\""), sep = "\n")
-    cat(paste0("Relative path: ", "\"", relativePath,          "\""), sep = "\n")
-    cat(paste0("Collection:    ", "\"", collection,            "\""), sep = "\n")
+    cat(paste0("Type:          ", "\"", "ArvadosFile", "\""), sep = "\n")
+    cat(paste0("Name:          ", "\"", x$getName(),   "\""), sep = "\n")
+    cat(paste0("Relative path: ", "\"", relativePath,  "\""), sep = "\n")
+    cat(paste0("Collection:    ", "\"", collection,    "\""), sep = "\n")
 }

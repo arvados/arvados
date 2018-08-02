@@ -16,7 +16,7 @@ HttpRequest <- R6::R6Class(
         initialize = function()
         {
             self$validContentTypes <- c("text", "raw")
-            self$validVerbs <- c("GET", "POST", "PUT", "DELETE", "PROPFIND", "MOVE")
+            self$validVerbs <- c("GET", "POST", "PUT", "DELETE", "PROPFIND", "MOVE", "COPY")
         },
 
         exec = function(verb, url, headers = NULL, body = NULL, queryParams = NULL,

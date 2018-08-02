@@ -15,22 +15,60 @@ CollectionTree <- R6::R6Class(
         initialize = function(fileContent, collection)
         {
             self$pathsList <- fileContent
-
-            treeBranches <- sapply(fileContent, function(filePath)
-            {
-                splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
-                branch <- private$createBranch(splitPath)
-            })
-
+            treeBranches <- sapply(fileContent, function(filePath) self$createBranch(filePath))
             root <- Subcollection$new("")
-
-            sapply(treeBranches, function(branch)
-            {
-                private$addBranch(root, branch)
-            })
-
+            sapply(treeBranches, function(branch) self$addBranch(root, branch))
             root$setCollection(collection)
             private$tree <- root
+        },
+
+        createBranch = function(filePath)
+        {
+            splitPath <- unlist(strsplit(filePath, "/", fixed = TRUE))
+            branch <- NULL
+            lastElementIndex <- length(splitPath)
+
+            for(elementIndex in lastElementIndex:1)
+            {
+                if(elementIndex == lastElementIndex)
+                {
+                    branch <- ArvadosFile$new(splitPath[[elementIndex]])
+                }
+                else
+                {
+                    newFolder <- Subcollection$new(splitPath[[elementIndex]])
+                    newFolder$add(branch)
+                    branch <- newFolder
+                }
+            }
+
+            branch
+        },
+
+        addBranch = function(container, node)
+        {
+            child <- container$get(node$getName())
+
+            if(is.null(child))
+            {
+                # Make sure we are don't make any REST call while adding child
+                collection <- container$getCollection()
+                container$setCollection(NULL, setRecursively = FALSE)
+                container$add(node)
+                container$setCollection(collection, setRecursively = FALSE)
+            }
+            else
+            {
+                # Note: REST always returns folder name alone before other folder
+                # content, so in first iteration we don't know if it's a file
+                # or folder since its just a name, so we assume it's a file.
+                # If we encounter that same name again we know
+                # it's a folder so we need to replace ArvadosFile with Subcollection.
+                if("ArvadosFile" %in% class(child))
+                    child = private$replaceFileWithSubcollection(child)
+
+                self$addBranch(child, node$getFirst())
+            }
         },
 
         getElement = function(relativePath)
@@ -61,52 +99,6 @@ CollectionTree <- R6::R6Class(
     private = list(
 
         tree = NULL,
-
-        createBranch = function(splitPath)
-        {
-            branch <- NULL
-            lastElementIndex <- length(splitPath)
-
-            for(elementIndex in lastElementIndex:1)
-            {
-                if(elementIndex == lastElementIndex)
-                {
-                    branch <- ArvadosFile$new(splitPath[[elementIndex]])
-                }
-                else
-                {
-                    newFolder <- Subcollection$new(splitPath[[elementIndex]])
-                    newFolder$add(branch)
-                    branch <- newFolder
-                }
-            }
-
-            branch
-        },
-
-        addBranch = function(container, node)
-        {
-            child <- container$get(node$getName())
-
-            if(is.null(child))
-            {
-                container$add(node)
-            }
-            else
-            {
-                # Note: REST always returns folder name alone before other folder
-                # content, so in first iteration we don't know if it's a file
-                # or folder since its just a name, so we assume it's a file.
-                # If we encounter that same name again we know
-                # it's a folder so we need to replace ArvadosFile with Subcollection.
-                if("ArvadosFile" %in% class(child))
-                {
-                    child = private$replaceFileWithSubcollection(child)
-                }
-
-                private$addBranch(child, node$getFirst())
-            }
-        },
 
         replaceFileWithSubcollection = function(arvadosFile)
         {

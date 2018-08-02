@@ -133,7 +133,7 @@ files <- collection$getFileListing()
 arvadosFile <- collection$get("location/to/my/file.cpp")
 ```
 
-    or
+or
 
 ```{r}
 arvadosSubcollection <- collection$get("location/to/my/directory/")
@@ -177,7 +177,7 @@ fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 size <- arvadosFile$getSizeInBytes()
 ```
 
-    or
+or
 
 ```{r}
 size <- arvadosSubcollection$getSizeInBytes()
@@ -186,30 +186,15 @@ size <- arvadosSubcollection$getSizeInBytes()
 * Create new file in a collection:
 
 ```{r}
-collection$create(fileNames, optionalRelativePath)
+collection$create(files)
 ```
 
-    Example:
+Example:
 
 ```{r}
-mainFile <- collection$create("main.cpp", "cpp/src/")
-fileList <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
+mainFile <- collection$create("cpp/src/main.cpp")
+fileList <- collection$create(c("cpp/src/main.cpp", "cpp/src/util.h"))
 ```
-
-* Add existing ArvadosFile or Subcollection to a collection:
-
-```{r}
-folder <- Subcollection$new("src")
-file   <- ArvadosFile$new("main.cpp")
-folder$add(file)
-```
-
-```{r}
-collection$add(folder, "cpp")
-```
-
-This examples will add file "main.cpp" in "./cpp/src/" folder if folder exists.
-If subcollection contains more files or folders they will be added recursively.
 
 * Delete file from a collection:
 
@@ -234,9 +219,9 @@ subcollection$remove("fileInsideSubcollection.exe")
 subcollection$remove("folderInsideSubcollection/")
 ```
 
-* Move file or folder inside collection:
+* Move or rename a file or folder within a collection (moving between collections is currently not supported):
 
-Directley from collection
+Directly from collection
 
 ```{r}
 collection$move("folder/file.cpp", "file.cpp")
@@ -258,6 +243,28 @@ subcollection$move("newDestination/folder")
 
 Make sure to include new file name in destination.
 In second example file$move("newDestination/") will not work.
+
+* Copy file or folder within a collection (copying between collections is currently not supported):
+
+Directly from collection
+
+```{r}
+collection$copy("folder/file.cpp", "file.cpp")
+```
+
+Or from file
+
+```{r}
+file <- collection$get("location/to/my/file.cpp")
+file$copy("destination/file.cpp")
+```
+
+Or from subcollection
+
+```{r}
+subcollection <- collection$get("location/to/folder")
+subcollection$copy("destination/folder")
+```
 
 #### Working with Aravdos projects
 

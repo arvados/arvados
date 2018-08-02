@@ -29,7 +29,8 @@ ArvadosFile class represents a file inside Arvados collection.
   \item{flush()}{Write connections content to a file (override current content of the file).}
   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
   \item{getSizeInBytes()}{Returns file size in bytes.}
-  \item{move(newLocation)}{Moves file to a new location inside collection.}
+  \item{move(destination)}{Moves file to a new location inside collection.}
+  \item{copy(destination)}{Copies file to a new location inside collection.}
 }
 }
 
@@ -40,7 +41,7 @@ myFile <- ArvadosFile$new("myFile")
 myFile$write("This is new file content")
 fileContent <- myFile$read()
 fileContent <- myFile$read("text")
-fileContent <- myFile$read("raw", offset = 8, length = 4) 
+fileContent <- myFile$read("raw", offset = 8, length = 4)
 
 #Write a table:
 arvConnection <- myFile$connection("w")
@@ -52,5 +53,6 @@ arvConnection <- myFile$connection("r")
 mytable <- read.table(arvConnection)
 
 myFile$move("newFolder/myFile")
+myFile$copy("newFolder/myFile")
 }
 }

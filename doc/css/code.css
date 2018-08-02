@@ -29,3 +29,12 @@ table.code tr td:nth-child(2) {
 .userinput {
     color: #d14;
 }
+
+table.CodeRay {
+    margin-left: 3em;
+    width: calc(100% - 6em);
+}
+
+td.line-numbers {
+    width: 2em;
+}

@@ -23,9 +23,10 @@ source("./R/util.R")
 #' @section Methods:
 #' \describe{
 #'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
-#'   \item{create(fileNames, relativePath = "")}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
+#'   \item{create(files)}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
 #'   \item{remove(fileNames)}{Remove one or more files from the collection.}
-#'   \item{move(content, newLocation)}{Moves ArvadosFile or Subcollection to another location in the collection.}
+#'   \item{move(content, destination)}{Moves ArvadosFile or Subcollection to another location in the collection.}
+#'   \item{copy(content, destination)}{Copies ArvadosFile or Subcollection to another location in the collection.}
 #'   \item{getFileListing()}{Returns collections file content as character vector.}
 #'   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
 #' }
@@ -35,9 +36,6 @@ source("./R/util.R")
 #' \dontrun{
 #' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 #' collection <- Collection$new(arv, "uuid")
-#'
-#' newFile <- ArvadosFile$new("myFile")
-#' collection$add(newFile, "myFolder")
 #'
 #' createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
 #'
@@ -58,23 +56,17 @@ Collection <- R6::R6Class(
     public = list(
 
 		uuid = NULL,
-        # api  = NULL,
 
 		initialize = function(api, uuid)
         {
-            # self$api <- api
             private$REST <- api$getRESTService()
-
             self$uuid <- uuid
-
-            private$fileContent <- private$REST$getCollectionContent(uuid)
-            private$tree <- CollectionTree$new(private$fileContent, self)
         },
 
         add = function(content, relativePath = "")
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             if(relativePath == ""  ||
                relativePath == "." ||
@@ -94,6 +86,9 @@ Collection <- R6::R6Class(
             if("ArvadosFile"   %in% class(content) ||
                "Subcollection" %in% class(content))
             {
+                if(!is.null(content$getCollection()))
+                    stop("Content already belongs to a collection.")
+
                 if(content$getName() == "")
                     stop("Content has invalid name.")
 
@@ -108,50 +103,32 @@ Collection <- R6::R6Class(
             }
         },
 
-        create = function(fileNames, relativePath = "")
+        create = function(files)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
-            if(relativePath == ""  ||
-               relativePath == "." ||
-               relativePath == "./")
+            if(is.character(files))
             {
-                subcollection <- private$tree$getTree()
-            }
-            else
-            {
-                relativePath  <- trimFromEnd(relativePath, "/")
-                subcollection <- self$get(relativePath)
-            }
-
-            if(is.null(subcollection))
-                stop(paste("Subcollection", relativePath, "doesn't exist."))
-
-            if(is.character(fileNames))
-            {
-                arvadosFiles <- NULL
-                sapply(fileNames, function(fileName)
+                sapply(files, function(file)
                 {
-                    childWithSameName <- subcollection$get(fileName)
+                    childWithSameName <- self$get(file)
                     if(!is.null(childWithSameName))
                         stop("Destination already contains file with same name.")
 
-                    newFile <- ArvadosFile$new(fileName)
-                    subcollection$add(newFile)
+                    newTreeBranch <- private$tree$createBranch(file)
+                    private$tree$addBranch(private$tree$getTree(), newTreeBranch)
 
-                    arvadosFiles <<- c(arvadosFiles, newFile)
+                    private$REST$create(file, self$uuid)
+                    newTreeBranch$setCollection(self)
                 })
 
-                if(length(arvadosFiles) == 1)
-                    return(arvadosFiles[[1]])
-                else
-                    return(arvadosFiles)
+                "Created"
             }
             else
             {
                 stop(paste0("Expected character vector, got ",
-                            paste0("(", paste0(class(fileNames), collapse = ", "), ")"),
+                            paste0("(", paste0(class(files), collapse = ", "), ")"),
                             "."))
             }
         },
@@ -159,7 +136,7 @@ Collection <- R6::R6Class(
         remove = function(paths)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             if(is.character(paths))
             {
@@ -189,10 +166,10 @@ Collection <- R6::R6Class(
             }
         },
 
-        move = function(content, newLocation)
+        move = function(content, destination)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             content <- trimFromEnd(content, "/")
 
@@ -201,13 +178,37 @@ Collection <- R6::R6Class(
             if(is.null(elementToMove))
                 stop("Content you want to move doesn't exist in the collection.")
 
-            elementToMove$move(newLocation)
+            elementToMove$move(destination)
+        },
+
+        copy = function(content, destination)
+        {
+            if(is.null(private$tree))
+                private$generateCollectionTreeStructure()
+
+            content <- trimFromEnd(content, "/")
+
+            elementToCopy <- self$get(content)
+
+            if(is.null(elementToCopy))
+                stop("Content you want to copy doesn't exist in the collection.")
+
+            elementToCopy$copy(destination)
+        },
+
+        refresh = function()
+        {
+            if(!is.null(private$tree))
+            {
+                private$tree$getTree()$setCollection(NULL, setRecursively = TRUE)
+                private$tree <- NULL
+            }
         },
 
         getFileListing = function()
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             content <- private$REST$getCollectionContent(self$uuid)
             content[order(tolower(content))]
@@ -216,31 +217,10 @@ Collection <- R6::R6Class(
         get = function(relativePath)
         {
             if(is.null(private$tree))
-                private$genereateCollectionTreeStructure()
+                private$generateCollectionTreeStructure()
 
             private$tree$getElement(relativePath)
         },
-
-		toJSON = function()
-        {
-			fields <- sapply(private$classFields, function(field)
-			{
-				self[[field]]
-			}, USE.NAMES = TRUE)
-
-			jsonlite::toJSON(list("collection" =
-                     Filter(Negate(is.null), fields)), auto_unbox = TRUE)
-		},
-
-		isEmpty = function() {
-			fields <- sapply(private$classFields,
-			                 function(field) self[[field]])
-
-			if(any(sapply(fields, function(field) !is.null(field) && field != "")))
-				FALSE
-			else
-				TRUE
-		},
 
         getRESTService = function() private$REST,
         setRESTService = function(newRESTService) private$REST <- newRESTService
@@ -251,9 +231,8 @@ Collection <- R6::R6Class(
         REST        = NULL,
         tree        = NULL,
         fileContent = NULL,
-        classFields = NULL,
 
-        genereateCollectionTreeStructure = function()
+        generateCollectionTreeStructure = function()
         {
             if(is.null(self$uuid))
                 stop("Collection uuid is not defined.")
