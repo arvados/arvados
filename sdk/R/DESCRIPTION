@@ -1,7 +1,7 @@
 Package: ArvadosR
 Type: Package
 Title: Arvados R SDK
-Version: 0.0.2
+Version: 0.0.5
 Authors@R: person("Fuad", "Muhic", role = c("aut", "cre"), email = "fmuhic@capeannenterprises.com")
 Maintainer: Ward Vandewege <wvandewege@veritasgenetics.com>
 Description: This is the Arvados R SDK
