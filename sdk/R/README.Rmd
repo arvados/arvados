@@ -221,7 +221,7 @@ subcollection$remove("folderInsideSubcollection/")
 
 * Move file or folder inside collection:
 
-Directley from collection
+Directly from collection
 
 ```{r}
 collection$move("folder/file.cpp", "file.cpp")
@@ -246,7 +246,7 @@ In second example file$move("newDestination/") will not work.
 
 * Copy file or folder inside collection:
 
-Directley from collection
+Directly from collection
 
 ```{r}
 collection$copy("folder/file.cpp", "file.cpp")
