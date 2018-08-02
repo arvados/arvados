@@ -31,7 +31,8 @@ const memoizedMapStateToProps = () => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
+    onUploadDataClick: () => { return; },
     onCollapseToggle: (id) => {
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id }));
     },
