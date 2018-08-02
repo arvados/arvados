@@ -3,6 +3,7 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -19,12 +20,25 @@ func (h *Handler) groupsShared(w http.ResponseWriter, req *http.Request, current
 
 	gl := arvados.GroupList{}
 
-	err = db.QueryRowContext(req.Context(), `SELECT count(uuid) from groups`).Scan(&gl.ItemsAvailable)
+	// select groups that are readable by current user AND
+	//   the owner_uuid is a user (but not the current user) OR
+	//   the owner_uuid is not readable by the current user
+	//   the owner_uuid group_class is not a project
+
+	baseQuery := `SELECT %s from groups
+WHERE
+  EXISTS(SELECT 1 from materialized_permission_view WHERE user_uuid=$1 AND target_uuid=groups.uuid) AND
+  (groups.owner_uuid IN (SELECT uuid FROM users WHERE users.uuid != $1) OR
+    NOT EXISTS(SELECT 1 FROM materialized_permission_view WHERE user_uuid=$1 AND target_uuid=groups.owner_uuid) OR
+    EXISTS(SELECT 1 FROM groups as gp where gp.uuid=groups.owner_uuid and gp.group_class != 'project'))
+LIMIT 50`
+
+	err = db.QueryRowContext(req.Context(), fmt.Sprintf(baseQuery, "count(uuid)"), currentUser.UUID).Scan(&gl.ItemsAvailable)
 	if err != nil {
 		return err
 	}
 
-	rows, err := db.QueryContext(req.Context(), `SELECT uuid, name, owner_uuid, group_class from groups limit 50`)
+	rows, err := db.QueryContext(req.Context(), fmt.Sprintf(baseQuery, "uuid, name, owner_uuid, group_class"), currentUser.UUID)
 	if err != nil {
 		return err
 	}
