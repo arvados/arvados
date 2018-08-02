@@ -277,9 +277,10 @@ class Container < ArvadosModel
       return usable
     end
 
-    # Check for Running candidates and return the most likely to finish sooner.
+    # Check for non-failing Running candidates and return the most likely to finish sooner.
     log_reuse_info { "checking for state=Running..." }
     running = candidates.where(state: Running).
+              where("NOT (runtime_status ? 'error')").
               order('progress desc, started_at asc').
               limit(1).first
     if running
