@@ -2,7 +2,7 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -10,8 +10,39 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
-func (h *Handler) groupsShared(w http.ResponseWriter, req *http.Request, currentUser CurrentUser) {
-	w.Write([]byte(fmt.Sprintf("Hello world %v\n", currentUser.UUID)))
+func (h *Handler) groupsShared(w http.ResponseWriter, req *http.Request, currentUser CurrentUser) error {
+
+	db, err := h.db(req)
+	if err != nil {
+		return err
+	}
+
+	gl := arvados.GroupList{}
+
+	err = db.QueryRowContext(req.Context(), `SELECT count(uuid) from groups`).Scan(&gl.ItemsAvailable)
+	if err != nil {
+		return err
+	}
+
+	rows, err := db.QueryContext(req.Context(), `SELECT uuid, name, owner_uuid, group_class from groups limit 50`)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var g arvados.Group
+		rows.Scan(&g.UUID, &g.Name, &g.OwnerUUID, &g.GroupClass)
+		gl.Items = append(gl.Items, g)
+	}
+
+	enc := json.NewEncoder(w)
+	err = enc.Encode(gl)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h *Handler) handleGoAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
@@ -43,5 +74,8 @@ func (h *Handler) handleGoAPI(w http.ResponseWriter, req *http.Request, next htt
 
 	// Handle /arvados/v1/groups/shared
 
-	h.groupsShared(w, req, currentUser)
+	err = h.groupsShared(w, req, currentUser)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+	}
 }
