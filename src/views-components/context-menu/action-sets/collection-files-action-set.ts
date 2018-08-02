@@ -4,6 +4,7 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { collectionPanelFilesAction } from "../../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
+import { openRemoveDialog } from "../../remove-dialog/remove-dialog";
 
 
 export const collectionFilesActionSet: ContextMenuActionSet = [[{
@@ -19,7 +20,7 @@ export const collectionFilesActionSet: ContextMenuActionSet = [[{
 },{
     name: "Remove selected",
     execute: (dispatch, resource) => {
-        return;
+        dispatch(openRemoveDialog('selected files'));
     }
 },{
     name: "Download selected",

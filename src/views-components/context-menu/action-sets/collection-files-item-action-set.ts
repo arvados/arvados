@@ -4,6 +4,7 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { RenameIcon, DownloadIcon, RemoveIcon } from "../../../components/icon/icon";
+import { openRemoveDialog } from "../../remove-dialog/remove-dialog";
 
 
 export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
@@ -22,6 +23,6 @@ export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
     name: "Remove",
     icon: RemoveIcon,
     execute: (dispatch, resource) => {
-        return;
+        dispatch(openRemoveDialog('selected file'));
     }
 }]];
