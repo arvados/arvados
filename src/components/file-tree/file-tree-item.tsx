@@ -22,7 +22,7 @@ const fileTreeItemStyle: StyleRulesCallback<CssRules> = theme => ({
         flex: "1"
     },
     sizeInfo: {
-        marginRight: `${theme.spacing.unit * 3}px`
+        width: `${theme.spacing.unit * 8}px`
     },
     button: {
         width: theme.spacing.unit * 3,

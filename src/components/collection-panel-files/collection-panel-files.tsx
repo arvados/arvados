@@ -27,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         marginLeft: '75px'
     },
     fileSizeHeader: {
-        marginRight: '50px'
+        marginRight: '65px'
     }
 });
 
