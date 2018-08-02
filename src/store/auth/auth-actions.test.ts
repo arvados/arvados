@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { authReducer, AuthState } from "./auth-reducer";
-import { AuthAction, authActions, initAuth } from "./auth-action";
+import { AuthAction, initAuth } from "./auth-action";
 import {
     API_TOKEN_KEY,
     USER_EMAIL_KEY,
@@ -16,7 +16,7 @@ import {
 import 'jest-localstorage-mock';
 import { createServices } from "../../services/services";
 import { configureStore, RootStore } from "../store";
-import createBrowserHistory from "../../../node_modules/@types/history/createBrowserHistory";
+import createBrowserHistory from "history/createBrowserHistory";
 
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
@@ -51,6 +51,7 @@ describe('auth-actions', () => {
         });
     });
 
+    // TODO: Add remaining action tests
     /*
     it('should fire external url to login', () => {
         const initialState = undefined;
