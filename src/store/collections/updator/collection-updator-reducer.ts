@@ -8,7 +8,7 @@ export type CollectionUpdatorState = CollectionUpdator;
 
 interface CollectionUpdator {
     opened: boolean;
-    ownerUuid: string;
+    uuid: string;
 }
 
 const updateCollection = (state: CollectionUpdatorState, updator?: Partial<CollectionUpdator>) => ({
@@ -18,15 +18,14 @@ const updateCollection = (state: CollectionUpdatorState, updator?: Partial<Colle
 
 const initialState: CollectionUpdatorState = {
     opened: false,
-    ownerUuid: ''
+    uuid: ''
 };
 
 export const collectionCreationReducer = (state: CollectionUpdatorState = initialState, action: CollectionUpdatorAction) => {
     return collectionUpdatorActions.match(action, {
-        OPEN_COLLECTION_UPDATOR: ({ ownerUuid }) => updateCollection(state, { ownerUuid, opened: true }),
+        OPEN_COLLECTION_UPDATOR: ({ uuid }) => updateCollection(state, { uuid, opened: true }),
         CLOSE_COLLECTION_UPDATOR: () => updateCollection(state, { opened: false }),
-        UPDATE_COLLECTION: () => updateCollection(state),
-        UPDATE_COLLECTION_SUCCESS: () => updateCollection(state, { opened: false, ownerUuid: "" }),
+        UPDATE_COLLECTION_SUCCESS: () => updateCollection(state, { opened: false, uuid: "" }),
         default: () => state
     });
 };

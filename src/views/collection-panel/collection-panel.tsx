@@ -59,13 +59,12 @@ export const CollectionPanel = withStyles(styles)(
                                         <MoreOptionsIcon />
                                     </IconButton> 
                                 }
-                                title={item && item.name } />
+                                title={item && item.name } 
+                                subheader={item && item.description} />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid}>
-                                        Here I will add copy
-                                    </DetailsAttribute>
+                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid} />
                                     <DetailsAttribute label='Content size' value='54 MB' />
                                     <DetailsAttribute label='Owner' value={item && item.ownerUuid} />
                                     </Grid>

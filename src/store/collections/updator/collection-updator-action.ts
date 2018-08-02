@@ -8,26 +8,40 @@ import { Dispatch } from "redux";
 import { RootState } from "../../store";
 import { collectionService } from '../../../services/services';
 import { CollectionResource } from '../../../models/collection';
+import { initialize } from 'redux-form';
+import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
 
 export const collectionUpdatorActions = unionize({
-    OPEN_COLLECTION_UPDATOR: ofType<{ ownerUuid: string }>(),
+    OPEN_COLLECTION_UPDATOR: ofType<{ uuid: string }>(),
     CLOSE_COLLECTION_UPDATOR: ofType<{}>(),
-    UPDATE_COLLECTION: ofType<{}>(),
     UPDATE_COLLECTION_SUCCESS: ofType<{}>(),
 }, {
         tag: 'type',
         value: 'payload'
     });
 
+
+export const COLLECTION_FORM_NAME = 'collectionEditDialog';
+    
+export const openUpdator = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(collectionUpdatorActions.OPEN_COLLECTION_UPDATOR({ uuid }));
+        const item = getState().collectionPanel.item;
+        if(item) {
+            dispatch(initialize(COLLECTION_FORM_NAME, { name: item.name, description: item.description }));
+        }
+    };
+
 export const updateCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { ownerUuid } = getState().collections.creator;
-        const collectiontData = { ownerUuid, ...collection };
-        dispatch(collectionUpdatorActions.UPDATE_COLLECTION(collectiontData));
+        const { uuid } = getState().collections.updator;
         return collectionService
-            // change for update
-            .create(collectiontData)
-            .then(collection => dispatch(collectionUpdatorActions.UPDATE_COLLECTION_SUCCESS(collection)));
+            .update(uuid, collection)
+            .then(collection => {
+                    dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
+                    dispatch(collectionUpdatorActions.UPDATE_COLLECTION_SUCCESS());
+                }
+            );
     };
 
 export type CollectionUpdatorAction = UnionOf<typeof collectionUpdatorActions>;

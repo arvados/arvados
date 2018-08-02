@@ -21,7 +21,7 @@ export const loadCollection = (uuid: string, kind: ResourceKind) =>
         return collectionService
             .get(uuid)
             .then(item => {
-                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: item as CollectionResource }));
+                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
             });
     };
 

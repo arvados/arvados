@@ -8,6 +8,7 @@ import { compose } from 'redux';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '../../../node_modules/@material-ui/core';
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { COLLECTION_FORM_NAME } from '../../store/collections/updator/collection-updator-action';
 
 type CssRules = 'content' | 'actions' | 'textField' | 'buttonWrapper' | 'saveButton' | 'circularProgress';
 
@@ -64,7 +65,7 @@ interface TextFieldProps {
 }
 
 export const DialogCollectionUpdate = compose(
-    reduxForm({ form: 'collectionEditDialog' }),
+    reduxForm({ form: COLLECTION_FORM_NAME }),
     withStyles(styles))(
 
         class DialogCollectionUpdate extends React.Component<DialogCollectionProps> {
