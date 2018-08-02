@@ -133,7 +133,7 @@ files <- collection$getFileListing()
 arvadosFile <- collection$get("location/to/my/file.cpp")
 ```
 
-    or
+or
 
 ```{r}
 arvadosSubcollection <- collection$get("location/to/my/directory/")
@@ -177,7 +177,7 @@ fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 size <- arvadosFile$getSizeInBytes()
 ```
 
-    or
+or
 
 ```{r}
 size <- arvadosSubcollection$getSizeInBytes()
@@ -189,7 +189,7 @@ size <- arvadosSubcollection$getSizeInBytes()
 collection$create(files)
 ```
 
-    Example:
+Example:
 
 ```{r}
 mainFile <- collection$create("cpp/src/main.cpp")
