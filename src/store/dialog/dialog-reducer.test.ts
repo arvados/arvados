@@ -18,4 +18,13 @@ describe('DialogReducer', () => {
         const state = dialogReducer({}, dialogActions.CLOSE_DIALOG({ id }));
         expect(state[id]).toEqual({ open: false });
     });
+    
+    it('CLOSE_DIALOG persist data', () => {
+        const id = 'test id';
+        const [newState] = [{}]
+            .map(state => dialogReducer(state, dialogActions.OPEN_DIALOG({ id, data: 'test data' })))
+            .map(state => dialogReducer(state, dialogActions.CLOSE_DIALOG({ id })));
+        
+        expect(newState[id]).toEqual({ open: false, data: 'test data' });
+    });
 });

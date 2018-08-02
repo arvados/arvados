@@ -14,7 +14,9 @@ export interface Dialog {
 export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
     dialogActions.match(action, {
         OPEN_DIALOG: ({ id, data }) => ({ ...state, [id]: { open: true, data } }),
-        CLOSE_DIALOG: ({ id }) => ({ ...state, [id]: { open: false } }),
+        CLOSE_DIALOG: ({ id }) => ({ 
+            ...state, 
+            [id]: state[id] ? { ...state[id], open: false } : { open: false } }),
         default: () => state,
     });
 
