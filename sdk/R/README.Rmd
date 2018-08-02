@@ -219,7 +219,7 @@ subcollection$remove("fileInsideSubcollection.exe")
 subcollection$remove("folderInsideSubcollection/")
 ```
 
-* Move file or folder inside collection:
+* Move or rename a file or folder within a collection (moving between collections is currently not supported):
 
 Directly from collection
 
@@ -244,7 +244,7 @@ subcollection$move("newDestination/folder")
 Make sure to include new file name in destination.
 In second example file$move("newDestination/") will not work.
 
-* Copy file or folder inside collection:
+* Copy file or folder within a collection (copying between collections is currently not supported):
 
 Directly from collection
 
