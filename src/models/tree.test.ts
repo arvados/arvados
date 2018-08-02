@@ -43,7 +43,7 @@ describe('Tree', () => {
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
         expect(Tree.getNodeDescendants('Node 1')(newTree)).toEqual(['Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
     });
-    
+
     it('gets root descendants', () => {
         const newTree = [
             { children: [], id: 'Node 1', parent: '', value: 'Value 1' },
@@ -52,9 +52,9 @@ describe('Tree', () => {
             { children: [], id: 'Node 3', parent: 'Node 1', value: 'Value 1' },
             { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeDescendants('')(newTree)).toEqual(['Node 1','Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
+        expect(Tree.getNodeDescendants('')(newTree)).toEqual(['Node 1', 'Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
     });
-    
+
     it('gets node children', () => {
         const newTree = [
             { children: [], id: 'Node 1', parent: '', value: 'Value 1' },
@@ -65,7 +65,7 @@ describe('Tree', () => {
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
         expect(Tree.getNodeChildren('Node 1')(newTree)).toEqual(['Node 2', 'Node 3']);
     });
-    
+
     it('gets root children', () => {
         const newTree = [
             { children: [], id: 'Node 1', parent: '', value: 'Value 1' },
@@ -76,25 +76,13 @@ describe('Tree', () => {
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
         expect(Tree.getNodeChildren('')(newTree)).toEqual(['Node 1', 'Node 3']);
     });
-    
-    it('maps nodes', () => {
-        const newTree = [
-            { children: [], id: 'Node 1', parent: '', value: 'Value 1' },
-            { children: [], id: 'Node 2', parent: 'Node 1', value: 'Value 1' },
-            { children: [], id: 'Node 2.1', parent: 'Node 2', value: 'Value 1' },
-            { children: [], id: 'Node 3', parent: 'Node 1', value: 'Value 1' },
-            { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
-        ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        const updatedTree = Tree.mapNodes(['Node 2.1', 'Node 3.1'])(node => ({...node, value: `Updated ${node.value}`}))(newTree);
-        expect(Tree.getNode('Node 2.1')(updatedTree)).toEqual({ children: [], id: 'Node 2.1', parent: 'Node 2', value: 'Updated Value 1' },);
-    });
-    
+
     it('maps tree', () => {
         const newTree = [
             { children: [], id: 'Node 1', parent: '', value: 'Value 1' },
             { children: [], id: 'Node 2', parent: 'Node 1', value: 'Value 2' },
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        const mappedTree = Tree.mapTree<string, number>(node => ({...node, value: parseInt(node.value.split(' ')[1], 10)}))(newTree);
-        expect(Tree.getNode('Node 2')(mappedTree)).toEqual({ children: [], id: 'Node 2', parent: 'Node 1', value: 2 },);
+        const mappedTree = Tree.mapTreeValues<string, number>(value => parseInt(value.split(' ')[1], 10))(newTree);
+        expect(Tree.getNode('Node 2')(mappedTree)).toEqual({ children: [], id: 'Node 2', parent: 'Node 1', value: 2 }, );
     });
 });
