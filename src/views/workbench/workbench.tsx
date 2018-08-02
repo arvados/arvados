@@ -33,10 +33,11 @@ import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer'
 import { ProjectResource } from '../../models/project';
 import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
-import { FavoritePanel, FAVORITE_PANEL_ID } from "../favorite-panel/favorite-panel";
+import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
 import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
+import { favoritePanelActions } from '../../store/favorite-panel/favorite-panel-action';
 import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection } from '../../store/collection-panel/collection-panel-action';
@@ -279,7 +280,7 @@ export const Workbench = withStyles(styles)(
                 {...props} />
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
-                onItemRouteChange={() => this.props.dispatch<any>(dataExplorerActions.REQUEST_ITEMS({ id: FAVORITE_PANEL_ID }))}
+                onItemRouteChange={() => this.props.dispatch<any>(favoritePanelActions.REQUEST_ITEMS())}
                 onContextMenu={(event, item) => {
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
