@@ -27,7 +27,7 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
             mapTreeValues(v => ({ ...v, selected: false }))(state),
 
         default: () => state
-    });
+    }) as CollectionPanelFilesState;
 };
 
 const toggleCollapse = (id: string) => (tree: CollectionPanelFilesState) =>
