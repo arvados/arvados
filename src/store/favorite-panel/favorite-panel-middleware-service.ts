@@ -8,7 +8,7 @@ import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
 import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
 import { FavoriteOrderBuilder } from "../../services/favorite-service/favorite-order-builder";
-import { favoriteService, authService } from "../../services/services";
+import { ServiceRepository } from "../../services/services";
 import { SortDirection } from "../../components/data-table/data-column";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { LinkResource } from "../../models/link";
@@ -17,7 +17,7 @@ import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
-    constructor(id: string) {
+    constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
@@ -30,8 +30,8 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
         const order = FavoriteOrderBuilder.create();
         if (typeFilters.length > 0) {
-            favoriteService
-                .list(authService.getUuid()!, {
+            this.services.favoriteService
+                .list(this.services.authService.getUuid()!, {
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     order: sortColumn!.name === FavoritePanelColumnNames.NAME

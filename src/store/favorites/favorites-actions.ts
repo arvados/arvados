@@ -4,10 +4,10 @@
 
 import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { favoriteService } from "../../services/services";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions } from "../snackbar/snackbar-actions";
+import { ServiceRepository } from "../../services/services";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -18,14 +18,14 @@ export const favoritesActions = unionize({
 export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
 export const toggleFavorite = (resource: { uuid: string; name: string }) =>
-    (dispatch: Dispatch, getState: () => RootState): Promise<any> => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
         const promise: any = isFavorite
-            ? favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
-            : favoriteService.create({ userUuid, resource });
+            ? services.favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
+            : services.favoriteService.create({ userUuid, resource });
 
         return promise
             .then(() => {
@@ -41,12 +41,12 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
     };
 
 export const checkPresenceInFavorites = (resourceUuids: string[]) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
-        favoriteService
+        services.favoriteService
             .checkPresenceInFavorites(userUuid, resourceUuids)
-            .then(results => {
+            .then((results: any) => {
                 dispatch(favoritesActions.UPDATE_FAVORITES(results));
             });
     };

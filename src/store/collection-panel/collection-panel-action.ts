@@ -6,7 +6,8 @@ import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
-import { collectionService } from "../../services/services";
+import { RootState } from "../store";
+import { ServiceRepository } from "../../services/services";
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
@@ -16,12 +17,12 @@ export const collectionPanelActions = unionize({
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
-    (dispatch: Dispatch) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
-        return collectionService
+        return services.collectionService
             .get(uuid)
             .then(item => {
-                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
+                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: item as CollectionResource }));
             });
     };
 
