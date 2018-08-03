@@ -15,7 +15,6 @@ import Axios from "axios";
 
 export interface ServiceRepository {
     apiClient: AxiosInstance;
-    authClient: AxiosInstance;
 
     authService: AuthService;
     groupsService: GroupsService;
@@ -26,13 +25,10 @@ export interface ServiceRepository {
 }
 
 export const createServices = (baseUrl: string): ServiceRepository => {
-    const authClient = Axios.create();
     const apiClient = Axios.create();
-
-    authClient.defaults.baseURL = baseUrl;
     apiClient.defaults.baseURL = `${baseUrl}/arvados/v1`;
 
-    const authService = new AuthService(authClient, apiClient);
+    const authService = new AuthService(apiClient, baseUrl);
     const groupsService = new GroupsService(apiClient);
     const projectService = new ProjectService(apiClient);
     const linkService = new LinkService(apiClient);
@@ -41,7 +37,6 @@ export const createServices = (baseUrl: string): ServiceRepository => {
 
     return {
         apiClient,
-        authClient,
         authService,
         groupsService,
         projectService,

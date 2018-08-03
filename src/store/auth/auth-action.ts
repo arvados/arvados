@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { User } from "../../models/user";
 import { RootState } from "../store";
 import { ServiceRepository } from "../../services/services";
-import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/api/server-api";
+import { AxiosInstance } from "axios";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -21,11 +21,21 @@ export const authActions = unionize({
     value: 'payload'
 });
 
+function setAuthorizationHeader(client: AxiosInstance, token: string) {
+    client.defaults.headers.common = {
+        Authorization: `OAuth2 ${token}`
+    };
+}
+
+function removeAuthorizationHeader(client: AxiosInstance) {
+    delete client.defaults.headers.common.Authorization;
+}
+
 export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     if (token) {
-        setServerApiAuthorizationHeader([services.authClient, services.apiClient], token);
+        setAuthorizationHeader(services.apiClient, token);
     }
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
@@ -34,7 +44,7 @@ export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, se
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     services.authService.saveApiToken(token);
-    setServerApiAuthorizationHeader([services.authClient, services.apiClient], token);
+    setAuthorizationHeader(services.apiClient, token);
     dispatch(authActions.SAVE_API_TOKEN(token));
 };
 
@@ -46,7 +56,7 @@ export const login = () => (dispatch: Dispatch, getState: () => RootState, servi
 export const logout = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     services.authService.removeApiToken();
     services.authService.removeUser();
-    removeServerApiAuthorizationHeader([services.authClient, services.apiClient]);
+    removeAuthorizationHeader(services.apiClient);
     services.authService.logout();
     dispatch(authActions.LOGOUT());
 };

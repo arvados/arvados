@@ -5,7 +5,6 @@
 import { authActions, AuthAction } from "./auth-action";
 import { User } from "../../models/user";
 import { ServiceRepository } from "../../services/services";
-import { removeServerApiAuthorizationHeader, setServerApiAuthorizationHeader } from "../../common/api/server-api";
 
 export interface AuthState {
     user?: User;
