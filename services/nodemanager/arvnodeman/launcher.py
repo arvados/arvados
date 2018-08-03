@@ -83,9 +83,9 @@ def launch_pollers(config, server_calculator):
     poll_time = config.getfloat('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
-    cloudlist_poll_time = config.getfloat('Daemon', 'cloudlist_poll_time') or config.getfloat('Daemon', 'poll_time')
-    nodelist_poll_time = config.getfloat('Daemon', 'nodelist_poll_time') or config.getfloat('Daemon', 'poll_time')
-    wishlist_poll_time = config.getfloat('Daemon', 'wishlist_poll_time') or config.getfloat('Daemon', 'poll_time')
+    cloudlist_poll_time = config.getfloat('Daemon', 'cloudlist_poll_time') or poll_time
+    nodelist_poll_time = config.getfloat('Daemon', 'nodelist_poll_time') or poll_time
+    wishlist_poll_time = config.getfloat('Daemon', 'wishlist_poll_time') or poll_time
 
     timer = TimedCallBackActor.start(poll_time / 10.0).tell_proxy()
     cloud_node_poller = CloudNodeListMonitorActor.start(
