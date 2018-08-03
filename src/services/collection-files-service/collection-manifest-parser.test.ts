@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { parseKeepManifestText, parseKeepManifestStream } from "./keep-manifest";
+import { parseKeepManifestText, parseKeepManifestStream } from "./collection-manifest-parser";
 
 describe('parseKeepManifestText', () => {
     it('should parse text into streams', () => {

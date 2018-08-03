@@ -4,22 +4,22 @@
 
 import { collectionPanelFilesReducer } from "./collections-panel-files-reducer";
 import { collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { CollectionFile, CollectionDirectory, createFile, createDirectory } from "../../../models/collection-file";
+import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "../../../models/collection-file";
 import { createTree, setNode, getNodeValue, mapTreeValues, Tree } from "../../../models/tree";
 import { CollectionPanelFile, CollectionPanelDirectory } from "./collection-panel-files-state";
 
 describe('CollectionPanelFilesReducer', () => {
 
     const files: Array<CollectionFile | CollectionDirectory> = [
-        createDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
-        createDirectory({ id: 'Directory 2', name: 'Directory 2', parentId: 'Directory 1' }),
-        createDirectory({ id: 'Directory 3', name: 'Directory 3', parentId: '' }),
-        createDirectory({ id: 'Directory 4', name: 'Directory 4', parentId: 'Directory 3' }),
-        createFile({ id: 'file1.txt', name: 'file1.txt', parentId: 'Directory 2' }),
-        createFile({ id: 'file2.txt', name: 'file2.txt', parentId: 'Directory 2' }),
-        createFile({ id: 'file3.txt', name: 'file3.txt', parentId: 'Directory 3' }),
-        createFile({ id: 'file4.txt', name: 'file4.txt', parentId: 'Directory 3' }),
-        createFile({ id: 'file5.txt', name: 'file5.txt', parentId: 'Directory 4' }),
+        createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
+        createCollectionDirectory({ id: 'Directory 2', name: 'Directory 2', parentId: 'Directory 1' }),
+        createCollectionDirectory({ id: 'Directory 3', name: 'Directory 3', parentId: '' }),
+        createCollectionDirectory({ id: 'Directory 4', name: 'Directory 4', parentId: 'Directory 3' }),
+        createCollectionFile({ id: 'file1.txt', name: 'file1.txt', parentId: 'Directory 2' }),
+        createCollectionFile({ id: 'file2.txt', name: 'file2.txt', parentId: 'Directory 2' }),
+        createCollectionFile({ id: 'file3.txt', name: 'file3.txt', parentId: 'Directory 3' }),
+        createCollectionFile({ id: 'file4.txt', name: 'file4.txt', parentId: 'Directory 3' }),
+        createCollectionFile({ id: 'file5.txt', name: 'file5.txt', parentId: 'Directory 4' }),
     ];
 
     const collectionFilesTree = files.reduce((tree, file) => setNode({
@@ -35,7 +35,7 @@ describe('CollectionPanelFilesReducer', () => {
 
     it('SET_COLLECTION_FILES', () => {
         expect(getNodeValue('Directory 1')(collectionPanelFilesTree)).toEqual({
-            ...createDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
+            ...createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
             collapsed: true,
             selected: false
         });

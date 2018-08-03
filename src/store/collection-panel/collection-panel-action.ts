@@ -8,9 +8,9 @@ import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
 import { collectionService } from "../../services/services";
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
-import { parseKeepManifestText } from "../../models/keep-manifest";
-import { mapManifestToCollectionFilesTree } from "../../models/collection-file";
-import { getNodeChildren, createTree } from "../../models/tree";
+import { createTree } from "../../models/tree";
+import { mapManifestToCollectionFilesTree } from "../../services/collection-files-service/collection-manifest-mapper";
+import { parseKeepManifestText } from "../../services/collection-files-service/collection-manifest-parser";
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
