@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { 
-    StyleRulesCallback, WithStyles, withStyles, Card, 
+import {
+    StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Chip
 } from '@material-ui/core';
 import { connect } from 'react-redux';
@@ -46,28 +46,28 @@ interface CollectionPanelActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: CollectionResource) => void;
 }
 
-type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps 
+type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps
                             & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 
 export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState) => ({ item: state.collectionPanel.item }))(
-        class extends React.Component<CollectionPanelProps> { 
+    connect((state: RootState) => ({ item: state.collectionPanel.item! }))(
+        class extends React.Component<CollectionPanelProps> {
 
             render() {
                 const { classes, item, onContextMenu } = this.props;
                 return <div>
                         <Card className={classes.card}>
-                            <CardHeader 
+                            <CardHeader
                                 avatar={ <CollectionIcon className={classes.iconHeader} /> }
-                                action={ 
+                                action={
                                     <IconButton
                                         aria-label="More options"
                                         onClick={event => onContextMenu(event, item)}>
                                         <MoreOptionsIcon />
-                                    </IconButton> 
+                                    </IconButton>
                                 }
-                                title={item && item.name } 
+                                title={item && item.name }
                                 subheader={item && item.description} />
                             <CardContent>
                                 <Grid container direction="column">
