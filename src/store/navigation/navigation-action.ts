@@ -32,7 +32,7 @@ export enum ItemMode {
 }
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState) => {
         const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
