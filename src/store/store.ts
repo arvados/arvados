@@ -16,12 +16,15 @@ import { contextMenuReducer, ContextMenuState } from './context-menu/context-men
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
+import { CollectionPanelFilesState } from './collection-panel/collection-panel-files/collection-panel-files-state';
+import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collection-panel-files-reducer';
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
 import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
+import { DialogState, dialogReducer } from './dialog/dialog-reducer';
 import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
 import { ServiceRepository } from "../services/services";
 
@@ -42,25 +45,29 @@ export interface RootState {
     contextMenu: ContextMenuState;
     favorites: FavoritesState;
     snackbar: SnackbarState;
+    collectionPanelFiles: CollectionPanelFilesState;
+    dialog: DialogState;
 }
 
 export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 
 export function configureStore(history: History, services: ServiceRepository): RootStore {
-	const rootReducer = combineReducers({
-	    auth: authReducer(services),
-	    projects: projectsReducer,
+    const rootReducer = combineReducers({
+        auth: authReducer(services),
+        projects: projectsReducer,
         collections: collectionsReducer,
-	    router: routerReducer,
-	    dataExplorer: dataExplorerReducer,
-	    sidePanel: sidePanelReducer,
-	    collectionPanel: collectionPanelReducer,
-	    detailsPanel: detailsPanelReducer,
-	    contextMenu: contextMenuReducer,
-	    form: formReducer,
-	    favorites: favoritesReducer,
-	    snackbar: snackbarReducer,
-	});
+        router: routerReducer,
+        dataExplorer: dataExplorerReducer,
+        sidePanel: sidePanelReducer,
+        collectionPanel: collectionPanelReducer,
+        detailsPanel: detailsPanelReducer,
+        contextMenu: contextMenuReducer,
+        form: formReducer,
+        favorites: favoritesReducer,
+        snackbar: snackbarReducer,
+        collectionPanelFiles: collectionPanelFilesReducer,
+        dialog: dialogReducer
+    });
 
     const projectPanelMiddleware = dataExplorerMiddleware(
         new ProjectPanelMiddlewareService(services, PROJECT_PANEL_ID)

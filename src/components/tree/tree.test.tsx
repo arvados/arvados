@@ -10,6 +10,7 @@ import ListItem from "@material-ui/core/ListItem/ListItem";
 import { Tree, TreeItem } from './tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
+import { Checkbox } from '@material-ui/core';
 
 Enzyme.configure({ adapter: new Adapter() });
 
@@ -48,4 +49,51 @@ describe("Tree component", () => {
             items={[project]} />);
         expect(wrapper.find('i')).toHaveLength(1);
     });
+
+    it("should render checkbox", () => {
+        const project: TreeItem<ProjectResource> = {
+            data: mockProjectResource(),
+            id: "3",
+            open: true,
+            active: true,
+            status: 1,
+        };
+        const wrapper = mount(<Tree
+            showSelection={true}
+            render={() => <div />}
+            toggleItemOpen={jest.fn()}
+            toggleItemActive={jest.fn()}
+            onContextMenu={jest.fn()}
+            items={[project]} />);
+        expect(wrapper.find(Checkbox)).toHaveLength(1);
+    });
+
+    it("call onSelectionChanged with associated item", () => {
+        const project: TreeItem<ProjectResource> = {
+            data: mockProjectResource(),
+            id: "3",
+            open: true,
+            active: true,
+            status: 1,
+        };
+        const spy = jest.fn();
+        const onSelectionChanged = (event: any, item: TreeItem<any>) => spy(item);
+        const wrapper = mount(<Tree
+            showSelection={true}
+            render={() => <div />}
+            toggleItemOpen={jest.fn()}
+            toggleItemActive={jest.fn()}
+            onContextMenu={jest.fn()}
+            onSelectionChange={onSelectionChanged}
+            items={[project]} />);
+        wrapper.find(Checkbox).prop('onClick')();
+        expect(spy).toHaveBeenLastCalledWith({
+            data: mockProjectResource(),
+            id: "3",
+            open: true,
+            active: true,
+            status: 1,
+        });
+    });
+
 });
