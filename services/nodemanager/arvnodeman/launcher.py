@@ -83,16 +83,20 @@ def launch_pollers(config, server_calculator):
     poll_time = config.getfloat('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
+    cloudlist_poll_time = config.getfloat('Daemon', 'cloudlist_poll_time') or poll_time
+    nodelist_poll_time = config.getfloat('Daemon', 'nodelist_poll_time') or poll_time
+    wishlist_poll_time = config.getfloat('Daemon', 'wishlist_poll_time') or poll_time
+
     timer = TimedCallBackActor.start(poll_time / 10.0).tell_proxy()
     cloud_node_poller = CloudNodeListMonitorActor.start(
-        config.new_cloud_client(), timer, server_calculator, poll_time, max_poll_time).tell_proxy()
+        config.new_cloud_client(), timer, server_calculator, cloudlist_poll_time, max_poll_time).tell_proxy()
     arvados_node_poller = ArvadosNodeListMonitorActor.start(
-        config.new_arvados_client(), timer, poll_time, max_poll_time).tell_proxy()
+        config.new_arvados_client(), timer, nodelist_poll_time, max_poll_time).tell_proxy()
     job_queue_poller = JobQueueMonitorActor.start(
         config.new_arvados_client(), timer, server_calculator,
         config.getboolean('Arvados', 'jobs_queue'),
         config.getboolean('Arvados', 'slurm_queue'),
-        poll_time, max_poll_time
+        wishlist_poll_time, max_poll_time
     ).tell_proxy()
     return timer, cloud_node_poller, arvados_node_poller, job_queue_poller
 
