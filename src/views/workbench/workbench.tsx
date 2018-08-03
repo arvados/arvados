@@ -181,7 +181,6 @@ export const Workbench = withStyles(styles)(
 
                 const id = getProjectIdFromUrl(this.props.router.pathname);
                 if (id) {
-                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     this.props.dispatch<any>(restoreBranch(id));
                 }
             }
