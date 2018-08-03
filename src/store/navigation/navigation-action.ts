@@ -6,13 +6,14 @@ import { Dispatch } from "redux";
 import { projectActions, getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
-import { findTreeItem } from "../project/project-reducer";
+import { findTreeItem, getTreePath } from "../project/project-reducer";
 import { dataExplorerActions } from "../data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { Resource, ResourceKind } from "../../models/resource";
 import { getCollectionUrl } from "../../models/collection";
-import { getProjectUrl } from "../../models/project";
+import { getProjectUrl, ProjectResource } from "../../models/project";
+import { projectService } from "../../services/services";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
@@ -34,14 +35,22 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
+            console.log('treeItem', treeItem);
 
+            const treePath = getTreePath(projects.items, treeItem.data.uuid);
+
+            console.log('treePath', treePath);
             const resourceUrl = getResourceUrl(treeItem.data);
+
+            console.log('resourceUrl', resourceUrl);
+            const ancestors = loadProjectAncestors(treeItem.data.uuid);
+            console.log('ancestors', ancestors);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
                 if (router.location && !router.location.pathname.includes(resourceUrl)) {
                     dispatch(push(resourceUrl));
                 }
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treePath[treePath.length - 1].id));
             }
 
             const promise = treeItem.status === TreeItemStatus.LOADED
@@ -60,3 +69,14 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         }
     };
 
+    const USER_UUID_REGEX = /.*tpzed.*/;
+
+    export const loadProjectAncestors = async (uuid: string): Promise<Array<ProjectResource>> => {
+        if (USER_UUID_REGEX.test(uuid)) {
+            return [];
+        } else {
+            const currentProject = await projectService.get(uuid);
+            const ancestors = await loadProjectAncestors(currentProject.ownerUuid);
+            return [...ancestors, currentProject];
+        }
+    };

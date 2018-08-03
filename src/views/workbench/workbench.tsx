@@ -89,6 +89,7 @@ interface WorkbenchDataProps {
     user?: User;
     currentToken?: string;
     sidePanelItems: SidePanelItem[];
+    router?: any;
 }
 
 interface WorkbenchActionProps {
@@ -122,7 +123,8 @@ export const Workbench = withStyles(styles)(
             currentProjectId: state.projects.currentItemId,
             user: state.auth.user,
             currentToken: state.auth.apiToken,
-            sidePanelItems: state.sidePanel
+            sidePanelItems: state.sidePanel,
+            router: state.router.location
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
@@ -162,6 +164,13 @@ export const Workbench = withStyles(styles)(
                 }
             };
 
+            componentDidMount() {
+                if (this.props.router.pathname.includes("/projects")) {
+                    this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelIdentifiers.PROJECTS));
+                    this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                }
+            }
+
             render() {
                 const path = getTreePath(this.props.projects, this.props.currentProjectId);
                 const breadcrumbs = path.map(item => ({
@@ -169,6 +178,7 @@ export const Workbench = withStyles(styles)(
                     itemId: item.data.uuid,
                     status: item.status
                 }));
+                console.log("breadcrumbs", breadcrumbs);
 
                 const { classes, user } = this.props;
                 return (
@@ -234,7 +244,7 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
-            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel
                 onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION))}
                 onContextMenu={(event, item) => {
                     this.openContextMenu(event, {
@@ -266,7 +276,7 @@ export const Workbench = withStyles(styles)(
                         case ResourceKind.COLLECTION:
                             this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default: 
+                        default:
                             this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
