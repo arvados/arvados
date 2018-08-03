@@ -10,7 +10,7 @@ import ListItem from "@material-ui/core/ListItem/ListItem";
 import { Tree, TreeItem } from './tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
-import { Checkbox } from '../../../node_modules/@material-ui/core';
+import { Checkbox } from '@material-ui/core';
 
 Enzyme.configure({ adapter: new Adapter() });
 
