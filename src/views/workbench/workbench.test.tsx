@@ -11,12 +11,13 @@ import createBrowserHistory from "history/createBrowserHistory";
 import { ConnectedRouter } from "react-router-redux";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '../../common/custom-theme';
+import { createServices } from "../../services/services";
 
 const history = createBrowserHistory();
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
-    const store = configureStore(createBrowserHistory());
+    const store = configureStore(createBrowserHistory(), createServices("/arvados/v1"));
     ReactDOM.render(
         <MuiThemeProvider theme={CustomTheme}>
             <Provider store={store}>

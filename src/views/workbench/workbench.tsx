@@ -7,7 +7,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
 import { Route, Switch, RouteComponentProps } from "react-router";
-import { authActions } from "../../store/auth/auth-action";
+import { login, logout } from "../../store/auth/auth-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
 import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
@@ -25,7 +25,6 @@ import { ProjectPanel } from "../project-panel/project-panel";
 import { DetailsPanel } from '../../views-components/details-panel/details-panel';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { CreateProjectDialog } from "../../views-components/create-project-dialog/create-project-dialog";
-import { authService } from '../../services/services';
 
 import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
 import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
@@ -42,9 +41,10 @@ import { CreateCollectionDialog } from '../../views-components/create-collection
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection } from '../../store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '../../models/collection';
+import { AuthService } from "../../services/auth-service/auth-service";
 
-const drawerWidth = 240;
-const appBarHeight = 100;
+const DRAWER_WITDH = 240;
+const APP_BAR_HEIGHT = 100;
 
 type CssRules = 'root' | 'appBar' | 'drawerPaper' | 'content' | 'contentWrapper' | 'toolbar';
 
@@ -65,7 +65,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     drawerPaper: {
         position: 'relative',
-        width: drawerWidth,
+        width: DRAWER_WITDH,
         display: 'flex',
         flexDirection: 'column',
     },
@@ -74,7 +74,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         flexGrow: 1,
         minWidth: 0,
-        paddingTop: appBarHeight
+        paddingTop: APP_BAR_HEIGHT
     },
     content: {
         padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
@@ -92,10 +92,14 @@ interface WorkbenchDataProps {
     sidePanelItems: SidePanelItem[];
 }
 
+interface WorkbenchServiceProps {
+    authService: AuthService;
+}
+
 interface WorkbenchActionProps {
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchActionProps & DispatchProp & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchServiceProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
@@ -141,7 +145,7 @@ export const Workbench = withStyles(styles)(
                         },
                         {
                             label: "Logout",
-                            action: () => this.props.dispatch(authActions.LOGOUT())
+                            action: () => this.props.dispatch(logout())
                         },
                         {
                             label: "My account",
@@ -157,7 +161,7 @@ export const Workbench = withStyles(styles)(
                     anonymousMenu: [
                         {
                             label: "Sign in",
-                            action: () => this.props.dispatch(authActions.LOGIN())
+                            action: () => this.props.dispatch(login())
                         }
                     ]
                 }
@@ -194,22 +198,22 @@ export const Workbench = withStyles(styles)(
                                     toggleActive={this.toggleSidePanelActive}
                                     sidePanelItems={this.props.sidePanelItems}
                                     onContextMenu={(event) => this.openContextMenu(event, {
-                                        uuid: authService.getUuid() || "",
+                                        uuid: this.props.authService.getUuid() || "",
                                         name: "",
                                         kind: ContextMenuKind.ROOT_PROJECT
                                     })}>
                                     <ProjectTree
                                         projects={this.props.projects}
-                                        toggleOpen={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.OPEN))}
+                                        toggleOpen={itemId => this.props.dispatch(setProjectItem(itemId, ItemMode.OPEN))}
                                         onContextMenu={(event, item) => this.openContextMenu(event, {
                                             uuid: item.data.uuid,
                                             name: item.data.name,
                                             kind: ContextMenuKind.PROJECT
                                         })}
                                         toggleActive={itemId => {
-                                            this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE));
-                                            this.props.dispatch<any>(loadDetails(itemId, ResourceKind.PROJECT));
-                                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                                            this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE));
+                                            this.props.dispatch(loadDetails(itemId, ResourceKind.PROJECT));
+                                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                                         }} />
                                 </SidePanel>
                             </Drawer>}
@@ -247,7 +251,7 @@ export const Workbench = withStyles(styles)(
                 {...props} />
 
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
-                onItemRouteChange={itemId => this.props.dispatch<any>(setProjectItem(itemId, ItemMode.ACTIVE))}
+                onItemRouteChange={itemId => this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE))}
                 onContextMenu={(event, item) => {
 
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
@@ -260,23 +264,23 @@ export const Workbench = withStyles(styles)(
                 onProjectCreationDialogOpen={this.handleProjectCreationDialogOpen}
                 onCollectionCreationDialogOpen={this.handleCollectionCreationDialogOpen}
                 onItemClick={item => {
-                    this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                    this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
                     switch (item.kind) {
                         case ResourceKind.COLLECTION:
-                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default: 
-                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
 
                 }}
                 {...props} />
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
-                onItemRouteChange={() => this.props.dispatch<any>(favoritePanelActions.REQUEST_ITEMS())}
+                onItemRouteChange={() => this.props.dispatch(favoritePanelActions.REQUEST_ITEMS())}
                 onContextMenu={(event, item) => {
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {
@@ -287,17 +291,17 @@ export const Workbench = withStyles(styles)(
                 }}
                 onDialogOpen={this.handleProjectCreationDialogOpen}
                 onItemClick={item => {
-                    this.props.dispatch<any>(loadDetails(item.uuid, item.kind as ResourceKind));
+                    this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
                     switch (item.kind) {
                         case ResourceKind.COLLECTION:
-                            this.props.dispatch<any>(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default:
-                            this.props.dispatch<any>(loadDetails(item.uuid, ResourceKind.PROJECT));
-                            this.props.dispatch<any>(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                            this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
+                            this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     }
 
                 }}
@@ -305,8 +309,8 @@ export const Workbench = withStyles(styles)(
 
             mainAppBarActions: MainAppBarActionProps = {
                 onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-                    this.props.dispatch<any>(setProjectItem(itemId, ItemMode.BOTH));
-                    this.props.dispatch<any>(loadDetails(itemId, ResourceKind.PROJECT));
+                    this.props.dispatch(setProjectItem(itemId, ItemMode.BOTH));
+                    this.props.dispatch(loadDetails(itemId, ResourceKind.PROJECT));
                 },
                 onSearch: searchText => {
                     this.setState({ searchText });
