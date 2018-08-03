@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { collectionPanelFilesReducer } from "./collections-panel-files-reducer";
+import { collectionPanelFilesReducer } from "./collection-panel-files-reducer";
 import { collectionPanelFilesAction } from "./collection-panel-files-actions";
 import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "../../../models/collection-file";
 import { createTree, setNode, getNodeValue, mapTreeValues, Tree } from "../../../models/tree";
@@ -31,7 +31,7 @@ describe('CollectionPanelFilesReducer', () => {
 
     const collectionPanelFilesTree = collectionPanelFilesReducer(
         createTree<CollectionPanelFile | CollectionPanelDirectory>(),
-        collectionPanelFilesAction.SET_COLLECTION_FILES({ files: collectionFilesTree }));
+        collectionPanelFilesAction.SET_COLLECTION_FILES(collectionFilesTree));
 
     it('SET_COLLECTION_FILES', () => {
         expect(getNodeValue('Directory 1')(collectionPanelFilesTree)).toEqual({

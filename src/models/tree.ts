@@ -21,7 +21,7 @@ export const setNode = <T>(node: TreeNode<T>) => (tree: Tree<T>): Tree<T> => {
     const [newTree] = [tree]
         .map(tree => getNode(node.id)(tree) === node
             ? tree
-            : Object.assign({}, tree, { [node.id]: node }))
+            : {...tree, [node.id]: node})
         .map(addChild(node.parent, node.id));
     return newTree;
 };

@@ -29,7 +29,7 @@ export const loadCollection = (uuid: string, kind: ResourceKind) =>
                 return services.collectionFilesService.getFiles(item.uuid);
             })
             .then(files => {
-                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files }));
+                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(files));
             });
     };
 

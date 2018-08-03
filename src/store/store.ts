@@ -17,7 +17,7 @@ import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
 import { CollectionPanelFilesState } from './collection-panel/collection-panel-files/collection-panel-files-state';
-import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collections-panel-files-reducer';
+import { collectionPanelFilesReducer } from './collection-panel/collection-panel-files/collection-panel-files-reducer';
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";

@@ -9,7 +9,7 @@ import { CollectionFileType } from "../../../models/collection-file";
 
 export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
     return collectionPanelFilesAction.match(action, {
-        SET_COLLECTION_FILES: ({ files }) =>
+        SET_COLLECTION_FILES: files =>
             mapTree(mapCollectionFileToCollectionPanelFile)(files),
 
         TOGGLE_COLLECTION_FILE_COLLAPSE: data =>
