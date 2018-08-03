@@ -23,7 +23,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     onSubmit: (data: { name: string, description: string }) => {
         return dispatch<any>(editCollection(data))
             .catch((e: any) => {
-                throw new SubmissionError({ name: e.errors.join("").includes("UniqueViolation") ? "Collection with this name already exists." : "" });
+                if(e.errors) {
+                    throw new SubmissionError({ name: e.errors.join("").includes("UniqueViolation") ? "Collection with this name already exists." : "" });
+                }
             });
     }
 });

@@ -6,7 +6,7 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
-import { collectionService } from '../../../services/services';
+import { ServiceRepository } from "../../../services/services";
 import { CollectionResource } from '../../../models/collection';
 import { initialize } from 'redux-form';
 import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
@@ -33,12 +33,12 @@ export const openUpdator = (uuid: string) =>
     };
 
 export const updateCollection = (collection: Partial<CollectionResource>) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { uuid } = getState().collections.updator;
-        return collectionService
+        return services.collectionService
             .update(uuid, collection)
             .then(collection => {
-                    dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
+                    dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection as CollectionResource }));
                     dispatch(collectionUpdatorActions.UPDATE_COLLECTION_SUCCESS());
                 }
             );
