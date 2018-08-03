@@ -6,7 +6,7 @@ import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
-import { collectionService } from "../../services/services";
+import { collectionService, collectionFilesService } from "../../services/services";
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
 import { createTree } from "../../models/tree";
 import { mapManifestToCollectionFilesTree } from "../../services/collection-files-service/collection-manifest-mapper";
@@ -27,7 +27,9 @@ export const loadCollection = (uuid: string, kind: ResourceKind) =>
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
-                const files = mapManifestToCollectionFilesTree(parseKeepManifestText(item.manifestText));
+                return collectionFilesService.getFiles(item.uuid);
+            })
+            .then(files => {
                 dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files }));
             });
     };

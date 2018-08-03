@@ -9,10 +9,12 @@ import { ProjectService } from "./project-service/project-service";
 import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
 import { CollectionService } from "./collection-service/collection-service";
+import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 
 export const authService = new AuthService(authClient, apiClient);
 export const groupsService = new GroupsService(apiClient);
 export const projectService = new ProjectService(apiClient);
 export const collectionService = new CollectionService(apiClient);
+export const collectionFilesService = new CollectionFilesService(collectionService);
 export const linkService = new LinkService(apiClient);
 export const favoriteService = new FavoriteService(linkService, groupsService);
