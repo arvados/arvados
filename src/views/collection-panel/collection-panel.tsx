@@ -14,6 +14,7 @@ import { RootState } from '../../store/store';
 import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon/icon';
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
+import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
@@ -95,17 +96,9 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </CardContent>
                         </Card>
-
-                        <Card className={classes.card}>
-                            <CardHeader title="Files" />
-                            <CardContent>
-                                <Grid container direction="column">
-                                    <Grid item xs={4}>
-                                        Tags
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
+                        <div className={classes.card}>
+                            <CollectionPanelFiles/>
+                        </div>
                     </div>;
             }
 
