@@ -21,8 +21,8 @@ import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
 import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
-import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
+import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
 import { ServiceRepository } from "../services/services";
 
 const composeEnhancers =
@@ -33,7 +33,7 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
-    collectionCreation: CollectionCreatorState;
+    collections: CollectionsState;
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
@@ -50,7 +50,7 @@ export function configureStore(history: History, services: ServiceRepository): R
 	const rootReducer = combineReducers({
 	    auth: authReducer(services),
 	    projects: projectsReducer,
-	    collectionCreation: collectionCreationReducer,
+        collections: collectionsReducer,
 	    router: routerReducer,
 	    dataExplorer: dataExplorerReducer,
 	    sidePanel: sidePanelReducer,

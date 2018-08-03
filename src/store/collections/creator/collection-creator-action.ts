@@ -21,7 +21,7 @@ export const collectionCreateActions = unionize({
 
 export const createCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { ownerUuid } = getState().collectionCreation.creator;
+        const { ownerUuid } = getState().collections.creator;
         const collectiontData = { ownerUuid, ...collection };
         dispatch(collectionCreateActions.CREATE_COLLECTION(collectiontData));
         return services.collectionService
