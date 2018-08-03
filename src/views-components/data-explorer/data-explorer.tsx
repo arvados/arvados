@@ -24,40 +24,46 @@ interface Props {
 const mapStateToProps = (state: RootState, { id }: Props) =>
     getDataExplorer(state.dataExplorer, id);
 
-const mapDispatchToProps = (dispatch: Dispatch, { id, columns, onRowClick, onRowDoubleClick, onContextMenu }: Props) => {
-    dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
-    return {
-        onSearch: (searchValue: string) => {
-            dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
-        },
+const mapDispatchToProps = () => {
+    let prevColumns: DataColumns<any>;
+    return (dispatch: Dispatch, { id, columns, onRowClick, onRowDoubleClick, onContextMenu }: Props) => {
+        if (columns !== prevColumns) {
+            prevColumns = columns;
+            dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
+        }
+        return {
+            onSearch: (searchValue: string) => {
+                dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
+            },
 
-        onColumnToggle: (column: DataColumn<any>) => {
-            dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
-        },
+            onColumnToggle: (column: DataColumn<any>) => {
+                dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
+            },
 
-        onSortToggle: (column: DataColumn<any>) => {
-            dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
-        },
+            onSortToggle: (column: DataColumn<any>) => {
+                dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
+            },
 
-        onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
-            dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
-        },
+            onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
+                dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
+            },
 
-        onChangePage: (page: number) => {
-            dispatch(dataExplorerActions.SET_PAGE({ id, page }));
-        },
+            onChangePage: (page: number) => {
+                dispatch(dataExplorerActions.SET_PAGE({ id, page }));
+            },
 
-        onChangeRowsPerPage: (rowsPerPage: number) => {
-            dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
-        },
+            onChangeRowsPerPage: (rowsPerPage: number) => {
+                dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
+            },
 
-        onRowClick,
+            onRowClick,
 
-        onRowDoubleClick,
+            onRowDoubleClick,
 
-        onContextMenu,
+            onContextMenu,
+        };
     };
 };
 
-export const DataExplorer = connect(mapStateToProps, mapDispatchToProps)(DataExplorerComponent);
+export const DataExplorer = connect(mapStateToProps, mapDispatchToProps())(DataExplorerComponent);
 
