@@ -6,14 +6,16 @@ import { Dispatch } from "redux";
 import { projectActions, getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
-import { findTreeItem, getTreePath } from "../project/project-reducer";
+import { findTreeItem } from "../project/project-reducer";
 import { RootState } from "../store";
 import { Resource, ResourceKind } from "../../models/resource";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { getCollectionUrl } from "../../models/collection";
 import { getProjectUrl, ProjectResource } from "../../models/project";
-import { ServiceRepository } from "../../services/services";
 import { ProjectService } from "../../services/project-service/project-service";
+import { ServiceRepository } from "../../services/services";
+import { sidePanelActions } from "../side-panel/side-panel-action";
+import { SidePanelIdentifiers } from "../side-panel/side-panel-reducer";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
@@ -30,27 +32,19 @@ export enum ItemMode {
 }
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
-            console.log('treeItem', treeItem);
 
-            const treePath = getTreePath(projects.items, treeItem.data.uuid);
-
-            console.log('treePath', treePath);
             const resourceUrl = getResourceUrl(treeItem.data);
-
-            console.log('resourceUrl', resourceUrl);
-            const ancestors = loadProjectAncestors(treeItem.data.uuid);
-            console.log('ancestors', ancestors);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
                 if (router.location && !router.location.pathname.includes(resourceUrl)) {
                     dispatch(push(resourceUrl));
                 }
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treePath[treePath.length - 1].id));
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
             }
 
             const promise = treeItem.status === TreeItemStatus.LOADED
@@ -69,14 +63,33 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         }
     };
 
-    const USER_UUID_REGEX = /.*tpzed.*/;
-
-    export const loadProjectAncestors = async (uuid: string, services?: any): Promise<Array<ProjectResource>> => {
-        if (USER_UUID_REGEX.test(uuid)) {
-            return [];
-        } else {
-            const currentProject = await services.projectService.get(uuid);
-            const ancestors = await loadProjectAncestors(currentProject.ownerUuid);
-            return [...ancestors, currentProject];
-        }
+export const restoreBranch = (itemId: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const ancestors = await loadProjectAncestors(itemId, services.projectService);
+        const uuids = ancestors.map(ancestor => ancestor.uuid);
+        await loadBranch(uuids, dispatch);
+        dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelIdentifiers.PROJECTS));
+        uuids.forEach(uuid => {
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(uuid));
+        });
     };
+
+const USER_UUID_REGEX = /.*tpzed.*/;
+
+export const loadProjectAncestors = async (uuid: string, projectService: ProjectService): Promise<Array<ProjectResource>> => {
+    if (USER_UUID_REGEX.test(uuid)) {
+        return [];
+    } else {
+        const currentProject = await projectService.get(uuid);
+        const ancestors = await loadProjectAncestors(currentProject.ownerUuid, projectService);
+        return [...ancestors, currentProject];
+    }
+};
+
+const loadBranch = async (uuids: string[], dispatch: Dispatch): Promise<any> => {
+    const [uuid, ...rest] = uuids;
+    if (uuid) {
+        await dispatch<any>(getProjectList(uuid));
+        return loadBranch(rest, dispatch);
+    }
+};

@@ -18,7 +18,7 @@ import { TreeItem } from "../../components/tree/tree";
 import { getTreePath } from '../../store/project/project-reducer';
 import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
-import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
+import { ItemMode, setProjectItem, restoreBranch } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
 import { collectionCreateActions } from '../../store/collections/creator/collection-creator-action';
 import { ProjectPanel } from "../project-panel/project-panel";
@@ -171,9 +171,16 @@ export const Workbench = withStyles(styles)(
             };
 
             componentDidMount() {
-                if (this.props.router.pathname.includes("/projects")) {
-                    this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelIdentifiers.PROJECTS));
-                    this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                const PROJECT_URL_REGEX = /\/projects\/(.*)/;
+                const getProjectIdFromUrl = (url: string) => {
+                    const match = PROJECT_URL_REGEX.exec(url);
+                    return match ? match[1] : match;
+                };
+
+                const id = getProjectIdFromUrl(this.props.router.pathname);
+                if (id) {
+                    this.props.dispatch<any>(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
+                    this.props.dispatch<any>(restoreBranch(id));
                 }
             }
 
@@ -184,7 +191,6 @@ export const Workbench = withStyles(styles)(
                     itemId: item.data.uuid,
                     status: item.status
                 }));
-                console.log("breadcrumbs", breadcrumbs);
 
                 const { classes, user } = this.props;
                 return (
@@ -283,7 +289,7 @@ export const Workbench = withStyles(styles)(
                         case ResourceKind.COLLECTION:
                             this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default: 
+                        default:
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
