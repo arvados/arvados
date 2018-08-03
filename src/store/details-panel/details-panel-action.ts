@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import { CommonResourceService } from "../../common/api/common-resource-service";
 import { Dispatch } from "redux";
-import { apiClient } from "../../common/api/server-api";
 import { Resource, ResourceKind } from "../../models/resource";
+import { RootState } from "../store";
+import { ServiceRepository } from "../../services/services";
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
@@ -17,23 +17,20 @@ export const detailsPanelActions = unionize({
 export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
 
 export const loadDetails = (uuid: string, kind: ResourceKind) =>
-    (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(detailsPanelActions.LOAD_DETAILS({ uuid, kind }));
-        getService(kind)
-            .get(uuid)
-            .then(project => {
-                dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item: project }));
-            });
+        const item = await getService(services, kind).get(uuid);
+        dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item }));
     };
 
-const getService = (kind: ResourceKind) => {
+const getService = (services: ServiceRepository, kind: ResourceKind) => {
     switch (kind) {
         case ResourceKind.PROJECT:
-            return new CommonResourceService(apiClient, "groups");
+            return services.projectService;
         case ResourceKind.COLLECTION:
-            return new CommonResourceService(apiClient, "collections");
+            return services.collectionService;
         default:
-            return new CommonResourceService(apiClient, "");
+            return services.projectService;
     }
 };
 

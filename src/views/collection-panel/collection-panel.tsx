@@ -5,18 +5,19 @@
 import * as React from 'react';
 import { 
     StyleRulesCallback, WithStyles, withStyles, Card, 
-    CardHeader, IconButton, CardContent, Grid
+    CardHeader, IconButton, CardContent, Grid, Chip
 } from '@material-ui/core';
 import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { RootState } from '../../store/store';
-import { MoreOptionsIcon, CollectionIcon } from '../../components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon/icon';
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
 import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
+import * as CopyToClipboard from 'react-copy-to-clipboard';
 
-type CssRules = 'card' | 'iconHeader';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -25,6 +26,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.yellow700
+    },
+    tag: {
+        marginRight: theme.spacing.unit
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        fontSize: '1.125rem',
+        cursor: 'pointer'
     }
 });
 
@@ -39,6 +48,7 @@ interface CollectionPanelActionProps {
 
 type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps 
                             & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+
 
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState) => ({ item: state.collectionPanel.item }))(
@@ -57,12 +67,17 @@ export const CollectionPanel = withStyles(styles)(
                                         <MoreOptionsIcon />
                                     </IconButton> 
                                 }
-                                title={item && item.name } />
+                                title={item && item.name } 
+                                subheader={item && item.description} />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid} />
-                                        <DetailsAttribute label='Content size' value='54 MB' />
+                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid}>
+                                        <CopyToClipboard text={item && item.uuid}>
+                                            <CopyIcon className={classes.copyIcon} />
+                                        </CopyToClipboard>
+                                    </DetailsAttribute>
+                                    <DetailsAttribute label='Content size' value='54 MB' />
                                     <DetailsAttribute label='Owner' value={item && item.ownerUuid} />
                                     </Grid>
                                 </Grid>
@@ -74,7 +89,9 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={4}>
-                                        Tags
+                                        <Chip label="Tag 1" className={classes.tag}/>
+                                        <Chip label="Tag 2" className={classes.tag}/>
+                                        <Chip label="Tag 3" className={classes.tag}/>
                                     </Grid>
                                 </Grid>
                             </CardContent>

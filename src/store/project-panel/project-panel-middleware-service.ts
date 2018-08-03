@@ -6,7 +6,7 @@ import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-mi
 import { ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
 import { RootState } from "../store";
 import { DataColumns } from "../../components/data-table/data-table";
-import { groupsService } from "../../services/services";
+import { ServiceRepository } from "../../services/services";
 import { ProjectPanelItem, resourceToDataItem } from "../../views/project-panel/project-panel-item";
 import { SortDirection } from "../../components/data-table/data-column";
 import { OrderBuilder } from "../../common/api/order-builder";
@@ -18,7 +18,7 @@ import { projectPanelActions } from "./project-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
-    constructor(id: string) {
+    constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
@@ -31,7 +31,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC;
         if (typeFilters.length > 0) {
-            groupsService
+            this.services.groupsService
                 .contents(state.projects.currentItemId, {
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,

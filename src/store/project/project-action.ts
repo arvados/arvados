@@ -4,11 +4,11 @@
 import { default as unionize, ofType, UnionOf } from "unionize";
 
 import { ProjectResource } from "../../models/project";
-import { projectService } from "../../services/services";
 import { Dispatch } from "redux";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { RootState } from "../store";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { ServiceRepository } from "../../services/services";
 
 export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -26,9 +26,9 @@ export const projectActions = unionize({
         value: 'payload'
     });
 
-export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
+export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
-    return projectService.list({
+    return services.projectService.list({
         filters: FilterBuilder
             .create<ProjectResource>()
             .addEqual("ownerUuid", parentUuid)
@@ -40,11 +40,11 @@ export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, 
 };
 
 export const createProject = (project: Partial<ProjectResource>) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { ownerUuid } = getState().projects.creator;
         const projectData = { ownerUuid, ...project };
         dispatch(projectActions.CREATE_PROJECT(projectData));
-        return projectService
+        return services.projectService
             .create(projectData)
             .then(project => dispatch(projectActions.CREATE_PROJECT_SUCCESS(project)));
     };

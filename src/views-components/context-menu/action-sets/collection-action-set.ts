@@ -5,8 +5,8 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
-import { dataExplorerActions } from "../../../store/data-explorer/data-explorer-action";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "../../../components/icon/icon";
+import { openUpdator } from "../../../store/collections/updator/collection-updator-action";
 import { favoritePanelActions } from "../../../store/favorite-panel/favorite-panel-action";
 
 export const collectionActionSet: ContextMenuActionSet = [[
@@ -14,7 +14,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
         icon: RenameIcon,
         name: "Edit collection",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openUpdator(resource.uuid));
         }
     },
     {
@@ -35,7 +35,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());           
             });
         }
     },

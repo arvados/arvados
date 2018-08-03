@@ -96,6 +96,23 @@ const themeOptions: ArvadosThemeOptions = {
             root: {
                 padding: '8px 16px'
             }
+        },
+        MuiInput: {
+            underline: {
+                '&:after': {
+                    borderBottomColor: purple800
+                },
+                '&:hover:not($disabled):not($focused):not($error):before': {
+                    borderBottom: '1px solid inherit'
+                }
+            }
+        },
+        MuiFormLabel: {
+            focused: {
+                "&$focused:not($error)": {
+                    color: purple800
+                }
+            }
         }
     },
     mixins: {

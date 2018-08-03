@@ -14,7 +14,7 @@ import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState) => ({
-    open: state.collectionCreation.creator.opened
+    open: state.collections.creator.opened
 });
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
@@ -33,7 +33,7 @@ const addCollection = (data: { name: string, description: string }) =>
     (dispatch: Dispatch) => {
         return dispatch<any>(createCollection(data)).then(() => {
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Created a new collection",
+                message: "Collection has been successfully created.",
                 hideDuration: 2000
             }));
             dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
