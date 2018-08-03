@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createStore, applyMiddleware, compose, Middleware, combineReducers } from 'redux';
+import { createStore, applyMiddleware, compose, Middleware, combineReducers, Store, Action, Dispatch } from 'redux';
 import { routerMiddleware, routerReducer, RouterState } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
@@ -11,15 +11,19 @@ import { projectsReducer, ProjectState } from "./project/project-reducer";
 import { sidePanelReducer, SidePanelState } from './side-panel/side-panel-reducer';
 import { authReducer, AuthState } from "./auth/auth-reducer";
 import { dataExplorerReducer, DataExplorerState } from './data-explorer/data-explorer-reducer';
-import { projectPanelMiddleware } from './project-panel/project-panel-middleware';
 import { detailsPanelReducer, DetailsPanelState } from './details-panel/details-panel-reducer';
 import { contextMenuReducer, ContextMenuState } from './context-menu/context-menu-reducer';
-import { favoritePanelMiddleware } from "./favorite-panel/favorite-panel-middleware";
 import { reducer as formReducer } from 'redux-form';
 import { FavoritesState, favoritesReducer } from './favorites/favorites-reducer';
 import { snackbarReducer, SnackbarState } from './snackbar/snackbar-reducer';
-import { CollectionCreatorState, collectionCreationReducer } from './collections/creator/collection-creator-reducer';
+import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
+import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
+import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
+import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
+import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
+import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
+import { ServiceRepository } from "../services/services";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -29,7 +33,7 @@ const composeEnhancers =
 export interface RootState {
     auth: AuthState;
     projects: ProjectState;
-    collectionCreation: CollectionCreatorState;
+    collections: CollectionsState;
     router: RouterState;
     dataExplorer: DataExplorerState;
     sidePanel: SidePanelState;
@@ -40,26 +44,34 @@ export interface RootState {
     snackbar: SnackbarState;
 }
 
-const rootReducer = combineReducers({
-    auth: authReducer,
-    projects: projectsReducer,
-    collectionCreation: collectionCreationReducer,
-    router: routerReducer,
-    dataExplorer: dataExplorerReducer,
-    sidePanel: sidePanelReducer,
-    collectionPanel: collectionPanelReducer,
-    detailsPanel: detailsPanelReducer,
-    contextMenu: contextMenuReducer,
-    form: formReducer,
-    favorites: favoritesReducer,
-    snackbar: snackbarReducer,
-});
+export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 
+export function configureStore(history: History, services: ServiceRepository): RootStore {
+	const rootReducer = combineReducers({
+	    auth: authReducer(services),
+	    projects: projectsReducer,
+        collections: collectionsReducer,
+	    router: routerReducer,
+	    dataExplorer: dataExplorerReducer,
+	    sidePanel: sidePanelReducer,
+	    collectionPanel: collectionPanelReducer,
+	    detailsPanel: detailsPanelReducer,
+	    contextMenu: contextMenuReducer,
+	    form: formReducer,
+	    favorites: favoritesReducer,
+	    snackbar: snackbarReducer,
+	});
 
-export function configureStore(history: History) {
+    const projectPanelMiddleware = dataExplorerMiddleware(
+        new ProjectPanelMiddlewareService(services, PROJECT_PANEL_ID)
+    );
+    const favoritePanelMiddleware = dataExplorerMiddleware(
+        new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID)
+    );
+
     const middlewares: Middleware[] = [
         routerMiddleware(history),
-        thunkMiddleware,
+        thunkMiddleware.withExtraArgument(services),
         projectPanelMiddleware,
         favoritePanelMiddleware
     ];

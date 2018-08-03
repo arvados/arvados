@@ -3,23 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import { CommonResourceService } from "../../common/api/common-resource-service";
-import { apiClient } from "../../common/api/server-api";
 import { Dispatch } from "redux";
 import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
+import { RootState } from "../store";
+import { ServiceRepository } from "../../services/services";
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
-    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
+    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>()
 }, { tag: 'type', value: 'payload' });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
-    (dispatch: Dispatch) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
-        return new CommonResourceService(apiClient, "collections")
+        return services.collectionService
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: item as CollectionResource }));

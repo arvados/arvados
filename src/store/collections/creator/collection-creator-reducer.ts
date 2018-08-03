@@ -4,9 +4,7 @@
 
 import { collectionCreateActions, CollectionCreateAction } from './collection-creator-action';
 
-export type CollectionCreatorState = {
-    creator: CollectionCreator
-};
+export type CollectionCreatorState = CollectionCreator;
 
 interface CollectionCreator {
     opened: boolean;
@@ -15,17 +13,12 @@ interface CollectionCreator {
 
 const updateCreator = (state: CollectionCreatorState, creator?: Partial<CollectionCreator>) => ({
     ...state,
-    creator: {
-        ...state.creator,
-        ...creator
-    }
+    ...creator
 });
 
 const initialState: CollectionCreatorState = {
-    creator: {
-        opened: false,
-        ownerUuid: ""
-    }
+    opened: false,
+    ownerUuid: ''
 };
 
 export const collectionCreationReducer = (state: CollectionCreatorState = initialState, action: CollectionCreateAction) => {

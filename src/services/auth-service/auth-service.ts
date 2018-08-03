@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_HOST } from "../../common/api/server-api";
 import { User } from "../../models/user";
 import { AxiosInstance } from "../../../node_modules/axios";
 
@@ -25,8 +24,8 @@ export interface UserDetailsResponse {
 export class AuthService {
 
     constructor(
-        protected authClient: AxiosInstance,
-        protected apiClient: AxiosInstance) { }
+        protected apiClient: AxiosInstance,
+        protected baseUrl: string) { }
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
@@ -78,12 +77,12 @@ export class AuthService {
 
     public login() {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        window.location.assign(`${this.authClient.defaults.baseURL || ""}/login?return_to=${currentUrl}`);
+        window.location.assign(`${this.baseUrl || ""}/login?return_to=${currentUrl}`);
     }
 
     public logout() {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        window.location.assign(`${this.authClient.defaults.baseURL || ""}/logout?return_to=${currentUrl}`);
+        window.location.assign(`${this.baseUrl || ""}/logout?return_to=${currentUrl}`);
     }
 
     public getUserDetails = (): Promise<User> => {

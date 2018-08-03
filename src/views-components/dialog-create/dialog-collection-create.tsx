@@ -14,7 +14,7 @@ import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } 
 
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-collection/create-collection-validator';
 
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
+type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -27,17 +27,9 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     formContainer: {
         display: "flex",
         flexDirection: "column",
-        marginTop: "20px",
-    },
-    dialogTitle: {
-        paddingBottom: "0"
     },
     textField: {
-        marginTop: "32px",
-    },
-    dialog: {
-        minWidth: "600px",
-        minHeight: "320px"
+        marginBottom: theme.spacing.unit * 3
     },
     createProgress: {
         position: "absolute",
@@ -45,7 +37,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         right: "110px"
     },
     dialogActions: {
-        marginBottom: "24px"
+        marginBottom: theme.spacing.unit * 3
     }
 });
 interface DialogCollectionCreateProps {
@@ -77,39 +69,41 @@ export const DialogCollectionCreate = compose(
                 <Dialog
                     open={open}
                     onClose={handleClose}
+                    fullWidth={true}
+                    maxWidth='sm'
                     disableBackdropClick={true}
                     disableEscapeKeyDown={true}>
-                    <div className={classes.dialog}>
-                        <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
-                            <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>Create a collection</DialogTitle>
-                            <DialogContent className={classes.formContainer}>
-                                <Field name="name"
-                                       component={this.renderTextField}
-                                       floatinglabeltext="Collection Name"
-                                       validate={COLLECTION_NAME_VALIDATION}
-                                       className={classes.textField}
-                                       label="Collection Name"/>
-                                <Field name="description"
-                                       component={this.renderTextField}
-                                       floatinglabeltext="Description - optional"
-                                       validate={COLLECTION_DESCRIPTION_VALIDATION}
-                                       className={classes.textField}
-                                       label="Description - optional"/>
-                            </DialogContent>
-                            <DialogActions className={classes.dialogActions}>
-                                <Button onClick={handleClose} className={classes.button} color="primary"
-                                        disabled={submitting}>CANCEL</Button>
-                                <Button type="submit"
-                                        className={classes.lastButton}
-                                        color="primary"
-                                        disabled={invalid || submitting || pristine}
-                                        variant="contained">
-                                    CREATE A COLLECTION
-                                </Button>
-                                {submitting && <CircularProgress size={20} className={classes.createProgress}/>}
-                            </DialogActions>
-                        </form>
-                    </div>
+                    <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
+                        <DialogTitle id="form-dialog-title">Create a collection</DialogTitle>
+                        <DialogContent className={classes.formContainer}>
+                            <Field name="name"
+                                    disabled={submitting}
+                                    component={this.renderTextField}
+                                    floatinglabeltext="Collection Name"
+                                    validate={COLLECTION_NAME_VALIDATION}
+                                    className={classes.textField}
+                                    label="Collection Name"/>
+                            <Field name="description"
+                                    disabled={submitting}
+                                    component={this.renderTextField}
+                                    floatinglabeltext="Description - optional"
+                                    validate={COLLECTION_DESCRIPTION_VALIDATION}
+                                    className={classes.textField}
+                                    label="Description - optional"/>
+                        </DialogContent>
+                        <DialogActions className={classes.dialogActions}>
+                            <Button onClick={handleClose} className={classes.button} color="primary"
+                                    disabled={submitting}>CANCEL</Button>
+                            <Button type="submit"
+                                    className={classes.lastButton}
+                                    color="primary"
+                                    disabled={invalid || submitting || pristine}
+                                    variant="contained">
+                                CREATE A COLLECTION
+                            </Button>
+                            {submitting && <CircularProgress size={20} className={classes.createProgress}/>}
+                        </DialogActions>
+                    </form>
                 </Dialog>
             );
         }
