@@ -23,11 +23,13 @@ import { rootProjectActionSet } from "./views-components/context-menu/action-set
 import { projectActionSet } from "./views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from './views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "./views-components/context-menu/action-sets/favorite-action-set";
+import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet); 
 
 fetchConfig()
     .then(config => {

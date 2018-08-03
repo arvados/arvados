@@ -20,3 +20,26 @@ export const dataExplorerActions = unionize({
 }, { tag: "type", value: "payload" });
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
+
+export const bindDataExplorerActions = (id: string) => ({
+    RESET_PAGINATION: () =>
+        dataExplorerActions.RESET_PAGINATION({ id }),
+    REQUEST_ITEMS: () =>
+        dataExplorerActions.REQUEST_ITEMS({ id }),
+    SET_COLUMNS: (payload: { columns: DataColumns<any> }) =>
+        dataExplorerActions.SET_COLUMNS({ ...payload, id }),
+    SET_FILTERS: (payload: { columnName: string, filters: DataTableFilterItem[] }) =>
+        dataExplorerActions.SET_FILTERS({ ...payload, id }),
+    SET_ITEMS: (payload: { items: any[], page: number, rowsPerPage: number, itemsAvailable: number }) =>
+        dataExplorerActions.SET_ITEMS({ ...payload, id }),
+    SET_PAGE: (payload: { page: number }) =>
+        dataExplorerActions.SET_PAGE({ ...payload, id }),
+    SET_ROWS_PER_PAGE: (payload: { rowsPerPage: number }) =>
+        dataExplorerActions.SET_ROWS_PER_PAGE({ ...payload, id }),
+    TOGGLE_COLUMN: (payload: { columnName: string }) =>
+        dataExplorerActions.TOGGLE_COLUMN({ ...payload, id }),
+    TOGGLE_SORT: (payload: { columnName: string }) =>
+        dataExplorerActions.TOGGLE_SORT({ ...payload, id }),
+    SET_SEARCH_VALUE: (payload: { searchValue: string }) =>
+        dataExplorerActions.SET_SEARCH_VALUE({ ...payload, id }),
+});

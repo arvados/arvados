@@ -11,6 +11,7 @@ import { AxiosInstance } from "axios";
 import { CommonResourceService } from "../common/api/common-resource-service";
 import { CollectionResource } from "../models/collection";
 import { Resource } from "../models/resource";
+import { CollectionService } from "./collection-service/collection-service";
 import Axios from "axios";
 
 export interface ServiceRepository {
@@ -33,7 +34,7 @@ export const createServices = (baseUrl: string): ServiceRepository => {
     const projectService = new ProjectService(apiClient);
     const linkService = new LinkService(apiClient);
     const favoriteService = new FavoriteService(linkService, groupsService);
-    const collectionService = new CommonResourceService<CollectionResource>(apiClient, "collections");
+    const collectionService = new CollectionService(apiClient);
 
     return {
         apiClient,

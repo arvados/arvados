@@ -16,7 +16,6 @@ export type ProjectState = {
 
 interface ProjectCreator {
     opened: boolean;
-    pending: boolean;
     ownerUuid: string;
     error?: string;
 }
@@ -106,7 +105,6 @@ const initialState: ProjectState = {
     currentItemId: "",
     creator: {
         opened: false,
-        pending: false,
         ownerUuid: ""
     }
 };
@@ -114,7 +112,7 @@ const initialState: ProjectState = {
 
 export const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
     return projectActions.match(action, {
-        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true, pending: false }),
+        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
         CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
         CREATE_PROJECT: () => updateCreator(state, { error: undefined }),
         CREATE_PROJECT_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
