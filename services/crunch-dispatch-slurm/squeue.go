@@ -82,7 +82,7 @@ func (sqc *SqueueChecker) reniceAll() {
 			// (perhaps it's not an Arvados job)
 			continue
 		}
-		if j.priority == 0 {
+		if j.priority <= 2*slurm15NiceLimit {
 			// SLURM <= 15.x implements "hold" by setting
 			// priority to 0. If we include held jobs
 			// here, we'll end up trying to push other
