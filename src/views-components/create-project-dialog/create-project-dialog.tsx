@@ -9,8 +9,8 @@ import { SubmissionError } from "redux-form";
 import { RootState } from "../../store/store";
 import { DialogProjectCreate } from "../dialog-create/dialog-project-create";
 import { projectActions, createProject, getProjectList } from "../../store/project/project-action";
-import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
-import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
+import { projectPanelActions } from "../../store/project-panel/project-panel-action";
+import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.projects.creator.opened
@@ -20,7 +20,11 @@ const addProject = (data: { name: string, description: string }) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { ownerUuid } = getState().projects.creator;
         return dispatch<any>(createProject(data)).then(() => {
-            dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Created a new project",
+                hideDuration: 2000
+            }));
+            dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch<any>(getProjectList(ownerUuid));
         });
     };

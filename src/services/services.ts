@@ -4,13 +4,46 @@
 
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
-import { authClient, apiClient } from "../common/api/server-api";
 import { ProjectService } from "./project-service/project-service";
 import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
+import { AxiosInstance } from "axios";
+import { CollectionService } from "./collection-service/collection-service";
+import Axios from "axios";
+import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 
-export const authService = new AuthService(authClient, apiClient);
-export const groupsService = new GroupsService(apiClient);
-export const projectService = new ProjectService(apiClient);
-export const linkService = new LinkService(apiClient);
-export const favoriteService = new FavoriteService(linkService, groupsService);
+export interface ServiceRepository {
+    apiClient: AxiosInstance;
+
+    authService: AuthService;
+    groupsService: GroupsService;
+    projectService: ProjectService;
+    linkService: LinkService;
+    favoriteService: FavoriteService;
+    collectionService: CollectionService;
+    collectionFilesService: CollectionFilesService;
+}
+
+export const createServices = (baseUrl: string): ServiceRepository => {
+    const apiClient = Axios.create();
+    apiClient.defaults.baseURL = `${baseUrl}/arvados/v1`;
+
+    const authService = new AuthService(apiClient, baseUrl);
+    const groupsService = new GroupsService(apiClient);
+    const projectService = new ProjectService(apiClient);
+    const linkService = new LinkService(apiClient);
+    const favoriteService = new FavoriteService(linkService, groupsService);
+    const collectionService = new CollectionService(apiClient);
+    const collectionFilesService = new CollectionFilesService(collectionService);
+
+    return {
+        apiClient,
+        authService,
+        groupsService,
+        projectService,
+        linkService,
+        favoriteService,
+        collectionService,
+        collectionFilesService
+    };
+};

@@ -54,6 +54,8 @@ interface DialogProjectProps {
     onSubmit: (data: { name: string, description: string }) => void;
     handleSubmit: any;
     submitting: boolean;
+    invalid: boolean;
+    pristine: boolean;
 }
 
 interface TextFieldProps {
@@ -69,7 +71,7 @@ export const DialogProjectCreate = compose(
     withStyles(styles))(
     class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyles<CssRules>> {
         render() {
-            const { classes, open, handleClose, handleSubmit, onSubmit, submitting } = this.props;
+            const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine } = this.props;
 
             return (
                 <Dialog
@@ -101,7 +103,7 @@ export const DialogProjectCreate = compose(
                                 <Button type="submit"
                                         className={classes.lastButton}
                                         color="primary"
-                                        disabled={submitting}
+                                        disabled={invalid || submitting || pristine}
                                         variant="contained">
                                     CREATE A PROJECT
                                 </Button>

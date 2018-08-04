@@ -59,5 +59,8 @@ export enum ContextMenuKind {
     ROOT_PROJECT = "RootProject",
     PROJECT = "Project",
     RESOURCE = "Resource",
-    FAVORITE = "Favorite"
+    FAVORITE = "Favorite",
+    COLLECTION_FILES = "CollectionFiles",
+    COLLECTION_FILES_ITEM = "CollectionFilesItem",
+    COLLECTION = 'Collection'
 }

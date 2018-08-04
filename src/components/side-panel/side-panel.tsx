@@ -34,7 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toggableIconContainer: {
         color: theme.palette.grey["700"],
         height: '14px',
-        position: 'absolute'
+        width: '14px'
     },
     toggableIcon: {
         fontSize: '14px'

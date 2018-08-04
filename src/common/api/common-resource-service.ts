@@ -100,8 +100,11 @@ export class CommonResourceService<T extends Resource> {
                 }));
     }
 
-    update(uuid: string) {
-        throw new Error("Not implemented");
+    update(uuid: string, data: any) {
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .put<T>(this.resourceType + uuid, data));
+        
     }
 }
 
