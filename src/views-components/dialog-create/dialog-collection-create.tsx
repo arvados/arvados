@@ -13,6 +13,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { FileUpload } from "../../components/file-upload/file-upload";
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
 
@@ -90,6 +91,7 @@ export const DialogCollectionCreate = compose(
                                     validate={COLLECTION_DESCRIPTION_VALIDATION}
                                     className={classes.textField}
                                     label="Description - optional"/>
+                            <FileUpload/>
                         </DialogContent>
                         <DialogActions className={classes.dialogActions}>
                             <Button onClick={handleClose} className={classes.button} color="primary"

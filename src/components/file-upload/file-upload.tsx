@@ -3,24 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Button, Grid, StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { Grid, StyleRulesCallback, Typography, WithStyles } from '@material-ui/core';
 import { withStyles } from '@material-ui/core';
+import Dropzone from 'react-dropzone';
+import { CloudUploadIcon } from "../icon/icon";
 
-export interface Breadcrumb {
-    label: string;
-}
-
-type CssRules = "item" | "currentItem" | "label";
+type CssRules = "root" | "dropzone" | "container" | "uploadIcon";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
-    item: {
-        opacity: 0.6
+    root: {
     },
-    currentItem: {
-        opacity: 1
+    dropzone: {
+        width: "100%",
+        height: "100px",
+        border: "1px dashed black",
+        borderRadius: "5px"
     },
-    label: {
-        textTransform: "none"
+    container: {
+        height: "100%"
+    },
+    uploadIcon: {
+        verticalAlign: "middle"
     }
 });
 
@@ -29,8 +32,18 @@ interface FileUploadProps {
 
 export const FileUpload = withStyles(styles)(
     ({ classes }: FileUploadProps & WithStyles<CssRules>) =>
-    <Grid container alignItems="center" wrap="nowrap">
-    {
-    }
+    <Grid container direction={"column"}>
+        <Typography variant={"subheading"}>
+            Upload data
+        </Typography>
+        <Dropzone className={classes.dropzone}>
+            <Grid container justify="center" alignItems="center" className={classes.container}>
+                <Grid item component={"span"}>
+                    <Typography variant={"subheading"}>
+                        <CloudUploadIcon className={classes.uploadIcon}/> Drag and drop data or <a>browse</a>
+                    </Typography>
+                </Grid>
+            </Grid>
+        </Dropzone>
     </Grid>
 );
