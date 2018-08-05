@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { SubmissionError } from "redux-form";
 import { RootState } from "../../store/store";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
-import { collectionUpdatorActions, updateCollection } from "../../store/collections/updater/collection-updater-action";
+import { collectionUpdaterActions, updateCollection } from "../../store/collections/updater/collection-updater-action";
 import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { DialogCollectionUpdate } from "../dialog-update/dialog-collection-update";
@@ -18,7 +18,7 @@ const mapStateToProps = (state: RootState) => ({
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleClose: () => {
-        dispatch(collectionUpdatorActions.CLOSE_COLLECTION_UPDATER());
+        dispatch(collectionUpdaterActions.CLOSE_COLLECTION_UPDATER());
     },
     onSubmit: (data: { name: string, description: string }) => {
         return dispatch<any>(editCollection(data))

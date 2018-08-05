@@ -21,7 +21,7 @@ const initialState: CollectionCreatorState = {
     ownerUuid: ''
 };
 
-export const collectionCreationReducer = (state: CollectionCreatorState = initialState, action: CollectionCreateAction) => {
+export const collectionCreatorReducer = (state: CollectionCreatorState = initialState, action: CollectionCreateAction) => {
     return collectionCreateActions.match(action, {
         OPEN_COLLECTION_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
         CLOSE_COLLECTION_CREATOR: () => updateCreator(state, { opened: false }),

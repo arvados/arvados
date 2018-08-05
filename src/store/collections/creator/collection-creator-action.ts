@@ -15,9 +15,9 @@ export const collectionCreateActions = unionize({
     CREATE_COLLECTION: ofType<{}>(),
     CREATE_COLLECTION_SUCCESS: ofType<{}>(),
 }, {
-        tag: 'type',
-        value: 'payload'
-    });
+    tag: 'type',
+    value: 'payload'
+});
 
 export const createCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
