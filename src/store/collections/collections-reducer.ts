@@ -4,7 +4,7 @@
 
 import { combineReducers } from 'redux';
 import * as creator from "./creator/collection-creator-reducer";
-import * as updator from "./updator/collection-updator-reducer";
+import * as updator from "./updater/collection-updater-reducer";
 
 export type CollectionsState = {
     creator: creator.CollectionCreatorState;
