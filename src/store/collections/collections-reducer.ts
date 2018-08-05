@@ -8,10 +8,10 @@ import * as updator from "./updater/collection-updater-reducer";
 
 export type CollectionsState = {
     creator: creator.CollectionCreatorState;
-    updator: updator.CollectionUpdaterState;
+    updater: updator.CollectionUpdaterState;
 };
 
 export const collectionsReducer = combineReducers({
     creator: creator.collectionCreatorReducer,
-    updator: updator.collectionUpdaterReducer
+    updater: updator.collectionUpdaterReducer
 });

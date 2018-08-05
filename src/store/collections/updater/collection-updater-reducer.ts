@@ -4,14 +4,12 @@
 
 import { collectionUpdaterActions, CollectionUpdaterAction } from './collection-updater-action';
 
-export type CollectionUpdaterState = CollectionUpdater;
-
-interface CollectionUpdater {
+export interface CollectionUpdaterState {
     opened: boolean;
     uuid: string;
 }
 
-const updateCollection = (state: CollectionUpdaterState, updater?: Partial<CollectionUpdater>) => ({
+const updateCollection = (state: CollectionUpdaterState, updater?: Partial<CollectionUpdaterState>) => ({
     ...state,
     ...updater
 });

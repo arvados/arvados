@@ -13,7 +13,7 @@ import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { DialogCollectionUpdate } from "../dialog-update/dialog-collection-update";
 
 const mapStateToProps = (state: RootState) => ({
-    open: state.collections.updator.opened
+    open: state.collections.updater.opened
 });
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({

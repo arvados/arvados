@@ -34,7 +34,7 @@ export const openUpdater = (uuid: string) =>
 
 export const updateCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { uuid } = getState().collections.updator;
+        const { uuid } = getState().collections.updater;
         return services.collectionService
             .update(uuid, collection)
             .then(collection => {
