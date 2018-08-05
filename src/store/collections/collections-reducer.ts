@@ -4,14 +4,14 @@
 
 import { combineReducers } from 'redux';
 import * as creator from "./creator/collection-creator-reducer";
-import * as updator from "./updater/collection-updater-reducer";
+import * as updater from "./updater/collection-updater-reducer";
 
 export type CollectionsState = {
     creator: creator.CollectionCreatorState;
-    updater: updator.CollectionUpdaterState;
+    updater: updater.CollectionUpdaterState;
 };
 
 export const collectionsReducer = combineReducers({
     creator: creator.collectionCreatorReducer,
-    updater: updator.collectionUpdaterReducer
+    updater: updater.collectionUpdaterReducer
 });
