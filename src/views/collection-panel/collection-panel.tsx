@@ -15,8 +15,8 @@ import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { createCollectionTag } from '../../store/collection-panel/collection-panel-action';
 import { TagResource } from '../../models/tag';
+import { CollectionTagForm } from './collection-tag-form';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
 
@@ -29,7 +29,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.yellow700
     },
     tag: {
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing.unit,
+        marginBottom: theme.spacing.unit
     },
     copyIcon: {
         marginLeft: theme.spacing.unit,
@@ -94,14 +95,12 @@ export const CollectionPanel = withStyles(styles)(
                             <CardHeader title="Tags" />
                             <CardContent>
                                 <Grid container direction="column">
-                                    <Grid item xs={12}>
-                                        {/* Temporarty button to add new tag */}
-                                        <Button onClick={this.addTag}>Add Tag</Button>
-                                    </Grid>
+                                    <Grid item xs={12}><CollectionTagForm /></Grid>
                                     <Grid item xs={12}>
                                         {
                                             tags.map(tag => {
                                                 return <Chip key={tag.etag} className={classes.tag}
+                                                    onDelete={handleDelete}
                                                     label={renderTagLabel(tag)}  />;
                                             })
                                         }
@@ -115,17 +114,12 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={4}>
-                                        Tags
+                                        Files
                                     </Grid>
                                 </Grid>
                             </CardContent>
                         </Card>
                     </div>;
-            }
-
-            // Temporary method to add new tag
-            addTag = () => {
-                this.props.dispatch<any>(createCollectionTag(this.props.item.uuid, { key: 'test', value: 'value for tag'}));
             }
 
             componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {
@@ -141,4 +135,8 @@ export const CollectionPanel = withStyles(styles)(
 const renderTagLabel = (tag: TagResource) => {
     const { properties } = tag;
     return `${properties.key}: ${properties.value}`;
+};
+
+const handleDelete = () => {
+    alert('tag has been deleted');
 };

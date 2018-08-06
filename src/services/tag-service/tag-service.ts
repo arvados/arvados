@@ -6,6 +6,7 @@ import { LinkService } from "../link-service/link-service";
 import { LinkClass } from "../../models/link";
 import { FilterBuilder } from "../../common/api/filter-builder";
 import { TagTailType, TagResource } from "../../models/tag";
+import { OrderBuilder } from "../../common/api/order-builder";
 
 export class TagService {
 
@@ -30,8 +31,12 @@ export class TagService {
             .addEqual("tailUuid", TagTailType.COLLECTION)
             .addEqual("linkClass", LinkClass.TAG);
 
+        const order = OrderBuilder
+            .create<TagResource>()
+            .addAsc('createdAt');
+
         return this.linkService
-            .list({ filters })
+            .list({ filters, order })
             .then(results => {
                 return results.items.map((tag => tag as TagResource ));
             });

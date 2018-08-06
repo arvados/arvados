@@ -22,6 +22,8 @@ export const collectionPanelActions = unionize({
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
+export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
+
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
@@ -43,9 +45,11 @@ export const loadCollectionTags = (uuid: string) =>
     };
 
 
-export const createCollectionTag = (uuid: string, data: TagProperty) => 
+export const createCollectionTag = (data: TagProperty) => 
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.CREATE_COLLECTION_TAG({ data }));
+        const item = getState().collectionPanel.item;
+        const uuid = item ? item.uuid : '';
         return services.tagService
             .create(uuid, data)
             .then(tag => {
