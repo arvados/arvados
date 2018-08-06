@@ -26,6 +26,10 @@ export interface CollectionFile {
     type: CollectionFileType.FILE;
 }
 
+export interface CollectionUploadFile {
+    name: string;
+}
+
 export const createCollectionDirectory = (data: Partial<CollectionDirectory>): CollectionDirectory => ({
     id: '',
     name: '',

@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, StyleRulesCallback, Typography, WithStyles } from '@material-ui/core';
+import { Grid, List, ListItem, ListItemText, StyleRulesCallback, Typography, WithStyles } from '@material-ui/core';
 import { withStyles } from '@material-ui/core';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon } from "../icon/icon";
+import { formatFileSize } from "../../common/formatters";
 
 type CssRules = "root" | "dropzone" | "container" | "uploadIcon";
 
@@ -15,7 +16,8 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     dropzone: {
         width: "100%",
-        height: "100px",
+        height: "200px",
+        overflow: "auto",
         border: "1px dashed black",
         borderRadius: "5px"
     },
@@ -28,20 +30,32 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 });
 
 interface FileUploadProps {
+    files: File[];
+    onDrop: (files: File[]) => void;
 }
 
 export const FileUpload = withStyles(styles)(
-    ({ classes }: FileUploadProps & WithStyles<CssRules>) =>
+    ({ classes, files, onDrop }: FileUploadProps & WithStyles<CssRules>) =>
     <Grid container direction={"column"}>
         <Typography variant={"subheading"}>
             Upload data
         </Typography>
-        <Dropzone className={classes.dropzone}>
-            <Grid container justify="center" alignItems="center" className={classes.container}>
+        <Dropzone className={classes.dropzone} onDrop={files => onDrop(files)}>
+            <Grid container justify="center" alignItems="center" className={classes.container} direction={"column"}>
                 <Grid item component={"span"}>
                     <Typography variant={"subheading"}>
                         <CloudUploadIcon className={classes.uploadIcon}/> Drag and drop data or <a>browse</a>
                     </Typography>
+                </Grid>
+                <Grid item>
+                    <List>
+                    {files.map((f, idx) =>
+                        <ListItem button key={idx}>
+                            <ListItemText
+                                primary={f.name} primaryTypographyProps={{variant: "body2"}}
+                                secondary={formatFileSize(f.size)}/>
+                        </ListItem>)}
+                    </List>
                 </Grid>
             </Grid>
         </Dropzone>

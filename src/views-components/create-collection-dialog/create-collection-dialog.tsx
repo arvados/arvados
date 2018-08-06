@@ -12,6 +12,7 @@ import { collectionCreateActions, createCollection } from "../../store/collectio
 import { dataExplorerActions } from "../../store/data-explorer/data-explorer-action";
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
+import { ServiceRepository } from "../../services/services";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.collections.creator.opened
@@ -21,7 +22,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleClose: () => {
         dispatch(collectionCreateActions.CLOSE_COLLECTION_CREATOR());
     },
-    onSubmit: (data: { name: string, description: string }) => {
+    onSubmit: (data: { name: string, description: string, files: File[] }) => {
         return dispatch<any>(addCollection(data))
             .catch((e: any) => {
                 throw new SubmissionError({ name: e.errors.join("").includes("UniqueViolation") ? "Collection with this name already exists." : "" });
@@ -29,14 +30,16 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     }
 });
 
-const addCollection = (data: { name: string, description: string }) =>
-    (dispatch: Dispatch) => {
+const addCollection = (data: { name: string, description: string, files: File[] }) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         return dispatch<any>(createCollection(data)).then(() => {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully created.",
                 hideDuration: 2000
             }));
-            dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
+            services.collectionService.uploadFiles(data.files).then(() => {
+                dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
+            });
         });
     };
 

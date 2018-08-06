@@ -4,14 +4,12 @@
 
 import { collectionCreateActions, CollectionCreateAction } from './collection-creator-action';
 
-export type CollectionCreatorState = CollectionCreator;
-
-interface CollectionCreator {
+export interface CollectionCreatorState {
     opened: boolean;
     ownerUuid: string;
 }
 
-const updateCreator = (state: CollectionCreatorState, creator?: Partial<CollectionCreator>) => ({
+const updateCreator = (state: CollectionCreatorState, creator?: Partial<CollectionCreatorState>) => ({
     ...state,
     ...creator
 });

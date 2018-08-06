@@ -46,7 +46,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                             .create()
                             .addIsA("uuid", typeFilters.map(f => f.type)))
                         .concat(FilterBuilder
-                            .create<ProcessResource>(GroupContentsResourcePrefix.PROCESS)
+                            .create(GroupContentsResourcePrefix.PROCESS)
                             .addIn("state", statusFilters.map(f => f.type)))
                         .concat(getSearchFilter(dataExplorer.searchValue))
                 })
@@ -88,9 +88,9 @@ const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
 const getSearchFilter = (searchValue: string) =>
     searchValue
         ? [
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS),
-            FilterBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT)]
+            FilterBuilder.create(GroupContentsResourcePrefix.COLLECTION),
+            FilterBuilder.create(GroupContentsResourcePrefix.PROCESS),
+            FilterBuilder.create(GroupContentsResourcePrefix.PROJECT)]
             .reduce((acc, b) =>
                 acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
         : FilterBuilder.create();
