@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { CollectionService } from "../collection-service/collection-service";
-import { parseKeepManifestText } from "./collection-manifest-parser";
+import { parseKeepManifestText, stringifyKeepManifest } from "./collection-manifest-parser";
 import { mapManifestToCollectionFilesTree } from "./collection-manifest-mapper";
+import { CollectionFile } from "../../models/collection-file";
 
 export class CollectionFilesService {
-    
+
     constructor(private collectionService: CollectionService) { }
 
     getFiles(collectionUuid: string) {
@@ -20,6 +21,39 @@ export class CollectionFilesService {
                     )
                 )
             );
+    }
+
+    async renameFile(collectionUuid: string, file: { name: string, path: string }, newName: string) {
+        const collection = await this.collectionService.get(collectionUuid);
+        const manifest = parseKeepManifestText(collection.manifestText);
+        const updatedManifest = manifest.map(stream =>
+            stream.name === file.path
+                ? {
+                    ...stream,
+                    files: stream.files.map(f =>
+                        f.name === file.name
+                            ? { ...f, name: newName }
+                            : f)
+                }
+                : stream
+        );
+        const manifestText = stringifyKeepManifest(updatedManifest);
+        return this.collectionService.update(collectionUuid, { ...collection, manifestText });
+    }
+
+    async deleteFile(collectionUuid: string, file: { name: string, path: string }) {
+        const collection = await this.collectionService.get(collectionUuid);
+        const manifest = parseKeepManifestText(collection.manifestText);
+        const updatedManifest = manifest.map(stream =>
+            stream.name === file.path
+                ? {
+                    ...stream,
+                    files: stream.files.filter(f => f.name !== file.name)
+                }
+                : stream
+        );
+        const manifestText = stringifyKeepManifest(updatedManifest);
+        return this.collectionService.update(collectionUuid, { manifestText });
     }
 
 }
