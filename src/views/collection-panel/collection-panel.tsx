@@ -16,7 +16,7 @@ import { DetailsAttribute } from '../../components/details-attribute/details-att
 import { CollectionResource } from '../../models/collection';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { createCollectionTag } from '../../store/collection-panel/collection-panel-action';
-import { LinkResource } from '../../models/link';
+import { TagResource } from '../../models/tag';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
 
@@ -41,7 +41,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
-    tags: LinkResource[];
+    tags: TagResource[];
 }
 
 interface CollectionPanelActionProps {
@@ -125,7 +125,7 @@ export const CollectionPanel = withStyles(styles)(
 
             // Temporary method to add new tag
             addTag = () => {
-                this.props.dispatch<any>(createCollectionTag(this.props.item.uuid, 'dodalem nowy'));
+                this.props.dispatch<any>(createCollectionTag(this.props.item.uuid, { key: 'test', value: 'value for tag'}));
             }
 
             componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {
@@ -138,7 +138,7 @@ export const CollectionPanel = withStyles(styles)(
     )
 );
 
-const renderTagLabel = (tag: LinkResource) => {
+const renderTagLabel = (tag: TagResource) => {
     const { properties } = tag;
     return `${properties.key}: ${properties.value}`;
 };

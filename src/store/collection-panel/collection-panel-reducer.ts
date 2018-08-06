@@ -4,11 +4,11 @@
 
 import { collectionPanelActions, CollectionPanelAction } from "./collection-panel-action";
 import { CollectionResource } from "../../models/collection";
-import { LinkResource } from "../../models/link";
+import { TagResource } from "../../models/tag";
 
 export interface CollectionPanelState {
     item: CollectionResource | null;
-    tags: LinkResource[];
+    tags: TagResource[];
 }
 
 const initialState = {

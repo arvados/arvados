@@ -8,15 +8,16 @@ import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
 import { RootState } from "../store";
 import { ServiceRepository } from "../../services/services";
-import { LinkClass, LinkResource } from "../../models/link";
+import { TagResource, TagProperty } from "../../models/tag";
+import { snackbarActions } from "../snackbar/snackbar-actions";
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
     LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
     LOAD_COLLECTION_TAGS: ofType<{ uuid: string }>(),
-    LOAD_COLLECTION_TAGS_SUCCESS: ofType<{ tags: LinkResource[] }>(),
+    LOAD_COLLECTION_TAGS_SUCCESS: ofType<{ tags: TagResource[] }>(),
     CREATE_COLLECTION_TAG: ofType<{ data: any }>(),
-    CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: LinkResource }>()
+    CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: TagResource }>()
 }, { tag: 'type', value: 'payload' });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -42,18 +43,16 @@ export const loadCollectionTags = (uuid: string) =>
     };
 
 
-export const createCollectionTag = (uuid: string, data: {}) => 
+export const createCollectionTag = (uuid: string, data: TagProperty) => 
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const linkResource = {
-            key: 'testowanie',
-            value: 'by Arturo'
-        };
-
-        dispatch(collectionPanelActions.CREATE_COLLECTION_TAG({ data: linkResource }));
+        dispatch(collectionPanelActions.CREATE_COLLECTION_TAG({ data }));
         return services.tagService
-            .create(uuid, linkResource)
+            .create(uuid, data)
             .then(tag => {
-                console.log('tag: ', tag);
                 dispatch(collectionPanelActions.CREATE_COLLECTION_TAG_SUCCESS({ tag }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Tag has been successfully added.",
+                    hideDuration: 2000
+                }));
             });
     };
