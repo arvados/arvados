@@ -3,32 +3,34 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { parseKeepManifestText } from "./collection-manifest-parser";
-import { mapManifestToFiles, mapManifestToDirectories } from "./collection-manifest-mapper";
+import { mapManifestToFiles, mapManifestToDirectories, mapManifestToCollectionFilesTree, mapCollectionFilesTreeToManifest } from "./collection-manifest-mapper";
+import { createTree, setNode, TreeNode } from "../../models/tree";
+import { CollectionFilesTree, CollectionDirectory, CollectionFile, CollectionFileType } from "../../models/collection-file";
 
 test('mapManifestToFiles', () => {
     const manifestText = `. 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt\n./c d41d8cd98f00b204e9800998ecf8427e+0 0:0:d`;
     const manifest = parseKeepManifestText(manifestText);
     const files = mapManifestToFiles(manifest);
     expect(files).toEqual([{
-        parentId: '',
+        path: '',
         id: '/a',
         name: 'a',
         size: 0,
         type: 'file'
     }, {
-        parentId: '',
+        path: '',
         id: '/b',
         name: 'b',
         size: 0,
         type: 'file'
     }, {
-        parentId: '',
+        path: '',
         id: '/output.txt',
         name: 'output.txt',
         size: 33,
         type: 'file'
     }, {
-        parentId: '/c',
+        path: '/c',
         id: '/c/d',
         name: 'd',
         size: 0,
@@ -41,19 +43,51 @@ test('mapManifestToDirectories', () => {
     const manifest = parseKeepManifestText(manifestText);
     const directories = mapManifestToDirectories(manifest);
     expect(directories).toEqual([{
-        parentId: "",
+        path: "",
         id: '/c',
         name: 'c',
         type: 'directory'
     }, {
-        parentId: '/c',
+        path: '/c',
         id: '/c/user',
         name: 'user',
         type: 'directory'
     }, {
-        parentId: '/c/user',
+        path: '/c/user',
         id: '/c/user/results',
         name: 'results',
         type: 'directory'
     },]);
+});
+
+test('mapCollectionFilesTreeToManifest', () => {
+    const manifestText = `. 930625b054ce894ac40596c3f5a0d947+33 0:22:test.txt\n./c/user/results 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt\n`;
+    const tree = mapManifestToCollectionFilesTree(parseKeepManifestText(manifestText));
+    const manifest = mapCollectionFilesTreeToManifest(tree);
+    expect(manifest).toEqual([{
+        name: '',
+        locators: [],
+        files: [{
+            name: 'test.txt',
+            position: '',
+            size: 22
+        },],
+    }, {
+        name: '/c/user/results',
+        locators: [],
+        files: [{
+            name: 'a',
+            position: '',
+            size: 0
+        }, {
+            name: 'b',
+            position: '',
+            size: 0
+        }, {
+            name: 'output.txt',
+            position: '',
+            size: 33
+        },],
+    },]);
+
 });
