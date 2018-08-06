@@ -12,7 +12,7 @@ export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
     name: "Rename",
     icon: RenameIcon,
     execute: (dispatch, resource) => {
-        dispatch(openRenameFileDialog(resource.name));
+        dispatch<any>(openRenameFileDialog(resource.name));
     }
 }, {
     name: "Download",
