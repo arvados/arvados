@@ -7,7 +7,7 @@ import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '../../../node_modules/@material-ui/core';
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-collection/create-collection-validator';
 import { COLLECTION_FORM_NAME } from '../../store/collections/updator/collection-updator-action';
 
 type CssRules = 'content' | 'actions' | 'textField' | 'buttonWrapper' | 'saveButton' | 'circularProgress';
