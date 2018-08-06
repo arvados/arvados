@@ -8,25 +8,27 @@ import { DialogState } from './dialog-reducer';
 import { Dispatch } from 'redux';
 import { dialogActions } from './dialog-actions';
 
-export type WithDialog<T> = {
+export type WithDialogStateProps<T> = {
     open: boolean;
     data?: T;
 };
 
-export type WithDialogActions = {
+export type WithDialogDispatchProps = {
     closeDialog: () => void;
 };
 
+export type WithDialogProps<T> = WithDialogStateProps<T> & WithDialogDispatchProps;
+
 export const withDialog = (id: string) =>
-    <T>(component: React.ComponentType<WithDialog<T> & WithDialogActions>) =>
+    <T, P>(component: React.ComponentType<WithDialogProps<T> & P>) =>
         connect(mapStateToProps(id), mapDispatchToProps(id))(component);
 
-export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialog<T> => {
+export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
     const dialog = state.dialog[id];
     return dialog ? dialog : { open: false };
 };
 
-export const mapDispatchToProps = (id: string) => (dispatch: Dispatch): WithDialogActions => ({
+export const mapDispatchToProps = (id: string) => (dispatch: Dispatch): WithDialogDispatchProps => ({
     closeDialog: () => {
         dispatch(dialogActions.CLOSE_DIALOG({ id }));
     }
