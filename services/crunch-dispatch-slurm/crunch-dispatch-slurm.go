@@ -252,9 +252,6 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
 
-	disp.sqCheck.L.Lock()
-	defer disp.sqCheck.L.Unlock()
-
 	sbArgs, err := disp.sbatchArgs(container)
 	if err != nil {
 		return err
@@ -355,10 +352,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	}
 }
 func (disp *Dispatcher) scancel(ctr arvados.Container) {
-	disp.sqCheck.L.Lock()
 	err := disp.slurm.Cancel(ctr.UUID)
-	disp.sqCheck.L.Unlock()
-
 	if err != nil {
 		log.Printf("scancel: %s", err)
 		time.Sleep(time.Second)
