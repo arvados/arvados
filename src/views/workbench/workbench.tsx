@@ -18,7 +18,7 @@ import { TreeItem } from "../../components/tree/tree";
 import { getTreePath } from '../../store/project/project-reducer';
 import { sidePanelActions } from '../../store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
-import { ItemMode, setProjectItem, restoreBranch } from "../../store/navigation/navigation-action";
+import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
 import { projectActions } from "../../store/project/project-action";
 import { collectionCreateActions } from '../../store/collections/creator/collection-creator-action';
 import { ProjectPanel } from "../project-panel/project-panel";
@@ -277,7 +277,7 @@ export const Workbench = withStyles(styles)(
                         case ResourceKind.COLLECTION:
                             this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default:
+                        default: 
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
