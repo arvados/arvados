@@ -4,8 +4,6 @@
 
 import { parseKeepManifestText } from "./collection-manifest-parser";
 import { mapManifestToFiles, mapManifestToDirectories, mapManifestToCollectionFilesTree, mapCollectionFilesTreeToManifest } from "./collection-manifest-mapper";
-import { createTree, setNode, TreeNode } from "../../models/tree";
-import { CollectionFilesTree, CollectionDirectory, CollectionFile, CollectionFileType } from "../../models/collection-file";
 
 test('mapManifestToFiles', () => {
     const manifestText = `. 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt\n./c d41d8cd98f00b204e9800998ecf8427e+0 0:0:d`;
