@@ -9,7 +9,7 @@ import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 
 const mapStateToProps = (state: RootState) => ({
-    isFavorite: state.contextMenu.resource && state.favorites[state.contextMenu.resource.uuid] === true
+    isFavorite: state.contextMenu.resource !== undefined && state.favorites[state.contextMenu.resource.uuid] === true
 });
 
 export const ToggleFavoriteAction = connect(mapStateToProps)((props: { isFavorite: boolean }) =>
