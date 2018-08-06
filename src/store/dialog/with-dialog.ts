@@ -10,7 +10,7 @@ import { dialogActions } from './dialog-actions';
 
 export type WithDialogStateProps<T> = {
     open: boolean;
-    data?: T;
+    data: T;
 };
 
 export type WithDialogDispatchProps = {
@@ -25,7 +25,7 @@ export const withDialog = (id: string) =>
 
 export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
     const dialog = state.dialog[id];
-    return dialog ? dialog : { open: false };
+    return dialog ? dialog : { open: false, data: {} };
 };
 
 export const mapDispatchToProps = (id: string) => (dispatch: Dispatch): WithDialogDispatchProps => ({
