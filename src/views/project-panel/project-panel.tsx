@@ -129,7 +129,6 @@ export const PROJECT_PANEL_ID = "projectPanel";
 
 interface ProjectPanelDataProps {
     currentItemId: string;
-    isSidePanelOpen: boolean;
 }
 
 interface ProjectPanelActionProps {
@@ -145,7 +144,7 @@ type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & Dispa
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId, isSidePanelOpen: state.sidePanel[0].open }))(
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
@@ -186,7 +185,7 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             componentDidMount() {
-                if (this.props.match.params.id && !this.props.isSidePanelOpen) {
+                if (this.props.match.params.id && this.props.currentItemId === '') {
                     this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
                 }
             }
