@@ -104,19 +104,13 @@ PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 ## End Debian Python defaults.
 
 case "$TARGET" in
-    debian8)
+    debian*)
         FORMAT=deb
         ;;
-    debian9)
+    ubuntu*)
         FORMAT=deb
         ;;
-    ubuntu1404)
-        FORMAT=deb
-        ;;
-    ubuntu1604)
-        FORMAT=deb
-        ;;
-    centos7)
+    centos*)
         FORMAT=rpm
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
         PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE

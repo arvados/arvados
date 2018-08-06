@@ -71,22 +71,13 @@ if [[ "$DEBUG" != 0 ]]; then
 fi
 
 case "$TARGET" in
-    debian8)
+    debian*)
         FORMAT=deb
         ;;
-    debian9)
+    ubuntu*)
         FORMAT=deb
         ;;
-    ubuntu1204)
-        FORMAT=deb
-        ;;
-    ubuntu1404)
-        FORMAT=deb
-        ;;
-    ubuntu1604)
-        FORMAT=deb
-        ;;
-    centos7)
+    centos*)
         FORMAT=rpm
         ;;
     *)
