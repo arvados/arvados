@@ -41,13 +41,14 @@ export const FileUpload = withStyles(styles)(
             Upload data
         </Typography>
         <Dropzone className={classes.dropzone} onDrop={files => onDrop(files)}>
-            <Grid container justify="center" alignItems="center" className={classes.container} direction={"column"}>
-                <Grid item component={"span"}>
+            <Grid container justify="center" alignItems="center" className={classes.container} direction={"row"}>
+                <Grid item component={"span"} style={{width: "100%", textAlign: "center"}}>
                     <Typography variant={"subheading"}>
-                        <CloudUploadIcon className={classes.uploadIcon}/> Drag and drop data or <a>browse</a>
+                        <CloudUploadIcon className={classes.uploadIcon}/> Drag and drop data or click to browse
                     </Typography>
                 </Grid>
-                <Grid item>
+
+                <Grid item style={{width: "100%"}}>
                     <List>
                     {files.map((f, idx) =>
                         <ListItem button key={idx}>

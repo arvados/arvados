@@ -13,6 +13,7 @@ import { dataExplorerActions } from "../../store/data-explorer/data-explorer-act
 import { PROJECT_PANEL_ID } from "../../views/project-panel/project-panel";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 import { ServiceRepository } from "../../services/services";
+import { CollectionResource } from "../../models/collection";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.collections.creator.opened
@@ -32,12 +33,12 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 const addCollection = (data: { name: string, description: string, files: File[] }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        return dispatch<any>(createCollection(data)).then(() => {
+        return dispatch<any>(createCollection(data)).then((collection: CollectionResource) => {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully created.",
                 hideDuration: 2000
             }));
-            services.collectionService.uploadFiles(data.files).then(() => {
+            services.collectionService.uploadFiles(collection.uuid, data.files).then(() => {
                 dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             });
         });

@@ -26,7 +26,10 @@ export const createCollection = (collection: Partial<CollectionResource>) =>
         dispatch(collectionCreateActions.CREATE_COLLECTION(collectiontData));
         return services.collectionService
             .create(collectiontData)
-            .then(collection => dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection)));
+            .then(collection => {
+                dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+                return collection;
+            });
     };
 
 export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;

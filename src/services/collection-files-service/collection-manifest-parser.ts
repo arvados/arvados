@@ -7,7 +7,7 @@ import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "../../
 /**
  * Documentation [http://doc.arvados.org/api/storage.html](http://doc.arvados.org/api/storage.html)
  */
-export const parseKeepManifestText = (text: string) =>
+export const parseKeepManifestText: (text: string) => KeepManifestStream[] = (text: string) =>
     text
         .split(/\n/)
         .filter(streamText => streamText.length > 0)
