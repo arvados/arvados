@@ -12,14 +12,14 @@ export enum CollectionFileType {
 }
 
 export interface CollectionDirectory {
-    parentId: string;
+    path: string;
     id: string;
     name: string;
     type: CollectionFileType.DIRECTORY;
 }
 
 export interface CollectionFile {
-    parentId: string;
+    path: string;
     id: string;
     name: string;
     size: number;
@@ -29,7 +29,7 @@ export interface CollectionFile {
 export const createCollectionDirectory = (data: Partial<CollectionDirectory>): CollectionDirectory => ({
     id: '',
     name: '',
-    parentId: '',
+    path: '',
     type: CollectionFileType.DIRECTORY,
     ...data
 });
@@ -37,7 +37,7 @@ export const createCollectionDirectory = (data: Partial<CollectionDirectory>): C
 export const createCollectionFile = (data: Partial<CollectionFile>): CollectionFile => ({
     id: '',
     name: '',
-    parentId: '',
+    path: '',
     size: 0,
     type: CollectionFileType.FILE,
     ...data
