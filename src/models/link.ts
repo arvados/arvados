@@ -9,9 +9,18 @@ export interface LinkResource extends Resource {
     tailUuid: string;
     linkClass: string;
     name: string;
-    properties: {};
+    properties: {
+        key?: string;
+        value?: any;
+    };
+}
+
+export enum TailType {
+    COLLECTION = 'Collection',
+    JOB = 'Job'
 }
 
 export enum LinkClass {
-    STAR = 'star'
+    STAR = 'star',
+    TAG = 'tag'
 }

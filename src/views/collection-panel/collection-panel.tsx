@@ -5,9 +5,9 @@
 import * as React from 'react';
 import { 
     StyleRulesCallback, WithStyles, withStyles, Card, 
-    CardHeader, IconButton, CardContent, Grid, Chip
+    CardHeader, IconButton, CardContent, Grid, Chip, TextField, Button
 } from '@material-ui/core';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { RootState } from '../../store/store';
@@ -15,6 +15,8 @@ import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
+import { createCollectionTag } from '../../store/collection-panel/collection-panel-action';
+import { LinkResource } from '../../models/link';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
 
@@ -32,12 +34,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     copyIcon: {
         marginLeft: theme.spacing.unit,
         fontSize: '1.125rem',
+        color: theme.palette.grey["500"],
         cursor: 'pointer'
     }
 });
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
+    tags: LinkResource[];
 }
 
 interface CollectionPanelActionProps {
@@ -45,16 +49,19 @@ interface CollectionPanelActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: CollectionResource) => void;
 }
 
-type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps 
+type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps & DispatchProp
                             & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 
 export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState) => ({ item: state.collectionPanel.item }))(
+    connect((state: RootState) => ({ 
+        item: state.collectionPanel.item, 
+        tags: state.collectionPanel.tags 
+    }))(
         class extends React.Component<CollectionPanelProps> { 
 
             render() {
-                const { classes, item, onContextMenu } = this.props;
+                const { classes, item, tags, onContextMenu } = this.props;
                 return <div>
                         <Card className={classes.card}>
                             <CardHeader 
@@ -87,10 +94,17 @@ export const CollectionPanel = withStyles(styles)(
                             <CardHeader title="Tags" />
                             <CardContent>
                                 <Grid container direction="column">
-                                    <Grid item xs={4}>
-                                        <Chip label="Tag 1" className={classes.tag}/>
-                                        <Chip label="Tag 2" className={classes.tag}/>
-                                        <Chip label="Tag 3" className={classes.tag}/>
+                                    <Grid item xs={12}>
+                                        {/* Temporarty button to add new tag */}
+                                        <Button onClick={this.addTag}>Add Tag</Button>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        {
+                                            tags.map(tag => {
+                                                return <Chip key={tag.etag} className={classes.tag}
+                                                    label={renderTagLabel(tag)}  />;
+                                            })
+                                        }
                                     </Grid>
                                 </Grid>
                             </CardContent>
@@ -109,6 +123,11 @@ export const CollectionPanel = withStyles(styles)(
                     </div>;
             }
 
+            // Temporary method to add new tag
+            addTag = () => {
+                this.props.dispatch<any>(createCollectionTag(this.props.item.uuid, 'dodalem nowy'));
+            }
+
             componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {
                 if (!item || match.params.id !== item.uuid) {
                     onItemRouteChange(match.params.id);
@@ -118,3 +137,8 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
+
+const renderTagLabel = (tag: LinkResource) => {
+    const { properties } = tag;
+    return `${properties.key}: ${properties.value}`;
+};
