@@ -167,7 +167,7 @@ CREATE TABLE public.collections (
     description character varying(524288),
     properties jsonb,
     delete_at timestamp without time zone,
-    file_names character varying(8192),
+    file_names text,
     trash_at timestamp without time zone,
     is_trashed boolean DEFAULT false NOT NULL,
     storage_classes_desired jsonb DEFAULT '["default"]'::jsonb,
@@ -1623,7 +1623,7 @@ CREATE INDEX collection_index_on_properties ON public.collections USING gin (pro
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_full_text_search_idx ON public.collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
+CREATE INDEX collections_full_text_search_idx ON public.collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || COALESCE(file_names, (''::character varying)::text))));
 
 
 --
@@ -3118,4 +3118,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180514135529');
 INSERT INTO schema_migrations (version) VALUES ('20180607175050');
 
 INSERT INTO schema_migrations (version) VALUES ('20180608123145');
+
+INSERT INTO schema_migrations (version) VALUES ('20180806133039');
 

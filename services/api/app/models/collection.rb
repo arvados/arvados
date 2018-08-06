@@ -190,22 +190,16 @@ class Collection < ArvadosModel
   end
 
   def manifest_files
+    return '' if !self.manifest_text
+
     names = ''
-    if self.manifest_text
-      self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
-        names << name.first.gsub('\040',' ') + "\n"
-        break if names.length > 2**12
-      end
+    self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+      names << name.first.gsub('\040',' ') + "\n"
     end
-
-    if self.manifest_text and names.length < 2**12
-      self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
-        names << stream_name.first.gsub('\040',' ') + "\n"
-        break if names.length > 2**12
-      end
+    self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+      names << stream_name.first.gsub('\040',' ') + "\n"
     end
-
-    names[0,2**12]
+    names
   end
 
   def default_empty_manifest
