@@ -41,6 +41,10 @@ Generally this will contain additional keys that are not present in any correspo
   "vcpus":2,
   "API":true
 }</code></pre>See "Runtime constraints":#runtime_constraints for more details.|
+|runtime_status|hash|Information related to the container's run, including its steps. Some keys have specific meaning and are described later in this page.|e.g.,
+<pre><code>{
+  "error": "This container won't be successful because at least one step have already failed."
+}</code></pre>See "Runtime status":#runtime_status for more details.|
 |scheduling_parameters|hash|Parameters to be passed to the container scheduler when running this container.|e.g.,<pre><code>{
 "partitions":["fastcpu","vfastcpu"]
 }</code></pre>See "Scheduling parameters":#scheduling_parameters for more details.|
@@ -65,6 +69,8 @@ table(table table-bordered table-condensed).
 h2(#mount_types). {% include 'mount_types' %}
 
 h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
+
+h2(#runtime_status). {% include 'container_runtime_status' %}
 
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
