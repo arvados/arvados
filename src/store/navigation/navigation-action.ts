@@ -16,6 +16,7 @@ import { ProjectService } from "../../services/project-service/project-service";
 import { ServiceRepository } from "../../services/services";
 import { sidePanelActions } from "../side-panel/side-panel-action";
 import { SidePanelIdentifiers } from "../side-panel/side-panel-reducer";
+import { getUuidObjectType, ObjectTypes } from "../../models/object-types";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
@@ -75,10 +76,8 @@ export const restoreBranch = (itemId: string) =>
         });
     };
 
-const USER_UUID_REGEX = /.*tpzed.*/;
-
 export const loadProjectAncestors = async (uuid: string, projectService: ProjectService): Promise<Array<ProjectResource>> => {
-    if (USER_UUID_REGEX.test(uuid)) {
+    if (getUuidObjectType(uuid) === ObjectTypes.USER) {
         return [];
     } else {
         const currentProject = await projectService.get(uuid);

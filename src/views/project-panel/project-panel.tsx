@@ -17,6 +17,7 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
+import { restoreBranch } from '../../store/navigation/navigation-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -128,6 +129,7 @@ export const PROJECT_PANEL_ID = "projectPanel";
 
 interface ProjectPanelDataProps {
     currentItemId: string;
+    isSidePanelOpen: boolean;
 }
 
 interface ProjectPanelActionProps {
@@ -143,7 +145,7 @@ type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & Dispa
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId, isSidePanelOpen: state.sidePanel[0].open }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
@@ -176,9 +178,16 @@ export const ProjectPanel = withStyles(styles)(
             handleNewCollectionClick = () => {
                 this.props.onCollectionCreationDialogOpen(this.props.currentItemId);
             }
+
             componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
                 if (match.params.id !== currentItemId) {
                     onItemRouteChange(match.params.id);
+                }
+            }
+
+            componentDidMount() {
+                if (this.props.match.params.id && !this.props.isSidePanelOpen) {
+                    this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
                 }
             }
         }

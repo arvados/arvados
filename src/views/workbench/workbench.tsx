@@ -93,7 +93,6 @@ interface WorkbenchDataProps {
     user?: User;
     currentToken?: string;
     sidePanelItems: SidePanelItem[];
-    router?: any;
 }
 
 interface WorkbenchServiceProps {
@@ -131,8 +130,7 @@ export const Workbench = withStyles(styles)(
             currentProjectId: state.projects.currentItemId,
             user: state.auth.user,
             currentToken: state.auth.apiToken,
-            sidePanelItems: state.sidePanel,
-            router: state.router.location
+            sidePanelItems: state.sidePanel
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
@@ -171,19 +169,6 @@ export const Workbench = withStyles(styles)(
                     ]
                 }
             };
-
-            componentDidMount() {
-                const PROJECT_URL_REGEX = /\/projects\/(.*)/;
-                const getProjectIdFromUrl = (url: string) => {
-                    const match = PROJECT_URL_REGEX.exec(url);
-                    return match ? match[1] : match;
-                };
-
-                const id = getProjectIdFromUrl(this.props.router.pathname);
-                if (id) {
-                    this.props.dispatch<any>(restoreBranch(id));
-                }
-            }
 
             render() {
                 const path = getTreePath(this.props.projects, this.props.currentProjectId);
