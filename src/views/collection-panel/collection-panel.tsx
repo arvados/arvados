@@ -17,12 +17,13 @@ import { CollectionResource } from '../../models/collection';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { TagResource } from '../../models/tag';
 import { CollectionTagForm } from './collection-tag-form';
+import { deleteCollectionTag } from '../../store/collection-panel/collection-panel-action';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'value';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
-        marginBottom: '20px'
+        marginBottom: theme.spacing.unit * 2
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -37,6 +38,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '1.125rem',
         color: theme.palette.grey["500"],
         cursor: 'pointer'
+    },
+    value: {
+        textTransform: 'none'
     }
 });
 
@@ -79,13 +83,16 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute label='Collection UUID' value={item && item.uuid}>
+                                    <DetailsAttribute classValue={classes.value} 
+                                            label='Collection UUID' 
+                                            value={item && item.uuid}>
                                         <CopyToClipboard text={item && item.uuid}>
                                             <CopyIcon className={classes.copyIcon} />
                                         </CopyToClipboard>
                                     </DetailsAttribute>
+                                    <DetailsAttribute label='Number of files' value='14' />
                                     <DetailsAttribute label='Content size' value='54 MB' />
-                                    <DetailsAttribute label='Owner' value={item && item.ownerUuid} />
+                                    <DetailsAttribute classValue={classes.value} label='Owner' value={item && item.ownerUuid} />
                                     </Grid>
                                 </Grid>
                             </CardContent>
@@ -100,7 +107,7 @@ export const CollectionPanel = withStyles(styles)(
                                         {
                                             tags.map(tag => {
                                                 return <Chip key={tag.etag} className={classes.tag}
-                                                    onDelete={handleDelete}
+                                                    onDelete={this.handleDelete(tag.uuid)}
                                                     label={renderTagLabel(tag)}  />;
                                             })
                                         }
@@ -122,6 +129,10 @@ export const CollectionPanel = withStyles(styles)(
                     </div>;
             }
 
+            handleDelete = (uuid: string) => () => {
+                this.props.dispatch<any>(deleteCollectionTag(uuid));
+            }
+
             componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {
                 if (!item || match.params.id !== item.uuid) {
                     onItemRouteChange(match.params.id);
@@ -135,8 +146,4 @@ export const CollectionPanel = withStyles(styles)(
 const renderTagLabel = (tag: TagResource) => {
     const { properties } = tag;
     return `${properties.key}: ${properties.value}`;
-};
-
-const handleDelete = () => {
-    alert('tag has been deleted');
 };

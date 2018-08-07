@@ -20,6 +20,7 @@ export const collectionPanelReducer = (state: CollectionPanelState = initialStat
     collectionPanelActions.match(action, {
         default: () => state,
         LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item }),
-        LOAD_COLLECTION_TAGS_SUCCESS: ({ tags }) => ({...state, tags}),
-        CREATE_COLLECTION_TAG_SUCCESS: ({ tag }) => ({...state, tags: [...state.tags, tag] })
+        LOAD_COLLECTION_TAGS_SUCCESS: ({ tags }) => ({...state, tags }),
+        CREATE_COLLECTION_TAG_SUCCESS: ({ tag }) => ({...state, tags: [...state.tags, tag] }),
+        DELETE_COLLECTION_TAG_SUCCESS: ({ uuid }) => ({...state, tags: state.tags.filter(tag => tag.uuid !== uuid) })
     });

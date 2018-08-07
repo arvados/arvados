@@ -6,6 +6,7 @@ import * as React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '../../common/custom-theme';
+import * as classnames from "classnames";
 
 type CssRules = 'attribute' | 'label' | 'value' | 'link';
 
@@ -35,19 +36,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface DetailsAttributeDataProps {
     label: string;
+    classLabel?: string;
     value?: string | number;
+    classValue?: string;
     link?: string;
     children?: React.ReactNode;
 }
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
-export const DetailsAttribute = withStyles(styles)(({ label, link, value, children, classes }: DetailsAttributeProps) =>
+export const DetailsAttribute = withStyles(styles)(({ label, link, value, children, classes, classLabel, classValue }: DetailsAttributeProps) =>
     <Typography component="div" className={classes.attribute}>
-        <Typography component="span" className={classes.label}>{label}</Typography>
+        <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
         { link
             ? <a href={link} className={classes.link} target='_blank'>{value}</a>
-            : <Typography component="span" className={classes.value}>
+            : <Typography component="span" className={classnames([classes.value, classValue])}>
                 {value}
                 {children}
             </Typography> }

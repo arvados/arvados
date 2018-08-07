@@ -17,7 +17,9 @@ export const collectionPanelActions = unionize({
     LOAD_COLLECTION_TAGS: ofType<{ uuid: string }>(),
     LOAD_COLLECTION_TAGS_SUCCESS: ofType<{ tags: TagResource[] }>(),
     CREATE_COLLECTION_TAG: ofType<{ data: any }>(),
-    CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: TagResource }>()
+    CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: TagResource }>(),
+    DELETE_COLLECTION_TAG: ofType<{ uuid: string }>(),
+    DELETE_COLLECTION_TAG_SUCCESS: ofType<{ uuid: string }>()
 }, { tag: 'type', value: 'payload' });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -56,6 +58,20 @@ export const createCollectionTag = (data: TagProperty) =>
                 dispatch(collectionPanelActions.CREATE_COLLECTION_TAG_SUCCESS({ tag }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Tag has been successfully added.",
+                    hideDuration: 2000
+                }));
+            });
+    };
+
+export const deleteCollectionTag = (uuid: string) => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(collectionPanelActions.DELETE_COLLECTION_TAG({ uuid }));
+        return services.linkService
+            .delete(uuid)
+            .then(tag => {
+                dispatch(collectionPanelActions.DELETE_COLLECTION_TAG_SUCCESS({ uuid: tag.uuid }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Tag has been successfully deleted.",
                     hideDuration: 2000
                 }));
             });
