@@ -33,7 +33,7 @@ addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
-addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet); 
+addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 
 fetchConfig()
     .then(config => {
@@ -44,15 +44,16 @@ fetchConfig()
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
 
-        const Token = (props: any) => <ApiToken authService={services.authService} {...props}/>;
+        const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
+        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} {...props}/>;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
                 <Provider store={store}>
                     <ConnectedRouter history={history}>
                         <div>
-                            <Route path="/" component={Workbench} />
-                            <Route path="/token" component={Token} />
+                            <Route path="/" component={WorkbenchComponent} />
+                            <Route path="/token" component={TokenComponent} />
                         </div>
                     </ConnectedRouter>
                 </Provider>
