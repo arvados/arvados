@@ -11,7 +11,7 @@ import Code from '@material-ui/icons/Code';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import Close from '@material-ui/icons/Close';
-import ContentCopy from '@material-ui/icons/ContentCopy';
+import ContentCopy from '@material-ui/icons/FileCopyOutlined';
 import CreateNewFolder from '@material-ui/icons/CreateNewFolder';
 import Delete from '@material-ui/icons/Delete';
 import DeviceHub from '@material-ui/icons/DeviceHub';

@@ -6,6 +6,8 @@ import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 import { ResourceKind } from "../../models/resource";
 import { CollectionResource } from "../../models/collection";
+import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
+import { createTree } from "../../models/tree";
 import { RootState } from "../store";
 import { ServiceRepository } from "../../services/services";
 import { TagResource, TagProperty } from "../../models/tag";
@@ -29,10 +31,15 @@ export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 export const loadCollection = (uuid: string, kind: ResourceKind) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
+        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         return services.collectionService
             .get(uuid)
             .then(item => {
-                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: item as CollectionResource }));
+                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
+                return services.collectionFilesService.getFiles(item.uuid);
+            })
+            .then(files => {
+                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(files));
             });
     };
 

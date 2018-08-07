@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { 
-    StyleRulesCallback, WithStyles, withStyles, Card, 
-    CardHeader, IconButton, CardContent, Grid, Chip, TextField, Button
+import {
+    StyleRulesCallback, WithStyles, withStyles, Card,
+    CardHeader, IconButton, CardContent, Grid, Chip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -14,6 +14,7 @@ import { RootState } from '../../store/store';
 import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon/icon';
 import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
 import { CollectionResource } from '../../models/collection';
+import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { TagResource } from '../../models/tag';
 import { CollectionTagForm } from './collection-tag-form';
@@ -69,16 +70,16 @@ export const CollectionPanel = withStyles(styles)(
                 const { classes, item, tags, onContextMenu } = this.props;
                 return <div>
                         <Card className={classes.card}>
-                            <CardHeader 
+                            <CardHeader
                                 avatar={ <CollectionIcon className={classes.iconHeader} /> }
-                                action={ 
+                                action={
                                     <IconButton
                                         aria-label="More options"
                                         onClick={event => onContextMenu(event, item)}>
                                         <MoreOptionsIcon />
-                                    </IconButton> 
+                                    </IconButton>
                                 }
-                                title={item && item.name } 
+                                title={item && item.name }
                                 subheader={item && item.description} />
                             <CardContent>
                                 <Grid container direction="column">
@@ -115,17 +116,9 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </CardContent>
                         </Card>
-
-                        <Card className={classes.card}>
-                            <CardHeader title="Files" />
-                            <CardContent>
-                                <Grid container direction="column">
-                                    <Grid item xs={4}>
-                                        Files
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
+                        <div className={classes.card}>
+                            <CollectionPanelFiles/>
+                        </div>
                     </div>;
             }
 

@@ -8,11 +8,10 @@ import { ProjectService } from "./project-service/project-service";
 import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
 import { AxiosInstance } from "axios";
-import { CommonResourceService } from "../common/api/common-resource-service";
-import { Resource } from "../models/resource";
 import { CollectionService } from "./collection-service/collection-service";
 import { TagService } from "./tag-service/tag-service";
 import Axios from "axios";
+import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 
 export interface ServiceRepository {
     apiClient: AxiosInstance;
@@ -22,8 +21,9 @@ export interface ServiceRepository {
     projectService: ProjectService;
     linkService: LinkService;
     favoriteService: FavoriteService;
-    collectionService: CommonResourceService<Resource>;
     tagService: TagService;
+    collectionService: CollectionService;
+    collectionFilesService: CollectionFilesService;
 }
 
 export const createServices = (baseUrl: string): ServiceRepository => {
@@ -37,7 +37,8 @@ export const createServices = (baseUrl: string): ServiceRepository => {
     const favoriteService = new FavoriteService(linkService, groupsService);
     const collectionService = new CollectionService(apiClient);
     const tagService = new TagService(linkService);
-    
+    const collectionFilesService = new CollectionFilesService(collectionService);
+
     return {
         apiClient,
         authService,
@@ -46,6 +47,7 @@ export const createServices = (baseUrl: string): ServiceRepository => {
         linkService,
         favoriteService,
         collectionService,
-        tagService
+        tagService,
+        collectionFilesService
     };
 };

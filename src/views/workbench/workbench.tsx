@@ -34,13 +34,14 @@ import { ResourceKind } from '../../models/resource';
 import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
-import { dataExplorerActions } from '../../store/data-explorer/data-explorer-action';
 import { Snackbar } from '../../views-components/snackbar/snackbar';
 import { favoritePanelActions } from '../../store/favorite-panel/favorite-panel-action';
 import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection, loadCollectionTags } from '../../store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '../../models/collection';
+import { RemoveDialog } from '../../views-components/remove-dialog/remove-dialog';
+import { RenameDialog } from '../../views-components/rename-dialog/rename-dialog';
 import { UpdateCollectionDialog } from '../../views-components/update-collection-dialog/update-collection-dialog.';
 import { AuthService } from "../../services/auth-service/auth-service";
 
@@ -232,6 +233,8 @@ export const Workbench = withStyles(styles)(
                         <Snackbar />
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
+                        <RemoveDialog />
+                        <RenameDialog />
                         <UpdateCollectionDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "unionize";
-import { CommonResourceService } from "../../common/api/common-resource-service";
 import { Dispatch } from "redux";
 import { Resource, ResourceKind } from "../../models/resource";
 import { RootState } from "../store";
@@ -18,13 +17,10 @@ export const detailsPanelActions = unionize({
 export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
 
 export const loadDetails = (uuid: string, kind: ResourceKind) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(detailsPanelActions.LOAD_DETAILS({ uuid, kind }));
-        getService(services, kind)
-            .get(uuid)
-            .then(project => {
-                dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item: project }));
-            });
+        const item = await getService(services, kind).get(uuid);
+        dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item }));
     };
 
 const getService = (services: ServiceRepository, kind: ResourceKind) => {
