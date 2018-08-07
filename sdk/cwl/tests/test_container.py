@@ -481,7 +481,8 @@ class TestContainer(unittest.TestCase):
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
-            "portable_data_hash": "99999999999999999999999999999993+99"}
+            "portable_data_hash": "99999999999999999999999999999994+99",
+            "manifest_text": ". 99999999999999999999999999999994+99 0:0:file1 0:0:file2"}
 
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 

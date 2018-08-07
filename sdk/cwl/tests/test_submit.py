@@ -132,7 +132,8 @@ def stubs(func):
                     "listing": [{
                         "basename": "renamed.txt",
                         "class": "File",
-                        "location": "keep:99999999999999999999999999999998+99/file1.txt"
+                        "location": "keep:99999999999999999999999999999998+99/file1.txt",
+                        "size": 0
                     }],
                     'class': 'Directory'
                 },
@@ -164,7 +165,8 @@ def stubs(func):
                                   {
                                       'basename': 'renamed.txt',
                                       'class': 'File', 'location':
-                                      'keep:99999999999999999999999999999998+99/file1.txt'
+                                      'keep:99999999999999999999999999999998+99/file1.txt',
+                                      'size': 0
                                   }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
@@ -225,7 +227,8 @@ def stubs(func):
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
                              'class': 'File',
-                             'location': 'keep:99999999999999999999999999999998+99/file1.txt'
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
+                             'size': 0
                             }
                         ]}
                     },
@@ -781,6 +784,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
         capture_stdout = cStringIO.StringIO()
+        collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_keepref_wf.cwl"],

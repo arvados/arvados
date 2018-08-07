@@ -389,6 +389,7 @@ class TestWorkflow(unittest.TestCase):
         metadata["cwlVersion"] = tool["cwlVersion"]
 
         mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
+        mockcollectionreader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "token.txt")
 
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
@@ -435,7 +436,8 @@ class TestWorkflow(unittest.TestCase):
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
-    "location": "/keep/99999999999999999999999999999999+118/token.txt"
+    "location": "/keep/99999999999999999999999999999999+118/token.txt",
+    "size": 0
   },
   "sleeptime": 5
 }''')])
