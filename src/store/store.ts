@@ -27,6 +27,8 @@ import { CollectionPanelState, collectionPanelReducer } from './collection-panel
 import { DialogState, dialogReducer } from './dialog/dialog-reducer';
 import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
 import { ServiceRepository } from "../services/services";
+import { treePickerReducer } from './tree-picker/tree-picker-reducer';
+import { TreePicker } from './tree-picker/tree-picker';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -47,6 +49,7 @@ export interface RootState {
     snackbar: SnackbarState;
     collectionPanelFiles: CollectionPanelFilesState;
     dialog: DialogState;
+    treePicker: TreePicker;
 }
 
 export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
@@ -66,7 +69,8 @@ export function configureStore(history: History, services: ServiceRepository): R
         favorites: favoritesReducer,
         snackbar: snackbarReducer,
         collectionPanelFiles: collectionPanelFilesReducer,
-        dialog: dialogReducer
+        dialog: dialogReducer,
+        treePicker: treePickerReducer,
     });
 
     const projectPanelMiddleware = dataExplorerMiddleware(

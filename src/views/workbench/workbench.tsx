@@ -40,10 +40,12 @@ import { CreateCollectionDialog } from '../../views-components/create-collection
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection, loadCollectionTags } from '../../store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '../../models/collection';
-import { RemoveDialog } from '../../views-components/remove-dialog/remove-dialog';
-import { RenameDialog } from '../../views-components/rename-dialog/rename-dialog';
 import { UpdateCollectionDialog } from '../../views-components/update-collection-dialog/update-collection-dialog.';
 import { AuthService } from "../../services/auth-service/auth-service";
+import { RenameFileDialog } from '../../views-components/rename-file-dialog/rename-file-dialog';
+import { FileRemoveDialog } from '../../views-components/file-remove-dialog/file-remove-dialog';
+import { MultipleFilesRemoveDialog } from '../../views-components/file-remove-dialog/multiple-files-remove-dialog';
+import { DialogCollectionCreateWithSelectedFile } from '../../views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -233,8 +235,10 @@ export const Workbench = withStyles(styles)(
                         <Snackbar />
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
-                        <RemoveDialog />
-                        <RenameDialog />
+                        <RenameFileDialog />
+                        <DialogCollectionCreateWithSelectedFile />
+                        <FileRemoveDialog />
+                        <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}

@@ -8,7 +8,7 @@ export type DialogState = Record<string, Dialog>;
 
 export interface Dialog {
     open: boolean;
-    data?: any;
+    data: any;
 }
 
 export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
@@ -16,7 +16,7 @@ export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
         OPEN_DIALOG: ({ id, data }) => ({ ...state, [id]: { open: true, data } }),
         CLOSE_DIALOG: ({ id }) => ({ 
             ...state, 
-            [id]: state[id] ? { ...state[id], open: false } : { open: false } }),
+            [id]: state[id] ? { ...state[id], open: false } : { open: false, data: {} } }),
         default: () => state,
     });
 

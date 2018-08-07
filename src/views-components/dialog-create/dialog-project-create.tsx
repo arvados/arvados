@@ -5,11 +5,8 @@
 import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
-import TextField from '@material-ui/core/TextField';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
+import { TextField } from '../../components/text-field/text-field';
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
 import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
@@ -58,14 +55,6 @@ interface DialogProjectProps {
     pristine: boolean;
 }
 
-interface TextFieldProps {
-    label: string;
-    floatinglabeltext: string;
-    className?: string;
-    input?: string;
-    meta?: any;
-}
-
 export const DialogProjectCreate = compose(
     reduxForm({ form: 'projectCreateDialog' }),
     withStyles(styles))(
@@ -85,14 +74,12 @@ export const DialogProjectCreate = compose(
                                 project</DialogTitle>
                             <DialogContent className={classes.formContainer}>
                                 <Field name="name"
-                                       component={this.renderTextField}
-                                       floatinglabeltext="Project Name"
+                                       component={TextField}
                                        validate={PROJECT_NAME_VALIDATION}
                                        className={classes.textField}
                                        label="Project Name"/>
                                 <Field name="description"
-                                       component={this.renderTextField}
-                                       floatinglabeltext="Description - optional"
+                                       component={TextField}
                                        validate={PROJECT_DESCRIPTION_VALIDATION}
                                        className={classes.textField}
                                        label="Description - optional"/>
@@ -114,17 +101,5 @@ export const DialogProjectCreate = compose(
                 </Dialog>
             );
         }
-
-        renderTextField = ({ input, label, meta: { touched, error }, ...custom }: TextFieldProps) => (
-            <TextField
-                helperText={touched && error}
-                label={label}
-                className={this.props.classes.textField}
-                error={touched && !!error}
-                autoComplete='off'
-                {...input}
-                {...custom}
-            />
-        )
     }
 );
