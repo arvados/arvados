@@ -80,7 +80,7 @@ export interface TreeItem<T> {
     items?: Array<TreeItem<T>>;
 }
 
-interface TreeProps<T> {
+export interface TreeProps<T> {
     items?: Array<TreeItem<T>>;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     toggleItemOpen: (id: string, status: TreeItemStatus) => void;
