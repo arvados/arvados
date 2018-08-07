@@ -13,5 +13,6 @@ export interface LinkResource extends Resource {
 }
 
 export enum LinkClass {
-    STAR = 'star'
+    STAR = 'star',
+    TAG = 'tag'
 }

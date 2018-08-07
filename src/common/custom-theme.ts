@@ -34,6 +34,7 @@ const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
 const grey900 = grey["900"];
+const rocheBlue = '#06C';
 
 const themeOptions: ArvadosThemeOptions = {
     customs: {
@@ -122,7 +123,7 @@ const themeOptions: ArvadosThemeOptions = {
     },
     palette: {
         primary: {
-            main: '#06C',
+            main: rocheBlue,
             dark: blue.A100
         }
     }
