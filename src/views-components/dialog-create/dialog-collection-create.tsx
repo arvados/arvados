@@ -16,7 +16,7 @@ import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '.
 import { FileUpload } from "../../components/file-upload/file-upload";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "../../store/store";
-import { collectionUploaderActions } from "../../store/collections/uploader/collection-uploader-actions";
+import { collectionUploaderActions, UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
 
@@ -48,12 +48,12 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 interface DialogCollectionCreateProps {
     open: boolean;
     handleClose: () => void;
-    onSubmit: (data: { name: string, description: string, files: File[] }) => void;
+    onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;
     handleSubmit: any;
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
-    files: File[];
+    files: UploadFile[];
 }
 
 interface TextFieldProps {
@@ -66,13 +66,13 @@ interface TextFieldProps {
 
 export const DialogCollectionCreate = compose(
     connect((state: RootState) => ({
-        files: state.collections.uploader.files
+        files: state.collections.uploader
     })),
     reduxForm({ form: 'collectionCreateDialog' }),
     withStyles(styles))(
     class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & DispatchProp & WithStyles<CssRules>> {
         render() {
-            const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine } = this.props;
+            const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine, files } = this.props;
 
             return (
                 <Dialog
@@ -82,7 +82,7 @@ export const DialogCollectionCreate = compose(
                     maxWidth='sm'
                     disableBackdropClick={true}
                     disableEscapeKeyDown={true}>
-                    <form onSubmit={handleSubmit((data: any) => onSubmit({ ...data, files: this.props.files }))}>
+                    <form onSubmit={handleSubmit((data: any) => onSubmit(data, files))}>
                         <DialogTitle id="form-dialog-title">Create a collection</DialogTitle>
                         <DialogContent className={classes.formContainer}>
                             <Field name="name"
@@ -100,7 +100,7 @@ export const DialogCollectionCreate = compose(
                                     className={classes.textField}
                                     label="Description - optional"/>
                             <FileUpload
-                                files={this.props.files}
+                                files={files}
                                 onDrop={files => this.props.dispatch(collectionUploaderActions.SET_UPLOAD_FILES(files))}/>
                         </DialogContent>
                         <DialogActions className={classes.dialogActions}>

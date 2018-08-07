@@ -7,29 +7,47 @@ import { CollectionResource } from "../../models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
 import { FilterBuilder } from "../../common/api/filter-builder";
-import { CollectionFile, CollectionFileType, createCollectionFile } from "../../models/collection-file";
+import { CollectionFile, createCollectionFile } from "../../models/collection-file";
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
 import * as _ from "lodash";
 import { KeepManifestStream } from "../../models/keep-manifest";
+
+export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
 export class CollectionService extends CommonResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private keepService: KeepService) {
         super(serverApi, "collections");
     }
 
-    uploadFile(keepServiceHost: string, file: File, fileIdx = 0): Promise<CollectionFile> {
-        const fd = new FormData();
-        fd.append(`file_${fileIdx}`, file);
+    private readFile(file: File): Promise<ArrayBuffer> {
+        return new Promise<ArrayBuffer>(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result as ArrayBuffer);
+            };
 
-        return axios.post<string>(keepServiceHost, fd, {
-            onUploadProgress: (e: ProgressEvent) => {
-                console.log(`${e.loaded} / ${e.total}`);
-            }
-        }).then(data => createCollectionFile({
-            id: data.data,
-            name: file.name,
-            size: file.size
-        }));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    private uploadFile(keepServiceHost: string, file: File, fileId: number, onProgress?: UploadProgress): Promise<CollectionFile> {
+        return this.readFile(file).then(content => {
+            return axios.post<string>(keepServiceHost, content, {
+                headers: {
+                    'Content-Type': 'text/octet-stream'
+                },
+                onUploadProgress: (e: ProgressEvent) => {
+                    if (onProgress) {
+                        onProgress(fileId, e.loaded, e.total, Date.now());
+                    }
+                    console.log(`${e.loaded} / ${e.total}`);
+                }
+            }).then(data => createCollectionFile({
+                id: data.data,
+                name: file.name,
+                size: file.size
+            }));
+        });
     }
 
     private async updateManifest(collectionUuid: string, files: CollectionFile[]): Promise<CollectionResource> {
@@ -65,9 +83,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         return this.update(collectionUuid, CommonResourceService.mapKeys(_.snakeCase)(data));
     }
 
-    uploadFiles(collectionUuid: string, files: File[]) {
-        console.log("Uploading files", files);
-
+    uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress): Promise<CollectionResource | never> {
         const filters = FilterBuilder.create()
             .addEqual("service_type", "proxy");
 
@@ -78,14 +94,14 @@ export class CollectionService extends CommonResourceService<CollectionResource>
                     data.items[0].serviceHost +
                     ":" + data.items[0].servicePort;
 
-                console.log("Servicehost", serviceHost);
+                console.log("serviceHost", serviceHost);
 
-                const files$ = files.map((f, idx) => this.uploadFile(serviceHost, f, idx));
-                Promise.all(files$).then(values => {
-                    this.updateManifest(collectionUuid, values).then(() => {
-                        console.log("Upload done!");
-                    });
+                const files$ = files.map((f, idx) => this.uploadFile(serviceHost, f, idx, onProgress));
+                return Promise.all(files$).then(values => {
+                    return this.updateManifest(collectionUuid, values);
                 });
+            } else {
+                return Promise.reject("Missing keep service host");
             }
         });
     }

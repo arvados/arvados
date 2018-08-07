@@ -8,6 +8,7 @@ import { Dispatch } from "redux";
 import { RootState } from "../../store";
 import { CollectionResource } from '../../../models/collection';
 import { ServiceRepository } from "../../../services/services";
+import { collectionUploaderActions } from "../uploader/collection-uploader-actions";
 
 export const collectionCreateActions = unionize({
     OPEN_COLLECTION_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -19,7 +20,7 @@ export const collectionCreateActions = unionize({
     value: 'payload'
 });
 
-export const createCollection = (collection: Partial<CollectionResource>) =>
+export const createCollection = (collection: Partial<CollectionResource>, files: File[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { ownerUuid } = getState().collections.creator;
         const collectiontData = { ownerUuid, ...collection };
@@ -27,7 +28,14 @@ export const createCollection = (collection: Partial<CollectionResource>) =>
         return services.collectionService
             .create(collectiontData)
             .then(collection => {
-                dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+                dispatch(collectionUploaderActions.START_UPLOAD());
+                services.collectionService.uploadFiles(collection.uuid, files,
+                    (fileId, loaded, total, currentTime) => {
+                        dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
+                    })
+                .then(collection => {
+                    dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+                });
                 return collection;
             });
     };
