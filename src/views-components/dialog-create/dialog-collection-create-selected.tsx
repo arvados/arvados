@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { InjectedFormProps, Field } from "redux-form";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from "@material-ui/core";
+import { InjectedFormProps, Field, WrappedFieldProps } from "redux-form";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, FormHelperText } from "@material-ui/core";
 import { WithDialogProps } from "../../store/dialog/with-dialog";
 import { TextField } from "../../components/text-field/text-field";
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from "../../validators/create-project/create-project-validator";
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "../../validators/create-project/create-project-validator";
+import { ProjectTreePicker } from "../project-tree-picker/project-tree-picker";
 
 export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
     <form>
@@ -28,7 +29,10 @@ export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string
                         validate={COLLECTION_DESCRIPTION_VALIDATION}
                         label="Description - optional" />
                 </div>
-                <div style={{ overflowY: 'auto' }}>TREE</div>
+                <Field
+                    name="projectUuid"
+                    component={Picker}
+                    validate={COLLECTION_PROJECT_VALIDATION} />
             </DialogContent>
             <DialogActions>
                 <Button
@@ -51,3 +55,8 @@ export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string
             </DialogActions>
         </Dialog>
     </form>;
+
+const Picker = (props: WrappedFieldProps) =>
+    <div style={{ width: '400px', height: '144px', display: 'flex', flexDirection: 'column' }}>
+        <ProjectTreePicker onChange={projectUuid => props.input.onChange(projectUuid)} />
+    </div>;

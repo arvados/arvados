@@ -19,9 +19,10 @@ import { FilterBuilder } from "../../common/api/filter-builder";
 
 type ProjectTreePickerProps = Pick<TreeProps<ProjectResource>, 'toggleItemActive' | 'toggleItemOpen'>;
 
-const mapDispatchToProps = (dispatch: Dispatch): ProjectTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, props: {onChange: (projectUuid: string) => void}): ProjectTreePickerProps => ({
     toggleItemActive: id => {
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id }));
+        props.onChange(id);
     },
     toggleItemOpen: (id, status) => {
         status === TreeItemStatus.INITIAL
@@ -31,11 +32,13 @@ const mapDispatchToProps = (dispatch: Dispatch): ProjectTreePickerProps => ({
 });
 
 export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: ProjectTreePickerProps) =>
-    <div>
-        <Typography variant='caption'>
+    <div style={{display: 'flex', flexDirection: 'column'}}>
+        <Typography variant='caption' style={{flexShrink: 0}}>
             Select a project
         </Typography>
-        <TreePicker {...props} render={renderTreeItem} />
+        <div style={{flexGrow: 1, overflow: 'auto'}}>
+            <TreePicker {...props} render={renderTreeItem} />
+        </div>
     </div>);
 
 // TODO: move action creator to store directory

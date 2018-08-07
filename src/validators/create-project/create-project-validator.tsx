@@ -9,3 +9,4 @@ export const PROJECT_NAME_VALIDATION = [require, maxLength(255)];
 export const PROJECT_DESCRIPTION_VALIDATION = [maxLength(255)];
 export const COLLECTION_NAME_VALIDATION = [require, maxLength(255)];
 export const COLLECTION_DESCRIPTION_VALIDATION = [maxLength(255)];
+export const COLLECTION_PROJECT_VALIDATION = [require];
