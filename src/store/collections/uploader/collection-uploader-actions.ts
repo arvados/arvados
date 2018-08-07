@@ -18,7 +18,8 @@ export interface UploadFile {
 export const collectionUploaderActions = unionize({
     SET_UPLOAD_FILES: ofType<File[]>(),
     START_UPLOAD: ofType(),
-    SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>()
+    SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>(),
+    CLEAR_UPLOAD: ofType()
 }, {
     tag: 'type',
     value: 'payload'

@@ -37,6 +37,7 @@ export const collectionUploaderReducer = (state: CollectionUploaderState = initi
             }
             return files;
         },
+        CLEAR_UPLOAD: () => [],
         default: () => state
     });
 };

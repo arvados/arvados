@@ -38,16 +38,17 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 interface FileUploadProps {
     files: UploadFile[];
+    disabled: boolean;
     onDrop: (files: File[]) => void;
 }
 
 export const FileUpload = withStyles(styles)(
-    ({ classes, files, onDrop }: FileUploadProps & WithStyles<CssRules>) =>
+    ({ classes, files, disabled, onDrop }: FileUploadProps & WithStyles<CssRules>) =>
     <Grid container direction={"column"}>
         <Typography variant={"subheading"}>
             Upload data
         </Typography>
-        <Dropzone className={classes.dropzone} onDrop={files => onDrop(files)}>
+        <Dropzone className={classes.dropzone} onDrop={files => onDrop(files)} disabled={disabled}>
             {files.length === 0 &&
             <Grid container justify="center" alignItems="center" className={classes.container}>
                 <Grid item component={"span"}>

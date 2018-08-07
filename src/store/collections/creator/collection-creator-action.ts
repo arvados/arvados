@@ -9,6 +9,7 @@ import { RootState } from "../../store";
 import { CollectionResource } from '../../../models/collection';
 import { ServiceRepository } from "../../../services/services";
 import { collectionUploaderActions } from "../uploader/collection-uploader-actions";
+import { reset } from "redux-form";
 
 export const collectionCreateActions = unionize({
     OPEN_COLLECTION_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -35,6 +36,8 @@ export const createCollection = (collection: Partial<CollectionResource>, files:
                     })
                 .then(collection => {
                     dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+                    dispatch(reset('collectionCreateDialog'));
+                    dispatch(collectionUploaderActions.CLEAR_UPLOAD());
                 });
                 return collection;
             });

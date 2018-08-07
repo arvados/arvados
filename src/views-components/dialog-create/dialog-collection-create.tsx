@@ -73,7 +73,9 @@ export const DialogCollectionCreate = compose(
     class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & DispatchProp & WithStyles<CssRules>> {
         render() {
             const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine, files } = this.props;
-
+            const busy = submitting || files.reduce(
+                (prev, curr) => prev + (curr.loaded > 0 && curr.loaded < curr.total ? 1 : 0), 0
+            ) > 0;
             return (
                 <Dialog
                     open={open}
@@ -101,19 +103,20 @@ export const DialogCollectionCreate = compose(
                                     label="Description - optional"/>
                             <FileUpload
                                 files={files}
+                                disabled={busy}
                                 onDrop={files => this.props.dispatch(collectionUploaderActions.SET_UPLOAD_FILES(files))}/>
                         </DialogContent>
                         <DialogActions className={classes.dialogActions}>
                             <Button onClick={handleClose} className={classes.button} color="primary"
-                                    disabled={submitting}>CANCEL</Button>
+                                    disabled={busy}>CANCEL</Button>
                             <Button type="submit"
                                     className={classes.lastButton}
                                     color="primary"
-                                    disabled={invalid || submitting || pristine}
+                                    disabled={invalid || busy || pristine}
                                     variant="contained">
                                 CREATE A COLLECTION
                             </Button>
-                            {submitting && <CircularProgress size={20} className={classes.createProgress}/>}
+                            {busy && <CircularProgress size={20} className={classes.createProgress}/>}
                         </DialogActions>
                     </form>
                 </Dialog>
