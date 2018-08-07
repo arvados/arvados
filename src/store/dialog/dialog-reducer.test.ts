@@ -16,7 +16,7 @@ describe('DialogReducer', () => {
     it('CLOSE_DIALOG', () => {
         const id = 'test id';
         const state = dialogReducer({}, dialogActions.CLOSE_DIALOG({ id }));
-        expect(state[id]).toEqual({ open: false });
+        expect(state[id]).toEqual({ open: false, data: {} });
     });
     
     it('CLOSE_DIALOG persist data', () => {

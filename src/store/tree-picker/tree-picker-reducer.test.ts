@@ -57,7 +57,7 @@ describe('TreePickerReducer', () => {
             .map(tree => treePickerReducer(tree, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1' })));
         expect(getNodeValue('1')(newTree)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
-            collapsed: true
+            collapsed: false
         });
     });
 
@@ -70,7 +70,7 @@ describe('TreePickerReducer', () => {
             .map(tree => treePickerReducer(tree, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1' })));
         expect(getNodeValue('1')(newTree)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
-            collapsed: false
+            collapsed: true
         });
     });
 
