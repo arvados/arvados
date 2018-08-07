@@ -114,12 +114,6 @@ const themeOptions: ArvadosThemeOptions = {
                     color: purple800
                 }
             }
-        },
-        MuiChip: {
-            root: {
-                color: 'white',
-                backgroundColor: rocheBlue
-            }
         }
     },
     mixins: {
