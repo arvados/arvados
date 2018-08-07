@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { CollectionUploaderAction, collectionUploaderActions, UploadFile } from "./collection-uploader-actions";
-import * as _ from 'lodash';
 
 export type CollectionUploaderState = UploadFile[];
 
@@ -25,18 +24,15 @@ export const collectionUploaderReducer = (state: CollectionUploaderState = initi
             const startTime = Date.now();
             return state.map(f => ({...f, startTime, prevTime: startTime}));
         },
-        SET_UPLOAD_PROGRESS: ({ fileId, loaded, total, currentTime }) => {
-            const files = _.cloneDeep(state);
-            const f = files.find(f => f.id === fileId);
-            if (f) {
-                f.prevLoaded = f.loaded;
-                f.loaded = loaded;
-                f.total = total;
-                f.prevTime = f.currentTime;
-                f.currentTime = currentTime;
-            }
-            return files;
-        },
+        SET_UPLOAD_PROGRESS: ({ fileId, loaded, total, currentTime }) =>
+            state.map(f => f.id === fileId ? {
+                ...f,
+                prevLoaded: f.loaded,
+                loaded,
+                total,
+                prevTime: f.currentTime,
+                currentTime
+            } : f),
         CLEAR_UPLOAD: () => [],
         default: () => state
     });
