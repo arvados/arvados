@@ -26,7 +26,7 @@ export class TagService {
 
     list(uuid: string) {
         const filters = FilterBuilder
-            .create<TagResource>()
+            .create()
             .addEqual("headUuid", uuid)
             .addEqual("tailUuid", TagTailType.COLLECTION)
             .addEqual("linkClass", LinkClass.TAG);

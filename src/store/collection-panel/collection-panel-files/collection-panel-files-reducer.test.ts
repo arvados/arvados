@@ -11,21 +11,21 @@ import { CollectionPanelFile, CollectionPanelDirectory } from "./collection-pane
 describe('CollectionPanelFilesReducer', () => {
 
     const files: Array<CollectionFile | CollectionDirectory> = [
-        createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
-        createCollectionDirectory({ id: 'Directory 2', name: 'Directory 2', parentId: 'Directory 1' }),
-        createCollectionDirectory({ id: 'Directory 3', name: 'Directory 3', parentId: '' }),
-        createCollectionDirectory({ id: 'Directory 4', name: 'Directory 4', parentId: 'Directory 3' }),
-        createCollectionFile({ id: 'file1.txt', name: 'file1.txt', parentId: 'Directory 2' }),
-        createCollectionFile({ id: 'file2.txt', name: 'file2.txt', parentId: 'Directory 2' }),
-        createCollectionFile({ id: 'file3.txt', name: 'file3.txt', parentId: 'Directory 3' }),
-        createCollectionFile({ id: 'file4.txt', name: 'file4.txt', parentId: 'Directory 3' }),
-        createCollectionFile({ id: 'file5.txt', name: 'file5.txt', parentId: 'Directory 4' }),
+        createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', path: '' }),
+        createCollectionDirectory({ id: 'Directory 2', name: 'Directory 2', path: 'Directory 1' }),
+        createCollectionDirectory({ id: 'Directory 3', name: 'Directory 3', path: '' }),
+        createCollectionDirectory({ id: 'Directory 4', name: 'Directory 4', path: 'Directory 3' }),
+        createCollectionFile({ id: 'file1.txt', name: 'file1.txt', path: 'Directory 2' }),
+        createCollectionFile({ id: 'file2.txt', name: 'file2.txt', path: 'Directory 2' }),
+        createCollectionFile({ id: 'file3.txt', name: 'file3.txt', path: 'Directory 3' }),
+        createCollectionFile({ id: 'file4.txt', name: 'file4.txt', path: 'Directory 3' }),
+        createCollectionFile({ id: 'file5.txt', name: 'file5.txt', path: 'Directory 4' }),
     ];
 
     const collectionFilesTree = files.reduce((tree, file) => setNode({
         children: [],
         id: file.id,
-        parent: file.parentId,
+        parent: file.path,
         value: file
     })(tree), createTree<CollectionFile | CollectionDirectory>());
 
@@ -35,7 +35,7 @@ describe('CollectionPanelFilesReducer', () => {
 
     it('SET_COLLECTION_FILES', () => {
         expect(getNodeValue('Directory 1')(collectionPanelFilesTree)).toEqual({
-            ...createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', parentId: '' }),
+            ...createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', path: '' }),
             collapsed: true,
             selected: false
         });

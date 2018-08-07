@@ -8,6 +8,10 @@ import { FileTreeData } from '../file-tree/file-tree-data';
 import { FileTree } from '../file-tree/file-tree';
 import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, CardContent, Card, Button } from '@material-ui/core';
 import { CustomizeTableIcon } from '../icon/icon';
+import { connect, DispatchProp } from "react-redux";
+import { Dispatch } from "redux";
+import { RootState } from "../../store/store";
+import { ServiceRepository } from "../../services/services";
 
 export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;
@@ -36,14 +40,24 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     }
 });
 
-export const CollectionPanelFiles = withStyles(styles)(
-    ({ onItemMenuOpen, onOptionsMenuOpen, classes, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
+const renameFile = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+  services.collectionFilesService.renameTest();
+};
+
+
+export const CollectionPanelFiles =
+    connect()(
+    withStyles(styles)(
+    ({ onItemMenuOpen, onOptionsMenuOpen, classes, dispatch, ...treeProps }: CollectionPanelFilesProps & DispatchProp & WithStyles<CssRules>) =>
         <Card className={classes.root}>
             <CardHeader
                 title="Files"
                 action={
-                    <Button 
-                        variant='raised' 
+                    <Button onClick={
+                        () => {
+                            dispatch<any>(renameFile());
+                        }}
+                        variant='raised'
                         color='primary'
                         size='small'>
                         Upload data
@@ -65,4 +79,5 @@ export const CollectionPanelFiles = withStyles(styles)(
                     </Typography>
             </Grid>
             <FileTree onMenuOpen={onItemMenuOpen} {...treeProps} />
-        </Card>);
+        </Card>)
+);

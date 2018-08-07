@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { KeepManifestStream, KeepManifestStreamFile } from "../../models/keep-manifest";
+import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "../../models/keep-manifest";
 
 /**
  * Documentation [http://doc.arvados.org/api/storage.html](http://doc.arvados.org/api/storage.html)
  */
-export const parseKeepManifestText = (text: string) =>
+export const parseKeepManifestText: (text: string) => KeepManifestStream[] = (text: string) =>
     text
         .split(/\n/)
         .filter(streamText => streamText.length > 0)
@@ -24,6 +24,12 @@ export const parseKeepManifestStream = (stream: string): KeepManifestStream => {
         files: files(tokens)
     };
 };
+
+export const stringifyKeepManifest = (manifest: KeepManifest) =>
+    manifest.map(stringifyKeepManifestStream).join('');
+
+export const stringifyKeepManifestStream = (stream: KeepManifestStream) =>
+    `.${stream.name} ${stream.locators.join(' ')} ${stream.files.map(stringifyFile).join(' ')}\n`;
 
 const FILE_LOCATOR_REGEXP = /^([0-9a-f]{32})\+([0-9]+)(\+[A-Z][-A-Za-z0-9@_]*)*$/;
 
@@ -44,3 +50,6 @@ const parseFile = (token: string): KeepManifestStreamFile => {
     const [position, size, name] = match!.slice(1);
     return { name, position, size: parseInt(size, 10) };
 };
+
+const stringifyFile = (file: KeepManifestStreamFile) =>
+    `${file.position}:${file.size}:${file.name}`;

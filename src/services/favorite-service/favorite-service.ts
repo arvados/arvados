@@ -13,7 +13,7 @@ import { OrderBuilder } from "../../common/api/order-builder";
 export interface FavoriteListArguments {
     limit?: number;
     offset?: number;
-    filters?: FilterBuilder<LinkResource>;
+    filters?: FilterBuilder;
     order?: FavoriteOrderBuilder;
 }
 
@@ -37,7 +37,7 @@ export class FavoriteService {
         return this.linkService
             .list({
                 filters: FilterBuilder
-                    .create<LinkResource>()
+                    .create()
                     .addEqual('tailUuid', data.userUuid)
                     .addEqual('headUuid', data.resourceUuid)
                     .addEqual('linkClass', LinkClass.STAR)
@@ -48,7 +48,7 @@ export class FavoriteService {
 
     list(userUuid: string, { filters, limit, offset, order }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const listFilter = FilterBuilder
-            .create<LinkResource>()
+            .create()
             .addEqual('tailUuid', userUuid)
             .addEqual('linkClass', LinkClass.STAR);
 
@@ -65,7 +65,7 @@ export class FavoriteService {
                     limit,
                     offset,
                     order: order ? order.getContentOrder() : OrderBuilder.create<GroupContentsResource>(),
-                    filters: FilterBuilder.create<GroupContentsResource>().addIn('uuid', uuids),
+                    filters: FilterBuilder.create().addIn('uuid', uuids),
                     recursive: true
                 });
             });
@@ -75,7 +75,7 @@ export class FavoriteService {
         return this.linkService
             .list({
                 filters: FilterBuilder
-                    .create<LinkResource>()
+                    .create()
                     .addIn("headUuid", resourceUuids)
                     .addEqual("tailUuid", userUuid)
                     .addEqual("linkClass", LinkClass.STAR)

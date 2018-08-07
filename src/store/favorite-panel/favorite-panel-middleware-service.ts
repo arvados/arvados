@@ -40,7 +40,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                             : order.addAsc("name")
                         : order,
                     filters: FilterBuilder
-                        .create<LinkResource>()
+                        .create()
                         .addIsA("headUuid", typeFilters.map(filter => filter.type))
                         .addILike("name", dataExplorer.searchValue)
                 })
