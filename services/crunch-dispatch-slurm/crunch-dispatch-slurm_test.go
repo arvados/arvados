@@ -116,7 +116,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	var containers arvados.ContainerList
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Check(len(containers.Items), Equals, 1)
+	c.Assert(len(containers.Items), Equals, 1)
 
 	s.disp.CrunchRunCommand = []string{"echo"}
 
