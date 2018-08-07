@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { parseKeepManifestText, parseKeepManifestStream } from "./collection-manifest-parser";
+import { parseKeepManifestText, parseKeepManifestStream, stringifyKeepManifest } from "./collection-manifest-parser";
 
 describe('parseKeepManifestText', () => {
     it('should parse text into streams', () => {
@@ -26,9 +26,15 @@ describe('parseKeepManifestStream', () => {
     });
     it('should parse stream files', () => {
         expect(stream.files).toEqual([
-            {name: 'a', position: '0', size: 0},
-            {name: 'b', position: '0', size: 0},
-            {name: 'output.txt', position: '0', size: 33},
+            { name: 'a', position: '0', size: 0 },
+            { name: 'b', position: '0', size: 0 },
+            { name: 'output.txt', position: '0', size: 33 },
         ]);
     });
+});
+
+test('stringifyKeepManifest', () => {
+    const manifestText = `. 930625b054ce894ac40596c3f5a0d947+33 0:22:test.txt\n./c/user/results 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt\n`;
+    const manifest = parseKeepManifestText(manifestText);
+    expect(stringifyKeepManifest(manifest)).toEqual(`. 930625b054ce894ac40596c3f5a0d947+33 0:22:test.txt\n./c/user/results 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt\n`);
 });

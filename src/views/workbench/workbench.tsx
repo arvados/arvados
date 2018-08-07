@@ -38,7 +38,7 @@ import { Snackbar } from '../../views-components/snackbar/snackbar';
 import { favoritePanelActions } from '../../store/favorite-panel/favorite-panel-action';
 import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
-import { loadCollection } from '../../store/collection-panel/collection-panel-action';
+import { loadCollection, loadCollectionTags } from '../../store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '../../models/collection';
 import { UpdateCollectionDialog } from '../../views-components/update-collection-dialog/update-collection-dialog.';
 import { AuthService } from "../../services/auth-service/auth-service";
@@ -248,8 +248,11 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
-            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel
-                onItemRouteChange={(collectionId) => this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION))}
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+                onItemRouteChange={(collectionId) => {
+                    this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION));
+                    this.props.dispatch<any>(loadCollectionTags(collectionId));
+                }}
                 onContextMenu={(event, item) => {
                     this.openContextMenu(event, {
                         uuid: item.uuid,

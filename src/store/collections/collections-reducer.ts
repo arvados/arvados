@@ -3,15 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { combineReducers } from 'redux';
-import * as creator from "./creator/collection-creator-reducer";
-import * as updator from "./updator/collection-updator-reducer";
+import { collectionCreatorReducer, CollectionCreatorState } from "./creator/collection-creator-reducer";
+import { collectionUpdaterReducer, CollectionUpdaterState } from "./updater/collection-updater-reducer";
+import { collectionUploaderReducer, CollectionUploaderState } from "./uploader/collection-uploader-reducer";
 
 export type CollectionsState = {
-    creator: creator.CollectionCreatorState;
-    updator: updator.CollectionUpdatorState;
+    creator: CollectionCreatorState;
+    updater: CollectionUpdaterState;
+    uploader: CollectionUploaderState
 };
 
 export const collectionsReducer = combineReducers({
-    creator: creator.collectionCreationReducer,
-    updator: updator.collectionCreationReducer
+    creator: collectionCreatorReducer,
+    updater: collectionUpdaterReducer,
+    uploader: collectionUploaderReducer
 });

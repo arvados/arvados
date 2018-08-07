@@ -68,10 +68,10 @@ export class CommonResourceService<T extends Resource> {
         this.resourceType = '/' + resourceType + '/';
     }
 
-    create(data: Partial<T>) {
+    create(data?: Partial<T> | any) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post<T>(this.resourceType, CommonResourceService.mapKeys(_.snakeCase)(data)));
+                .post<T>(this.resourceType, data && CommonResourceService.mapKeys(_.snakeCase)(data)));
     }
 
     delete(uuid: string): Promise<T> {
@@ -104,7 +104,7 @@ export class CommonResourceService<T extends Resource> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .put<T>(this.resourceType + uuid, data));
-        
+
     }
 }
 

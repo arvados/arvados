@@ -28,7 +28,7 @@ describe("CommonResourceService", () => {
         expect(axiosInstance.get).toHaveBeenCalledWith("/groups/", {
             params: {
                 filters: FilterBuilder
-                    .create<ProjectResource>()
+                    .create()
                     .addEqual("groupClass", "project")
                     .serialize()
             }

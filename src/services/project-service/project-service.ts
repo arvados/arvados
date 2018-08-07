@@ -29,7 +29,7 @@ export class ProjectService extends GroupsService<ProjectResource> {
                 ? filters
                 : FilterBuilder.create())
             .concat(FilterBuilder
-                .create<ProjectResource>()
+                .create()
                 .addEqual("groupClass", GroupClass.PROJECT));
     }
 }

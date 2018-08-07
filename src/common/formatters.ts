@@ -19,6 +19,18 @@ export const formatFileSize = (size?: number) => {
     return "";
 };
 
+export const formatProgress = (loaded: number, total: number) => {
+    const progress = loaded >= 0 && total > 0 ? loaded * 100 / total : 0;
+    return `${progress.toFixed(2)}%`;
+};
+
+export function formatUploadSpeed(prevLoaded: number, loaded: number, prevTime: number, currentTime: number) {
+    const speed = loaded > prevLoaded && currentTime > prevTime
+        ? (loaded - prevLoaded) / (currentTime - prevTime)
+        : 0;
+    return `${(speed / 1000).toFixed(2)} KB/s`;
+}
+
 const FILE_SIZES = [
     {
         base: 1000000000000,

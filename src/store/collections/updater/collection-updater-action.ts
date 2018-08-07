@@ -11,21 +11,21 @@ import { CollectionResource } from '../../../models/collection';
 import { initialize } from 'redux-form';
 import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
 
-export const collectionUpdatorActions = unionize({
-    OPEN_COLLECTION_UPDATOR: ofType<{ uuid: string }>(),
-    CLOSE_COLLECTION_UPDATOR: ofType<{}>(),
+export const collectionUpdaterActions = unionize({
+    OPEN_COLLECTION_UPDATER: ofType<{ uuid: string }>(),
+    CLOSE_COLLECTION_UPDATER: ofType<{}>(),
     UPDATE_COLLECTION_SUCCESS: ofType<{}>(),
 }, {
-        tag: 'type',
-        value: 'payload'
-    });
+    tag: 'type',
+    value: 'payload'
+});
 
 
 export const COLLECTION_FORM_NAME = 'collectionEditDialog';
-    
-export const openUpdator = (uuid: string) =>
+
+export const openUpdater = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(collectionUpdatorActions.OPEN_COLLECTION_UPDATOR({ uuid }));
+        dispatch(collectionUpdaterActions.OPEN_COLLECTION_UPDATER({ uuid }));
         const item = getState().collectionPanel.item;
         if(item) {
             dispatch(initialize(COLLECTION_FORM_NAME, { name: item.name, description: item.description }));
@@ -34,14 +34,14 @@ export const openUpdator = (uuid: string) =>
 
 export const updateCollection = (collection: Partial<CollectionResource>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { uuid } = getState().collections.updator;
+        const { uuid } = getState().collections.updater;
         return services.collectionService
             .update(uuid, collection)
             .then(collection => {
                     dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection as CollectionResource }));
-                    dispatch(collectionUpdatorActions.UPDATE_COLLECTION_SUCCESS());
+                    dispatch(collectionUpdaterActions.UPDATE_COLLECTION_SUCCESS());
                 }
             );
     };
 
-export type CollectionUpdatorAction = UnionOf<typeof collectionUpdatorActions>;
+export type CollectionUpdaterAction = UnionOf<typeof collectionUpdaterActions>;

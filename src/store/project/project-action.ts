@@ -22,15 +22,15 @@ export const projectActions = unionize({
     TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ofType<string>(),
     RESET_PROJECT_TREE_ACTIVITY: ofType<string>()
 }, {
-        tag: 'type',
-        value: 'payload'
-    });
+    tag: 'type',
+    value: 'payload'
+});
 
 export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
     return services.projectService.list({
         filters: FilterBuilder
-            .create<ProjectResource>()
+            .create()
             .addEqual("ownerUuid", parentUuid)
     }).then(({ items: projects }) => {
         dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));

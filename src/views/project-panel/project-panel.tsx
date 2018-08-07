@@ -17,6 +17,7 @@ import { ResourceKind } from '../../models/resource';
 import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
+import { restoreBranch } from '../../store/navigation/navigation-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -176,9 +177,16 @@ export const ProjectPanel = withStyles(styles)(
             handleNewCollectionClick = () => {
                 this.props.onCollectionCreationDialogOpen(this.props.currentItemId);
             }
+
             componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
                 if (match.params.id !== currentItemId) {
                     onItemRouteChange(match.params.id);
+                }
+            }
+
+            componentDidMount() {
+                if (this.props.match.params.id && this.props.currentItemId === '') {
+                    this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
                 }
             }
         }

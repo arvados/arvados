@@ -9,7 +9,11 @@ import { TextField } from '../../components/text-field/text-field';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-collection/create-collection-validator';
+import { FileUpload } from "../../components/file-upload/file-upload";
+import { connect, DispatchProp } from "react-redux";
+import { RootState } from "../../store/store";
+import { collectionUploaderActions, UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
 
@@ -37,23 +41,30 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         marginBottom: theme.spacing.unit * 3
     }
 });
+
 interface DialogCollectionCreateProps {
     open: boolean;
     handleClose: () => void;
-    onSubmit: (data: { name: string, description: string }) => void;
+    onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;
     handleSubmit: any;
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
+    files: UploadFile[];
 }
 
 export const DialogCollectionCreate = compose(
+    connect((state: RootState) => ({
+        files: state.collections.uploader
+    })),
     reduxForm({ form: 'collectionCreateDialog' }),
     withStyles(styles))(
-        class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & WithStyles<CssRules>> {
+        class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & DispatchProp & WithStyles<CssRules>> {
             render() {
-                const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine } = this.props;
-
+                const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine, files } = this.props;
+                const busy = submitting || files.reduce(
+                    (prev, curr) => prev + (curr.loaded > 0 && curr.loaded < curr.total ? 1 : 0), 0
+                ) > 0;
                 return (
                     <Dialog
                         open={open}
@@ -62,7 +73,7 @@ export const DialogCollectionCreate = compose(
                         maxWidth='sm'
                         disableBackdropClick={true}
                         disableEscapeKeyDown={true}>
-                        <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
+                        <form onSubmit={handleSubmit((data: any) => onSubmit(data, files))}>
                             <DialogTitle id="form-dialog-title">Create a collection</DialogTitle>
                             <DialogContent className={classes.formContainer}>
                                 <Field name="name"
@@ -77,18 +88,22 @@ export const DialogCollectionCreate = compose(
                                     validate={COLLECTION_DESCRIPTION_VALIDATION}
                                     className={classes.textField}
                                     label="Description - optional" />
+                                <FileUpload
+                                    files={files}
+                                    disabled={busy}
+                                    onDrop={files => this.props.dispatch(collectionUploaderActions.SET_UPLOAD_FILES(files))} />
                             </DialogContent>
                             <DialogActions className={classes.dialogActions}>
                                 <Button onClick={handleClose} className={classes.button} color="primary"
-                                    disabled={submitting}>CANCEL</Button>
+                                    disabled={busy}>CANCEL</Button>
                                 <Button type="submit"
                                     className={classes.lastButton}
                                     color="primary"
-                                    disabled={invalid || submitting || pristine}
+                                    disabled={invalid || busy || pristine}
                                     variant="contained">
                                     CREATE A COLLECTION
                             </Button>
-                                {submitting && <CircularProgress size={20} className={classes.createProgress} />}
+                                {busy && <CircularProgress size={20} className={classes.createProgress} />}
                             </DialogActions>
                         </form>
                     </Dialog>

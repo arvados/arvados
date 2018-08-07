@@ -21,7 +21,7 @@ const addProject = (data: { name: string, description: string }) =>
         const { ownerUuid } = getState().projects.creator;
         return dispatch<any>(createProject(data)).then(() => {
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Created a new project",
+                message: "Project has been successfully created.",
                 hideDuration: 2000
             }));
             dispatch(projectPanelActions.REQUEST_ITEMS());
