@@ -91,14 +91,7 @@ func (h *handler) setup() {
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
-	status := struct {
-		cacheStats
-		Version string
-	}{
-		cacheStats: h.Config.Cache.Stats(),
-		Version:    version,
-	}
-	json.NewEncoder(w).Encode(status)
+	json.NewEncoder(w).Encode(struct{ Version string }{version})
 }
 
 // updateOnSuccess wraps httpserver.ResponseWriter. If the handler
