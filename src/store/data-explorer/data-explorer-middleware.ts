@@ -8,15 +8,16 @@ import { dataExplorerActions, bindDataExplorerActions } from "./data-explorer-ac
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 
 export const dataExplorerMiddleware = (service: DataExplorerMiddlewareService): Middleware => api => next => {
-    const handleAction = <T extends { id: string }>(handler: (data: T) => void) =>
-        (data: T) => {
-            if (data.id === service.getId()) {
-                handler(data);
-            }
-        };
     const actions = bindDataExplorerActions(service.getId());
 
     return action => {
+        const handleAction = <T extends { id: string }>(handler: (data: T) => void) =>
+            (data: T) => {
+                next(action);
+                if (data.id === service.getId()) {
+                    handler(data);
+                }
+            };
         dataExplorerActions.match(action, {
             SET_PAGE: handleAction(() => {
                 api.dispatch(actions.REQUEST_ITEMS());
