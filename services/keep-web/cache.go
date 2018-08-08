@@ -6,7 +6,6 @@ package main
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -26,23 +25,11 @@ type cache struct {
 	MaxUUIDEntries       int
 
 	registry    *prometheus.Registry
-	stats       cacheStats
 	metrics     cacheMetrics
 	pdhs        *lru.TwoQueueCache
 	collections *lru.TwoQueueCache
 	permissions *lru.TwoQueueCache
 	setupOnce   sync.Once
-}
-
-// cacheStats is EOL - add new metrics to cacheMetrics instead
-type cacheStats struct {
-	Requests          uint64 `json:"Cache.Requests"`
-	CollectionBytes   uint64 `json:"Cache.CollectionBytes"`
-	CollectionEntries int    `json:"Cache.CollectionEntries"`
-	CollectionHits    uint64 `json:"Cache.CollectionHits"`
-	PDHHits           uint64 `json:"Cache.UUIDHits"`
-	PermissionHits    uint64 `json:"Cache.PermissionHits"`
-	APICalls          uint64 `json:"Cache.APICalls"`
 }
 
 type cacheMetrics struct {
@@ -157,19 +144,6 @@ var selectPDH = map[string]interface{}{
 	"select": []string{"portable_data_hash"},
 }
 
-func (c *cache) Stats() cacheStats {
-	c.setupOnce.Do(c.setup)
-	return cacheStats{
-		Requests:          atomic.LoadUint64(&c.stats.Requests),
-		CollectionBytes:   c.collectionBytes(),
-		CollectionEntries: c.collections.Len(),
-		CollectionHits:    atomic.LoadUint64(&c.stats.CollectionHits),
-		PDHHits:           atomic.LoadUint64(&c.stats.PDHHits),
-		PermissionHits:    atomic.LoadUint64(&c.stats.PermissionHits),
-		APICalls:          atomic.LoadUint64(&c.stats.APICalls),
-	}
-}
-
 // Update saves a modified version (fs) to an existing collection
 // (coll) and, if successful, updates the relevant cache entries so
 // subsequent calls to Get() reflect the modifications.
@@ -195,8 +169,6 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 
 func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceReload bool) (*arvados.Collection, error) {
 	c.setupOnce.Do(c.setup)
-
-	atomic.AddUint64(&c.stats.Requests, 1)
 	c.metrics.requests.Inc()
 
 	permOK := false
@@ -208,7 +180,6 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			c.permissions.Remove(permKey)
 		} else {
 			permOK = true
-			atomic.AddUint64(&c.stats.PermissionHits, 1)
 			c.metrics.permissionHits.Inc()
 		}
 	}
@@ -222,7 +193,6 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			c.pdhs.Remove(targetID)
 		} else {
 			pdh = ent.pdh
-			atomic.AddUint64(&c.stats.PDHHits, 1)
 			c.metrics.pdhHits.Inc()
 		}
 	}
@@ -239,7 +209,6 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		// likely, the cached PDH is still correct; if so,
 		// _and_ the current token has permission, we can
 		// use our cached manifest.
-		atomic.AddUint64(&c.stats.APICalls, 1)
 		c.metrics.apiCalls.Inc()
 		var current arvados.Collection
 		err := arv.Get("collections", targetID, selectPDH, &current)
@@ -268,7 +237,6 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	}
 
 	// Collection manifest is not cached.
-	atomic.AddUint64(&c.stats.APICalls, 1)
 	c.metrics.apiCalls.Inc()
 	err := arv.Get("collections", targetID, nil, &collection)
 	if err != nil {
@@ -359,7 +327,6 @@ func (c *cache) lookupCollection(key string) *arvados.Collection {
 		c.collections.Remove(key)
 		return nil
 	}
-	atomic.AddUint64(&c.stats.CollectionHits, 1)
 	c.metrics.collectionHits.Inc()
 	return ent.collection
 }
