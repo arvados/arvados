@@ -1,0 +1,21 @@
+{
+  "href": "/groups/ardev-j7d0g-bmg3pfqtx3ivczp",
+  "kind": "arvados#group",
+  "etag": "3hw0vk4mbl0ofvia5k6x4dwrx",
+  "uuid": "ardev-j7d0g-bmg3pfqtx3ivczp",
+  "owner_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+  "created_at": "2018-03-29T11:09:05.984597000Z",
+  "modified_by_client_uuid": "ardev-ozdt8-97tzh5x96spqkay",
+  "modified_by_user_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+  "modified_at": "2018-03-29T11:09:05.984597000Z",
+  "name": "TestGroup1",
+  "group_class": "project",
+  "description": null,
+  "writable_by": [
+    "ardev-tpzed-n3kzq4fvoks3uw4",
+    "ardev-tpzed-n3kzq4fvoks3uw4"
+  ],
+  "delete_at": null,
+  "trash_at": null,
+  "is_trashed": false
+}

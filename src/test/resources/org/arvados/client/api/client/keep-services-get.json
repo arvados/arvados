@@ -1,0 +1,16 @@
+{
+    "href": "/keep_services/112ci-bi6l4-hv02fg8sbti8ykk",
+    "kind": "arvados#keepService",
+    "etag": "bjzh7og2d9z949lbd38vnnslt",
+    "uuid": "112ci-bi6l4-hv02fg8sbti8ykk",
+    "owner_uuid": "112ci-tpzed-000000000000000",
+    "created_at": "2017-11-03T10:04:48.314229000Z",
+    "modified_by_client_uuid": "112ci-ozdt8-xxy0ipzwti8gnmt",
+    "modified_by_user_uuid": "112ci-tpzed-000000000000000",
+    "modified_at": "2017-11-03T10:04:48.314229000Z",
+    "service_host": "10.0.2.15",
+    "service_port": 9000,
+    "service_ssl_flag": false,
+    "service_type": "disk",
+    "read_only": false
+}
