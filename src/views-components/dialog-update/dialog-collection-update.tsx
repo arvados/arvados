@@ -6,7 +6,7 @@ import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
 import { ArvadosTheme } from '../../common/custom-theme';
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '../../../node_modules/@material-ui/core';
+import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '@material-ui/core';
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-collection/create-collection-validator';
 import { COLLECTION_FORM_NAME } from '../../store/collections/updater/collection-updater-action';
 
