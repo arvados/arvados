@@ -129,7 +129,8 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     sc = []
     def only_real(obj):
-        if obj.get("location", "").startswith("file:"):
+        loc = obj.get("location", "")
+        if loc.startswith("file:") or loc.startswith("keep:"):
             sc.append(obj)
 
     visit_class(sc_result, ("File", "Directory"), only_real)
