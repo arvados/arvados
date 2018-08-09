@@ -11,6 +11,7 @@ import { DialogCollectionCreate } from "../dialog-create/dialog-collection-creat
 import { collectionCreateActions, createCollection } from "../../store/collections/creator/collection-creator-action";
 import { snackbarActions } from "../../store/snackbar/snackbar-actions";
 import { UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
+import { projectPanelActions } from "../../store/project-panel/project-panel-action";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.collections.creator.opened
@@ -35,6 +36,7 @@ const addCollection = (data: { name: string, description: string }, files: File[
                 message: "Collection has been successfully created.",
                 hideDuration: 2000
             }));
+            dispatch(projectPanelActions.REQUEST_ITEMS());
         });
     };
 
