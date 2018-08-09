@@ -10,7 +10,7 @@ import { RenameDialog } from "../../components/rename-dialog/rename-dialog";
 
 export const RENAME_FILE_DIALOG = 'renameFileDialog';
 
-export const openRenameFileDialog = (originalName: string, ) =>
+export const openRenameFileDialog = (originalName: string) =>
     (dispatch: Dispatch) => {
         dispatch(reset(RENAME_FILE_DIALOG));
         dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_FILE_DIALOG, data: originalName }));

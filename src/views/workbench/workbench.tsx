@@ -257,6 +257,7 @@ export const Workbench = withStyles(styles)(
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
+                        description: item.description,
                         kind: ContextMenuKind.COLLECTION
                     });
                 }}
@@ -265,11 +266,20 @@ export const Workbench = withStyles(styles)(
             renderProjectPanel = (props: RouteComponentProps<{ id: string }>) => <ProjectPanel
                 onItemRouteChange={itemId => this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE))}
                 onContextMenu={(event, item) => {
+                    let kind: ContextMenuKind;
 
-                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
+                    if (item.kind === ResourceKind.PROJECT) {
+                        kind = ContextMenuKind.PROJECT;
+                    } else if (item.kind === ResourceKind.COLLECTION) {
+                        kind = ContextMenuKind.COLLECTION_RESOURCE;
+                    } else {
+                        kind = ContextMenuKind.RESOURCE;
+                    }
+                    
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
+                        description: item.description,
                         kind
                     });
                 }}
@@ -362,7 +372,7 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
             }
 
-            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; kind: ContextMenuKind; }) => {
+            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; kind: ContextMenuKind; }) => {
                 event.preventDefault();
                 this.props.dispatch(
                     contextMenuActions.OPEN_CONTEXT_MENU({

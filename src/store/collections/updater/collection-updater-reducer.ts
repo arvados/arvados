@@ -22,7 +22,7 @@ const initialState: CollectionUpdaterState = {
 export const collectionUpdaterReducer = (state: CollectionUpdaterState = initialState, action: CollectionUpdaterAction) => {
     return collectionUpdaterActions.match(action, {
         OPEN_COLLECTION_UPDATER: ({ uuid }) => updateCollection(state, { uuid, opened: true }),
-        CLOSE_COLLECTION_UPDATER: () => updateCollection(state, { opened: false }),
+        CLOSE_COLLECTION_UPDATER: () => updateCollection(state, { opened: false, uuid: "" }),
         UPDATE_COLLECTION_SUCCESS: () => updateCollection(state, { opened: false, uuid: "" }),
         default: () => state
     });
