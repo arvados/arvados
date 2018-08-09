@@ -40,6 +40,8 @@ centos7|python-daemon|2.1.2|1|python|all
 centos7|pbr|0.11.1|2|python|all
 centos7|pyparsing|2.1.10|2|python|all
 centos7|keepalive|0.5|2|python|all
+centos7|networkx|1.11|0|python|all
+centos7|psutil|5.0.1|0|python|all
 debian8,debian9,ubuntu1404,ubuntu1604,centos7|lockfile|0.12.2|2|python|all|--epoch 1
 debian8,debian9,ubuntu1404,ubuntu1604,centos7|subprocess32|3.5.1|2|python|all
 all|ruamel.yaml|0.14.12|2|python|amd64|--python-setup-py-arguments --single-version-externally-managed
@@ -53,5 +55,3 @@ all|mypy-extensions|0.3.0|1|python|all
 all|prov|1.5.1|0|python|all
 all|bagit|1.6.4|0|python|all
 all|typing-extensions|3.6.5|0|python|all
-centos7|networkx|1.11|0|python|all
-centos7|psutil|5.0.1|0|python|all
