@@ -7,6 +7,9 @@ require "trashable"
 class Arvados::V1::GroupsController < ApplicationController
   include TrashableController
 
+  skip_before_filter :find_object_by_uuid, only: :shared
+  skip_before_filter :render_404_if_no_object, only: :shared
+
   def self._index_requires_parameters
     (super rescue {}).
       merge({
@@ -61,6 +64,44 @@ class Arvados::V1::GroupsController < ApplicationController
       :items_available => @items_available,
       :items => @objects.as_api_response(nil)
     })
+  end
+
+  def shared
+    # The purpose of this endpoint is to return the toplevel set of
+    # projects which are *not* reachable through an ownership chain of
+    # projects starting from the user account.  In other words,
+    # projects which to which access was granted via a permission
+    # link, or indirectly through group permissions.
+    #
+    # This also returns (in the "includes" field) the objects that own
+    # those projects (users or non-project groups).
+    #
+    # select groups that are readable by current user AND
+    #   the owner_uuid is a user (but not the current user) OR
+    #   the owner_uuid is not readable by the current user
+    #   the owner_uuid group_class is not a project
+
+    if current_user.is_admin
+      exists1 = "EXISTS(SELECT 1 from #{PERMISSION_VIEW} WHERE user_uuid=(:user_uuid) AND target_uuid=groups.uuid) AND "
+    end
+
+    g = Group.where("group_class='project' AND "+
+                    exists1+
+                    "(groups.owner_uuid IN (SELECT uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
+                    "NOT EXISTS(SELECT 1 FROM materialized_permission_view WHERE user_uuid=(:user_uuid) AND target_uuid=groups.owner_uuid) OR "+
+                    "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=groups.owner_uuid and gp.group_class != 'project'))",
+                    user_uuid: current_user.uuid)
+
+    send_json({
+      :kind => "arvados#objectList",
+      :etag => "",
+      :self_link => "",
+      :offset => @offset,
+      :limit => @limit,
+      :items_available => @items_available,
+      :items => g.as_api_response(nil)
+    })
+
   end
 
   protected
