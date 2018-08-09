@@ -55,8 +55,10 @@ interface DialogProjectProps {
     pristine: boolean;
 }
 
+export const PROJECT_CREATE_DIALOG = "projectCreateDialog";
+
 export const DialogProjectCreate = compose(
-    reduxForm({ form: 'projectCreateDialog' }),
+    reduxForm({ form: PROJECT_CREATE_DIALOG }),
     withStyles(styles))(
     class DialogProjectCreate extends React.Component<DialogProjectProps & WithStyles<CssRules>> {
         render() {

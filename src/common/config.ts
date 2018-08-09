@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import Axios from "../../node_modules/axios";
+import Axios from "axios";
 
 export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
 
