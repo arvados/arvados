@@ -19,7 +19,7 @@ import { FilterBuilder } from "../../common/api/filter-builder";
 
 type ProjectTreePickerProps = Pick<TreeProps<ProjectResource>, 'toggleItemActive' | 'toggleItemOpen'>;
 
-const mapDispatchToProps = (dispatch: Dispatch, props: {onChange: (projectUuid: string) => void}): ProjectTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): ProjectTreePickerProps => ({
     toggleItemActive: id => {
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id }));
         props.onChange(id);
@@ -32,14 +32,22 @@ const mapDispatchToProps = (dispatch: Dispatch, props: {onChange: (projectUuid: 
 });
 
 export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: ProjectTreePickerProps) =>
-    <div style={{display: 'flex', flexDirection: 'column'}}>
-        <Typography variant='caption' style={{flexShrink: 0}}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <Typography variant='caption' style={{ flexShrink: 0 }}>
             Select a project
         </Typography>
-        <div style={{flexGrow: 1, overflow: 'auto'}}>
+        <div style={{ flexGrow: 1, overflow: 'auto' }}>
             <TreePicker {...props} render={renderTreeItem} />
         </div>
     </div>);
+
+export const ProjectTreePickerWithSidePanel = connect(undefined, mapDispatchToProps)((props: ProjectTreePickerProps) =>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flexGrow: 1, overflow: 'auto' }}>
+            <TreePicker {...props} render={renderTreeItem} />
+        </div>
+    </div>
+);
 
 // TODO: move action creator to store directory
 export const loadProjectTreePickerProjects = (id: string) =>

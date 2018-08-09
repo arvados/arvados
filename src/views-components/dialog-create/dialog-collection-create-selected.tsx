@@ -7,7 +7,7 @@ import { InjectedFormProps, Field, WrappedFieldProps } from "redux-form";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, FormHelperText } from "@material-ui/core";
 import { WithDialogProps } from "../../store/dialog/with-dialog";
 import { TextField } from "../../components/text-field/text-field";
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "../../validators/create-project/create-project-validator";
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "../../validators/create-collection/create-collection-validator";
 import { ProjectTreePicker } from "../project-tree-picker/project-tree-picker";
 
 export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
