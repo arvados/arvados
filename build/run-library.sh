@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -60,7 +60,7 @@ version_from_git() {
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
     ARVADOS_BUILDING_VERSION="$(git describe --abbrev=0).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
-} 
+}
 
 nohash_version_from_git() {
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
@@ -129,10 +129,7 @@ package_go_binary() {
     # Arvados SDK and the SDK has changed.
     declare -a checkdirs=(vendor)
     if grep -qr git.curoverse.com/arvados .; then
-        checkdirs+=(sdk/go)
-        if [[ "$prog" -eq "crunch-dispatch-slurm" ]]; then
-          checkdirs+=(lib/dispatchcloud)
-        fi
+        checkdirs+=(sdk/go lib)
     fi
     for dir in ${checkdirs[@]}; do
         cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
@@ -276,11 +273,14 @@ test_package_presence() {
           repo_subdir=${pkgname:0:1}
         fi
 
-        repo_pkg_list=$(curl -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
+        repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
         echo ${repo_pkg_list} |grep -q ${complete_pkgname}
-        if [ $? -eq 0 ]; then
+        if [ $? -eq 0 ] ; then
           echo "Package $complete_pkgname exists, not rebuilding!"
           curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+          return 1
+	elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+          echo "Package $complete_pkgname exists, not rebuilding!"
           return 1
         else
           echo "Package $complete_pkgname not found, building"
@@ -313,6 +313,7 @@ handle_rails_package() {
     cd "$srcdir"
     local license_path="$1"; shift
     local version="$(version_from_git)"
+    echo "$version" >package-build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
         set -e

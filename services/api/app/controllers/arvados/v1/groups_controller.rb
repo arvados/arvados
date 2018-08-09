@@ -69,6 +69,11 @@ class Arvados::V1::GroupsController < ApplicationController
     all_objects = []
     @items_available = 0
 
+    # Reload the orders param, this time without prefixing unqualified
+    # columns ("name" => "groups.name"). Here, unqualified orders
+    # apply to each table being searched, not "groups".
+    load_limit_offset_order_params(fill_table_names: false)
+
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
     # aggregate set.
@@ -142,7 +147,7 @@ class Arvados::V1::GroupsController < ApplicationController
       # table_name for the current klass, apply that order.
       # Otherwise, order by recency.
       request_order =
-        request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i } ||
+        request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
         klass.default_orders.join(", ")
 
       @select = nil

@@ -50,7 +50,7 @@ module LoadParam
 
   # Load params[:limit], params[:offset] and params[:order]
   # into @limit, @offset, @orders
-  def load_limit_offset_order_params
+  def load_limit_offset_order_params(fill_table_names: true)
     if params[:limit]
       unless params[:limit].to_s.match(/^\d+$/)
         raise ArgumentError.new("Invalid value for limit parameter")
@@ -96,10 +96,14 @@ module LoadParam
         # has used set_table_name to use an alternate table name from the Rails standard.
         # I could not find a perfect way to handle this well, but ActiveRecord::Base.send(:descendants)
         # would be a place to start if this ever becomes necessary.
-        if attr.match(/^[a-z][_a-z0-9]+$/) and
-            model_class.columns.collect(&:name).index(attr) and
-            ['asc','desc'].index direction.downcase
-          @orders << "#{table_name}.#{attr} #{direction.downcase}"
+        if (attr.match(/^[a-z][_a-z0-9]+$/) &&
+            model_class.columns.collect(&:name).index(attr) &&
+            ['asc','desc'].index(direction.downcase))
+          if fill_table_names
+            @orders << "#{table_name}.#{attr} #{direction.downcase}"
+          else
+            @orders << "#{attr} #{direction.downcase}"
+          end
         elsif attr.match(/^([a-z][_a-z0-9]+)\.([a-z][_a-z0-9]+)$/) and
             ['asc','desc'].index(direction.downcase) and
             ActiveRecord::Base.connection.tables.include?($1) and

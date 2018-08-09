@@ -166,6 +166,7 @@ Arvados class gives users ability to access Arvados REST API.
 	\item{}{\code{\link{users.delete}}}
 	\item{}{\code{\link{users.get}}}
 	\item{}{\code{\link{users.list}}}
+	\item{}{\code{\link{users.merge}}}
 	\item{}{\code{\link{users.setup}}}
 	\item{}{\code{\link{users.system}}}
 	\item{}{\code{\link{users.unsetup}}}

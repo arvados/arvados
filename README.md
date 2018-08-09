@@ -19,9 +19,7 @@ Arvados consists of:
 
 ## Quick start
 
-Curoverse maintains an Arvados public cloud demo at
-[https://cloud.curoverse.com](https://cloud.curoverse.com).  A Google account
-is required to log in.
+Veritas Genetics maintains a public installation of Arvados for evaluation and trial use, the [Arvados Playground](https://playground.arvados.org). A Google account is required to log in.
 
 To try out Arvados on your local workstation, you can use Arvbox, which
 provides Arvados components pre-installed in a Docker container (requires

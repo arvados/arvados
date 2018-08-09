@@ -20,7 +20,7 @@ from .mock_discovery import get_rootDesc
 
 from arvados_cwl.pathmapper import ArvPathMapper
 
-def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None, collection=None):
+def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None, collection=None, packed=None):
     pdh = "99999999999999999999999999999991+99"
     for c in files:
         c.keepref = "%s/%s" % (pdh, os.path.basename(c.fn))
@@ -64,23 +64,6 @@ class TestPathmap(unittest.TestCase):
         }], "", "/test/%s", "/test/%s/%s")
 
         self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
-                         p._pathmap)
-
-    @mock.patch("arvados.commands.run.uploadfiles")
-    def test_prev_uploaded(self, upl):
-        """Test pathmapper handling previously uploaded files."""
-
-        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
-        arvrunner.add_uploaded('file:tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999992+99/hw.py', target='', type='File', staged=True))
-
-        upl.side_effect = upload_mock
-
-        p = ArvPathMapper(arvrunner, [{
-            "class": "File",
-            "location": "file:tests/hw.py"
-        }], "", "/test/%s", "/test/%s/%s")
-
-        self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999992+99/hw.py', target='/test/99999999999999999999999999999992+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")

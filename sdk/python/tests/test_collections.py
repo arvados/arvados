@@ -14,6 +14,8 @@ import random
 import re
 import sys
 import tempfile
+import datetime
+import ciso8601
 import time
 import unittest
 
@@ -802,6 +804,18 @@ class CollectionMethods(run_test_server.TestCaseWithServers):
         self.assertEqual(fn0, c.items()[0][0])
         self.assertEqual(fn1, c.items()[1][0])
 
+    def test_get_properties(self):
+        c = Collection()
+        self.assertEqual(c.get_properties(), {})
+        c.save_new(properties={"foo":"bar"})
+        self.assertEqual(c.get_properties(), {"foo":"bar"})
+
+    def test_get_trash_at(self):
+        c = Collection()
+        self.assertEqual(c.get_trash_at(), None)
+        c.save_new(trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111111))
+        self.assertEqual(c.get_trash_at(), ciso8601.parse_datetime('2111-01-01T11:11:11.111111000Z'))
+
 
 class CollectionOpenModes(run_test_server.TestCaseWithServers):
 
@@ -1300,29 +1314,43 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
     def test_create_and_save(self):
         c = self.create_count_txt()
-        c.save(storage_classes=['archive'])
+        c.save(properties={'type' : 'Intermediate'},
+               storage_classes=['archive'],
+               trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111111))
 
         self.assertRegex(
             c.manifest_text(),
             r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
         self.assertEqual(c.api_response()["storage_classes_desired"], ['archive'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Intermediate'})
+        self.assertEqual(c.api_response()["trash_at"], '2111-01-01T11:11:11.111111000Z')
 
 
     def test_create_and_save_new(self):
         c = self.create_count_txt()
-        c.save_new(storage_classes=['archive'])
+        c.save_new(properties={'type' : 'Intermediate'},
+                   storage_classes=['archive'],
+                   trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111111))
 
         self.assertRegex(
             c.manifest_text(),
             r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
         self.assertEqual(c.api_response()["storage_classes_desired"], ['archive'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Intermediate'})
+        self.assertEqual(c.api_response()["trash_at"], '2111-01-01T11:11:11.111111000Z')
 
-    def test_update_storage_classes_desired_if_collection_is_commited(self):
+    def test_create_and_save_after_commiting(self):
         c = self.create_count_txt()
-        c.save(storage_classes=['hot'])
-        c.save(storage_classes=['cold'])
+        c.save(properties={'type' : 'Intermediate'},
+               storage_classes=['hot'],
+               trash_at=datetime.datetime(2111, 1, 1, 11, 11, 11, 111111))
+        c.save(properties={'type' : 'Output'},
+               storage_classes=['cold'],
+               trash_at=datetime.datetime(2222, 2, 2, 22, 22, 22, 222222))
 
         self.assertEqual(c.api_response()["storage_classes_desired"], ['cold'])
+        self.assertEqual(c.api_response()["properties"], {'type' : 'Output'})
+        self.assertEqual(c.api_response()["trash_at"], '2222-02-02T22:22:22.222222000Z')
 
     def test_create_diff_apply(self):
         c1 = self.create_count_txt()

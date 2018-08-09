@@ -20,7 +20,7 @@ test_that("parseJSONResponse generates and returns JSON object from server respo
 
     expect_that(barExists, is_true())
     expect_that(unlist(result$bar$foo), equals(10))
-}) 
+})
 
 test_that(paste("parseResponse generates and returns character vector",
                 "from server response if outputType is text"), {
@@ -35,10 +35,10 @@ test_that(paste("parseResponse generates and returns character vector",
     parsedResponse <- parser$parseResponse(serverResponse, "text")
 
     expect_that(parsedResponse, equals("random text"))
-}) 
+})
 
 
-webDAVResponseSample = 
+webDAVResponseSample =
     paste0("<?xml version=\"1.0\" encoding=\"UTF-8\"?><D:multistatus xmlns:",
            "D=\"DAV:\"><D:response><D:href>/c=aaaaa-bbbbb-ccccccccccccccc</D",
            ":href><D:propstat><D:prop><D:resourcetype><D:collection xmlns:D=",
@@ -76,7 +76,7 @@ test_that(paste("getFileNamesFromResponse returns file names belonging to specif
     resultMatchExpected <- all.equal(result, expectedResult)
 
     expect_that(resultMatchExpected, is_true())
-}) 
+})
 
 test_that(paste("getFileSizesFromResponse returns file sizes",
                 "parsed from webDAV server response"), {
@@ -93,4 +93,4 @@ test_that(paste("getFileSizesFromResponse returns file sizes",
     resultMatchExpected <- result == expectedResult
 
     expect_that(resultMatchExpected, is_true())
-}) 
+})

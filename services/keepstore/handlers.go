@@ -86,17 +86,11 @@ func MakeRESTRouter() http.Handler {
 	// 400 Bad Request.
 	rtr.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
-	theConfig.metrics.setup()
-
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", theConfig.metrics.Instrument(
-		httpserver.AddRequestIDs(httpserver.LogRequests(rtr.limiter))))
-	mux.HandleFunc("/metrics.json", theConfig.metrics.exportJSON)
-	mux.Handle("/metrics", theConfig.metrics.exportProm)
-
-	return mux
+	stack := httpserver.Instrument(nil, nil,
+		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
+	return stack.ServeAPI(stack)
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.

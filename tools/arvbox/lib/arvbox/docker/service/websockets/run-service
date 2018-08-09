@@ -27,7 +27,7 @@ database_pw=$(cat /var/lib/arvados/api_database_pw)
 
 cat >/var/lib/arvados/arvados-ws.yml <<EOF
 Client:
-  APIHost: $localip:${services[api]}
+  APIHost: $localip:${services[controller-ssl]}
   Insecure: true
 Postgres:
   dbname: arvados_$RAILS_ENV

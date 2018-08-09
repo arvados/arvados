@@ -273,4 +273,10 @@
 // avoids redirecting requests to keep-web if they depend on
 // TrustAllContent being enabled.
 //
+// Metrics
+//
+// Keep-web exposes request metrics in Prometheus text-based format at
+// /metrics. The same information is also available as JSON at
+// /metrics.json.
+//
 package main

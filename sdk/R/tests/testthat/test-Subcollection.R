@@ -15,7 +15,7 @@ test_that("getRelativePath returns path relative to the tree root", {
 
     expect_that(animal$getRelativePath(), equals("animal"))
     expect_that(fish$getRelativePath(), equals("animal/fish"))
-}) 
+})
 
 test_that(paste("getFileListing by default returns sorted path of all files",
                 "relative to the current subcollection"), {
@@ -38,7 +38,7 @@ test_that(paste("getFileListing by default returns sorted path of all files",
                     all(expectedResult == result)
 
     expect_that(resultsMatch, is_true())
-}) 
+})
 
 test_that(paste("getFileListing returns sorted names of all direct children",
                 "if fullPath is set to FALSE"), {
@@ -59,7 +59,7 @@ test_that(paste("getFileListing returns sorted names of all direct children",
                     all(expectedResult == result)
 
     expect_that(resultsMatch, is_true())
-}) 
+})
 
 test_that("add adds content to inside collection tree", {
 
@@ -75,7 +75,7 @@ test_that("add adds content to inside collection tree", {
 
     expect_that(animalContainsFish, is_true())
     expect_that(animalContainsDog, is_true())
-}) 
+})
 
 test_that("add raises exception if content name is empty string", {
 
@@ -86,7 +86,7 @@ test_that("add raises exception if content name is empty string", {
                 throws_error("Content has invalid name.", fixed = TRUE))
 })
 
-test_that(paste("add raises exception if ArvadosFile/Subcollection", 
+test_that(paste("add raises exception if ArvadosFile/Subcollection",
                 "with same name already exists in the subcollection"), {
 
     animal     <- Subcollection$new("animal")
@@ -102,9 +102,9 @@ test_that(paste("add raises exception if ArvadosFile/Subcollection",
     expect_that(animal$add(thirdFish),
                 throws_error(paste("Subcollection already contains ArvadosFile or",
                                    "Subcollection with same name."), fixed = TRUE))
-}) 
+})
 
-test_that(paste("add raises exception if passed argument is", 
+test_that(paste("add raises exception if passed argument is",
                 "not ArvadosFile or Subcollection"), {
 
     animal <- Subcollection$new("animal")
@@ -113,11 +113,11 @@ test_that(paste("add raises exception if passed argument is",
     expect_that(animal$add(number),
                 throws_error(paste("Expected AravodsFile or Subcollection object,",
                                    "got (numeric)."), fixed = TRUE))
-}) 
+})
 
-test_that(paste("add post content to a REST service", 
+test_that(paste("add post content to a REST service",
                 "if subcollection belongs to a collection"), {
-    
+
     collectionContent <- c("animal", "animal/fish")
     fakeREST <- FakeRESTService$new(collectionContent)
 
@@ -131,7 +131,7 @@ test_that(paste("add post content to a REST service",
     animal$add(dog)
 
     expect_that(fakeREST$createCallCount, equals(1))
-}) 
+})
 
 test_that("remove removes content from subcollection", {
 
@@ -144,9 +144,9 @@ test_that("remove removes content from subcollection", {
     returnValueAfterRemovalIsNull <- is.null(animal$get("fish"))
 
     expect_that(returnValueAfterRemovalIsNull, is_true())
-}) 
+})
 
-test_that(paste("remove raises exception", 
+test_that(paste("remove raises exception",
                 "if content to remove doesn't exist in the subcollection"), {
 
     animal <- Subcollection$new("animal")
@@ -154,7 +154,7 @@ test_that(paste("remove raises exception",
     expect_that(animal$remove("fish"),
                 throws_error(paste("Subcollection doesn't contains ArvadosFile",
                                    "or Subcollection with specified name.")))
-}) 
+})
 
 test_that("remove raises exception if passed argument is not character vector", {
 
@@ -164,11 +164,11 @@ test_that("remove raises exception if passed argument is not character vector", 
     expect_that(animal$remove(number),
                 throws_error(paste("Expected character,",
                                    "got (numeric)."), fixed = TRUE))
-}) 
+})
 
-test_that(paste("remove removes content from REST service", 
+test_that(paste("remove removes content from REST service",
                 "if subcollection belongs to a collection"), {
-    
+
     collectionContent <- c("animal", "animal/fish", "animal/dog")
     fakeREST <- FakeRESTService$new(collectionContent)
 
@@ -180,9 +180,9 @@ test_that(paste("remove removes content from REST service",
     animal$remove("fish")
 
     expect_that(fakeREST$deleteCallCount, equals(1))
-}) 
+})
 
-test_that(paste("get returns ArvadosFile or Subcollection", 
+test_that(paste("get returns ArvadosFile or Subcollection",
                 "if file or folder with given name exists"), {
 
     animal <- Subcollection$new("animal")
@@ -203,9 +203,9 @@ test_that(paste("get returns ArvadosFile or Subcollection",
 
     expect_that(returnedDogIsArvadosFile, is_true())
     expect_that(returnedDog$getName(), equals("dog"))
-}) 
+})
 
-test_that(paste("get returns NULL if file or folder", 
+test_that(paste("get returns NULL if file or folder",
                 "with given name doesn't exists"), {
 
     animal <- Subcollection$new("animal")
@@ -216,7 +216,7 @@ test_that(paste("get returns NULL if file or folder",
     returnedDogIsNull <- is.null(animal$get("dog"))
 
     expect_that(returnedDogIsNull, is_true())
-}) 
+})
 
 test_that("getFirst returns first child in the subcollection", {
 
@@ -226,7 +226,7 @@ test_that("getFirst returns first child in the subcollection", {
     animal$add(fish)
 
     expect_that(animal$getFirst()$getName(), equals("fish"))
-}) 
+})
 
 test_that("getFirst returns NULL if subcollection contains no children", {
 
@@ -235,7 +235,7 @@ test_that("getFirst returns NULL if subcollection contains no children", {
     returnedElementIsNull <- is.null(animal$getFirst())
 
     expect_that(returnedElementIsNull, is_true())
-}) 
+})
 
 test_that(paste("setCollection by default sets collection",
                 "filed of subcollection and all its children"), {
@@ -248,7 +248,7 @@ test_that(paste("setCollection by default sets collection",
 
     expect_that(animal$getCollection(), equals("myCollection"))
     expect_that(fish$getCollection(), equals("myCollection"))
-}) 
+})
 
 test_that(paste("setCollection sets collection filed of subcollection only",
                 "if parameter setRecursively is set to FALSE"), {
@@ -262,7 +262,7 @@ test_that(paste("setCollection sets collection filed of subcollection only",
 
     expect_that(animal$getCollection(), equals("myCollection"))
     expect_that(fishCollectionIsNull, is_true())
-}) 
+})
 
 test_that(paste("move raises exception if subcollection",
                 "doesn't belong to any collection"), {
@@ -271,7 +271,7 @@ test_that(paste("move raises exception if subcollection",
 
     expect_that(animal$move("new/location"),
                 throws_error("Subcollection doesn't belong to any collection"))
-}) 
+})
 
 test_that("move raises exception if new location contains content with the same name", {
 
@@ -290,7 +290,7 @@ test_that("move raises exception if new location contains content with the same 
     expect_that(fish$move("fish"),
                 throws_error("Destination already contains content with same name."))
 
-}) 
+})
 
 test_that(paste("move raises exception if newLocationInCollection",
                 "parameter is invalid"), {
@@ -309,8 +309,8 @@ test_that(paste("move raises exception if newLocationInCollection",
     fish <- collection$get("animal/fish")
 
     expect_that(fish$move("objects/dog"),
-                throws_error("Unable to get destination subcollection"))
-}) 
+                throws_error("Unable to get destination subcollection."))
+})
 
 test_that("move moves subcollection inside collection tree", {
 
@@ -332,7 +332,7 @@ test_that("move moves subcollection inside collection tree", {
 
     expect_that(fishIsNullOnOldLocation, is_true())
     expect_that(fishExistsOnNewLocation, is_true())
-}) 
+})
 
 test_that(paste("getSizeInBytes returns zero if subcollection",
                 "is not part of a collection"), {
@@ -340,7 +340,7 @@ test_that(paste("getSizeInBytes returns zero if subcollection",
     animal <- Subcollection$new("animal")
 
     expect_that(animal$getSizeInBytes(), equals(0))
-}) 
+})
 
 test_that(paste("getSizeInBytes delegates size calculation",
                 "to REST service class"), {
@@ -357,4 +357,88 @@ test_that(paste("getSizeInBytes delegates size calculation",
     resourceSize <- animal$getSizeInBytes()
 
     expect_that(resourceSize, equals(100))
+})
+
+#########################
+test_that(paste("copy raises exception if subcollection",
+                "doesn't belong to any collection"), {
+
+    animal <- Subcollection$new("animal")
+
+    expect_that(animal$copy("new/location"),
+                throws_error("Subcollection doesn't belong to any collection."))
+})
+
+test_that("copy raises exception if new location contains content with the same name", {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "fish")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    expect_that(fish$copy("fish"),
+                throws_error("Destination already contains content with same name."))
+
+})
+
+test_that(paste("copy raises exception if location parameter is invalid"), {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    expect_that(fish$copy("objects/dog"),
+                throws_error("Unable to get destination subcollection."))
+})
+
+test_that("copy copies subcollection inside collection tree", {
+
+    collectionContent <- c("animal",
+                           "animal/fish",
+                           "animal/dog",
+                           "animal/fish/shark",
+                           "ball")
+    fakeREST <- FakeRESTService$new(collectionContent)
+
+    api <- Arvados$new("myToken", "myHostName")
+    api$setRESTService(fakeREST)
+    collection <- Collection$new(api, "myUUID")
+    fish <- collection$get("animal/fish")
+
+    fish$copy("fish")
+    fishExistsOnOldLocation <- !is.null(collection$get("animal/fish"))
+    fishExistsOnNewLocation <- !is.null(collection$get("fish"))
+
+    expect_that(fishExistsOnOldLocation, is_true())
+    expect_that(fishExistsOnNewLocation, is_true())
+})
+
+test_that("duplicate performs deep cloning of Subcollection", {
+    foo <- ArvadosFile$new("foo")
+    bar <- ArvadosFile$new("bar")
+    sub <- Subcollection$new("qux")
+    sub$add(foo)
+    sub$add(bar)
+
+    newSub1 <- sub$duplicate()
+    newSub2 <- sub$duplicate("quux")
+
+    expect_that(newSub1$getFileListing(), equals(sub$getFileListing()))
+    expect_that(sort(newSub2$getFileListing()), equals(c("quux/bar", "quux/foo")))
 })

@@ -1,0 +1,56 @@
+---
+layout: default
+navsection: admin
+title: Management token
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+To enable and collect health checks and metrics, services must be configured with a "management token".
+
+Services must have ManagementToken configured.  This is used to authorize access monitoring endpoints.  If ManagementToken is not configured, monitoring endpoints will return the error @404 disabled@.
+
+To access a monitoring endpoint, the requester must provide the HTTP header @Authorization: Bearer (ManagementToken)@.
+
+h2. API server
+
+Set @ManagementToken@ in the appropriate section of @application.yml@
+
+<pre>
+production:
+  # Token to be included in all healthcheck requests. Disabled by default.
+  # Server expects request header of the format "Authorization: Bearer xxx"
+  ManagementToken: xxx
+</pre>
+
+h2. Node Manager
+
+Set @port@ (the listen port) and @ManagementToken@ in the @Manage@ section of @node-manager.ini@.
+
+<pre>
+[Manage]
+# The management server responds to http://addr:port/status.json with
+# a snapshot of internal state.
+
+# Management server listening address (default 127.0.0.1)
+#address = 0.0.0.0
+
+# Management server port number (default -1, server is disabled)
+#port = 8989
+
+ManagementToken = xxx
+</pre>
+
+h2. Other services
+
+The following services also support monitoring.  Set @ManagementToken@ in the respective yaml config file for each service.
+
+* keepstore
+* keep-web
+* keepproxy
+* arv-git-httpd
+* websockets

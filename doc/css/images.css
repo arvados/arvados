@@ -5,3 +5,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0 */
 img.full-width {
     width: 100%
 }
+
+img.screenshot {
+    max-width: calc(100% - 2em);
+    border: 3px;
+    border-style: solid;
+    margin-left: 2em;
+    margin-bottom: 2em;
+}

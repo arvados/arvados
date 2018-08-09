@@ -70,9 +70,11 @@ apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 cmd/arvados-client
+cmd/arvados-server
 doc
 lib/cli
 lib/cmd
+lib/controller
 lib/crunchstat
 lib/dispatchcloud
 services/api
@@ -270,6 +272,8 @@ declare -a failures
 declare -A skip
 declare -A testargs
 skip[apps/workbench_profile]=1
+# nodemanager_integration tests are not reliable, see #12061.
+skip[services/nodemanager_integration]=1
 
 while [[ -n "$1" ]]
 do
@@ -345,15 +349,19 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo fail=1) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && python sdk/python/tests/run_test_server.py start_controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && python sdk/python/tests/run_test_server.py start_nginx \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo fail=1) \
         && (env | egrep ^ARVADOS)
+    if [[ -n "$fail" ]]; then
+       return 1
+    fi
 }
 
 stop_services() {
@@ -367,6 +375,7 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop_ws \
         && python sdk/python/tests/run_test_server.py stop_keep-web \
         && python sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python sdk/python/tests/run_test_server.py stop_controller \
         && python sdk/python/tests/run_test_server.py stop
 }
 
@@ -403,6 +412,8 @@ do
         mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
+
+rm -vf "${WORKSPACE}/tmp/*.log"
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
@@ -512,13 +523,20 @@ export GOPATH
     set -e
     mkdir -p "$GOPATH/src/git.curoverse.com"
     rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
+    if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
+        for d in \
+            "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+                "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                "$GOPATH/src/git.curoverse.com/arvados.git"; do
+            [[ -d "$d" ]] && rmdir "$d"
+        done
+    fi
     for d in \
-        "$GOPATH/src/git.curoverse.com/arvados.git/arvados.git" \
-            "$GOPATH/src/git.curoverse.com/arvados.git"; do
-        [[ -d "$d" ]] && rmdir "$d"
+        "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
+        "$GOPATH/src/git.curoverse.com/arvados.git"; do
         [[ -h "$d" ]] && rm "$d"
     done
-    ln -vsnfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
     go get -v github.com/kardianos/govendor
     cd "$GOPATH/src/git.curoverse.com/arvados.git"
     if [[ -n "$short" ]]; then
@@ -598,6 +616,12 @@ then
     gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
+# Jenkins config requires that glob tmp/*.log match something. Ensure
+# that happens even if we don't end up running services that set up
+# logging.
+mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
+touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
+
 retry() {
     remain="${repeat}"
     while :
@@ -634,8 +658,9 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-                (-z "${only}" || "${only}" == "${suite}" || \
-                 "${only}" == "${1}") ]]; then
+              (-z "${only}" || "${only}" == "${suite}" || \
+                   "${only}" == "${1}") ||
+                  "${only}" == "${2}" ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
@@ -707,7 +732,7 @@ do_test_once() {
 do_install() {
   skipit=false
 
-  if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
+  if [[ -z "${only_install}" || "${only_install}" == "${1}" || "${only_install}" == "${2}" ]]; then
       retry do_install_once ${@}
   else
       skipit=true
@@ -886,8 +911,10 @@ do_install services/api apiserver
 declare -a gostuff
 gostuff=(
     cmd/arvados-client
+    cmd/arvados-server
     lib/cli
     lib/cmd
+    lib/controller
     lib/crunchstat
     lib/dispatchcloud
     sdk/go/arvados

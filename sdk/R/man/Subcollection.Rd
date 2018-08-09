@@ -5,7 +5,7 @@
 \title{Subcollection}
 \description{
 Subcollection class represents a folder inside Arvados collection.
-It is essentially a composite of ArvadosFiles and other Subcollections.
+It is essentially a composite of arvadosFiles and other subcollections.
 }
 \section{Usage}{
 
@@ -29,7 +29,8 @@ It is essentially a composite of ArvadosFiles and other Subcollections.
   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
   \item{getFileListing()}{Returns subcollections file content as character vector.}
   \item{getSizeInBytes()}{Returns subcollections content size in bytes.}
-  \item{move(newLocation)}{Moves subcollection to a new location inside collection.}
+  \item{move(destination)}{Moves subcollection to a new location inside collection.}
+  \item{copy(destination)}{Copies subcollection to a new location inside collection.}
 }
 }
 
@@ -43,5 +44,6 @@ myFolder$get("myFile")
 myFolder$remove("myFile")
 
 myFolder$move("newLocation/myFolder")
+myFolder$copy("newLocation/myFolder")
 }
 }

@@ -29,7 +29,7 @@ type UnitSuite struct{}
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	h := handler{Config: DefaultConfig()}
-	u, _ := url.Parse("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
+	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
 		Host:       u.Host,
@@ -70,8 +70,7 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 		"http://" + bogusID + ".keep-web/t=" + token + "/" + bogusID + "/foo",
 	} {
 		c.Log(trial)
-		u, err := url.Parse(trial)
-		c.Assert(err, check.IsNil)
+		u := mustParseURL(trial)
 		req := &http.Request{
 			Method:     "GET",
 			Host:       u.Host,
@@ -513,7 +512,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
-	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
+	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
 	u, _ = u.Parse(resp.Header().Get("Location"))

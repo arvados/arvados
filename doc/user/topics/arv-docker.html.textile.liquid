@@ -184,14 +184,14 @@ arvados/jobs          latest              12b9f859d48c        4 days ago        
 
 h2. Upload your image
 
-Finally, we are ready to upload the new Docker image to Arvados.  Use @arv keep docker@ with the image repository name to upload the image.  Without arguments, @arv keep docker@ will print out the list of Docker images in Arvados that are available to you.
+Finally, we are ready to upload the new Docker image to Arvados.  Use @arv-keepdocker@ with the image repository name to upload the image.  Without arguments, @arv-keepdocker@ will print out the list of Docker images in Arvados that are available to you.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep docker arvados/jobs-with-r</span>
+<pre><code>$ <span class="userinput">arv-keepdocker arvados/jobs-with-r</span>
 703M / 703M 100.0%
 Collection saved as 'Docker image arvados/jobs-with-r:latest 2818853ff9f9'
 qr1hi-4zz18-abcdefghijklmno
-$ <span class="userinput">arv keep docker</span>
+$ <span class="userinput">arv-keepdocker</span>
 REPOSITORY                      TAG         IMAGE ID      COLLECTION                     CREATED
 arvados/jobs-with-r             latest      2818853ff9f9  qr1hi-4zz18-abcdefghijklmno    Tue Jan 17 20:35:53 2017
 </code></pre>
@@ -207,9 +207,9 @@ hints:
 
 h2. Share Docker images
 
-Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others (or wish to share a pipeline template that uses your Docker image) you will need to use @arv keep docker@ with the @--project-uuid@ option to upload the image to a shared project.
+Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others (or wish to share a pipeline template that uses your Docker image) you will need to use @arv-keepdocker@ with the @--project-uuid@ option to upload the image to a shared project.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep docker --project-uuid qr1hi-j7d0g-xxxxxxxxxxxxxxx arvados/jobs-with-r</span>
+<pre><code>$ <span class="userinput">arv-keepdocker --project-uuid qr1hi-j7d0g-xxxxxxxxxxxxxxx arvados/jobs-with-r</span>
 </code></pre>
 </notextile>

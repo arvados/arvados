@@ -30,7 +30,6 @@ func (s *UnitSuite) TestStatus(c *check.C) {
 	var status map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&status)
 	c.Check(err, check.IsNil)
-	c.Check(status["Cache.Requests"], check.Equals, float64(0))
 	c.Check(status["Version"], check.Not(check.Equals), "")
 }
 

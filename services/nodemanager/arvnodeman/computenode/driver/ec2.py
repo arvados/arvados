@@ -91,18 +91,27 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     "VolumeSize": volsize,
                     "VolumeType": "gp2"
                 }}]
+        if size.preemptible:
+            # Request a Spot instance for this node
+            kw['ex_spot_market'] = True
         return kw
 
     def sync_node(self, cloud_node, arvados_node):
         self.real.ex_create_tags(cloud_node,
                                  {'Name': arvados_node_fqdn(arvados_node)})
 
+    def create_node(self, size, arvados_node):
+        # Set up tag indicating the Arvados assigned Cloud Size id.
+        self.create_kwargs['ex_metadata'].update({'arvados_node_size': size.id})
+        return super(ComputeNodeDriver, self).create_node(size, arvados_node)
+
     def list_nodes(self):
         # Need to populate Node.size
         nodes = super(ComputeNodeDriver, self).list_nodes()
         for n in nodes:
             if not n.size:
-                n.size = self.sizes[n.extra["instance_type"]]
+                n.size = self.sizes()[n.extra["instance_type"]]
+            n.extra['arvados_node_size'] = n.extra.get('tags', {}).get('arvados_node_size') or n.size.id
         return nodes
 
     @classmethod

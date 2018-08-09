@@ -48,7 +48,7 @@ func (srv *server) setup() {
 
 	srv.listener = ln
 	srv.eventSource = &pgEventSource{
-		DataSource:   srv.wsConfig.Postgres.ConnectionString(),
+		DataSource:   srv.wsConfig.Postgres.String(),
 		MaxOpenConns: srv.wsConfig.PostgresPool,
 		QueueSize:    srv.wsConfig.ServerEventQueue,
 	}

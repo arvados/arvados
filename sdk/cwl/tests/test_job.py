@@ -26,6 +26,28 @@ if not os.getenv('ARVADOS_DEBUG'):
 
 class TestJob(unittest.TestCase):
 
+    def helper(self, runner, enable_reuse=True):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+        loadingContext = arvados_cwl.context.ArvLoadingContext(
+            {"avsc_names": avsc_names,
+             "basedir": "",
+             "make_fs_access": make_fs_access,
+             "loader": Loader({}),
+             "metadata": {"cwlVersion": "v1.0"},
+             "makeTool": runner.arv_make_tool})
+        runtimeContext = arvados_cwl.context.ArvRuntimeContext(
+            {"work_api": "jobs",
+             "basedir": "",
+             "name": "test_run_job_"+str(enable_reuse),
+             "make_fs_access": make_fs_access,
+             "enable_reuse": enable_reuse,
+             "priority": 500})
+
+        return loadingContext, runtimeContext
+
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
@@ -35,7 +57,6 @@ class TestJob(unittest.TestCase):
             runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             runner.ignore_docker_for_reuse = False
             runner.num_retries = 0
-            document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
             list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
             runner.api.collections().get().execute.return_value = {"portable_data_hash": "99999999999999999999999999999993+99"}
@@ -56,14 +77,13 @@ class TestJob(unittest.TestCase):
                 "id": "#",
                 "class": "CommandLineTool"
             })
-            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
-                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
-            arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                                     basedir="", make_fs_access=make_fs_access, loader=Loader({}),
-                                                     metadata={"cwlVersion": "v1.0"})
+
+            loadingContext, runtimeContext = self.helper(runner, enable_reuse)
+
+            arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
             arvtool.formatgraph = None
-            for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-                j.run(enable_reuse=enable_reuse)
+            for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+                j.run(runtimeContext)
                 runner.api.jobs().create.assert_called_with(
                     body=JsonDiffMatcher({
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -105,7 +125,7 @@ class TestJob(unittest.TestCase):
                     runner.api.links().create.side_effect = ApiError(
                         mock.MagicMock(return_value={'status': 403}),
                         'Permission denied')
-                    j.run(enable_reuse=enable_reuse)
+                    j.run(runtimeContext)
                 else:
                     assert not runner.api.links().create.called
 
@@ -121,9 +141,6 @@ class TestJob(unittest.TestCase):
 
         list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
         runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
-
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
-
 
         tool = {
             "inputs": [],
@@ -148,14 +165,13 @@ class TestJob(unittest.TestCase):
             "id": "#",
             "class": "CommandLineTool"
         }
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
-                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                                 make_fs_access=make_fs_access, loader=Loader({}),
-                                                 metadata={"cwlVersion": "v1.0"})
+
+        loadingContext, runtimeContext = self.helper(runner)
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-            j.run(enable_reuse=True)
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
         runner.api.jobs().create.assert_called_with(
             body=JsonDiffMatcher({
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -205,9 +221,13 @@ class TestJob(unittest.TestCase):
                                                         {"items": []},
                                                         {"items": [{"manifest_text": "ABC"}]})
 
-        arvjob = arvados_cwl.ArvadosJob(runner)
-        arvjob.name = "testjob"
-        arvjob.builder = mock.MagicMock()
+        arvjob = arvados_cwl.ArvadosJob(runner,
+                                        mock.MagicMock(),
+                                        {},
+                                        None,
+                                        [],
+                                        [],
+                                        "testjob")
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
         arvjob.collect_outputs.return_value = {"out": "stuff"}
@@ -275,9 +295,13 @@ class TestJob(unittest.TestCase):
             {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},
         )
 
-        arvjob = arvados_cwl.ArvadosJob(runner)
-        arvjob.name = "testjob"
-        arvjob.builder = mock.MagicMock()
+        arvjob = arvados_cwl.ArvadosJob(runner,
+                                        mock.MagicMock(),
+                                        {},
+                                        None,
+                                        [],
+                                        [],
+                                        "testjob")
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
         arvjob.collect_outputs.return_value = {"out": "stuff"}
@@ -309,6 +333,34 @@ class TestJob(unittest.TestCase):
 
 
 class TestWorkflow(unittest.TestCase):
+    def helper(self, runner, enable_reuse=True):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+
+        document_loader.fetcher_constructor = functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=make_fs_access(""))
+        document_loader.fetcher = document_loader.fetcher_constructor(document_loader.cache, document_loader.session)
+        document_loader.fetch_text = document_loader.fetcher.fetch_text
+        document_loader.check_exists = document_loader.fetcher.check_exists
+
+        loadingContext = arvados_cwl.context.ArvLoadingContext(
+            {"avsc_names": avsc_names,
+             "basedir": "",
+             "make_fs_access": make_fs_access,
+             "loader": document_loader,
+             "metadata": {"cwlVersion": "v1.0"},
+             "construct_tool_object": runner.arv_make_tool})
+        runtimeContext = arvados_cwl.context.ArvRuntimeContext(
+            {"work_api": "jobs",
+             "basedir": "",
+             "name": "test_run_wf_"+str(enable_reuse),
+             "make_fs_access": make_fs_access,
+             "enable_reuse": enable_reuse,
+             "priority": 500})
+
+        return loadingContext, runtimeContext
+
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.collection.CollectionReader")
@@ -330,27 +382,21 @@ class TestWorkflow(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
-                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
-        document_loader.fetcher_constructor = functools.partial(arvados_cwl.CollectionFetcher, api_client=api, fs_access=make_fs_access(""))
-        document_loader.fetcher = document_loader.fetcher_constructor(document_loader.cache, document_loader.session)
-        document_loader.fetch_text = document_loader.fetcher.fetch_text
-        document_loader.check_exists = document_loader.fetcher.check_exists
+        loadingContext, runtimeContext = self.helper(runner)
 
-        tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
+        tool, metadata = loadingContext.loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
         mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
+        mockcollectionreader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "token.txt")
 
-        arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                              basedir="", make_fs_access=make_fs_access, loader=document_loader,
-                                              makeTool=runner.arv_make_tool, metadata=metadata)
+        arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
-        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access, tmp_outdir_prefix="")
-        it.next().run()
-        it.next().run()
+        it = arvtool.job({}, mock.MagicMock(), runtimeContext)
+
+        it.next().run(runtimeContext)
+        it.next().run(runtimeContext)
 
         with open("tests/wf/scatter2_subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())
@@ -390,7 +436,8 @@ class TestWorkflow(unittest.TestCase):
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
-    "location": "/keep/99999999999999999999999999999999+118/token.txt"
+    "location": "/keep/99999999999999999999999999999999+118/token.txt",
+    "size": 0
   },
   "sleeptime": 5
 }''')])
@@ -416,27 +463,19 @@ class TestWorkflow(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
-                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
-        document_loader.fetcher_constructor = functools.partial(arvados_cwl.CollectionFetcher, api_client=api, fs_access=make_fs_access(""))
-        document_loader.fetcher = document_loader.fetcher_constructor(document_loader.cache, document_loader.session)
-        document_loader.fetch_text = document_loader.fetcher.fetch_text
-        document_loader.check_exists = document_loader.fetcher.check_exists
+        loadingContext, runtimeContext = self.helper(runner)
 
-        tool, metadata = document_loader.resolve_ref("tests/wf/echo-wf.cwl")
+        tool, metadata = loadingContext.loader.resolve_ref("tests/wf/echo-wf.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
         mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
 
-        arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                              basedir="", make_fs_access=make_fs_access, loader=document_loader,
-                                              makeTool=runner.arv_make_tool, metadata=metadata)
+        arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
-        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access, tmp_outdir_prefix="")
-        it.next().run()
-        it.next().run()
+        it = arvtool.job({}, mock.MagicMock(), runtimeContext)
+        it.next().run(runtimeContext)
+        it.next().run(runtimeContext)
 
         with open("tests/wf/echo-subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())

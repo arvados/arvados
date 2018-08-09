@@ -32,7 +32,8 @@ table(table table-bordered table-condensed).
 |job_uuid|string|The UUID of the job that this node is assigned to work on.  If you do not have permission to read the job, this will be null.||
 |first_ping_at|datetime|||
 |last_ping_at|datetime|||
-|info|hash|||
+|info|hash|Sensitive information about the node (only visible to admin) such as 'ping_secret' and 'ec2_instance_id'. May be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters||
+|properties|hash|Public information about the node, such as 'total_cpu_cores', 'total_ram_mb', and 'total_scratch_mb'.  May be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters||
 
 h2. Methods
 

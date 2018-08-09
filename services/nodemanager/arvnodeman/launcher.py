@@ -71,7 +71,7 @@ def setup_logging(path, level, **sublevels):
     return root_logger
 
 def build_server_calculator(config):
-    cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
+    cloud_size_list = config.node_sizes()
     if not cloud_size_list:
         abort("No valid node sizes configured")
     return ServerCalculator(cloud_size_list,
@@ -80,19 +80,23 @@ def build_server_calculator(config):
                             config.getfloat('Daemon', 'node_mem_scaling'))
 
 def launch_pollers(config, server_calculator):
-    poll_time = config.getint('Daemon', 'poll_time')
+    poll_time = config.getfloat('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
+
+    cloudlist_poll_time = config.getfloat('Daemon', 'cloudlist_poll_time') or poll_time
+    nodelist_poll_time = config.getfloat('Daemon', 'nodelist_poll_time') or poll_time
+    wishlist_poll_time = config.getfloat('Daemon', 'wishlist_poll_time') or poll_time
 
     timer = TimedCallBackActor.start(poll_time / 10.0).tell_proxy()
     cloud_node_poller = CloudNodeListMonitorActor.start(
-        config.new_cloud_client(), timer, server_calculator, poll_time, max_poll_time).tell_proxy()
+        config.new_cloud_client(), timer, server_calculator, cloudlist_poll_time, max_poll_time).tell_proxy()
     arvados_node_poller = ArvadosNodeListMonitorActor.start(
-        config.new_arvados_client(), timer, poll_time, max_poll_time).tell_proxy()
+        config.new_arvados_client(), timer, nodelist_poll_time, max_poll_time).tell_proxy()
     job_queue_poller = JobQueueMonitorActor.start(
         config.new_arvados_client(), timer, server_calculator,
         config.getboolean('Arvados', 'jobs_queue'),
         config.getboolean('Arvados', 'slurm_queue'),
-        poll_time, max_poll_time
+        wishlist_poll_time, max_poll_time
     ).tell_proxy()
     return timer, cloud_node_poller, arvados_node_poller, job_queue_poller
 
@@ -144,7 +148,8 @@ def main(args=None):
             config.getint('Daemon', 'boot_fail_after'),
             config.getint('Daemon', 'node_stale_after'),
             node_setup, node_shutdown, node_monitor,
-            max_total_price=config.getfloat('Daemon', 'max_total_price')).tell_proxy()
+            max_total_price=config.getfloat('Daemon', 'max_total_price'),
+            consecutive_idle_count=config.getint('Daemon', 'consecutive_idle_count'),).tell_proxy()
 
         watchdog = WatchdogActor.start(config.getint('Daemon', 'watchdog'),
                             cloud_node_poller.actor_ref,

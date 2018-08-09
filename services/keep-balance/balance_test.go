@@ -49,6 +49,8 @@ type tester struct {
 
 	shouldPullMounts  []string
 	shouldTrashMounts []string
+
+	expectResult balanceResult
 }
 
 func (bal *balancerSuite) SetUpSuite(c *check.C) {
@@ -90,6 +92,7 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 	}
 
 	bal.MinMtime = time.Now().UnixNano() - bal.signatureTTL*1e9
+	bal.cleanupMounts()
 }
 
 func (bal *balancerSuite) TestPerfect(c *check.C) {
@@ -245,6 +248,198 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 		shouldTrash: slots{2}})
 }
 
+func (bal *balancerSuite) TestCleanupMounts(c *check.C) {
+	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
+	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
+	c.Check(len(bal.srvs[3].mounts), check.Equals, 1)
+	bal.cleanupMounts()
+	c.Check(len(bal.srvs[3].mounts), check.Equals, 0)
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{2}})
+}
+
+func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
+	bal.srvs[0].mounts[0].KeepMount.Replication = 2  // srv 0
+	bal.srvs[14].mounts[0].KeepMount.Replication = 2 // srv e
+	bal.cleanupMounts()
+	// block 0 rendezvous is 3,e,a -- so slot 1 has repl=2
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{0}})
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{0, 1},
+		shouldPull: nil})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2},
+		shouldTrash: slots{2}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 3},
+		current:     slots{0, 2, 3, 4},
+		shouldPull:  slots{1},
+		shouldTrash: slots{4},
+		expectResult: balanceResult{
+			have: 4,
+			want: 3,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      3,
+				surplus:      1,
+				unachievable: false}}}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 3},
+		current:     slots{0, 1, 2, 3, 4},
+		shouldTrash: slots{2, 3, 4}})
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 4},
+		current:     slots{0, 1, 2, 3, 4},
+		shouldTrash: slots{3, 4},
+		expectResult: balanceResult{
+			have: 6,
+			want: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      4,
+				surplus:      2,
+				unachievable: false}}}})
+	// block 1 rendezvous is 0,9,7 -- so slot 0 has repl=2
+	bal.try(c, tester{
+		known:   1,
+		desired: map[string]int{"default": 2},
+		current: slots{0},
+		expectResult: balanceResult{
+			have: 2,
+			want: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      0,
+				unachievable: false}}}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 3},
+		current:    slots{0},
+		shouldPull: slots{1}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{0},
+		shouldPull: slots{1, 2}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{2},
+		shouldPull: slots{0, 1}})
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 4},
+		current:    slots{7},
+		shouldPull: slots{0, 1, 2},
+		expectResult: balanceResult{
+			have: 1,
+			want: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      4,
+				surplus:      -3,
+				unachievable: false}}}})
+	bal.try(c, tester{
+		known:       1,
+		desired:     map[string]int{"default": 2},
+		current:     slots{1, 2, 3, 4},
+		shouldPull:  slots{0},
+		shouldTrash: slots{3, 4}})
+	bal.try(c, tester{
+		known:       1,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2},
+		shouldTrash: slots{1, 2},
+		expectResult: balanceResult{
+			have: 4,
+			want: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      2,
+				unachievable: false}}}})
+}
+
+func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
+	bal.srvs[0].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[9].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
+	// block 0 belongs on servers 3 and e, which have different
+	// device IDs.
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1},
+		shouldPull: slots{0}})
+	// block 1 belongs on servers 0 and 9, which both report
+	// having a replica, but the replicas are on the same device
+	// ID -- so we should pull to the third position (7).
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 2},
+		current:    slots{0, 1},
+		shouldPull: slots{2}})
+	// block 1 can be pulled to the doubly-mounted device, but the
+	// pull should only be done on the first of the two servers.
+	bal.try(c, tester{
+		known:      1,
+		desired:    map[string]int{"default": 2},
+		current:    slots{2},
+		shouldPull: slots{0}})
+	// block 0 has one replica on a single device mounted on two
+	// servers (e,9 at positions 1,9). Trashing the replica on 9
+	// would lose the block.
+	bal.try(c, tester{
+		known:      0,
+		desired:    map[string]int{"default": 2},
+		current:    slots{1, 9},
+		shouldPull: slots{0},
+		expectResult: balanceResult{
+			have: 1,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      -1,
+				unachievable: false}}}})
+	// block 0 is overreplicated, but the second and third
+	// replicas are the same replica according to DeviceID
+	// (despite different Mtimes). Don't trash the third replica.
+	bal.try(c, tester{
+		known:   0,
+		desired: map[string]int{"default": 2},
+		current: slots{0, 1, 9},
+		expectResult: balanceResult{
+			have: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      0,
+				unachievable: false}}}})
+	// block 0 is overreplicated; the third and fifth replicas are
+	// extra, but the fourth is another view of the second and
+	// shouldn't be trashed.
+	bal.try(c, tester{
+		known:       0,
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 5, 9, 12},
+		shouldTrash: slots{5, 12},
+		expectResult: balanceResult{
+			have: 4,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      2,
+				unachievable: false}}}})
+}
+
 func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// For known blocks 0/1/2/3, server 9 is slot 9/1/14/0 in
 	// probe order. For these tests we give it two mounts, one
@@ -373,7 +568,7 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	for _, srv := range bal.srvs {
 		srv.ChangeSet = &ChangeSet{}
 	}
-	bal.balanceBlock(knownBlkid(t.known), blk)
+	result := bal.balanceBlock(knownBlkid(t.known), blk)
 
 	var didPull, didTrash slots
 	var didPullMounts, didTrashMounts []string
@@ -408,6 +603,15 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	if t.shouldTrashMounts != nil {
 		sort.Strings(didTrashMounts)
 		c.Check(didTrashMounts, check.DeepEquals, t.shouldTrashMounts)
+	}
+	if t.expectResult.have > 0 {
+		c.Check(result.have, check.Equals, t.expectResult.have)
+	}
+	if t.expectResult.want > 0 {
+		c.Check(result.want, check.Equals, t.expectResult.want)
+	}
+	if t.expectResult.classState != nil {
+		c.Check(result.classState, check.DeepEquals, t.expectResult.classState)
 	}
 }
 

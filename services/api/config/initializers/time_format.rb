@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+ActiveSupport::JSON::Encoding.time_precision = 9
+
 class ActiveSupport::TimeWithZone
   remove_method :as_json
   def as_json *args

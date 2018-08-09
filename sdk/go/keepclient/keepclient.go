@@ -101,6 +101,7 @@ type KeepClient struct {
 	Retries            int
 	BlockCache         *BlockCache
 	RequestID          string
+	StorageClasses     []string
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int

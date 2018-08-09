@@ -21,7 +21,7 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             *args, **kwargs)
         self.client.nodes().list().execute.side_effect = side_effect
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_uuid_is_subscription_key(self, sinfo_mock):
         sinfo_mock.return_value = ""
         node = testutil.arvados_node_mock()
@@ -40,7 +40,7 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.subscriber.assert_called_with(node)
         self.assertEqual("down", node["crunch_worker_state"])
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_update_from_sinfo(self, sinfo_mock):
         sinfo_mock.return_value = """compute1|idle|instancetype=a1.test
 compute2|alloc|(null)
@@ -84,6 +84,7 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             self.public_ips = []
             self.size = testutil.MockSize(1)
             self.state = 0
+            self.extra = {'arvados_node_size': self.size.id}
 
 
     def build_monitor(self, side_effect, *args, **kwargs):
