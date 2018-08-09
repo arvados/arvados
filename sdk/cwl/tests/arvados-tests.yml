@@ -120,6 +120,12 @@
 
 - job: null
   output:
+    out: null
+  tool: 13976-keepref-wf.cwl
+  doc: "Test issue 13976"
+
+- job: null
+  output:
     out: out
   tool: wf/runin-wf.cwl
   doc: "RunInSingleContainer cwl.input.json needs to be consistent with pathmapper manipulations"
