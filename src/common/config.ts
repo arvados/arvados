@@ -8,6 +8,7 @@ export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.j
 
 export interface Config {
     API_HOST: string;
+    KEEP_WEB_HOST: string;
 }
 
 export const fetchConfig = () => {
@@ -24,7 +25,8 @@ const mapConfig = (config: Config): Config => ({
 });
 
 const getDefaultConfig = (): Config => ({
-    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || ""
+    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
+    KEEP_WEB_HOST: process.env.REACT_APP_ARVADOS_KEEP_WEB_HOST || ""
 });
 
 const addProtocol = (url: string) => `${window.location.protocol}//${url}`;

@@ -38,12 +38,12 @@ addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 fetchConfig()
     .then(config => {
         const history = createBrowserHistory();
-        const services = createServices(config.API_HOST);
+        const services = createServices(config);
         const store = configureStore(history, services);
 
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
-
+        console.log(services.webdavClient);
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} {...props}/>;
 
