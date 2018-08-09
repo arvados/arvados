@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export class WebDAV {
-    static create(config?: Partial<WebDAVDefaults>) {
-        return new WebDAV(config);
+    static create(config?: Partial<WebDAVDefaults>, createRequest?: () => XMLHttpRequest) {
+        return new WebDAV(config, createRequest);
     }
 
     defaults: WebDAVDefaults = {
@@ -44,7 +44,7 @@ export class WebDAV {
             method: 'DELETE'
         })
 
-    private constructor(config?: Partial<WebDAVDefaults>) {
+    private constructor(config?: Partial<WebDAVDefaults>, private createRequest = () => new XMLHttpRequest()) {
         if (config) {
             this.defaults = { ...this.defaults, ...config };
         }
@@ -52,7 +52,7 @@ export class WebDAV {
 
     private request = (config: RequestConfig) => {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
-            const r = new XMLHttpRequest();
+            const r = this.createRequest();
             r.open(config.method, this.defaults.baseUrl + config.url);
 
             const headers = { ...this.defaults.headers, ...config.headers };
