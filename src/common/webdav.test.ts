@@ -27,13 +27,16 @@ describe('WebDAV', () => {
     });
 
     it('PUT', async () => {
-        const { open, send, load, createRequest } = mockCreateRequest();
+        const { open, send, load, progress, createRequest } = mockCreateRequest();
+        const onProgress = jest.fn();
         const webdav = WebDAV.create(undefined, createRequest);
-        const promise = webdav.put('foo', { data: 'Test data' });
+        const promise = webdav.put('foo', { data: 'Test data', onProgress });
+        progress();
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PUT', 'foo');
         expect(send).toHaveBeenCalledWith('Test data');
+        expect(onProgress).toHaveBeenCalled();
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -79,10 +82,12 @@ const mockCreateRequest = () => {
     request.open = open;
     request.setRequestHeader = setRequestHeader;
     const load = () => request.dispatchEvent(new Event('load'));
+    const progress = () => request.dispatchEvent(new Event('progress'));
     return {
         send,
         open,
         load,
+        progress,
         setRequestHeader,
         createRequest: () => request
     };

@@ -77,6 +77,7 @@ export interface PropfindConfig extends BaseConfig { }
 
 export interface PutConfig extends BaseConfig {
     data?: any;
+    onProgress?: (event: ProgressEvent) => void;
 }
 
 export interface CopyConfig extends BaseConfig {
