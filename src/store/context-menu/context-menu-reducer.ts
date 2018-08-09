@@ -19,6 +19,7 @@ export interface ContextMenuResource {
     uuid: string;
     kind: string;
     name: string;
+    description?: string;
 }
 
 const initialState = {

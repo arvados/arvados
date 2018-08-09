@@ -8,6 +8,7 @@ import { ResourceKind } from "../../models/resource";
 export interface ProjectPanelItem {
     uuid: string;
     name: string;
+    description?: string;
     kind: string;
     url: string;
     owner: string;
@@ -21,6 +22,7 @@ export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
     return {
         uuid: r.uuid,
         name: r.name,
+        description: r.description,
         kind: r.kind,
         url: "",
         owner: r.ownerUuid,

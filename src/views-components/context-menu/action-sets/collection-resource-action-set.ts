@@ -5,11 +5,11 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "../../../store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "../../../components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "../../../components/icon/icon";
 import { openUpdater } from "../../../store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "../../../store/favorite-panel/favorite-panel-action";
 
-export const collectionActionSet: ContextMenuActionSet = [[
+export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
@@ -49,20 +49,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: ProvenanceGraphIcon,
-        name: "Provenance graph",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: AdvancedIcon,
-        name: "Advanced",
         execute: (dispatch, resource) => {
             // add code
         }
