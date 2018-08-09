@@ -13,6 +13,7 @@ import { RootState } from "../../store/store";
 import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
 import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
+import { reset } from 'redux-form';
 import { ProjectTree } from '../../views-components/project-tree/project-tree';
 import { TreeItem } from "../../components/tree/tree";
 import { getTreePath } from '../../store/project/project-reducer';
@@ -47,6 +48,8 @@ import { FileRemoveDialog } from '../../views-components/file-remove-dialog/file
 import { MultipleFilesRemoveDialog } from '../../views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { DialogCollectionCreateWithSelectedFile } from '../../views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { MoveToProjectDialog } from '../../views-components/move-to-dialog/move-to-dialog';
+import { COLLECTION_CREATE_DIALOG } from '../../views-components/dialog-create/dialog-collection-create';
+import { PROJECT_CREATE_DIALOG } from '../../views-components/dialog-create/dialog-project-create';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -367,10 +370,12 @@ export const Workbench = withStyles(styles)(
             }
 
             handleProjectCreationDialogOpen = (itemUuid: string) => {
+                this.props.dispatch(reset(PROJECT_CREATE_DIALOG));
                 this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
             }
 
             handleCollectionCreationDialogOpen = (itemUuid: string) => {
+                this.props.dispatch(reset(COLLECTION_CREATE_DIALOG));
                 this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
             }
 
