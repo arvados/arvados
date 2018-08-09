@@ -27,7 +27,7 @@ cd /tmp/opts
 
 export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
-if [[ -f "$ARV_PACKAGES_DIR/$1"_*.deb ]] ; then
+if [[ -f $(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb | head -n1) ]] ; then
     debpkg=$(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb | head -n1)
 else
     debpkg=$(ls -t "$ARV_PACKAGES_DIR/processed/$1"_*.deb | head -n1)
