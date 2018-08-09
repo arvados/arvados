@@ -11,12 +11,52 @@ import { CollectionFile, createCollectionFile } from "../../models/collection-fi
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
 import * as _ from "lodash";
 import { KeepManifestStream } from "../../models/keep-manifest";
+import { WebDAV } from "../../common/webdav";
+import { AuthService } from "../auth-service/auth-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
 export class CollectionService extends CommonResourceService<CollectionResource> {
-    constructor(serverApi: AxiosInstance, private keepService: KeepService) {
+    constructor(serverApi: AxiosInstance, private keepService: KeepService, private webdavClient: WebDAV, private authService: AuthService) {
         super(serverApi, "collections");
+    }
+
+    async files(uuid: string) {
+        const request = await this.webdavClient.propfind(`/c=${uuid}`);
+        if (request.responseXML != null) {
+            return this.extractFilesData(request.responseXML);
+        }
+        return Promise.reject();
+    }
+
+    extractFilesData(document: Document) {
+        return Array
+            .from(document.getElementsByTagName('D:response'))
+            .filter(element => {
+                const [resourceTypeElement] = Array.from(element.getElementsByTagName('D:resourcetype'));
+                return resourceTypeElement && resourceTypeElement.innerHTML === '';
+            })
+            .map(element => {
+                const [displayNameElement] = Array.from(element.getElementsByTagName('D:displayname'));
+                const name = displayNameElement ? displayNameElement.innerHTML : undefined;
+
+                const [sizeElement] = Array.from(element.getElementsByTagName('D:getcontentlength'));
+                const size = sizeElement ? sizeElement.innerHTML : undefined;
+
+                const [hrefElement] = Array.from(element.getElementsByTagName('D:href'));
+                const pathname = hrefElement ? hrefElement.innerHTML : undefined;
+                const directory = pathname && pathname.replace(/\/c=[0-9a-zA-Z\-]*/, '').replace(`/${name || ''}`, '');
+
+                const href = this.webdavClient.defaults.baseUrl + pathname + '?api_token=' + this.authService.getApiToken();
+
+                return {
+                    directory,
+                    href,
+                    name,
+                    size,
+                };
+
+            });
     }
 
     private readFile(file: File): Promise<ArrayBuffer> {

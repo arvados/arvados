@@ -36,6 +36,7 @@ export const loadCollection = (uuid: string, kind: ResourceKind) =>
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
+                services.collectionService.files(item.uuid).then(console.log);
                 return services.collectionFilesService.getFiles(item.uuid);
             })
             .then(files => {

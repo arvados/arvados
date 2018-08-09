@@ -21,7 +21,8 @@ export const fetchConfig = () => {
 
 const mapConfig = (config: Config): Config => ({
     ...config,
-    API_HOST: addProtocol(config.API_HOST)
+    API_HOST: addProtocol(config.API_HOST),
+    KEEP_WEB_HOST: addProtocol(config.KEEP_WEB_HOST)
 });
 
 const getDefaultConfig = (): Config => ({
