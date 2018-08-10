@@ -9,7 +9,8 @@ import { ServiceRepository } from "../../../services/services";
 import { RootState } from "../../store";
 import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from "../../dialog/dialog-actions";
-import { getNodeValue } from "../../../models/tree";
+import { getNodeValue, getNodeDescendants } from "../../../models/tree";
+import { CollectionPanelDirectory, CollectionPanelFile } from "./collection-panel-files-state";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -39,6 +40,19 @@ export const removeCollectionFiles = (filePaths: string[]) =>
         }
     };
 
+export const removeCollectionsSelectedFiles = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const tree = getState().collectionPanelFiles;
+        const allFiles = getNodeDescendants('')(tree)
+            .map(id => getNodeValue(id)(tree))
+            .filter(file => file !== undefined) as Array<CollectionPanelDirectory | CollectionPanelFile>;
+
+        const selectedDirectories = allFiles.filter(file => file.selected && file.type === CollectionFileType.DIRECTORY);
+        const selectedFiles = allFiles.filter(file => file.selected && !selectedDirectories.some(dir => dir.id === file.path));
+        const paths = [...selectedDirectories, ...selectedFiles].map(file => file.id);
+        dispatch<any>(removeCollectionFiles(paths));
+    };
+
 export const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
 export const openFileRemoveDialog = (filePath: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
@@ -62,3 +76,14 @@ export const openFileRemoveDialog = (filePath: string) =>
             }));
         }
     };
+
+export const MULTIPLE_FILES_REMOVE_DIALOG = 'multipleFilesRemoveDialog';
+export const openMultipleFilesRemoveDialog = () =>
+    dialogActions.OPEN_DIALOG({
+        id: MULTIPLE_FILES_REMOVE_DIALOG,
+        data: {
+            title: 'Removing files',
+            text: 'Are you sure you want to remove selected files?',
+            confirmButtonLabel: 'Remove'
+        }
+    });
