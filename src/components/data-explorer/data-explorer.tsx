@@ -12,7 +12,7 @@ import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "../../common/custom-theme";
 import { DefaultView } from '../default-view/default-view';
-import { ProjectIcon } from '../icon/icon';
+import { ProjectIcon, IconType } from '../icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | 'defaultRoot' | 'defaultMessage' | 'defaultIcon';
 
@@ -25,9 +25,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     defaultRoot: {
         position: 'absolute',
-        width: '100%',
+        width: '80%',
+        left: '50%',
         top: '50%',
-        transform: 'translate(0%, -50%)'
+        transform: 'translate(-50%, -50%)'
     },
     defaultMessage: {
         fontSize: '1.75rem',
@@ -45,6 +46,8 @@ interface DataExplorerDataProps<T> {
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     page: number;
+    defaultIcon: IconType;
+    defaultMessages: string[];
 }
 
 interface DataExplorerActionProps<T> {
@@ -68,7 +71,7 @@ export const DataExplorer = withStyles(styles)(
             const { 
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey, 
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch, 
-                items, itemsAvailable, onRowClick, onRowDoubleClick, classes 
+                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes 
             } = this.props;
             return <div>
                 { items.length > 0 ? (
@@ -110,9 +113,9 @@ export const DataExplorer = withStyles(styles)(
                 ) : (
                     <DefaultView 
                         classRoot={classes.defaultRoot}
-                        icon={ProjectIcon}
+                        icon={defaultIcon}
                         classIcon={classes.defaultIcon}
-                        messages={['Your project is empty. Please create a project', 'or create a collection and upload a data.']}
+                        messages={defaultMessages}
                         classMessage={classes.defaultMessage} />
                 )}
             </div>;

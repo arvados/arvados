@@ -18,6 +18,7 @@ import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
 import { FAVORITE_PANEL_ID } from "../../store/favorite-panel/favorite-panel-action";
+import { FavoriteIcon } from '../../components/icon/icon';
 
 type CssRules = "toolbar" | "button";
 
@@ -150,7 +151,9 @@ export const FavoritePanel = withStyles(styles)(
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
-                    extractKey={(item: FavoritePanelItem) => item.uuid} />
+                    extractKey={(item: FavoritePanelItem) => item.uuid} 
+                    defaultIcon={FavoriteIcon}
+                    defaultMessages={['Your favorites list is empty.']}/>
                 ;
             }
 

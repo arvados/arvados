@@ -18,7 +18,7 @@ import { resourceLabel } from '../../common/labels';
 import { ArvadosTheme } from '../../common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
 import { restoreBranch } from '../../store/navigation/navigation-action';
-import { relative } from 'path';
+import { ProjectIcon } from '../../components/icon/icon';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -172,7 +172,9 @@ export const ProjectPanel = withStyles(styles)(
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
-                        extractKey={(item: ProjectPanelItem) => item.uuid} />
+                        extractKey={(item: ProjectPanelItem) => item.uuid}
+                        defaultIcon={ProjectIcon}
+                        defaultMessages={['Your project is empty. Please create a project', 'or create a collection and upload a data.']} />
                 </div>;
             }
 

@@ -83,7 +83,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
         padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
         overflowY: "auto",
-        flexGrow: 1
+        flexGrow: 1,
+        position: 'relative'
     },
     toolbar: theme.mixins.toolbar
 });
