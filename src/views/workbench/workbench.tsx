@@ -248,9 +248,9 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
-            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel
                 onItemRouteChange={(collectionId) => {
-                    this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION));
+                    this.props.dispatch<any>(loadCollection(collectionId));
                     this.props.dispatch<any>(loadCollectionTags(collectionId));
                 }}
                 onContextMenu={(event, item) => {
@@ -281,9 +281,9 @@ export const Workbench = withStyles(styles)(
                 onItemDoubleClick={item => {
                     switch (item.kind) {
                         case ResourceKind.COLLECTION:
-                            this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(loadCollection(item.uuid));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default: 
+                        default:
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                     }
@@ -308,7 +308,7 @@ export const Workbench = withStyles(styles)(
                 onItemDoubleClick={item => {
                     switch (item.kind) {
                         case ResourceKind.COLLECTION:
-                            this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
+                            this.props.dispatch(loadCollection(item.uuid));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
                         default:
                             this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));

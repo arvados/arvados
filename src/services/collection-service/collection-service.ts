@@ -29,6 +29,11 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         return Promise.reject();
     }
 
+    async deleteFile(collectionUuid: string, filePath: string){
+        return this.webdavClient.delete(`/c=${collectionUuid}${filePath}`);
+    }
+
+
     extractFilesData(document: Document) {
         return Array
             .from(document.getElementsByTagName('D:response'))

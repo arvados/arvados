@@ -5,34 +5,29 @@
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { ConfirmationDialog } from "../../components/confirmation-dialog/confirmation-dialog";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
-import { snackbarActions } from "../../store/snackbar/snackbar-actions";
+import { withDialog, WithDialogProps } from "../../store/dialog/with-dialog";
+import { RootState } from "../../store/store";
+import { removeCollectionFiles, FILE_REMOVE_DIALOG } from "../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
 
-const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
+const mapStateToProps = (state: RootState, props: WithDialogProps<{ filePath: string }>) => ({
+    filePath: props.data.filePath
+});
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onConfirm: () => {
-        // TODO: dispatch action that removes single file
-        dispatch(dialogActions.CLOSE_DIALOG({ id: FILE_REMOVE_DIALOG }));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing file...', hideDuration: 2000 }));
-        setTimeout(() => {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File removed.', hideDuration: 2000 }));
-        }, 1000);
+const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<{ filePath: string }>) => ({
+    onConfirm: (filePath: string) => {
+        props.closeDialog();
+        dispatch<any>(removeCollectionFiles([filePath]));
     }
 });
 
-export const openFileRemoveDialog = (fileId: string) =>
-    dialogActions.OPEN_DIALOG({
-        id: FILE_REMOVE_DIALOG,
-        data: {
-            title: 'Removing file',
-            text: 'Are you sure you want to remove this file?',
-            confirmButtonLabel: 'Remove',
-            fileId
-        }
+const mergeProps = (
+    stateProps: { filePath: string },
+    dispatchProps: { onConfirm: (filePath: string) => void },
+    props: WithDialogProps<{ filePath: string }>) => ({
+        onConfirm: () => dispatchProps.onConfirm(stateProps.filePath),
+        ...props
     });
 
 export const [FileRemoveDialog] = [ConfirmationDialog]
-    .map(withDialog(FILE_REMOVE_DIALOG))
-    .map(connect(undefined, mapDispatchToProps));
+    .map(connect(mapStateToProps, mapDispatchToProps, mergeProps))
+    .map(withDialog(FILE_REMOVE_DIALOG));
