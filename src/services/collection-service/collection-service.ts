@@ -7,7 +7,7 @@ import { CollectionResource } from "../../models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
 import { FilterBuilder } from "../../common/api/filter-builder";
-import { CollectionFile, createCollectionFile } from "../../models/collection-file";
+import { CollectionFile, createCollectionFile, createCollectionDirectory, createCollectionFilesTree } from "../../models/collection-file";
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
 import * as _ from "lodash";
 import { KeepManifestStream } from "../../models/keep-manifest";
@@ -24,7 +24,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     async files(uuid: string) {
         const request = await this.webdavClient.propfind(`/c=${uuid}`);
         if (request.responseXML != null) {
-            return this.extractFilesData(request.responseXML);
+            return createCollectionFilesTree(this.extractFilesData(request.responseXML));
         }
         return Promise.reject();
     }
@@ -32,16 +32,13 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     extractFilesData(document: Document) {
         return Array
             .from(document.getElementsByTagName('D:response'))
-            .filter(element => {
-                const [resourceTypeElement] = Array.from(element.getElementsByTagName('D:resourcetype'));
-                return resourceTypeElement && resourceTypeElement.innerHTML === '';
-            })
+            .slice(1)
             .map(element => {
                 const [displayNameElement] = Array.from(element.getElementsByTagName('D:displayname'));
                 const name = displayNameElement ? displayNameElement.innerHTML : undefined;
 
                 const [sizeElement] = Array.from(element.getElementsByTagName('D:getcontentlength'));
-                const size = sizeElement ? sizeElement.innerHTML : undefined;
+                const size = sizeElement ? parseInt(sizeElement.innerHTML, 10) : 0;
 
                 const [hrefElement] = Array.from(element.getElementsByTagName('D:href'));
                 const pathname = hrefElement ? hrefElement.innerHTML : undefined;
@@ -49,15 +46,21 @@ export class CollectionService extends CommonResourceService<CollectionResource>
 
                 const href = this.webdavClient.defaults.baseUrl + pathname + '?api_token=' + this.authService.getApiToken();
 
-                return {
-                    directory,
-                    href,
+                const data = {
+                    url: href,
+                    id: `${directory}/${name}`,
                     name,
-                    size,
+                    path: directory,
                 };
+
+                const [resourceTypeElement] = Array.from(element.getElementsByTagName('D:resourcetype'));
+                return resourceTypeElement && resourceTypeElement.innerHTML === ''
+                    ? createCollectionFile({ ...data, size })
+                    : createCollectionDirectory(data);
 
             });
     }
+
 
     private readFile(file: File): Promise<ArrayBuffer> {
         return new Promise<ArrayBuffer>(resolve => {
