@@ -12,7 +12,7 @@ import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "../../common/custom-theme";
 import { DefaultView } from '../default-view/default-view';
-import { ProjectIcon, IconType } from '../icon/icon';
+import { IconType } from '../icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | 'defaultRoot' | 'defaultMessage' | 'defaultIcon';
 
