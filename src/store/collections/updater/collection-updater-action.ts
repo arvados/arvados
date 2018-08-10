@@ -6,8 +6,8 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
-import { ServiceRepository } from "../../../services/services";
-import { CollectionResource } from '../../../models/collection';
+import { ServiceRepository } from "~/services/services";
+import { CollectionResource } from '~/models/collection';
 import { initialize } from 'redux-form';
 import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
 import { ContextMenuResource } from "../../context-menu/context-menu-reducer";

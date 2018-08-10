@@ -6,12 +6,12 @@ import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { SubmissionError } from "redux-form";
 
-import { RootState } from "../../store/store";
+import { RootState } from "~/store/store";
 import { DialogCollectionCreate } from "../dialog-create/dialog-collection-create";
-import { collectionCreateActions, createCollection } from "../../store/collections/creator/collection-creator-action";
-import { snackbarActions } from "../../store/snackbar/snackbar-actions";
-import { UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
-import { projectPanelActions } from "../../store/project-panel/project-panel-action";
+import { collectionCreateActions, createCollection } from "~/store/collections/creator/collection-creator-action";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
+import { UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
+import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.collections.creator.opened

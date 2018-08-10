@@ -4,12 +4,12 @@
 
 import * as React from 'react';
 import { ReactElement } from 'react';
-import { StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core/styles';
-import { Tree, TreeItem, TreeItemStatus } from '../../components/tree/tree';
-import { ProjectResource } from '../../models/project';
-import { ProjectIcon } from '../../components/icon/icon';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { ListItemTextIcon } from '../../components/list-item-text-icon/list-item-text-icon';
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Tree, TreeItem, TreeItemStatus } from '~/components/tree/tree';
+import { ProjectResource } from '~/models/project';
+import { ProjectIcon } from '~/components/icon/icon';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { ListItemTextIcon } from '~/components/list-item-text-icon/list-item-text-icon';
 
 type CssRules = 'root';
 

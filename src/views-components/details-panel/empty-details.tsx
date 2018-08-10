@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DefaultIcon, IconType, ProjectsIcon } from '../../components/icon/icon';
-import { EmptyResource } from '../../models/empty';
+import { DefaultIcon, IconType, ProjectsIcon } from '~/components/icon/icon';
+import { EmptyResource } from '~/models/empty';
 import { DetailsData } from "./details-data";
 import Typography from "@material-ui/core/Typography";
 import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core/styles";
-import { ArvadosTheme } from "../../common/custom-theme";
+import { ArvadosTheme } from "~/common/custom-theme";
 import Icon from "@material-ui/core/Icon/Icon";
 
 type CssRules = 'container' | 'icon';

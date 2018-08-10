@@ -5,19 +5,19 @@
 import * as React from 'react';
 import { FavoritePanelItem } from './favorite-panel-item';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataExplorer } from "../../views-components/data-explorer/data-explorer";
+import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
-import { DataColumns } from '../../components/data-table/data-table';
+import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
-import { RootState } from '../../store/store';
-import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
-import { ContainerRequestState } from '../../models/container-request';
-import { SortDirection } from '../../components/data-table/data-column';
-import { ResourceKind } from '../../models/resource';
-import { resourceLabel } from '../../common/labels';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
-import { FAVORITE_PANEL_ID } from "../../store/favorite-panel/favorite-panel-action";
+import { RootState } from '~/store/store';
+import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
+import { ContainerRequestState } from '~/models/container-request';
+import { SortDirection } from '~/components/data-table/data-column';
+import { ResourceKind } from '~/models/resource';
+import { resourceLabel } from '~/common/labels';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
+import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
 
 type CssRules = "toolbar" | "button";
 

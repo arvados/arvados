@@ -5,18 +5,18 @@
 import { Dispatch } from "redux";
 import { projectActions, getProjectList } from "../project/project-action";
 import { push } from "react-router-redux";
-import { TreeItemStatus } from "../../components/tree/tree";
+import { TreeItemStatus } from "~/components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
 import { RootState } from "../store";
-import { Resource, ResourceKind } from "../../models/resource";
+import { Resource, ResourceKind } from "~/models/resource";
 import { projectPanelActions } from "../project-panel/project-panel-action";
-import { getCollectionUrl } from "../../models/collection";
-import { getProjectUrl, ProjectResource } from "../../models/project";
-import { ProjectService } from "../../services/project-service/project-service";
-import { ServiceRepository } from "../../services/services";
+import { getCollectionUrl } from "~/models/collection";
+import { getProjectUrl, ProjectResource } from "~/models/project";
+import { ProjectService } from "~/services/project-service/project-service";
+import { ServiceRepository } from "~/services/services";
 import { sidePanelActions } from "../side-panel/side-panel-action";
 import { SidePanelIdentifiers } from "../side-panel/side-panel-reducer";
-import { getUuidObjectType, ObjectTypes } from "../../models/object-types";
+import { getUuidObjectType, ObjectTypes } from "~/models/object-types";
 
 export const getResourceUrl = <T extends Resource>(resource: T): string => {
     switch (resource.kind) {
@@ -60,7 +60,6 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                     dispatch(projectPanelActions.RESET_PAGINATION());
                     dispatch(projectPanelActions.REQUEST_ITEMS());
                 }));
-
         }
     };
 

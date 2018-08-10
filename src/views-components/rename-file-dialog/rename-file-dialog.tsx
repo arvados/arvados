@@ -4,9 +4,9 @@
 
 import { Dispatch } from "redux";
 import { reduxForm, reset, startSubmit, stopSubmit } from "redux-form";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
-import { RenameDialog } from "../../components/rename-dialog/rename-dialog";
+import { withDialog } from "~/store/dialog/with-dialog";
+import { dialogActions } from "~/store/dialog/dialog-actions";
+import { RenameDialog } from "~/components/rename-dialog/rename-dialog";
 
 export const RENAME_FILE_DIALOG = 'renameFileDialog';
 

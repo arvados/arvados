@@ -5,11 +5,11 @@
 import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
-import { TextField } from '../../components/text-field/text-field';
+import { TextField } from '~/components/text-field/text-field';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '../../validators/create-project/create-project-validator';
+import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '~/validators/create-project/create-project-validator';
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 

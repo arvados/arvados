@@ -4,8 +4,8 @@
 
 import * as _ from "lodash";
 import { sidePanelActions, SidePanelAction } from './side-panel-action';
-import { SidePanelItem } from '../../components/side-panel/side-panel';
-import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
+import { SidePanelItem } from '~/components/side-panel/side-panel';
+import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "~/components/icon/icon";
 import { Dispatch } from "redux";
 import { push } from "react-router-redux";
 import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";

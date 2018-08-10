@@ -5,8 +5,8 @@
 import { reset } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions } from "../../../store/project/project-action";
-import { NewProjectIcon } from "../../../components/icon/icon";
+import { projectActions } from "~/store/project/project-action";
+import { NewProjectIcon } from "~/components/icon/icon";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
 
 export const rootProjectActionSet: ContextMenuActionSet =  [[{

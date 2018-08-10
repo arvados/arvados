@@ -26,7 +26,7 @@ import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-
 import { CollectionPanelState, collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 import { DialogState, dialogReducer } from './dialog/dialog-reducer';
 import { CollectionsState, collectionsReducer } from './collections/collections-reducer';
-import { ServiceRepository } from "../services/services";
+import { ServiceRepository } from "~/services/services";
 import { treePickerReducer } from './tree-picker/tree-picker-reducer';
 import { TreePicker } from './tree-picker/tree-picker';
 

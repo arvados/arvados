@@ -10,7 +10,7 @@ import { DataTable, DataColumns } from "../data-table/data-table";
 import { DataColumn } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
-import { ArvadosTheme } from "../../common/custom-theme";
+import { ArvadosTheme } from "~/common/custom-theme";
 
 type CssRules = "searchBox" | "toolbar";
 

@@ -30,7 +30,7 @@ describe("<DataExplorer />", () => {
 
     it("communicates with <ColumnSelector/>", () => {
         const onColumnToggle = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true }];
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             columns={columns}
@@ -45,7 +45,7 @@ describe("<DataExplorer />", () => {
         const onFiltersChange = jest.fn();
         const onSortToggle = jest.fn();
         const onRowClick = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true }];
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true }];
         const items = [{ name: "item 1" }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
@@ -100,6 +100,7 @@ const mockDataExplorerProps = () => ({
     searchValue: "",
     page: 0,
     rowsPerPage: 0,
+    rowsPerPageOptions: [],
     onSearch: jest.fn(),
     onFiltersChange: jest.fn(),
     onSortToggle: jest.fn(),

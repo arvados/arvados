@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { RenameIcon, DownloadIcon, RemoveIcon } from "../../../components/icon/icon";
+import { RenameIcon, DownloadIcon, RemoveIcon } from "~/components/icon/icon";
 import { openRenameFileDialog } from "../../rename-file-dialog/rename-file-dialog";
 import { openFileRemoveDialog } from "../../file-remove-dialog/file-remove-dialog";
 

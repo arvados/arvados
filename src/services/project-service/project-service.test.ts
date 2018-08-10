@@ -4,8 +4,7 @@
 
 import axios from "axios";
 import { ProjectService } from "./project-service";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { ProjectResource } from "../../models/project";
+import { FilterBuilder } from "~/common/api/filter-builder";
 
 describe("CommonResourceService", () => {
     const axiosInstance = axios.create();
@@ -20,7 +19,6 @@ describe("CommonResourceService", () => {
         });
     });
 
-
     it("#list has groupClass filter set by default", async () => {
         axiosInstance.get = jest.fn(() => Promise.resolve({ data: {} }));
         const projectService = new ProjectService(axiosInstance);
@@ -34,5 +32,4 @@ describe("CommonResourceService", () => {
             }
         });
     });
-
 });
