@@ -53,11 +53,13 @@ interface DialogCollectionCreateProps {
     files: UploadFile[];
 }
 
+export const COLLECTION_CREATE_DIALOG = "collectionCreateDialog";
+
 export const DialogCollectionCreate = compose(
     connect((state: RootState) => ({
         files: state.collections.uploader
     })),
-    reduxForm({ form: 'collectionCreateDialog' }),
+    reduxForm({ form: COLLECTION_CREATE_DIALOG }),
     withStyles(styles))(
         class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & DispatchProp & WithStyles<CssRules>> {
             render() {
