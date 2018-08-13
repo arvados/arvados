@@ -7,12 +7,13 @@ import { CollectionResource } from "../../models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
 import { FilterBuilder } from "../../common/api/filter-builder";
-import { CollectionFile, createCollectionFile, createCollectionDirectory, createCollectionFilesTree } from "../../models/collection-file";
+import { CollectionFile, createCollectionFile, createCollectionDirectory, createCollectionFilesTree, CollectionFileType, CollectionDirectory } from "../../models/collection-file";
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
 import * as _ from "lodash";
 import { KeepManifestStream } from "../../models/keep-manifest";
 import { WebDAV } from "../../common/webdav";
 import { AuthService } from "../auth-service/auth-service";
+import { mapTree, getNodeChildren, getNode, TreeNode } from "../../models/tree";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -24,15 +25,25 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     async files(uuid: string) {
         const request = await this.webdavClient.propfind(`/c=${uuid}`);
         if (request.responseXML != null) {
-            return createCollectionFilesTree(this.extractFilesData(request.responseXML));
+            const files = this.extractFilesData(request.responseXML);
+            const tree = createCollectionFilesTree(files);
+            const sortedTree = mapTree(node => {
+                const children = getNodeChildren(node.id)(tree).map(id => getNode(id)(tree)) as TreeNode<CollectionDirectory | CollectionFile>[];
+                children.sort((a, b) =>
+                    a.value.type !== b.value.type
+                        ? a.value.type === CollectionFileType.DIRECTORY ? -1 : 1
+                        : a.value.name.localeCompare(b.value.name)
+                );
+                return { ...node, children: children.map(child => child.id) };
+            })(tree);
+            return sortedTree;
         }
         return Promise.reject();
     }
 
-    async deleteFile(collectionUuid: string, filePath: string){
+    async deleteFile(collectionUuid: string, filePath: string) {
         return this.webdavClient.delete(`/c=${collectionUuid}${filePath}`);
     }
-
 
     extractFilesData(document: Document) {
         return Array
