@@ -58,8 +58,8 @@ export class WebDAV {
                 .keys(headers)
                 .forEach(key => r.setRequestHeader(key, headers[key]));
 
-            if (config.onProgress) {
-                r.addEventListener('progress', config.onProgress);
+            if (config.onUploadProgress) {
+                r.upload.addEventListener('progress', config.onUploadProgress);
             }
 
             r.addEventListener('load', () => resolve(r));
@@ -73,7 +73,7 @@ export interface WebDAVRequestConfig {
     headers?: {
         [key: string]: string;
     };
-    onProgress?: (event: ProgressEvent) => void;
+    onUploadProgress?: (event: ProgressEvent) => void;
 }
 
 interface WebDAVDefaults {
@@ -86,5 +86,5 @@ interface RequestConfig {
     url: string;
     headers?: { [key: string]: string };
     data?: any;
-    onProgress?: (event: ProgressEvent) => void;
+    onUploadProgress?: (event: ProgressEvent) => void;
 }
