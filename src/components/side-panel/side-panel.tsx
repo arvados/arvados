@@ -59,7 +59,7 @@ export interface SidePanelItem {
     open?: boolean;
     margin?: boolean;
     openAble?: boolean;
-    activeAction?: (dispatch: Dispatch) => void;
+    activeAction?: (dispatch: Dispatch, uuid?: string) => void;
 }
 
 interface SidePanelDataProps {

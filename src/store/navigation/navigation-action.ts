@@ -33,12 +33,11 @@ export enum ItemMode {
 }
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
-
             const resourceUrl = getResourceUrl(treeItem.data);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
@@ -61,6 +60,13 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                     dispatch(projectPanelActions.REQUEST_ITEMS());
                 }));
 
+        } else {
+            const uuid = services.authService.getUuid();
+            if (itemId === uuid) {
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
+                dispatch(projectPanelActions.RESET_PAGINATION());
+                dispatch(projectPanelActions.REQUEST_ITEMS());
+            }
         }
     };
 

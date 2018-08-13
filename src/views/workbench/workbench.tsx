@@ -6,7 +6,7 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, RouteComponentProps } from "react-router";
+import { Route, Switch, RouteComponentProps, Redirect } from "react-router";
 import { login, logout } from "../../store/auth/auth-action";
 import { User } from "../../models/user";
 import { RootState } from "../../store/store";
@@ -228,6 +228,7 @@ export const Workbench = withStyles(styles)(
                         <main className={classes.contentWrapper}>
                             <div className={classes.content}>
                                 <Switch>
+                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`}  />} />
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
@@ -362,9 +363,10 @@ export const Workbench = withStyles(styles)(
             toggleSidePanelActive = (itemId: string) => {
                 this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
                 if (panelItem && panelItem.activeAction) {
-                    panelItem.activeAction(this.props.dispatch);
+                    panelItem.activeAction(this.props.dispatch, this.props.authService.getUuid());
                 }
             }
 

@@ -174,7 +174,7 @@ export const ProjectPanel = withStyles(styles)(
                         onContextMenu={this.props.onContextMenu}
                         extractKey={(item: ProjectPanelItem) => item.uuid}
                         defaultIcon={ProjectIcon}
-                        defaultMessages={['Your project is empty. Please create a project', 'or create a collection and upload a data.']} />
+                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
                 </div>;
             }
 
