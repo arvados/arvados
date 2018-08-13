@@ -49,7 +49,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     extractFilesData(document: Document) {
         return Array
             .from(document.getElementsByTagName('D:response'))
-            .slice(1)
+            .slice(1) // omit first element which is collection itself
             .map(element => {
                 const name = getTagValue(element, 'D:displayname', '');
                 const size = parseInt(getTagValue(element, 'D:getcontentlength', '0') as string, 10);
@@ -64,10 +64,9 @@ export class CollectionService extends CommonResourceService<CollectionResource>
                     path: directory,
                 };
 
-                const [resourceTypeElement] = Array.from(element.getElementsByTagName('D:resourcetype'));
-                return resourceTypeElement && resourceTypeElement.innerHTML === ''
-                    ? createCollectionFile({ ...data, size })
-                    : createCollectionDirectory(data);
+                return getTagValue(element, 'D:resourcetype', '')
+                    ? createCollectionDirectory(data)
+                    : createCollectionFile({ ...data, size });
 
             });
     }
