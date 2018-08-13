@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { projectActions, getProjectList } from "../project/project-action";
+import { getProjectList, projectActions } from "../project/project-action";
 import { push } from "react-router-redux";
 import { TreeItemStatus } from "../../components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
 import { RootState } from "../store";
-import { Resource, ResourceKind } from "../../models/resource";
+import { ResourceKind } from "../../models/resource";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { getCollectionUrl } from "../../models/collection";
 import { getProjectUrl, ProjectResource } from "../../models/project";
@@ -18,11 +18,12 @@ import { sidePanelActions } from "../side-panel/side-panel-action";
 import { SidePanelIdentifiers } from "../side-panel/side-panel-reducer";
 import { getUuidObjectType, ObjectTypes } from "../../models/object-types";
 
-export const getResourceUrl = <T extends Resource>(resource: T): string => {
-    switch (resource.kind) {
-        case ResourceKind.PROJECT: return getProjectUrl(resource.uuid);
-        case ResourceKind.COLLECTION: return getCollectionUrl(resource.uuid);
-        default: return resource.href;
+export const getResourceUrl = (resourceKind: ResourceKind, resourceUuid: string): string => {
+    switch (resourceKind) {
+        case ResourceKind.PROJECT: return getProjectUrl(resourceUuid);
+        case ResourceKind.COLLECTION: return getCollectionUrl(resourceUuid);
+        default:
+            return '';
     }
 };
 
@@ -34,11 +35,13 @@ export enum ItemMode {
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log("SetProjectItem!!", itemId);
+        debugger;
         const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
         if (treeItem) {
-            const resourceUrl = getResourceUrl(treeItem.data);
+            const resourceUrl = getResourceUrl(treeItem.data.kind, treeItem.data.uuid);
 
             if (itemMode === ItemMode.ACTIVE || itemMode === ItemMode.BOTH) {
                 if (router.location && !router.location.pathname.includes(resourceUrl)) {

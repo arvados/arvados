@@ -12,6 +12,8 @@ import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { projectActions } from "../project/project-action";
 import { getProjectUrl } from "../../models/project";
+import { columns as projectPanelColumns } from "../../views/project-panel/project-panel";
+import { columns as favoritePanelColumns } from "../../views/favorite-panel/favorite-panel";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -63,8 +65,9 @@ export const sidePanelData = [
         activeAction: (dispatch: Dispatch, uuid: string) => {
             dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
             dispatch(push(getProjectUrl(uuid)));
+            dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(projectPanelActions.RESET_PAGINATION());
-            dispatch(projectPanelActions.REQUEST_ITEMS()); 
+            dispatch(projectPanelActions.REQUEST_ITEMS());
         }
     },
     {
@@ -92,6 +95,7 @@ export const sidePanelData = [
         active: false,
         activeAction: (dispatch: Dispatch) => {
             dispatch(push("/favorites"));
+            dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }))
             dispatch(favoritePanelActions.RESET_PAGINATION());
             dispatch(favoritePanelActions.REQUEST_ITEMS());
         }
