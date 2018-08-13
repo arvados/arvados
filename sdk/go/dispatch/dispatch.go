@@ -29,6 +29,9 @@ const (
 type Dispatcher struct {
 	Arv *arvadosclient.ArvadosClient
 
+	// Batch size for container queries
+	BatchSize int64
+
 	// Queue polling frequency
 	PollPeriod time.Duration
 
@@ -71,6 +74,10 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 
 	poll := time.NewTicker(d.PollPeriod)
 	defer poll.Stop()
+
+	if d.BatchSize == 0 {
+		d.BatchSize = 100
+	}
 
 	for {
 		select {
@@ -159,8 +166,22 @@ func (d *Dispatcher) start(c arvados.Container) *runTracker {
 }
 
 func (d *Dispatcher) checkForUpdates(filters [][]interface{}, todo map[string]*runTracker) bool {
+	var countList arvados.ContainerList
 	params := arvadosclient.Dict{
 		"filters": filters,
+		"count": "exact",
+		"limit": 0,
+		"order":   []string{"priority desc"}}
+	err := d.Arv.List("containers", params, &countList)
+	if err != nil {
+		log.Printf("Error getting count of containers: %q", err)
+		return false
+	}
+	itemsAvailable := countList.ItemsAvailable	
+	params = arvadosclient.Dict{
+		"filters": filters,
+		"count": "none",
+		"limit": d.BatchSize,
 		"order":   []string{"priority desc"}}
 	offset := 0
 	for {
@@ -173,7 +194,7 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}, todo map[string]*r
 		}
 		d.checkListForUpdates(list.Items, todo)
 		offset += len(list.Items)
-		if len(list.Items) == 0 || list.ItemsAvailable <= offset {
+		if len(list.Items) == 0 || itemsAvailable <= offset {
 			return true
 		}
 	}
