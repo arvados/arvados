@@ -7,7 +7,7 @@ import { WebDAV } from "./webdav";
 describe('WebDAV', () => {
     it('makes use of provided config', async () => {
         const { open, load, setRequestHeader, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create({ baseUrl: 'http://foo.com/', headers: { Authorization: 'Basic' } }, createRequest);
+        const webdav = new WebDAV({ baseURL: 'http://foo.com/', headers: { Authorization: 'Basic' } }, createRequest);
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
@@ -18,8 +18,8 @@ describe('WebDAV', () => {
 
     it('allows to modify defaults after instantiation', async () => {
         const { open, load, setRequestHeader, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
-        webdav.defaults.baseUrl = 'http://foo.com/';
+        const webdav = new WebDAV(undefined, createRequest);
+        webdav.defaults.baseURL = 'http://foo.com/';
         webdav.defaults.headers = { Authorization: 'Basic' };
         const promise = webdav.propfind('foo');
         load();
@@ -31,7 +31,7 @@ describe('WebDAV', () => {
 
     it('PROPFIND', async () => {
         const { open, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
+        const webdav = new WebDAV(undefined, createRequest);
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
@@ -42,8 +42,8 @@ describe('WebDAV', () => {
     it('PUT', async () => {
         const { open, send, load, progress, createRequest } = mockCreateRequest();
         const onProgress = jest.fn();
-        const webdav = WebDAV.create(undefined, createRequest);
-        const promise = webdav.put('foo', { data: 'Test data', onProgress });
+        const webdav = new WebDAV(undefined, createRequest);
+        const promise = webdav.put('foo', 'Test data', { onProgress });
         progress();
         load();
         const request = await promise;
@@ -55,20 +55,20 @@ describe('WebDAV', () => {
 
     it('COPY', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
-        const promise = webdav.copy('foo', { destination: 'foo-copy' });
+        const webdav = new WebDAV(undefined, createRequest);
+        const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'foo-copy');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
-    
-    it('COPY - adds baseUrl to Destination header', async () => {
+
+    it('COPY - adds baseURL to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
-        webdav.defaults.baseUrl = 'base/';
-        const promise = webdav.copy('foo', { destination: 'foo-copy' });
+        const webdav = new WebDAV(undefined, createRequest);
+        webdav.defaults.baseURL = 'base/';
+        const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'base/foo');
@@ -78,8 +78,8 @@ describe('WebDAV', () => {
 
     it('MOVE', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
-        const promise = webdav.move('foo', { destination: 'foo-copy' });
+        const webdav = new WebDAV(undefined, createRequest);
+        const promise = webdav.move('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'foo');
@@ -87,11 +87,11 @@ describe('WebDAV', () => {
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('MOVE - adds baseUrl to Destination header', async () => {
+    it('MOVE - adds baseURL to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
-        webdav.defaults.baseUrl = 'base/';
-        const promise = webdav.move('foo', { destination: 'foo-moved' });
+        const webdav = new WebDAV(undefined, createRequest);
+        webdav.defaults.baseURL = 'base/';
+        const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'base/foo');
@@ -101,7 +101,7 @@ describe('WebDAV', () => {
 
     it('DELETE', async () => {
         const { open, load, createRequest } = mockCreateRequest();
-        const webdav = WebDAV.create(undefined, createRequest);
+        const webdav = new WebDAV(undefined, createRequest);
         const promise = webdav.delete('foo');
         load();
         const request = await promise;

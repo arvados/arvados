@@ -13,7 +13,7 @@ describe('auth-reducer', () => {
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices({ API_HOST: "/arvados/v1", KEEP_WEB_HOST: "" }));
+        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
     });
 
     it('should correctly initialise state', () => {

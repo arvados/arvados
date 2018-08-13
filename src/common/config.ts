@@ -7,8 +7,8 @@ import Axios from "../../node_modules/axios";
 export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
 
 export interface Config {
-    API_HOST: string;
-    KEEP_WEB_HOST: string;
+    apiHost: string;
+    keepWebHost: string;
 }
 
 export const fetchConfig = () => {
@@ -21,12 +21,13 @@ export const fetchConfig = () => {
 
 const mapConfig = (config: Config): Config => ({
     ...config,
-    API_HOST: addProtocol(config.API_HOST)
+    apiHost: addProtocol(config.apiHost),
+    keepWebHost: addProtocol(config.keepWebHost)
 });
 
 const getDefaultConfig = (): Config => ({
-    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
-    KEEP_WEB_HOST: process.env.REACT_APP_ARVADOS_KEEP_WEB_HOST || ""
+    apiHost: process.env.REACT_APP_ARVADOS_API_HOST || "",
+    keepWebHost: process.env.REACT_APP_ARVADOS_KEEP_WEB_HOST || ""
 });
 
 const addProtocol = (url: string) => `${window.location.protocol}//${url}`;
