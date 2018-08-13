@@ -5,8 +5,8 @@
 import * as _ from "lodash";
 
 import { projectActions, ProjectAction } from "./project-action";
-import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { ProjectResource } from "../../models/project";
+import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import { ProjectResource } from "~/models/project";
 
 export type ProjectState = {
     items: Array<TreeItem<ProjectResource>>,

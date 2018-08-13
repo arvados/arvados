@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { default as unionize, ofType, UnionOf } from "unionize";
 
-import { ProjectResource } from "../../models/project";
+import { ProjectResource } from "~/models/project";
 import { Dispatch } from "redux";
-import { FilterBuilder } from "../../common/api/filter-builder";
+import { FilterBuilder } from "~/common/api/filter-builder";
 import { RootState } from "../store";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
-import { ServiceRepository } from "../../services/services";
+import { ServiceRepository } from "~/services/services";
 
 export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),

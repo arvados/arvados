@@ -5,7 +5,8 @@
 import { reset } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions } from "../../../store/project/project-action";
+import { projectActions } from "~/store/project/project-action";
+import { NewProjectIcon } from "~/components/icon/icon";
 import { collectionCreateActions } from "../../../store/collections/creator/collection-creator-action";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
 import { COLLECTION_CREATE_DIALOG } from "../../dialog-create/dialog-collection-create";

@@ -5,10 +5,10 @@
 import { Redirect, RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import { getUserDetails, saveApiToken } from "../../store/auth/auth-action";
-import { getProjectList } from "../../store/project/project-action";
-import { getUrlParameter } from "../../common/url";
-import { AuthService } from "../../services/auth-service/auth-service";
+import { getUserDetails, saveApiToken } from "~/store/auth/auth-action";
+import { getProjectList } from "~/store/project/project-action";
+import { getUrlParameter } from "~/common/url";
+import { AuthService } from "~/services/auth-service/auth-service";
 
 interface ApiTokenProps {
     authService: AuthService;

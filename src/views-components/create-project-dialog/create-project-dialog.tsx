@@ -6,11 +6,11 @@ import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { SubmissionError } from "redux-form";
 
-import { RootState } from "../../store/store";
+import { RootState } from "~/store/store";
 import { DialogProjectCreate } from "../dialog-create/dialog-project-create";
-import { projectActions, createProject, getProjectList } from "../../store/project/project-action";
-import { projectPanelActions } from "../../store/project-panel/project-panel-action";
-import { snackbarActions } from "../../store/snackbar/snackbar-actions";
+import { projectActions, createProject, getProjectList } from "~/store/project/project-action";
+import { projectPanelActions } from "~/store/project-panel/project-panel-action";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState) => ({
     open: state.projects.creator.opened

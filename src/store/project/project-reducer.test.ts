@@ -4,8 +4,8 @@
 
 import { projectsReducer, getTreePath } from "./project-reducer";
 import { projectActions } from "./project-action";
-import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { mockProjectResource } from "../../models/test-utils";
+import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import { mockProjectResource } from "~/models/test-utils";
 
 describe('project-reducer', () => {
 

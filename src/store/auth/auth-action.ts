@@ -4,9 +4,9 @@
 
 import { ofType, default as unionize, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { User } from "../../models/user";
+import { User } from "~/models/user";
 import { RootState } from "../store";
-import { ServiceRepository } from "../../services/services";
+import { ServiceRepository } from "~/services/services";
 import { AxiosInstance } from "axios";
 
 export const authActions = unionize({

@@ -30,13 +30,13 @@ describe("<DropdownMenu />", () => {
     it("opens on menu icon click", () => {
         const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
         dropdownMenu.find(IconButton).simulate("click", {currentTarget: {}});
-        expect(dropdownMenu.state().anchorEl).toBeDefined();
+        expect((dropdownMenu.state() as any).anchorEl).toBeDefined();
     });
 
     it("closes on menu click", () => {
         const dropdownMenu = shallow(<DropdownMenu id="test-menu" icon={<PaginationRightArrowIcon />} />);
         dropdownMenu.find(Menu).simulate("click", {currentTarget: {}});
-        expect(dropdownMenu.state().anchorEl).toBeUndefined();
+        expect((dropdownMenu.state() as any).anchorEl).toBeUndefined();
     });
 
 });

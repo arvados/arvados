@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { default as unionize, ofType, UnionOf } from "unionize";
-import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
-import { DataColumns } from "../../components/data-table/data-table";
+import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
+import { DataColumns } from "~/components/data-table/data-table";
 
 export const dataExplorerActions = unionize({
     RESET_PAGINATION: ofType<{ id: string }>(),

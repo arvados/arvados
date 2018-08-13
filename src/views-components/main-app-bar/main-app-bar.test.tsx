@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { mount, configure, ReactWrapper } from "enzyme";
+import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
 import { MainAppBar } from "./main-app-bar";
-import { SearchBar } from "../../components/search-bar/search-bar";
-import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
-import { DropdownMenu } from "../../components/dropdown-menu/dropdown-menu";
+import { SearchBar } from "~/components/search-bar/search-bar";
+import { Breadcrumbs } from "~/components/breadcrumbs/breadcrumbs";
+import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { Button, MenuItem, IconButton } from "@material-ui/core";
-import { User } from "../../models/user";
+import { User } from "~/models/user";
 
 configure({ adapter: new Adapter() });
 

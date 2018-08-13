@@ -3,16 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { ProjectPanelColumnNames, ProjectPanelFilter } from "../../views/project-panel/project-panel";
+import { ProjectPanelColumnNames, ProjectPanelFilter } from "~/views/project-panel/project-panel";
 import { RootState } from "../store";
-import { DataColumns } from "../../components/data-table/data-table";
-import { ServiceRepository } from "../../services/services";
-import { ProjectPanelItem, resourceToDataItem } from "../../views/project-panel/project-panel-item";
-import { SortDirection } from "../../components/data-table/data-column";
-import { OrderBuilder } from "../../common/api/order-builder";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { ProcessResource } from "../../models/process";
-import { GroupContentsResourcePrefix, GroupContentsResource } from "../../services/groups-service/groups-service";
+import { DataColumns } from "~/components/data-table/data-table";
+import { ServiceRepository } from "~/services/services";
+import { ProjectPanelItem, resourceToDataItem } from "~/views/project-panel/project-panel-item";
+import { SortDirection } from "~/components/data-table/data-column";
+import { OrderBuilder } from "~/common/api/order-builder";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { GroupContentsResourcePrefix, GroupContentsResource } from "~/services/groups-service/groups-service";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";

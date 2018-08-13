@@ -5,15 +5,15 @@
 import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
-import { TextField } from '../../components/text-field/text-field';
+import { TextField } from '~/components/text-field/text-field';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '../../validators/create-collection/create-collection-validator';
-import { FileUpload } from "../../components/file-upload/file-upload";
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/create-collection/create-collection-validator';
+import { FileUpload } from "~/components/file-upload/file-upload";
 import { connect, DispatchProp } from "react-redux";
-import { RootState } from "../../store/store";
-import { collectionUploaderActions, UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
+import { RootState } from "~/store/store";
+import { collectionUploaderActions, UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
 
 type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
 

@@ -6,8 +6,8 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
-import { CollectionResource } from '../../../models/collection';
-import { ServiceRepository } from "../../../services/services";
+import { CollectionResource } from '~/models/collection';
+import { ServiceRepository } from "~/services/services";
 import { collectionUploaderActions } from "../uploader/collection-uploader-actions";
 import { reset } from "redux-form";
 

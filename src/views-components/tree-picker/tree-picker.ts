@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { Tree, TreeProps, TreeItem } from "../../components/tree/tree";
-import { RootState } from "../../store/store";
-import { TreePicker as TTreePicker, TreePickerNode, createTreePickerNode } from "../../store/tree-picker/tree-picker";
-import { getNodeValue, getNodeChildren } from "../../models/tree";
+import { Tree, TreeProps, TreeItem } from "~/components/tree/tree";
+import { RootState } from "~/store/store";
+import { TreePicker as TTreePicker, TreePickerNode, createTreePickerNode } from "~/store/tree-picker/tree-picker";
+import { getNodeValue, getNodeChildren } from "~/models/tree";
 
 const memoizedMapStateToProps = () => {
     let prevState: TTreePicker;

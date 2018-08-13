@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService, ListResults } from "../../common/api/common-resource-service";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { CommonResourceService, ListResults } from "~/common/api/common-resource-service";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { OrderBuilder } from "~/common/api/order-builder";
 import { AxiosInstance } from "axios";
-import { GroupResource } from "../../models/group";
-import { CollectionResource } from "../../models/collection";
-import { ProjectResource } from "../../models/project";
-import { ProcessResource } from "../../models/process";
+import { GroupResource } from "~/models/group";
+import { CollectionResource } from "~/models/collection";
+import { ProjectResource } from "~/models/project";
+import { ProcessResource } from "~/models/process";
 
 export interface ContentsArguments {
     limit?: number;

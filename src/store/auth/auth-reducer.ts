@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { authActions, AuthAction } from "./auth-action";
-import { User } from "../../models/user";
-import { ServiceRepository } from "../../services/services";
+import { User } from "~/models/user";
+import { ServiceRepository } from "~/services/services";
 
 export interface AuthState {
     user?: User;
