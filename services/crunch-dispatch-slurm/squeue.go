@@ -78,9 +78,9 @@ func (sqc *SqueueChecker) SetPriority(uuid string, want int64) {
 // adjust slurm job nice values as needed to ensure slurm priority
 // order matches Arvados priority order.
 func (sqc *SqueueChecker) reniceAll() {
-	sqc.lock.RLock()
-	defer sqc.lock.RUnlock()
-
+	// This is slow (it shells out to scontrol many times) and no
+	// other goroutines update sqc.queue or any of the job fields
+	// we use here, so we don't acquire a lock.
 	jobs := make([]*slurmJob, 0, len(sqc.queue))
 	for _, j := range sqc.queue {
 		if j.wantPriority == 0 {
@@ -139,9 +139,6 @@ func (sqc *SqueueChecker) Stop() {
 // queued). If it succeeds, it updates sqc.queue and wakes up any
 // goroutines that are waiting in HasUUID() or All().
 func (sqc *SqueueChecker) check() {
-	sqc.lock.Lock()
-	defer sqc.lock.Unlock()
-
 	cmd := sqc.Slurm.QueueCommand([]string{"--all", "--noheader", "--format=%j %y %Q %T %r"})
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
@@ -162,6 +159,10 @@ func (sqc *SqueueChecker) check() {
 			log.Printf("warning: ignoring unparsed line in squeue output: %q", line)
 			continue
 		}
+
+		// No other goroutines write to jobs' priority or nice
+		// fields, so we can read and write them without
+		// locks.
 		replacing, ok := sqc.queue[uuid]
 		if !ok {
 			replacing = &slurmJob{uuid: uuid}
@@ -197,7 +198,9 @@ func (sqc *SqueueChecker) check() {
 			log.Printf("warning: job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
 		}
 	}
+	sqc.lock.Lock()
 	sqc.queue = newq
+	sqc.lock.Unlock()
 	sqc.notify.Broadcast()
 }
 
