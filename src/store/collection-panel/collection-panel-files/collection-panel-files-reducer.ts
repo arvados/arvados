@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile } from "./collection-panel-files-state";
+import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from "./collection-panel-files-state";
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
 import { createTree, mapTreeValues, getNode, setNode, getNodeAncestors, getNodeDescendants, setNodeValueWith, mapTree } from "../../../models/tree";
 import { CollectionFileType } from "../../../models/collection-file";
@@ -10,7 +10,7 @@ import { CollectionFileType } from "../../../models/collection-file";
 export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
     return collectionPanelFilesAction.match(action, {
         SET_COLLECTION_FILES: files =>
-            mapTree(mapCollectionFileToCollectionPanelFile)(files),
+            mergeCollectionPanelFilesStates(state, mapTree(mapCollectionFileToCollectionPanelFile)(files)),
 
         TOGGLE_COLLECTION_FILE_COLLAPSE: data =>
             toggleCollapse(data.id)(state),
