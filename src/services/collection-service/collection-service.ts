@@ -49,7 +49,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
                 const pathname = hrefElement ? hrefElement.innerHTML : undefined;
                 const directory = pathname && pathname.replace(/\/c=[0-9a-zA-Z\-]*/, '').replace(`/${name || ''}`, '');
 
-                const href = this.webdavClient.defaults.baseUrl + pathname + '?api_token=' + this.authService.getApiToken();
+                const href = this.webdavClient.defaults.baseURL + pathname + '?api_token=' + this.authService.getApiToken();
 
                 const data = {
                     url: href,

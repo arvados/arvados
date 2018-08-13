@@ -3,57 +3,55 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export class WebDAV {
-    static create(config?: Partial<WebDAVDefaults>, createRequest?: () => XMLHttpRequest) {
-        return new WebDAV(config, createRequest);
-    }
 
     defaults: WebDAVDefaults = {
-        baseUrl: '',
+        baseURL: '',
         headers: {},
     };
 
-    propfind = (url: string, config: PropfindConfig = {}) =>
-        this.request({
-            ...config, url,
-            method: 'PROPFIND'
-        })
-
-    put = (url: string, config: PutConfig = {}) =>
-        this.request({
-            ...config, url,
-            method: 'PUT'
-        })
-
-    copy = (url: string, { destination, ...config }: CopyConfig) =>
-        this.request({
-            ...config, url,
-            method: 'COPY',
-            headers: { ...config.headers, Destination: this.defaults.baseUrl + destination }
-        })
-
-    move = (url: string, { destination, ...config }: MoveConfig) =>
-        this.request({
-            ...config, url,
-            method: 'MOVE',
-            headers: { ...config.headers, Destination: this.defaults.baseUrl + destination }
-        })
-
-    delete = (url: string, config: DeleteConfig = {}) =>
-        this.request({
-            ...config, url,
-            method: 'DELETE'
-        })
-
-    private constructor(config?: Partial<WebDAVDefaults>, private createRequest = () => new XMLHttpRequest()) {
+    constructor(config?: Partial<WebDAVDefaults>, private createRequest = () => new XMLHttpRequest()) {
         if (config) {
             this.defaults = { ...this.defaults, ...config };
         }
     }
 
+    propfind = (url: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'PROPFIND'
+        })
+
+    put = (url: string, data?: any, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'PUT',
+            data,
+        })
+
+    copy = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'COPY',
+            headers: { ...config.headers, Destination: this.defaults.baseURL + destination }
+        })
+
+    move = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'MOVE',
+            headers: { ...config.headers, Destination: this.defaults.baseURL + destination }
+        })
+
+    delete = (url: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'DELETE'
+        })
+
     private request = (config: RequestConfig) => {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             const r = this.createRequest();
-            r.open(config.method, this.defaults.baseUrl + config.url);
+            r.open(config.method, this.defaults.baseURL + config.url);
 
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
@@ -69,35 +67,17 @@ export class WebDAV {
 
             r.send(config.data);
         });
-
     }
 }
-
-export interface PropfindConfig extends BaseConfig { }
-
-export interface PutConfig extends BaseConfig {
-    data?: any;
-    onProgress?: (event: ProgressEvent) => void;
-}
-
-export interface CopyConfig extends BaseConfig {
-    destination: string;
-}
-
-export interface MoveConfig extends BaseConfig {
-    destination: string;
-}
-
-export interface DeleteConfig extends BaseConfig { }
-
-interface BaseConfig {
+export interface WebDAVRequestConfig {
     headers?: {
         [key: string]: string;
     };
+    onProgress?: (event: ProgressEvent) => void;
 }
 
 interface WebDAVDefaults {
-    baseUrl: string;
+    baseURL: string;
     headers: { [key: string]: string };
 }
 

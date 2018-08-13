@@ -43,6 +43,7 @@ fetchConfig()
 
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
+        
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} {...props}/>;
 
