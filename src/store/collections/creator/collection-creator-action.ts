@@ -17,9 +17,9 @@ export const collectionCreateActions = unionize({
     CREATE_COLLECTION: ofType<{}>(),
     CREATE_COLLECTION_SUCCESS: ofType<{}>(),
 }, {
-    tag: 'type',
-    value: 'payload'
-});
+        tag: 'type',
+        value: 'payload'
+    });
 
 export const createCollection = (collection: Partial<CollectionResource>, files: File[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -34,11 +34,11 @@ export const createCollection = (collection: Partial<CollectionResource>, files:
                     (fileId, loaded, total, currentTime) => {
                         dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
                     })
-                .then(collection => {
-                    dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
-                    dispatch(reset('collectionCreateDialog'));
-                    dispatch(collectionUploaderActions.CLEAR_UPLOAD());
-                });
+                    .then(() => {
+                        dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+                        dispatch(reset('collectionCreateDialog'));
+                        dispatch(collectionUploaderActions.CLEAR_UPLOAD());
+                    });
                 return collection;
             });
     };
