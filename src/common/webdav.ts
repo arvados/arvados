@@ -48,7 +48,6 @@ export class WebDAV {
             method: 'DELETE'
         })
 
-
     private request = (config: RequestConfig) => {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             const r = this.createRequest();
@@ -68,7 +67,6 @@ export class WebDAV {
 
             r.send(config.data);
         });
-
     }
 }
 export interface WebDAVRequestConfig {
