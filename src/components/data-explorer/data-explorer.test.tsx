@@ -11,6 +11,8 @@ import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable } from "../data-table/data-table";
 import { SearchInput } from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
+import { ProjectIcon } from '../icon/icon';
+import { DefaultView } from '../default-view/default-view';
 
 configure({ adapter: new Adapter() });
 
@@ -64,12 +66,13 @@ describe("<DataExplorer />", () => {
         expect(onRowClick).toHaveBeenCalledWith("rowClick");
     });
 
-    it("does not render <TablePagination/> if there is no items", () => {
+    it("does not render <DataTable/> if there is no items", () => {
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             items={[]}
         />);
-        expect(dataExplorer.find(TablePagination)).toHaveLength(0);
+        expect(dataExplorer.find(DataTable)).toHaveLength(0);
+        expect(dataExplorer.find(DefaultView)).toHaveLength(1);
     });
 
     it("communicates with <TablePagination/>", () => {
@@ -100,7 +103,7 @@ const mockDataExplorerProps = () => ({
     searchValue: "",
     page: 0,
     rowsPerPage: 0,
-    rowsPerPageOptions: [],
+    rowsPerPageOptions: [0],
     onSearch: jest.fn(),
     onFiltersChange: jest.fn(),
     onSortToggle: jest.fn(),
@@ -109,5 +112,7 @@ const mockDataExplorerProps = () => ({
     onColumnToggle: jest.fn(),
     onChangePage: jest.fn(),
     onChangeRowsPerPage: jest.fn(),
-    onContextMenu: jest.fn()
+    onContextMenu: jest.fn(),
+    defaultIcon: ProjectIcon,
+    defaultMessages: ['testing'],
 });

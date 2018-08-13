@@ -18,10 +18,16 @@ import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
 import { restoreBranch } from '~/store/navigation/navigation-action';
+import { ProjectIcon } from '~/components/icon/icon';
 
-type CssRules = "toolbar" | "button";
+type CssRules = 'root' | "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        position: 'relative',
+        width: '100%',
+        height: '100%'
+    },
     toolbar: {
         paddingBottom: theme.spacing.unit * 3,
         textAlign: "right"
@@ -148,7 +154,7 @@ export const ProjectPanel = withStyles(styles)(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
-                return <div>
+                return <div className={classes.root}>
                     <div className={classes.toolbar}>
                         <Button color="primary" onClick={this.handleNewCollectionClick} variant="raised" className={classes.button}>
                             Create a collection
@@ -166,7 +172,9 @@ export const ProjectPanel = withStyles(styles)(
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
-                        extractKey={(item: ProjectPanelItem) => item.uuid} />
+                        extractKey={(item: ProjectPanelItem) => item.uuid}
+                        defaultIcon={ProjectIcon}
+                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
                 </div>;
             }
 

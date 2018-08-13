@@ -6,7 +6,7 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, RouteComponentProps, Switch } from "react-router";
+import { Route, RouteComponentProps, Switch, Redirect } from "react-router";
 import { login, logout } from "~/store/auth/auth-action";
 import { User } from "~/models/user";
 import { RootState } from "~/store/store";
@@ -86,7 +86,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
         padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
         overflowY: "auto",
-        flexGrow: 1
+        flexGrow: 1,
+        position: 'relative'
     },
     toolbar: theme.mixins.toolbar
 });
@@ -227,6 +228,7 @@ export const Workbench = withStyles(styles)(
                         <main className={classes.contentWrapper}>
                             <div className={classes.content}>
                                 <Switch>
+                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`}  />} />
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
@@ -361,9 +363,10 @@ export const Workbench = withStyles(styles)(
             toggleSidePanelActive = (itemId: string) => {
                 this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
+
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
                 if (panelItem && panelItem.activeAction) {
-                    panelItem.activeAction(this.props.dispatch);
+                    panelItem.activeAction(this.props.dispatch, this.props.authService.getUuid());
                 }
             }
 

@@ -45,14 +45,15 @@ interface DetailsAttributeDataProps {
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
-export const DetailsAttribute = withStyles(styles)(({ label, link, value, children, classes, classLabel, classValue }: DetailsAttributeProps) =>
-    <Typography component="div" className={classes.attribute}>
-        <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
-        { link
-            ? <a href={link} className={classes.link} target='_blank'>{value}</a>
-            : <Typography component="span" className={classnames([classes.value, classValue])}>
-                {value}
-                {children}
-            </Typography> }
-    </Typography>
+export const DetailsAttribute = withStyles(styles)(
+    ({ label, link, value, children, classes, classLabel, classValue }: DetailsAttributeProps) =>
+        <Typography component="div" className={classes.attribute}>
+            <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
+            { link
+                ? <a href={link} className={classes.link} target='_blank'>{value}</a>
+                : <Typography component="span" className={classnames([classes.value, classValue])}>
+                    {value}
+                    {children}
+                </Typography> }
+        </Typography>
 );

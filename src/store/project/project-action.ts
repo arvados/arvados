@@ -26,18 +26,19 @@ export const projectActions = unionize({
     value: 'payload'
 });
 
-export const getProjectList = (parentUuid: string = '') => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
-    return services.projectService.list({
-        filters: FilterBuilder
-            .create()
-            .addEqual("ownerUuid", parentUuid)
-    }).then(({ items: projects }) => {
-        dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
-        dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
-        return projects;
-    });
-};
+export const getProjectList = (parentUuid: string = '') => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
+        return services.projectService.list({
+            filters: FilterBuilder
+                .create()
+                .addEqual("ownerUuid", parentUuid)
+        }).then(({ items: projects }) => {
+            dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
+            dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
+            return projects;
+        });
+    };
 
 export const createProject = (project: Partial<ProjectResource>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

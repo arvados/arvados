@@ -18,6 +18,7 @@ const history = createBrowserHistory();
 it('renders without crashing', () => {
     const div = document.createElement('div');
     const services = createServices("/arvados/v1");
+	services.authService.getUuid = jest.fn().mockReturnValueOnce('test');
     const store = configureStore(createBrowserHistory(), services);
     ReactDOM.render(
         <MuiThemeProvider theme={CustomTheme}>
