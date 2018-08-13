@@ -13,7 +13,7 @@ describe('auth-reducer', () => {
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices("/arvados/v1"));
+        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
     });
 
     it('should correctly initialise state', () => {
@@ -25,7 +25,7 @@ describe('auth-reducer', () => {
             uuid: "uuid",
             ownerUuid: "ownerUuid"
         };
-        const state = reducer(initialState, authActions.INIT({user, token: "token"}));
+        const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
             user

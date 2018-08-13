@@ -12,26 +12,19 @@ import { CollectionService } from "./collection-service/collection-service";
 import { TagService } from "./tag-service/tag-service";
 import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 import { KeepService } from "./keep-service/keep-service";
+import { WebDAV } from "../common/webdav";
+import { Config } from "../common/config";
 
-export interface ServiceRepository {
-    apiClient: AxiosInstance;
+export type ServiceRepository = ReturnType<typeof createServices>;
 
-    authService: AuthService;
-    keepService: KeepService;
-    groupsService: GroupsService;
-    projectService: ProjectService;
-    linkService: LinkService;
-    favoriteService: FavoriteService;
-    tagService: TagService;
-    collectionService: CollectionService;
-    collectionFilesService: CollectionFilesService;
-}
-
-export const createServices = (baseUrl: string): ServiceRepository => {
+export const createServices = (config: Config) => {
     const apiClient = Axios.create();
-    apiClient.defaults.baseURL = `${baseUrl}/arvados/v1`;
+    apiClient.defaults.baseURL = `${config.apiHost}/arvados/v1`;
 
-    const authService = new AuthService(apiClient, baseUrl);
+    const webdavClient = new WebDAV();
+    webdavClient.defaults.baseURL = config.keepWebHost;
+
+    const authService = new AuthService(apiClient, config.apiHost);
     const keepService = new KeepService(apiClient);
     const groupsService = new GroupsService(apiClient);
     const projectService = new ProjectService(apiClient);
@@ -43,6 +36,7 @@ export const createServices = (baseUrl: string): ServiceRepository => {
 
     return {
         apiClient,
+        webdavClient,
         authService,
         keepService,
         groupsService,
@@ -54,3 +48,4 @@ export const createServices = (baseUrl: string): ServiceRepository => {
         collectionFilesService
     };
 };
+

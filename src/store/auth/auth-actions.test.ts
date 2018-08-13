@@ -23,9 +23,9 @@ describe('auth-actions', () => {
     let store: RootStore;
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices("/arvados/v1"));
+        store = configureStore(createBrowserHistory(), createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
         localStorage.clear();
-        reducer = authReducer(createServices("/arvados/v1"));
+        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
     });
 
     it('should initialise state with user and api token from local storage', () => {
