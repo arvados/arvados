@@ -14,6 +14,7 @@ import { KeepManifestStream } from "../../models/keep-manifest";
 import { WebDAV } from "../../common/webdav";
 import { AuthService } from "../auth-service/auth-service";
 import { mapTree, getNodeChildren, getNode, TreeNode } from "../../models/tree";
+import { getTagValue } from "../../common/xml";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -50,16 +51,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
             .from(document.getElementsByTagName('D:response'))
             .slice(1)
             .map(element => {
-                const [displayNameElement] = Array.from(element.getElementsByTagName('D:displayname'));
-                const name = displayNameElement ? displayNameElement.innerHTML : undefined;
-
-                const [sizeElement] = Array.from(element.getElementsByTagName('D:getcontentlength'));
-                const size = sizeElement ? parseInt(sizeElement.innerHTML, 10) : 0;
-
-                const [hrefElement] = Array.from(element.getElementsByTagName('D:href'));
-                const pathname = hrefElement ? hrefElement.innerHTML : undefined;
+                const name = getTagValue(element, 'D:displayname', '');
+                const size = parseInt(getTagValue(element, 'D:getcontentlength', '0') as string, 10);
+                const pathname = getTagValue(element, 'D:href', '');
                 const directory = pathname && pathname.replace(/\/c=[0-9a-zA-Z\-]*/, '').replace(`/${name || ''}`, '');
-
                 const href = this.webdavClient.defaults.baseURL + pathname + '?api_token=' + this.authService.getApiToken();
 
                 const data = {
