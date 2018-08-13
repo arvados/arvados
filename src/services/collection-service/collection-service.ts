@@ -10,6 +10,7 @@ import { WebDAV } from "../../common/webdav";
 import { AuthService } from "../auth-service/auth-service";
 import { mapTreeValues } from "../../models/tree";
 import { parseFilesResponse } from "./collection-service-files-response";
+import { fileToArrayBuffer } from "../../common/file";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -42,27 +43,19 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         url: this.webdavClient.defaults.baseURL + file.url + '?api_token=' + this.authService.getApiToken()
     })
 
-    private uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
-        return this.readFile(file).then(content =>
-            this.webdavClient.put(`/c=${collectionUuid}/${file.name}`, content, {
-                headers: {
-                    'Content-Type': 'text/octet-stream'
-                },
-                onUploadProgress: (e: ProgressEvent) => {
-                    onProgress(fileId, e.loaded, e.total, Date.now());
-                }
-            })
-        );
-    }
+    private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
+        const fileURL = `/c=${collectionUuid}/${file.name}`;
+        const fileContent = await fileToArrayBuffer(file);
+        const requestConfig = {
+            headers: {
+                'Content-Type': 'text/octet-stream'
+            },
+            onUploadProgress: (e: ProgressEvent) => {
+                onProgress(fileId, e.loaded, e.total, Date.now());
+            }
+        };
+        return this.webdavClient.put(fileURL, fileContent, requestConfig);
 
-    private readFile(file: File): Promise<ArrayBuffer> {
-        return new Promise<ArrayBuffer>(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                resolve(reader.result as ArrayBuffer);
-            };
-            reader.readAsArrayBuffer(file);
-        });
     }
 
 }
