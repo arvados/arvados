@@ -95,7 +95,7 @@ export const sidePanelData = [
         active: false,
         activeAction: (dispatch: Dispatch) => {
             dispatch(push("/favorites"));
-            dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }))
+            dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
             dispatch(favoritePanelActions.RESET_PAGINATION());
             dispatch(favoritePanelActions.REQUEST_ITEMS());
         }
