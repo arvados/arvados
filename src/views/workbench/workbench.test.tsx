@@ -12,8 +12,13 @@ import { ConnectedRouter } from "react-router-redux";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '../../common/custom-theme';
 import { createServices } from "../../services/services";
+import { AuthService } from "../../services/auth-service/auth-service";
+import Axios from "axios";
 
 const history = createBrowserHistory();
+const authService = new AuthService(Axios.create(), '/arvados/v1');
+
+authService.getUuid = jest.fn().mockReturnValueOnce('test');
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
@@ -22,7 +27,7 @@ it('renders without crashing', () => {
         <MuiThemeProvider theme={CustomTheme}>
             <Provider store={store}>
                 <ConnectedRouter history={history}>
-                    <Workbench/>
+                    <Workbench authService={authService} />
                 </ConnectedRouter>
             </Provider>
         </MuiThemeProvider>,
