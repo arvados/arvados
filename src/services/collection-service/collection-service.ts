@@ -47,6 +47,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     extractFilesData(document: Document) {
+        const collectionUrlPrefix = /\/c=[0-9a-zA-Z\-]*/;
         return Array
             .from(document.getElementsByTagName('D:response'))
             .slice(1) // omit first element which is collection itself
@@ -54,7 +55,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
                 const name = getTagValue(element, 'D:displayname', '');
                 const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
                 const pathname = getTagValue(element, 'D:href', '');
-                const directory = pathname && pathname.replace(/\/c=[0-9a-zA-Z\-]*/, '').replace(`/${name || ''}`, '');
+                const nameSuffix = `/${name || ''}`;
+                const directory = pathname
+                    .replace(collectionUrlPrefix, '')
+                    .replace(nameSuffix, '');
                 const href = this.webdavClient.defaults.baseURL + pathname + '?api_token=' + this.authService.getApiToken();
 
                 const data = {
