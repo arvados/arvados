@@ -342,6 +342,7 @@ class ContainerTest < ActiveSupport::TestCase
                                  progress: 0.1})
     c_faster_started_first.update_attributes!({state: Container::Locked})
     c_faster_started_first.update_attributes!({state: Container::Running,
+                                               runtime_status: {'warning' => 'This is not an error'},
                                                progress: 0.15})
     c_faster_started_second.update_attributes!({state: Container::Locked})
     c_faster_started_second.update_attributes!({state: Container::Running,
