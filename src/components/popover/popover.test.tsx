@@ -15,7 +15,7 @@ describe("<Popover />", () => {
     it("opens on default trigger click", () => {
         const popover = mount(<Popover />);
         popover.find(DefaultTrigger).simulate("click");
-        expect(popover.state().anchorEl).toBeDefined();
+        expect((popover.state() as any).anchorEl).toBeDefined();
     });
 
     it("renders custom trigger", () => {
@@ -26,7 +26,7 @@ describe("<Popover />", () => {
     it("opens on custom trigger click", () => {
         const popover = mount(<Popover triggerComponent={CustomTrigger} />);
         popover.find(CustomTrigger).simulate("click");
-        expect(popover.state().anchorEl).toBeDefined();
+        expect((popover.state() as any).anchorEl).toBeDefined();
     });
 
     it("renders children when opened", () => {
@@ -47,7 +47,7 @@ describe("<Popover />", () => {
         );
         popover.find(DefaultTrigger).simulate("click");
         popover.find(CustomTrigger).simulate("click");
-        expect(popover.state().anchorEl).toBeDefined();
+        expect((popover.state() as any).anchorEl).toBeDefined();
     });
     it("closes on content click if closeOnContentClick is set", () => {
         const popover = mount(
@@ -57,7 +57,7 @@ describe("<Popover />", () => {
         );
         popover.find(DefaultTrigger).simulate("click");
         popover.find(CustomTrigger).simulate("click");
-        expect(popover.state().anchorEl).toBeUndefined();
+        expect((popover.state() as any).anchorEl).toBeUndefined();
     });
 
 });

@@ -3,15 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { FavoritePanelFilter, FavoritePanelColumnNames } from "../../views/favorite-panel/favorite-panel";
+import { FavoritePanelFilter, FavoritePanelColumnNames } from "~/views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
-import { DataColumns } from "../../components/data-table/data-table";
-import { FavoritePanelItem, resourceToDataItem } from "../../views/favorite-panel/favorite-panel-item";
-import { FavoriteOrderBuilder } from "../../services/favorite-service/favorite-order-builder";
-import { ServiceRepository } from "../../services/services";
-import { SortDirection } from "../../components/data-table/data-column";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { LinkResource } from "../../models/link";
+import { DataColumns } from "~/components/data-table/data-table";
+import { FavoritePanelItem, resourceToDataItem } from "~/views/favorite-panel/favorite-panel-item";
+import { FavoriteOrderBuilder } from "~/services/favorite-service/favorite-order-builder";
+import { ServiceRepository } from "~/services/services";
+import { SortDirection } from "~/components/data-table/data-column";
+import { FilterBuilder } from "~/common/api/filter-builder";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";

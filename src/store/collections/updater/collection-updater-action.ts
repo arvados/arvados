@@ -6,10 +6,11 @@ import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
-import { ServiceRepository } from "../../../services/services";
-import { CollectionResource } from '../../../models/collection';
+import { ServiceRepository } from "~/services/services";
+import { CollectionResource } from '~/models/collection';
 import { initialize } from 'redux-form';
 import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
+import { ContextMenuResource } from "../../context-menu/context-menu-reducer";
 
 export const collectionUpdaterActions = unionize({
     OPEN_COLLECTION_UPDATER: ofType<{ uuid: string }>(),
@@ -23,11 +24,10 @@ export const collectionUpdaterActions = unionize({
 
 export const COLLECTION_FORM_NAME = 'collectionEditDialog';
 
-export const openUpdater = (uuid: string) =>
+export const openUpdater = (item: ContextMenuResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(collectionUpdaterActions.OPEN_COLLECTION_UPDATER({ uuid }));
-        const item = getState().collectionPanel.item;
-        if(item) {
+        if (item) {
+            dispatch(collectionUpdaterActions.OPEN_COLLECTION_UPDATER({ uuid: item.uuid }));
             dispatch(initialize(COLLECTION_FORM_NAME, { name: item.name, description: item.description }));
         }
     };

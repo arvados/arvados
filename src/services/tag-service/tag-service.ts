@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { LinkService } from "../link-service/link-service";
-import { LinkClass } from "../../models/link";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { TagTailType, TagResource } from "../../models/tag";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { LinkClass } from "~/models/link";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { TagTailType, TagResource } from "~/models/tag";
+import { OrderBuilder } from "~/common/api/order-builder";
 
 export class TagService {
 
@@ -41,5 +41,4 @@ export class TagService {
                 return results.items.map((tag => tag as TagResource ));
             });
     }
-
 }

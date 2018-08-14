@@ -2,19 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "../../common/api/common-resource-service";
-import { CollectionResource } from "../../models/collection";
+import * as _ from "lodash";
+import { CommonResourceService } from "~/common/api/common-resource-service";
+import { CollectionResource } from "~/models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { CollectionFile, createCollectionFile, createCollectionDirectory, createCollectionFilesTree, CollectionFileType, CollectionDirectory } from "../../models/collection-file";
-import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
-import * as _ from "lodash";
-import { KeepManifestStream } from "../../models/keep-manifest";
-import { WebDAV } from "../../common/webdav";
+import { WebDAV } from "~/common/webdav";
 import { AuthService } from "../auth-service/auth-service";
 import { mapTree, getNodeChildren, getNode, TreeNode } from "../../models/tree";
-import { getTagValue } from "../../common/xml";
+import { getTagValue } from "~/common/xml";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { CollectionFile, createCollectionFile, CollectionFileType, CollectionDirectory, createCollectionDirectory } from '~/models/collection-file';
+import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
+import { KeepManifestStream } from "~/models/keep-manifest";
+import { createCollectionFilesTree } from '~/models/collection-file';
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 

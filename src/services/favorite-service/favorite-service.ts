@@ -4,11 +4,11 @@
 
 import { LinkService } from "../link-service/link-service";
 import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
-import { LinkResource, LinkClass } from "../../models/link";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { ListArguments, ListResults } from "../../common/api/common-resource-service";
+import { LinkResource, LinkClass } from "~/models/link";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { ListResults } from "~/common/api/common-resource-service";
 import { FavoriteOrderBuilder } from "./favorite-order-builder";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { OrderBuilder } from "~/common/api/order-builder";
 
 export interface FavoriteListArguments {
     limit?: number;

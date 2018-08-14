@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "../../models/keep-manifest";
+import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "~/models/keep-manifest";
 
 /**
  * Documentation [http://doc.arvados.org/api/storage.html](http://doc.arvados.org/api/storage.html)

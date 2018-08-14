@@ -4,8 +4,8 @@
 
 import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from "./collection-panel-files-state";
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { createTree, mapTreeValues, getNode, setNode, getNodeAncestors, getNodeDescendants, setNodeValueWith, mapTree } from "../../../models/tree";
-import { CollectionFileType } from "../../../models/collection-file";
+import { createTree, mapTreeValues, getNode, setNode, getNodeAncestors, getNodeDescendants, setNodeValueWith, mapTree } from "~/models/tree";
+import { CollectionFileType } from "~/models/collection-file";
 
 export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
     return collectionPanelFilesAction.match(action, {

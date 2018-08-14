@@ -6,7 +6,7 @@ import * as _ from "lodash";
 import { FilterBuilder } from "./filter-builder";
 import { OrderBuilder } from "./order-builder";
 import { AxiosInstance, AxiosPromise } from "axios";
-import { Resource } from "../../models/resource";
+import { Resource } from "~/models/resource";
 
 export interface ListArguments {
     limit?: number;

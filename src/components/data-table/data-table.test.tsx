@@ -18,17 +18,20 @@ describe("<DataTable />", () => {
             {
                 name: "Column 1",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             },
             {
                 name: "Column 2",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             },
             {
                 name: "Column 3",
                 render: () => <span />,
-                selected: false
+                selected: false,
+                configurable: true
             }
         ];
         const dataTable = mount(<DataTable
@@ -47,7 +50,8 @@ describe("<DataTable />", () => {
             {
                 name: "Column 1",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const dataTable = mount(<DataTable
@@ -67,7 +71,8 @@ describe("<DataTable />", () => {
                 name: "Column 1",
                 renderHeader: () => <span>Column Header</span>,
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const dataTable = mount(<DataTable
@@ -87,7 +92,8 @@ describe("<DataTable />", () => {
                 name: "Column 1",
                 key: "column-1-key",
                 render: () => <span />,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const dataTable = mount(<DataTable
@@ -107,12 +113,14 @@ describe("<DataTable />", () => {
             {
                 name: "Column 1",
                 render: (item) => <Typography>{item}</Typography>,
-                selected: true
+                selected: true,
+                configurable: true
             },
             {
                 name: "Column 2",
                 render: (item) => <Button>{item}</Button>,
-                selected: true
+                selected: true,
+                configurable: true
             }
         ];
         const dataTable = mount(<DataTable
@@ -132,6 +140,7 @@ describe("<DataTable />", () => {
             name: "Column 1",
             sortDirection: SortDirection.ASC,
             selected: true,
+            configurable: true,
             render: (item) => <Typography>{item}</Typography>
         }];
         const onSortToggle = jest.fn();
@@ -153,6 +162,7 @@ describe("<DataTable />", () => {
             name: "Column 1",
             sortDirection: SortDirection.ASC,
             selected: true,
+            configurable: true,
             filters: [{ name: "Filter 1", selected: true }],
             render: (item) => <Typography>{item}</Typography>
         }];

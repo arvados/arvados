@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { uniqBy, groupBy } from 'lodash';
-import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "../../models/keep-manifest";
-import { TreeNode, setNode, createTree, getNodeDescendants, getNodeValue } from '../../models/tree';
+import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "~/models/keep-manifest";
+import { TreeNode, setNode, createTree, getNodeDescendants, getNodeValue } from '~/models/tree';
 import { CollectionFilesTree, CollectionFile, CollectionDirectory, createCollectionDirectory, createCollectionFile, CollectionFileType } from '../../models/collection-file';
 
 export const mapCollectionFilesTreeToManifest = (tree: CollectionFilesTree): KeepManifest => {

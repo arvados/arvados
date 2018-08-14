@@ -11,10 +11,10 @@ import {
     USER_LAST_NAME_KEY,
     USER_OWNER_UUID_KEY,
     USER_UUID_KEY
-} from "../../services/auth-service/auth-service";
+} from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
-import { createServices } from "../../services/services";
+import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 

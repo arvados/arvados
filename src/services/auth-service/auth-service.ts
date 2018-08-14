@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { User } from "../../models/user";
-import { AxiosInstance } from "../../../node_modules/axios";
+import { User } from "~/models/user";
+import { AxiosInstance } from "axios";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';

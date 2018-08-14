@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { defaultTo, property } from 'lodash';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, DialogContentText, CircularProgress } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, DialogContentText } from "@material-ui/core";
 import { WithDialogProps } from "../../store/dialog/with-dialog";
-import { TextField } from "../text-field/text-field";
 
 export interface ConfirmationDialogDataProps {
     title: string;
