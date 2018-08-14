@@ -335,10 +335,20 @@ class ProjectsControllerTest < ActionController::TestCase
     project = api_fixture('groups')['aproject']
     use_token :active
     found = Group.find(project['uuid'])
-    found.description = 'Textile description with link to home page <a href="/">take me home</a>.'
+    found.description = '<b>Textile</b> description with link to home page <a href="/">take me home</a>.'
     found.save!
     get(:show, {id: project['uuid']}, session_for(:active))
-    assert_includes @response.body, 'Textile description with link to home page <a href="/">take me home</a>.'
+    assert_includes @response.body, '<b>Textile</b> description with link to home page <a href="/">take me home</a>.'
+  end
+
+  test "find a project and edit description to unsafe html description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'Textile description with unsafe script tag <script language="javascript">alert("Hello there")</script>.'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'Textile description with unsafe script tag alert("Hello there").'
   end
 
   test "find a project and edit description to textile description with link to object" do
