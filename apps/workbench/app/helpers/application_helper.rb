@@ -16,7 +16,7 @@ module ApplicationHelper
   end
 
   def render_markup(markup)
-    raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
+    sanitize(raw(RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile))) if markup
   end
 
   def human_readable_bytes_html(n)
