@@ -133,7 +133,7 @@ class ArvCwlRunner(object):
             if arvargs.work_api is None:
                 raise Exception("No supported APIs")
             else:
-                raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
+                raise Exception("Unsupported API '%s', expected one of %s" % (arvargs.work_api, expected_api))
 
         if self.work_api == "jobs":
             logger.warn("""
