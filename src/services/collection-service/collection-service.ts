@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "../../common/api/common-resource-service";
-import { CollectionResource } from "../../models/collection";
+import { CommonResourceService } from "~/common/api/common-resource-service";
+import { CollectionResource } from "~/models/collection";
 import { AxiosInstance } from "axios";
-import { CollectionFile, CollectionDirectory } from "../../models/collection-file";
-import { WebDAV } from "../../common/webdav";
+import { CollectionFile, CollectionDirectory } from "~/models/collection-file";
+import { WebDAV } from "~/common/webdav";
 import { AuthService } from "../auth-service/auth-service";
-import { mapTreeValues } from "../../models/tree";
+import { mapTreeValues } from "~/models/tree";
 import { parseFilesResponse } from "./collection-service-files-response";
-import { fileToArrayBuffer } from "../../common/file";
+import { fileToArrayBuffer } from "~/common/file";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 

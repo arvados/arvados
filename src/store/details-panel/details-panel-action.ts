@@ -4,9 +4,9 @@
 
 import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { Resource, ResourceKind } from "../../models/resource";
+import { Resource, ResourceKind } from "~/models/resource";
 import { RootState } from "../store";
-import { ServiceRepository } from "../../services/services";
+import { ServiceRepository } from "~/services/services";
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),

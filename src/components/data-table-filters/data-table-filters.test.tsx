@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { mount, configure } from "enzyme";
-import { DataTableFilters, DataTableFilterItem } from "./data-table-filters";
+import { DataTableFilters } from "./data-table-filters";
 import * as Adapter from 'enzyme-adapter-react-16';
 import { Checkbox, ButtonBase, ListItem, Button, ListItemText } from "@material-ui/core";
 

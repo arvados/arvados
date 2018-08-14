@@ -5,21 +5,21 @@
 import * as React from 'react';
 import { Drawer, IconButton, Tabs, Tab, Typography, Grid } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '../../common/custom-theme';
+import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
 import { connect } from 'react-redux';
-import { RootState } from '../../store/store';
-import { detailsPanelActions } from "../../store/details-panel/details-panel-action";
-import { CloseIcon } from '../../components/icon/icon';
-import { EmptyResource } from '../../models/empty';
+import { RootState } from '~/store/store';
+import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
+import { CloseIcon } from '~/components/icon/icon';
+import { EmptyResource } from '~/models/empty';
 import { Dispatch } from "redux";
-import { ResourceKind } from "../../models/resource";
+import { ResourceKind } from "~/models/resource";
 import { ProjectDetails } from "./project-details";
 import { CollectionDetails } from "./collection-details";
 import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
-import { DetailsResource } from "../../models/details";
+import { DetailsResource } from "~/models/details";
 
 type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 

@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions } from "../snackbar/snackbar-actions";
-import { ServiceRepository } from "../../services/services";
+import { ServiceRepository } from "~/services/services";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),

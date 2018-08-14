@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { RootState } from "../../store/store";
-import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "../../components/context-menu/context-menu";
-import { createAnchorAt } from "../../components/popover/helpers";
-import { ContextMenuResource } from "../../store/context-menu/context-menu-reducer";
+import { RootState } from "~/store/store";
+import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
+import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "~/components/context-menu/context-menu";
+import { createAnchorAt } from "~/components/popover/helpers";
+import { ContextMenuResource } from "~/store/context-menu/context-menu-reducer";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 
@@ -62,5 +62,6 @@ export enum ContextMenuKind {
     FAVORITE = "Favorite",
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_ITEM = "CollectionFilesItem",
-    COLLECTION = 'Collection'
+    COLLECTION = 'Collection',
+    COLLECTION_RESOURCE = 'CollectionResource'
 }

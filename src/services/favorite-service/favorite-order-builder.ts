@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { LinkResource } from "../../models/link";
+import { LinkResource } from "~/models/link";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "../groups-service/groups-service";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { OrderBuilder } from "~/common/api/order-builder";
 
 export class FavoriteOrderBuilder {
 
     static create(
-        linkOrder = OrderBuilder.create<LinkResource>(), 
+        linkOrder = OrderBuilder.create<LinkResource>(),
         contentOrder = OrderBuilder.create<GroupContentsResource>()) {
         return new FavoriteOrderBuilder(linkOrder, contentOrder);
     }

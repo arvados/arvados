@@ -4,13 +4,13 @@
 
 import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { ResourceKind } from "../../models/resource";
-import { CollectionResource } from "../../models/collection";
-import { collectionPanelFilesAction, loadCollectionFiles } from "./collection-panel-files/collection-panel-files-actions";
-import { createTree } from "../../models/tree";
+import { loadCollectionFiles } from "./collection-panel-files/collection-panel-files-actions";
+import { CollectionResource } from "~/models/collection";
+import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
+import { createTree } from "~/models/tree";
 import { RootState } from "../store";
-import { ServiceRepository } from "../../services/services";
-import { TagResource, TagProperty } from "../../models/tag";
+import { ServiceRepository } from "~/services/services";
+import { TagResource, TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
 
 export const collectionPanelActions = unionize({
@@ -40,7 +40,7 @@ export const loadCollection = (uuid: string) =>
             });
     };
 
-export const loadCollectionTags = (uuid: string) => 
+export const loadCollectionTags = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION_TAGS({ uuid }));
         return services.tagService
@@ -51,7 +51,7 @@ export const loadCollectionTags = (uuid: string) =>
     };
 
 
-export const createCollectionTag = (data: TagProperty) => 
+export const createCollectionTag = (data: TagProperty) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.CREATE_COLLECTION_TAG({ data }));
         const item = getState().collectionPanel.item;
@@ -67,7 +67,7 @@ export const createCollectionTag = (data: TagProperty) =>
             });
     };
 
-export const deleteCollectionTag = (uuid: string) => 
+export const deleteCollectionTag = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.DELETE_COLLECTION_TAG({ uuid }));
         return services.linkService

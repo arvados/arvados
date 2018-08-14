@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { LinkService } from "../link-service/link-service";
-import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
+import { GroupsService } from "../groups-service/groups-service";
 import { FavoriteService } from "./favorite-service";
-import { LinkClass, LinkResource } from "../../models/link";
-import { mockResourceService } from "../../common/api/common-resource-service.test";
-import { FilterBuilder } from "../../common/api/filter-builder";
+import { LinkClass } from "~/models/link";
+import { mockResourceService } from "~/common/api/common-resource-service.test";
+import { FilterBuilder } from "~/common/api/filter-builder";
 
 describe("FavoriteService", () => {
 

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { default as unionize, ofType, UnionOf } from "unionize";
-import { TreeNode } from "../../models/tree";
 import { TreePickerNode } from "./tree-picker";
 
 export const treePickerActions = unionize({

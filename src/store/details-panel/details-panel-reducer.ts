@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { detailsPanelActions, DetailsPanelAction } from "./details-panel-action";
-import { Resource } from "../../models/resource";
+import { Resource } from "~/models/resource";
 
 export interface DetailsPanelState {
     item: Resource | null;

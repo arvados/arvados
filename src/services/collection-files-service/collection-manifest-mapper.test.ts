@@ -14,25 +14,29 @@ test('mapManifestToFiles', () => {
         id: '/a',
         name: 'a',
         size: 0,
-        type: 'file'
+        type: 'file',
+        url: ''
     }, {
         path: '',
         id: '/b',
         name: 'b',
         size: 0,
-        type: 'file'
+        type: 'file',
+        url: ''
     }, {
         path: '',
         id: '/output.txt',
         name: 'output.txt',
         size: 33,
-        type: 'file'
+        type: 'file',
+        url: ''
     }, {
         path: '/c',
         id: '/c/d',
         name: 'd',
         size: 0,
-        type: 'file'
+        type: 'file',
+        url: ''
     },]);
 });
 
@@ -44,17 +48,20 @@ test('mapManifestToDirectories', () => {
         path: "",
         id: '/c',
         name: 'c',
-        type: 'directory'
+        type: 'directory',
+        url: ''
     }, {
         path: '/c',
         id: '/c/user',
         name: 'user',
-        type: 'directory'
+        type: 'directory',
+        url: ''
     }, {
         path: '/c/user',
         id: '/c/user/results',
         name: 'results',
-        type: 'directory'
+        type: 'directory',
+        url: ''
     },]);
 });
 

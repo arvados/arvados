@@ -13,7 +13,8 @@ describe('data-explorer-reducer', () => {
         const columns: DataColumns<any> = [{
             name: "Column 1",
             render: jest.fn(),
-            selected: true
+            selected: true,
+            configurable: true
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
@@ -25,11 +26,13 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
+            configurable: true,
             sortDirection: SortDirection.ASC
         }, {
             name: "Column 2",
             render: jest.fn(),
             selected: true,
+            configurable: true,
             sortDirection: SortDirection.NONE,
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
@@ -43,6 +46,7 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
+            configurable: true
         }];
 
         const filters: DataTableFilterItem[] = [{
@@ -55,7 +59,7 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set items', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_ITEMS({
                 id: "Data explorer",
                 items: ["Item 1", "Item 2"],
@@ -67,13 +71,13 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set page', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_PAGE({ id: "Data explorer", page: 2 }));
         expect(state["Data explorer"].page).toEqual(2);
     });
 
     it('should set rows per page', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_ROWS_PER_PAGE({ id: "Data explorer", rowsPerPage: 5 }));
         expect(state["Data explorer"].rowsPerPage).toEqual(5);
     });

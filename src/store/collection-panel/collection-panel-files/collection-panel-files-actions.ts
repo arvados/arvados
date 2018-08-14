@@ -4,12 +4,12 @@
 
 import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { CollectionFilesTree, CollectionFileType } from "../../../models/collection-file";
-import { ServiceRepository } from "../../../services/services";
+import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
+import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
 import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from "../../dialog/dialog-actions";
-import { getNodeValue, getNodeDescendants } from "../../../models/tree";
+import { getNodeValue, getNodeDescendants } from "~/models/tree";
 import { CollectionPanelDirectory, CollectionPanelFile } from "./collection-panel-files-state";
 
 export const collectionPanelFilesAction = unionize({

@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '../../common/custom-theme';
+import { ArvadosTheme } from '~/common/custom-theme';
 import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
 import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
 import * as classnames from "classnames";
@@ -59,7 +59,7 @@ export interface SidePanelItem {
     open?: boolean;
     margin?: boolean;
     openAble?: boolean;
-    activeAction?: (dispatch: Dispatch) => void;
+    activeAction?: (dispatch: Dispatch, uuid?: string) => void;
 }
 
 interface SidePanelDataProps {

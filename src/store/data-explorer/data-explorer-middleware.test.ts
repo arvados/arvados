@@ -5,12 +5,12 @@
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 import { dataExplorerMiddleware } from "./data-explorer-middleware";
 import { MiddlewareAPI } from "redux";
-import { DataColumns } from "../../components/data-table/data-table";
+import { DataColumns } from "~/components/data-table/data-table";
 import { dataExplorerActions } from "./data-explorer-action";
 
 
 describe("DataExplorerMiddleware", () => {
-    
+
     it("handles only actions that are identified by service id", () => {
         const config = {
             id: "ServiceId",

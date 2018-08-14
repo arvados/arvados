@@ -4,8 +4,8 @@
 
 import * as React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { TextField as MaterialTextField, StyleRulesCallback, WithStyles, withStyles } from '../../../node_modules/@material-ui/core';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { TextField as MaterialTextField, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 
 type CssRules = 'textField';
 

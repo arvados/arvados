@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataTableFilterItem } from "../data-table-filters/data-table-filters";
+import * as React from "react";
 
 export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterItem> {
     name: string;
