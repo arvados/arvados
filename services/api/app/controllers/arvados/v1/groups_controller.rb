@@ -80,6 +80,10 @@ class Arvados::V1::GroupsController < ApplicationController
     #   the owner_uuid is a user (but not the current user) OR
     #   the owner_uuid is not readable by the current user
     #   the owner_uuid is a group but group_class is not a project
+    #
+    # The intended use of this endpoint is to support clients which
+    # wish to browse those projects which are visible to the user but
+    # are not part of the "home" project.
 
     load_limit_offset_order_params
     load_filters_param
