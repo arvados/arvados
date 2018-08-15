@@ -48,9 +48,9 @@ export const loadProjectTreePickerProjects = (id: string) =>
 
         const ownerUuid = id.length === 0 ? services.authService.getUuid() || '' : id;
 
-        const filters = FilterBuilder
-            .create()
-            .addEqual('ownerUuid', ownerUuid);
+        const filters = new FilterBuilder()
+            .addEqual('ownerUuid', ownerUuid)
+            .getFilters();
 
         const { items } = await services.projectService.list({ filters });
 

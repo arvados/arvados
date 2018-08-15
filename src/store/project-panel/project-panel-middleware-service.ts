@@ -9,12 +9,13 @@ import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { ProjectPanelItem, resourceToDataItem } from "~/views/project-panel/project-panel-item";
 import { SortDirection } from "~/components/data-table/data-column";
-import { OrderBuilder } from "~/common/api/order-builder";
+import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
 import { FilterBuilder } from "~/common/api/filter-builder";
-import { GroupContentsResourcePrefix, GroupContentsResource } from "~/services/groups-service/groups-service";
+import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
+import { ProjectResource } from "~/models/project";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -27,8 +28,8 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
         const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
-        const sortColumn = dataExplorer.columns.find(({ sortDirection }) => Boolean(sortDirection && sortDirection !== "none"));
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC;
+        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== undefined && c.sortDirection !== "none");
+        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? OrderDirection.ASC : OrderDirection.DESC;
         if (typeFilters.length > 0) {
             this.services.groupsService
                 .contents(state.projects.currentItemId, {
@@ -38,16 +39,14 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         ? sortColumn.name === ProjectPanelColumnNames.NAME
                             ? getOrder("name", sortDirection)
                             : getOrder("createdAt", sortDirection)
-                        : OrderBuilder.create(),
-                    filters: FilterBuilder
-                        .create()
-                        .concat(FilterBuilder
-                            .create()
-                            .addIsA("uuid", typeFilters.map(f => f.type)))
-                        .concat(FilterBuilder
-                            .create(GroupContentsResourcePrefix.PROCESS)
-                            .addIn("state", statusFilters.map(f => f.type)))
-                        .concat(getSearchFilter(dataExplorer.searchValue))
+                        : "",
+                    filters: new FilterBuilder()
+                        .addIsA("uuid", typeFilters.map(f => f.type))
+                        .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
+                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+                        .getFilters()
                 })
                 .then(response => {
                     api.dispatch(projectPanelActions.SET_ITEMS({
@@ -74,22 +73,9 @@ const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFil
     return column && column.filters ? column.filters.filter(f => f.selected) : [];
 };
 
-const getOrder = (attribute: "name" | "createdAt", direction: SortDirection) =>
-    [
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.COLLECTION),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROCESS),
-        OrderBuilder.create<GroupContentsResource>(GroupContentsResourcePrefix.PROJECT)
-    ].reduce((acc, b) =>
-        acc.concat(direction === SortDirection.ASC
-            ? b.addAsc(attribute)
-            : b.addDesc(attribute)), OrderBuilder.create());
-
-const getSearchFilter = (searchValue: string) =>
-    searchValue
-        ? [
-            FilterBuilder.create(GroupContentsResourcePrefix.COLLECTION),
-            FilterBuilder.create(GroupContentsResourcePrefix.PROCESS),
-            FilterBuilder.create(GroupContentsResourcePrefix.PROJECT)]
-            .reduce((acc, b) =>
-                acc.concat(b.addILike("name", searchValue)), FilterBuilder.create())
-        : FilterBuilder.create();
+const getOrder = (attribute: "name" | "createdAt", direction: OrderDirection) =>
+    new OrderBuilder<ProjectResource>()
+        .addOrder(direction, attribute, GroupContentsResourcePrefix.COLLECTION)
+        .addOrder(direction, attribute, GroupContentsResourcePrefix.PROCESS)
+        .addOrder(direction, attribute, GroupContentsResourcePrefix.PROJECT)
+        .getOrder();

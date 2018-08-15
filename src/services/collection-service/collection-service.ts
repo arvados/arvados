@@ -84,10 +84,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress): Promise<CollectionResource | never> {
-        const filters = FilterBuilder.create()
+        const filters = new FilterBuilder()
             .addEqual("service_type", "proxy");
 
-        return this.keepService.list({ filters }).then(data => {
+        return this.keepService.list({ filters: filters.getFilters() }).then(data => {
             if (data.items && data.items.length > 0) {
                 const serviceHost =
                     (data.items[0].serviceSslFlag ? "https://" : "http://") +

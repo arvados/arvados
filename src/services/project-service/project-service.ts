@@ -6,7 +6,7 @@ import { GroupsService } from "../groups-service/groups-service";
 import { ProjectResource } from "~/models/project";
 import { GroupClass } from "~/models/group";
 import { ListArguments } from "~/common/api/common-resource-service";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { FilterBuilder, joinFilters } from "~/common/api/filter-builder";
 
 export class ProjectService extends GroupsService<ProjectResource> {
 
@@ -18,18 +18,12 @@ export class ProjectService extends GroupsService<ProjectResource> {
     list(args: ListArguments = {}) {
         return super.list({
             ...args,
-            filters: this.addProjectFilter(args.filters)
+            filters: joinFilters(
+                args.filters,
+                new FilterBuilder()
+                    .addEqual("groupClass", GroupClass.PROJECT)
+                    .getFilters()
+            )
         });
-    }
-
-    private addProjectFilter(filters?: FilterBuilder) {
-        return FilterBuilder
-            .create()
-            .concat(filters
-                ? filters
-                : FilterBuilder.create())
-            .concat(FilterBuilder
-                .create()
-                .addEqual("groupClass", GroupClass.PROJECT));
     }
 }

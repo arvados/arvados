@@ -3,17 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { FavoritePanelFilter, FavoritePanelColumnNames } from "~/views/favorite-panel/favorite-panel";
+import { FavoritePanelColumnNames, FavoritePanelFilter } from "~/views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { FavoritePanelItem, resourceToDataItem } from "~/views/favorite-panel/favorite-panel-item";
-import { FavoriteOrderBuilder } from "~/services/favorite-service/favorite-order-builder";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
 import { FilterBuilder } from "~/common/api/filter-builder";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
+import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
+import { LinkResource } from "~/models/link";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -24,24 +26,36 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(
-            ({ sortDirection }) => sortDirection !== undefined && sortDirection !== "none"
+            c => c.sortDirection !== undefined && c.sortDirection !== "none"
         );
         const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
-        const order = FavoriteOrderBuilder.create();
+
+        const linkOrder = new OrderBuilder<LinkResource>();
+        const contentOrder = new OrderBuilder<GroupContentsResource>();
+
+        if (sortColumn && sortColumn.name === FavoritePanelColumnNames.NAME) {
+            const direction = sortColumn.sortDirection === SortDirection.ASC
+                ? OrderDirection.ASC
+                : OrderDirection.DESC;
+
+            linkOrder.addOrder(direction, "name");
+            contentOrder
+                .addOrder(direction, "name", GroupContentsResourcePrefix.COLLECTION)
+                .addOrder(direction, "name", GroupContentsResourcePrefix.PROCESS)
+                .addOrder(direction, "name", GroupContentsResourcePrefix.PROJECT);
+        }
+
         if (typeFilters.length > 0) {
             this.services.favoriteService
                 .list(this.services.authService.getUuid()!, {
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    order: sortColumn!.name === FavoritePanelColumnNames.NAME
-                        ? sortColumn!.sortDirection === SortDirection.ASC
-                            ? order.addDesc("name")
-                            : order.addAsc("name")
-                        : order,
-                    filters: FilterBuilder
-                        .create()
+                    linkOrder: linkOrder.getOrder(),
+                    contentOrder: contentOrder.getOrder(),
+                    filters: new FilterBuilder()
                         .addIsA("headUuid", typeFilters.map(filter => filter.type))
                         .addILike("name", dataExplorer.searchValue)
+                        .getFilters()
                 })
                 .then(response => {
                     api.dispatch(favoritePanelActions.SET_ITEMS({

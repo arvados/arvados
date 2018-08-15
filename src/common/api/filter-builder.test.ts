@@ -9,49 +9,49 @@ describe("FilterBuilder", () => {
     let filters: FilterBuilder;
 
     beforeEach(() => {
-        filters = FilterBuilder.create();
+        filters = new FilterBuilder();
     });
 
     it("should add 'equal' rule", () => {
         expect(
-            filters.addEqual("etag", "etagValue").serialize()
-        ).toEqual(`[["etag","=","etagValue"]]`);
+            filters.addEqual("etag", "etagValue").getFilters()
+        ).toEqual(`["etag","=","etagValue"]`);
     });
 
     it("should add 'like' rule", () => {
         expect(
-            filters.addLike("etag", "etagValue").serialize()
-        ).toEqual(`[["etag","like","%etagValue%"]]`);
+            filters.addLike("etag", "etagValue").getFilters()
+        ).toEqual(`["etag","like","%etagValue%"]`);
     });
 
     it("should add 'ilike' rule", () => {
         expect(
-            filters.addILike("etag", "etagValue").serialize()
-        ).toEqual(`[["etag","ilike","%etagValue%"]]`);
+            filters.addILike("etag", "etagValue").getFilters()
+        ).toEqual(`["etag","ilike","%etagValue%"]`);
     });
 
     it("should add 'is_a' rule", () => {
         expect(
-            filters.addIsA("etag", "etagValue").serialize()
-        ).toEqual(`[["etag","is_a","etagValue"]]`);
+            filters.addIsA("etag", "etagValue").getFilters()
+        ).toEqual(`["etag","is_a","etagValue"]`);
     });
 
     it("should add 'is_a' rule for set", () => {
         expect(
-            filters.addIsA("etag", ["etagValue1", "etagValue2"]).serialize()
-        ).toEqual(`[["etag","is_a",["etagValue1","etagValue2"]]]`);
+            filters.addIsA("etag", ["etagValue1", "etagValue2"]).getFilters()
+        ).toEqual(`["etag","is_a",["etagValue1","etagValue2"]]`);
     });
 
     it("should add 'in' rule", () => {
         expect(
-            filters.addIn("etag", "etagValue").serialize()
-        ).toEqual(`[["etag","in","etagValue"]]`);
+            filters.addIn("etag", "etagValue").getFilters()
+        ).toEqual(`["etag","in","etagValue"]`);
     });
 
     it("should add 'in' rule for set", () => {
         expect(
-            filters.addIn("etag", ["etagValue1", "etagValue2"]).serialize()
-        ).toEqual(`[["etag","in",["etagValue1","etagValue2"]]]`);
+            filters.addIn("etag", ["etagValue1", "etagValue2"]).getFilters()
+        ).toEqual(`["etag","in",["etagValue1","etagValue2"]]`);
     });
 
     it("should add multiple rules", () => {
@@ -59,28 +59,14 @@ describe("FilterBuilder", () => {
             filters
                 .addIn("etag", ["etagValue1", "etagValue2"])
                 .addEqual("href", "hrefValue")
-                .serialize()
-        ).toEqual(`[["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]]`);
-    });
-
-    it("should concatenate multiple builders", () => {
-        expect(
-            filters
-                .concat(FilterBuilder.create().addIn("etag", ["etagValue1", "etagValue2"]))
-                .concat(FilterBuilder.create().addEqual("href", "hrefValue"))
-                .serialize()
-        ).toEqual(`[["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]]`);
+                .getFilters()
+        ).toEqual(`["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]`);
     });
 
     it("should add attribute prefix", () => {
-        expect(FilterBuilder
-            .create("myPrefix")
-            .addIn("etag", ["etagValue1", "etagValue2"])
-            .serialize())
-            .toEqual(`[["my_prefix.etag","in",["etagValue1","etagValue2"]]]`);
+        expect(new FilterBuilder()
+            .addIn("etag", ["etagValue1", "etagValue2"], "myPrefix")
+            .getFilters())
+            .toEqual(`["my_prefix.etag","in",["etagValue1","etagValue2"]]`);
     });
-
-
-
-
 });
