@@ -8,7 +8,6 @@ import arvados
 import itertools
 import Queue
 import threading
-import _strptime
 
 from crunchstat_summary import logger
 
@@ -30,7 +29,10 @@ class CollectionReader(object):
         if len(filenames) > 1:
             filenames = ['crunchstat.txt', 'arv-mount.txt']
         for filename in filenames:
-            self._readers.append(collection.open(filename))
+            try:
+                self._readers.append(collection.open(filename))
+            except IOError:
+                logger.warn('Unable to open %s', filename)
         self._label = "{}/{}".format(self._collection_id, filenames[0])
         return itertools.chain(*[iter(reader) for reader in self._readers])
 
