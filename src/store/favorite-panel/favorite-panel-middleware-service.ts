@@ -25,10 +25,8 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
-        const sortColumn = dataExplorer.columns.find(
-            c => c.sortDirection !== undefined && c.sortDirection !== "none"
-        );
-        const typeFilters = getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
+        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+        const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
 
         const linkOrder = new OrderBuilder<LinkResource>();
         const contentOrder = new OrderBuilder<GroupContentsResource>();
@@ -45,39 +43,33 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 .addOrder(direction, "name", GroupContentsResourcePrefix.PROJECT);
         }
 
-        if (typeFilters.length > 0) {
-            this.services.favoriteService
-                .list(this.services.authService.getUuid()!, {
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    linkOrder: linkOrder.getOrder(),
-                    contentOrder: contentOrder.getOrder(),
-                    filters: new FilterBuilder()
-                        .addIsA("headUuid", typeFilters.map(filter => filter.type))
-                        .addILike("name", dataExplorer.searchValue)
-                        .getFilters()
-                })
-                .then(response => {
-                    api.dispatch(favoritePanelActions.SET_ITEMS({
-                        items: response.items.map(resourceToDataItem),
-                        itemsAvailable: response.itemsAvailable,
-                        page: Math.floor(response.offset / response.limit),
-                        rowsPerPage: response.limit
-                    }));
-                    api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
-                });
-        } else {
-            api.dispatch(favoritePanelActions.SET_ITEMS({
-                items: [],
-                itemsAvailable: 0,
-                page: 0,
-                rowsPerPage: dataExplorer.rowsPerPage
-            }));
-        }
+        this.services.favoriteService
+            .list(this.services.authService.getUuid()!, {
+                limit: dataExplorer.rowsPerPage,
+                offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                linkOrder: linkOrder.getOrder(),
+                contentOrder: contentOrder.getOrder(),
+                filters: new FilterBuilder()
+                    .addIsA("headUuid", typeFilters.map(filter => filter.type))
+                    .addILike("name", dataExplorer.searchValue)
+                    .getFilters()
+            })
+            .then(response => {
+                api.dispatch(favoritePanelActions.SET_ITEMS({
+                    items: response.items.map(resourceToDataItem),
+                    itemsAvailable: response.itemsAvailable,
+                    page: Math.floor(response.offset / response.limit),
+                    rowsPerPage: response.limit
+                }));
+                api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
+            })
+            .catch(() => {
+                api.dispatch(favoritePanelActions.SET_ITEMS({
+                    items: [],
+                    itemsAvailable: 0,
+                    page: 0,
+                    rowsPerPage: dataExplorer.rowsPerPage
+                }));
+            });
     }
 }
-
-const getColumnFilters = (columns: DataColumns<FavoritePanelItem, FavoritePanelFilter>, columnName: string) => {
-    const column = columns.find(c => c.name === columnName);
-    return column && column.filters ? column.filters.filter(f => f.selected) : [];
-};

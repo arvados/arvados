@@ -56,6 +56,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
+        filters: [],
         render: renderName,
         width: "450px"
     },
@@ -63,6 +64,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: "Status",
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: ContainerRequestState.COMMITTED,
@@ -87,6 +89,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: resourceLabel(ResourceKind.COLLECTION),
@@ -111,6 +114,8 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderOwner(item.owner),
         width: "200px"
     },
@@ -118,6 +123,8 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderFileSize(item.fileSize),
         width: "50px"
     },
@@ -126,6 +133,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderDate(item.lastModified),
         width: "150px"
     }

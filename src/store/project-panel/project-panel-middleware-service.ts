@@ -26,56 +26,53 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         const state = api.getState();
         const dataExplorer = state.dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
-        const typeFilters = getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
-        const statusFilters = getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
-        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== undefined && c.sortDirection !== "none");
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC ? OrderDirection.ASC : OrderDirection.DESC;
-        if (typeFilters.length > 0) {
-            this.services.groupsService
-                .contents(state.projects.currentItemId, {
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    order: sortColumn
-                        ? sortColumn.name === ProjectPanelColumnNames.NAME
-                            ? getOrder("name", sortDirection)
-                            : getOrder("createdAt", sortDirection)
-                        : "",
-                    filters: new FilterBuilder()
-                        .addIsA("uuid", typeFilters.map(f => f.type))
-                        .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
-                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
-                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-                        .getFilters()
-                })
-                .then(response => {
-                    api.dispatch(projectPanelActions.SET_ITEMS({
-                        items: response.items.map(resourceToDataItem),
-                        itemsAvailable: response.itemsAvailable,
-                        page: Math.floor(response.offset / response.limit),
-                        rowsPerPage: response.limit
-                    }));
-                    api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
-                });
-        } else {
-            api.dispatch(projectPanelActions.SET_ITEMS({
-                items: [],
-                itemsAvailable: 0,
-                page: 0,
-                rowsPerPage: dataExplorer.rowsPerPage
-            }));
+        const typeFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
+        const statusFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
+        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+
+        const order = new OrderBuilder<ProjectResource>();
+
+        if (sortColumn) {
+            const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+                ? OrderDirection.ASC
+                : OrderDirection.DESC;
+
+            const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
+            order
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
         }
+
+        this.services.groupsService
+            .contents(state.projects.currentItemId, {
+                limit: dataExplorer.rowsPerPage,
+                offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                order: order.getOrder(),
+                filters: new FilterBuilder()
+                    .addIsA("uuid", typeFilters.map(f => f.type))
+                    .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
+                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+                    .getFilters()
+            })
+            .then(response => {
+                api.dispatch(projectPanelActions.SET_ITEMS({
+                    items: response.items.map(resourceToDataItem),
+                    itemsAvailable: response.itemsAvailable,
+                    page: Math.floor(response.offset / response.limit),
+                    rowsPerPage: response.limit
+                }));
+                api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
+            })
+            .catch(() => {
+                api.dispatch(projectPanelActions.SET_ITEMS({
+                    items: [],
+                    itemsAvailable: 0,
+                    page: 0,
+                    rowsPerPage: dataExplorer.rowsPerPage
+                }));
+            });
     }
 }
-
-const getColumnFilters = (columns: DataColumns<ProjectPanelItem, ProjectPanelFilter>, columnName: string) => {
-    const column = columns.find(c => c.name === columnName);
-    return column && column.filters ? column.filters.filter(f => f.selected) : [];
-};
-
-const getOrder = (attribute: "name" | "createdAt", direction: OrderDirection) =>
-    new OrderBuilder<ProjectResource>()
-        .addOrder(direction, attribute, GroupContentsResourcePrefix.COLLECTION)
-        .addOrder(direction, attribute, GroupContentsResourcePrefix.PROCESS)
-        .addOrder(direction, attribute, GroupContentsResourcePrefix.PROJECT)
-        .getOrder();
