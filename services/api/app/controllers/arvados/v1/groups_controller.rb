@@ -68,10 +68,10 @@ class Arvados::V1::GroupsController < ApplicationController
 
   def shared
     # The purpose of this endpoint is to return the toplevel set of
-    # projects which are *not* reachable through an ownership chain of
-    # projects starting from the user account.  In other words,
-    # projects which to which access was granted via a permission
-    # link, or indirectly through group permissions.
+    # groups which are *not* reachable through a direct ownership
+    # chain of projects starting from the current user account.  In
+    # other words, groups which to which access was granted via a
+    # permission link or chain of links.
     #
     # This also returns (in the "includes" field) the objects that own
     # those projects (users or non-project groups).
@@ -79,29 +79,35 @@ class Arvados::V1::GroupsController < ApplicationController
     # select groups that are readable by current user AND
     #   the owner_uuid is a user (but not the current user) OR
     #   the owner_uuid is not readable by the current user
-    #   the owner_uuid group_class is not a project
+    #   the owner_uuid is a group but group_class is not a project
 
-    if current_user.is_admin
-      exists1 = "EXISTS(SELECT 1 from #{PERMISSION_VIEW} WHERE user_uuid=(:user_uuid) AND target_uuid=groups.uuid) AND "
-    end
+    load_limit_offset_order_params
+    load_filters_param
 
-    g = Group.where("group_class='project' AND "+
-                    exists1+
-                    "(groups.owner_uuid IN (SELECT uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
-                    "NOT EXISTS(SELECT 1 FROM materialized_permission_view WHERE user_uuid=(:user_uuid) AND target_uuid=groups.owner_uuid) OR "+
-                    "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=groups.owner_uuid and gp.group_class != 'project'))",
-                    user_uuid: current_user.uuid)
+    read_parent_check = if current_user.is_admin
+                          ""
+                        else
+                          "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} WHERE "+
+                            "user_uuid=(:user_uuid) AND target_uuid=groups.owner_uuid AND perm_level >= 1) OR "
+                        end
 
-    send_json({
-      :kind => "arvados#objectList",
-      :etag => "",
-      :self_link => "",
-      :offset => @offset,
-      :limit => @limit,
-      :items_available => @items_available,
-      :items => g.as_api_response(nil)
-    })
+    @objects = Group.readable_by(*@read_users).where("groups.owner_uuid IN (SELECT users.uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
+                                                     read_parent_check+
+                                                     "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=groups.owner_uuid and gp.group_class != 'project')",
+                                            user_uuid: current_user.uuid)
+    apply_where_limit_order_params
 
+    owners = @objects.map(&:owner_uuid).to_a
+
+    @extra_include = []
+    @extra_include += Group.readable_by(*@read_users).where(uuid: owners).to_a
+    @extra_include += User.readable_by(*@read_users).where(uuid: owners).to_a
+
+    index
+  end
+
+  def self._shared_requires_parameters
+    self._index_requires_parameters
   end
 
   protected

@@ -78,6 +78,7 @@ class ApplicationController < ActionController::Base
     @distinct = nil
     @response_resource_name = nil
     @attrs = nil
+    @extra_include = nil
   end
 
   def default_url_options
@@ -490,7 +491,8 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil, {select: @select})
+      :items => @objects.as_api_response(nil, {select: @select}),
+      :include => @extra_include
     }
     case params[:count]
     when nil, '', 'exact'
