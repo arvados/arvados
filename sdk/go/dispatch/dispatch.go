@@ -169,19 +169,19 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}, todo map[string]*r
 	var countList arvados.ContainerList
 	params := arvadosclient.Dict{
 		"filters": filters,
-		"count": "exact",
-		"limit": 0,
+		"count":   "exact",
+		"limit":   0,
 		"order":   []string{"priority desc"}}
 	err := d.Arv.List("containers", params, &countList)
 	if err != nil {
-		log.Printf("Error getting count of containers: %q", err)
+		log.Printf("error getting count of containers: %q", err)
 		return false
 	}
-	itemsAvailable := countList.ItemsAvailable	
+	itemsAvailable := countList.ItemsAvailable
 	params = arvadosclient.Dict{
 		"filters": filters,
-		"count": "none",
-		"limit": d.BatchSize,
+		"count":   "none",
+		"limit":   d.BatchSize,
 		"order":   []string{"priority desc"}}
 	offset := 0
 	for {

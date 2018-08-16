@@ -22,7 +22,7 @@ var exampleConfigFile = []byte(`
 	"PollPeriod": "10s",
 	"SbatchArguments": ["--partition=foo", "--exclude=node13"],
 	"ReserveExtraRAM": 268435456,
-	"BatchSize": 10000,
+	"BatchSize": 10000
     }`)
 
 func usage(fs *flag.FlagSet) {
