@@ -304,7 +304,7 @@ completed_with_input_mounts:
   container_image: test
   cwd: test
   output_path: test
-  command: ["echo", "hello"]
+  command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   runtime_constraints:
     vcpus: 1
     ram: 123
