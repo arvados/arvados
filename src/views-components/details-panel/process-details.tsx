@@ -21,7 +21,7 @@ export class ProcessDetails extends DetailsData<ProcessResource> {
         return <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
             <DetailsAttribute label='Size' value='---' />
-            <DetailsAttribute label='Owner' value={this.item.ownerUuid} />
+            <DetailsAttribute label='Owner' value={this.item.ownerUuid} lowercaseValue={true} />
 
             {/* Missing attr */}
             <DetailsAttribute label='Status' value={this.item.state} />
