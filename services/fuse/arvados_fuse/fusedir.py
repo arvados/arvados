@@ -925,7 +925,7 @@ class ProjectDirectory(Directory):
         with llfuse.lock_released:
             if not self._current_user:
                 self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
-            return self._current_user["uuid"] in self.project_object["writable_by"]
+            return self._current_user["uuid"] in self.project_object.get("writable_by", [])
 
     def persisted(self):
         return True
@@ -1059,7 +1059,6 @@ class SharedDirectory(Directory):
                     page = []
                     while True:
                         resp = self.api.groups().shared(filters=[['group_class', '=', 'project']]+page,
-                                                       select=["uuid", "owner_uuid"],
                                                        order="uuid",
                                                        limit=10000,
                                                        count="none").execute()
