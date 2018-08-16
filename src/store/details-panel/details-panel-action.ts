@@ -12,6 +12,7 @@ export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
     LOAD_DETAILS: ofType<{ uuid: string, kind: ResourceKind }>(),
     LOAD_DETAILS_SUCCESS: ofType<{ item: Resource }>(),
+    UPDATE_DETAILS: ofType<{ item: Resource }>()
 }, { tag: 'type', value: 'payload' });
 
 export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
@@ -22,6 +23,16 @@ export const loadDetails = (uuid: string, kind: ResourceKind) =>
         const item = await getService(services, kind).get(uuid);
         dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item }));
     };
+
+export const updateDetails = (item: Resource) => 
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        const currentItem = getState().detailsPanel.item;
+        if (currentItem && (currentItem.uuid === item.uuid)) {
+            dispatch(detailsPanelActions.UPDATE_DETAILS({ item }));
+            dispatch(detailsPanelActions.LOAD_DETAILS_SUCCESS({ item }));
+        }
+    };
+
 
 const getService = (services: ServiceRepository, kind: ResourceKind) => {
     switch (kind) {
