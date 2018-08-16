@@ -705,4 +705,61 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
     end
   end
+
+  test 'get shared owned by another user' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+    end
+
+    get :shared, {filters: [["group_class", "=", "project"]]}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 1, json_response['include'].length
+    assert_equal json_response['include'][0]["uuid"], users(:user_foo_in_sharing_group).uuid
+  end
+
+  test 'get shared, owned by unreadable project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:aproject).uuid)
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+    end
+
+    get :shared, {filters: [["group_class", "=", "project"]]}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 0, json_response['include'].length
+  end
+
+  test 'get shared, owned by non-project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
+    end
+
+    get :shared, {filters: [["group_class", "=", "project"]]}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 1, json_response['include'].length
+    assert_equal json_response['include'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+  end
+
 end
