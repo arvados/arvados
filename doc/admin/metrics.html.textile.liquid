@@ -10,11 +10,37 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Metrics endpoints are found at @/status.json@ on many Arvados services.  The purpose of metrics are to provide statistics about the operation of a service, suitable for diagnosing how well a service is performing under load.
+Some Arvados services publish Prometheus/OpenMetrics-compatible metrics at @/metrics@, and some provide additional runtime status at @/status.json@.  Metrics can help you understand how components perform under load, find performance bottlenecks, and detect and diagnose problems.
 
-To access metrics endpoints, services must be configured with a "management token":management-token.html .
+To access metrics endpoints, services must be configured with a "management token":management-token.html. When accessing a metrics endpoint, prefix the management token with @"Bearer "@ and supply it in the @Authorization@ request header.
+
+<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "https://0.0.0.0:25107/status.json"
+</pre>
+
+h2. Keep-web
+
+Keep-web exports metrics at @/metrics@ -- e.g., @https://collections.zzzzz.arvadosapi.com/metrics@.
+
+table(table table-bordered table-condensed).
+|_. Name|_. Type|_. Description|
+|request_duration_seconds|summary|elapsed time between receiving a request and sending the last byte of the response body (segmented by HTTP request method and response status code)|
+|time_to_status_seconds|summary|elapsed time between receiving a request and sending the HTTP response status code (segmented by HTTP request method and response status code)|
+
+Metrics in the @arvados_keepweb_collectioncache@ namespace report keep-web's internal cache of Arvados collection metadata.
+
+table(table table-bordered table-condensed).
+|_. Name|_. Type|_. Description|
+|arvados_keepweb_collectioncache_requests|counter|cache lookups|
+|arvados_keepweb_collectioncache_api_calls|counter|outgoing API calls|
+|arvados_keepweb_collectioncache_permission_hits|counter|collection-to-permission cache hits|
+|arvados_keepweb_collectioncache_pdh_hits|counter|UUID-to-PDH cache hits|
+|arvados_keepweb_collectioncache_hits|counter|PDH-to-manifest cache hits|
+|arvados_keepweb_collectioncache_cached_manifests|gauge|number of collections in the cache|
+|arvados_keepweb_collectioncache_cached_manifest_bytes|gauge|memory consumed by cached collection manifests|
 
 h2. Keepstore
+
+Keepstore exports metrics at @/status.json@ -- e.g., @http://keep0.zzzzz.arvadosapi.com:25107/status.json@.
 
 h3. Root
 
