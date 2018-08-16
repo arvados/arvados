@@ -73,7 +73,7 @@ class Arvados::V1::GroupsController < ApplicationController
     # other words, groups which to which access was granted via a
     # permission link or chain of links.
     #
-    # This also returns (in the "includes" field) the objects that own
+    # This also returns (in the "included" field) the objects that own
     # those projects (users or non-project groups).
     #
     # select groups that are readable by current user AND

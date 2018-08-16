@@ -491,9 +491,11 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil, {select: @select}),
-      :included => @extra_included.as_api_response(nil, {select: @select}),
+      :items => @objects.as_api_response(nil, {select: @select})
     }
+    if @extra_included
+      list[:included] = @extra_included.as_api_response(nil, {select: @select})
+    end
     case params[:count]
     when nil, '', 'exact'
       if @objects.respond_to? :except
