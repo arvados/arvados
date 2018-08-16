@@ -492,7 +492,7 @@ class ApplicationController < ActionController::Base
       :offset => @offset,
       :limit => @limit,
       :items => @objects.as_api_response(nil, {select: @select}),
-      :included => @extra_included
+      :included => @extra_included.as_api_response(nil, {select: @select}),
     }
     case params[:count]
     when nil, '', 'exact'

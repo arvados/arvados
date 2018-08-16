@@ -105,8 +105,9 @@ class Arvados::V1::GroupsController < ApplicationController
 
     if params["include"] == "owner_uuid"
       @extra_included = []
-      @extra_included += Group.readable_by(*@read_users).where(uuid: owners).select(@select).to_a
-      @extra_included += User.readable_by(*@read_users).where(uuid: owners).select(@select).to_a
+      [Group, User].each do |klass|
+        @extra_included += klass.readable_by(*@read_users).where(uuid: owners).to_a
+      end
     end
 
     index
