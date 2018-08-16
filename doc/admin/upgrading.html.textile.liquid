@@ -30,10 +30,6 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3. 2018-08-09: "21bf21abe":https://dev.arvados.org/projects/arvados/repository/revisions/21bf21abe includes a slow migration
-* The migration removes the size constraint on the file_names column in the collections table, and reparses all manifests to fix any truncated values.
-* Migration time depends on the size and number of collections in the database. Our test clusters processed about 20K collections per minute.
-
 h3. 2018-07-31: "#13497":https://dev.arvados.org/issues/13497 "db5107dca":https://dev.arvados.org/projects/arvados/repository/revisions/db5107dca adds a new system service, arvados-controller
 * "Install the controller":../install/install-controller.html after upgrading your system.
 * Verify your setup by confirming that API calls appear in the controller's logs (_e.g._, @journalctl -fu arvados-controller@) while loading a workbench page.
