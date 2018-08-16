@@ -673,7 +673,7 @@ module ApplicationHelper
   end
 
   # Keep locators are expected to be of the form \"...<pdh/file_path>\"
-  JSON_KEEP_LOCATOR_REGEXP = /[\'\"][^\'\"]*?([0-9a-f]{32}\+\d+[^\'\"]*?)[\'\"]/
+  JSON_KEEP_LOCATOR_REGEXP = /([0-9a-f]{32}\+\d+[^'"]*?)(?=['"]|\z|$)/
   def keep_locator_in_json str
     # Return a list of all matches
     str.scan(JSON_KEEP_LOCATOR_REGEXP).flatten
