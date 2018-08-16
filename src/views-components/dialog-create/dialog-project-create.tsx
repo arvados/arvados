@@ -9,9 +9,9 @@ import { TextField } from '~/components/text-field/text-field';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '~/validators/create-project/create-project-validator';
+import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '~/validators/validators';
 
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
+type CssRules = "button" | "lastButton" | "formContainer" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -28,9 +28,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     dialogTitle: {
         paddingBottom: "0"
-    },
-    textField: {
-        marginTop: "32px",
     },
     dialog: {
         minWidth: "600px",
@@ -78,12 +75,10 @@ export const DialogProjectCreate = compose(
                                 <Field name="name"
                                        component={TextField}
                                        validate={PROJECT_NAME_VALIDATION}
-                                       className={classes.textField}
                                        label="Project Name"/>
                                 <Field name="description"
                                        component={TextField}
                                        validate={PROJECT_DESCRIPTION_VALIDATION}
-                                       className={classes.textField}
                                        label="Description - optional"/>
                             </DialogContent>
                             <DialogActions className={classes.dialogActions}>

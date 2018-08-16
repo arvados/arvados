@@ -35,6 +35,10 @@ describe('project-reducer', () => {
             creator: {
                 opened: false,
                 ownerUuid: "",
+            },
+            updater: {
+                opened: false,
+                uuid: ''
             }
         });
     });
@@ -50,6 +54,7 @@ describe('project-reducer', () => {
             }],
             currentItemId: "1",
             creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
         };
         const project = {
             items: [{
@@ -61,6 +66,7 @@ describe('project-reducer', () => {
             }],
             currentItemId: "",
             creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
         };
 
         const state = projectsReducer(initialState, projectActions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
@@ -77,7 +83,8 @@ describe('project-reducer', () => {
                 status: TreeItemStatus.PENDING
             }],
             currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" }
+            creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
         };
         const project = {
             items: [{
@@ -89,6 +96,7 @@ describe('project-reducer', () => {
             }],
             currentItemId: "1",
             creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
         };
 
         const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
@@ -106,7 +114,8 @@ describe('project-reducer', () => {
                 status: TreeItemStatus.PENDING,
             }],
             currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" }
+            creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
         };
         const project = {
             items: [{
@@ -118,6 +127,7 @@ describe('project-reducer', () => {
             }],
             currentItemId: "1",
             creator: { opened: false, ownerUuid: "" },
+
         };
 
         const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
