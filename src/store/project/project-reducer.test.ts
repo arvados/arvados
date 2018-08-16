@@ -127,6 +127,7 @@ describe('project-reducer', () => {
             }],
             currentItemId: "1",
             creator: { opened: false, ownerUuid: "" },
+            updater: { opened: false, uuid: '' }
 
         };
 

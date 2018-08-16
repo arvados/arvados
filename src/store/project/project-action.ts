@@ -10,6 +10,7 @@ import { RootState } from "../store";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { ServiceRepository } from "~/services/services";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
+import { updateDetails } from "~/store/details-panel/details-panel-action";
 
 export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -65,7 +66,7 @@ export const updateProject = (project: Partial<ProjectResource>) =>
                 dispatch(projectActions.UPDATE_PROJECT_SUCCESS(project));
                 dispatch(projectPanelActions.REQUEST_ITEMS());
                 dispatch<any>(getProjectList(project.ownerUuid));
-                // ToDo: Update Panel Details
+                dispatch<any>(updateDetails(project));
             });
     };
 

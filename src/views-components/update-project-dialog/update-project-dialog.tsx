@@ -22,7 +22,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         return dispatch<any>(editProject(data))
             .catch((e: any) => {
                 if (e.errors) {
-                    throw new SubmissionError({ name: e.errors.join("").includes("UniqueViolation") ? "CProject with this name already exists." : "" });
+                    throw new SubmissionError({ name: e.errors.join("").includes("UniqueViolation") ? "Project with this name already exists." : "" });
                 }
             });
     }

@@ -100,7 +100,7 @@ export const CollectionPanel = withStyles(styles)(
                         </Card>
 
                         <Card className={classes.card}>
-                            <CardHeader title="Tags" />
+                            <CardHeader title="Properties" />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={12}><CollectionTagForm /></Grid>
