@@ -717,13 +717,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: groups(:project_owned_by_foo).uuid)
     end
 
-    get :shared, {filters: [["group_class", "=", "project"]]}
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
 
-    assert_equal 1, json_response['include'].length
-    assert_equal json_response['include'][0]["uuid"], users(:user_foo_in_sharing_group).uuid
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], users(:user_foo_in_sharing_group).uuid
   end
 
   test 'get shared, owned by unreadable project' do
@@ -738,12 +738,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: groups(:project_owned_by_foo).uuid)
     end
 
-    get :shared, {filters: [["group_class", "=", "project"]]}
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
 
-    assert_equal 0, json_response['include'].length
+    assert_equal 0, json_response['included'].length
   end
 
   test 'get shared, owned by non-project' do
@@ -753,13 +753,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
     end
 
-    get :shared, {filters: [["group_class", "=", "project"]]}
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
 
-    assert_equal 1, json_response['include'].length
-    assert_equal json_response['include'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
   end
 
 end

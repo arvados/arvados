@@ -103,15 +103,19 @@ class Arvados::V1::GroupsController < ApplicationController
 
     owners = @objects.map(&:owner_uuid).to_a
 
-    @extra_include = []
-    @extra_include += Group.readable_by(*@read_users).where(uuid: owners).to_a
-    @extra_include += User.readable_by(*@read_users).where(uuid: owners).to_a
+    if params["include"] == "owner_uuid"
+      @extra_included = []
+      @extra_included += Group.readable_by(*@read_users).where(uuid: owners).to_a
+      @extra_included += User.readable_by(*@read_users).where(uuid: owners).to_a
+    end
 
     index
   end
 
   def self._shared_requires_parameters
-    self._index_requires_parameters
+    rp = self._index_requires_parameters
+    rp[:include] = { type: 'string', required: false }
+    rp
   end
 
   protected

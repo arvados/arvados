@@ -1059,16 +1059,17 @@ class SharedDirectory(Directory):
                     page = []
                     while True:
                         resp = self.api.groups().shared(filters=[['group_class', '=', 'project']]+page,
-                                                       order="uuid",
-                                                       limit=10000,
-                                                       count="none").execute()
+                                                        order="uuid",
+                                                        limit=10000,
+                                                        count="none",
+                                                        include="owner_uuid").execute()
                         if not resp["items"]:
                             break
                         page = [["uuid", ">", resp["items"][len(resp["items"])-1]["uuid"]]]
                         for r in resp["items"]:
                             objects[r["uuid"]] = r
                             roots.append(r["uuid"])
-                        for r in resp["include"]:
+                        for r in resp["included"]:
                             objects[r["uuid"]] = r
                             root_owners.add(r["uuid"])
                 else:
