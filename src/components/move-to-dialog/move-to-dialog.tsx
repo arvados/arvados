@@ -6,9 +6,9 @@ import * as React from "react";
 import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from "@material-ui/core";
 
-import { WithDialogProps } from "../../store/dialog/with-dialog";
-import { ProjectTreePicker } from "../../views-components/project-tree-picker/project-tree-picker";
-import { MOVE_TO_VALIDATION } from "../../validators/move-to/move-to-validator";
+import { WithDialogProps } from "~/store/dialog/with-dialog";
+import { ProjectTreePicker } from "~/views-components/project-tree-picker/project-tree-picker";
+import { MOVE_TO_VALIDATION } from "~/validators/validators";
 
 export const MoveTo = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
     <form>
