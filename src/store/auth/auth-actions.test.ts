@@ -11,10 +11,10 @@ import {
     USER_LAST_NAME_KEY,
     USER_OWNER_UUID_KEY,
     USER_UUID_KEY
-} from "../../services/auth-service/auth-service";
+} from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
-import { createServices } from "../../services/services";
+import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 
@@ -23,9 +23,9 @@ describe('auth-actions', () => {
     let store: RootStore;
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices("/arvados/v1"));
+        store = configureStore(createBrowserHistory(), createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
         localStorage.clear();
-        reducer = authReducer(createServices("/arvados/v1"));
+        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
     });
 
     it('should initialise state with user and api token from local storage', () => {

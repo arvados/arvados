@@ -6,12 +6,12 @@ import * as React from 'react';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { FileTree } from '../file-tree/file-tree';
-import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, CardContent, Card, Button } from '@material-ui/core';
+import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button } from '@material-ui/core';
 import { CustomizeTableIcon } from '../icon/icon';
 import { connect, DispatchProp } from "react-redux";
 import { Dispatch } from "redux";
-import { RootState } from "../../store/store";
-import { ServiceRepository } from "../../services/services";
+import { RootState } from "~/store/store";
+import { ServiceRepository } from "~/services/services";
 
 export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;

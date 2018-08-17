@@ -4,10 +4,10 @@
 
 import * as React from "react";
 import { connect } from "react-redux";
-import { RootState } from "../../store/store";
+import { RootState } from "~/store/store";
 import MaterialSnackbar, { SnackbarProps } from "@material-ui/core/Snackbar";
 import { Dispatch } from "redux";
-import { snackbarActions } from "../../store/snackbar/snackbar-actions";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 
 const mapStateToProps = (state: RootState): SnackbarProps => ({
     anchorOrigin: { vertical: "bottom", horizontal: "center" },

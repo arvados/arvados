@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataTableFilterItem } from "../data-table-filters/data-table-filters";
+import * as React from "react";
 
 export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterItem> {
+    key?: React.Key;
     name: string;
     selected: boolean;
     configurable: boolean;
-    key?: React.Key;
-    sortDirection?: SortDirection;
-    filters?: F[];
+    sortDirection: SortDirection;
+    filters: F[];
     render: (item: T) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
     width?: string;

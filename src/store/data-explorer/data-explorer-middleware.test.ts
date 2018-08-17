@@ -5,12 +5,13 @@
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 import { dataExplorerMiddleware } from "./data-explorer-middleware";
 import { MiddlewareAPI } from "redux";
-import { DataColumns } from "../../components/data-table/data-table";
+import { DataColumns } from "~/components/data-table/data-table";
 import { dataExplorerActions } from "./data-explorer-action";
+import { SortDirection } from "~/components/data-table/data-column";
 
 
 describe("DataExplorerMiddleware", () => {
-    
+
     it("handles only actions that are identified by service id", () => {
         const config = {
             id: "ServiceId",
@@ -18,6 +19,8 @@ describe("DataExplorerMiddleware", () => {
                 name: "Column",
                 selected: true,
                 configurable: false,
+                sortDirection: SortDirection.NONE,
+                filters: [],
                 render: jest.fn()
             }],
             requestItems: jest.fn(),
@@ -44,6 +47,8 @@ describe("DataExplorerMiddleware", () => {
                 name: "Column",
                 selected: true,
                 configurable: false,
+                sortDirection: SortDirection.NONE,
+                filters: [],
                 render: jest.fn()
             }],
             requestItems: jest.fn(),

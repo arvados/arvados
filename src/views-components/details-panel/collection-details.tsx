@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { CollectionIcon } from '../../components/icon/icon';
-import { CollectionResource } from '../../models/collection';
-import { formatDate } from '../../common/formatters';
-import { resourceLabel } from '../../common/labels';
-import { ResourceKind } from '../../models/resource';
+import { CollectionIcon } from '~/components/icon/icon';
+import { CollectionResource } from '~/models/collection';
+import { formatDate } from '~/common/formatters';
+import { resourceLabel } from '~/common/labels';
+import { ResourceKind } from '~/models/resource';
 import { DetailsData } from "./details-data";
-import { DetailsAttribute } from "../../components/details-attribute/details-attribute";
+import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
 
 export class CollectionDetails extends DetailsData<CollectionResource> {
 

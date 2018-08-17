@@ -13,8 +13,8 @@ import {
 import { withStyles } from '@material-ui/core';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon } from "../icon/icon";
-import { formatFileSize, formatProgress, formatUploadSpeed } from "../../common/formatters";
-import { UploadFile } from "../../store/collections/uploader/collection-uploader-actions";
+import { formatFileSize, formatProgress, formatUploadSpeed } from "~/common/formatters";
+import { UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
 
 type CssRules = "root" | "dropzone" | "container" | "uploadIcon";
 

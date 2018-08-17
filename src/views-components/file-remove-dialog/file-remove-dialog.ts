@@ -4,10 +4,10 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { ConfirmationDialog } from "../../components/confirmation-dialog/confirmation-dialog";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
-import { snackbarActions } from "../../store/snackbar/snackbar-actions";
+import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
+import { withDialog } from "~/store/dialog/with-dialog";
+import { dialogActions } from "~/store/dialog/dialog-actions";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 
 const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
 

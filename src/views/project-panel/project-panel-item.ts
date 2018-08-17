@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupContentsResource } from "../../services/groups-service/groups-service";
-import { ResourceKind } from "../../models/resource";
+import { GroupContentsResource } from "~/services/groups-service/groups-service";
+import { ResourceKind } from "~/models/resource";
 
 export interface ProjectPanelItem {
     uuid: string;
@@ -17,7 +17,6 @@ export interface ProjectPanelItem {
     status?: string;
 }
 
-
 export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
     return {
         uuid: r.uuid,
@@ -30,4 +29,3 @@ export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
         status:  r.kind === ResourceKind.PROCESS ? r.state : undefined
     };
 }
-

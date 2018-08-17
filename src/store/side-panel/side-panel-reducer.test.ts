@@ -4,7 +4,7 @@
 
 import { sidePanelReducer } from "./side-panel-reducer";
 import { sidePanelActions } from "./side-panel-action";
-import { ProjectsIcon } from "../../components/icon/icon";
+import { ProjectsIcon } from "~/components/icon/icon";
 
 describe('side-panel-reducer', () => {
 

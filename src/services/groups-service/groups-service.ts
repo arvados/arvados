@@ -3,20 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService, ListResults } from "../../common/api/common-resource-service";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { CommonResourceService, ListResults } from "~/common/api/common-resource-service";
 import { AxiosInstance } from "axios";
-import { GroupResource } from "../../models/group";
-import { CollectionResource } from "../../models/collection";
-import { ProjectResource } from "../../models/project";
-import { ProcessResource } from "../../models/process";
+import { GroupResource } from "~/models/group";
+import { CollectionResource } from "~/models/collection";
+import { ProjectResource } from "~/models/project";
+import { ProcessResource } from "~/models/process";
 
 export interface ContentsArguments {
     limit?: number;
     offset?: number;
-    order?: OrderBuilder;
-    filters?: FilterBuilder;
+    order?: string;
+    filters?: string;
     recursive?: boolean;
 }
 
@@ -35,8 +33,8 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Comm
         const { filters, order, ...other } = args;
         const params = {
             ...other,
-            filters: filters ? filters.serialize() : undefined,
-            order: order ? order.getOrder() : undefined
+            filters: filters ? `[${filters}]` : undefined,
+            order: order ? order : undefined
         };
         return this.serverApi
             .get(this.resourceType + `${uuid}/contents/`, {

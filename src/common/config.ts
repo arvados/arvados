@@ -7,24 +7,31 @@ import Axios from "axios";
 export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
 
 export interface Config {
-    API_HOST: string;
+    apiHost: string;
+    keepWebHost: string;
 }
 
 export const fetchConfig = () => {
     return Axios
-        .get<Config>(CONFIG_URL + "?nocache=" + (new Date()).getTime())
+        .get<ConfigJSON>(CONFIG_URL + "?nocache=" + (new Date()).getTime())
         .then(response => response.data)
         .catch(() => Promise.resolve(getDefaultConfig()))
         .then(mapConfig);
 };
 
-const mapConfig = (config: Config): Config => ({
-    ...config,
-    API_HOST: addProtocol(config.API_HOST)
+interface ConfigJSON {
+    API_HOST: string;
+    KEEP_WEB_HOST: string;
+}
+
+const mapConfig = (config: ConfigJSON): Config => ({
+    apiHost: addProtocol(config.API_HOST),
+    keepWebHost: addProtocol(config.KEEP_WEB_HOST)
 });
 
-const getDefaultConfig = (): Config => ({
-    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || ""
+const getDefaultConfig = (): ConfigJSON => ({
+    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
+    KEEP_WEB_HOST: process.env.REACT_APP_ARVADOS_KEEP_WEB_HOST || ""
 });
 
 const addProtocol = (url: string) => `${window.location.protocol}//${url}`;

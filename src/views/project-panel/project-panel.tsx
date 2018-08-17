@@ -5,20 +5,20 @@
 import * as React from 'react';
 import { ProjectPanelItem } from './project-panel-item';
 import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataExplorer } from "../../views-components/data-explorer/data-explorer";
+import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
-import { DataColumns } from '../../components/data-table/data-table';
+import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
-import { RootState } from '../../store/store';
-import { DataTableFilterItem } from '../../components/data-table-filters/data-table-filters';
-import { ContainerRequestState } from '../../models/container-request';
-import { SortDirection } from '../../components/data-table/data-column';
-import { ResourceKind } from '../../models/resource';
-import { resourceLabel } from '../../common/labels';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '../../views-components/data-explorer/renderers';
-import { restoreBranch } from '../../store/navigation/navigation-action';
-import { ProjectIcon } from '../../components/icon/icon';
+import { RootState } from '~/store/store';
+import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
+import { ContainerRequestState } from '~/models/container-request';
+import { SortDirection } from '~/components/data-table/data-column';
+import { ResourceKind } from '~/models/resource';
+import { resourceLabel } from '~/common/labels';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
+import { restoreBranch } from '~/store/navigation/navigation-action';
+import { ProjectIcon } from '~/components/icon/icon';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -56,6 +56,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
+        filters: [],
         render: renderName,
         width: "450px"
     },
@@ -63,6 +64,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: "Status",
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: ContainerRequestState.COMMITTED,
@@ -87,6 +89,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: resourceLabel(ResourceKind.COLLECTION),
@@ -111,6 +114,8 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderOwner(item.owner),
         width: "200px"
     },
@@ -118,6 +123,8 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderFileSize(item.fileSize),
         width: "50px"
     },
@@ -126,6 +133,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderDate(item.lastModified),
         width: "150px"
     }

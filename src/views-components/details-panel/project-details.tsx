@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ProjectIcon } from '../../components/icon/icon';
-import { ProjectResource } from '../../models/project';
-import { formatDate } from '../../common/formatters';
-import { ResourceKind } from '../../models/resource';
-import { resourceLabel } from '../../common/labels';
+import { ProjectIcon } from '~/components/icon/icon';
+import { ProjectResource } from '~/models/project';
+import { formatDate } from '~/common/formatters';
+import { ResourceKind } from '~/models/resource';
+import { resourceLabel } from '~/common/labels';
 import { DetailsData } from "./details-data";
-import { DetailsAttribute } from "../../components/details-attribute/details-attribute";
+import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
 

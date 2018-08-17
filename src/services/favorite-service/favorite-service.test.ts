@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { LinkService } from "../link-service/link-service";
-import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
+import { GroupsService } from "../groups-service/groups-service";
 import { FavoriteService } from "./favorite-service";
-import { LinkClass, LinkResource } from "../../models/link";
-import { mockResourceService } from "../../common/api/common-resource-service.test";
-import { FilterBuilder } from "../../common/api/filter-builder";
+import { LinkClass } from "~/models/link";
+import { mockResourceService } from "~/common/api/common-resource-service.test";
+import { FilterBuilder } from "~/common/api/filter-builder";
 
 describe("FavoriteService", () => {
 
@@ -38,8 +38,7 @@ describe("FavoriteService", () => {
 
     it("unmarks resource as favorite", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "linkUuid" }] }));
-        const filters = FilterBuilder
-            .create()
+        const filters = new FilterBuilder()
             .addEqual('tailUuid', "userUuid")
             .addEqual('headUuid', "resourceUuid")
             .addEqual('linkClass', LinkClass.STAR);
@@ -56,12 +55,11 @@ describe("FavoriteService", () => {
 
     it("lists favorite resources", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "headUuid" }] }));
-        const listFilters = FilterBuilder
-            .create()
+        const listFilters = new FilterBuilder()
             .addEqual('tailUuid', "userUuid")
             .addEqual('linkClass', LinkClass.STAR);
         const contents = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "resourceUuid" }] }));
-        const contentFilters = FilterBuilder.create().addIn('uuid', ["headUuid"]);
+        const contentFilters = new FilterBuilder().addIn('uuid', ["headUuid"]);
         linkService.list = list;
         groupService.contents = contents;
         const favoriteService = new FavoriteService(linkService, groupService);
@@ -76,8 +74,7 @@ describe("FavoriteService", () => {
 
     it("checks if resources are present in favorites", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "foo" }] }));
-        const listFilters = FilterBuilder
-            .create()
+        const listFilters = new FilterBuilder()
             .addIn("headUuid", ["foo", "oof"])
             .addEqual("tailUuid", "userUuid")
             .addEqual("linkClass", LinkClass.STAR);

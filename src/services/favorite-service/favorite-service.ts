@@ -4,24 +4,23 @@
 
 import { LinkService } from "../link-service/link-service";
 import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
-import { LinkResource, LinkClass } from "../../models/link";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { ListArguments, ListResults } from "../../common/api/common-resource-service";
-import { FavoriteOrderBuilder } from "./favorite-order-builder";
-import { OrderBuilder } from "../../common/api/order-builder";
+import { LinkClass } from "~/models/link";
+import { FilterBuilder, joinFilters } from "~/common/api/filter-builder";
+import { ListResults } from "~/common/api/common-resource-service";
 
 export interface FavoriteListArguments {
     limit?: number;
     offset?: number;
-    filters?: FilterBuilder;
-    order?: FavoriteOrderBuilder;
+    filters?: string;
+    linkOrder?: string;
+    contentOrder?: string;
 }
 
 export class FavoriteService {
     constructor(
         private linkService: LinkService,
         private groupsService: GroupsService
-    ) { }
+    ) {}
 
     create(data: { userUuid: string; resource: { uuid: string; name: string } }) {
         return this.linkService.create({
@@ -36,36 +35,36 @@ export class FavoriteService {
     delete(data: { userUuid: string; resourceUuid: string; }) {
         return this.linkService
             .list({
-                filters: FilterBuilder
-                    .create()
+                filters: new FilterBuilder()
                     .addEqual('tailUuid', data.userUuid)
                     .addEqual('headUuid', data.resourceUuid)
                     .addEqual('linkClass', LinkClass.STAR)
+                    .getFilters()
             })
             .then(results => Promise.all(
                 results.items.map(item => this.linkService.delete(item.uuid))));
     }
 
-    list(userUuid: string, { filters, limit, offset, order }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
-        const listFilter = FilterBuilder
-            .create()
+    list(userUuid: string, { filters, limit, offset, linkOrder, contentOrder }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
+        const listFilters = new FilterBuilder()
             .addEqual('tailUuid', userUuid)
-            .addEqual('linkClass', LinkClass.STAR);
+            .addEqual('linkClass', LinkClass.STAR)
+            .getFilters();
 
         return this.linkService
             .list({
-                filters: filters ? filters.concat(listFilter) : listFilter,
+                filters: joinFilters(filters, listFilters),
                 limit,
                 offset,
-                order: order ? order.getLinkOrder() : OrderBuilder.create<LinkResource>()
+                order: linkOrder
             })
             .then(results => {
                 const uuids = results.items.map(item => item.headUuid);
                 return this.groupsService.contents(userUuid, {
                     limit,
                     offset,
-                    order: order ? order.getContentOrder() : OrderBuilder.create<GroupContentsResource>(),
-                    filters: FilterBuilder.create().addIn('uuid', uuids),
+                    order: contentOrder,
+                    filters: new FilterBuilder().addIn('uuid', uuids).getFilters(),
                     recursive: true
                 });
             });
@@ -74,11 +73,11 @@ export class FavoriteService {
     checkPresenceInFavorites(userUuid: string, resourceUuids: string[]): Promise<Record<string, boolean>> {
         return this.linkService
             .list({
-                filters: FilterBuilder
-                    .create()
+                filters: new FilterBuilder()
                     .addIn("headUuid", resourceUuids)
                     .addEqual("tailUuid", userUuid)
                     .addEqual("linkClass", LinkClass.STAR)
+                    .getFilters()
             })
             .then(({ items }) => resourceUuids.reduce((results, uuid) => {
                 const isFavorite = items.some(item => item.headUuid === uuid);

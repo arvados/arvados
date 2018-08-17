@@ -6,49 +6,50 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, RouteComponentProps, Redirect } from "react-router";
-import { login, logout } from "../../store/auth/auth-action";
-import { User } from "../../models/user";
-import { RootState } from "../../store/store";
-import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '../../views-components/main-app-bar/main-app-bar';
-import { Breadcrumb } from '../../components/breadcrumbs/breadcrumbs';
+import { Route, RouteComponentProps, Switch, Redirect } from "react-router";
+import { login, logout } from "~/store/auth/auth-action";
+import { User } from "~/models/user";
+import { RootState } from "~/store/store";
+import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '~/views-components/main-app-bar/main-app-bar';
+import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import { reset } from 'redux-form';
-import { ProjectTree } from '../../views-components/project-tree/project-tree';
-import { TreeItem } from "../../components/tree/tree";
-import { getTreePath } from '../../store/project/project-reducer';
-import { sidePanelActions } from '../../store/side-panel/side-panel-action';
-import { SidePanel, SidePanelItem } from '../../components/side-panel/side-panel';
-import { ItemMode, setProjectItem } from "../../store/navigation/navigation-action";
-import { projectActions } from "../../store/project/project-action";
-import { collectionCreateActions } from '../../store/collections/creator/collection-creator-action';
-import { ProjectPanel } from "../project-panel/project-panel";
-import { DetailsPanel } from '../../views-components/details-panel/details-panel';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { CreateProjectDialog } from "../../views-components/create-project-dialog/create-project-dialog";
+import { ProjectTree } from '~/views-components/project-tree/project-tree';
+import { TreeItem } from "~/components/tree/tree";
+import { getTreePath } from '~/store/project/project-reducer';
+import { sidePanelActions } from '~/store/side-panel/side-panel-action';
+import { SidePanel, SidePanelItem } from '~/components/side-panel/side-panel';
+import { ItemMode, setProjectItem } from "~/store/navigation/navigation-action";
+import { projectActions } from "~/store/project/project-action";
+import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
+import { ProjectPanel } from "~/views/project-panel/project-panel";
+import { DetailsPanel } from '~/views-components/details-panel/details-panel';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
 
-import { detailsPanelActions, loadDetails } from "../../store/details-panel/details-panel-action";
-import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '../../store/side-panel/side-panel-reducer';
-import { ProjectResource } from '../../models/project';
-import { ResourceKind } from '../../models/resource';
-import { ContextMenu, ContextMenuKind } from "../../views-components/context-menu/context-menu";
+import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-panel-action";
+import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
+import { SidePanelIdentifiers } from '~/store/side-panel/side-panel-reducer';
+import { ProjectResource } from '~/models/project';
+import { ResourceKind } from '~/models/resource';
+import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
-import { CurrentTokenDialog } from '../../views-components/current-token-dialog/current-token-dialog';
-import { Snackbar } from '../../views-components/snackbar/snackbar';
-import { favoritePanelActions } from '../../store/favorite-panel/favorite-panel-action';
-import { CreateCollectionDialog } from '../../views-components/create-collection-dialog/create-collection-dialog';
+import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
+import { Snackbar } from '~/views-components/snackbar/snackbar';
+import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
+import { CreateCollectionDialog } from '~/views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
-import { loadCollection, loadCollectionTags } from '../../store/collection-panel/collection-panel-action';
-import { getCollectionUrl } from '../../models/collection';
-import { UpdateCollectionDialog } from '../../views-components/update-collection-dialog/update-collection-dialog.';
-import { AuthService } from "../../services/auth-service/auth-service";
-import { RenameFileDialog } from '../../views-components/rename-file-dialog/rename-file-dialog';
-import { FileRemoveDialog } from '../../views-components/file-remove-dialog/file-remove-dialog';
-import { MultipleFilesRemoveDialog } from '../../views-components/file-remove-dialog/multiple-files-remove-dialog';
-import { DialogCollectionCreateWithSelectedFile } from '../../views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
-import { COLLECTION_CREATE_DIALOG } from '../../views-components/dialog-create/dialog-collection-create';
-import { PROJECT_CREATE_DIALOG } from '../../views-components/dialog-create/dialog-project-create';
+import { loadCollection, loadCollectionTags } from '~/store/collection-panel/collection-panel-action';
+import { getCollectionUrl } from '~/models/collection';
+import { UpdateCollectionDialog } from '~/views-components/update-collection-dialog/update-collection-dialog.';
+import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
+import { AuthService } from "~/services/auth-service/auth-service";
+import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
+import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
+import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
+import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
+import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
+import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -245,6 +246,7 @@ export const Workbench = withStyles(styles)(
                         <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
+                        <UpdateProjectDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
                             open={this.state.isCurrentTokenDialogOpen}
@@ -253,7 +255,7 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
-            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel 
+            renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel
                 onItemRouteChange={(collectionId) => {
                     this.props.dispatch<any>(loadCollection(collectionId, ResourceKind.COLLECTION));
                     this.props.dispatch<any>(loadCollectionTags(collectionId));
@@ -280,7 +282,7 @@ export const Workbench = withStyles(styles)(
                     } else {
                         kind = ContextMenuKind.RESOURCE;
                     }
-                    
+
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
@@ -298,7 +300,7 @@ export const Workbench = withStyles(styles)(
                         case ResourceKind.COLLECTION:
                             this.props.dispatch(loadCollection(item.uuid, item.kind as ResourceKind));
                             this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default: 
+                        default:
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
                             this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                     }

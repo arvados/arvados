@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataColumn, toggleSortDirection, resetSortDirection } from "../../components/data-table/data-column";
+import { DataColumn, toggleSortDirection, resetSortDirection } from "~/components/data-table/data-column";
 import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action";
-import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
-import { DataColumns } from "../../components/data-table/data-table";
+import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
+import { DataColumns } from "~/components/data-table/data-table";
 
 export interface DataExplorer {
     columns: DataColumns<any>;

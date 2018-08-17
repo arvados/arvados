@@ -20,7 +20,7 @@
     "react-router": "4.3.1",
     "react-router-dom": "4.3.1",
     "react-router-redux": "5.0.0-alpha.9",
-    "react-scripts-ts": "2.16.0",
+    "react-scripts-ts": "2.17.0",
     "redux": "4.0.0",
     "redux-thunk": "2.3.0",
     "unionize": "2.1.2"
@@ -54,7 +54,9 @@
     "redux-form": "7.4.2",
     "typescript": "3.0.1"
   },
-  "moduleNameMapper": {
-    "^~/(.*)$": "<rootDir>/src/$1"
+  "jest": {
+    "moduleNameMapper": {
+      "^~/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }

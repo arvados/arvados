@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { CollectionPanelFiles as Component, CollectionPanelFilesProps } from "../../components/collection-panel-files/collection-panel-files";
-import { RootState } from "../../store/store";
-import { TreeItemStatus, TreeItem } from "../../components/tree/tree";
-import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFile } from "../../store/collection-panel/collection-panel-files/collection-panel-files-state";
-import { FileTreeData } from "../../components/file-tree/file-tree-data";
+import { CollectionPanelFiles as Component, CollectionPanelFilesProps } from "~/components/collection-panel-files/collection-panel-files";
+import { RootState } from "~/store/store";
+import { TreeItemStatus, TreeItem } from "~/components/tree/tree";
+import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFile } from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { FileTreeData } from "~/components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
-import { collectionPanelFilesAction } from "../../store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { contextMenuActions } from "../../store/context-menu/context-menu-actions";
+import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
+import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { Tree, getNodeChildren, getNode } from "../../models/tree";
-import { CollectionFileType } from "../../models/collection-file";
+import { Tree, getNodeChildren, getNode } from "~/models/tree";
+import { CollectionFileType } from "~/models/collection-file";
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;

@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Dialog, DialogActions, DialogTitle, DialogContent, WithStyles, withStyles, StyleRulesCallback, Button, Typography, Paper } from '@material-ui/core';
-import { ArvadosTheme } from '../../common/custom-theme';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'link' | 'paper' | 'button';
 
@@ -27,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface CurrentTokenDataProps {
-    currentToken?: string; 
+    currentToken?: string;
     open: boolean;
 }
 
@@ -37,9 +37,9 @@ interface CurrentTokenActionProps {
 
 type CurrentTokenProps = CurrentTokenDataProps & CurrentTokenActionProps & WithStyles<CssRules>;
 
-export const CurrentTokenDialog = withStyles(styles)(    
+export const CurrentTokenDialog = withStyles(styles)(
     class extends React.Component<CurrentTokenProps> {
-        
+
         render() {
             const { classes, open, handleClose, currentToken } = this.props;
             return (
@@ -47,7 +47,7 @@ export const CurrentTokenDialog = withStyles(styles)(
                     <DialogTitle>Current Token</DialogTitle>
                     <DialogContent>
                         <Typography variant='body1' paragraph={true}>
-                            The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions. 
+                            The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
                             <Typography component='p'>
                                 For more information see
                                 <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
@@ -56,13 +56,13 @@ export const CurrentTokenDialog = withStyles(styles)(
                             </Typography>
                         </Typography>
 
-                        <Typography variant='body1' paragraph={true}> 
+                        <Typography variant='body1' paragraph={true}>
                             Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your klingenc account.
                         </Typography>
 
                         <Paper className={classes.paper} elevation={0}>
                             <Typography variant='body1'>
-                                HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'                            
+                                HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
                             </Typography>
                             <Typography variant='body1'>
                                 export ARVADOS_API_TOKEN={currentToken}
@@ -75,8 +75,8 @@ export const CurrentTokenDialog = withStyles(styles)(
                             </Typography>
                         </Paper>
                         <Typography variant='body1'>
-                            Arvados 
-                            <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a> 
+                            Arvados
+                            <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
                             do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).
                         </Typography>
                     </DialogContent>
