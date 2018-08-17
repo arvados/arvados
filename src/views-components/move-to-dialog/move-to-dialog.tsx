@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { withDialog } from "../../store/dialog/with-dialog";
 import { dialogActions } from "../../store/dialog/dialog-actions";
-import { MoveTo } from "../../components/move-to-dialog/move-to-dialog";
+import { MoveToDialog } from "../../components/move-to-dialog/move-to-dialog";
 import { reduxForm, startSubmit, stopSubmit } from "redux-form";
 
 export const MOVE_TO_DIALOG = 'moveToDialog';
@@ -15,7 +15,7 @@ export const openMoveToDialog = () =>
         dispatch(dialogActions.OPEN_DIALOG({ id: MOVE_TO_DIALOG, data: {}}));
     };
 
-export const [MoveToProjectDialog] = [MoveTo]
+export const [MoveToProjectDialog] = [MoveToDialog]
     .map(withDialog(MOVE_TO_DIALOG))
     .map(reduxForm({
         form: MOVE_TO_DIALOG,

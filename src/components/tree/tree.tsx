@@ -110,9 +110,7 @@ export const Tree = withStyles(styles)(
                             <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {it.status === TreeItemStatus.PENDING 
-                                    || (it.status === TreeItemStatus.LOADED && !it.items)
-                                    || (it.status === TreeItemStatus.LOADED && it.items && it.items.length === 0) ? <span /> : <SidePanelRightArrowIcon />}
+                                    {this.getProperArrowAnimation(it.status, it.items!)}
                                 </ListItemIcon>
                             </i>
                             {this.props.showSelection &&
@@ -140,6 +138,10 @@ export const Tree = withStyles(styles)(
                             </Collapse>}
                     </div>)}
             </List>;
+        }
+
+        getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
+            return status === TreeItemStatus.PENDING || (status === TreeItemStatus.LOADED && !items) ? <span /> : <SidePanelRightArrowIcon />;
         }
 
         getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {

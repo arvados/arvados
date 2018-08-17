@@ -9,27 +9,27 @@ import { TreeItemStatus } from "~/components/tree/tree";
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
-        LOAD_TREE_PICKER_NODE: ({ id, pickerId }) => {
-            const picker = state[pickerId] || createTree();
+        LOAD_TREE_PICKER_NODE: ({ id, pickerKind }) => {
+            const picker = state[pickerKind] || createTree();
             const updatedPicker = setNodeValueWith(setPending)(id)(picker);
-            return { ...state, [pickerId]: updatedPicker };
+            return { ...state, [pickerKind]: updatedPicker };
         },
-        LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) => {
-            const picker = state[pickerId] || createTree();
+        LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerKind }) => {
+            const picker = state[pickerKind] || createTree();
             const [updatedPicker] = [picker]
                 .map(receiveNodes(nodes)(id))
                 .map(setNodeValueWith(setLoaded)(id));
-            return { ...state, [pickerId]: updatedPicker };
+            return { ...state, [pickerKind]: updatedPicker };
         },
-        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) => {
-            const picker = state[pickerId] || createTree();
+        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerKind }) => {
+            const picker = state[pickerKind] || createTree();
             const updatedPicker = setNodeValueWith(toggleCollapse)(id)(picker);
-            return { ...state, [pickerId]: updatedPicker };
+            return { ...state, [pickerKind]: updatedPicker };
         },
-        TOGGLE_TREE_PICKER_NODE_SELECT: ({ id, pickerId }) => {
-            const picker = state[pickerId] || createTree();
+        TOGGLE_TREE_PICKER_NODE_SELECT: ({ id, pickerKind }) => {
+            const picker = state[pickerKind] || createTree();
             const updatedPicker = mapTreeValues(toggleSelect(id))(picker);
-            return { ...state, [pickerId]: updatedPicker };
+            return { ...state, [pickerKind]: updatedPicker };
         },
         default: () => state
     });

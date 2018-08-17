@@ -41,8 +41,6 @@ export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch) => {
-            dispatch<any>(openMoveToDialog());
-        }
+        execute: dispatch => dispatch<any>(openMoveToDialog())
     },
 ]];

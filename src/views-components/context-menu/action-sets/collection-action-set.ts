@@ -28,9 +28,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch) => {
-            dispatch<any>(openMoveToDialog());
-        }
+        execute: dispatch => dispatch<any>(openMoveToDialog())
     },
     {
         component: ToggleFavoriteAction,

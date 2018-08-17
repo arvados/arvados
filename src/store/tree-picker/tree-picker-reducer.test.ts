@@ -11,7 +11,7 @@ import { TreeItemStatus } from "~/components/tree/tree";
 describe('TreePickerReducer', () => {
     it('LOAD_TREE_PICKER_NODE - initial state', () => {
         const tree = createTree<TreePickerNode>();
-        const newState = treePickerReducer({}, treePickerActions.LOAD_TREE_PICKER_NODE({ id: '1', pickerId: "projects" }));
+        const newState = treePickerReducer({}, treePickerActions.LOAD_TREE_PICKER_NODE({ id: '1', pickerKind: "projects" }));
         expect(newState).toEqual({ 'projects': tree });
     });
 
@@ -20,8 +20,8 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE({ id: '1', pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE({ id: '1', pickerKind: "projects" })));
 
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
@@ -31,7 +31,7 @@ describe('TreePickerReducer', () => {
 
     it('LOAD_TREE_PICKER_NODE_SUCCESS - initial state', () => {
         const subNode = createTreePickerNode({ id: '1.1', value: '1.1' });
-        const newState = treePickerReducer({}, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [subNode], pickerId: "projects" }));
+        const newState = treePickerReducer({}, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [subNode], pickerKind: "projects" }));
         expect(getNodeChildren('')(newState.projects)).toEqual(['1.1']);
     });
 
@@ -41,8 +41,8 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '1', nodes: [subNode], pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '1', nodes: [subNode], pickerKind: "projects" })));
         expect(getNodeChildren('1')(newState.projects)).toEqual(['1.1']);
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
@@ -55,8 +55,8 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerKind: "projects" })));
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
             collapsed: false
@@ -68,9 +68,9 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id: '1', pickerKind: "projects" })));
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
             collapsed: true
@@ -82,8 +82,8 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerKind: "projects" })));
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
             selected: true
@@ -95,9 +95,9 @@ describe('TreePickerReducer', () => {
         const [newState] = [{
             projects: createTree<TreePickerNode>()
         }]
-            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerId: "projects" })))
-            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerId: "projects" })));
+            .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerKind: "projects" })))
+            .map(state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ id: '1', pickerKind: "projects" })));
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ id: '1', value: '1' }),
             selected: false

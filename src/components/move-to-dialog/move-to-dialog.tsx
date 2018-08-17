@@ -10,7 +10,7 @@ import { WithDialogProps } from "~/store/dialog/with-dialog";
 import { ProjectTreePicker } from "~/views-components/project-tree-picker/project-tree-picker";
 import { MOVE_TO_VALIDATION } from "~/validators/validators";
 
-export const MoveTo = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
+export const MoveToDialog = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
     <form>
         <Dialog open={props.open}
             disableBackdropClick={true}

@@ -27,7 +27,7 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
-import { initPickerProjectTree } from './store/tree-picker/tree-picker-actions';
+import { initPickerProjectTree } from './views-components/project-tree-picker/project-tree-picker';
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
