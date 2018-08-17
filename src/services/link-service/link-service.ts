@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "../../common/api/common-resource-service";
-import { LinkResource } from "../../models/link";
+import { CommonResourceService } from "~/common/api/common-resource-service";
+import { LinkResource } from "~/models/link";
 import { AxiosInstance } from "axios";
 
 export class LinkService extends CommonResourceService<LinkResource> {

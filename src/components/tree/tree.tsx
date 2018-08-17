@@ -9,7 +9,7 @@ import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import * as classnames from "classnames";
 
-import { ArvadosTheme } from '../../common/custom-theme';
+import { ArvadosTheme } from '~/common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
 
 type CssRules = 'list'

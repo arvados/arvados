@@ -6,14 +6,14 @@ import { authReducer, AuthState } from "./auth-reducer";
 import { AuthAction, authActions } from "./auth-action";
 
 import 'jest-localstorage-mock';
-import { createServices } from "../../services/services";
+import { createServices } from "~/services/services";
 
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices("/arvados/v1"));
+        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
     });
 
     it('should correctly initialise state', () => {
@@ -25,7 +25,7 @@ describe('auth-reducer', () => {
             uuid: "uuid",
             ownerUuid: "ownerUuid"
         };
-        const state = reducer(initialState, authActions.INIT({user, token: "token"}));
+        const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
             user

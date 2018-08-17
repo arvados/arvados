@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { InjectedFormProps, Field } from "redux-form";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, DialogContentText, CircularProgress } from "@material-ui/core";
-import { WithDialogProps } from "../../store/dialog/with-dialog";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, DialogContentText, CircularProgress } from "@material-ui/core";
+import { WithDialogProps } from "~/store/dialog/with-dialog";
 import { TextField } from "../text-field/text-field";
 
 export const RenameDialog = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>

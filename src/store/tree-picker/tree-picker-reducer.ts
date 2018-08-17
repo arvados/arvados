@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "../../models/tree";
+import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "~/models/tree";
 import { TreePicker, TreePickerNode } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
-import { TreeItemStatus } from "../../components/tree/tree";
+import { TreeItemStatus } from "~/components/tree/tree";
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {

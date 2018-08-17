@@ -4,8 +4,8 @@
 
 import { Dispatch } from "redux";
 import { reduxForm, reset, startSubmit, stopSubmit } from "redux-form";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
+import { withDialog } from "~/store/dialog/with-dialog";
+import { dialogActions } from "~/store/dialog/dialog-actions";
 import { DialogCollectionCreateWithSelected } from "../dialog-create/dialog-collection-create-selected";
 
 export const DIALOG_COLLECTION_CREATE_WITH_SELECTED = 'dialogCollectionCreateWithSelected';

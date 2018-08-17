@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "baseUrl": "./",
     "outDir": "build/dist",
     "module": "esnext",
     "target": "es5",
@@ -18,11 +18,10 @@
     "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-    //  waits for moduleNameMapper being able to override
-    //    "paths": {
-    //      "~/*": ["src/*"]
-    //    }
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "~/*": ["src/*"]
+    }
   },
   "exclude": [
     "node_modules",

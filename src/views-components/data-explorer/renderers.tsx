@@ -5,10 +5,10 @@
 import * as React from 'react';
 import { Grid, Typography } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
-import { ResourceKind } from '../../models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '../../components/icon/icon';
-import { formatDate, formatFileSize } from '../../common/formatters';
-import { resourceLabel } from '../../common/labels';
+import { ResourceKind } from '~/models/resource';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
+import { formatDate, formatFileSize } from '~/common/formatters';
+import { resourceLabel } from '~/common/labels';
 
 
 export const renderName = (item: {name: string; uuid: string, kind: string}) =>

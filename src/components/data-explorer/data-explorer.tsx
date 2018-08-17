@@ -7,12 +7,14 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, Table
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataColumns } from "../data-table/data-table";
-import { DataColumn } from "../data-table/data-column";
+import { DataColumn, SortDirection } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
-import { ArvadosTheme } from "../../common/custom-theme";
+import { ArvadosTheme } from "~/common/custom-theme";
+import { DefaultView } from '../default-view/default-view';
+import { IconType } from '../icon/icon';
 
-type CssRules = "searchBox" | "toolbar";
+type CssRules = 'searchBox' | "toolbar" | 'defaultRoot' | 'defaultMessage' | 'defaultIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -20,6 +22,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbar: {
         paddingTop: theme.spacing.unit * 2
+    },
+    defaultRoot: {
+        position: 'absolute',
+        width: '80%',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)'
+    },
+    defaultMessage: {
+        fontSize: '1.75rem',
+    },
+    defaultIcon: {
+        fontSize: '6rem'
     }
 });
 
@@ -31,6 +46,11 @@ interface DataExplorerDataProps<T> {
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     page: number;
+    defaultIcon: IconType;
+    defaultMessages: string[];
+}
+
+interface DataExplorerActionProps<T> {
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
@@ -43,48 +63,62 @@ interface DataExplorerDataProps<T> {
     extractKey?: (item: T) => React.Key;
 }
 
-type DataExplorerProps<T> = DataExplorerDataProps<T> & WithStyles<CssRules>;
+type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules>;
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
         render() {
-            return <Paper>
-                <Toolbar className={this.props.classes.toolbar}>
-                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={this.props.classes.searchBox}>
-                            <SearchInput
-                                value={this.props.searchValue}
-                                onSearch={this.props.onSearch}/>
-                        </div>
-                        <ColumnSelector
-                            columns={this.props.columns}
-                            onColumnToggle={this.props.onColumnToggle}/>
-                    </Grid>
-                </Toolbar>
-                <DataTable
-                    columns={[...this.props.columns, this.contextMenuColumn]}
-                    items={this.props.items}
-                    onRowClick={(_, item: T) => this.props.onRowClick(item)}
-                    onContextMenu={this.props.onContextMenu}
-                    onRowDoubleClick={(_, item: T) => this.props.onRowDoubleClick(item)}
-                    onFiltersChange={this.props.onFiltersChange}
-                    onSortToggle={this.props.onSortToggle}
-                    extractKey={this.props.extractKey}/>
-                <Toolbar>
-                    {this.props.items.length > 0 &&
-                    <Grid container justify="flex-end">
-                        <TablePagination
-                            count={this.props.itemsAvailable}
-                            rowsPerPage={this.props.rowsPerPage}
-                            rowsPerPageOptions={this.props.rowsPerPageOptions}
-                            page={this.props.page}
-                            onChangePage={this.changePage}
-                            onChangeRowsPerPage={this.changeRowsPerPage}
-                            component="div"
-                        />
-                    </Grid>}
-                </Toolbar>
-            </Paper>;
+            const {
+                columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
+                rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
+                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes
+            } = this.props;
+            return <div>
+                { items.length > 0 ? (
+                    <Paper>
+                        <Toolbar className={classes.toolbar}>
+                            <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                                <div className={classes.searchBox}>
+                                    <SearchInput
+                                        value={searchValue}
+                                        onSearch={onSearch}/>
+                                </div>
+                                <ColumnSelector
+                                    columns={columns}
+                                    onColumnToggle={onColumnToggle}/>
+                            </Grid>
+                        </Toolbar>
+                        <DataTable
+                            columns={[...columns, this.contextMenuColumn]}
+                            items={items}
+                            onRowClick={(_, item: T) => onRowClick(item)}
+                            onContextMenu={onContextMenu}
+                            onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
+                            onFiltersChange={onFiltersChange}
+                            onSortToggle={onSortToggle}
+                            extractKey={extractKey}/>
+                        <Toolbar>
+                            <Grid container justify="flex-end">
+                                <TablePagination
+                                    count={itemsAvailable}
+                                    rowsPerPage={rowsPerPage}
+                                    rowsPerPageOptions={rowsPerPageOptions}
+                                    page={this.props.page}
+                                    onChangePage={this.changePage}
+                                    onChangeRowsPerPage={this.changeRowsPerPage}
+                                    component="div" />
+                            </Grid>
+                        </Toolbar>
+                    </Paper>
+                ) : (
+                    <DefaultView
+                        classRoot={classes.defaultRoot}
+                        icon={defaultIcon}
+                        classIcon={classes.defaultIcon}
+                        messages={defaultMessages}
+                        classMessage={classes.defaultMessage} />
+                )}
+            </div>;
         }
 
         changePage = (event: React.MouseEvent<HTMLButtonElement>, page: number) => {
@@ -106,6 +140,8 @@ export const DataExplorer = withStyles(styles)(
             name: "Actions",
             selected: true,
             configurable: false,
+            sortDirection: SortDirection.NONE,
+            filters: [],
             key: "context-actions",
             render: this.renderContextMenuTrigger,
             width: "auto"

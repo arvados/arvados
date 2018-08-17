@@ -9,16 +9,16 @@ import {
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
-import { ArvadosTheme } from '../../common/custom-theme';
-import { RootState } from '../../store/store';
-import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '../../components/icon/icon';
-import { DetailsAttribute } from '../../components/details-attribute/details-attribute';
-import { CollectionResource } from '../../models/collection';
-import { CollectionPanelFiles } from '../../views-components/collection-panel-files/collection-panel-files';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { RootState } from '~/store/store';
+import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '~/components/icon/icon';
+import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
+import { CollectionResource } from '~/models/collection';
+import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { TagResource } from '../../models/tag';
+import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
-import { deleteCollectionTag } from '../../store/collection-panel/collection-panel-action';
+import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'value';
 
@@ -60,11 +60,11 @@ type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProp
 
 
 export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState) => ({ 
-        item: state.collectionPanel.item, 
-        tags: state.collectionPanel.tags 
+    connect((state: RootState) => ({
+        item: state.collectionPanel.item,
+        tags: state.collectionPanel.tags
     }))(
-        class extends React.Component<CollectionPanelProps> { 
+        class extends React.Component<CollectionPanelProps> {
 
             render() {
                 const { classes, item, tags, onContextMenu } = this.props;
@@ -84,8 +84,8 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute classValue={classes.value} 
-                                            label='Collection UUID' 
+                                    <DetailsAttribute classValue={classes.value}
+                                            label='Collection UUID'
                                             value={item && item.uuid}>
                                         <CopyToClipboard text={item && item.uuid}>
                                             <CopyIcon className={classes.copyIcon} />
@@ -100,7 +100,7 @@ export const CollectionPanel = withStyles(styles)(
                         </Card>
 
                         <Card className={classes.card}>
-                            <CardHeader title="Tags" />
+                            <CardHeader title="Properties" />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={12}><CollectionTagForm /></Grid>

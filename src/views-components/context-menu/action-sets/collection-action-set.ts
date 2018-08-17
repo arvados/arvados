@@ -4,10 +4,10 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
-import { toggleFavorite } from "../../../store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "../../../components/icon/icon";
-import { openUpdater } from "../../../store/collections/updater/collection-updater-action";
-import { favoritePanelActions } from "../../../store/favorite-panel/favorite-panel-action";
+import { toggleFavorite } from "~/store/favorites/favorites-actions";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
+import { openUpdater } from "~/store/collections/updater/collection-updater-action";
+import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 
 export const collectionActionSet: ContextMenuActionSet = [[

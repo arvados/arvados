@@ -4,11 +4,14 @@
 
 import * as _ from "lodash";
 import { sidePanelActions, SidePanelAction } from './side-panel-action';
-import { SidePanelItem } from '../../components/side-panel/side-panel';
-import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "../../components/icon/icon";
+import { SidePanelItem } from '~/components/side-panel/side-panel';
+import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "~/components/icon/icon";
 import { Dispatch } from "redux";
 import { push } from "react-router-redux";
 import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";
+import { projectPanelActions } from "../project-panel/project-panel-action";
+import { projectActions } from "../project/project-action";
+import { getProjectUrl } from "../../models/project";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -56,7 +59,13 @@ export const sidePanelData = [
         open: false,
         active: false,
         margin: true,
-        openAble: true
+        openAble: true,
+        activeAction: (dispatch: Dispatch, uuid: string) => {
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
+            dispatch(push(getProjectUrl(uuid)));
+            dispatch(projectPanelActions.RESET_PAGINATION());
+            dispatch(projectPanelActions.REQUEST_ITEMS()); 
+        }
     },
     {
         id: SidePanelIdentifiers.SHARED_WITH_ME,

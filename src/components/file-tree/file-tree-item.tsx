@@ -6,7 +6,7 @@ import * as React from "react";
 import { TreeItem } from "../tree/tree";
 import { ProjectIcon, MoreOptionsIcon, DefaultIcon, CollectionIcon } from "../icon/icon";
 import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles } from "@material-ui/core";
-import { formatFileSize } from "../../common/formatters";
+import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
 import { FileTreeData } from "./file-tree-data";
 

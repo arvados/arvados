@@ -14,7 +14,9 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
-            configurable: false
+            sortDirection: SortDirection.ASC,
+            filters: [],
+            configurable: true
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
@@ -27,13 +29,15 @@ describe('data-explorer-reducer', () => {
             render: jest.fn(),
             selected: true,
             sortDirection: SortDirection.ASC,
-            configurable: false
+            filters: [],
+            configurable: true
         }, {
             name: "Column 2",
             render: jest.fn(),
             selected: true,
+            configurable: true,
             sortDirection: SortDirection.NONE,
-            configurable: false
+            filters: [],
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));
@@ -46,7 +50,9 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
-            configurable: false
+            configurable: true,
+            sortDirection: SortDirection.NONE,
+            filters: [],
         }];
 
         const filters: DataTableFilterItem[] = [{
@@ -59,7 +65,7 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set items', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_ITEMS({
                 id: "Data explorer",
                 items: ["Item 1", "Item 2"],
@@ -71,13 +77,13 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set page', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_PAGE({ id: "Data explorer", page: 2 }));
         expect(state["Data explorer"].page).toEqual(2);
     });
 
     it('should set rows per page', () => {
-        const state = dataExplorerReducer({ "Data explorer": undefined },
+        const state = dataExplorerReducer({},
             dataExplorerActions.SET_ROWS_PER_PAGE({ id: "Data explorer", rowsPerPage: 5 }));
         expect(state["Data explorer"].rowsPerPage).toEqual(5);
     });

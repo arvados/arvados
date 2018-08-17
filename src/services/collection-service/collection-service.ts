@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "../../common/api/common-resource-service";
-import { CollectionResource } from "../../models/collection";
+import { CommonResourceService } from "~/common/api/common-resource-service";
+import { CollectionResource } from "~/models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
-import { FilterBuilder } from "../../common/api/filter-builder";
-import { CollectionFile, createCollectionFile } from "../../models/collection-file";
+import { FilterBuilder } from "~/common/api/filter-builder";
+import { CollectionFile, createCollectionFile } from "~/models/collection-file";
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
 import * as _ from "lodash";
-import { KeepManifestStream } from "../../models/keep-manifest";
+import { KeepManifestStream } from "~/models/keep-manifest";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -84,10 +84,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress): Promise<CollectionResource | never> {
-        const filters = FilterBuilder.create()
+        const filters = new FilterBuilder()
             .addEqual("service_type", "proxy");
 
-        return this.keepService.list({ filters }).then(data => {
+        return this.keepService.list({ filters: filters.getFilters() }).then(data => {
             if (data.items && data.items.length > 0) {
                 const serviceHost =
                     (data.items[0].serviceSslFlag ? "https://" : "http://") +

@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { Tree, TreeProps, TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { RootState } from "../../store/store";
-import { createTreePickerNode, TreePickerNode } from "../../store/tree-picker/tree-picker";
-import { getNodeValue, getNodeChildren, Tree as Ttree, createTree } from "../../models/tree";
-import { Dispatch } from "node_modules/redux";
+import { Tree, TreeProps, TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import { RootState } from "~/store/store";
+import { createTreePickerNode, TreePickerNode } from "~/store/tree-picker/tree-picker";
+import { getNodeValue, getNodeChildren, Tree as Ttree, createTree } from "~/models/tree";
+import { Dispatch } from "redux";
 
 export interface TreePickerProps {
     pickerId: string;

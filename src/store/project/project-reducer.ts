@@ -5,19 +5,25 @@
 import * as _ from "lodash";
 
 import { projectActions, ProjectAction } from "./project-action";
-import { TreeItem, TreeItemStatus } from "../../components/tree/tree";
-import { ProjectResource } from "../../models/project";
+import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import { ProjectResource } from "~/models/project";
 
 export type ProjectState = {
     items: Array<TreeItem<ProjectResource>>,
     currentItemId: string,
-    creator: ProjectCreator
+    creator: ProjectCreator,
+    updater: ProjectUpdater
 };
 
 interface ProjectCreator {
     opened: boolean;
     ownerUuid: string;
     error?: string;
+}
+
+interface ProjectUpdater {
+    opened: boolean;
+    uuid: string;
 }
 
 export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
@@ -100,12 +106,24 @@ const updateCreator = (state: ProjectState, creator: Partial<ProjectCreator>) =>
     }
 });
 
+const updateProject = (state: ProjectState, updater?: Partial<ProjectUpdater>) => ({
+    ...state,
+    updater: {
+        ...state.updater,
+        ...updater
+    }
+});
+
 const initialState: ProjectState = {
     items: [],
     currentItemId: "",
     creator: {
         opened: false,
         ownerUuid: ""
+    },
+    updater: {
+        opened: false,
+        uuid: ''
     }
 };
 
@@ -116,6 +134,9 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
         CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
         CREATE_PROJECT: () => updateCreator(state, { error: undefined }),
         CREATE_PROJECT_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
+        OPEN_PROJECT_UPDATER: ({ uuid }) => updateProject(state, { uuid, opened: true }),
+        CLOSE_PROJECT_UPDATER: () => updateProject(state, { opened: false, uuid: "" }),
+        UPDATE_PROJECT_SUCCESS: () => updateProject(state, { opened: false, uuid: "" }),
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: itemId => {
             const items = _.cloneDeep(state.items);
