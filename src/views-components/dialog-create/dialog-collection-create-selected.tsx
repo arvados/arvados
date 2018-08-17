@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { InjectedFormProps, Field, WrappedFieldProps } from "redux-form";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, FormHelperText } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from "@material-ui/core";
 import { WithDialogProps } from "../../store/dialog/with-dialog";
 import { TextField } from "../../components/text-field/text-field";
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "../../validators/create-collection/create-collection-validator";
@@ -48,9 +48,7 @@ export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string
                     type='submit'
                     onClick={props.handleSubmit}
                     disabled={props.pristine || props.invalid || props.submitting}>
-                    {props.submitting
-                        ? <CircularProgress size={20} />
-                        : 'Create a collection'}
+                    {props.submitting ? <CircularProgress size={20} /> : 'Create a collection'}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -65,9 +65,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum TreeItemStatus {
-    INITIAL,
-    PENDING,
-    LOADED
+    INITIAL = 'initial',
+    PENDING = 'pending',
+    LOADED = 'loaded'
 }
 
 export interface TreeItem<T> {
@@ -110,7 +110,9 @@ export const Tree = withStyles(styles)(
                             <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {it.status !== TreeItemStatus.INITIAL && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
+                                    {it.status === TreeItemStatus.PENDING 
+                                    || (it.status === TreeItemStatus.LOADED && !it.items)
+                                    || (it.status === TreeItemStatus.LOADED && it.items && it.items.length === 0) ? <span /> : <SidePanelRightArrowIcon />}
                                 </ListItemIcon>
                             </i>
                             {this.props.showSelection &&

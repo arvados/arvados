@@ -21,7 +21,7 @@ describe('project-reducer', () => {
                 id: "1",
                 items: [],
                 data: mockProjectResource({ uuid: "1" }),
-                status: 0
+                status: TreeItemStatus.INITIAL
             }, {
                 active: false,
                 open: false,

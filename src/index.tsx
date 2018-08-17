@@ -27,6 +27,7 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
+import { initPickerProjectTree } from './store/tree-picker/tree-picker-actions';
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
@@ -45,6 +46,7 @@ fetchConfig()
 
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
+        store.dispatch(initPickerProjectTree());
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} {...props}/>;

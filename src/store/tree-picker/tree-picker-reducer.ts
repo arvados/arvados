@@ -2,26 +2,35 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, setNodeValueWith, TreeNode, setNode, mapTree, mapTreeValues } from "../../models/tree";
+import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "../../models/tree";
 import { TreePicker, TreePickerNode } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { TreeItemStatus } from "../../components/tree/tree";
 
-
-export const treePickerReducer = (state: TreePicker = createTree(), action: TreePickerAction) =>
+export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
-        LOAD_TREE_PICKER_NODE: ({ id }) =>
-            setNodeValueWith(setPending)(id)(state),
-        LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes }) => {
-            const [newState] = [state]
+        LOAD_TREE_PICKER_NODE: ({ id, pickerId }) => {
+            const picker = state[pickerId] || createTree();
+            const updatedPicker = setNodeValueWith(setPending)(id)(picker);
+            return { ...state, [pickerId]: updatedPicker };
+        },
+        LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) => {
+            const picker = state[pickerId] || createTree();
+            const [updatedPicker] = [picker]
                 .map(receiveNodes(nodes)(id))
                 .map(setNodeValueWith(setLoaded)(id));
-            return newState;
+            return { ...state, [pickerId]: updatedPicker };
         },
-        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id }) =>
-            setNodeValueWith(toggleCollapse)(id)(state),
-        TOGGLE_TREE_PICKER_NODE_SELECT: ({ id }) =>
-            mapTreeValues(toggleSelect(id))(state),
+        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) => {
+            const picker = state[pickerId] || createTree();
+            const updatedPicker = setNodeValueWith(toggleCollapse)(id)(picker);
+            return { ...state, [pickerId]: updatedPicker };
+        },
+        TOGGLE_TREE_PICKER_NODE_SELECT: ({ id, pickerId }) => {
+            const picker = state[pickerId] || createTree();
+            const updatedPicker = mapTreeValues(toggleSelect(id))(picker);
+            return { ...state, [pickerId]: updatedPicker };
+        },
         default: () => state
     });
 
@@ -39,8 +48,8 @@ const toggleSelect = (id: string) => (value: TreePickerNode): TreePickerNode =>
         ? ({ ...value, selected: !value.selected })
         : ({ ...value, selected: false });
 
-const receiveNodes = (nodes: Array<TreePickerNode>) => (parent: string) => (state: TreePicker) =>
-    nodes.reduce((tree, node) =>
+const receiveNodes = (nodes: Array<TreePickerNode>) => (parent: string) => (state: Tree<TreePickerNode>) =>
+    nodes.reduce((tree, node) => 
         setNode(
             createTreeNode(parent)(node)
         )(tree), state);

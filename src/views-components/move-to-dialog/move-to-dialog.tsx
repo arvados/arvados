@@ -6,14 +6,12 @@ import { Dispatch } from "redux";
 import { withDialog } from "../../store/dialog/with-dialog";
 import { dialogActions } from "../../store/dialog/dialog-actions";
 import { MoveTo } from "../../components/move-to-dialog/move-to-dialog";
-import { loadProjectTreePickerProjects } from "../project-tree-picker/project-tree-picker";
 import { reduxForm, startSubmit, stopSubmit } from "redux-form";
 
 export const MOVE_TO_DIALOG = 'moveToDialog';
 
 export const openMoveToDialog = () =>
     (dispatch: Dispatch) => {
-        dispatch<any>(loadProjectTreePickerProjects(''));
         dispatch(dialogActions.OPEN_DIALOG({ id: MOVE_TO_DIALOG, data: {}}));
     };
 

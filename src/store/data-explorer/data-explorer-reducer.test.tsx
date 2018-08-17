@@ -13,7 +13,8 @@ describe('data-explorer-reducer', () => {
         const columns: DataColumns<any> = [{
             name: "Column 1",
             render: jest.fn(),
-            selected: true
+            selected: true,
+            configurable: false
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
@@ -25,12 +26,14 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
-            sortDirection: SortDirection.ASC
+            sortDirection: SortDirection.ASC,
+            configurable: false
         }, {
             name: "Column 2",
             render: jest.fn(),
             selected: true,
             sortDirection: SortDirection.NONE,
+            configurable: false
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));
@@ -43,6 +46,7 @@ describe('data-explorer-reducer', () => {
             name: "Column 1",
             render: jest.fn(),
             selected: true,
+            configurable: false
         }];
 
         const filters: DataTableFilterItem[] = [{

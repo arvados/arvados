@@ -7,7 +7,7 @@ import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from "@material-ui/core";
 
 import { WithDialogProps } from "../../store/dialog/with-dialog";
-import { ProjectTreePickerWithSidePanel } from "../../views-components/project-tree-picker/project-tree-picker";
+import { ProjectTreePicker } from "../../views-components/project-tree-picker/project-tree-picker";
 import { MOVE_TO_VALIDATION } from "../../validators/move-to/move-to-validator";
 
 export const MoveTo = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
@@ -36,9 +36,7 @@ export const MoveTo = (props: WithDialogProps<string> & InjectedFormProps<{ name
                     type='submit'
                     onClick={props.handleSubmit}
                     disabled={props.pristine || props.invalid || props.submitting}>
-                    {props.submitting
-                        ? <CircularProgress size={20} />
-                        : 'Move'}
+                    {props.submitting ? <CircularProgress size={20} /> : 'Move'}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -46,5 +44,5 @@ export const MoveTo = (props: WithDialogProps<string> & InjectedFormProps<{ name
 
 const Picker = (props: WrappedFieldProps) =>
     <div style={{ width: '400px', height: '144px', display: 'flex', flexDirection: 'column' }}>
-        <ProjectTreePickerWithSidePanel onChange={projectUuid => props.input.onChange(projectUuid)} />
+       <ProjectTreePicker onChange={projectUuid => props.input.onChange(projectUuid)} /> 
     </div>;
