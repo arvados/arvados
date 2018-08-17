@@ -3,40 +3,28 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { Resource } from "../../models/resource";
+import { Resource } from "~/models/resource";
+
+export enum OrderDirection { ASC, DESC }
 
 export class OrderBuilder<T extends Resource = Resource> {
 
-    static create<T extends Resource = Resource>(prefix?: string){
-        return new OrderBuilder<T>([], prefix);
+    constructor(private order: string[] = []) {}
+
+    addOrder(direction: OrderDirection, attribute: keyof T, prefix?: string) {
+        this.order.push(`${prefix ? prefix + "." : ""}${_.snakeCase(attribute.toString())} ${direction === OrderDirection.ASC ? "asc" : "desc"}`);
+        return this;
     }
 
-    private constructor(
-        private order: string[] = [],
-        private prefix = ""){}
-
-    private addRule (direction: string, attribute: keyof T) {
-        const prefix = this.prefix ? this.prefix + "." : "";
-        const order = [...this.order, `${prefix}${_.snakeCase(attribute.toString())} ${direction}`];
-        return new OrderBuilder<T>(order, prefix);
+    addAsc(attribute: keyof T, prefix?: string) {
+        return this.addOrder(OrderDirection.ASC, attribute, prefix);
     }
 
-    addAsc(attribute: keyof T) {
-        return this.addRule("asc", attribute);
-    }
-
-    addDesc(attribute: keyof T) {
-        return this.addRule("desc", attribute);
-    }
-
-    concat(orderBuilder: OrderBuilder){
-        return new OrderBuilder<T>(
-            this.order.concat(orderBuilder.getOrder()),
-            this.prefix
-        );
+    addDesc(attribute: keyof T, prefix?: string) {
+        return this.addOrder(OrderDirection.DESC, attribute, prefix);
     }
 
     getOrder() {
-        return this.order.slice();
+        return this.order.join(",");
     }
 }

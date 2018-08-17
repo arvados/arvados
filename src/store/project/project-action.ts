@@ -37,9 +37,9 @@ export const getProjectList = (parentUuid: string = '') =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
         return services.projectService.list({
-            filters: FilterBuilder
-                .create()
+            filters: new FilterBuilder()
                 .addEqual("ownerUuid", parentUuid)
+                .getFilters()
         }).then(({ items: projects }) => {
             dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
             dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));

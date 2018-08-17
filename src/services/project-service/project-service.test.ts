@@ -25,10 +25,9 @@ describe("CommonResourceService", () => {
         const resource = await projectService.list();
         expect(axiosInstance.get).toHaveBeenCalledWith("/groups/", {
             params: {
-                filters: FilterBuilder
-                    .create()
+                filters: new FilterBuilder()
                     .addEqual("groupClass", "project")
-                    .serialize()
+                    .getFilters()
             }
         });
     });
