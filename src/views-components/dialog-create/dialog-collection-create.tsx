@@ -9,13 +9,13 @@ import { TextField } from '~/components/text-field/text-field';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/create-collection/create-collection-validator';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/validators';
 import { FileUpload } from "~/components/file-upload/file-upload";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "~/store/store";
 import { collectionUploaderActions, UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
 
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "createProgress" | "dialogActions";
+type CssRules = "button" | "lastButton" | "formContainer" | "createProgress" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -29,9 +29,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         display: "flex",
         flexDirection: "column",
     },
-    textField: {
-        marginBottom: theme.spacing.unit * 3
-    },
     createProgress: {
         position: "absolute",
         minWidth: "20px",
@@ -42,16 +39,21 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     }
 });
 
-interface DialogCollectionCreateProps {
+interface DialogCollectionDataProps {
     open: boolean;
-    handleClose: () => void;
-    onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;
     handleSubmit: any;
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
     files: UploadFile[];
 }
+
+interface DialogCollectionActionProps {
+    handleClose: () => void;
+    onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;
+}
+
+type DialogCollectionProps = DialogCollectionDataProps & DialogCollectionActionProps & DispatchProp & WithStyles<CssRules>;
 
 export const COLLECTION_CREATE_DIALOG = "collectionCreateDialog";
 
@@ -61,7 +63,7 @@ export const DialogCollectionCreate = compose(
     })),
     reduxForm({ form: COLLECTION_CREATE_DIALOG }),
     withStyles(styles))(
-        class DialogCollectionCreate extends React.Component<DialogCollectionCreateProps & DispatchProp & WithStyles<CssRules>> {
+    class DialogCollectionCreate extends React.Component<DialogCollectionProps> {
             render() {
                 const { classes, open, handleClose, handleSubmit, onSubmit, submitting, invalid, pristine, files } = this.props;
                 const busy = submitting || files.reduce(
@@ -82,13 +84,11 @@ export const DialogCollectionCreate = compose(
                                     disabled={submitting}
                                     component={TextField}
                                     validate={COLLECTION_NAME_VALIDATION}
-                                    className={classes.textField}
                                     label="Collection Name" />
                                 <Field name="description"
                                     disabled={submitting}
                                     component={TextField}
                                     validate={COLLECTION_DESCRIPTION_VALIDATION}
-                                    className={classes.textField}
                                     label="Description - optional" />
                                 <FileUpload
                                     files={files}

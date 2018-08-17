@@ -4,58 +4,48 @@
 
 import * as _ from "lodash";
 
+export function joinFilters(filters0?: string, filters1?: string) {
+    return [filters0, filters1].filter(s => s).join(",");
+}
+
 export class FilterBuilder {
-    static create(resourcePrefix = "") {
-        return new FilterBuilder(resourcePrefix);
+    constructor(private filters = "") { }
+
+    public addEqual(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "=", value, "", "", resourcePrefix );
     }
 
-    constructor(
-        private resourcePrefix = "",
-        private filters = "") { }
-
-    public addEqual(field: string, value?: string) {
-        return this.addCondition(field, "=", value);
+    public addLike(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "like", value, "%", "%", resourcePrefix);
     }
 
-    public addLike(field: string, value?: string) {
-        return this.addCondition(field, "like", value, "%", "%");
+    public addILike(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "ilike", value, "%", "%", resourcePrefix);
     }
 
-    public addILike(field: string, value?: string) {
-        return this.addCondition(field, "ilike", value, "%", "%");
+    public addIsA(field: string, value?: string | string[], resourcePrefix?: string) {
+        return this.addCondition(field, "is_a", value, "", "", resourcePrefix);
     }
 
-    public addIsA(field: string, value?: string | string[]) {
-        return this.addCondition(field, "is_a", value);
-    }
-
-    public addIn(field: string, value?: string | string[]) {
-        return this.addCondition(field, "in", value);
-    }
-
-    public concat(filterBuilder: FilterBuilder) {
-        return new FilterBuilder(this.resourcePrefix, this.filters + (this.filters && filterBuilder.filters ? "," : "") + filterBuilder.getFilters());
+    public addIn(field: string, value?: string | string[], resourcePrefix?: string) {
+        return this.addCondition(field, "in", value, "", "", resourcePrefix);
     }
 
     public getFilters() {
         return this.filters;
     }
 
-    public serialize() {
-        return "[" + this.filters + "]";
-    }
-
-    private addCondition(field: string, cond: string, value?: string | string[], prefix: string = "", postfix: string = "") {
+    private addCondition(field: string, cond: string, value?: string | string[], prefix: string = "", postfix: string = "", resourcePrefix?: string) {
         if (value) {
             value = typeof value === "string"
                 ? `"${prefix}${value}${postfix}"`
                 : `["${value.join(`","`)}"]`;
 
-            const resourcePrefix = this.resourcePrefix
-                ? _.snakeCase(this.resourcePrefix) + "."
+            const resPrefix = resourcePrefix
+                ? _.snakeCase(resourcePrefix) + "."
                 : "";
 
-            this.filters += `${this.filters ? "," : ""}["${resourcePrefix}${_.snakeCase(field.toString())}","${cond}",${value}]`;
+            this.filters += `${this.filters ? "," : ""}["${resPrefix}${_.snakeCase(field)}","${cond}",${value}]`;
         }
         return this;
     }

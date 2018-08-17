@@ -51,6 +51,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
+        filters: [],
         render: renderName,
         width: "450px"
     },
@@ -58,6 +59,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         name: "Status",
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: ContainerRequestState.COMMITTED,
@@ -82,6 +84,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: resourceLabel(ResourceKind.COLLECTION),
@@ -106,6 +109,8 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.OWNER,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderOwner(item.owner),
         width: "200px"
     },
@@ -113,6 +118,8 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderFileSize(item.fileSize),
         width: "50px"
     },
@@ -121,6 +128,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
+        filters: [],
         render: item => renderDate(item.lastModified),
         width: "150px"
     }
@@ -151,7 +159,7 @@ export const FavoritePanel = withStyles(styles)(
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
-                    extractKey={(item: FavoritePanelItem) => item.uuid} 
+                    extractKey={(item: FavoritePanelItem) => item.uuid}
                     defaultIcon={FavoriteIcon}
                     defaultMessages={['Your favorites list is empty.']}/>
                 ;
