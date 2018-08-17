@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from "redux";
+import { Dispatch, compose } from "redux";
 import { reduxForm, reset, startSubmit, stopSubmit } from "redux-form";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { dialogActions } from "~/store/dialog/dialog-actions";
@@ -18,12 +18,13 @@ export const createCollectionWithSelected = () =>
         dispatch(dialogActions.OPEN_DIALOG({ id: DIALOG_COLLECTION_CREATE_WITH_SELECTED, data: {} }));
     };
 
-export const [DialogCollectionCreateWithSelectedFile] = [DialogCollectionCreateWithSelected]
-    .map(withDialog(DIALOG_COLLECTION_CREATE_WITH_SELECTED))
-    .map(reduxForm({
+
+export const DialogCollectionCreateWithSelectedFile = compose(
+    withDialog(DIALOG_COLLECTION_CREATE_WITH_SELECTED),
+    reduxForm({
         form: DIALOG_COLLECTION_CREATE_WITH_SELECTED,
         onSubmit: (data, dispatch) => {
             dispatch(startSubmit(DIALOG_COLLECTION_CREATE_WITH_SELECTED));
             setTimeout(() => dispatch(stopSubmit(DIALOG_COLLECTION_CREATE_WITH_SELECTED, { name: 'Invalid name' })), 2000);
         }
-    }));
+    }))(DialogCollectionCreateWithSelected);
