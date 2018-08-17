@@ -10,6 +10,6 @@ describe("OrderBuilder", () => {
             .addAsc("kind")
             .addDesc("modifiedAt")
             .getOrder();
-        expect(order).toEqual(["kind asc", "modified_at desc"]);
+        expect(order).toEqual("kind asc,modified_at desc");
     });
 });

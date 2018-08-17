@@ -48,7 +48,7 @@ describe("FavoriteService", () => {
 
         const newFavorite = await favoriteService.delete({ userUuid: "userUuid", resourceUuid: "resourceUuid" });
 
-        expect(list.mock.calls[0][0].filters.getFilters()).toEqual(filters.getFilters());
+        expect(list.mock.calls[0][0].filters).toEqual(filters.getFilters());
         expect(linkService.delete).toHaveBeenCalledWith("linkUuid");
         expect(newFavorite[0].uuid).toEqual("linkUuid");
     });
@@ -66,9 +66,9 @@ describe("FavoriteService", () => {
 
         const favorites = await favoriteService.list("userUuid");
 
-        expect(list.mock.calls[0][0].filters.getFilters()).toEqual(listFilters.getFilters());
+        expect(list.mock.calls[0][0].filters).toEqual(listFilters.getFilters());
         expect(contents.mock.calls[0][0]).toEqual("userUuid");
-        expect(contents.mock.calls[0][1].filters.getFilters()).toEqual(contentFilters.getFilters());
+        expect(contents.mock.calls[0][1].filters).toEqual(contentFilters.getFilters());
         expect(favorites).toEqual({ items: [{ uuid: "resourceUuid" }] });
     });
 
@@ -83,7 +83,7 @@ describe("FavoriteService", () => {
 
         const favorites = await favoriteService.checkPresenceInFavorites("userUuid", ["foo", "oof"]);
 
-        expect(list.mock.calls[0][0].filters.getFilters()).toEqual(listFilters.getFilters());
+        expect(list.mock.calls[0][0].filters).toEqual(listFilters.getFilters());
         expect(favorites).toEqual({ foo: true, oof: false });
     });
 
