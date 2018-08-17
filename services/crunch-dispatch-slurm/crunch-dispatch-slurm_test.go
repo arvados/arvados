@@ -250,7 +250,7 @@ func (s *StubbedSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	s.testWithServerStub(c, apiStubResponses, "echo", "error getting list of containers")
+	s.testWithServerStub(c, apiStubResponses, "echo", "error getting count of containers")
 }
 
 func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {

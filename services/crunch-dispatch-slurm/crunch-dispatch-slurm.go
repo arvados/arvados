@@ -64,6 +64,9 @@ type Dispatcher struct {
 
 	// Minimum time between two attempts to run the same container
 	MinRetryPeriod arvados.Duration
+
+	// Batch size for container queries
+	BatchSize int64
 }
 
 func main() {
@@ -183,6 +186,7 @@ func (disp *Dispatcher) setup() {
 	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
 		Logger:         disp.logger,
+		BatchSize:      disp.BatchSize,
 		RunContainer:   disp.runContainer,
 		PollPeriod:     time.Duration(disp.PollPeriod),
 		MinRetryPeriod: time.Duration(disp.MinRetryPeriod),
