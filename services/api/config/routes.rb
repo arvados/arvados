@@ -30,6 +30,7 @@ Server::Application.routes.draw do
       resources :groups do
         get 'contents', on: :collection
         get 'contents', on: :member
+        get 'shared', on: :collection
         post 'trash', on: :member
         post 'untrash', on: :member
       end
