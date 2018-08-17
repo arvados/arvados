@@ -134,6 +134,8 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_response :success
 
     assert_match /hello/, @response.body
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/baz\?" # locator on command
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar\?" # locator on command
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/foo" # mount input1
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/bar" # mount input2
     assert_includes @response.body, "href=\"\/collections/1fd08fc162a5c6413070a8bd0bffc818+150" # mount workflow

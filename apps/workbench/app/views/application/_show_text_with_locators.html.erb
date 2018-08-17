@@ -6,30 +6,39 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <% data_height = data_height || 100 %>
   <div style="max-height:<%=data_height%>px; overflow:auto;">
-    <% text_data.each_line do |l| %>
-      <% text_part = l %>
-      <% match = keep_locator_in_json l %>
+    <% text_data.each_line do |line| %>
+      <% matches = keep_locator_in_json line %>
 
-      <%
-        if match
-          text_part = match[1]
-          rindex = match[2].rindex('"'); match2 = match[2][0..rindex-1]
-          quote_char = '"'
+      <% if matches.nil? or matches.empty? %>
+        <span style="white-space: pre-wrap; margin: none;"><%= line %></span>
+      <% else
+        subs = []
+        matches.uniq.each do |loc|
+          pdh, filename = loc.split('/', 2)
 
-          pdh_readable = object_readable(match2)
-          file_link = ''
-          if pdh_readable and match[4].size > 0
-            link_params = {controller: 'collections', action: 'show_file', uuid: match[3], file: match[4][1..-1]}
-            preview_allowed = preview_allowed_for(match[4])
-            if preview_allowed
-              file_link = link_to(raw(match[4]), link_params.merge(disposition: 'inline'))
-            else
-              file_link = link_to(raw(match[4]), link_params.merge(disposition: 'attachment'))
+          if object_readable(pdh)
+            # Add PDH link
+            replacement = link_to_arvados_object_if_readable(pdh, pdh, friendly_name: true)
+            if filename
+              link_params = {controller: 'collections', action: 'show_file', uuid: pdh, file: filename}
+              if preview_allowed_for(filename)
+                params = {disposition: 'inline'}
+              else
+                params = {disposition: 'attachment'}
+              end
+              file_link = link_to(raw("/"+filename), link_params.merge(params))
+              # Add file link
+              replacement << file_link
             end
+            # Add link(s) substitution
+            subs << [loc, replacement]
           end
         end
-      %>
-
-      <span style="white-space: pre-wrap; margin: none;"><%= text_part %><% if match %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) %><%= file_link%><% else %><%= match2%><% end %><%=quote_char+match[5]%><br/><% end %></span>
+        # Replace all readable locators with links
+        subs.each do |loc, link|
+          line.gsub!(loc, link)
+        end %>
+        <span style="white-space: pre-wrap; margin: none;"><%= raw line %></span>
+      <% end %>
     <% end %>
   </div>
