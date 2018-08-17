@@ -3,16 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { FilterBuilder } from "./filter-builder";
-import { OrderBuilder } from "./order-builder";
 import { AxiosInstance, AxiosPromise } from "axios";
 import { Resource } from "~/models/resource";
 
 export interface ListArguments {
     limit?: number;
     offset?: number;
-    filters?: FilterBuilder;
-    order?: OrderBuilder;
+    filters?: string;
+    order?: string;
     select?: string[];
     distinct?: boolean;
     count?: string;
@@ -90,8 +88,8 @@ export class CommonResourceService<T extends Resource> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,
-            filters: filters ? filters.serialize() : undefined,
-            order: order ? order.getOrder() : undefined
+            filters: filters ? `[${filters}]` : undefined,
+            order: order ? order : undefined
         };
         return CommonResourceService.defaultResponse(
             this.serverApi
