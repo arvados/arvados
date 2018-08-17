@@ -4,7 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-import { ResourceKind } from "~/models/resource";
+import { loadCollectionFiles } from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from "~/models/collection";
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
 import { createTree } from "~/models/tree";
@@ -14,7 +14,7 @@ import { TagResource, TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
 
 export const collectionPanelActions = unionize({
-    LOAD_COLLECTION: ofType<{ uuid: string, kind: ResourceKind }>(),
+    LOAD_COLLECTION: ofType<{ uuid: string }>(),
     LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
     LOAD_COLLECTION_TAGS: ofType<{ uuid: string }>(),
     LOAD_COLLECTION_TAGS_SUCCESS: ofType<{ tags: TagResource[] }>(),
@@ -28,18 +28,15 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 
-export const loadCollection = (uuid: string, kind: ResourceKind) =>
+export const loadCollection = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid, kind }));
+        dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         return services.collectionService
             .get(uuid)
             .then(item => {
                 dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
-                return services.collectionFilesService.getFiles(item.uuid);
-            })
-            .then(files => {
-                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(files));
+                dispatch<any>(loadCollectionFiles(uuid));
             });
     };
 

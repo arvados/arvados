@@ -36,21 +36,23 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                 {items.map((group, groupIndex) =>
                     <React.Fragment key={groupIndex}>
                         {group.map((item, actionIndex) =>
-                            <ListItem
-                                button
-                                key={actionIndex}
-                                onClick={() => onItemClick(item)}>
-                                {item.icon &&
-                                    <ListItemIcon>
-                                        <item.icon />
-                                    </ListItemIcon>}
-                                {item.name &&
-                                    <ListItemText>
-                                        {item.name}
-                                    </ListItemText>}
-                                {item.component &&
-                                    <item.component />}
-                            </ListItem>)}
+                            item.component
+                                ? <item.component
+                                    key={actionIndex}
+                                    onClick={() => onItemClick(item)} />
+                                : <ListItem
+                                    button
+                                    key={actionIndex}
+                                    onClick={() => onItemClick(item)}>
+                                    {item.icon &&
+                                        <ListItemIcon>
+                                            <item.icon />
+                                        </ListItemIcon>}
+                                    {item.name &&
+                                        <ListItemText>
+                                            {item.name}
+                                        </ListItemText>}
+                                </ListItem>)}
                         {groupIndex < items.length - 1 && <Divider />}
                     </React.Fragment>)}
             </List>

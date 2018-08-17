@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Tree } from './tree';
+import { Tree, createTree, setNode } from './tree';
 
 export type CollectionFilesTree = Tree<CollectionDirectory | CollectionFile>;
 
@@ -13,6 +13,7 @@ export enum CollectionFileType {
 
 export interface CollectionDirectory {
     path: string;
+    url: string;
     id: string;
     name: string;
     type: CollectionFileType.DIRECTORY;
@@ -20,6 +21,7 @@ export interface CollectionDirectory {
 
 export interface CollectionFile {
     path: string;
+    url: string;
     id: string;
     name: string;
     size: number;
@@ -34,6 +36,7 @@ export const createCollectionDirectory = (data: Partial<CollectionDirectory>): C
     id: '',
     name: '',
     path: '',
+    url: '',
     type: CollectionFileType.DIRECTORY,
     ...data
 });
@@ -42,7 +45,21 @@ export const createCollectionFile = (data: Partial<CollectionFile>): CollectionF
     id: '',
     name: '',
     path: '',
+    url: '',
     size: 0,
     type: CollectionFileType.FILE,
     ...data
 });
+
+export const createCollectionFilesTree = (data: Array<CollectionDirectory | CollectionFile>) => {
+    const directories = data.filter(item => item.type === CollectionFileType.DIRECTORY);
+    directories.sort((a, b) => a.path.localeCompare(b.path));
+    const files = data.filter(item => item.type === CollectionFileType.FILE);
+    return [...directories, ...files]
+        .reduce((tree, item) => setNode({
+            children: [],
+            id: item.id,
+            parent: item.path,
+            value: item
+        })(tree), createTree<CollectionDirectory | CollectionFile>());
+};
