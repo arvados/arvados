@@ -49,6 +49,7 @@ import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
+import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -228,7 +229,7 @@ export const Workbench = withStyles(styles)(
                         <main className={classes.contentWrapper}>
                             <div className={classes.content}>
                                 <Switch>
-                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`}  />} />
+                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`} />} />
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
@@ -245,6 +246,7 @@ export const Workbench = withStyles(styles)(
                         <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
+                        <UploadCollectionFilesDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
                             open={this.state.isCurrentTokenDialogOpen}

@@ -43,4 +43,24 @@ export const createCollection = (collection: Partial<CollectionResource>, files:
             });
     };
 
+export const uploadCollectionFiles = (collectionUuid: string, files: File[]) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(collectionUploaderActions.START_UPLOAD());
+        return services.collectionService.uploadFiles(collectionUuid, files,
+            (fileId, loaded, total, currentTime) => {
+                dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
+            })
+            .then(() => {
+                dispatch(collectionUploaderActions.CLEAR_UPLOAD());
+            });
+    };
+
+export const uploadCurrentCollectionFiles = (files: File[]) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const currentCollection = getState().collectionPanel.item;
+        if (currentCollection) {
+            return dispatch<any>(uploadCollectionFiles(currentCollection.uuid, files));
+        }
+    };
+
 export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;

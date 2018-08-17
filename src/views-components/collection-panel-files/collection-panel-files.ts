@@ -14,6 +14,7 @@ import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
 import { Tree, getNodeChildren, getNode } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
+import { openUploadCollectionFilesDialog } from '~/store/collections/uploader/collection-uploader-actions';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -32,7 +33,9 @@ const memoizedMapStateToProps = () => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
-    onUploadDataClick: () => { return; },
+    onUploadDataClick: () => {
+        dispatch<any>(openUploadCollectionFilesDialog());
+    },
     onCollapseToggle: (id) => {
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id }));
     },
