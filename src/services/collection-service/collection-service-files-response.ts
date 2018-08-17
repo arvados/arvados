@@ -14,14 +14,17 @@ export const parseFilesResponse = (document: Document) => {
 
 export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) => {
     return mapTree(node => {
-        const children = getNodeChildren(node.id)(tree).map(id => getNode(id)(tree)) as TreeNode<CollectionDirectory | CollectionFile>[];
+        const children = getNodeChildren(node.id)(tree)
+            .map(id => getNode(id)(tree))
+            .filter(node => node !== undefined) as TreeNode<CollectionDirectory | CollectionFile>[];
+
         children.sort((a, b) =>
             a.value.type !== b.value.type
                 ? a.value.type === CollectionFileType.DIRECTORY ? -1 : 1
                 : a.value.name.localeCompare(b.value.name)
         );
-        return { ...node, children: children.map(child => child.id) } as TreeNode<CollectionDirectory | CollectionFile>;
-    })(tree);
+        return { ...node, children: children.map(child => child.id) };
+    })(tree) as Tree<CollectionDirectory | CollectionFile>;
 };
 
 export const extractFilesData = (document: Document) => {
@@ -32,14 +35,14 @@ export const extractFilesData = (document: Document) => {
         .map(element => {
             const name = getTagValue(element, 'D:displayname', '');
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
-            const pathname = getTagValue(element, 'D:href', '');
+            const url = getTagValue(element, 'D:href', '');
             const nameSuffix = `/${name || ''}`;
-            const directory = pathname
+            const directory = url
                 .replace(collectionUrlPrefix, '')
                 .replace(nameSuffix, '');
 
             const data = {
-                url: pathname,
+                url,
                 id: `${directory}/${name}`,
                 name,
                 path: directory,
