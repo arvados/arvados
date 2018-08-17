@@ -128,22 +128,20 @@ table(table table-bordered table-condensed).
 
 h3. shared
 
-This endpoint returns the toplevel set of groups which are *not* reachable through a direct ownership chain of projects starting from the current user account.  In other words, groups which to which access was granted via a permission link or chain of links.
+This endpoint returns the toplevel set of groups to which access is granted through a chain of one or more permission links rather than through direct ownership by the current user account.  This is useful for clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project tree.
 
-This also returns (in the "included" field) the objects that own those projects (users or non-project groups).
+When called with "include=owner_uuid" this also returns (in the "included" field) the objects that own those projects (users or non-project groups).
 
-The logic is:
+Specifically, the logic is:
 
 <pre>
 select groups that are readable by current user AND
-    the owner_uuid is a user (but not the current user) OR
-    the owner_uuid is not readable by the current user OR
-    the owner_uuid is a group but group_class is not a project
+    (the owner_uuid is a user (but not the current user) OR
+     the owner_uuid is not readable by the current user OR
+     the owner_uuid is a group but group_class is not a project)
 </pre>
 
-The intended use of this endpoint is to support clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project (projects directly owned by the user).
-
-This endpoint supports the same parameters as the "list method.":{{site.baseurl}}/api/methods.html#index  It also supports the "include" parameter:
+In addition to the "include" parameter this endpoint also supports the same parameters as the "list method.":{{site.baseurl}}/api/methods.html#index
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
