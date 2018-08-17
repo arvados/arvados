@@ -6,11 +6,12 @@ import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { compose } from 'redux';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '@material-ui/core';
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/create-collection/create-collection-validator';
+import { Dialog, DialogActions, DialogContent, DialogTitle, StyleRulesCallback, withStyles, WithStyles, Button, CircularProgress } from '@material-ui/core';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/validators';
 import { COLLECTION_FORM_NAME } from '~/store/collections/updater/collection-updater-action';
+import { TextField } from '~/components/text-field/text-field';
 
-type CssRules = 'content' | 'actions' | 'textField' | 'buttonWrapper' | 'saveButton' | 'circularProgress';
+type CssRules = 'content' | 'actions' | 'buttonWrapper' | 'saveButton' | 'circularProgress';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
@@ -21,9 +22,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         margin: 0,
         padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3 - theme.spacing.unit / 2}px 
                 ${theme.spacing.unit * 3}px ${theme.spacing.unit * 3}px`
-    },
-    textField: {
-        marginBottom: theme.spacing.unit * 3
     },
     buttonWrapper: {
         position: 'relative'
@@ -56,14 +54,6 @@ interface DialogCollectionAction {
 
 type DialogCollectionProps = DialogCollectionDataProps & DialogCollectionAction & WithStyles<CssRules>;
 
-interface TextFieldProps {
-    label: string;
-    floatinglabeltext: string;
-    className?: string;
-    input?: string;
-    meta?: any;
-}
-
 export const DialogCollectionUpdate = compose(
     reduxForm({ form: COLLECTION_FORM_NAME }),
     withStyles(styles))(
@@ -83,19 +73,15 @@ export const DialogCollectionUpdate = compose(
                         <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
                             <DialogTitle>Edit Collection</DialogTitle>
                             <DialogContent className={classes.content}>
-                                <Field name="name"
+                                <Field name='name'
                                     disabled={submitting}
-                                    component={this.renderTextField}
-                                    floatinglabeltext="Collection Name"
+                                    component={TextField}
                                     validate={COLLECTION_NAME_VALIDATION}
-                                    className={classes.textField}
                                     label="Collection Name" />
-                                <Field name="description"
+                                <Field name='description'
                                     disabled={submitting}
-                                    component={this.renderTextField}
-                                    floatinglabeltext="Description - optional"
+                                    component={TextField}
                                     validate={COLLECTION_DESCRIPTION_VALIDATION}
-                                    className={classes.textField}
                                     label="Description - optional" />
                             </DialogContent>
                             <DialogActions className={classes.actions}>
@@ -115,17 +101,5 @@ export const DialogCollectionUpdate = compose(
                     </Dialog>
                 );
             }
-
-            renderTextField = ({ input, label, meta: { touched, error }, ...custom }: TextFieldProps) => (
-                <TextField
-                    helperText={touched && error}
-                    label={label}
-                    className={this.props.classes.textField}
-                    error={touched && !!error}
-                    autoComplete='off'
-                    {...input}
-                    {...custom}
-                />
-            )
         }
     );

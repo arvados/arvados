@@ -34,17 +34,13 @@ export const collectionUploaderActions = unionize({
 export type CollectionUploaderAction = UnionOf<typeof collectionUploaderActions>;
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionUploaderActions.START_UPLOAD());
         const files = getState().collections.uploader.map(file => file.file);
-        return services.collectionService.uploadFiles(collectionUuid, files,
-            (fileId, loaded, total, currentTime) => {
-                dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
-            })
-            .then(() => {
-                dispatch(collectionUploaderActions.CLEAR_UPLOAD());
-            });
+        await services.collectionService.uploadFiles(collectionUuid, files, handleUploadProgress(dispatch));
+        dispatch(collectionUploaderActions.CLEAR_UPLOAD());
     };
+
 
 export const uploadCurrentCollectionFiles = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -64,3 +60,7 @@ export const openUploadCollectionFilesDialog = () => (dispatch: Dispatch) => {
 };
 
 export const closeUploadCollectionFilesDialog = () => dialogActions.CLOSE_DIALOG({ id: UPLOAD_COLLECTION_FILES_DIALOG });
+
+const handleUploadProgress = (dispatch: Dispatch) => (fileId: number, loaded: number, total: number, currentTime: number) => {
+    dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
+};

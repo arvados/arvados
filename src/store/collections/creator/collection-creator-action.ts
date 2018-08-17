@@ -8,7 +8,7 @@ import { Dispatch } from "redux";
 import { RootState } from "../../store";
 import { CollectionResource } from '~/models/collection';
 import { ServiceRepository } from "~/services/services";
-import { collectionUploaderActions } from "../uploader/collection-uploader-actions";
+import { uploadCollectionFiles } from '../uploader/collection-uploader-actions';
 import { reset } from "redux-form";
 
 export const collectionCreateActions = unionize({
@@ -22,45 +22,15 @@ export const collectionCreateActions = unionize({
     });
 
 export const createCollection = (collection: Partial<CollectionResource>, files: File[]) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { ownerUuid } = getState().collections.creator;
         const collectiontData = { ownerUuid, ...collection };
         dispatch(collectionCreateActions.CREATE_COLLECTION(collectiontData));
-        return services.collectionService
-            .create(collectiontData)
-            .then(collection => {
-                dispatch(collectionUploaderActions.START_UPLOAD());
-                services.collectionService.uploadFiles(collection.uuid, files,
-                    (fileId, loaded, total, currentTime) => {
-                        dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
-                    })
-                    .then(() => {
-                        dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
-                        dispatch(reset('collectionCreateDialog'));
-                        dispatch(collectionUploaderActions.CLEAR_UPLOAD());
-                    });
-                return collection;
-            });
-    };
-
-export const uploadCollectionFiles = (collectionUuid: string, files: File[]) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(collectionUploaderActions.START_UPLOAD());
-        return services.collectionService.uploadFiles(collectionUuid, files,
-            (fileId, loaded, total, currentTime) => {
-                dispatch(collectionUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
-            })
-            .then(() => {
-                dispatch(collectionUploaderActions.CLEAR_UPLOAD());
-            });
-    };
-
-export const uploadCurrentCollectionFiles = (files: File[]) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            return dispatch<any>(uploadCollectionFiles(currentCollection.uuid, files));
-        }
+        const newCollection = await services.collectionService.create(collectiontData);
+        await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
+        dispatch(collectionCreateActions.CREATE_COLLECTION_SUCCESS(collection));
+        dispatch(reset('collectionCreateDialog'));
+        return newCollection;
     };
 
 export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;
