@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +20,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/Sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -110,7 +110,7 @@ func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
+	testWithServerStub(c, apiStubResponses, "echo", "error getting list of containers")
 }
 
 func (s *MockArvadosServerSuite) Test_APIErrorUpdatingContainerState(c *C) {
@@ -133,7 +133,7 @@ func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
 		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2", "state":"Running", "priority":1, "locked_by_uuid": "` + arvadostest.Dispatch1AuthUUID + `"}`)}
 
 	testWithServerStub(c, apiStubResponses, "echo",
-		`After echo process termination, container state for Running is "zzzzz-dz642-xxxxxxxxxxxxxx2".  Updating it to "Cancelled"`)
+		`after "echo" process termination, container state for zzzzz-dz642-xxxxxxxxxxxxxx2 is "Running"; updating it to "Cancelled"`)
 }
 
 func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
@@ -144,7 +144,7 @@ func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx3/lock"] =
 		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3", "state":"Locked", "priority":1}`)}
 
-	testWithServerStub(c, apiStubResponses, "nosuchcommand", "Error starting nosuchcommand for zzzzz-dz642-xxxxxxxxxxxxxx3")
+	testWithServerStub(c, apiStubResponses, "nosuchcommand", `error starting "nosuchcommand" for zzzzz-dz642-xxxxxxxxxxxxxx3`)
 }
 
 func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
@@ -165,15 +165,15 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	}
 
 	buf := bytes.NewBuffer(nil)
-	log.SetOutput(io.MultiWriter(buf, os.Stderr))
-	defer log.SetOutput(os.Stderr)
+	logrus.SetOutput(io.MultiWriter(buf, os.Stderr))
+	defer logrus.SetOutput(os.Stderr)
 
 	*crunchRunCommand = crunchCmd
 
 	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
-		PollPeriod: time.Duration(1) * time.Second,
+		PollPeriod: time.Second / 20,
 		RunContainer: func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
 			run(d, c, s)
 			cancel()

@@ -230,7 +230,7 @@ func (d *Dispatcher) checkListForUpdates(containers []arvados.Container, todo ma
 				}
 				err := d.lock(c.UUID)
 				if err != nil {
-					d.Logger.Debugf("error locking container %s: %s", c.UUID, err)
+					d.Logger.Warnf("error locking container %s: %s", c.UUID, err)
 					break
 				}
 				c.State = Locked
