@@ -11,9 +11,10 @@ import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, initialize, SubmissionError, stopSubmit } from 'redux-form';
+import { startSubmit, initialize, SubmissionError, stopSubmit, reset } from 'redux-form';
 import { loadProjectTreePickerProjects } from '../../../views-components/project-tree-picker/project-tree-picker';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getDialog } from "~/store/dialog/dialog-reducer";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -136,3 +137,33 @@ export const doCollectionPartialCopy = ({ name, description, projectUuid }: Coll
         }
     };
 
+export const RENAME_FILE_DIALOG = 'renameFileDialog';
+export interface RenameFileDialogData {
+    name: string;
+    id: string;
+}
+
+export const openRenameFileDialog = (data: RenameFileDialogData) =>
+    (dispatch: Dispatch) => {
+        dispatch(reset(RENAME_FILE_DIALOG));
+        dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_FILE_DIALOG, data }));
+    };
+
+export const renameFile = (newName: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const dialog = getDialog<RenameFileDialogData>(getState().dialog, RENAME_FILE_DIALOG);
+        const currentCollection = getState().collectionPanel.item;
+        if (dialog && currentCollection) {
+            dispatch(startSubmit(RENAME_FILE_DIALOG));
+            const oldPath = dialog.data.id;
+            const newPath = dialog.data.id.replace(dialog.data.name, newName);
+            try {
+                await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
+                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
+            } catch (e) {
+                dispatch(stopSubmit(RENAME_FILE_DIALOG, { name: 'Could not rename the file' }));
+            }
+        }
+    };
