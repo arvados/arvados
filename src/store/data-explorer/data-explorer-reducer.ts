@@ -67,9 +67,23 @@ export const getDataExplorer = (state: DataExplorerState, id: string) =>
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
     ({ ...state, [id]: updateFn(getDataExplorer(state, id)) });
 
+const canUpdateColumns = (prevColumns: DataColumns<any>, nextColumns: DataColumns<any>) => {
+    if (prevColumns.length !== nextColumns.length) {
+        return true;
+    }
+    for (let i = 0; i < nextColumns.length; i++) {
+        const pc = prevColumns[i];
+        const nc = nextColumns[i];
+        if (pc.key !== nc.key || pc.name !== nc.name) {
+            return true;
+        }
+    }
+    return false;
+};
+
 const setColumns = (columns: DataColumns<any>) =>
     (dataExplorer: DataExplorer) =>
-        ({ ...dataExplorer, columns });
+        ({ ...dataExplorer, columns: canUpdateColumns(dataExplorer.columns, columns) ? columns : dataExplorer.columns });
 
 const mapColumns = (mapFn: (column: DataColumn<any>) => DataColumn<any>) =>
     (dataExplorer: DataExplorer) =>
