@@ -51,6 +51,7 @@ interface DataExplorerDataProps<T> {
 }
 
 interface DataExplorerActionProps<T> {
+    onSetColumns: (columns: DataColumns<T>) => void;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
@@ -67,6 +68,9 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+        componentDidMount() {
+            this.props.onSetColumns(this.props.columns);
+        }
         render() {
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
