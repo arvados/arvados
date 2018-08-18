@@ -10,34 +10,43 @@ import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTI
 import { ProjectTreePicker } from "../project-tree-picker/project-tree-picker";
 import { FormDialog } from '../../components/form-dialog/form-dialog';
 
-export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
+export const CollectionPartialCopyFormDialog = (props: WithDialogProps<string> & InjectedFormProps<{ name: string }>) =>
     <FormDialog
         dialogTitle='Create a collection'
-        formFields={FormFields}
+        formFields={CollectionPartialCopyFields}
         submitLabel='Create a collection'
         {...props}
     />;
 
-const FormFields = () => <div style={{ display: 'flex' }}>
+export const CollectionPartialCopyFields = () => <div style={{ display: 'flex' }}>
     <div>
-        <Field
-            name='name'
-            component={TextField}
-            validate={COLLECTION_NAME_VALIDATION}
-            label="Collection Name" />
-        <Field
-            name='description'
-            component={TextField}
-            validate={COLLECTION_DESCRIPTION_VALIDATION}
-            label="Description - optional" />
+        <CollectionNameField />
+        <CollectionDescriptionField />
     </div>
-    <Field
-        name="projectUuid"
-        component={Picker}
-        validate={COLLECTION_PROJECT_VALIDATION} />
+    <CollectionProjectPickerField />
 </div>;
 
-const Picker = (props: WrappedFieldProps) =>
+export const CollectionNameField = () =>
+    <Field
+        name='name'
+        component={TextField}
+        validate={COLLECTION_NAME_VALIDATION}
+        label="Collection Name" />;
+
+export const CollectionDescriptionField = () =>
+    <Field
+        name='description'
+        component={TextField}
+        validate={COLLECTION_DESCRIPTION_VALIDATION}
+        label="Description - optional" />;
+
+export const CollectionProjectPickerField = () =>
+    <Field
+        name="projectUuid"
+        component={ProjectPicker}
+        validate={COLLECTION_PROJECT_VALIDATION} />;
+
+const ProjectPicker = (props: WrappedFieldProps) =>
     <div style={{ width: '400px', height: '144px', display: 'flex', flexDirection: 'column' }}>
         <ProjectTreePicker onChange={projectUuid => props.input.onChange(projectUuid)} />
     </div>;

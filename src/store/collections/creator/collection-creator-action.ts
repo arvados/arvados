@@ -21,6 +21,8 @@ export const collectionCreateActions = unionize({
         value: 'payload'
     });
 
+export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;
+
 export const createCollection = (collection: Partial<CollectionResource>, files: File[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { ownerUuid } = getState().collections.creator;
@@ -33,4 +35,3 @@ export const createCollection = (collection: Partial<CollectionResource>, files:
         return newCollection;
     };
 
-export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;

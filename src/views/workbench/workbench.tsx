@@ -47,10 +47,10 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
-import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
+import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -243,7 +243,7 @@ export const Workbench = withStyles(styles)(
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
                         <RenameFileDialog />
-                        <DialogCollectionCreateWithSelectedFile />
+                        <CollectionPartialCopyDialog />
                         <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
