@@ -69,7 +69,9 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
         componentDidMount() {
-            this.props.onSetColumns(this.props.columns);
+            if (this.props.onSetColumns) {
+                this.props.onSetColumns(this.props.columns);
+            }
         }
         render() {
             const {

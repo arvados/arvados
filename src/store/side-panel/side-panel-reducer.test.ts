@@ -22,7 +22,8 @@ describe('side-panel-reducer', () => {
                 id: "1",
                 name: "Projects",
                 icon: ProjectsIcon,
-                open: true
+                open: true,
+                url: "/projects"
             }
         ];
 
