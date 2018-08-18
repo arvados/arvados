@@ -29,7 +29,6 @@ import { CreateProjectDialog } from "~/views-components/create-project-dialog/cr
 
 import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-panel-action";
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '~/store/side-panel/side-panel-reducer';
 import { ProjectResource } from '~/models/project';
 import { ResourceKind } from '~/models/resource';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";

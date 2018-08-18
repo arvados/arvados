@@ -16,7 +16,7 @@ import { columns as favoritePanelColumns } from "../../views/favorite-panel/favo
 
 export type SidePanelState = SidePanelItem[];
 
-export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
+export const sidePanelReducer = (state: SidePanelState = sidePanelItems, action: SidePanelAction) => {
     return sidePanelActions.match(action, {
         TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
             state.map(it => ({...it, open: itemId === it.id && it.open === false})),
@@ -24,7 +24,7 @@ export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: 
     });
 };
 
-export enum SidePanelIdentifiers {
+export enum SidePanelId {
     PROJECTS = "Projects",
     SHARED_WITH_ME = "SharedWithMe",
     WORKFLOWS = "Workflows",
@@ -33,9 +33,9 @@ export enum SidePanelIdentifiers {
     TRASH = "Trash"
 }
 
-export const sidePanelData = [
+export const sidePanelItems = [
     {
-        id: SidePanelIdentifiers.PROJECTS,
+        id: SidePanelId.PROJECTS,
         name: "Projects",
         url: "/projects",
         icon: ProjectsIcon,
@@ -52,7 +52,7 @@ export const sidePanelData = [
         }
     },
     {
-        id: SidePanelIdentifiers.SHARED_WITH_ME,
+        id: SidePanelId.SHARED_WITH_ME,
         name: "Shared with me",
         url: "/shared",
         icon: ShareMeIcon,
@@ -62,7 +62,7 @@ export const sidePanelData = [
         }
     },
     {
-        id: SidePanelIdentifiers.WORKFLOWS,
+        id: SidePanelId.WORKFLOWS,
         name: "Workflows",
         url: "/workflows",
         icon: WorkflowIcon,
@@ -72,7 +72,7 @@ export const sidePanelData = [
         }
     },
     {
-        id: SidePanelIdentifiers.RECENT_OPEN,
+        id: SidePanelId.RECENT_OPEN,
         name: "Recent open",
         url: "/recent",
         icon: RecentIcon,
@@ -82,7 +82,7 @@ export const sidePanelData = [
         }
     },
     {
-        id: SidePanelIdentifiers.FAVORITES,
+        id: SidePanelId.FAVORITES,
         name: "Favorites",
         url: "/favorites",
         icon: FavoriteIcon,
@@ -95,7 +95,7 @@ export const sidePanelData = [
         }
     },
     {
-        id: SidePanelIdentifiers.TRASH,
+        id: SidePanelId.TRASH,
         name: "Trash",
         url: "/trash",
         icon: TrashIcon,
