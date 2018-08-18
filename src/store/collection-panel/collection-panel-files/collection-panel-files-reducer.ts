@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from "./collection-panel-files-state";
+import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from './collection-panel-files-state';
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
 import { createTree, mapTreeValues, getNode, setNode, getNodeAncestors, getNodeDescendants, setNodeValueWith, mapTree } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";

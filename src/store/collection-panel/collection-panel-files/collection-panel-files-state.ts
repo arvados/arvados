@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Tree, TreeNode, mapTreeValues, getNodeValue } from '~/models/tree';
+import { Tree, TreeNode, mapTreeValues, getNodeValue, getNodeDescendants } from '~/models/tree';
 import { CollectionFile, CollectionDirectory, CollectionFileType } from '~/models/collection-file';
 
 export type CollectionPanelFilesState = Tree<CollectionPanelDirectory | CollectionPanelFile>;
@@ -34,4 +34,14 @@ export const mergeCollectionPanelFilesStates = (oldState: CollectionPanelFilesSt
                 : { ...value, selected: oldValue.selected }
             : value;
     })(newState);
-}; 
+};
+
+export const filterCollectionFilesBySelection = (tree: CollectionPanelFilesState, selected: boolean) => {
+    const allFiles = getNodeDescendants('')(tree)
+        .map(id => getNodeValue(id)(tree))
+        .filter(file => file !== undefined) as Array<CollectionPanelDirectory | CollectionPanelFile>;
+
+    const selectedDirectories = allFiles.filter(file => file.selected === selected && file.type === CollectionFileType.DIRECTORY);
+    const selectedFiles = allFiles.filter(file => file.selected === selected && !selectedDirectories.some(dir => dir.id === file.path));
+    return [...selectedDirectories, ...selectedFiles];
+};

@@ -2,29 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch, compose } from "redux";
-import { reduxForm, reset, startSubmit, stopSubmit } from "redux-form";
-import { withDialog } from "~/store/dialog/with-dialog";
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { loadProjectTreePickerProjects } from "../project-tree-picker/project-tree-picker";
-import { CollectionPartialCopyFormDialog } from "~/views-components/form-dialog/collection-form-dialog";
-
-export const COLLECTION_PARTIAL_COPY = 'COLLECTION_PARTIAL_COPY';
-
-export const openCollectionPartialCopyDialog = () =>
-    (dispatch: Dispatch) => {
-        dispatch(reset(COLLECTION_PARTIAL_COPY));
-        dispatch<any>(loadProjectTreePickerProjects(''));
-        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY, data: {} }));
-    };
-
+import * as React from "react";
+import { compose } from "redux";
+import { reduxForm, InjectedFormProps } from 'redux-form';
+import { withDialog, WithDialogProps } from '~/store/dialog/with-dialog';
+import { CollectionPartialCopyFields } from '../form-dialog/collection-form-dialog';
+import { FormDialog } from '~/components/form-dialog/form-dialog';
+import { COLLECTION_PARTIAL_COPY, doCollectionPartialCopy, CollectionPartialCopyFormData } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 export const CollectionPartialCopyDialog = compose(
     withDialog(COLLECTION_PARTIAL_COPY),
     reduxForm({
         form: COLLECTION_PARTIAL_COPY,
-        onSubmit: (data, dispatch) => {
-            dispatch(startSubmit(COLLECTION_PARTIAL_COPY));
-            setTimeout(() => dispatch(stopSubmit(COLLECTION_PARTIAL_COPY, { name: 'Invalid name' })), 2000);
+        onSubmit: (data: CollectionPartialCopyFormData, dispatch) => {
+            dispatch(doCollectionPartialCopy(data));
         }
-    }))(CollectionPartialCopyFormDialog);
+    }))((props: WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>) =>
+        <FormDialog
+            dialogTitle='Create a collection'
+            formFields={CollectionPartialCopyFields}
+            submitLabel='Create a collection'
+            {...props}
+        />);

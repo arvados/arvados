@@ -8,9 +8,11 @@ import { CollectionFilesTree, CollectionFileType } from "~/models/collection-fil
 import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
 import { snackbarActions } from "../../snackbar/snackbar-actions";
-import { dialogActions } from "../../dialog/dialog-actions";
-import { getNodeValue, getNodeDescendants } from "~/models/tree";
-import { CollectionPanelDirectory, CollectionPanelFile } from "./collection-panel-files-state";
+import { dialogActions } from '../../dialog/dialog-actions';
+import { getNodeValue } from "~/models/tree";
+import { filterCollectionFilesBySelection } from './collection-panel-files-state';
+import { startSubmit, initialize } from 'redux-form';
+import { loadProjectTreePickerProjects } from '../../../views-components/project-tree-picker/project-tree-picker';
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -30,30 +32,23 @@ export const loadCollectionFiles = (uuid: string) =>
 
 export const removeCollectionFiles = (filePaths: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { item } = getState().collectionPanel;
-        if (item) {
+        const currentCollection = getState().collectionPanel.item;
+        if (currentCollection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-            const promises = filePaths.map(filePath => services.collectionService.deleteFile(item.uuid, filePath));
-            await Promise.all(promises);
-            dispatch<any>(loadCollectionFiles(item.uuid));
+            await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
+            dispatch<any>(loadCollectionFiles(currentCollection.uuid));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
         }
     };
 
 export const removeCollectionsSelectedFiles = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const tree = getState().collectionPanelFiles;
-        const allFiles = getNodeDescendants('')(tree)
-            .map(id => getNodeValue(id)(tree))
-            .filter(file => file !== undefined) as Array<CollectionPanelDirectory | CollectionPanelFile>;
-
-        const selectedDirectories = allFiles.filter(file => file.selected && file.type === CollectionFileType.DIRECTORY);
-        const selectedFiles = allFiles.filter(file => file.selected && !selectedDirectories.some(dir => dir.id === file.path));
-        const paths = [...selectedDirectories, ...selectedFiles].map(file => file.id);
+        const paths = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).map(file => file.id);
         dispatch<any>(removeCollectionFiles(paths));
     };
 
 export const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
+
 export const openFileRemoveDialog = (filePath: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const file = getNodeValue(filePath)(getState().collectionPanelFiles);
@@ -78,6 +73,7 @@ export const openFileRemoveDialog = (filePath: string) =>
     };
 
 export const MULTIPLE_FILES_REMOVE_DIALOG = 'multipleFilesRemoveDialog';
+
 export const openMultipleFilesRemoveDialog = () =>
     dialogActions.OPEN_DIALOG({
         id: MULTIPLE_FILES_REMOVE_DIALOG,
@@ -87,3 +83,49 @@ export const openMultipleFilesRemoveDialog = () =>
             confirmButtonLabel: 'Remove'
         }
     });
+
+export const COLLECTION_PARTIAL_COPY = 'COLLECTION_PARTIAL_COPY';
+
+export interface CollectionPartialCopyFormData {
+    name: string;
+    description: string;
+    projectUuid: string;
+}
+
+export const openCollectionPartialCopyDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const currentCollection = getState().collectionPanel.item;
+        if (currentCollection) {
+            const initialData = {
+                name: currentCollection.name,
+                description: currentCollection.description,
+                projectUuid: ''
+            };
+            dispatch(initialize(COLLECTION_PARTIAL_COPY, initialData));
+            dispatch<any>(loadProjectTreePickerProjects(''));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY, data: {} }));
+        }
+    };
+
+export const doCollectionPartialCopy = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(startSubmit(COLLECTION_PARTIAL_COPY));
+        const state = getState();
+        const currentCollection = state.collectionPanel.item;
+        if (currentCollection) {
+            const collection = await services.collectionService.get(currentCollection.uuid);
+            const collectionCopy = {
+                ...collection,
+                name,
+                description,
+                ownerUuid: projectUuid,
+                uuid: undefined
+            };
+            const newCollection = await services.collectionService.create(collectionCopy);
+            const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
+            await services.collectionService.deleteFiles(newCollection.uuid, paths);
+            dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
+        }
+    };
+
