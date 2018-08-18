@@ -20,10 +20,6 @@ export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: 
     return sidePanelActions.match(action, {
         TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
             state.map(it => ({...it, open: itemId === it.id && it.open === false})),
-        TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId =>
-            state.map(it => ({...it, active: it.id === itemId})),
-        RESET_SIDE_PANEL_ACTIVITY: () =>
-            state.map(it => ({...it, active: false })),
         default: () => state
     });
 };
@@ -41,14 +37,15 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.PROJECTS,
         name: "Projects",
+        url: "/projects",
         icon: ProjectsIcon,
         open: false,
         active: false,
         margin: true,
         openAble: true,
         activeAction: (dispatch: Dispatch, uuid: string) => {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
             dispatch(push(getProjectUrl(uuid)));
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
             dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(projectPanelActions.RESET_PAGINATION());
             dispatch(projectPanelActions.REQUEST_ITEMS());
@@ -57,24 +54,37 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.SHARED_WITH_ME,
         name: "Shared with me",
+        url: "/shared",
         icon: ShareMeIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/shared"));
+        }
     },
     {
         id: SidePanelIdentifiers.WORKFLOWS,
         name: "Workflows",
+        url: "/workflows",
         icon: WorkflowIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/workflows"));
+        }
     },
     {
         id: SidePanelIdentifiers.RECENT_OPEN,
         name: "Recent open",
+        url: "/recent",
         icon: RecentIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/recent"));
+        }
     },
     {
         id: SidePanelIdentifiers.FAVORITES,
         name: "Favorites",
+        url: "/favorites",
         icon: FavoriteIcon,
         active: false,
         activeAction: (dispatch: Dispatch) => {
@@ -87,7 +97,11 @@ export const sidePanelData = [
     {
         id: SidePanelIdentifiers.TRASH,
         name: "Trash",
+        url: "/trash",
         icon: TrashIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/trash"));
+        }
     }
 ];

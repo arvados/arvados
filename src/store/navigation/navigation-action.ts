@@ -8,7 +8,7 @@ import { push } from "react-router-redux";
 import { TreeItemStatus } from "~/components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
 import { RootState } from "../store";
-import { Resource, ResourceKind } from "~/models/resource";
+import { ResourceKind } from "~/models/resource";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl, ProjectResource } from "~/models/project";
@@ -35,8 +35,6 @@ export enum ItemMode {
 
 export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log("SetProjectItem!!", itemId);
-        debugger;
         const { projects, router } = getState();
         const treeItem = findTreeItem(projects.items, itemId);
 
@@ -78,7 +76,6 @@ export const restoreBranch = (itemId: string) =>
         const uuids = ancestors.map(ancestor => ancestor.uuid);
         await loadBranch(uuids, dispatch);
         dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelIdentifiers.PROJECTS));
-        dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
         uuids.forEach(uuid => {
             dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(uuid));
         });

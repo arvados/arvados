@@ -222,7 +222,6 @@ export const Workbench = withStyles(styles)(
                                         toggleActive={itemId => {
                                             this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE));
                                             this.props.dispatch(loadDetails(itemId, ResourceKind.PROJECT));
-                                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                                         }} />
                                 </SidePanel>
                             </Drawer>}
@@ -330,7 +329,6 @@ export const Workbench = withStyles(styles)(
                         default:
                             this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     }
 
                 }}
@@ -363,7 +361,6 @@ export const Workbench = withStyles(styles)(
             }
 
             toggleSidePanelActive = (itemId: string) => {
-                this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
 
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);
