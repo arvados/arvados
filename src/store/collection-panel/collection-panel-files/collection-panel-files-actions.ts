@@ -11,8 +11,9 @@ import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, initialize } from 'redux-form';
+import { startSubmit, initialize, SubmissionError, stopSubmit } from 'redux-form';
 import { loadProjectTreePickerProjects } from '../../../views-components/project-tree-picker/project-tree-picker';
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -113,19 +114,25 @@ export const doCollectionPartialCopy = ({ name, description, projectUuid }: Coll
         const state = getState();
         const currentCollection = state.collectionPanel.item;
         if (currentCollection) {
-            const collection = await services.collectionService.get(currentCollection.uuid);
-            const collectionCopy = {
-                ...collection,
-                name,
-                description,
-                ownerUuid: projectUuid,
-                uuid: undefined
-            };
-            const newCollection = await services.collectionService.create(collectionCopy);
-            const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
-            await services.collectionService.deleteFiles(newCollection.uuid, paths);
-            dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
+            try {
+                const collection = await services.collectionService.get(currentCollection.uuid);
+                const collectionCopy = {
+                    ...collection,
+                    name,
+                    description,
+                    ownerUuid: projectUuid,
+                    uuid: undefined
+                };
+                const newCollection = await services.collectionService.create(collectionCopy);
+                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
+                await services.collectionService.deleteFiles(newCollection.uuid, paths);
+                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
+            } catch (e) {
+                if (getCommonResourceServiceError(e) === CommonResourceServiceError.UNIQUE_VIOLATION) {
+                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY, { name: 'Collection with this name already exists.' }));
+                }
+            }
         }
     };
 
