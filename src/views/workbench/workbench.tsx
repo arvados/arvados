@@ -100,14 +100,15 @@ interface WorkbenchDataProps {
     sidePanelItems: SidePanelItem[];
 }
 
-interface WorkbenchServiceProps {
+interface WorkbenchGeneralProps {
     authService: AuthService;
+    buildInfo: string;
 }
 
 interface WorkbenchActionProps {
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchServiceProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
@@ -192,6 +193,7 @@ export const Workbench = withStyles(styles)(
                                 searchText={this.state.searchText}
                                 user={this.props.user}
                                 menuItems={this.state.menuItems}
+                                buildInfo={this.props.buildInfo}
                                 {...this.mainAppBarActions} />
                         </div>
                         {user &&
