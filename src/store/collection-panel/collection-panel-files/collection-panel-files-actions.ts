@@ -9,7 +9,7 @@ import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
 import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from "../../dialog/dialog-actions";
-import { getNodeValue, getNodeDescendants } from "~/models/tree";
+import { getNodeValue, getNodeDescendants } from '~/models/tree';
 import { CollectionPanelDirectory, CollectionPanelFile } from "./collection-panel-files-state";
 
 export const collectionPanelFilesAction = unionize({
@@ -44,8 +44,7 @@ export const removeCollectionsSelectedFiles = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const tree = getState().collectionPanelFiles;
         const allFiles = getNodeDescendants('')(tree)
-            .map(id => getNodeValue(id)(tree))
-            .filter(file => file !== undefined) as Array<CollectionPanelDirectory | CollectionPanelFile>;
+            .map(node => node.value);
 
         const selectedDirectories = allFiles.filter(file => file.selected && file.type === CollectionFileType.DIRECTORY);
         const selectedFiles = allFiles.filter(file => file.selected && !selectedDirectories.some(dir => dir.id === file.path));
