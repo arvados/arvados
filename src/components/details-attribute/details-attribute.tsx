@@ -8,7 +8,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
 
-type CssRules = 'attribute' | 'label' | 'value' | 'link';
+type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
@@ -26,6 +26,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'flex-start',
         textTransform: 'capitalize'
     },
+    lowercaseValue: {
+        textTransform: 'lowercase'
+    },
     link: {
         width: '60%',
         color: theme.palette.primary.main,
@@ -39,6 +42,7 @@ interface DetailsAttributeDataProps {
     classLabel?: string;
     value?: string | number;
     classValue?: string;
+    lowercaseValue?: boolean;
     link?: string;
     children?: React.ReactNode;
 }
@@ -46,12 +50,12 @@ interface DetailsAttributeDataProps {
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
 export const DetailsAttribute = withStyles(styles)(
-    ({ label, link, value, children, classes, classLabel, classValue }: DetailsAttributeProps) =>
+    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue }: DetailsAttributeProps) =>
         <Typography component="div" className={classes.attribute}>
             <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
             { link
                 ? <a href={link} className={classes.link} target='_blank'>{value}</a>
-                : <Typography component="span" className={classnames([classes.value, classValue])}>
+                : <Typography component="span" className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
                     {value}
                     {children}
                 </Typography> }
