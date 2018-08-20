@@ -10,7 +10,6 @@ import { resourceLabel } from '~/common/labels';
 import { ResourceKind } from '~/models/resource';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
-import * as classnames from "classnames";
 
 export class CollectionDetails extends DetailsData<CollectionResource> {
 
