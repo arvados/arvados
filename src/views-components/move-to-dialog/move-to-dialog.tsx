@@ -10,13 +10,13 @@ import { reduxForm, startSubmit, stopSubmit, InjectedFormProps, initialize, Fiel
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePicker } from '~/views-components/project-tree-picker/project-tree-picker';
-import { MOVE_TO_VALIDATION } from '~/validators/validators';
 import { Typography } from "@material-ui/core";
 import { ResourceKind } from '~/models/resource';
 import { ServiceRepository, getResourceService } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
 import { snackbarActions } from '../../store/snackbar/snackbar-actions';
+import { require } from '~/validators/require';
 
 export const MOVE_TO_DIALOG = 'moveToDialog';
 
@@ -71,12 +71,16 @@ export const MoveToProjectDialog = compose(
         {...props}
     />);
 
-const MoveToDialogFields = () =>
+const MoveToDialogFields = (props: InjectedFormProps<MoveToDialogResource>) =>
     <Field
         name="ownerUuid"
         component={Picker}
-        validate={MOVE_TO_VALIDATION} />;
+        validate={validation} />;
 
+const sameUuid = (value: string, allValues: MoveToDialogResource) =>
+    value === allValues.uuid && 'Cannot move the project to itself';
+
+const validation = [require, sameUuid];
 
 const Picker = (props: WrappedFieldProps) =>
     <div style={{ height: '144px', display: 'flex', flexDirection: 'column' }}>
