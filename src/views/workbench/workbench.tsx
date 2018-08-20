@@ -29,7 +29,6 @@ import { CreateProjectDialog } from "~/views-components/create-project-dialog/cr
 
 import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-panel-action";
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '~/store/side-panel/side-panel-reducer';
 import { ProjectResource } from '~/models/project';
 import { ResourceKind } from '~/models/resource';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
@@ -51,6 +50,7 @@ import { DialogCollectionCreateWithSelectedFile } from '~/views-components/creat
 import { MoveToProjectDialog } from '../../views-components/move-to-dialog/move-to-dialog';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
+import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -102,14 +102,15 @@ interface WorkbenchDataProps {
     sidePanelItems: SidePanelItem[];
 }
 
-interface WorkbenchServiceProps {
+interface WorkbenchGeneralProps {
     authService: AuthService;
+    buildInfo: string;
 }
 
 interface WorkbenchActionProps {
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchServiceProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
@@ -194,6 +195,7 @@ export const Workbench = withStyles(styles)(
                                 searchText={this.state.searchText}
                                 user={this.props.user}
                                 menuItems={this.state.menuItems}
+                                buildInfo={this.props.buildInfo}
                                 {...this.mainAppBarActions} />
                         </div>
                         {user &&
@@ -223,14 +225,13 @@ export const Workbench = withStyles(styles)(
                                         toggleActive={itemId => {
                                             this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE));
                                             this.props.dispatch(loadDetails(itemId, ResourceKind.PROJECT));
-                                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                                         }} />
                                 </SidePanel>
                             </Drawer>}
                         <main className={classes.contentWrapper}>
                             <div className={classes.content}>
                                 <Switch>
-                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`}  />} />
+                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`} />} />
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
@@ -248,6 +249,7 @@ export const Workbench = withStyles(styles)(
                         <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
+                        <UploadCollectionFilesDialog />
                         <UpdateProjectDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}
@@ -332,7 +334,6 @@ export const Workbench = withStyles(styles)(
                         default:
                             this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     }
 
                 }}
@@ -365,7 +366,6 @@ export const Workbench = withStyles(styles)(
             }
 
             toggleSidePanelActive = (itemId: string) => {
-                this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
 
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);

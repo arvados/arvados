@@ -29,6 +29,14 @@ import { collectionActionSet } from './views-components/context-menu/action-sets
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 import { initPickerProjectTree } from './views-components/project-tree-picker/project-tree-picker';
 
+const getBuildNumber = () => "BN-" + (process.env.BUILD_NUMBER || "dev");
+const getGitCommit = () => "GIT-" + (process.env.GIT_COMMIT || "latest").substr(0, 7);
+const getBuildInfo = () => getBuildNumber() + " / " + getGitCommit();
+
+const buildInfo = getBuildInfo();
+
+console.log(`Starting arvados [${buildInfo}]`);
+
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
@@ -46,10 +54,10 @@ fetchConfig()
 
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
-        store.dispatch(initPickerProjectTree());
-        
+        store.dispatch(initPickerProjectTree());    
+
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
-        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} {...props}/>;
+        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props}/>;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>

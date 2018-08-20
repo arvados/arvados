@@ -12,11 +12,11 @@ describe('data-explorer-reducer', () => {
     it('should set columns', () => {
         const columns: DataColumns<any> = [{
             name: "Column 1",
+            filters: [],
             render: jest.fn(),
             selected: true,
-            sortDirection: SortDirection.ASC,
-            filters: [],
-            configurable: true
+            configurable: true,
+            sortDirection: SortDirection.NONE
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
@@ -26,18 +26,18 @@ describe('data-explorer-reducer', () => {
     it('should toggle sorting', () => {
         const columns: DataColumns<any> = [{
             name: "Column 1",
+            filters: [],
             render: jest.fn(),
             selected: true,
             sortDirection: SortDirection.ASC,
-            filters: [],
             configurable: true
         }, {
             name: "Column 2",
+            filters: [],
             render: jest.fn(),
             selected: true,
             configurable: true,
             sortDirection: SortDirection.NONE,
-            filters: [],
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));
@@ -48,11 +48,11 @@ describe('data-explorer-reducer', () => {
     it('should set filters', () => {
         const columns: DataColumns<any> = [{
             name: "Column 1",
+            filters: [],
             render: jest.fn(),
             selected: true,
             configurable: true,
-            sortDirection: SortDirection.NONE,
-            filters: [],
+            sortDirection: SortDirection.NONE
         }];
 
         const filters: DataTableFilterItem[] = [{

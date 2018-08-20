@@ -17,9 +17,9 @@ export const authActions = unionize({
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>()
 }, {
-        tag: 'type',
-        value: 'payload'
-    });
+    tag: 'type',
+    value: 'payload'
+});
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {

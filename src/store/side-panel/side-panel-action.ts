@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { default as unionize, ofType, UnionOf } from "unionize";
+import { SidePanelId } from "~/store/side-panel/side-panel-reducer";
 
 export const sidePanelActions = unionize({
-    TOGGLE_SIDE_PANEL_ITEM_OPEN: ofType<string>(),
-    TOGGLE_SIDE_PANEL_ITEM_ACTIVE: ofType<string>(),
-    RESET_SIDE_PANEL_ACTIVITY: ofType<{}>(),
+    TOGGLE_SIDE_PANEL_ITEM_OPEN: ofType<SidePanelId>()
 }, {
     tag: 'type',
     value: 'payload'

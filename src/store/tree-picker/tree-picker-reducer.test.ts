@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, getNodeValue, getNodeChildren } from "~/models/tree";
+import { createTree, getNodeValue, getNodeChildrenIds } from "~/models/tree";
 import { TreePickerNode, createTreePickerNode } from "./tree-picker";
 import { treePickerReducer } from "./tree-picker-reducer";
 import { treePickerActions } from "./tree-picker-actions";
@@ -32,7 +32,7 @@ describe('TreePickerReducer', () => {
     it('LOAD_TREE_PICKER_NODE_SUCCESS - initial state', () => {
         const subNode = createTreePickerNode({ nodeId: '1.1', value: '1.1' });
         const newState = treePickerReducer({}, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ nodeId: '', nodes: [subNode], pickerId: "projects" }));
-        expect(getNodeChildren('')(newState.projects)).toEqual(['1.1']);
+        expect(getNodeChildrenIds('')(newState.projects)).toEqual(['1.1']);
     });
 
     it('LOAD_TREE_PICKER_NODE_SUCCESS', () => {
@@ -43,7 +43,7 @@ describe('TreePickerReducer', () => {
         }]
             .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ nodeId: '', nodes: [node], pickerId: "projects" })))
             .map(state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ nodeId: '1', nodes: [subNode], pickerId: "projects" })));
-        expect(getNodeChildren('1')(newState.projects)).toEqual(['1.1']);
+        expect(getNodeChildrenIds('1')(newState.projects)).toEqual(['1.1']);
         expect(getNodeValue('1')(newState.projects)).toEqual({
             ...createTreePickerNode({ nodeId: '1', value: '1' }),
             status: TreeItemStatus.LOADED

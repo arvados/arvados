@@ -6,7 +6,7 @@ import { connect } from "react-redux";
 import { Tree, TreeProps, TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { RootState } from "~/store/store";
 import { createTreePickerNode, TreePickerNode } from "~/store/tree-picker/tree-picker";
-import { getNodeValue, getNodeChildren, Tree as Ttree, createTree } from "~/models/tree";
+import { getNodeValue, getNodeChildrenIds, Tree as Ttree, createTree } from "~/models/tree";
 import { Dispatch } from "redux";
 
 export interface TreePickerProps {
@@ -18,7 +18,7 @@ export interface TreePickerProps {
 const mapStateToProps = (state: RootState, props: TreePickerProps): Pick<TreeProps<any>, 'items'> => {
     const tree = state.treePicker[props.pickerId] || createTree();
     return {
-        items: getNodeChildren('')(tree)
+        items: getNodeChildrenIds('')(tree)
             .map(treePickerToTreeItems(tree))
     };
 };
@@ -34,7 +34,7 @@ export const TreePicker = connect(mapStateToProps, mapDispatchToProps)(Tree);
 const treePickerToTreeItems = (tree: Ttree<TreePickerNode>) =>
     (id: string): TreeItem<any> => {
         const node: TreePickerNode = getNodeValue(id)(tree) || createTreePickerNode({ nodeId: '', value: 'InvalidNode' });
-        const items = getNodeChildren(node.nodeId)(tree)
+        const items = getNodeChildrenIds(node.nodeId)(tree)
             .map(treePickerToTreeItems(tree));
         return {
             active: node.selected,
