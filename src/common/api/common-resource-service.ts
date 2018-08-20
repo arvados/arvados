@@ -29,6 +29,12 @@ export interface Errors {
     errorToken: string;
 }
 
+export enum CommonResourceServiceError {
+    UNIQUE_VIOLATION = 'UniqueViolation',
+    UNKNOWN = 'Unknown',
+    NONE = 'None'
+}
+
 export class CommonResourceService<T extends Resource> {
 
     static mapResponseKeys = (response: any): Promise<any> =>
@@ -105,4 +111,18 @@ export class CommonResourceService<T extends Resource> {
 
     }
 }
+
+export const getCommonResourceServiceError = (errorResponse: any) => {
+    if ('errors' in errorResponse && 'errorToken' in errorResponse) {
+        const error = errorResponse.errors.join('');
+        switch (true) {
+            case /UniqueViolation/.test(error):
+                return CommonResourceServiceError.UNIQUE_VIOLATION;
+            default:
+                return CommonResourceServiceError.UNKNOWN;
+        }
+    }
+    return CommonResourceServiceError.NONE;
+};
+
 
