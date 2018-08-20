@@ -141,7 +141,9 @@ export const Tree = withStyles(styles)(
         }
 
         getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
-            return status === TreeItemStatus.PENDING || (status === TreeItemStatus.LOADED && !items) || (status === TreeItemStatus.LOADED && items && items.length === 0) ? <span /> : <SidePanelRightArrowIcon />;
+            return status === TreeItemStatus.PENDING ||
+            (status === TreeItemStatus.LOADED && !items) || 
+            (status === TreeItemStatus.LOADED && items && items.length === 0) ? <span /> : <SidePanelRightArrowIcon />;
         }
 
         getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {

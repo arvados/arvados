@@ -8,9 +8,8 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMakeACopyDialog, MAKE_A_COPY_DIALOG } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
+import { openMakeACopyDialog } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
 import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
-import { reset } from 'redux-form';
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
@@ -44,7 +43,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            dispatch(reset(MAKE_A_COPY_DIALOG));
             dispatch<any>(openMakeACopyDialog({name: resource.name, projectUuid: resource.uuid}));
         }
     },

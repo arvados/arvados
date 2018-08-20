@@ -12,7 +12,7 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
-import { openMakeACopyDialog, MAKE_A_COPY_DIALOG } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
+import { openMakeACopyDialog } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -48,7 +48,6 @@ export const projectActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            dispatch(reset(MAKE_A_COPY_DIALOG));
             dispatch<any>(openMakeACopyDialog({name: resource.name, projectUuid: resource.uuid}));
         }
     }

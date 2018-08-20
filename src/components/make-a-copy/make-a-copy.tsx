@@ -9,7 +9,7 @@ import { ProjectTreePicker } from "~/views-components/project-tree-picker/projec
 import { MAKE_A_COPY_VALIDATION, COPY_NAME_VALIDATION } from "~/validators/validators";
 import { TextField } from '~/components/text-field/text-field';
 
-export  interface CopyFormData {
+export interface CopyFormData {
     name: string;
     projectUuid: string;
     uuid: string;
