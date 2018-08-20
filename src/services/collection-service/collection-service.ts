@@ -28,8 +28,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         return Promise.reject();
     }
 
-    async deleteFile(collectionUuid: string, filePath: string) {
-        return this.webdavClient.delete(`/c=${collectionUuid}${filePath}`);
+    async deleteFiles(collectionUuid: string, filePaths: string[]) {
+        for (const path of filePaths) {
+            await this.webdavClient.delete(`/c=${collectionUuid}${path}`);
+        }
     }
 
     async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress) {
