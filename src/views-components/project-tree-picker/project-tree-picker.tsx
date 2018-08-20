@@ -36,9 +36,9 @@ const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid:
 const toggleItemOpen = (nodeId: string, status: TreeItemStatus, pickerId: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (status === TreeItemStatus.INITIAL) {
-            if (pickerId === TreePickerKind.PROJECTS) {
+            if (pickerId === TreePickerId.PROJECTS) {
                 dispatch<any>(loadProjectTreePickerProjects(nodeId));
-            } else if (pickerId === TreePickerKind.FAVORITES) {
+            } else if (pickerId === TreePickerId.FAVORITES) {
                 dispatch<any>(loadFavoriteTreePickerProjects(nodeId === services.authService.getUuid() ? '' : nodeId));
             } else {
                 // TODO: load sharedWithMe
@@ -49,10 +49,10 @@ const toggleItemOpen = (nodeId: string, status: TreeItemStatus, pickerId: string
     };
 
 const getNotSelectedTreePickerKind = (pickerId: string) => {
-    return [TreePickerKind.PROJECTS, TreePickerKind.FAVORITES, TreePickerKind.SHARED_WITH_ME].filter(nodeId => nodeId !== pickerId);
+    return [TreePickerId.PROJECTS, TreePickerId.FAVORITES, TreePickerId.SHARED_WITH_ME].filter(nodeId => nodeId !== pickerId);
 };
 
-export enum TreePickerKind {
+export enum TreePickerId {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
     FAVORITES = 'Favorites'
@@ -64,9 +64,9 @@ export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: 
             Select a project
         </Typography>
         <div style={{ flexGrow: 1, overflow: 'auto' }}>
-            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerKind.PROJECTS} />
-            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerKind.SHARED_WITH_ME} />
-            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerKind.FAVORITES} />
+            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
+            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.SHARED_WITH_ME} />
+            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.FAVORITES} />
         </div>
     </div>);
 
@@ -74,7 +74,7 @@ export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: 
 // TODO: move action creator to store directory
 export const loadProjectTreePickerProjects = (nodeId: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerKind.PROJECTS }));
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.PROJECTS }));
 
         const ownerUuid = nodeId.length === 0 ? services.authService.getUuid() || '' : nodeId;
 
@@ -84,7 +84,7 @@ export const loadProjectTreePickerProjects = (nodeId: string) =>
 
         const { items } = await services.projectService.list({ filters });
 
-        dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerKind.PROJECTS));
+        dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.PROJECTS));
     };
 
 export const loadFavoriteTreePickerProjects = (nodeId: string) =>
@@ -92,30 +92,30 @@ export const loadFavoriteTreePickerProjects = (nodeId: string) =>
         const parentId = services.authService.getUuid() || '';
 
         if (nodeId === '') {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: parentId, pickerId: TreePickerKind.FAVORITES }));
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: parentId, pickerId: TreePickerId.FAVORITES }));
             const { items } = await services.favoriteService.list(parentId);
 
-            dispatch<any>(receiveTreePickerData(parentId, items as ProjectResource[], TreePickerKind.FAVORITES));
+            dispatch<any>(receiveTreePickerData(parentId, items as ProjectResource[], TreePickerId.FAVORITES));
         } else {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerKind.FAVORITES }));
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.FAVORITES }));
             const filters = new FilterBuilder()
                 .addEqual('ownerUuid', nodeId)
                 .getFilters();
 
             const { items } = await services.projectService.list({ filters });
 
-            dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerKind.FAVORITES));
+            dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.FAVORITES));
         }
 
     };
 
 const getProjectPickerIcon = (item: TreeItem<ProjectResource>) => {
     switch (item.data.name) {
-        case TreePickerKind.FAVORITES:
+        case TreePickerId.FAVORITES:
             return FavoriteIcon;
-        case TreePickerKind.PROJECTS:
+        case TreePickerId.PROJECTS:
             return ProjectsIcon;
-        case TreePickerKind.SHARED_WITH_ME:
+        case TreePickerId.SHARED_WITH_ME:
             return ShareMeIcon;
         default:
             return ProjectIcon;
@@ -151,15 +151,15 @@ export const initPickerProjectTree = () => (dispatch: Dispatch, getState: () => 
 };
 
 const getPickerTreeProjects = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerKind.PROJECTS);
+    return getProjectsPickerTree(uuid, TreePickerId.PROJECTS);
 };
 
 const getSharedWithMeProjectsPickerTree = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerKind.SHARED_WITH_ME);
+    return getProjectsPickerTree(uuid, TreePickerId.SHARED_WITH_ME);
 };
 
 const getFavoritesProjectsPickerTree = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerKind.FAVORITES);
+    return getProjectsPickerTree(uuid, TreePickerId.FAVORITES);
 };
 
 const getProjectsPickerTree = (uuid: string, kind: string) => {
