@@ -50,6 +50,7 @@ import { DialogCollectionCreateWithSelectedFile } from '~/views-components/creat
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
+import { MakeACopyToProjectDialog } from '~/views-components/make-a-copy-dialog/make-a-copy-dialog';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -245,6 +246,7 @@ export const Workbench = withStyles(styles)(
                         <RenameFileDialog />
                         <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
+                        <MakeACopyToProjectDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <UploadCollectionFilesDialog />

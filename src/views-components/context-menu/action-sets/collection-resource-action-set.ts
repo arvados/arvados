@@ -8,6 +8,7 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openMakeACopyDialog } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -42,9 +43,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: dispatch => dispatch<any>(openMakeACopyDialog())
     },
     {
         icon: DetailsIcon,
