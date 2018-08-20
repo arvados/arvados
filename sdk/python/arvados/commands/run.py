@@ -1,4 +1,17 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
+# Copyright (C) 2018 Genome Research Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -22,6 +35,7 @@ import sys
 import errno
 import arvados.commands._util as arv_cmd
 import arvados.collection
+import arvados.config as config
 
 from arvados._version import __version__
 
@@ -206,22 +220,39 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
                     for src in iterfiles:
                         write_file(collection, pathprefix, os.path.join(root, src))
 
-        filters=[["portable_data_hash", "=", collection.portable_data_hash()]]
-        if name:
-            filters.append(["name", "like", name+"%"])
-        if project:
-            filters.append(["owner_uuid", "=", project])
+        pdh = None
+        if len(collection) > 0:
+            # non-empty collection
+            filters = [["portable_data_hash", "=", collection.portable_data_hash()]]
+            name_pdh = "%s (%s)" % (name, collection.portable_data_hash())
+            if name:
+                filters.append(["name", "=", name_pdh])
+            if project:
+                filters.append(["owner_uuid", "=", project])
 
-        exists = api.collections().list(filters=filters, limit=1).execute(num_retries=num_retries)
+            # do the list / create in a loop with up to 2 tries as we are using `ensure_unique_name=False`
+            # and there is a potential race with other workflows that may have created the collection 
+            # between when we list it and find it does not exist and when we attempt to create it.
+            tries = 2
+            while pdh is None and tries > 0:
+                exists = api.collections().list(filters=filters, limit=1).execute(num_retries=num_retries)
 
-        if exists["items"]:
-            item = exists["items"][0]
-            pdh = item["portable_data_hash"]
-            logger.info("Using collection %s (%s)", pdh, item["uuid"])
-        elif len(collection) > 0:
-            collection.save_new(name=name, owner_uuid=project, ensure_unique_name=True)
+                if exists["items"]:
+                    item = exists["items"][0]
+                    pdh = item["portable_data_hash"]
+                    logger.info("Using collection %s (%s)", pdh, item["uuid"])
+                else:
+                    try:
+                        collection.save_new(name=name_pdh, owner_uuid=project, ensure_unique_name=False)
+                        pdh = collection.portable_data_hash()
+                        logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
+                    except arvados.errors.ApiError as ae:
+                        tries -= 1
+        else:
+            # empty collection
             pdh = collection.portable_data_hash()
-            logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
+            assert (pdh == config.EMPTY_BLOCK_LOCATOR), "Empty collection portable_data_hash did not have expected locator"
+            logger.info("Using empty collection %s", pdh)
 
     for c in files:
         c.keepref = "%s/%s" % (pdh, c.fn)
