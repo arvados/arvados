@@ -17,7 +17,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center'
     },
     listItemText: {
-        fontWeight: 700
+        fontWeight: 400
     },
     active: {
         color: theme.palette.primary.main,
