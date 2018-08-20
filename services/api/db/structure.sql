@@ -1900,6 +1900,20 @@ CREATE INDEX index_containers_on_auth_uuid ON public.containers USING btree (aut
 
 
 --
+-- Name: index_containers_on_locked_by_uuid_and_priority; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_locked_by_uuid_and_priority ON public.containers USING btree (locked_by_uuid, priority);
+
+
+--
+-- Name: index_containers_on_locked_by_uuid_and_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_locked_by_uuid_and_uuid ON public.containers USING btree (locked_by_uuid, uuid);
+
+
+--
 -- Name: index_containers_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3120,4 +3134,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180607175050');
 INSERT INTO schema_migrations (version) VALUES ('20180608123145');
 
 INSERT INTO schema_migrations (version) VALUES ('20180806133039');
+
+INSERT INTO schema_migrations (version) VALUES ('20180820132617');
 
