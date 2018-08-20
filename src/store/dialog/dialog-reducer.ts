@@ -4,9 +4,9 @@
 
 import { DialogAction, dialogActions } from "./dialog-actions";
 
-export type DialogState = Record<string, Dialog>;
+export type DialogState = Record<string, Dialog<any>>;
 
-export interface Dialog <T = {}> {
+export interface Dialog <T> {
     open: boolean;
     data: T;
 }
