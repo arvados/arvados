@@ -5,7 +5,7 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { RenameIcon, RemoveIcon } from "~/components/icon/icon";
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
-import { openFileRemoveDialog, openRenameFileDialog } from '../../../store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 
 export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
