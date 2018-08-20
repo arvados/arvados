@@ -30,7 +30,7 @@ describe('Tree', () => {
             { children: [], id: 'Node 2', parent: 'Node 1', value: 'Value 1' },
             { children: [], id: 'Node 3', parent: 'Node 2', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeAncestors('Node 3')(newTree)).toEqual(['Node 1', 'Node 2']);
+        expect(Tree.getNodeAncestorsIds('Node 3')(newTree)).toEqual(['Node 1', 'Node 2']);
     });
 
     it('gets node descendants', () => {
@@ -41,7 +41,7 @@ describe('Tree', () => {
             { children: [], id: 'Node 3', parent: 'Node 1', value: 'Value 1' },
             { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeDescendants('Node 1')(newTree)).toEqual(['Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
+        expect(Tree.getNodeDescendantsIds('Node 1')(newTree)).toEqual(['Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
     });
 
     it('gets root descendants', () => {
@@ -52,7 +52,7 @@ describe('Tree', () => {
             { children: [], id: 'Node 3', parent: 'Node 1', value: 'Value 1' },
             { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeDescendants('')(newTree)).toEqual(['Node 1', 'Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
+        expect(Tree.getNodeDescendantsIds('')(newTree)).toEqual(['Node 1', 'Node 2', 'Node 3', 'Node 2.1', 'Node 3.1']);
     });
 
     it('gets node children', () => {
@@ -63,7 +63,7 @@ describe('Tree', () => {
             { children: [], id: 'Node 3', parent: 'Node 1', value: 'Value 1' },
             { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeChildren('Node 1')(newTree)).toEqual(['Node 2', 'Node 3']);
+        expect(Tree.getNodeChildrenIds('Node 1')(newTree)).toEqual(['Node 2', 'Node 3']);
     });
 
     it('gets root children', () => {
@@ -74,7 +74,7 @@ describe('Tree', () => {
             { children: [], id: 'Node 3', parent: '', value: 'Value 1' },
             { children: [], id: 'Node 3.1', parent: 'Node 3', value: 'Value 1' }
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
-        expect(Tree.getNodeChildren('')(newTree)).toEqual(['Node 1', 'Node 3']);
+        expect(Tree.getNodeChildrenIds('')(newTree)).toEqual(['Node 1', 'Node 3']);
     });
 
     it('maps tree', () => {
