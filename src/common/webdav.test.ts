@@ -41,15 +41,13 @@ describe('WebDAV', () => {
 
     it('PUT', async () => {
         const { open, send, load, progress, createRequest } = mockCreateRequest();
-        const onUploadProgress = jest.fn();
         const webdav = new WebDAV(undefined, createRequest);
-        const promise = webdav.put('foo', 'Test data', { onUploadProgress });
+        const promise = webdav.put('foo', 'Test data');
         progress();
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PUT', 'foo');
         expect(send).toHaveBeenCalledWith('Test data');
-        expect(onUploadProgress).toHaveBeenCalled();
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 

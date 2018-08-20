@@ -4,11 +4,11 @@
 
 import { uniqBy, groupBy } from 'lodash';
 import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "~/models/keep-manifest";
-import { TreeNode, setNode, createTree, getNodeDescendants, getNodeValue } from '~/models/tree';
+import { TreeNode, setNode, createTree, getNodeDescendantsIds, getNodeValue } from '~/models/tree';
 import { CollectionFilesTree, CollectionFile, CollectionDirectory, createCollectionDirectory, createCollectionFile, CollectionFileType } from '../../models/collection-file';
 
 export const mapCollectionFilesTreeToManifest = (tree: CollectionFilesTree): KeepManifest => {
-    const values = getNodeDescendants('')(tree).map(id => getNodeValue(id)(tree));
+    const values = getNodeDescendantsIds('')(tree).map(id => getNodeValue(id)(tree));
     const files = values.filter(value => value && value.type === CollectionFileType.FILE) as CollectionFile[];
     const fileGroups = groupBy(files, file => file.path);
     return Object

@@ -26,6 +26,7 @@ interface MainAppBarDataProps {
     breadcrumbs: Breadcrumb[];
     user?: User;
     menuItems: MainAppBarMenuItems;
+    buildInfo: string;
 }
 
 export interface MainAppBarActionProps {
@@ -44,10 +45,10 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
             <Grid container justify="space-between">
                 <Grid item xs={3}>
                     <Typography variant="headline" color="inherit" noWrap>
-                        Arvados
+                        Arvados 2
                     </Typography>
                     <Typography variant="body1" color="inherit" noWrap >
-                        Workbench 2
+                        {props.buildInfo}
                     </Typography>
                 </Grid>
                 <Grid item xs={6} container alignItems="center">

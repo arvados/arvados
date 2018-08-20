@@ -35,6 +35,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress) {
+        // files have to be uploaded sequentially
         for (let idx = 0; idx < files.length; idx++) {
             await this.uploadFile(collectionUuid, files[idx], idx, onProgress);
         }

@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
 import { sidePanelActions, SidePanelAction } from './side-panel-action';
 import { SidePanelItem } from '~/components/side-panel/side-panel';
 import { ProjectsIcon, ShareMeIcon, WorkflowIcon, RecentIcon, FavoriteIcon, TrashIcon } from "~/components/icon/icon";
@@ -12,37 +11,20 @@ import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { projectActions } from "../project/project-action";
 import { getProjectUrl } from "../../models/project";
+import { columns as projectPanelColumns } from "../../views/project-panel/project-panel";
+import { columns as favoritePanelColumns } from "../../views/favorite-panel/favorite-panel";
 
 export type SidePanelState = SidePanelItem[];
 
-export const sidePanelReducer = (state: SidePanelState = sidePanelData, action: SidePanelAction) => {
-    if (state.length === 0) {
-        return sidePanelData;
-    } else {
-        return sidePanelActions.match(action, {
-            TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
-                state.map(it => ({...it, open: itemId === it.id && it.open === false})),
-            TOGGLE_SIDE_PANEL_ITEM_ACTIVE: itemId => {
-                const sidePanel = _.cloneDeep(state);
-                resetSidePanelActivity(sidePanel);
-                sidePanel.forEach(it => {
-                    if (it.id === itemId) {
-                        it.active = true;
-                    }
-                });
-                return sidePanel;
-            },
-            RESET_SIDE_PANEL_ACTIVITY: () => {
-                const sidePanel = _.cloneDeep(state);
-                resetSidePanelActivity(sidePanel);
-                return sidePanel;
-            },
-            default: () => state
-        });
-    }
+export const sidePanelReducer = (state: SidePanelState = sidePanelItems, action: SidePanelAction) => {
+    return sidePanelActions.match(action, {
+        TOGGLE_SIDE_PANEL_ITEM_OPEN: itemId =>
+            state.map(it => ({...it, open: itemId === it.id && it.open === false})),
+        default: () => state
+    });
 };
 
-export enum SidePanelIdentifiers {
+export enum SidePanelId {
     PROJECTS = "Projects",
     SHARED_WITH_ME = "SharedWithMe",
     WORKFLOWS = "Workflows",
@@ -51,61 +33,75 @@ export enum SidePanelIdentifiers {
     TRASH = "Trash"
 }
 
-export const sidePanelData = [
+export const sidePanelItems = [
     {
-        id: SidePanelIdentifiers.PROJECTS,
+        id: SidePanelId.PROJECTS,
         name: "Projects",
+        url: "/projects",
         icon: ProjectsIcon,
         open: false,
         active: false,
         margin: true,
         openAble: true,
         activeAction: (dispatch: Dispatch, uuid: string) => {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
             dispatch(push(getProjectUrl(uuid)));
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
+            dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(projectPanelActions.RESET_PAGINATION());
-            dispatch(projectPanelActions.REQUEST_ITEMS()); 
+            dispatch(projectPanelActions.REQUEST_ITEMS());
         }
     },
     {
-        id: SidePanelIdentifiers.SHARED_WITH_ME,
+        id: SidePanelId.SHARED_WITH_ME,
         name: "Shared with me",
+        url: "/shared",
         icon: ShareMeIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/shared"));
+        }
     },
     {
-        id: SidePanelIdentifiers.WORKFLOWS,
+        id: SidePanelId.WORKFLOWS,
         name: "Workflows",
+        url: "/workflows",
         icon: WorkflowIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/workflows"));
+        }
     },
     {
-        id: SidePanelIdentifiers.RECENT_OPEN,
+        id: SidePanelId.RECENT_OPEN,
         name: "Recent open",
+        url: "/recent",
         icon: RecentIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/recent"));
+        }
     },
     {
-        id: SidePanelIdentifiers.FAVORITES,
+        id: SidePanelId.FAVORITES,
         name: "Favorites",
+        url: "/favorites",
         icon: FavoriteIcon,
         active: false,
         activeAction: (dispatch: Dispatch) => {
             dispatch(push("/favorites"));
+            dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
             dispatch(favoritePanelActions.RESET_PAGINATION());
             dispatch(favoritePanelActions.REQUEST_ITEMS());
         }
     },
     {
-        id: SidePanelIdentifiers.TRASH,
+        id: SidePanelId.TRASH,
         name: "Trash",
+        url: "/trash",
         icon: TrashIcon,
         active: false,
+        activeAction: (dispatch: Dispatch) => {
+            dispatch(push("/trash"));
+        }
     }
 ];
-
-function resetSidePanelActivity(sidePanel: SidePanelItem[]) {
-    for (const t of sidePanel) {
-        t.active = false;
-    }
-}

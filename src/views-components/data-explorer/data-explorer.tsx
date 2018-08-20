@@ -21,48 +21,50 @@ interface Props {
     extractKey?: (item: any) => React.Key;
 }
 
-const mapStateToProps = (state: RootState, { id }: Props) =>
-    getDataExplorer(state.dataExplorer, id);
+const mapStateToProps = (state: RootState, { id, columns }: Props) => {
+    const s = getDataExplorer(state.dataExplorer, id);
+    if (s.columns.length === 0) {
+        s.columns = columns;
+    }
+    return s;
+};
 
 const mapDispatchToProps = () => {
-    let prevColumns: DataColumns<any>;
-    return (dispatch: Dispatch, { id, columns, onRowClick, onRowDoubleClick, onContextMenu }: Props) => {
-        if (columns !== prevColumns) {
-            prevColumns = columns;
+    return (dispatch: Dispatch, { id, columns, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
+        onSetColumns: (columns: DataColumns<any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
-        }
-        return {
-            onSearch: (searchValue: string) => {
-                dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
-            },
+        },
 
-            onColumnToggle: (column: DataColumn<any>) => {
-                dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
-            },
+        onSearch: (searchValue: string) => {
+            dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
+        },
 
-            onSortToggle: (column: DataColumn<any>) => {
-                dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
-            },
+        onColumnToggle: (column: DataColumn<any>) => {
+            dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
+        },
 
-            onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
-                dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
-            },
+        onSortToggle: (column: DataColumn<any>) => {
+            dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
+        },
 
-            onChangePage: (page: number) => {
-                dispatch(dataExplorerActions.SET_PAGE({ id, page }));
-            },
+        onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
+            dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
+        },
 
-            onChangeRowsPerPage: (rowsPerPage: number) => {
-                dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
-            },
+        onChangePage: (page: number) => {
+            dispatch(dataExplorerActions.SET_PAGE({ id, page }));
+        },
 
-            onRowClick,
+        onChangeRowsPerPage: (rowsPerPage: number) => {
+            dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
+        },
 
-            onRowDoubleClick,
+        onRowClick,
 
-            onContextMenu,
-        };
-    };
+        onRowDoubleClick,
+
+        onContextMenu,
+    });
 };
 
 export const DataExplorer = connect(mapStateToProps, mapDispatchToProps())(DataExplorerComponent);

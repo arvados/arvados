@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { createCollectionFilesTree, CollectionDirectory, CollectionFile, CollectionFileType, createCollectionDirectory, createCollectionFile } from "../../models/collection-file";
-import { Tree, mapTree, getNodeChildren, getNode, TreeNode } from "../../models/tree";
-import { getTagValue } from "../../common/xml";
+import { getTagValue } from "~/common/xml";
+import { getNodeChildren, Tree, mapTree } from '~/models/tree';
 
 export const parseFilesResponse = (document: Document) => {
     const files = extractFilesData(document);
@@ -13,10 +13,8 @@ export const parseFilesResponse = (document: Document) => {
 };
 
 export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) => {
-    return mapTree(node => {
-        const children = getNodeChildren(node.id)(tree)
-            .map(id => getNode(id)(tree))
-            .filter(node => node !== undefined) as TreeNode<CollectionDirectory | CollectionFile>[];
+    return mapTree<CollectionDirectory | CollectionFile>(node => {
+        const children = getNodeChildren(node.id)(tree);
 
         children.sort((a, b) =>
             a.value.type !== b.value.type
@@ -24,7 +22,7 @@ export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) 
                 : a.value.name.localeCompare(b.value.name)
         );
         return { ...node, children: children.map(child => child.id) };
-    })(tree) as Tree<CollectionDirectory | CollectionFile>;
+    })(tree);
 };
 
 export const extractFilesData = (document: Document) => {
