@@ -9,6 +9,7 @@ import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGra
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
+import { ResourceKind } from "~/models/resource";
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
@@ -28,7 +29,11 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: dispatch => dispatch<any>(openMoveToDialog())
+        execute: (dispatch, resource) => dispatch<any>(openMoveToDialog({
+            name: resource.name,
+            uuid: resource.uuid,
+            kind: ResourceKind.COLLECTION
+        }))
     },
     {
         component: ToggleFavoriteAction,
