@@ -41,6 +41,13 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         }
     }
 
+    moveFile(collectionUuid: string, oldPath: string, newPath: string) {
+        return this.webdavClient.move(
+            `/c=${collectionUuid}${oldPath}`,
+            `/c=${collectionUuid}${encodeURI(newPath)}`
+        );
+    }
+
     private extendFileURL = (file: CollectionDirectory | CollectionFile) => ({
         ...file,
         url: this.webdavClient.defaults.baseURL + file.url + '?api_token=' + this.authService.getApiToken()
