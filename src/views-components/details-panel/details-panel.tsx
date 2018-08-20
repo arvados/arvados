@@ -21,7 +21,7 @@ import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 
-type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
+type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'headerTitle' | 'tabContainer';
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -45,7 +45,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'center'
     },
     headerIcon: {
-        fontSize: "34px"
+        fontSize: '2.125rem'
+    },
+    headerTitle: {
+        wordBreak: 'break-all'
     },
     tabContainer: {
         padding: theme.spacing.unit * 3
@@ -114,7 +117,7 @@ export const DetailsPanel = withStyles(styles)(
                                         {item.getIcon(classes.headerIcon)}
                                     </Grid>
                                     <Grid item xs={8}>
-                                        <Typography variant="title">
+                                        <Typography variant="title" className={classes.headerTitle}>
                                             {item.getTitle()}
                                         </Typography>
                                     </Grid>

@@ -21,7 +21,7 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
         return <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.COLLECTION)} />
             <DetailsAttribute label='Size' value='---' />
-            <DetailsAttribute label='Owner' value={this.item.ownerUuid} />
+            <DetailsAttribute label='Owner' value={this.item.ownerUuid} lowercaseValue={true} />
             <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Links but we dont have view */}

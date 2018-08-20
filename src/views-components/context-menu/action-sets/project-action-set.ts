@@ -6,12 +6,13 @@ import { reset, initialize } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions, PROJECT_FORM_NAME } from "~/store/project/project-action";
-import { NewProjectIcon, RenameIcon, CopyIcon } from "~/components/icon/icon";
+import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
-import { openMakeACopyDialog } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
+import { openMakeACopyDialog, MAKE_A_COPY_DIALOG } from "~/views-components/make-a-copy-dialog/make-a-copy-dialog";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -39,8 +40,16 @@ export const projectActionSet: ContextMenuActionSet = [[
         }
     },
     {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: dispatch => dispatch<any>(openMoveToDialog())       
+    },
+    {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: dispatch => dispatch<any>(openMakeACopyDialog())
-    },
+        execute: (dispatch, resource) => {
+            dispatch(reset(MAKE_A_COPY_DIALOG));
+            dispatch<any>(openMakeACopyDialog({name: resource.name, projectUuid: resource.uuid}));
+        }
+    }
 ]];

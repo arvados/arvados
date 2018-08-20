@@ -27,6 +27,7 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
+import { initPickerProjectTree } from './store/project-tree-picker/project-tree-picker-actions';
 
 const getBuildNumber = () => "BN-" + (process.env.BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.GIT_COMMIT || "latest").substr(0, 7);
@@ -53,6 +54,7 @@ fetchConfig()
 
         store.dispatch(initAuth());
         store.dispatch(getProjectList(services.authService.getUuid()));
+        store.dispatch(initPickerProjectTree());    
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props}/>;

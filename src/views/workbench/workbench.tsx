@@ -47,6 +47,7 @@ import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-f
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
+import { MoveToProjectDialog } from '../../views-components/move-to-dialog/move-to-dialog';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
@@ -244,6 +245,7 @@ export const Workbench = withStyles(styles)(
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
                         <RenameFileDialog />
+                        <MoveToProjectDialog />
                         <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
                         <MakeACopyToProjectDialog />
