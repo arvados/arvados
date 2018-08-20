@@ -1830,6 +1830,13 @@ CREATE INDEX index_collections_on_portable_data_hash ON public.collections USING
 
 
 --
+-- Name: index_collections_on_portable_data_hash_and_trash_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collections_on_portable_data_hash_and_trash_at ON public.collections USING btree (portable_data_hash, trash_at);
+
+
+--
 -- Name: index_collections_on_trash_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3120,4 +3127,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180607175050');
 INSERT INTO schema_migrations (version) VALUES ('20180608123145');
 
 INSERT INTO schema_migrations (version) VALUES ('20180806133039');
+
+INSERT INTO schema_migrations (version) VALUES ('20180820130357');
 
