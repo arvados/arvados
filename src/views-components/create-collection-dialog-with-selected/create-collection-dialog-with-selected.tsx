@@ -7,14 +7,12 @@ import { reduxForm, reset, startSubmit, stopSubmit } from "redux-form";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { DialogCollectionCreateWithSelected } from "../dialog-create/dialog-collection-create-selected";
-import { loadProjectTreePickerProjects } from "../project-tree-picker/project-tree-picker";
 
 export const DIALOG_COLLECTION_CREATE_WITH_SELECTED = 'dialogCollectionCreateWithSelected';
 
 export const createCollectionWithSelected = () =>
     (dispatch: Dispatch) => {
         dispatch(reset(DIALOG_COLLECTION_CREATE_WITH_SELECTED));
-        dispatch<any>(loadProjectTreePickerProjects(''));
         dispatch(dialogActions.OPEN_DIALOG({ id: DIALOG_COLLECTION_CREATE_WITH_SELECTED, data: {} }));
     };
 
