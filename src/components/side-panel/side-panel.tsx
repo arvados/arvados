@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ReactElement } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { List, ListItem, ListItemIcon, Collapse } from "@material-ui/core";
@@ -11,6 +10,7 @@ import { SidePanelRightArrowIcon, IconType } from '../icon/icon';
 import * as classnames from "classnames";
 import { ListItemTextIcon } from '../list-item-text-icon/list-item-text-icon';
 import { Dispatch } from "redux";
+import { RouteComponentProps, withRouter } from "react-router";
 
 type CssRules = 'active' | 'row' | 'root' | 'list' | 'iconClose' | 'iconOpen' | 'toggableIconContainer' | 'toggableIcon';
 
@@ -54,8 +54,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface SidePanelItem {
     id: string;
     name: string;
+    url: string;
     icon: IconType;
-    active?: boolean;
     open?: boolean;
     margin?: boolean;
     openAble?: boolean;
@@ -69,30 +69,34 @@ interface SidePanelDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: SidePanelItem) => void;
 }
 
-type SidePanelProps = SidePanelDataProps & WithStyles<CssRules>;
+type SidePanelProps = RouteComponentProps<{}> & SidePanelDataProps & WithStyles<CssRules>;
 
-export const SidePanel = withStyles(styles)(
+export const SidePanel = withStyles(styles)(withRouter(
     class extends React.Component<SidePanelProps> {
-        render(): ReactElement<any> {
+        render() {
             const { classes, toggleOpen, toggleActive, sidePanelItems, children } = this.props;
             const { root, row, list, toggableIconContainer } = classes;
+
+            const path = this.props.location.pathname.split('/');
+            const activeUrl = path.length > 1 ? "/" + path[1] : "/";
             return (
                 <div className={root}>
                     <List>
-                        {sidePanelItems.map(it => (
-                            <span key={it.name}>
+                        {sidePanelItems.map(it => {
+                            const active = it.url === activeUrl;
+                            return <span key={it.name}>
                                 <ListItem button className={list} onClick={() => toggleActive(it.id)}
                                           onContextMenu={this.handleRowContextMenu(it)}>
                                     <span className={row}>
                                         {it.openAble ? (
                                             <i onClick={() => toggleOpen(it.id)} className={toggableIconContainer}>
                                                 <ListItemIcon
-                                                    className={this.getToggableIconClassNames(it.open, it.active)}>
+                                                    className={this.getToggableIconClassNames(it.open, active)}>
                                                     < SidePanelRightArrowIcon/>
                                                 </ListItemIcon>
                                             </i>
                                         ) : null}
-                                        <ListItemTextIcon icon={it.icon} name={it.name} isActive={it.active}
+                                        <ListItemTextIcon icon={it.icon} name={it.name} isActive={active}
                                                           hasMargin={it.margin}/>
                                     </span>
                                 </ListItem>
@@ -101,8 +105,8 @@ export const SidePanel = withStyles(styles)(
                                         {children}
                                     </Collapse>
                                 ) : null}
-                            </span>
-                        ))}
+                            </span>;
+                        })}
                     </List>
                 </div>
             );
@@ -121,4 +125,4 @@ export const SidePanel = withStyles(styles)(
             (event: React.MouseEvent<HTMLElement>) =>
                 item.openAble ? this.props.onContextMenu(event, item) : null
     }
-);
+));

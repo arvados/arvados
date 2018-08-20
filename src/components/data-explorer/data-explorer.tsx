@@ -7,7 +7,7 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, Table
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataColumns } from "../data-table/data-table";
-import { DataColumn } from "../data-table/data-column";
+import { DataColumn, SortDirection } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
@@ -51,6 +51,7 @@ interface DataExplorerDataProps<T> {
 }
 
 interface DataExplorerActionProps<T> {
+    onSetColumns: (columns: DataColumns<T>) => void;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
@@ -67,11 +68,16 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+        componentDidMount() {
+            if (this.props.onSetColumns) {
+                this.props.onSetColumns(this.props.columns);
+            }
+        }
         render() {
-            const { 
-                columns, onContextMenu, onFiltersChange, onSortToggle, extractKey, 
-                rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch, 
-                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes 
+            const {
+                columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
+                rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
+                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes
             } = this.props;
             return <div>
                 { items.length > 0 ? (
@@ -111,7 +117,7 @@ export const DataExplorer = withStyles(styles)(
                         </Toolbar>
                     </Paper>
                 ) : (
-                    <DefaultView 
+                    <DefaultView
                         classRoot={classes.defaultRoot}
                         icon={defaultIcon}
                         classIcon={classes.defaultIcon}
@@ -140,6 +146,8 @@ export const DataExplorer = withStyles(styles)(
             name: "Actions",
             selected: true,
             configurable: false,
+            sortDirection: SortDirection.NONE,
+            filters: [],
             key: "context-actions",
             render: this.renderContextMenuTrigger,
             width: "auto"

@@ -2,22 +2,80 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import * as _ from "lodash";
 import { CommonResourceService } from "~/common/api/common-resource-service";
 import { CollectionResource } from "~/models/collection";
 import axios, { AxiosInstance } from "axios";
 import { KeepService } from "../keep-service/keep-service";
+import { WebDAV } from "~/common/webdav";
+import { AuthService } from "../auth-service/auth-service";
+import { mapTree, getNodeChildren, getNode, TreeNode } from "../../models/tree";
+import { getTagValue } from "~/common/xml";
 import { FilterBuilder } from "~/common/api/filter-builder";
-import { CollectionFile, createCollectionFile } from "~/models/collection-file";
+import { CollectionFile, createCollectionFile, CollectionFileType, CollectionDirectory, createCollectionDirectory } from '~/models/collection-file';
 import { parseKeepManifestText, stringifyKeepManifest } from "../collection-files-service/collection-manifest-parser";
-import * as _ from "lodash";
 import { KeepManifestStream } from "~/models/keep-manifest";
+import { createCollectionFilesTree } from '~/models/collection-file';
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
 export class CollectionService extends CommonResourceService<CollectionResource> {
-    constructor(serverApi: AxiosInstance, private keepService: KeepService) {
+    constructor(serverApi: AxiosInstance, private keepService: KeepService, private webdavClient: WebDAV, private authService: AuthService) {
         super(serverApi, "collections");
     }
+
+    async files(uuid: string) {
+        const request = await this.webdavClient.propfind(`/c=${uuid}`);
+        if (request.responseXML != null) {
+            const files = this.extractFilesData(request.responseXML);
+            const tree = createCollectionFilesTree(files);
+            const sortedTree = mapTree(node => {
+                const children = getNodeChildren(node.id)(tree).map(id => getNode(id)(tree)) as TreeNode<CollectionDirectory | CollectionFile>[];
+                children.sort((a, b) =>
+                    a.value.type !== b.value.type
+                        ? a.value.type === CollectionFileType.DIRECTORY ? -1 : 1
+                        : a.value.name.localeCompare(b.value.name)
+                );
+                return { ...node, children: children.map(child => child.id) };
+            })(tree);
+            return sortedTree;
+        }
+        return Promise.reject();
+    }
+
+    async deleteFile(collectionUuid: string, filePath: string) {
+        return this.webdavClient.delete(`/c=${collectionUuid}${filePath}`);
+    }
+
+    extractFilesData(document: Document) {
+        const collectionUrlPrefix = /\/c=[0-9a-zA-Z\-]*/;
+        return Array
+            .from(document.getElementsByTagName('D:response'))
+            .slice(1) // omit first element which is collection itself
+            .map(element => {
+                const name = getTagValue(element, 'D:displayname', '');
+                const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
+                const pathname = getTagValue(element, 'D:href', '');
+                const nameSuffix = `/${name || ''}`;
+                const directory = pathname
+                    .replace(collectionUrlPrefix, '')
+                    .replace(nameSuffix, '');
+                const href = this.webdavClient.defaults.baseURL + pathname + '?api_token=' + this.authService.getApiToken();
+
+                const data = {
+                    url: href,
+                    id: `${directory}/${name}`,
+                    name,
+                    path: directory,
+                };
+
+                return getTagValue(element, 'D:resourcetype', '')
+                    ? createCollectionDirectory(data)
+                    : createCollectionFile({ ...data, size });
+
+            });
+    }
+
 
     private readFile(file: File): Promise<ArrayBuffer> {
         return new Promise<ArrayBuffer>(resolve => {
@@ -84,10 +142,10 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress): Promise<CollectionResource | never> {
-        const filters = FilterBuilder.create()
+        const filters = new FilterBuilder()
             .addEqual("service_type", "proxy");
 
-        return this.keepService.list({ filters }).then(data => {
+        return this.keepService.list({ filters: filters.getFilters() }).then(data => {
             if (data.items && data.items.length > 0) {
                 const serviceHost =
                     (data.items[0].serviceSslFlag ? "https://" : "http://") +

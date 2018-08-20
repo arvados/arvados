@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Tree, TreeNode, mapTreeValues, getNodeValue } from '~/models/tree';
 import { CollectionFile, CollectionDirectory, CollectionFileType } from '~/models/collection-file';
-import { Tree, TreeNode } from '~/models/tree';
 
 export type CollectionPanelFilesState = Tree<CollectionPanelDirectory | CollectionPanelFile>;
 
@@ -24,3 +24,14 @@ export const mapCollectionFileToCollectionPanelFile = (node: TreeNode<Collection
             : { ...node.value, selected: false }
     };
 };
+
+export const mergeCollectionPanelFilesStates = (oldState: CollectionPanelFilesState, newState: CollectionPanelFilesState) => {
+    return mapTreeValues((value: CollectionPanelDirectory | CollectionPanelFile) => {
+        const oldValue = getNodeValue(value.id)(oldState);
+        return oldValue
+            ? oldValue.type === CollectionFileType.DIRECTORY
+                ? { ...value, collapsed: oldValue.collapsed, selected: oldValue.selected }
+                : { ...value, selected: oldValue.selected }
+            : value;
+    })(newState);
+}; 

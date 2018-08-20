@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { openMultipleFilesRemoveDialog } from "~/views-components/file-remove-dialog/multiple-files-remove-dialog";
+import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { createCollectionWithSelected } from "~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected";
 
 
@@ -20,7 +19,7 @@ export const collectionFilesActionSet: ContextMenuActionSet = [[{
     }
 }, {
     name: "Remove selected",
-    execute: (dispatch, resource) => {
+    execute: (dispatch) => {
         dispatch(openMultipleFilesRemoveDialog());
     }
 }, {
