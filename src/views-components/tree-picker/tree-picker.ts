@@ -10,13 +10,13 @@ import { getNodeValue, getNodeChildren, Tree as Ttree, createTree } from "~/mode
 import { Dispatch } from "redux";
 
 export interface TreePickerProps {
-    pickerKind: string;
-    toggleItemOpen: (id: string, status: TreeItemStatus, pickerKind: string) => void;
-    toggleItemActive: (id: string, status: TreeItemStatus, pickerKind: string) => void;
+    pickerId: string;
+    toggleItemOpen: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
+    toggleItemActive: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
 }
 
 const mapStateToProps = (state: RootState, props: TreePickerProps): Pick<TreeProps<any>, 'items'> => {
-    const tree = state.treePicker[props.pickerKind] || createTree();
+    const tree = state.treePicker[props.pickerId] || createTree();
     return {
         items: getNodeChildren('')(tree)
             .map(treePickerToTreeItems(tree))
@@ -25,21 +25,21 @@ const mapStateToProps = (state: RootState, props: TreePickerProps): Pick<TreePro
 
 const mapDispatchToProps = (dispatch: Dispatch, props: TreePickerProps): Pick<TreeProps<any>, 'onContextMenu' | 'toggleItemOpen' | 'toggleItemActive'> => ({
     onContextMenu: () => { return; },
-    toggleItemActive: (id, status) => props.toggleItemActive(id, status, props.pickerKind),
-    toggleItemOpen: (id, status) => props.toggleItemOpen(id, status, props.pickerKind)
+    toggleItemActive: (id, status) => props.toggleItemActive(id, status, props.pickerId),
+    toggleItemOpen: (id, status) => props.toggleItemOpen(id, status, props.pickerId)
 });
 
 export const TreePicker = connect(mapStateToProps, mapDispatchToProps)(Tree);
 
 const treePickerToTreeItems = (tree: Ttree<TreePickerNode>) =>
     (id: string): TreeItem<any> => {
-        const node: TreePickerNode = getNodeValue(id)(tree) || createTreePickerNode({ id: '', value: 'InvalidNode' });
-        const items = getNodeChildren(node.id)(tree)
+        const node: TreePickerNode = getNodeValue(id)(tree) || createTreePickerNode({ nodeId: '', value: 'InvalidNode' });
+        const items = getNodeChildren(node.nodeId)(tree)
             .map(treePickerToTreeItems(tree));
         return {
             active: node.selected,
             data: node.value,
-            id: node.id,
+            id: node.nodeId,
             items: items.length > 0 ? items : undefined,
             open: !node.collapsed,
             status: node.status
