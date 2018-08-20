@@ -22,7 +22,7 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
             {/* Missing attr */}
             <DetailsAttribute label='Size' value='---' />
-            <DetailsAttribute label='Owner' value={this.item.ownerUuid} />
+            <DetailsAttribute label='Owner' value={this.item.ownerUuid} lowercaseValue={true} />
             <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Missing attr */}

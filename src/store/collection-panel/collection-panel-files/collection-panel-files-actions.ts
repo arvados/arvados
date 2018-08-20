@@ -130,8 +130,15 @@ export const doCollectionPartialCopy = ({ name, description, projectUuid }: Coll
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
             } catch (e) {
-                if (getCommonResourceServiceError(e) === CommonResourceServiceError.UNIQUE_VIOLATION) {
+                const error = getCommonResourceServiceError(e);
+                if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                     dispatch(stopSubmit(COLLECTION_PARTIAL_COPY, { name: 'Collection with this name already exists.' }));
+                } else if (error === CommonResourceServiceError.UNKNOWN) {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000 }));
+                } else {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000 }));
                 }
             }
         }

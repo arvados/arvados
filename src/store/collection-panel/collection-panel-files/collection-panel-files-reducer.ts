@@ -4,7 +4,7 @@
 
 import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from './collection-panel-files-state';
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { createTree, mapTreeValues, getNode, setNode, getNodeAncestors, getNodeDescendants, setNodeValueWith, mapTree } from "~/models/tree";
+import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
 
 export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
@@ -44,7 +44,7 @@ const toggleSelected = (id: string) => (tree: CollectionPanelFilesState) =>
 const toggleDescendants = (id: string) => (tree: CollectionPanelFilesState) => {
     const node = getNode(id)(tree);
     if (node && node.value.type === CollectionFileType.DIRECTORY) {
-        return getNodeDescendants(id)(tree)
+        return getNodeDescendantsIds(id)(tree)
             .reduce((newTree, id) =>
                 setNodeValueWith(v => ({ ...v, selected: node.value.selected }))(id)(newTree), tree);
     }
@@ -52,7 +52,7 @@ const toggleDescendants = (id: string) => (tree: CollectionPanelFilesState) => {
 };
 
 const toggleAncestors = (id: string) => (tree: CollectionPanelFilesState) => {
-    const ancestors = getNodeAncestors(id)(tree).reverse();
+    const ancestors = getNodeAncestorsIds(id)(tree).reverse();
     return ancestors.reduce((newTree, parent) => parent ? toggleParentNode(parent)(newTree) : newTree, tree);
 };
 

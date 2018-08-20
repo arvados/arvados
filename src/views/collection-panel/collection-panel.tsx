@@ -20,7 +20,7 @@ import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'value';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -40,8 +40,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["500"],
         cursor: 'pointer'
     },
+    label: {
+        fontSize: '0.875rem'
+    },
     value: {
-        textTransform: 'none'
+        textTransform: 'none',
+        fontSize: '0.875rem'
     }
 });
 
@@ -84,16 +88,19 @@ export const CollectionPanel = withStyles(styles)(
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
-                                    <DetailsAttribute classValue={classes.value}
-                                            label='Collection UUID'
-                                            value={item && item.uuid}>
-                                        <CopyToClipboard text={item && item.uuid}>
-                                            <CopyIcon className={classes.copyIcon} />
-                                        </CopyToClipboard>
-                                    </DetailsAttribute>
-                                    <DetailsAttribute label='Number of files' value='14' />
-                                    <DetailsAttribute label='Content size' value='54 MB' />
-                                    <DetailsAttribute classValue={classes.value} label='Owner' value={item && item.ownerUuid} />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                                label='Collection UUID'
+                                                value={item && item.uuid}>
+                                            <CopyToClipboard text={item && item.uuid}>
+                                                <CopyIcon className={classes.copyIcon} />
+                                            </CopyToClipboard>
+                                        </DetailsAttribute>
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value} 
+                                            label='Number of files' value='14' />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value} 
+                                            label='Content size' value='54 MB' />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value} 
+                                            label='Owner' value={item && item.ownerUuid} />
                                     </Grid>
                                 </Grid>
                             </CardContent>

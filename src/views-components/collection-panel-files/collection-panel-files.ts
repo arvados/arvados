@@ -12,7 +12,7 @@ import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { Tree, getNodeChildren, getNode } from "~/models/tree";
+import { Tree, getNodeChildrenIds, getNode } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
 import { openUploadCollectionFilesDialog } from '~/store/collections/uploader/collection-uploader-actions';
 
@@ -23,7 +23,7 @@ const memoizedMapStateToProps = () => {
     return (state: RootState): Pick<CollectionPanelFilesProps, "items"> => {
         if (prevState !== state.collectionPanelFiles) {
             prevState = state.collectionPanelFiles;
-            prevTree = getNodeChildren('')(state.collectionPanelFiles)
+            prevTree = getNodeChildrenIds('')(state.collectionPanelFiles)
                 .map(collectionItemToTreeItem(state.collectionPanelFiles));
         }
         return {
@@ -80,7 +80,7 @@ const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | Collecti
                 type: node.value.type
             },
             id: node.id,
-            items: getNodeChildren(node.id)(tree)
+            items: getNodeChildrenIds(node.id)(tree)
                 .map(collectionItemToTreeItem(tree)),
             open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
             selected: node.value.selected,

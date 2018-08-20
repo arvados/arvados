@@ -29,7 +29,6 @@ import { CreateProjectDialog } from "~/views-components/create-project-dialog/cr
 
 import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-panel-action";
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
-import { SidePanelIdentifiers } from '~/store/side-panel/side-panel-reducer';
 import { ProjectResource } from '~/models/project';
 import { ResourceKind } from '~/models/resource';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
@@ -47,6 +46,8 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
+import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
+import { MoveToProjectDialog } from '../../views-components/move-to-dialog/move-to-dialog';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
@@ -102,14 +103,15 @@ interface WorkbenchDataProps {
     sidePanelItems: SidePanelItem[];
 }
 
-interface WorkbenchServiceProps {
+interface WorkbenchGeneralProps {
     authService: AuthService;
+    buildInfo: string;
 }
 
 interface WorkbenchActionProps {
 }
 
-type WorkbenchProps = WorkbenchDataProps & WorkbenchServiceProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
+type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface NavBreadcrumb extends Breadcrumb {
     itemId: string;
@@ -194,6 +196,7 @@ export const Workbench = withStyles(styles)(
                                 searchText={this.state.searchText}
                                 user={this.props.user}
                                 menuItems={this.state.menuItems}
+                                buildInfo={this.props.buildInfo}
                                 {...this.mainAppBarActions} />
                         </div>
                         {user &&
@@ -223,7 +226,6 @@ export const Workbench = withStyles(styles)(
                                         toggleActive={itemId => {
                                             this.props.dispatch(setProjectItem(itemId, ItemMode.ACTIVE));
                                             this.props.dispatch(loadDetails(itemId, ResourceKind.PROJECT));
-                                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                                         }} />
                                 </SidePanel>
                             </Drawer>}
@@ -244,6 +246,8 @@ export const Workbench = withStyles(styles)(
                         <CreateCollectionDialog />
                         <RenameFileDialog />
                         <CollectionPartialCopyDialog />
+                        <MoveToProjectDialog />
+                        <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
@@ -332,7 +336,6 @@ export const Workbench = withStyles(styles)(
                         default:
                             this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
                             this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                            this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(SidePanelIdentifiers.PROJECTS));
                     }
 
                 }}
@@ -365,7 +368,6 @@ export const Workbench = withStyles(styles)(
             }
 
             toggleSidePanelActive = (itemId: string) => {
-                this.props.dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_ACTIVE(itemId));
                 this.props.dispatch(projectActions.RESET_PROJECT_TREE_ACTIVITY(itemId));
 
                 const panelItem = this.props.sidePanelItems.find(it => it.id === itemId);

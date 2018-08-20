@@ -27,9 +27,9 @@ export const collectionUploaderActions = unionize({
     SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>(),
     CLEAR_UPLOAD: ofType()
 }, {
-        tag: 'type',
-        value: 'payload'
-    });
+    tag: 'type',
+    value: 'payload'
+});
 
 export type CollectionUploaderAction = UnionOf<typeof collectionUploaderActions>;
 

@@ -6,10 +6,11 @@ import { reset, initialize } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions, PROJECT_FORM_NAME } from "~/store/project/project-action";
-import { NewProjectIcon, RenameIcon } from "~/components/icon/icon";
+import { NewProjectIcon, MoveToIcon, RenameIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
 
 export const projectActionSet: ContextMenuActionSet = [[
@@ -36,5 +37,10 @@ export const projectActionSet: ContextMenuActionSet = [[
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
         }
-    }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: dispatch => dispatch<any>(openMoveToDialog())
+    },
 ]];
