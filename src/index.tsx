@@ -28,8 +28,8 @@ import { collectionFilesItemActionSet } from './views-components/context-menu/ac
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 
-const getBuildNumber = () => "BN-" + (process.env.BUILD_NUMBER || "dev");
-const getGitCommit = () => "GIT-" + (process.env.GIT_COMMIT || "latest").substr(0, 7);
+const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
+const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
 const getBuildInfo = () => getBuildNumber() + " / " + getGitCommit();
 
 const buildInfo = getBuildInfo();
