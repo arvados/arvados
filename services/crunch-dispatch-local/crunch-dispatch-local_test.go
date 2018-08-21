@@ -12,7 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
-	"strings"
+	"regexp"
 	"testing"
 	"time"
 
@@ -41,6 +41,7 @@ func (s *TestSuite) SetUpSuite(c *C) {
 	initialArgs = os.Args
 	arvadostest.StartAPI()
 	runningCmds = make(map[string]*exec.Cmd)
+	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
 }
 
 func (s *TestSuite) TearDownSuite(c *C) {
@@ -133,7 +134,7 @@ func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
 		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2", "state":"Running", "priority":1, "locked_by_uuid": "` + arvadostest.Dispatch1AuthUUID + `"}`)}
 
 	testWithServerStub(c, apiStubResponses, "echo",
-		`after "echo" process termination, container state for zzzzz-dz642-xxxxxxxxxxxxxx2 is "Running"; updating it to "Cancelled"`)
+		`after \\"echo\\" process termination, container state for zzzzz-dz642-xxxxxxxxxxxxxx2 is \\"Running\\"; updating it to \\"Cancelled\\"`)
 }
 
 func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
@@ -144,7 +145,7 @@ func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx3/lock"] =
 		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3", "state":"Locked", "priority":1}`)}
 
-	testWithServerStub(c, apiStubResponses, "nosuchcommand", `error starting "nosuchcommand" for zzzzz-dz642-xxxxxxxxxxxxxx3`)
+	testWithServerStub(c, apiStubResponses, "nosuchcommand", `error starting \\"nosuchcommand\\" for zzzzz-dz642-xxxxxxxxxxxxxx3`)
 }
 
 func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
@@ -186,8 +187,9 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		return cmd.Start()
 	}
 
+	re := regexp.MustCompile(`(?ms).*` + expected + `.*`)
 	go func() {
-		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
+		for i := 0; i < 80 && !re.MatchString(buf.String()); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
 		cancel()
