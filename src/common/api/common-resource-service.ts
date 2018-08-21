@@ -119,7 +119,7 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
         switch (true) {
             case /UniqueViolation/.test(error):
                 return CommonResourceServiceError.UNIQUE_VIOLATION;
-            case /Owner uuid has an ownership cycle/.test(error):
+            case /ownership cycle/.test(error):
                 return CommonResourceServiceError.OWNERSHIP_CYCLE;
             default:
                 return CommonResourceServiceError.UNKNOWN;
