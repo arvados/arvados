@@ -8,15 +8,8 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePicker } from '~/views-components/project-tree-picker/project-tree-picker';
 import { Typography } from "@material-ui/core";
-import { ResourceKind } from '~/models/resource';
-import { MOVE_TO_VALIDATION } from '../../validators/validators';
-
-export interface MoveToFormDialogData {
-    name: string;
-    uuid: string;
-    ownerUuid: string;
-    kind: ResourceKind;
-}
+import { MOVE_TO_VALIDATION } from '~/validators/validators';
+import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
 export const MoveToFormDialog = (props: WithDialogProps<string> & InjectedFormProps<MoveToFormDialogData>) =>
     <FormDialog
