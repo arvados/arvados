@@ -33,6 +33,7 @@ class ContainerRequest < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validate :validate_datatypes
   validate :validate_scheduling_parameters
   validate :validate_state_change
   validate :check_update_whitelist
@@ -223,6 +224,43 @@ class ContainerRequest < ArvadosModel
         unless (v.is_a?(Integer) && v > 0)
           errors.add(:runtime_constraints,
                      "[#{k}]=#{v.inspect} must be a positive integer")
+        end
+      end
+    end
+  end
+
+  def validate_datatypes
+    command.each do |c|
+      if !c.is_a? String
+        errors.add(:command, "must be an array of strings but has entry #{c.class}")
+      end
+    end
+    environment.each do |k,v|
+      if !k.is_a?(String) || !v.is_a?(String)
+        errors.add(:environment, "must be an map of String to String but has entry #{k.class} to #{v.class}")
+      end
+    end
+    [:mounts, :secret_mounts].each do |m|
+      self[m].each do |k, v|
+        if !k.is_a?(String) || !v.is_a?(Hash)
+          errors.add(m, "must be an map of String to Hash but is has entry #{k.class} to #{v.class}")
+        end
+        if v["kind"].nil?
+          errors.add(m, "each item must have a 'kind' field")
+        end
+        [[String, ["kind", "portable_data_hash", "uuid", "device_type",
+                   "path", "commit", "repository_name", "git_url"]],
+         [Integer, ["capacity"]]].each do |t, fields|
+          fields.each do |f|
+            if !v[f].nil? && !v[f].is_a?(t)
+              errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
+            end
+          end
+        end
+        ["writable", "exclude_from_output"].each do |f|
+          if !v[f].nil? && !v[f].is_a?(TrueClass) && !v[f].is_a?(FalseClass)
+            errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
+          end
         end
       end
     end
