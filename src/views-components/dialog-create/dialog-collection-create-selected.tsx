@@ -48,9 +48,7 @@ export const DialogCollectionCreateWithSelected = (props: WithDialogProps<string
                     type='submit'
                     onClick={props.handleSubmit}
                     disabled={props.pristine || props.invalid || props.submitting}>
-                    {props.submitting
-                        ? <CircularProgress size={20} />
-                        : 'Create a collection'}
+                    {props.submitting ? <CircularProgress size={20} /> : 'Create a collection'}
                 </Button>
             </DialogActions>
         </Dialog>

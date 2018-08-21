@@ -6,11 +6,13 @@ import { reset, initialize } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions, PROJECT_FORM_NAME } from "~/store/project/project-action";
-import { NewProjectIcon, RenameIcon } from "~/components/icon/icon";
+import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
+import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -35,6 +37,18 @@ export const projectActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: dispatch => dispatch<any>(openMoveToDialog())       
+    },
+    {
+        icon: CopyIcon,
+        name: "Copy to project",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProjectCopyDialog({name: resource.name, projectUuid: resource.uuid}));
         }
     }
 ]];

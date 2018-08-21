@@ -29,8 +29,8 @@ describe('data-explorer-reducer', () => {
             filters: [],
             render: jest.fn(),
             selected: true,
-            configurable: true,
-            sortDirection: SortDirection.ASC
+            sortDirection: SortDirection.ASC,
+            configurable: true
         }, {
             name: "Column 2",
             filters: [],

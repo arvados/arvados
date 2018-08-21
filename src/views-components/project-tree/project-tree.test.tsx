@@ -11,9 +11,9 @@ import { Collapse } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { ProjectTree } from './project-tree';
-import { TreeItem } from '~/components/tree/tree';
-import { ProjectResource } from '~/models/project';
-import { mockProjectResource } from '~/models/test-utils';
+import { TreeItem, TreeItemStatus } from '../../components/tree/tree';
+import { ProjectResource } from '../../models/project';
+import { mockProjectResource } from '../../models/test-utils';
 
 Enzyme.configure({ adapter: new Adapter() });
 
@@ -25,7 +25,7 @@ describe("ProjectTree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1
+            status: TreeItemStatus.PENDING
         };
         const wrapper = mount(<ProjectTree
             projects={[project]}
@@ -43,14 +43,14 @@ describe("ProjectTree component", () => {
                 id: "3",
                 open: true,
                 active: true,
-                status: 2,
+                status: TreeItemStatus.LOADED,
                 items: [
                     {
                         data: mockProjectResource(),
                         id: "3",
                         open: true,
                         active: true,
-                        status: 1
+                        status: TreeItemStatus.PENDING
                     }
                 ]
             }
@@ -70,7 +70,7 @@ describe("ProjectTree component", () => {
             id: "3",
             open: false,
             active: true,
-            status: 1
+            status: TreeItemStatus.PENDING
         };
         const wrapper = mount(<ProjectTree
             projects={[project]}

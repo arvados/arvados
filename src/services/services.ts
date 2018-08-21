@@ -30,7 +30,7 @@ export const createServices = (config: Config) => {
     const projectService = new ProjectService(apiClient);
     const linkService = new LinkService(apiClient);
     const favoriteService = new FavoriteService(linkService, groupsService);
-    const collectionService = new CollectionService(apiClient, keepService, webdavClient, authService);
+    const collectionService = new CollectionService(apiClient, webdavClient, authService);
     const tagService = new TagService(linkService);
     const collectionFilesService = new CollectionFilesService(collectionService);
 

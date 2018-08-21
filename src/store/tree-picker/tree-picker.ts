@@ -5,17 +5,17 @@
 import { Tree } from "~/models/tree";
 import { TreeItemStatus } from "~/components/tree/tree";
 
-export type TreePicker = Tree<TreePickerNode>;
+export type TreePicker = { [key: string]: Tree<TreePickerNode> };
 
 export interface TreePickerNode {
-    id: string;
+    nodeId: string;
     value: any;
     selected: boolean;
     collapsed: boolean;
     status: TreeItemStatus;
 }
 
-export const createTreePickerNode = (data: {id: string, value: any}) => ({
+export const createTreePickerNode = (data: { nodeId: string, value: any }) => ({
     ...data,
     selected: false,
     collapsed: true,
