@@ -15,7 +15,7 @@ export interface CopyFormData {
     uuid: string;
 }
 
-export const MakeACopyDialog = (props: WithDialogProps<string> & InjectedFormProps<CopyFormData>) =>
+export const ProjectCopy = (props: WithDialogProps<string> & InjectedFormProps<CopyFormData>) =>
     <form>
         <Dialog open={props.open}
             disableBackdropClick={true}
@@ -46,8 +46,9 @@ export const MakeACopyDialog = (props: WithDialogProps<string> & InjectedFormPro
                     type='submit'
                     onClick={props.handleSubmit}
                     disabled={props.pristine || props.invalid || props.submitting}>
-                    {props.submitting ? <CircularProgress size={20} /> : 'Copy'}
-                </Button>
+                    {props.submitting && <CircularProgress size={20} style={{position: 'absolute'}}/>}
+                    Copy
+                </Button>                
             </DialogActions>
         </Dialog>
     </form>;

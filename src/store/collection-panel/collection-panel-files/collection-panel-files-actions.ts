@@ -11,9 +11,9 @@ import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, initialize, SubmissionError, stopSubmit } from 'redux-form';
-import { loadProjectTreePickerProjects } from '../../../views-components/project-tree-picker/project-tree-picker';
+import { startSubmit, initialize, stopSubmit } from 'redux-form';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { resetPickerProjectTree } from '../../project-tree-picker/project-tree-picker-actions';
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -103,7 +103,7 @@ export const openCollectionPartialCopyDialog = () =>
                 projectUuid: ''
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY, initialData));
-            dispatch<any>(loadProjectTreePickerProjects(''));
+            dispatch<any>(resetPickerProjectTree());
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY, data: {} }));
         }
     };
