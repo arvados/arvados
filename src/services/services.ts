@@ -14,7 +14,8 @@ import { CollectionFilesService } from "./collection-files-service/collection-fi
 import { KeepService } from "./keep-service/keep-service";
 import { WebDAV } from "../common/webdav";
 import { Config } from "../common/config";
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, Resource } from '~/models/resource';
+import { CommonResourceService } from '../common/api/common-resource-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -50,7 +51,7 @@ export const createServices = (config: Config) => {
     };
 };
 
-export const getResourceService = (resourceKind: ResourceKind, serviceRepository: ServiceRepository) => {
+export const getResourceService = (resourceKind: ResourceKind, serviceRepository: ServiceRepository): undefined | CommonResourceService<Resource> => {
     switch (resourceKind) {
         case ResourceKind.PROJECT:
             return serviceRepository.projectService;

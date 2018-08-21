@@ -40,13 +40,15 @@ export const moveResource = (resource: MoveToDialogResource) =>
         if (service) {
             try {
                 const originalResource = await service.get(resource.uuid);
-                await service.update(resource.uuid, { ...originalResource, owner_uuid: resource.ownerUuid });
+                await service.update(resource.uuid, { ...originalResource, ownerUuid: resource.ownerUuid });
                 dispatch(dialogActions.CLOSE_DIALOG({ id: MOVE_TO_DIALOG }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Resource has been moved', hideDuration: 2000 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                    dispatch(stopSubmit(MOVE_TO_DIALOG, { ownerUuid: 'A resource with the same name already exists in the target project' }));
+                    dispatch(stopSubmit(MOVE_TO_DIALOG, { ownerUuid: 'A resource with the same name already exists in the target project.' }));
+                } else if (error === CommonResourceServiceError.OWNERSHIP_CYCLE) {
+                    dispatch(stopSubmit(MOVE_TO_DIALOG, { ownerUuid: 'Cannot move a project into itself.' }));
                 } else {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: MOVE_TO_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the resource.', hideDuration: 2000 }));
@@ -77,16 +79,18 @@ const MoveToDialogFields = (props: InjectedFormProps<MoveToDialogResource>) =>
         component={Picker}
         validate={validation} />;
 
-const sameUuid = (value: string, allValues: MoveToDialogResource) =>
-    value === allValues.uuid && 'Cannot move the project to itself';
-
-const validation = [require, sameUuid];
+const validation = [require];
 
 const Picker = (props: WrappedFieldProps) =>
-    <div style={{ height: '144px', display: 'flex', flexDirection: 'column' }}>
-        <ProjectTreePicker onChange={projectUuid => props.input.onChange(projectUuid)} />
+    <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
+        <ProjectTreePicker onChange={handleChange(props)} />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>
                 {props.meta.error}
             </Typography>}
     </div>;
+
+const handleChange = (props: WrappedFieldProps) => (value: string) =>
+    props.input.value === value
+        ? props.input.onChange('')
+        : props.input.onChange(value);
