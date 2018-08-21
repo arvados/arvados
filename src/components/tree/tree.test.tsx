@@ -92,7 +92,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED,
         });
     });
 

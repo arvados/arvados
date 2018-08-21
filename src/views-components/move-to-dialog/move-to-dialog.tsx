@@ -2,28 +2,39 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch, compose } from "redux";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
-import { MoveToDialog } from "../../components/move-to-dialog/move-to-dialog";
-import { reduxForm, startSubmit, stopSubmit } from "redux-form";
-import { resetPickerProjectTree } from "~/store/project-tree-picker/project-tree-picker-actions";
+import * as React from "react";
+import { InjectedFormProps, Field, WrappedFieldProps } from 'redux-form';
+import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { FormDialog } from '~/components/form-dialog/form-dialog';
+import { ProjectTreePicker } from '~/views-components/project-tree-picker/project-tree-picker';
+import { Typography } from "@material-ui/core";
+import { MOVE_TO_VALIDATION } from '~/validators/validators';
+import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
-export const MOVE_TO_DIALOG = 'moveToDialog';
+export const MoveToFormDialog = (props: WithDialogProps<string> & InjectedFormProps<MoveToFormDialogData>) =>
+    <FormDialog
+        dialogTitle='Move to'
+        formFields={MoveToDialogFields}
+        submitLabel='Move'
+        {...props}
+    />;
 
-export const openMoveToDialog = () =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(resetPickerProjectTree());
-        dispatch(dialogActions.OPEN_DIALOG({ id: MOVE_TO_DIALOG, data: {} }));
-    };
+const MoveToDialogFields = () =>
+    <Field
+        name="ownerUuid"
+        component={ProjectPicker}
+        validate={MOVE_TO_VALIDATION} />;
 
-export const MoveToProjectDialog = compose(
-    withDialog(MOVE_TO_DIALOG),
-    reduxForm({
-        form: MOVE_TO_DIALOG,
-        onSubmit: (data, dispatch) => {
-            dispatch(startSubmit(MOVE_TO_DIALOG));
-            setTimeout(() => dispatch(stopSubmit(MOVE_TO_DIALOG, { name: 'Invalid path' })), 2000);
-        }
-    })
-)(MoveToDialog);
+const ProjectPicker = (props: WrappedFieldProps) =>
+    <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
+        <ProjectTreePicker onChange={handleChange(props)} />
+        {props.meta.dirty && props.meta.error &&
+            <Typography variant='caption' color='error'>
+                {props.meta.error}
+            </Typography>}
+    </div>;
+
+const handleChange = (props: WrappedFieldProps) => (value: string) =>
+    props.input.value === value
+        ? props.input.onChange('')
+        : props.input.onChange(value);

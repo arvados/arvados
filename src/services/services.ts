@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import Axios, { AxiosInstance } from "axios";
+import Axios from "axios";
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
 import { ProjectService } from "./project-service/project-service";
@@ -48,4 +48,3 @@ export const createServices = (config: Config) => {
         collectionFilesService
     };
 };
-

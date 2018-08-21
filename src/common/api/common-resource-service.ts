@@ -31,6 +31,7 @@ export interface Errors {
 
 export enum CommonResourceServiceError {
     UNIQUE_VIOLATION = 'UniqueViolation',
+    OWNERSHIP_CYCLE = 'OwnershipCycle',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -104,10 +105,10 @@ export class CommonResourceService<T extends Resource> {
                 }));
     }
 
-    update(uuid: string, data: any) {
+    update(uuid: string, data: Partial<T>) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .put<T>(this.resourceType + uuid, data));
+                .put<T>(this.resourceType + uuid, data && CommonResourceService.mapKeys(_.snakeCase)(data)));
 
     }
 }
@@ -118,6 +119,8 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
         switch (true) {
             case /UniqueViolation/.test(error):
                 return CommonResourceServiceError.UNIQUE_VIOLATION;
+            case /ownership cycle/.test(error):
+                return CommonResourceServiceError.OWNERSHIP_CYCLE;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }

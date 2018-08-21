@@ -8,8 +8,8 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
 import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
-import { openMoveToDialog } from "~/views-components/move-to-dialog/move-to-dialog";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -29,7 +29,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: dispatch => dispatch<any>(openMoveToDialog())
+        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
     },
     {
         component: ToggleFavoriteAction,
