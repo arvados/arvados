@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package dispatchcloud
 
 import (
@@ -17,6 +21,8 @@ type Instance interface {
 	// Cloud provider's "instance type" ID. Matches a key in
 	// configured arvados.InstanceTypeMap.
 	ProviderType() string
+	// Get tags
+	GetTags() ([]InstanceTag, error)
 	// Replace tags with the given tags
 	SetTags([]InstanceTag) error
 	// Shut down the node
@@ -26,6 +32,6 @@ type Instance interface {
 }
 
 type Provider interface {
-	Create(arvados.InstanceType, ImageID, []InstanceTag) (Instance, error)
-	Instances() ([]Instance, error)
+	Create(context.Context, arvados.InstanceType, ImageID, []InstanceTag) (Instance, error)
+	Instances(context.Context) ([]Instance, error)
 }
