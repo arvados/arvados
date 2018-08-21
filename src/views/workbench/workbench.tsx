@@ -51,6 +51,7 @@ import { MoveToProjectDialog } from '../../views-components/move-to-dialog/move-
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
+import { ProjectCopyDialog } from '~/views-components/project-copy-dialog/project-copy-dialog';
 import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 
 const DRAWER_WITDH = 240;
@@ -249,6 +250,7 @@ export const Workbench = withStyles(styles)(
                         <MoveToProjectDialog />
                         <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
+                        <ProjectCopyDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <UploadCollectionFilesDialog />

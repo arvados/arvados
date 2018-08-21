@@ -8,6 +8,7 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
 import { openMoveToDialog } from "../../move-to-dialog/move-to-dialog";
 
 export const collectionActionSet: ContextMenuActionSet = [[
@@ -42,7 +43,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProjectCopyDialog({name: resource.name, projectUuid: resource.uuid}));
         }
     },
     {
