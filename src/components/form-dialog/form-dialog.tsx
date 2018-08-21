@@ -8,7 +8,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 
-type CssRules = "button" | "lastButton" | "formContainer" | "textField" | "dialog" | "dialogTitle" | "progressIndicator" | "dialogActions";
+type CssRules = "button" | "lastButton" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -26,13 +26,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     dialogTitle: {
         paddingBottom: "0"
     },
-    textField: {
-        marginTop: "32px",
-    },
-    dialog: {
-        minWidth: "600px",
-        minHeight: "320px"
-    },
     progressIndicator: {
         position: "absolute",
         minWidth: "20px",
@@ -45,7 +38,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 interface DialogProjectProps {
     cancelLabel?: string;
     dialogTitle: string;
-    formFields: React.ComponentType<InjectedFormProps<any>>;
+    formFields: React.ComponentType<InjectedFormProps<any> & WithDialogProps<any>>;
     submitLabel?: string;
 }
 
@@ -54,35 +47,34 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps & WithDi
         open={props.open}
         onClose={props.closeDialog}
         disableBackdropClick={props.submitting}
-        disableEscapeKeyDown={props.submitting}>
-        <div className={props.classes.dialog}>
-            <form>
-                <DialogTitle className={props.classes.dialogTitle}>
-                    {props.dialogTitle}
-                </DialogTitle>
-                <DialogContent className={props.classes.formContainer}>
-                    <props.formFields {...props} />
-                </DialogContent>
-                <DialogActions className={props.classes.dialogActions}>
-                    <Button
-                        onClick={props.closeDialog}
-                        className={props.classes.button}
-                        color="primary"
-                        disabled={props.submitting}>
-                        {props.cancelLabel || 'Cancel'}
-                    </Button>
-                    <Button
-                        onClick={props.handleSubmit}
-                        className={props.classes.lastButton}
-                        color="primary"
-                        disabled={props.invalid || props.submitting || props.pristine}
-                        variant="contained">
-                        {props.submitLabel || 'Submit'}
-                        {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
-                    </Button>
-                </DialogActions>
-            </form>
-        </div>
+        disableEscapeKeyDown={props.submitting}
+        fullWidth>
+        <form>
+            <DialogTitle className={props.classes.dialogTitle}>
+                {props.dialogTitle}
+            </DialogTitle>
+            <DialogContent className={props.classes.formContainer}>
+                <props.formFields {...props} />
+            </DialogContent>
+            <DialogActions className={props.classes.dialogActions}>
+                <Button
+                    onClick={props.closeDialog}
+                    className={props.classes.button}
+                    color="primary"
+                    disabled={props.submitting}>
+                    {props.cancelLabel || 'Cancel'}
+                </Button>
+                <Button
+                    onClick={props.handleSubmit}
+                    className={props.classes.lastButton}
+                    color="primary"
+                    disabled={props.invalid || props.submitting || props.pristine}
+                    variant="contained">
+                    {props.submitLabel || 'Submit'}
+                    {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
+                </Button>
+            </DialogActions>
+        </form>
     </Dialog>
 );
 

@@ -4,11 +4,11 @@
 
 import { DialogAction, dialogActions } from "./dialog-actions";
 
-export type DialogState = Record<string, Dialog>;
+export type DialogState = Record<string, Dialog<any>>;
 
-export interface Dialog {
+export interface Dialog <T> {
     open: boolean;
-    data: any;
+    data: T;
 }
 
 export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
@@ -20,3 +20,5 @@ export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
         default: () => state,
     });
 
+export const getDialog = <T>(state: DialogState, id: string) => 
+    state[id] ? state[id] as Dialog<T> : undefined;
