@@ -60,6 +60,7 @@ class Container < ArvadosModel
     t.add :priority
     t.add :progress
     t.add :runtime_constraints
+    t.add :runtime_status
     t.add :started_at
     t.add :state
     t.add :auth_uuid
