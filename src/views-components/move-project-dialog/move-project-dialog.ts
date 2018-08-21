@@ -11,6 +11,8 @@ import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { MoveToFormDialogData, MoveToFormDialog } from '../move-to-dialog/move-to-dialog';
+import { projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { getProjectList } from '~/store/project/project-action';
 
 export const MOVE_PROJECT_DIALOG = 'moveProjectDialog';
 
@@ -26,6 +28,9 @@ export const moveProject = (resource: MoveToFormDialogData) =>
         try {
             const project = await services.projectService.get(resource.uuid);
             await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
+            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch<any>(getProjectList(project.ownerUuid));
+            dispatch<any>(getProjectList(resource.ownerUuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: MOVE_PROJECT_DIALOG }));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Project has been moved', hideDuration: 2000 }));
         } catch (e) {

@@ -11,6 +11,7 @@ import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { MoveToFormDialogData, MoveToFormDialog } from '../move-to-dialog/move-to-dialog';
+import { projectPanelActions } from '../../store/project-panel/project-panel-action';
 
 export const MOVE_COLLECTION_DIALOG = 'moveCollectionDialog';
 
@@ -26,6 +27,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
         try {
             const collection = await services.collectionService.get(resource.uuid);
             await services.collectionService.update(resource.uuid, { ...collection, ownerUuid: resource.ownerUuid });
+            dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: MOVE_COLLECTION_DIALOG }));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved', hideDuration: 2000 }));
         } catch (e) {
