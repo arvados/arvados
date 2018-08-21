@@ -19,12 +19,12 @@ export type ServiceRepository = ReturnType<typeof createServices>;
 
 export const createServices = (config: Config) => {
     const apiClient = Axios.create();
-    apiClient.defaults.baseURL = `${config.apiHost}/arvados/v1`;
+    apiClient.defaults.baseURL = config.baseUrl;
 
     const webdavClient = new WebDAV();
-    webdavClient.defaults.baseURL = config.keepWebHost;
+    webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
-    const authService = new AuthService(apiClient, config.apiHost);
+    const authService = new AuthService(apiClient, config.rootUrl);
     const keepService = new KeepService(apiClient);
     const groupsService = new GroupsService(apiClient);
     const projectService = new ProjectService(apiClient);
