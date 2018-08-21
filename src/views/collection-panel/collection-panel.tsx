@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip
+    CardHeader, IconButton, CardContent, Grid, Chip, Tooltip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -19,6 +19,7 @@ import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
 
@@ -91,9 +92,11 @@ export const CollectionPanel = withStyles(styles)(
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                                 label='Collection UUID'
                                                 value={item && item.uuid}>
-                                            <CopyToClipboard text={item && item.uuid}>
-                                                <CopyIcon className={classes.copyIcon} />
-                                            </CopyToClipboard>
+                                            <Tooltip title="Copy uuid">
+                                                <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy() }>
+                                                    <CopyIcon className={classes.copyIcon} />
+                                                </CopyToClipboard>
+                                            </Tooltip>
                                         </DetailsAttribute>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value} 
                                             label='Number of files' value='14' />
@@ -131,6 +134,13 @@ export const CollectionPanel = withStyles(styles)(
 
             handleDelete = (uuid: string) => () => {
                 this.props.dispatch<any>(deleteCollectionTag(uuid));
+            }
+
+            onCopy = () => {
+                this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Uuid has been copied",
+                    hideDuration: 2000
+                }));
             }
 
             componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {

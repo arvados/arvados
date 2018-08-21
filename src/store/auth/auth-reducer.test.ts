@@ -7,13 +7,14 @@ import { AuthAction, authActions } from "./auth-action";
 
 import 'jest-localstorage-mock';
 import { createServices } from "~/services/services";
+import { mockConfig } from '~/common/config';
 
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
+        reducer = authReducer(createServices(mockConfig({})));
     });
 
     it('should correctly initialise state', () => {

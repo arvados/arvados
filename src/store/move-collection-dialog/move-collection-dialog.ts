@@ -11,11 +11,13 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/com
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { MoveToFormDialogData } from '../move-to-dialog/move-to-dialog';
+import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 
 export const MOVE_COLLECTION_DIALOG = 'moveCollectionDialog';
 
 export const openMoveCollectionDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
+        dispatch<any>(resetPickerProjectTree());
         dispatch(initialize(MOVE_COLLECTION_DIALOG, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: MOVE_COLLECTION_DIALOG, data: {} }));
     };

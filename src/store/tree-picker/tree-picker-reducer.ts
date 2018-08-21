@@ -12,12 +12,14 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
     treePickerActions.match(action, {
         LOAD_TREE_PICKER_NODE: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, setNodeValueWith(setPending)(nodeId)),
-        LOAD_TREE_PICKER_NODE_SUCCESS: ({ nodeId, nodes, pickerId }) => 
-            updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(nodeId),setNodeValueWith(setLoaded)(nodeId))),
-        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ nodeId, pickerId }) => 
+        LOAD_TREE_PICKER_NODE_SUCCESS: ({ nodeId, nodes, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(nodeId), setNodeValueWith(setLoaded)(nodeId))),
+        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, setNodeValueWith(toggleCollapse)(nodeId)),
-        TOGGLE_TREE_PICKER_NODE_SELECT: ({ nodeId, pickerId }) => 
+        TOGGLE_TREE_PICKER_NODE_SELECT: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, mapTreeValues(toggleSelect(nodeId))),
+        RESET_TREE_PICKER: ({ pickerId }) => 
+            updateOrCreatePicker(state, pickerId, createTree),
         default: () => state
     });
 

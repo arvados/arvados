@@ -16,7 +16,6 @@ import { createTreePickerNode } from "~/store/tree-picker/tree-picker";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from "~/common/api/filter-builder";
-import { mockProjectResource } from "~/models/test-utils";
 
 type ProjectTreePickerProps = Pick<TreePickerProps, 'toggleItemActive' | 'toggleItemOpen'>;
 
@@ -142,31 +141,4 @@ export const receiveTreePickerData = (nodeId: string, projects: ProjectResource[
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
     };
 
-export const initPickerProjectTree = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const uuid = services.authService.getUuid();
-
-    dispatch<any>(getPickerTreeProjects(uuid));
-    dispatch<any>(getSharedWithMeProjectsPickerTree(uuid));
-    dispatch<any>(getFavoritesProjectsPickerTree(uuid));
-};
-
-const getPickerTreeProjects = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerId.PROJECTS);
-};
-
-const getSharedWithMeProjectsPickerTree = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerId.SHARED_WITH_ME);
-};
-
-const getFavoritesProjectsPickerTree = (uuid: string = '') => {
-    return getProjectsPickerTree(uuid, TreePickerId.FAVORITES);
-};
-
-const getProjectsPickerTree = (uuid: string, kind: string) => {
-    return receiveTreePickerData(
-        '',
-        [mockProjectResource({ uuid, name: kind })],
-        kind
-    );
-};
 

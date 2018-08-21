@@ -7,8 +7,48 @@ import Axios from "axios";
 export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
 
 export interface Config {
-    apiHost: string;
-    keepWebHost: string;
+    auth: {};
+    basePath: string;
+    baseUrl: string;
+    batchPath: string;
+    blobSignatureTtl: number;
+    crunchLimitLogBytesPerJob: number;
+    crunchLogBytesPerEvent: number;
+    crunchLogPartialLineThrottlePeriod: number;
+    crunchLogSecondsBetweenEvents: number;
+    crunchLogThrottleBytes: number;
+    crunchLogThrottleLines: number;
+    crunchLogThrottlePeriod: number;
+    defaultCollectionReplication: number;
+    defaultTrashLifetime: number;
+    description: string;
+    discoveryVersion: string;
+    dockerImageFormats: string[];
+    documentationLink: string;
+    generatedAt: string;
+    gitUrl: string;
+    id: string;
+    keepWebServiceUrl: string;
+    kind: string;
+    maxRequestSize: number;
+    name: string;
+    packageVersion: string;
+    parameters: {};
+    protocol: string;
+    remoteHosts: string;
+    remoteHostsViaDNS: boolean;
+    resources: {};
+    revision: string;
+    rootUrl: string;
+    schemas: {};
+    servicePath: string;
+    sourceVersion: string;
+    source_version: string;
+    title: string;
+    uuidPrefix: string;
+    version: string;
+    websocketUrl: string;
+    workbenchUrl: string;
 }
 
 export const fetchConfig = () => {
@@ -16,22 +56,62 @@ export const fetchConfig = () => {
         .get<ConfigJSON>(CONFIG_URL + "?nocache=" + (new Date()).getTime())
         .then(response => response.data)
         .catch(() => Promise.resolve(getDefaultConfig()))
-        .then(mapConfig);
+        .then(config => Axios.get<Config>(getDiscoveryURL(config.API_HOST)))
+        .then(response => response.data);
 };
+
+export const mockConfig = (config: Partial<Config>): Config => ({
+    auth: {},
+    basePath: '',
+    baseUrl: '',
+    batchPath: '',
+    blobSignatureTtl: 0,
+    crunchLimitLogBytesPerJob: 0,
+    crunchLogBytesPerEvent: 0,
+    crunchLogPartialLineThrottlePeriod: 0,
+    crunchLogSecondsBetweenEvents: 0,
+    crunchLogThrottleBytes: 0,
+    crunchLogThrottleLines: 0,
+    crunchLogThrottlePeriod: 0,
+    defaultCollectionReplication: 0,
+    defaultTrashLifetime: 0,
+    description: '',
+    discoveryVersion: '',
+    dockerImageFormats: [],
+    documentationLink: '',
+    generatedAt: '',
+    gitUrl: '',
+    id: '',
+    keepWebServiceUrl: '',
+    kind: '',
+    maxRequestSize: 0,
+    name: '',
+    packageVersion: '',
+    parameters: {},
+    protocol: '',
+    remoteHosts: '',
+    remoteHostsViaDNS: false,
+    resources: {},
+    revision: '',
+    rootUrl: '',
+    schemas: {},
+    servicePath: '',
+    sourceVersion: '',
+    source_version: '',
+    title: '',
+    uuidPrefix: '',
+    version: '',
+    websocketUrl: '',
+    workbenchUrl: '',
+    ...config
+});
 
 interface ConfigJSON {
     API_HOST: string;
-    KEEP_WEB_HOST: string;
 }
-
-const mapConfig = (config: ConfigJSON): Config => ({
-    apiHost: addProtocol(config.API_HOST),
-    keepWebHost: addProtocol(config.KEEP_WEB_HOST)
-});
 
 const getDefaultConfig = (): ConfigJSON => ({
     API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
-    KEEP_WEB_HOST: process.env.REACT_APP_ARVADOS_KEEP_WEB_HOST || ""
 });
 
-const addProtocol = (url: string) => `${window.location.protocol}//${url}`;
+const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/discovery/v1/apis/arvados/v1/rest`;

@@ -12,11 +12,13 @@ import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { getProjectList } from '~/store/project/project-action';
 import { MoveToFormDialogData } from '../move-to-dialog/move-to-dialog';
+import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 
 export const MOVE_PROJECT_DIALOG = 'moveProjectDialog';
 
 export const openMoveProjectDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
+        dispatch<any>(resetPickerProjectTree());
         dispatch(initialize(MOVE_PROJECT_DIALOG, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: MOVE_PROJECT_DIALOG, data: {} }));
     };
