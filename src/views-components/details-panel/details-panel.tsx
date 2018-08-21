@@ -48,7 +48,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '2.125rem'
     },
     headerTitle: {
-        wordBreak: 'break-all'
+        overflowWrap: 'break-word',
+        wordWrap: 'break-word'
     },
     tabContainer: {
         padding: theme.spacing.unit * 3

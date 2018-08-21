@@ -68,7 +68,7 @@ export const DialogProjectUpdate = compose(
                     disableBackdropClick={true}
                     disableEscapeKeyDown={true}>
                     <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
-                        <DialogTitle>Edit Collection</DialogTitle>
+                        <DialogTitle>Edit Project</DialogTitle>
                         <DialogContent className={classes.content}>
                             <Field name='name' 
                                 disabled={submitting}
