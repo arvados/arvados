@@ -97,7 +97,7 @@ completed:
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   output_path: test
-  command: ["echo", "hello"]
+  command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   runtime_constraints:
     ram: 12000000000
     vcpus: 4

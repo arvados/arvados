@@ -135,6 +135,11 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 }
 
 var (
+	corsAllowHeadersHeader = strings.Join([]string{
+		"Authorization", "Content-Type", "Range",
+		// WebDAV request headers:
+		"Depth", "Destination", "If", "Lock-Token", "Overwrite", "Timeout",
+	}, ", ")
 	writeMethod = map[string]bool{
 		"COPY":   true,
 		"DELETE": true,
@@ -206,7 +211,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
+		w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
 		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")

@@ -275,6 +275,13 @@ user_foo_in_sharing_group:
   api_token: 2p1pou8p4ls208mcbedeewlotghppenobcyrmyhq8pyf51xd8u
   expires_at: 2038-01-01 00:00:00
 
+user_bar_in_sharing_group:
+  uuid: zzzzz-gj3su-62hryf5fht531mz
+  api_client: untrusted
+  user: user_bar_in_sharing_group
+  api_token: 5vy55akwq85vghh80wc2cuxl4p8psay73lkpqf5c2cxvp6rmm6
+  expires_at: 2038-01-01 00:00:00
+
 user1_with_load:
   uuid: zzzzz-gj3su-357z32aux8dg2s1
   api_client: untrusted
