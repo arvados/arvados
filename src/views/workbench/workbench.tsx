@@ -40,7 +40,7 @@ import { CreateCollectionDialog } from '~/views-components/create-collection-dia
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection, loadCollectionTags } from '~/store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '~/models/collection';
-import { UpdateCollectionDialog } from '~/views-components/update-collection-dialog/update-collection-dialog.';
+import { UpdateCollectionDialog } from '~/views-components/update-collection-dialog/update-collection-dialog';
 import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
 import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
