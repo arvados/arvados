@@ -20,7 +20,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     }
 
     async files(uuid: string) {
-        const request = await this.webdavClient.propfind(`/c=${uuid}`);
+        const request = await this.webdavClient.propfind(`c=${uuid}`);
         if (request.responseXML != null) {
             const filesTree = parseFilesResponse(request.responseXML);
             return mapTreeValues(this.extendFileURL)(filesTree);
@@ -30,7 +30,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
 
     async deleteFiles(collectionUuid: string, filePaths: string[]) {
         for (const path of filePaths) {
-            await this.webdavClient.delete(`/c=${collectionUuid}${path}`);
+            await this.webdavClient.delete(`c=${collectionUuid}${path}`);
         }
     }
 
@@ -43,8 +43,8 @@ export class CollectionService extends CommonResourceService<CollectionResource>
 
     moveFile(collectionUuid: string, oldPath: string, newPath: string) {
         return this.webdavClient.move(
-            `/c=${collectionUuid}${oldPath}`,
-            `/c=${collectionUuid}${encodeURI(newPath)}`
+            `c=${collectionUuid}${oldPath}`,
+            `c=${collectionUuid}${encodeURI(newPath)}`
         );
     }
 
@@ -54,7 +54,7 @@ export class CollectionService extends CommonResourceService<CollectionResource>
     })
 
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
-        const fileURL = `/c=${collectionUuid}/${file.name}`;
+        const fileURL = `c=${collectionUuid}/${file.name}`;
         const fileContent = await fileToArrayBuffer(file);
         const requestConfig = {
             headers: {
