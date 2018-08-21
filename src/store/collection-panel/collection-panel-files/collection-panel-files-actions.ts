@@ -13,8 +13,8 @@ import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
 import { startSubmit, initialize, stopSubmit, reset } from 'redux-form';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
-import { resetPickerProjectTree } from '../../project-tree-picker/project-tree-picker-actions';
 import { getDialog } from "~/store/dialog/dialog-reducer";
+import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),

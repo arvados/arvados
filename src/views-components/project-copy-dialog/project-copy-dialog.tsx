@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 import { Dispatch, compose } from "redux";
-import { withDialog } from "../../store/dialog/with-dialog";
-import { dialogActions } from "../../store/dialog/dialog-actions";
-import { ProjectCopy, CopyFormData } from "../../components/project-copy/project-copy";
+import { withDialog } from "~/store/dialog/with-dialog";
+import { dialogActions } from "~/store/dialog/dialog-actions";
+import { ProjectCopy, CopyFormData } from "~/components/project-copy/project-copy";
 import { reduxForm, startSubmit, stopSubmit, initialize } from 'redux-form';
 import { resetPickerProjectTree } from "~/store/project-tree-picker/project-tree-picker-actions";
 

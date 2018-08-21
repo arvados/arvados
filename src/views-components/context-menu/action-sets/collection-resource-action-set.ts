@@ -9,7 +9,7 @@ import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } 
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
-import { openMoveToDialog } from '../../move-to-dialog/move-to-dialog';
+import { openMoveToDialog } from "~/views-components/move-to-dialog/move-to-dialog";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
