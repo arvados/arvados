@@ -49,6 +49,8 @@ import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
+import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -232,6 +234,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`}  />} />
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
+                                    <Route path="/trash" render={this.renderTrashPanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
                                 </Switch>
                             </div>
@@ -310,6 +313,33 @@ export const Workbench = withStyles(styles)(
 
             renderFavoritePanel = (props: RouteComponentProps<{ id: string }>) => <FavoritePanel
                 onItemRouteChange={() => this.props.dispatch(favoritePanelActions.REQUEST_ITEMS())}
+                onContextMenu={(event, item) => {
+                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        kind,
+                    });
+                }}
+                onDialogOpen={this.handleProjectCreationDialogOpen}
+                onItemClick={item => {
+                    this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
+                }}
+                onItemDoubleClick={item => {
+                    switch (item.kind) {
+                        case ResourceKind.COLLECTION:
+                            this.props.dispatch(loadCollection(item.uuid));
+                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
+                        default:
+                            this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
+                            this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                    }
+
+                }}
+                {...props} />
+
+            renderTrashPanel = (props: RouteComponentProps<{ id: string }>) => <TrashPanel
+                onItemRouteChange={() => this.props.dispatch(trashPanelActions.REQUEST_ITEMS())}
                 onContextMenu={(event, item) => {
                     const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
                     this.openContextMenu(event, {

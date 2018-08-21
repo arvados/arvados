@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupResource, GroupClass } from "./group";
+import { GroupClass, GroupResource } from "./group";
 import { Resource, ResourceKind } from "./resource";
 import { ProjectResource } from "./project";
 

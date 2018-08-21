@@ -14,9 +14,14 @@ export interface Resource {
     etag: string;
 }
 
+export interface TrashResource extends Resource {
+    trashAt: string;
+    deleteAt: string;
+    isTrashed: boolean;
+}
+
 export enum ResourceKind {
     COLLECTION = "arvados#collection",
-    CONTAINER_REQUEST = "arvados#containerRequest",
     GROUP = "arvados#group",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",

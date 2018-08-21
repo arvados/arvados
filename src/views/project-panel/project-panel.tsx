@@ -11,7 +11,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { ContainerRequestState } from '~/models/container-request';
+import { ProcessState } from '~/models/process';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
@@ -47,7 +47,7 @@ export enum ProjectPanelColumnNames {
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ContainerRequestState;
+    type: ResourceKind | ProcessState;
 }
 
 export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
@@ -67,19 +67,19 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         sortDirection: SortDirection.NONE,
         filters: [
             {
-                name: ContainerRequestState.COMMITTED,
+                name: ProcessState.COMMITTED,
                 selected: true,
-                type: ContainerRequestState.COMMITTED
+                type: ProcessState.COMMITTED
             },
             {
-                name: ContainerRequestState.FINAL,
+                name: ProcessState.FINAL,
                 selected: true,
-                type: ContainerRequestState.FINAL
+                type: ProcessState.FINAL
             },
             {
-                name: ContainerRequestState.UNCOMMITTED,
+                name: ProcessState.UNCOMMITTED,
                 selected: true,
-                type: ContainerRequestState.UNCOMMITTED
+                type: ProcessState.UNCOMMITTED
             }
         ],
         render: renderStatus,

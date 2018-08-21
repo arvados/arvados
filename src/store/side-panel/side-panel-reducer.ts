@@ -10,9 +10,11 @@ import { push } from "react-router-redux";
 import { favoritePanelActions } from "../favorite-panel/favorite-panel-action";
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { projectActions } from "../project/project-action";
-import { getProjectUrl } from "../../models/project";
-import { columns as projectPanelColumns } from "../../views/project-panel/project-panel";
-import { columns as favoritePanelColumns } from "../../views/favorite-panel/favorite-panel";
+import { getProjectUrl } from "~/models/project";
+import { columns as projectPanelColumns } from "~/views/project-panel/project-panel";
+import { columns as favoritePanelColumns } from "~/views/favorite-panel/favorite-panel";
+import { columns as trashPanelColumns } from "~/views/trash-panel/trash-panel";
+import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 
 export type SidePanelState = SidePanelItem[];
 
@@ -102,6 +104,9 @@ export const sidePanelItems = [
         active: false,
         activeAction: (dispatch: Dispatch) => {
             dispatch(push("/trash"));
+            dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
+            dispatch(trashPanelActions.RESET_PAGINATION());
+            dispatch(trashPanelActions.REQUEST_ITEMS());
         }
     }
 ];

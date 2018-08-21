@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { FavoritePanelItem } from './favorite-panel-item';
+import { TrashPanelItem } from './trash-panel-item';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
@@ -16,9 +16,9 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
-import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
-import { FavoriteIcon } from '~/components/icon/icon';
+import { renderName, renderType, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
+import { TrashIcon } from '~/components/icon/icon';
+import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 
 type CssRules = "toolbar" | "button";
 
@@ -32,22 +32,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export enum FavoritePanelColumnNames {
+export enum TrashPanelColumnNames {
     NAME = "Name",
-    STATUS = "Status",
     TYPE = "Type",
-    OWNER = "Owner",
     FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
+    TRASHED_DATE = "Trashed date",
+    TO_BE_DELETED = "To be deleted"
 }
 
-export interface FavoritePanelFilter extends DataTableFilterItem {
+export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ProcessState;
 }
 
-export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
+export const columns: DataColumns<TrashPanelItem, TrashPanelFilter> = [
     {
-        name: FavoritePanelColumnNames.NAME,
+        name: TrashPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
@@ -56,32 +55,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         width: "450px"
     },
     {
-        name: "Status",
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: [
-            {
-                name: ProcessState.COMMITTED,
-                selected: true,
-                type: ProcessState.COMMITTED
-            },
-            {
-                name: ProcessState.FINAL,
-                selected: true,
-                type: ProcessState.FINAL
-            },
-            {
-                name: ProcessState.UNCOMMITTED,
-                selected: true,
-                type: ProcessState.UNCOMMITTED
-            }
-        ],
-        render: renderStatus,
-        width: "75px"
-    },
-    {
-        name: FavoritePanelColumnNames.TYPE,
+        name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -106,16 +80,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         width: "125px"
     },
     {
-        name: FavoritePanelColumnNames.OWNER,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: [],
-        render: item => renderOwner(item.owner),
-        width: "200px"
-    },
-    {
-        name: FavoritePanelColumnNames.FILE_SIZE,
+        name: TrashPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -124,48 +89,57 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         width: "50px"
     },
     {
-        name: FavoritePanelColumnNames.LAST_MODIFIED,
+        name: TrashPanelColumnNames.TRASHED_DATE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderDate(item.lastModified),
-        width: "150px"
-    }
+        render: item => renderDate(item.trashAt),
+        width: "50px"
+    },
+    {
+        name: TrashPanelColumnNames.TO_BE_DELETED,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
+        render: item => renderDate(item.deleteAt),
+        width: "50px"
+    },
 ];
 
-interface FavoritePanelDataProps {
+interface TrashPanelDataProps {
     currentItemId: string;
 }
 
-interface FavoritePanelActionProps {
-    onItemClick: (item: FavoritePanelItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: FavoritePanelItem) => void;
+interface TrashPanelActionProps {
+    onItemClick: (item: TrashPanelItem) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TrashPanelItem) => void;
     onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: FavoritePanelItem) => void;
+    onItemDoubleClick: (item: TrashPanelItem) => void;
     onItemRouteChange: (itemId: string) => void;
 }
 
-type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
+type TrashPanelProps = TrashPanelDataProps & TrashPanelActionProps & DispatchProp
                         & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-export const FavoritePanel = withStyles(styles)(
+export const TrashPanel = withStyles(styles)(
     connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
-        class extends React.Component<FavoritePanelProps> {
+        class extends React.Component<TrashPanelProps> {
             render() {
                 return <DataExplorer
-                    id={FAVORITE_PANEL_ID}
+                    id={TRASH_PANEL_ID}
                     columns={columns}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
-                    extractKey={(item: FavoritePanelItem) => item.uuid}
-                    defaultIcon={FavoriteIcon}
-                    defaultMessages={['Your favorites list is empty.']}/>
+                    extractKey={(item: TrashPanelItem) => item.uuid}
+                    defaultIcon={TrashIcon}
+                    defaultMessages={['Your trash list is empty.']}/>
                 ;
             }
 
-            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: FavoritePanelProps) {
+            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: TrashPanelProps) {
                 if (match.params.id !== currentItemId) {
                     onItemRouteChange(match.params.id);
                 }

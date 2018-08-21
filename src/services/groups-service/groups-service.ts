@@ -16,6 +16,7 @@ export interface ContentsArguments {
     order?: string;
     filters?: string;
     recursive?: boolean;
+    includeTrash?: boolean;
 }
 
 export type GroupContentsResource =

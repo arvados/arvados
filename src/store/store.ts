@@ -29,6 +29,8 @@ import { CollectionsState, collectionsReducer } from './collections/collections-
 import { ServiceRepository } from "~/services/services";
 import { treePickerReducer } from './tree-picker/tree-picker-reducer';
 import { TreePicker } from './tree-picker/tree-picker';
+import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-middleware-service";
+import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -79,12 +81,16 @@ export function configureStore(history: History, services: ServiceRepository): R
     const favoritePanelMiddleware = dataExplorerMiddleware(
         new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID)
     );
+    const trashPanelMiddleware = dataExplorerMiddleware(
+        new TrashPanelMiddlewareService(services, TRASH_PANEL_ID)
+    );
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
         projectPanelMiddleware,
-        favoritePanelMiddleware
+        favoritePanelMiddleware,
+        trashPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

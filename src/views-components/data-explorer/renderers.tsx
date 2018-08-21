@@ -42,7 +42,7 @@ export const renderIcon = (item: {kind: string}) => {
     }
 };
 
-export const renderDate = (date: string) => {
+export const renderDate = (date?: string) => {
     return <Typography noWrap>{formatDate(date)}</Typography>;
 };
 

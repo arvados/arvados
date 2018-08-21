@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, ResourceKind } from "./resource";
+import { ResourceKind, TrashResource } from "./resource";
 
-export interface CollectionResource extends Resource {
+export interface CollectionResource extends TrashResource {
     kind: ResourceKind.COLLECTION;
     name: string;
     description: string;
@@ -14,9 +14,6 @@ export interface CollectionResource extends Resource {
     replicationDesired: number;
     replicationConfirmed: number;
     replicationConfirmedAt: string;
-    trashAt: string;
-    deleteAt: string;
-    isTrashed: boolean;
 }
 
 export const getCollectionUrl = (uuid: string) => {
