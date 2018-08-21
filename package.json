@@ -26,8 +26,8 @@
     "unionize": "2.1.2"
   },
   "scripts": {
-    "start": "react-scripts-ts start",
-    "build": "react-scripts-ts build",
+    "start": "REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts-ts start",
+    "build": "REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts-ts build",
     "test": "react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
     "lint": "tslint src/** -t verbose"

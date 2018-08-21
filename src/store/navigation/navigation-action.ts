@@ -45,7 +45,7 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
                 if (router.location && !router.location.pathname.includes(resourceUrl)) {
                     dispatch(push(resourceUrl));
                 }
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(treeItem.data.uuid));
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE({ itemId: treeItem.data.uuid }));
             }
 
             const promise = treeItem.status === TreeItemStatus.LOADED
@@ -55,7 +55,7 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
             promise
                 .then(() => dispatch<any>(() => {
                     if (itemMode === ItemMode.OPEN || itemMode === ItemMode.BOTH) {
-                        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(treeItem.data.uuid));
+                        dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: treeItem.data.uuid }));
                     }
                     dispatch(projectPanelActions.RESET_PAGINATION());
                     dispatch(projectPanelActions.REQUEST_ITEMS());
@@ -63,7 +63,7 @@ export const setProjectItem = (itemId: string, itemMode: ItemMode) =>
         } else {
             const uuid = services.authService.getUuid();
             if (itemId === uuid) {
-                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
+                dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE({ itemId: uuid }));
                 dispatch(projectPanelActions.RESET_PAGINATION());
                 dispatch(projectPanelActions.REQUEST_ITEMS());
             }
@@ -77,7 +77,7 @@ export const restoreBranch = (itemId: string) =>
         await loadBranch(uuids, dispatch);
         dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
         uuids.forEach(uuid => {
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(uuid));
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: uuid }));
         });
     };
 

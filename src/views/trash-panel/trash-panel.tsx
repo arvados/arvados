@@ -11,7 +11,6 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { ProcessState } from '~/models/process';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
@@ -41,7 +40,7 @@ export enum TrashPanelColumnNames {
 }
 
 export interface TrashPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ProcessState;
+    type: ResourceKind;
 }
 
 export const columns: DataColumns<TrashPanelItem, TrashPanelFilter> = [

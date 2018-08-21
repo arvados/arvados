@@ -20,6 +20,8 @@ export interface ContextMenuResource {
     kind: string;
     name: string;
     description?: string;
+    isTrashed?: boolean;
+    ownerUuid?: string;
 }
 
 const initialState = {

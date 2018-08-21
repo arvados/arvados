@@ -219,6 +219,8 @@ export const Workbench = withStyles(styles)(
                                         toggleOpen={itemId => this.props.dispatch(setProjectItem(itemId, ItemMode.OPEN))}
                                         onContextMenu={(event, item) => this.openContextMenu(event, {
                                             uuid: item.data.uuid,
+                                            ownerUuid: item.data.ownerUuid || this.props.authService.getUuid(),
+                                            isTrashed: item.data.isTrashed,
                                             name: item.data.name,
                                             kind: ContextMenuKind.PROJECT
                                         })}
@@ -268,6 +270,7 @@ export const Workbench = withStyles(styles)(
                         uuid: item.uuid,
                         name: item.name,
                         description: item.description,
+                        isTrashed: item.isTrashed,
                         kind: ContextMenuKind.COLLECTION
                     });
                 }}
@@ -290,6 +293,8 @@ export const Workbench = withStyles(styles)(
                         uuid: item.uuid,
                         name: item.name,
                         description: item.description,
+                        isTrashed: item.isTrashed,
+                        ownerUuid: item.owner || this.props.authService.getUuid(),
                         kind
                     });
                 }}
@@ -318,6 +323,7 @@ export const Workbench = withStyles(styles)(
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
+                        isTrashed: item.isTrashed,
                         kind,
                     });
                 }}
@@ -341,26 +347,28 @@ export const Workbench = withStyles(styles)(
             renderTrashPanel = (props: RouteComponentProps<{ id: string }>) => <TrashPanel
                 onItemRouteChange={() => this.props.dispatch(trashPanelActions.REQUEST_ITEMS())}
                 onContextMenu={(event, item) => {
-                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.RESOURCE;
+                    const kind = item.kind === ResourceKind.PROJECT ? ContextMenuKind.PROJECT : ContextMenuKind.COLLECTION;
                     this.openContextMenu(event, {
                         uuid: item.uuid,
                         name: item.name,
+                        isTrashed: item.isTrashed,
+                        ownerUuid: item.owner,
                         kind,
                     });
                 }}
                 onDialogOpen={this.handleProjectCreationDialogOpen}
                 onItemClick={item => {
-                    this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
+                    // this.props.dispatch(loadDetails(item.uuid, item.kind as ResourceKind));
                 }}
                 onItemDoubleClick={item => {
-                    switch (item.kind) {
-                        case ResourceKind.COLLECTION:
-                            this.props.dispatch(loadCollection(item.uuid));
-                            this.props.dispatch(push(getCollectionUrl(item.uuid)));
-                        default:
-                            this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
-                            this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
-                    }
+                    // switch (item.kind) {
+                    //     case ResourceKind.COLLECTION:
+                    //         this.props.dispatch(loadCollection(item.uuid));
+                    //         this.props.dispatch(push(getCollectionUrl(item.uuid)));
+                    //     default:
+                    //         this.props.dispatch(loadDetails(item.uuid, ResourceKind.PROJECT));
+                    //         this.props.dispatch(setProjectItem(item.uuid, ItemMode.ACTIVE));
+                    // }
 
                 }}
                 {...props} />
@@ -410,7 +418,7 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
             }
 
-            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; kind: ContextMenuKind; }) => {
+            openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; isTrashed?: boolean, ownerUuid?: string, kind: ContextMenuKind; }) => {
                 event.preventDefault();
                 this.props.dispatch(
                     contextMenuActions.OPEN_CONTEXT_MENU({

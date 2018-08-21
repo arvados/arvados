@@ -47,7 +47,7 @@ export const sidePanelItems = [
         openAble: true,
         activeAction: (dispatch: Dispatch, uuid: string) => {
             dispatch(push(getProjectUrl(uuid)));
-            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(uuid));
+            dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE({ itemId: uuid }));
             dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(projectPanelActions.RESET_PAGINATION());
             dispatch(projectPanelActions.REQUEST_ITEMS());

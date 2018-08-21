@@ -9,6 +9,7 @@ export interface TrashPanelItem {
     uuid: string;
     name: string;
     kind: string;
+    owner: string;
     fileSize?: number;
     trashAt?: string;
     deleteAt?: string;
@@ -20,6 +21,7 @@ export function resourceToDataItem(r: GroupContentsResource): TrashPanelItem {
         uuid: r.uuid,
         name: r.name,
         kind: r.kind,
+        owner: r.ownerUuid,
         trashAt: (r as TrashResource).trashAt,
         deleteAt: (r as TrashResource).deleteAt,
         isTrashed: (r as TrashResource).isTrashed

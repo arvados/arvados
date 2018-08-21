@@ -39,13 +39,12 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
             order
                 .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
                 .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
         }
 
         const userUuid = this.services.authService.getUuid()!;
 
-        this.services.trashService
+        this.services.groupsService
             .contents(userUuid, {
                 limit: dataExplorer.rowsPerPage,
                 offset: dataExplorer.page * dataExplorer.rowsPerPage,
@@ -53,7 +52,6 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 filters: new FilterBuilder()
                     .addIsA("uuid", typeFilters.map(f => f.type))
                     .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
                     .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
                     .getFilters(),
                 recursive: true,

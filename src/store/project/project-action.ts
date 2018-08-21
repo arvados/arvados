@@ -11,6 +11,10 @@ import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { ServiceRepository } from "~/services/services";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { updateDetails } from "~/store/details-panel/details-panel-action";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
+import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
+import { sidePanelActions } from "~/store/side-panel/side-panel-action";
+import { SidePanelId } from "~/store/side-panel/side-panel-reducer";
 
 export const projectActions = unionize({
     OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
@@ -23,8 +27,8 @@ export const projectActions = unionize({
     REMOVE_PROJECT: ofType<string>(),
     PROJECTS_REQUEST: ofType<string>(),
     PROJECTS_SUCCESS: ofType<{ projects: ProjectResource[], parentItemId?: string }>(),
-    TOGGLE_PROJECT_TREE_ITEM_OPEN: ofType<string>(),
-    TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ofType<string>(),
+    TOGGLE_PROJECT_TREE_ITEM_OPEN: ofType<{ itemId: string, open?: boolean, recursive?: boolean }>(),
+    TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ofType<{ itemId: string, active?: boolean, recursive?: boolean }>(),
     RESET_PROJECT_TREE_ACTIVITY: ofType<string>()
 }, {
     tag: 'type',
@@ -33,7 +37,7 @@ export const projectActions = unionize({
 
 export const PROJECT_FORM_NAME = 'projectEditDialog';
 
-export const getProjectList = (parentUuid: string = '') => 
+export const getProjectList = (parentUuid: string = '') =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(projectActions.PROJECTS_REQUEST(parentUuid));
         return services.projectService.list({
@@ -68,6 +72,36 @@ export const updateProject = (project: Partial<ProjectResource>) =>
                 dispatch<any>(getProjectList(project.ownerUuid));
                 dispatch<any>(updateDetails(project));
             });
+    };
+
+export const toggleProjectTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
+        if (resource.isTrashed) {
+            return services.groupsService.untrash(resource.uuid).then(() => {
+                dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
+                    dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
+                    dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
+                });
+                dispatch(trashPanelActions.REQUEST_ITEMS());
+                dispatch(snackbarActions.CLOSE_SNACKBAR());
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Restored from trash",
+                    hideDuration: 2000
+                }));
+            });
+        } else {
+            return services.groupsService.trash(resource.uuid).then(() => {
+                dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
+                    dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
+                });
+                dispatch(snackbarActions.CLOSE_SNACKBAR());
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Added to trash",
+                    hideDuration: 2000
+                }));
+            });
+        }
     };
 
 export type ProjectAction = UnionOf<typeof projectActions>;

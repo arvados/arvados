@@ -5,12 +5,13 @@
 import { reset, initialize } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions, PROJECT_FORM_NAME } from "~/store/project/project-action";
+import { projectActions, PROJECT_FORM_NAME, toggleProjectTrashed } from "~/store/project/project-action";
 import { NewProjectIcon, RenameIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
+import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -35,6 +36,12 @@ export const projectActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        component: ToggleTrashAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleProjectTrashed(resource));
         }
     }
 ]];

@@ -8,6 +8,8 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
+import { toggleCollectionTrashed } from "~/store/collections/collection-trash-actions";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -37,6 +39,12 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        component: ToggleTrashAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleCollectionTrashed(resource));
         }
     },
     {

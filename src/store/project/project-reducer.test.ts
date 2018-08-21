@@ -99,7 +99,7 @@ describe('project-reducer', () => {
             updater: { opened: false, uuid: '' }
         };
 
-        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
+        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE({ itemId: initialState.items[0].id }));
         expect(state).toEqual(project);
     });
 
@@ -131,7 +131,7 @@ describe('project-reducer', () => {
 
         };
 
-        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));
+        const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: initialState.items[0].id }));
         expect(state).toEqual(project);
     });
 });

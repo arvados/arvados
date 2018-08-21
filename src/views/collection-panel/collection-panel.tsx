@@ -65,7 +65,6 @@ export const CollectionPanel = withStyles(styles)(
         tags: state.collectionPanel.tags
     }))(
         class extends React.Component<CollectionPanelProps> {
-
             render() {
                 const { classes, item, tags, onContextMenu } = this.props;
                 return <div>
@@ -131,7 +130,6 @@ export const CollectionPanel = withStyles(styles)(
                     onItemRouteChange(match.params.id);
                 }
             }
-
         }
     )
 );

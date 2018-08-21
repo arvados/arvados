@@ -76,7 +76,6 @@ export class CollectionService extends CommonResourceService<CollectionResource>
             });
     }
 
-
     private readFile(file: File): Promise<ArrayBuffer> {
         return new Promise<ArrayBuffer>(resolve => {
             const reader = new FileReader();
@@ -163,4 +162,22 @@ export class CollectionService extends CommonResourceService<CollectionResource>
             }
         });
     }
+
+    trash(uuid: string): Promise<CollectionResource> {
+        return this.serverApi
+            .post(this.resourceType + `${uuid}/trash`)
+            .then(CommonResourceService.mapResponseKeys);
+    }
+
+    untrash(uuid: string): Promise<CollectionResource> {
+        const params = {
+            ensure_unique_name: true
+        };
+        return this.serverApi
+            .post(this.resourceType + `${uuid}/untrash`, {
+                params: CommonResourceService.mapKeys(_.snakeCase)(params)
+            })
+            .then(CommonResourceService.mapResponseKeys);
+    }
+
 }

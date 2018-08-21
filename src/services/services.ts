@@ -14,7 +14,6 @@ import { CollectionFilesService } from "./collection-files-service/collection-fi
 import { KeepService } from "./keep-service/keep-service";
 import { WebDAV } from "~/common/webdav";
 import { Config } from "~/common/config";
-import { TrashService } from "~/services/trash-service/trash-service";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -31,7 +30,6 @@ export const createServices = (config: Config) => {
     const projectService = new ProjectService(apiClient);
     const linkService = new LinkService(apiClient);
     const favoriteService = new FavoriteService(linkService, groupsService);
-    const trashService = new TrashService(apiClient);
     const collectionService = new CollectionService(apiClient, keepService, webdavClient, authService);
     const tagService = new TagService(linkService);
     const collectionFilesService = new CollectionFilesService(collectionService);
@@ -45,7 +43,6 @@ export const createServices = (config: Config) => {
         projectService,
         linkService,
         favoriteService,
-        trashService,
         collectionService,
         tagService,
         collectionFilesService

@@ -15,6 +15,7 @@ export interface ProjectPanelItem {
     lastModified: string;
     fileSize?: number;
     status?: string;
+    isTrashed?: boolean;
 }
 
 export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
@@ -26,6 +27,7 @@ export function resourceToDataItem(r: GroupContentsResource): ProjectPanelItem {
         url: "",
         owner: r.ownerUuid,
         lastModified: r.modifiedAt,
-        status:  r.kind === ResourceKind.PROCESS ? r.state : undefined
+        status: r.kind === ResourceKind.PROCESS ? r.state : undefined,
+        isTrashed: r.kind === ResourceKind.GROUP || r.kind === ResourceKind.COLLECTION ? r.isTrashed: undefined
     };
 }

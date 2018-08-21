@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
-
 import { projectActions, ProjectAction } from "./project-action";
 import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
@@ -26,25 +24,25 @@ interface ProjectUpdater {
     uuid: string;
 }
 
+function rebuildTree<T>(tree: Array<TreeItem<T>>, action: (item: TreeItem<T>, visitedItems: TreeItem<T>[]) => void, visitedItems: TreeItem<T>[] = []): Array<TreeItem<T>> {
+    const newTree: Array<TreeItem<T>> = [];
+    for (const t of tree) {
+        const items = t.items
+            ? rebuildTree(t.items, action, visitedItems.concat(t))
+            : undefined;
+        const item: TreeItem<T> = { ...t, items };
+        action(item, visitedItems);
+        newTree.push(item);
+    }
+    return newTree;
+}
+
 export function findTreeItem<T>(tree: Array<TreeItem<T>>, itemId: string): TreeItem<T> | undefined {
     let item;
     for (const t of tree) {
         item = t.id === itemId
             ? t
             : findTreeItem(t.items ? t.items : [], itemId);
-        if (item) {
-            break;
-        }
-    }
-    return item;
-}
-
-export function getActiveTreeItem<T>(tree: Array<TreeItem<T>>): TreeItem<T> | undefined {
-    let item;
-    for (const t of tree) {
-        item = t.active
-            ? t
-            : getActiveTreeItem(t.items ? t.items : []);
         if (item) {
             break;
         }
@@ -64,38 +62,6 @@ export function getTreePath<T>(tree: Array<TreeItem<T>>, itemId: string): Array<
         }
     }
     return [];
-}
-
-function resetTreeActivity<T>(tree: Array<TreeItem<T>>) {
-    for (const t of tree) {
-        t.active = false;
-        resetTreeActivity(t.items ? t.items : []);
-    }
-}
-
-function updateProjectTree(tree: Array<TreeItem<ProjectResource>>, projects: ProjectResource[], parentItemId?: string): Array<TreeItem<ProjectResource>> {
-    let treeItem;
-    if (parentItemId) {
-        treeItem = findTreeItem(tree, parentItemId);
-        if (treeItem) {
-            treeItem.status = TreeItemStatus.LOADED;
-        }
-    }
-    const items = projects.map(p => ({
-        id: p.uuid,
-        open: false,
-        active: false,
-        status: TreeItemStatus.INITIAL,
-        data: p,
-        items: []
-    } as TreeItem<ProjectResource>));
-
-    if (treeItem) {
-        treeItem.items = items;
-        return tree;
-    }
-
-    return items;
 }
 
 const updateCreator = (state: ProjectState, creator: Partial<ProjectCreator>) => ({
@@ -127,7 +93,6 @@ const initialState: ProjectState = {
     }
 };
 
-
 export const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
     return projectActions.match(action, {
         OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
@@ -139,55 +104,68 @@ export const projectsReducer = (state: ProjectState = initialState, action: Proj
         UPDATE_PROJECT_SUCCESS: () => updateProject(state, { opened: false, uuid: "" }),
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: itemId => {
-            const items = _.cloneDeep(state.items);
-            const item = findTreeItem(items, itemId);
-            if (item) {
-                item.status = TreeItemStatus.PENDING;
-                state.items = items;
-            }
-            return { ...state, items };
+            return {
+                ...state,
+                items: rebuildTree(state.items, item => {
+                    if (item.id === itemId) {
+                        item.status = TreeItemStatus.PENDING;
+                    }
+                })
+            };
         },
         PROJECTS_SUCCESS: ({ projects, parentItemId }) => {
-            const items = _.cloneDeep(state.items);
+            const items = projects.map(p => ({
+               id: p.uuid,
+               open: false,
+               active: false,
+               status: TreeItemStatus.INITIAL,
+               data: p,
+               items: []
+            }));
             return {
                 ...state,
-                items: updateProjectTree(items, projects, parentItemId)
+                items: state.items.length > 0 ?
+                    rebuildTree(state.items, item => {
+                        if (item.id === parentItemId) {
+                           item.status = TreeItemStatus.LOADED;
+                           item.items = items;
+                        }
+                    }) : items
             };
         },
-        TOGGLE_PROJECT_TREE_ITEM_OPEN: itemId => {
-            const items = _.cloneDeep(state.items);
-            const item = findTreeItem(items, itemId);
-            if (item) {
-                item.open = !item.open;
-            }
-            return {
-                ...state,
-                items,
-                currentItemId: itemId
-            };
-        },
-        TOGGLE_PROJECT_TREE_ITEM_ACTIVE: itemId => {
-            const items = _.cloneDeep(state.items);
-            resetTreeActivity(items);
-            const item = findTreeItem(items, itemId);
-            if (item) {
-                item.active = true;
-            }
-            return {
-                ...state,
-                items,
-                currentItemId: itemId
-            };
-        },
-        RESET_PROJECT_TREE_ACTIVITY: () => {
-            const items = _.cloneDeep(state.items);
-            resetTreeActivity(items);
-            return {
-                ...state,
-                items,
-                currentItemId: ""
-            };
-        },
+        TOGGLE_PROJECT_TREE_ITEM_OPEN: ({ itemId, open, recursive }) => ({
+            ...state,
+            items: rebuildTree(state.items, (item, visitedItems) => {
+                if (item.id === itemId) {
+                    if (recursive && open !== undefined) {
+                        visitedItems.forEach(item => item.open = open);
+                    }
+                    item.open = open !== undefined ? open : !item.open;
+                }
+            }),
+            currentItemId: itemId
+        }),
+        TOGGLE_PROJECT_TREE_ITEM_ACTIVE: ({ itemId, active, recursive }) => ({
+            ...state,
+            items: rebuildTree(state.items, (item, visitedItems) => {
+                item.active = false;
+                if (item.id === itemId) {
+                    if (recursive && active !== undefined) {
+                        visitedItems.forEach(item => item.active = active);
+                    }
+
+                    item.active = active !== undefined ? active : true;
+                }
+            }),
+            currentItemId: itemId
+        }),
+        RESET_PROJECT_TREE_ACTIVITY: () => ({
+            ...state,
+            items: rebuildTree(state.items, item => {
+                item.active = false;
+            }),
+            currentItemId: ""
+        }),
         default: () => state
     });
 };
