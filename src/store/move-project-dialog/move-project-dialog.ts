@@ -13,6 +13,7 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 import { getProjectList } from '~/store/project/project-action';
 import { MoveToFormDialogData } from '../move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
+import { findTreeItem } from '../project/project-reducer';
 
 export const MOVE_PROJECT_DIALOG = 'moveProjectDialog';
 
@@ -31,7 +32,10 @@ export const moveProject = (resource: MoveToFormDialogData) =>
             await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch<any>(getProjectList(project.ownerUuid));
-            dispatch<any>(getProjectList(resource.ownerUuid));
+            const { projects } = getState();
+            if (findTreeItem(projects.items, resource.ownerUuid)) {
+                dispatch<any>(getProjectList(resource.ownerUuid));
+            }
             dispatch(dialogActions.CLOSE_DIALOG({ id: MOVE_PROJECT_DIALOG }));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Project has been moved', hideDuration: 2000 }));
         } catch (e) {
