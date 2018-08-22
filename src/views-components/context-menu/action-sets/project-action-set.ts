@@ -12,7 +12,7 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
 import { openMoveProjectDialog } from '~/store/move-project-dialog/move-project-dialog';
-import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
+import { openProjectCopyDialog } from "~/store/project-copy-project-dialog/project-copy-project-dialog";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
