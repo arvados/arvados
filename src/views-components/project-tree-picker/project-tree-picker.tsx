@@ -16,6 +16,7 @@ import { createTreePickerNode } from "~/store/tree-picker/tree-picker";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from "~/common/api/filter-builder";
+import { WrappedFieldProps } from 'redux-form';
 
 type ProjectTreePickerProps = Pick<TreePickerProps, 'toggleItemActive' | 'toggleItemOpen'>;
 
@@ -141,4 +142,17 @@ export const receiveTreePickerData = (nodeId: string, projects: ProjectResource[
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
     };
 
+export const ProjectTreePickerField = (props: WrappedFieldProps) =>
+    <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
+        <ProjectTreePicker onChange={handleChange(props)} />
+        {props.meta.dirty && props.meta.error &&
+            <Typography variant='caption' color='error'>
+                {props.meta.error}
+            </Typography>}
+    </div>;
+
+const handleChange = (props: WrappedFieldProps) => (value: string) =>
+    props.input.value === value
+        ? props.input.onChange('')
+        : props.input.onChange(value);
 

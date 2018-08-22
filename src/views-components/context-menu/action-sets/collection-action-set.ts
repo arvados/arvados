@@ -9,7 +9,7 @@ import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGra
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
-import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
+import { openProjectCopyDialog } from "~/store/project-copy-project-dialog/project-copy-project-dialog";
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
