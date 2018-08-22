@@ -2,26 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
-
+import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { RootState } from "../../store";
 import { ServiceRepository } from "~/services/services";
 import { CollectionResource } from '~/models/collection';
 import { initialize } from 'redux-form';
 import { collectionPanelActions } from "../../collection-panel/collection-panel-action";
 import { ContextMenuResource } from "../../context-menu/context-menu-reducer";
-import { updateDetails } from "~/store/details-panel/details-panel-action";
+import { resourcesActions } from "~/store/resources/resources-actions";
 
 export const collectionUpdaterActions = unionize({
     OPEN_COLLECTION_UPDATER: ofType<{ uuid: string }>(),
     CLOSE_COLLECTION_UPDATER: ofType<{}>(),
     UPDATE_COLLECTION_SUCCESS: ofType<{}>(),
-}, {
-    tag: 'type',
-    value: 'payload'
 });
-
 
 export const COLLECTION_FORM_NAME = 'collectionEditDialog';
 
@@ -39,11 +34,10 @@ export const updateCollection = (collection: Partial<CollectionResource>) =>
         return services.collectionService
             .update(uuid, collection)
             .then(collection => {
-                    dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection as CollectionResource }));
-                    dispatch(collectionUpdaterActions.UPDATE_COLLECTION_SUCCESS());
-                    dispatch<any>(updateDetails(collection));
-                }
-            );
+                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection as CollectionResource }));
+                dispatch(collectionUpdaterActions.UPDATE_COLLECTION_SUCCESS());
+                dispatch(resourcesActions.SET_RESOURCES([collection]));
+            });
     };
 
 export type CollectionUpdaterAction = UnionOf<typeof collectionUpdaterActions>;

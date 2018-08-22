@@ -10,6 +10,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 
 import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from '~/validators/validators';
+import { PROJECT_CREATE_DIALOG } from '~/store/project/project-action';
 
 type CssRules = "button" | "lastButton" | "formContainer" | "dialog" | "dialogTitle" | "createProgress" | "dialogActions";
 
@@ -51,8 +52,6 @@ interface DialogProjectProps {
     invalid: boolean;
     pristine: boolean;
 }
-
-export const PROJECT_CREATE_DIALOG = "projectCreateDialog";
 
 export const DialogProjectCreate = compose(
     reduxForm({ form: PROJECT_CREATE_DIALOG }),

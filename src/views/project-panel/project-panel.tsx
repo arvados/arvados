@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ProjectPanelItem } from './project-panel-item';
 import { Button, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
@@ -16,9 +15,21 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
-import { restoreBranch } from '~/store/navigation/navigation-action';
+import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
+import { restoreBranch, setProjectItem, ItemMode } from '~/store/navigation/navigation-action';
 import { ProjectIcon } from '~/components/icon/icon';
+import { ResourceName } from '~/views-components/data-explorer/renderers';
+import { ResourcesState, getResource } from '~/store/resources/resources';
+import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
+import { CollectionResource } from '~/models/collection';
+import { ProjectResource } from '~/models/project';
+import { openProjectCreator } from '~/store/project/project-action';
+import { reset } from 'redux-form';
+import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
+import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
+import { navigateToResource } from '~/store/navigation/navigation-action';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -50,14 +61,14 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
+export const columns: DataColumns<string, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: renderName,
+        render: uuid => <ResourceName uuid={uuid} />,
         width: "450px"
     },
     {
@@ -82,7 +93,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
                 type: ContainerRequestState.UNCOMMITTED
             }
         ],
-        render: renderStatus,
+        render: uuid => <ProcessStatus uuid={uuid} />,
         width: "75px"
     },
     {
@@ -107,7 +118,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
                 type: ResourceKind.PROJECT
             }
         ],
-        render: item => renderType(item.kind),
+        render: uuid => <ResourceType uuid={uuid} />,
         width: "125px"
     },
     {
@@ -116,7 +127,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderOwner(item.owner),
+        render: uuid => <ResourceOwner uuid={uuid} />,
         width: "200px"
     },
     {
@@ -125,7 +136,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderFileSize(item.fileSize),
+        render: uuid => <ResourceFileSize uuid={uuid} />,
         width: "50px"
     },
     {
@@ -134,7 +145,7 @@ export const columns: DataColumns<ProjectPanelItem, ProjectPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderDate(item.lastModified),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />,
         width: "150px"
     }
 ];
@@ -143,22 +154,14 @@ export const PROJECT_PANEL_ID = "projectPanel";
 
 interface ProjectPanelDataProps {
     currentItemId: string;
+    resources: ResourcesState;
 }
 
-interface ProjectPanelActionProps {
-    onItemClick: (item: ProjectPanelItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProjectPanelItem) => void;
-    onProjectCreationDialogOpen: (ownerUuid: string) => void;
-    onCollectionCreationDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: ProjectPanelItem) => void;
-    onItemRouteChange: (itemId: string) => void;
-}
-
-type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp
+type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId, resources: state.resources }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
@@ -177,32 +180,64 @@ export const ProjectPanel = withStyles(styles)(
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         columns={columns}
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu}
-                        extractKey={(item: ProjectPanelItem) => item.uuid}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
                         defaultIcon={ProjectIcon}
                         defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
                 </div>;
             }
 
             handleNewProjectClick = () => {
-                this.props.onProjectCreationDialogOpen(this.props.currentItemId);
+                this.props.dispatch<any>(openProjectCreator(this.props.currentItemId));
             }
 
             handleNewCollectionClick = () => {
-                this.props.onCollectionCreationDialogOpen(this.props.currentItemId);
+                this.props.dispatch(reset(COLLECTION_CREATE_DIALOG));
+                this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: this.props.currentItemId }));
             }
 
-            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: ProjectPanelProps) {
-                if (match.params.id !== currentItemId) {
-                    onItemRouteChange(match.params.id);
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                event.preventDefault();
+                const resource = getResource(resourceUuid)(this.props.resources) as CollectionResource | ProjectResource | undefined;
+                if (resource) {
+                    let kind: ContextMenuKind;
+
+                    if (resource.kind === ResourceKind.PROJECT) {
+                        kind = ContextMenuKind.PROJECT;
+                    } else if (resource.kind === ResourceKind.COLLECTION) {
+                        kind = ContextMenuKind.COLLECTION_RESOURCE;
+                    } else {
+                        kind = ContextMenuKind.RESOURCE;
+                    }
+                    if (kind !== ContextMenuKind.RESOURCE) {
+                        this.props.dispatch(
+                            contextMenuActions.OPEN_CONTEXT_MENU({
+                                position: { x: event.clientX, y: event.clientY },
+                                resource: {
+                                    uuid: resource.uuid,
+                                    name: resource.name || '',
+                                    description: resource.description,
+                                    kind,
+                                }
+                            })
+                        );
+                    }
                 }
             }
 
-            componentDidMount() {
+            handleRowDoubleClick = (uuid: string) => {
+                this.props.dispatch<any>(navigateToResource(uuid));
+            }
+
+            handleRowClick = (uuid: string) => {
+                this.props.dispatch(loadDetailsPanel(uuid));
+            }
+
+            async componentDidMount() {
                 if (this.props.match.params.id && this.props.currentItemId === '') {
-                    this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
+                    await this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
+                    this.props.dispatch<any>(setProjectItem(this.props.match.params.id, ItemMode.BOTH));
                 }
             }
         }

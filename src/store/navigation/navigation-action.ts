@@ -8,7 +8,7 @@ import { push } from "react-router-redux";
 import { TreeItemStatus } from "~/components/tree/tree";
 import { findTreeItem } from "../project/project-reducer";
 import { RootState } from "../store";
-import { ResourceKind } from "~/models/resource";
+import { ResourceKind, Resource } from '~/models/resource';
 import { projectPanelActions } from "../project-panel/project-panel-action";
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl, ProjectResource } from "~/models/project";
@@ -17,6 +17,12 @@ import { ServiceRepository } from "~/services/services";
 import { sidePanelActions } from "../side-panel/side-panel-action";
 import { SidePanelId } from "../side-panel/side-panel-reducer";
 import { getUuidObjectType, ObjectTypes } from "~/models/object-types";
+import { getResource } from '~/store/resources/resources';
+import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { loadCollection } from '~/store/collection-panel/collection-panel-action';
+import { GroupContentsResource } from "~/services/groups-service/groups-service";
+import { snackbarActions } from '../snackbar/snackbar-actions';
+import { resourceLabel } from "~/common/labels";
 
 export const getResourceUrl = (resourceKind: ResourceKind, resourceUuid: string): string => {
     switch (resourceKind) {
@@ -98,3 +104,47 @@ const loadBranch = async (uuids: string[], dispatch: Dispatch): Promise<any> => 
         return loadBranch(rest, dispatch);
     }
 };
+
+export const navigateToResource = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const resource = getResource(uuid)(getState().resources);
+        resource
+            ? dispatch<any>(getResourceNavigationAction(resource))
+            : dispatch<any>(resourceIsNotLoaded(uuid));
+    };
+
+const getResourceNavigationAction = (resource: Resource) => {
+    switch (resource.kind) {
+        case ResourceKind.COLLECTION:
+            return navigateToCollection(resource);
+        case ResourceKind.PROJECT:
+            return navigateToProject(resource);
+        default:
+            return cannotNavigateToResource(resource);
+    }
+};
+
+export const navigateToProject = ({ uuid }: Resource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(setProjectItem(uuid, ItemMode.BOTH));
+        dispatch(loadDetailsPanel(uuid));
+    };
+
+export const navigateToCollection = ({ uuid }: Resource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(loadCollection(uuid));
+        dispatch(push(getCollectionUrl(uuid)));
+    };
+
+export const cannotNavigateToResource = ({ kind, uuid }: Resource) =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: `${resourceLabel(kind)} identified by ${uuid} cannot be opened.`,
+        hideDuration: 3000
+    });
+
+
+export const resourceIsNotLoaded = (uuid: string) =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: `Resource identified by ${uuid} is not loaded.`,
+        hideDuration: 3000
+    });

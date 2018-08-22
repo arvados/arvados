@@ -6,7 +6,6 @@ import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-mi
 import { FavoritePanelColumnNames, FavoritePanelFilter } from "~/views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
-import { FavoritePanelItem, resourceToDataItem } from "~/views/favorite-panel/favorite-panel-item";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
 import { FilterBuilder } from "~/common/api/filter-builder";
@@ -16,6 +15,7 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
 import { LinkResource } from "~/models/link";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
+import { resourcesActions } from "~/store/resources/resources-actions";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -24,7 +24,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
 
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<FavoritePanelItem, FavoritePanelFilter>;
+        const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
         const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
         const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
 
@@ -55,8 +55,9 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     .getFilters()
             })
             .then(response => {
+                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
-                    items: response.items.map(resourceToDataItem),
+                    items: response.items.map(resource => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit

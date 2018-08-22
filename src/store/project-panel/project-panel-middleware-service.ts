@@ -7,7 +7,6 @@ import { ProjectPanelColumnNames, ProjectPanelFilter } from "~/views/project-pan
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
-import { ProjectPanelItem, resourceToDataItem } from "~/views/project-panel/project-panel-item";
 import { SortDirection } from "~/components/data-table/data-column";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
 import { FilterBuilder } from "~/common/api/filter-builder";
@@ -16,6 +15,7 @@ import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions } from "./project-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
+import { resourcesActions } from "~/store/resources/resources-actions";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -25,7 +25,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
         const dataExplorer = state.dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
+        const columns = dataExplorer.columns as DataColumns<string, ProjectPanelFilter>;
         const typeFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
         const statusFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
         const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
@@ -58,8 +58,9 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     .getFilters()
             })
             .then(response => {
+                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 api.dispatch(projectPanelActions.SET_ITEMS({
-                    items: response.items.map(resourceToDataItem),
+                    items: response.items.map(resource => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
