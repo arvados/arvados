@@ -6,7 +6,7 @@ import * as React from "react";
 import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectTreePicker } from '~/components/project-tree-picker/project-tree-picker';
+import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
 import { COPY_NAME_VALIDATION, MAKE_A_COPY_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
 import { ProjectCopyFormDialogData } from "~/store/project-copy-dialog/project-copy-dialog";
@@ -34,5 +34,5 @@ const ProjectCopyNameField = () =>
 const ProjectCopyDialogFields = () =>
     <Field
         name="projectUuid"
-        component={ProjectTreePicker}
+        component={ProjectTreePickerField}
         validate={MAKE_A_COPY_VALIDATION} />;
