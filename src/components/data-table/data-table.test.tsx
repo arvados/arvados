@@ -8,31 +8,31 @@ import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } f
 import * as Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
 import { DataTableFilters } from "../data-table-filters/data-table-filters";
-import { SortDirection } from "./data-column";
+import { SortDirection, createDataColumn } from "./data-column";
 
 configure({ adapter: new Adapter() });
 
 describe("<DataTable />", () => {
     it("shows only selected columns", () => {
         const columns: DataColumns<string> = [
-            {
+            createDataColumn({
                 name: "Column 1",
                 render: () => <span />,
                 selected: true,
                 configurable: true
-            },
-            {
+            }),
+            createDataColumn({
                 name: "Column 2",
                 render: () => <span />,
                 selected: true,
                 configurable: true
-            },
-            {
+            }),
+            createDataColumn({
                 name: "Column 3",
                 render: () => <span />,
                 selected: false,
                 configurable: true
-            }
+            }),
         ];
         const dataTable = mount(<DataTable
             columns={columns}
@@ -47,12 +47,12 @@ describe("<DataTable />", () => {
 
     it("renders column name", () => {
         const columns: DataColumns<string> = [
-            {
+            createDataColumn({
                 name: "Column 1",
                 render: () => <span />,
                 selected: true,
                 configurable: true
-            }
+            }),
         ];
         const dataTable = mount(<DataTable
             columns={columns}
@@ -67,13 +67,13 @@ describe("<DataTable />", () => {
 
     it("uses renderHeader instead of name prop", () => {
         const columns: DataColumns<string> = [
-            {
+            createDataColumn({
                 name: "Column 1",
                 renderHeader: () => <span>Column Header</span>,
                 render: () => <span />,
                 selected: true,
                 configurable: true
-            }
+            }),
         ];
         const dataTable = mount(<DataTable
             columns={columns}
@@ -88,13 +88,13 @@ describe("<DataTable />", () => {
 
     it("passes column key prop to corresponding cells", () => {
         const columns: DataColumns<string> = [
-            {
+            createDataColumn({
                 name: "Column 1",
                 key: "column-1-key",
                 render: () => <span />,
                 selected: true,
                 configurable: true
-            }
+            })
         ];
         const dataTable = mount(<DataTable
             columns={columns}
@@ -110,18 +110,18 @@ describe("<DataTable />", () => {
 
     it("renders items", () => {
         const columns: DataColumns<string> = [
-            {
+            createDataColumn({
                 name: "Column 1",
                 render: (item) => <Typography>{item}</Typography>,
                 selected: true,
                 configurable: true
-            },
-            {
+            }),
+            createDataColumn({
                 name: "Column 2",
                 render: (item) => <Button>{item}</Button>,
                 selected: true,
                 configurable: true
-            }
+            })
         ];
         const dataTable = mount(<DataTable
             columns={columns}
@@ -136,13 +136,14 @@ describe("<DataTable />", () => {
     });
 
     it("passes sorting props to <TableSortLabel />", () => {
-        const columns: DataColumns<string> = [{
+        const columns: DataColumns<string> = [
+            createDataColumn({
             name: "Column 1",
             sortDirection: SortDirection.ASC,
             selected: true,
             configurable: true,
             render: (item) => <Typography>{item}</Typography>
-        }];
+        })];
         const onSortToggle = jest.fn();
         const dataTable = mount(<DataTable
             columns={columns}
@@ -155,6 +156,27 @@ describe("<DataTable />", () => {
         expect(dataTable.find(TableSortLabel).prop("active")).toBeTruthy();
         dataTable.find(TableSortLabel).at(0).simulate("click");
         expect(onSortToggle).toHaveBeenCalledWith(columns[0]);
+    });
+
+    it("does not display <DataTableFilter /> if there is no filters provided", () => {
+        const columns: DataColumns<string> = [{
+            name: "Column 1",
+            sortDirection: SortDirection.ASC,
+            selected: true,
+            configurable: true,
+            filters: [],
+            render: (item) => <Typography>{item}</Typography>
+        }];
+        const onFiltersChange = jest.fn();
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={[]}
+            onFiltersChange={onFiltersChange}
+            onRowClick={jest.fn()}
+            onRowDoubleClick={jest.fn()}
+            onSortToggle={jest.fn()}
+            onContextMenu={jest.fn()} />);
+        expect(dataTable.find(DataTableFilters)).toHaveLength(0);
     });
 
     it("passes filter props to <DataTableFilter />", () => {
