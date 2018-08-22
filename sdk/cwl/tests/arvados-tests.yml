@@ -120,6 +120,12 @@
 
 - job: null
   output:
+    out: null
+  tool: 13976-keepref-wf.cwl
+  doc: "Test issue 13976"
+
+- job: null
+  output:
     out: out
   tool: wf/runin-wf.cwl
   doc: "RunInSingleContainer cwl.input.json needs to be consistent with pathmapper manipulations"
@@ -226,3 +232,14 @@
     out: null
   tool: wf-defaults/wf7.cwl
   doc: workflow level default in RunInSingleContainer
+
+- job: 13931-size-job.yml
+  output:
+    "out": {
+        "checksum": "sha1$5bf6e5357bd42a6b1d2a3a040e16a91490064d26",
+        "location": "size.txt",
+        "class": "File",
+        "size": 3
+    }
+  tool: 13931-size.cwl
+  doc: Test that size is set for files in Keep

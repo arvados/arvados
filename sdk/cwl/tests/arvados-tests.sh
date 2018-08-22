@@ -12,4 +12,8 @@ fi
 if ! arv-get 4d8a70b1e63b2aad6984e40e338e2373+69 > /dev/null ; then
     arv-put --portable-data-hash secondaryFiles/hello.txt*
 fi
+if ! arv-get 20850f01122e860fb878758ac1320877+71 > /dev/null ; then
+    arv-put --portable-data-hash samples/sample1_S01_R1_001.fastq.gz
+fi
+
 exec cwltest --test arvados-tests.yml --tool arvados-cwl-runner $@ -- --disable-reuse --compute-checksum

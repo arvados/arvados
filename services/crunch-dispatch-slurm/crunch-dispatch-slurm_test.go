@@ -116,7 +116,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	var containers arvados.ContainerList
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Check(len(containers.Items), Equals, 1)
+	c.Assert(len(containers.Items), Equals, 1)
 
 	s.disp.CrunchRunCommand = []string{"echo"}
 
@@ -246,7 +246,7 @@ func (s *StubbedSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	s.testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
+	s.testWithServerStub(c, apiStubResponses, "echo", "error getting count of containers")
 }
 
 func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {

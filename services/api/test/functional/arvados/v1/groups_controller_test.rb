@@ -139,45 +139,59 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes ids, collections(:baz_file_in_asubproject).uuid
   end
 
-  [['asc', :<=],
-   ['desc', :>=]].each do |order, operator|
-    test "user with project read permission can sort project collections #{order}" do
+  [
+    ['collections.name', 'asc', :<=, "name"],
+    ['collections.name', 'desc', :>=, "name"],
+    ['name', 'asc', :<=, "name"],
+    ['name', 'desc', :>=, "name"],
+    ['collections.created_at', 'asc', :<=, "created_at"],
+    ['collections.created_at', 'desc', :>=, "created_at"],
+    ['created_at', 'asc', :<=, "created_at"],
+    ['created_at', 'desc', :>=, "created_at"],
+  ].each do |column, order, operator, field|
+    test "user with project read permission can sort projects on #{column} #{order}" do
       authorize_with :project_viewer
       get :contents, {
         id: groups(:asubproject).uuid,
         format: :json,
         filters: [['uuid', 'is_a', "arvados#collection"]],
-        order: "collections.name #{order}"
+        order: "#{column} #{order}"
       }
-      sorted_names = json_response['items'].collect { |item| item["name"] }
-      # Here we avoid assuming too much about the database
-      # collation. Both "alice"<"Bob" and "alice">"Bob" can be
-      # correct. Hopefully it _is_ safe to assume that if "a" comes
-      # before "b" in the ascii alphabet, "aX">"bY" is never true for
-      # any strings X and Y.
-      reliably_sortable_names = sorted_names.select do |name|
-        name[0] >= 'a' and name[0] <= 'z'
-      end.uniq do |name|
-        name[0]
-      end
-      # Preserve order of sorted_names. But do not use &=. If
-      # sorted_names has out-of-order duplicates, we want to preserve
-      # them here, so we can detect them and fail the test below.
-      sorted_names.select! do |name|
-        reliably_sortable_names.include? name
-      end
-      actually_checked_anything = false
-      previous = nil
-      sorted_names.each do |entry|
-        if previous
-          assert_operator(previous, operator, entry,
-                          "Entries sorted incorrectly.")
-          actually_checked_anything = true
+      sorted_values = json_response['items'].collect { |item| item[field] }
+      if field == "name"
+        # Here we avoid assuming too much about the database
+        # collation. Both "alice"<"Bob" and "alice">"Bob" can be
+        # correct. Hopefully it _is_ safe to assume that if "a" comes
+        # before "b" in the ascii alphabet, "aX">"bY" is never true for
+        # any strings X and Y.
+        reliably_sortable_names = sorted_values.select do |name|
+          name[0] >= 'a' && name[0] <= 'z'
+        end.uniq do |name|
+          name[0]
         end
-        previous = entry
+        # Preserve order of sorted_values. But do not use &=. If
+        # sorted_values has out-of-order duplicates, we want to preserve
+        # them here, so we can detect them and fail the test below.
+        sorted_values.select! do |name|
+          reliably_sortable_names.include? name
+        end
       end
-      assert actually_checked_anything, "Didn't even find two names to compare."
+      assert_sorted(operator, sorted_values)
     end
+  end
+
+  def assert_sorted(operator, sorted_items)
+    actually_checked_anything = false
+    previous = nil
+    sorted_items.each do |entry|
+      if !previous.nil?
+        assert_operator(previous, operator, entry,
+                        "Entries sorted incorrectly.")
+        actually_checked_anything = true
+      end
+      previous = entry
+    end
+    assert actually_checked_anything, "Didn't even find two items to compare."
   end
 
   test 'list objects across multiple projects' do
@@ -705,4 +719,61 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
     end
   end
+
+  test 'get shared owned by another user' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+    end
+
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], users(:user_foo_in_sharing_group).uuid
+  end
+
+  test 'get shared, owned by unreadable project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:aproject).uuid)
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+    end
+
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 0, json_response['included'].length
+  end
+
+  test 'get shared, owned by non-project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
+    end
+
+    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+  end
+
 end

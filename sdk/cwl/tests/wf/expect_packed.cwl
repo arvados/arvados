@@ -64,7 +64,8 @@
                                 "class": "File",
                                 "location": "keep:99999999999999999999999999999998+99/file1.txt",
                                 "nameext": ".txt",
-                                "nameroot": "renamed"
+                                "nameroot": "renamed",
+                                "size": 0
                             }
                         ]
                     },

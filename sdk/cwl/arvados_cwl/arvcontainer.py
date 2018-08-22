@@ -488,7 +488,7 @@ class RunnerContainer(Runner):
         self.uuid = response["uuid"]
         self.arvrunner.process_submitted(self)
 
-        logger.info("%s submitted container %s", self.arvrunner.label(self), response["uuid"])
+        logger.info("%s submitted container_request %s", self.arvrunner.label(self), response["uuid"])
 
     def done(self, record):
         try:

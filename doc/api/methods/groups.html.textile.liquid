@@ -125,3 +125,24 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group to untrash.|path||
 |ensure_unique_name|boolean (default false)|Rename project uniquely if untrashing it would fail with a unique name conflict.|query||
+
+h3. shared
+
+This endpoint returns the toplevel set of groups to which access is granted through a chain of one or more permission links rather than through direct ownership by the current user account.  This is useful for clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project tree.
+
+When called with "include=owner_uuid" this also returns (in the "included" field) the objects that own those projects (users or non-project groups).
+
+Specifically, the logic is:
+
+<pre>
+select groups that are readable by current user AND
+    (the owner_uuid is a user (but not the current user) OR
+     the owner_uuid is not readable by the current user OR
+     the owner_uuid is a group but group_class is not a project)
+</pre>
+
+In addition to the "include" parameter this endpoint also supports the same parameters as the "list method.":{{site.baseurl}}/api/methods.html#index
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query|?include=owner_uuid|

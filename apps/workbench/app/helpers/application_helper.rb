@@ -16,7 +16,7 @@ module ApplicationHelper
   end
 
   def render_markup(markup)
-    raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
+    sanitize(raw(RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile))) if markup
   end
 
   def human_readable_bytes_html(n)
@@ -43,13 +43,6 @@ module ApplicationHelper
     end
 
     return h(n)
-    #raw = n.to_s
-    #cooked = ''
-    #while raw.length > 3
-    #  cooked = ',' + raw[-3..-1] + cooked
-    #  raw = raw[0..-4]
-    #end
-    #cooked = raw + cooked
   end
 
   def resource_class_for_uuid(attrvalue, opts={})
@@ -680,9 +673,10 @@ module ApplicationHelper
   end
 
   # Keep locators are expected to be of the form \"...<pdh/file_path>\"
-  JSON_KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
+  JSON_KEEP_LOCATOR_REGEXP = /([0-9a-f]{32}\+\d+[^'"]*?)(?=['"]|\z|$)/
   def keep_locator_in_json str
-    JSON_KEEP_LOCATOR_REGEXP.match str
+    # Return a list of all matches
+    str.scan(JSON_KEEP_LOCATOR_REGEXP).flatten
   end
 
 private

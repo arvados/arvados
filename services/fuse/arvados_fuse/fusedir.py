@@ -925,7 +925,7 @@ class ProjectDirectory(Directory):
         with llfuse.lock_released:
             if not self._current_user:
                 self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
-            return self._current_user["uuid"] in self.project_object["writable_by"]
+            return self._current_user["uuid"] in self.project_object.get("writable_by", [])
 
     def persisted(self):
         return True
@@ -1049,35 +1049,55 @@ class SharedDirectory(Directory):
                 if not self.stale():
                     return
 
-                all_projects = arvados.util.list_all(
-                    self.api.groups().list, self.num_retries,
-                    filters=[['group_class','=','project']],
-                    select=["uuid", "owner_uuid"])
-                objects = {}
-                for ob in all_projects:
-                    objects[ob['uuid']] = ob
-
+                contents = {}
                 roots = []
                 root_owners = set()
-                current_uuid = self.current_user['uuid']
-                for ob in all_projects:
-                    if ob['owner_uuid'] != current_uuid and ob['owner_uuid'] not in objects:
-                        roots.append(ob['uuid'])
-                        root_owners.add(ob['owner_uuid'])
+                objects = {}
 
-                lusers = arvados.util.list_all(
-                    self.api.users().list, self.num_retries,
-                    filters=[['uuid','in', list(root_owners)]])
-                lgroups = arvados.util.list_all(
-                    self.api.groups().list, self.num_retries,
-                    filters=[['uuid','in', list(root_owners)+roots]])
+                methods = self.api._rootDesc.get('resources')["groups"]['methods']
+                if 'httpMethod' in methods.get('shared', {}):
+                    page = []
+                    while True:
+                        resp = self.api.groups().shared(filters=[['group_class', '=', 'project']]+page,
+                                                        order="uuid",
+                                                        limit=10000,
+                                                        count="none",
+                                                        include="owner_uuid").execute()
+                        if not resp["items"]:
+                            break
+                        page = [["uuid", ">", resp["items"][len(resp["items"])-1]["uuid"]]]
+                        for r in resp["items"]:
+                            objects[r["uuid"]] = r
+                            roots.append(r["uuid"])
+                        for r in resp["included"]:
+                            objects[r["uuid"]] = r
+                            root_owners.add(r["uuid"])
+                else:
+                    all_projects = arvados.util.list_all(
+                        self.api.groups().list, self.num_retries,
+                        filters=[['group_class','=','project']],
+                        select=["uuid", "owner_uuid"])
+                    for ob in all_projects:
+                        objects[ob['uuid']] = ob
 
-                for l in lusers:
-                    objects[l["uuid"]] = l
-                for l in lgroups:
-                    objects[l["uuid"]] = l
+                    current_uuid = self.current_user['uuid']
+                    for ob in all_projects:
+                        if ob['owner_uuid'] != current_uuid and ob['owner_uuid'] not in objects:
+                            roots.append(ob['uuid'])
+                            root_owners.add(ob['owner_uuid'])
 
-                contents = {}
+                    lusers = arvados.util.list_all(
+                        self.api.users().list, self.num_retries,
+                        filters=[['uuid','in', list(root_owners)]])
+                    lgroups = arvados.util.list_all(
+                        self.api.groups().list, self.num_retries,
+                        filters=[['uuid','in', list(root_owners)+roots]])
+
+                    for l in lusers:
+                        objects[l["uuid"]] = l
+                    for l in lgroups:
+                        objects[l["uuid"]] = l
+
                 for r in root_owners:
                     if r in objects:
                         obr = objects[r]

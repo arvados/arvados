@@ -57,6 +57,9 @@ type Dispatcher struct {
 
 	// Minimum time between two attempts to run the same container
 	MinRetryPeriod arvados.Duration
+
+	// Batch size for container queries
+	BatchSize int64
 }
 
 func main() {
@@ -164,6 +167,7 @@ func (disp *Dispatcher) setup() {
 	}
 	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
+		BatchSize:      disp.BatchSize,
 		RunContainer:   disp.runContainer,
 		PollPeriod:     time.Duration(disp.PollPeriod),
 		MinRetryPeriod: time.Duration(disp.MinRetryPeriod),
@@ -251,9 +255,6 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	crArgs := append([]string(nil), crunchRunCommand...)
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
-
-	disp.sqCheck.L.Lock()
-	defer disp.sqCheck.L.Unlock()
 
 	sbArgs, err := disp.sbatchArgs(container)
 	if err != nil {
@@ -355,10 +356,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	}
 }
 func (disp *Dispatcher) scancel(ctr arvados.Container) {
-	disp.sqCheck.L.Lock()
 	err := disp.slurm.Cancel(ctr.UUID)
-	disp.sqCheck.L.Unlock()
-
 	if err != nil {
 		log.Printf("scancel: %s", err)
 		time.Sleep(time.Second)

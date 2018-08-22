@@ -83,7 +83,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         p = sp[0]
         if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
             pdh = p[5:]
-            return (self.collection_cache.get(pdh), sp[1] if len(sp) == 2 else None)
+            return (self.collection_cache.get(pdh), urlparse.unquote(sp[1]) if len(sp) == 2 else None)
         else:
             return (None, path)
 
@@ -138,6 +138,17 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
                 return True
         else:
             return super(CollectionFsAccess, self).exists(fn)
+
+    def size(self, fn):  # type: (unicode) -> bool
+        collection, rest = self.get_collection(fn)
+        if collection is not None:
+            if rest:
+                arvfile = collection.find(rest)
+                if isinstance(arvfile, arvados.arvfile.ArvadosFile):
+                    return arvfile.size()
+            raise IOError(errno.EINVAL, "Not a path to a file %s" % (fn))
+        else:
+            return super(CollectionFsAccess, self).size(fn)
 
     def isfile(self, fn):  # type: (unicode) -> bool
         collection, rest = self.get_collection(fn)
