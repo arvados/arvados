@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { InjectedFormProps, Field, WrappedFieldProps } from 'redux-form';
+import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectTreePicker } from '~/views-components/project-tree-picker/project-tree-picker';
-import { Typography } from "@material-ui/core";
+import { ProjectTreePicker } from '~/components/project-tree-picker/project-tree-picker';
 import { MOVE_TO_VALIDATION } from '~/validators/validators';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
@@ -22,19 +21,6 @@ export const MoveToFormDialog = (props: WithDialogProps<string> & InjectedFormPr
 const MoveToDialogFields = () =>
     <Field
         name="ownerUuid"
-        component={ProjectPicker}
+        component={ProjectTreePicker}
         validate={MOVE_TO_VALIDATION} />;
 
-const ProjectPicker = (props: WrappedFieldProps) =>
-    <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
-        <ProjectTreePicker onChange={handleChange(props)} />
-        {props.meta.dirty && props.meta.error &&
-            <Typography variant='caption' color='error'>
-                {props.meta.error}
-            </Typography>}
-    </div>;
-
-const handleChange = (props: WrappedFieldProps) => (value: string) =>
-    props.input.value === value
-        ? props.input.onChange('')
-        : props.input.onChange(value);
