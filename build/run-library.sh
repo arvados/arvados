@@ -266,7 +266,7 @@ test_package_presence() {
     # Get the list of packages from the repos
 
     if [[ "$FORMAT" == "deb" ]]; then
-      debian_distros="jessie precise stretch trusty wheezy xenial"
+      debian_distros="jessie precise stretch trusty wheezy xenial bionic"
 
       for D in ${debian_distros}; do
         if [ ${pkgname:0:3} = "lib" ]; then
