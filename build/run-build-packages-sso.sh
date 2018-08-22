@@ -77,9 +77,6 @@ case "$TARGET" in
     debian9)
         FORMAT=deb
         ;;
-    ubuntu1204)
-        FORMAT=deb
-        ;;
     ubuntu1404)
         FORMAT=deb
         ;;
