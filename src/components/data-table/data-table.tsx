@@ -63,7 +63,7 @@ export const DataTable = withStyles(styles)(
             return <TableCell key={key || index} style={{ width: column.width, minWidth: column.width }}>
                 {renderHeader ?
                     renderHeader() :
-                    filters
+                    filters.length > 0
                         ? <DataTableFilters
                             name={`${name} filters`}
                             onChange={filters =>
