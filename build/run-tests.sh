@@ -664,9 +664,9 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-              (${#only[@]} -eq 0 || ${only[$suite]} = 1 || \
-                   ${only[$1]} = 1) ||
-                  ${only[$2]} = 1 ]]; then
+              (${#only[@]} -eq 0 || ${only[$suite]} -eq 1 || \
+                   ${only[$1]} -eq 1) ||
+                  ${only[$2]} -eq 1 ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
