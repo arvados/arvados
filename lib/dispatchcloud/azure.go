@@ -125,6 +125,7 @@ type AzureProvider struct {
 	netClient         InterfacesClientWrapper
 	storageAcctClient storageacct.AccountsClient
 	azureEnv          azure.Environment
+	interfaces        map[string]network.Interface
 }
 
 func NewAzureProvider(azcfg AzureProviderConfig, arvcfg arvados.Cluster) (prv Provider, err error) {
@@ -279,7 +280,7 @@ func (az *AzureProvider) Create(ctx context.Context,
 		},
 	}
 
-	vm, err := az.vmClient.CreateOrUpdate(ctx, az.azconfig.ResourceGroup, name+"-compute", vmParameters)
+	vm, err := az.vmClient.CreateOrUpdate(ctx, az.azconfig.ResourceGroup, name, vmParameters)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +294,11 @@ func (az *AzureProvider) Create(ctx context.Context,
 }
 
 func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
+	interfaces, err := az.ManageNics(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := az.vmClient.ListComplete(ctx, az.azconfig.ResourceGroup)
 	if err != nil {
 		return nil, err
@@ -304,59 +310,80 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("%v", *result.Value().Name)
 		if result.Value().Tags["arvados-class"] != nil &&
 			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
 			instances = append(instances, &AzureInstance{
 				provider: az,
-				vm:       result.Value()})
+				vm:       result.Value(),
+				nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID]})
 		}
 	}
 	return instances, nil
 }
 
-func (az *AzureProvider) DeleteDanglingNics(ctx context.Context) {
+func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Interface, error) {
 	result, err := az.netClient.ListComplete(ctx, az.azconfig.ResourceGroup)
 	if err != nil {
-		return
+		return nil, err
 	}
+
+	interfaces := make(map[string]network.Interface)
 
 	timestamp := time.Now()
 	wg := sync.WaitGroup{}
-	defer wg.Wait()
+	deletechannel := make(chan string, 20)
+	defer func() {
+		wg.Wait()
+		close(deletechannel)
+	}()
+	for i := 0; i < 4; i += 1 {
+		go func() {
+			for {
+				nicname, ok := <-deletechannel
+				if !ok {
+					return
+				}
+				_, delerr := az.netClient.Delete(context.Background(), az.azconfig.ResourceGroup, nicname)
+				if delerr != nil {
+					log.Printf("Error deleting %v: %v", nicname, delerr)
+				} else {
+					log.Printf("Deleted %v", nicname)
+				}
+				wg.Done()
+			}
+		}()
+	}
+
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
 			log.Printf("Error listing nics: %v", err)
-			return
-		}
-		if !result.NotDone() {
-			return
+			return interfaces, nil
 		}
 		if result.Value().Tags["arvados-class"] != nil &&
-			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" &&
-			result.Value().VirtualMachine == nil {
+			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
 
-			if result.Value().Tags["created-at"] != nil {
-				created_at, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
-				if err == nil {
-					log.Printf("found dangling NIC %v created %v seconds ago", *result.Value().Name, timestamp.Sub(created_at).Seconds())
-					if timestamp.Sub(created_at).Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
-						log.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
-						wg.Add(1)
-						go func(nicname string) {
-							r, delerr := az.netClient.Delete(context.Background(), az.azconfig.ResourceGroup, nicname)
-							log.Printf("%v %v", r, delerr)
-							wg.Done()
-						}(*result.Value().Name)
+			if result.Value().VirtualMachine != nil {
+				interfaces[*result.Value().ID] = result.Value()
+			} else {
+
+				if result.Value().Tags["created-at"] != nil {
+					created_at, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
+					if err == nil {
+						//log.Printf("found dangling NIC %v created %v seconds ago", *result.Value().Name, timestamp.Sub(created_at).Seconds())
+						if timestamp.Sub(created_at).Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
+							log.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
+							wg.Add(1)
+							deletechannel <- *result.Value().Name
+						}
 					}
 				}
 			}
 		}
 	}
-
+	return interfaces, nil
 }
 
-func (az *AzureProvider) DeleteDanglingBlobs(ctx context.Context) {
+func (az *AzureProvider) ManageBlobs(ctx context.Context) {
 	result, err := az.storageAcctClient.ListKeys(ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
 	if err != nil {
 		log.Printf("Couldn't get account keys %v", err)
@@ -374,6 +401,30 @@ func (az *AzureProvider) DeleteDanglingBlobs(ctx context.Context) {
 	blobcont := blobsvc.GetContainerReference(az.azconfig.BlobContainer)
 
 	timestamp := time.Now()
+	wg := sync.WaitGroup{}
+	deletechannel := make(chan storage.Blob, 20)
+	defer func() {
+		wg.Wait()
+		close(deletechannel)
+	}()
+	for i := 0; i < 4; i += 1 {
+		go func() {
+			for {
+				blob, ok := <-deletechannel
+				if !ok {
+					return
+				}
+				err := blob.Delete(nil)
+				if err != nil {
+					log.Printf("error deleting %v: %v", blob.Name, err)
+				} else {
+					log.Printf("Deleted blob %v", blob.Name)
+				}
+				wg.Done()
+			}
+		}()
+	}
+
 	page := storage.ListBlobsParameters{Prefix: "compute-"}
 
 	for {
@@ -388,7 +439,10 @@ func (az *AzureProvider) DeleteDanglingBlobs(ctx context.Context) {
 				b.Properties.LeaseState == "available" &&
 				b.Properties.LeaseStatus == "unlocked" &&
 				age.Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
+
 				log.Printf("Blob %v is unlocked and not modified for %v seconds, will delete", b.Name, age.Seconds())
+				wg.Add(1)
+				deletechannel <- b
 			}
 		}
 		if response.NextMarker != "" {
@@ -407,7 +461,7 @@ type AzureInstance struct {
 }
 
 func (ai *AzureInstance) String() string {
-	return *ai.vm.ID
+	return *ai.vm.Name
 }
 
 func (ai *AzureInstance) ProviderType() string {
@@ -428,7 +482,7 @@ func (ai *AzureInstance) GetTags() ([]InstanceTag, error) {
 
 func (ai *AzureInstance) Destroy(ctx context.Context) error {
 	_, err := ai.provider.vmClient.Delete(ctx, ai.provider.azconfig.ResourceGroup, *ai.vm.Name)
-	// check response code
+	// check response code?
 	return err
 }
 
