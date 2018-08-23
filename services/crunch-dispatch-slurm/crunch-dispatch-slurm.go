@@ -159,7 +159,7 @@ func (disp *Dispatcher) setup() {
 	}
 	arv.Retries = 25
 
-	disp.slurm = &slurmCLI{}
+	disp.slurm = NewSlurmCLI()
 	disp.sqCheck = &SqueueChecker{
 		Period:         time.Duration(disp.PollPeriod),
 		PrioritySpread: disp.PrioritySpread,
