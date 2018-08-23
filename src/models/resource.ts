@@ -20,5 +20,33 @@ export enum ResourceKind {
     GROUP = "arvados#group",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
-    WORKFLOW = "arvados#workflow"
+    WORKFLOW = "arvados#workflow",
+    USER = "arvados#user",
 }
+
+export enum ResourceObjectType {
+    USER = 'tpzed',
+    GROUP = 'j7d0g',
+    COLLECTION = '4zz18'
+}
+
+export const extractUuidObjectType = (uuid: string) => {
+    const match = /(.{5})-(.{5})-(.{15})/.exec(uuid);
+    return match
+        ? match[2]
+        : undefined;
+};
+
+export const extractUuidKind = (uuid: string = '') => {
+    const objectType = extractUuidObjectType(uuid);
+    switch(objectType){
+        case ResourceObjectType.USER:
+            return ResourceKind.USER;
+        case ResourceObjectType.GROUP:
+            return ResourceKind.GROUP;
+        case ResourceObjectType.COLLECTION:
+            return ResourceKind.COLLECTION;
+        default:
+            return undefined;
+    }
+};
