@@ -168,14 +168,13 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         with self.workflow_eval_lock:
             if processStatus == "success":
                 logger.info("Overall process status is %s", processStatus)
-                if self.pipeline:
-                    self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
-                                                         body={"state": "Complete"}).execute(num_retries=self.num_retries)
+                state = "Complete"
             else:
                 logger.error("Overall process status is %s", processStatus)
-                if self.pipeline:
-                    self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
-                                                         body={"state": "Failed"}).execute(num_retries=self.num_retries)
+                state = "Failed"
+            if self.pipeline:
+                self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
+                                                        body={"state": state}).execute(num_retries=self.num_retries)
             self.final_status = processStatus
             self.final_output = out
             self.workflow_eval_lock.notifyAll()
@@ -194,6 +193,53 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             logger.info("%s %s is %s", self.label(j), uuid, record["state"])
             self.task_queue.add(partial(j.done, record))
             del self.processes[uuid]
+
+    def runtime_status_error(self, child_label, child_uuid, error_log):
+        """
+        Called from a failing child container. Records the first child error
+        on this runner's runtime_status field.
+        On subsequent errors, updates the 'error' key to show how many additional
+        failures happened.
+        """
+        error_msg = "%s %s failed" % (child_label, child_uuid)
+        logger.info(error_msg)
+        with self.workflow_eval_lock:
+            try:
+                current = self.api.containers().current().execute(num_retries=self.num_retries)
+            except ApiError as e:
+                # Status code 404 just means we're not running in a container.
+                if e.resp.status != 404:
+                    logger.info("Getting current container: %s", e)
+                return
+            runtime_status = current.get('runtime_status', {})
+            # Save first fatal error
+            if not runtime_status.get('error'):
+                runtime_status.update({
+                    'error': error_msg,
+                    'errorDetail': error_log
+                })
+            # Further errors are only mentioned as a count
+            else:
+                error_msg = re.match(
+                    r'^(.*failed)\s*\(?', runtime_status.get('error')).groups()[0]
+                more_failures = re.match(
+                    r'.*\(.*(\d+) more\)', runtime_status.get('error'))
+                if more_failures:
+                    failure_qty = int(more_failures.groups()[0])
+                    runtime_status.update({
+                        'error': "%s (and %d more)" % (error_msg, failure_qty+1)
+                    })
+                else:
+                    runtime_status.update({
+                        'error': "%s (and 1 more)" % error_msg
+                    })
+            try:
+                self.api.containers().update(uuid=current['uuid'],
+                                            body={
+                                                'runtime_status': runtime_status,
+                                            }).execute(num_retries=self.num_retries)
+            except Exception as e:
+                logger.error("Updating runtime_status: %s", e)
 
     def wrapped_callback(self, cb, obj, st):
         with self.workflow_eval_lock:

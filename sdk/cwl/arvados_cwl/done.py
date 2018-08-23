@@ -97,3 +97,4 @@ def logtail(logcollection, logfunc, header, maxlen=25):
     logtxt = "\n  ".join(l.strip() for l in loglines)
     logfunc(header)
     logfunc("\n  %s", logtxt)
+    return logtxt
