@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
 	storageacct "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2018-02-01/storage"
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -60,23 +63,25 @@ func (cl *VirtualMachinesClientImpl) CreateOrUpdate(ctx context.Context,
 
 	future, err := cl.inner.CreateOrUpdate(ctx, resourceGroupName, VMName, parameters)
 	if err != nil {
-		return compute.VirtualMachine{}, err
+		return compute.VirtualMachine{}, WrapAzureError(err)
 	}
 	future.WaitForCompletionRef(ctx, cl.inner.Client)
-	return future.Result(cl.inner)
+	r, err := future.Result(cl.inner)
+	return r, WrapAzureError(err)
 }
 
 func (cl *VirtualMachinesClientImpl) Delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
 	future, err := cl.inner.Delete(ctx, resourceGroupName, VMName)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 	err = future.WaitForCompletionRef(ctx, cl.inner.Client)
-	return future.Response(), err
+	return future.Response(), WrapAzureError(err)
 }
 
 func (cl *VirtualMachinesClientImpl) ListComplete(ctx context.Context, resourceGroupName string) (result compute.VirtualMachineListResultIterator, err error) {
-	return cl.inner.ListComplete(ctx, resourceGroupName)
+	r, err := cl.inner.ListComplete(ctx, resourceGroupName)
+	return r, WrapAzureError(err)
 }
 
 type InterfacesClientWrapper interface {
@@ -95,10 +100,10 @@ type InterfacesClientImpl struct {
 func (cl *InterfacesClientImpl) Delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
 	future, err := cl.inner.Delete(ctx, resourceGroupName, VMName)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 	err = future.WaitForCompletionRef(ctx, cl.inner.Client)
-	return future.Response(), err
+	return future.Response(), WrapAzureError(err)
 }
 
 func (cl *InterfacesClientImpl) CreateOrUpdate(ctx context.Context,
@@ -108,14 +113,74 @@ func (cl *InterfacesClientImpl) CreateOrUpdate(ctx context.Context,
 
 	future, err := cl.inner.CreateOrUpdate(ctx, resourceGroupName, networkInterfaceName, parameters)
 	if err != nil {
-		return network.Interface{}, err
+		return network.Interface{}, WrapAzureError(err)
 	}
 	future.WaitForCompletionRef(ctx, cl.inner.Client)
-	return future.Result(cl.inner)
+	r, err := future.Result(cl.inner)
+	return r, WrapAzureError(err)
 }
 
 func (cl *InterfacesClientImpl) ListComplete(ctx context.Context, resourceGroupName string) (result network.InterfaceListResultIterator, err error) {
-	return cl.inner.ListComplete(ctx, resourceGroupName)
+	r, err := cl.inner.ListComplete(ctx, resourceGroupName)
+	return r, WrapAzureError(err)
+}
+
+var quotaRe = regexp.MustCompile(`(?i:exceed|quota|limit)`)
+
+type AzureRateLimitError struct {
+	azure.RequestError
+	earliestRetry time.Time
+}
+
+func (ar *AzureRateLimitError) EarliestRetry() time.Time {
+	return ar.earliestRetry
+}
+
+type AzureQuotaError struct {
+	azure.RequestError
+}
+
+func (ar *AzureQuotaError) IsQuotaError() bool {
+	return true
+}
+
+func WrapAzureError(err error) error {
+	de, ok := err.(autorest.DetailedError)
+	if !ok {
+		return err
+	}
+	rq, ok := de.Original.(*azure.RequestError)
+	if !ok {
+		return err
+	}
+	if rq.Response == nil {
+		return err
+	}
+	if rq.Response.StatusCode == 429 || len(rq.Response.Header["Retry-After"]) >= 1 {
+		// API throttling
+		ra := rq.Response.Header["Retry-After"][0]
+		earliestRetry, parseErr := http.ParseTime(ra)
+		if parseErr != nil {
+			// Could not parse as a timestamp, must be number of seconds
+			dur, parseErr := strconv.ParseInt(ra, 10, 64)
+			if parseErr != nil {
+				earliestRetry = time.Now().Add(time.Duration(dur) * time.Second)
+			}
+		}
+		if parseErr != nil {
+			// Couldn't make sense of retry-after,
+			// so set retry to 20 seconds
+			earliestRetry = time.Now().Add(20 * time.Second)
+		}
+		return &AzureRateLimitError{*rq, earliestRetry}
+	}
+	if rq.ServiceError == nil {
+		return err
+	}
+	if quotaRe.FindString(rq.ServiceError.Code) != "" || quotaRe.FindString(rq.ServiceError.Message) != "" {
+		return &AzureQuotaError{*rq}
+	}
+	return err
 }
 
 type AzureProvider struct {
@@ -214,7 +279,7 @@ func (az *AzureProvider) Create(ctx context.Context,
 	}
 	nic, err := az.netClient.CreateOrUpdate(ctx, az.azconfig.ResourceGroup, name+"-nic", nicParameters)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 
 	log.Printf("Created NIC %v", *nic.ID)
@@ -283,7 +348,7 @@ func (az *AzureProvider) Create(ctx context.Context,
 
 	vm, err := az.vmClient.CreateOrUpdate(ctx, az.azconfig.ResourceGroup, name, vmParameters)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 
 	return &AzureInstance{
@@ -302,14 +367,14 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 
 	result, err := az.vmClient.ListComplete(ctx, az.azconfig.ResourceGroup)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 
 	instances := make([]Instance, 0)
 
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
-			return nil, err
+			return nil, WrapAzureError(err)
 		}
 		if result.Value().Tags["arvados-class"] != nil &&
 			result.Value().Tags["arvados-instance-type"] != nil &&
@@ -327,7 +392,7 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Interface, error) {
 	result, err := az.netClient.ListComplete(ctx, az.azconfig.ResourceGroup)
 	if err != nil {
-		return nil, err
+		return nil, WrapAzureError(err)
 	}
 
 	interfaces := make(map[string]network.Interface)
@@ -360,7 +425,7 @@ func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Int
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
 			log.Printf("Error listing nics: %v", err)
-			return interfaces, nil
+			return interfaces, WrapAzureError(nil)
 		}
 		if result.Value().Tags["arvados-class"] != nil &&
 			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
@@ -481,8 +546,7 @@ func (ai *AzureInstance) GetTags() ([]InstanceTag, error) {
 
 func (ai *AzureInstance) Destroy(ctx context.Context) error {
 	_, err := ai.provider.vmClient.Delete(ctx, ai.provider.azconfig.ResourceGroup, *ai.vm.Name)
-	// check response code?
-	return err
+	return WrapAzureError(err)
 }
 
 func (ai *AzureInstance) Address() string {

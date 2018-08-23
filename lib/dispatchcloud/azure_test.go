@@ -14,6 +14,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	check "gopkg.in/check.v1"
 )
@@ -155,4 +157,50 @@ func (*AzureProviderSuite) TestDestroyInstances(c *check.C) {
 	for _, i := range l {
 		c.Check(i.Destroy(context.Background()), check.IsNil)
 	}
+}
+
+func (*AzureProviderSuite) TestDeleteFake(c *check.C) {
+	ap, _, _, err := GetProvider()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+
+	_, err = ap.(*AzureProvider).netClient.Delete(context.Background(), "fakefakefake", "fakefakefake")
+
+	rq := err.(autorest.DetailedError).Original.(*azure.RequestError)
+
+	log.Printf("%v %q %q", rq.Response.StatusCode, rq.ServiceError.Code, rq.ServiceError.Message)
+}
+
+func (*AzureProviderSuite) TestWrapError(c *check.C) {
+	retryError := autorest.DetailedError{
+		Original: &azure.RequestError{
+			DetailedError: autorest.DetailedError{
+				Response: &http.Response{
+					StatusCode: 429,
+					Header:     map[string][]string{"Retry-After": []string{"123"}},
+				},
+			},
+			ServiceError: &azure.ServiceError{},
+		},
+	}
+	wrapped := WrapAzureError(retryError)
+	_, ok := wrapped.(RateLimitError)
+	c.Check(ok, check.Equals, true)
+
+	quotaError := autorest.DetailedError{
+		Original: &azure.RequestError{
+			DetailedError: autorest.DetailedError{
+				Response: &http.Response{
+					StatusCode: 503,
+				},
+			},
+			ServiceError: &azure.ServiceError{
+				Message: "No more quota",
+			},
+		},
+	}
+	wrapped = WrapAzureError(quotaError)
+	_, ok = wrapped.(QuotaError)
+	c.Check(ok, check.Equals, true)
 }
