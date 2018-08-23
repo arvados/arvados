@@ -61,45 +61,49 @@ func (*InterfacesClientStub) ListComplete(ctx context.Context, resourceGroupName
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetProvider() (Provider, ImageID, error) {
+func GetProvider() (Provider, ImageID, arvados.Cluster, error) {
+	cluster := arvados.Cluster{
+		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
+			"tiny": arvados.InstanceType{
+				Name:         "tiny",
+				ProviderType: "Standard_D1_v2",
+				VCPUs:        1,
+				RAM:          4000000000,
+				Scratch:      10000000000,
+				Price:        .02,
+				Preemptible:  false,
+			},
+		})}
 	if *live != "" {
 		cfg := AzureProviderConfig{}
 		err := config.LoadFile(&cfg, *live)
 		if err != nil {
-			return nil, ImageID(""), err
+			return nil, ImageID(""), cluster, err
 		}
-		ap, err := NewAzureProvider(cfg, arvados.Cluster{})
-		return ap, ImageID(cfg.Image), err
+		ap, err := NewAzureProvider(cfg, cluster)
+		return ap, ImageID(cfg.Image), cluster, err
 	} else {
 		ap := AzureProvider{
 			azconfig: AzureProviderConfig{
 				BlobContainer: "vhds",
 			},
+			arvconfig: cluster,
 		}
 		ap.vmClient = &VirtualMachinesClientStub{}
 		ap.netClient = &InterfacesClientStub{}
-		return &ap, ImageID("blob"), nil
+		return &ap, ImageID("blob"), cluster, nil
 	}
 }
 
 func (*AzureProviderSuite) TestCreate(c *check.C) {
-	ap, img, err := GetProvider()
+	ap, img, cluster, err := GetProvider()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
 	inst, err := ap.Create(context.Background(),
-		arvados.InstanceType{
-			Name:         "tiny",
-			ProviderType: "Standard_D1_v2",
-			VCPUs:        1,
-			RAM:          4000000000,
-			Scratch:      10000000000,
-			Price:        .02,
-			Preemptible:  false,
-		},
-		img,
-		[]InstanceTag{"tag1"})
+		cluster.InstanceTypes["tiny"],
+		img, []InstanceTag{"tag1"})
 
 	c.Assert(err, check.IsNil)
 
@@ -107,7 +111,7 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 }
 
 func (*AzureProviderSuite) TestListInstances(c *check.C) {
-	ap, _, err := GetProvider()
+	ap, _, _, err := GetProvider()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
@@ -117,12 +121,12 @@ func (*AzureProviderSuite) TestListInstances(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
-		log.Printf("%v %v", i.String(), i.Address())
+		log.Printf("%v %v %v", i.String(), i.Address(), i.InstanceType())
 	}
 }
 
 func (*AzureProviderSuite) TestManageNics(c *check.C) {
-	ap, _, err := GetProvider()
+	ap, _, _, err := GetProvider()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
@@ -131,7 +135,7 @@ func (*AzureProviderSuite) TestManageNics(c *check.C) {
 }
 
 func (*AzureProviderSuite) TestManageBlobs(c *check.C) {
-	ap, _, err := GetProvider()
+	ap, _, _, err := GetProvider()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
@@ -140,7 +144,7 @@ func (*AzureProviderSuite) TestManageBlobs(c *check.C) {
 }
 
 func (*AzureProviderSuite) TestDestroyInstances(c *check.C) {
-	ap, _, err := GetProvider()
+	ap, _, _, err := GetProvider()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
