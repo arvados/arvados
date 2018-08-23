@@ -18,9 +18,8 @@ type ImageID string
 type Instance interface {
 	// String typically returns the cloud-provided instance ID.
 	String() string
-	// Cloud provider's "instance type" ID. Matches a key in
-	// configured arvados.InstanceTypeMap.
-	ProviderType() string
+	// Configured Arvados instance type
+	InstanceType() arvados.InstanceType
 	// Get tags
 	GetTags() ([]InstanceTag, error)
 	// Replace tags with the given tags

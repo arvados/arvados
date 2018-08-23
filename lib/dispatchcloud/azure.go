@@ -230,9 +230,10 @@ func (az *AzureProvider) Create(ctx context.Context,
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
 		Tags: map[string]*string{
-			"arvados-class":   to.StringPtr("crunch-dynamic-compute"),
-			"arvados-cluster": &az.arvconfig.ClusterID,
-			"created-at":      &timestamp,
+			"arvados-class":         to.StringPtr("crunch-dynamic-compute"),
+			"arvados-instance-type": &instanceType.Name,
+			"arvados-cluster":       &az.arvconfig.ClusterID,
+			"created-at":            &timestamp,
 		},
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
@@ -311,11 +312,13 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 			return nil, err
 		}
 		if result.Value().Tags["arvados-class"] != nil &&
+			result.Value().Tags["arvados-instance-type"] != nil &&
 			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
 			instances = append(instances, &AzureInstance{
-				provider: az,
-				vm:       result.Value(),
-				nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID]})
+				provider:     az,
+				vm:           result.Value(),
+				nic:          interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID],
+				instanceType: az.arvconfig.InstanceTypes[(*result.Value().Tags["arvados-instance-type"])]})
 		}
 	}
 	return instances, nil
@@ -462,10 +465,6 @@ type AzureInstance struct {
 
 func (ai *AzureInstance) String() string {
 	return *ai.vm.Name
-}
-
-func (ai *AzureInstance) ProviderType() string {
-	return string(ai.vm.VirtualMachineProperties.HardwareProfile.VMSize)
 }
 
 func (ai *AzureInstance) InstanceType() arvados.InstanceType {
