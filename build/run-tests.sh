@@ -270,6 +270,7 @@ rotate_logfile() {
 
 declare -a failures
 declare -A skip
+declare -A only
 declare -A testargs
 skip[apps/workbench_profile]=1
 # nodemanager_integration tests are not reliable, see #12061.
@@ -288,7 +289,7 @@ do
             skip[$1]=1; shift
             ;;
         --only)
-            only="$1"; skip[$1]=""; shift
+            only[$1]=1; skip[$1]=""; shift
             ;;
         --short)
             short=1
@@ -331,12 +332,17 @@ done
 # required when testing it. Skip that step if it is not needed.
 NEED_SDK_R=true
 
-if [[ ! -z "${only}" && "${only}" != "sdk/R" ]]; then
+if [[ ${#only[@]} -ne 0 ]] &&
+   [[ -z "${only['sdk/R']}" && -z "${only['doc']}" ]]; then
   NEED_SDK_R=false
 fi
 
-if [[ ${skip["sdk/R"]} = 1 ]]; then
+if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
   NEED_SDK_R=false
+fi
+
+if [[ $NEED_SDK_R == false ]]; then
+	echo "R SDK not needed, it will not be installed."
 fi
 
 start_services() {
@@ -658,9 +664,9 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-              (-z "${only}" || "${only}" == "${suite}" || \
-                   "${only}" == "${1}") ||
-                  "${only}" == "${2}" ]]; then
+              (${#only[@]} -eq 0 || ${only[$suite]} = 1 || \
+                   ${only[$1]} = 1) ||
+                  ${only[$2]} = 1 ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
