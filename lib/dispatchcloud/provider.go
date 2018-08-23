@@ -6,9 +6,31 @@ package dispatchcloud
 
 import (
 	"context"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
+
+// A RateLimitError should be returned by a Provider when the cloud
+// service indicates it is rejecting all API calls for some time
+// interval.
+type RateLimitError interface {
+	// Time before which the caller should expect requests to
+	// fail.
+	EarliestRetry() time.Time
+	error
+}
+
+// A QuotaError should be returned by a Provider when the cloud
+// service indicates the account cannot create more VMs than already
+// exist.
+type QuotaError interface {
+	// If true, don't create more instances until some existing
+	// instances are destroyed. If false, don't handle the error
+	// as a quota error.
+	IsQuotaError() bool
+	error
+}
 
 type InstanceTag string
 type InstanceID string
