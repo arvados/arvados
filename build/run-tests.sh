@@ -335,7 +335,7 @@ if [[ ! -z "${only}" && "${only}" != "sdk/R" ]]; then
   NEED_SDK_R=false
 fi
 
-if [[ ! -z "${skip}" && "${skip}" == "sdk/R" ]]; then
+if [[ ${skip["sdk/R"]} = 1 ]]; then
   NEED_SDK_R=false
 fi
 
