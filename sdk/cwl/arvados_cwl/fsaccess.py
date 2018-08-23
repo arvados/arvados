@@ -9,6 +9,7 @@ import urlparse
 import re
 import logging
 import threading
+import urllib
 from collections import OrderedDict
 
 import ruamel.yaml as yaml
