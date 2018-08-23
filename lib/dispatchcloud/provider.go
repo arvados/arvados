@@ -43,16 +43,16 @@ type Instance interface {
 	// Configured Arvados instance type
 	InstanceType() arvados.InstanceType
 	// Get tags
-	GetTags() ([]InstanceTag, error)
+	GetTags(context.Context) (map[string]string, error)
 	// Replace tags with the given tags
-	SetTags([]InstanceTag) error
+	SetTags(context.Context, map[string]string) error
 	// Shut down the node
-	Destroy(ctx context.Context) error
+	Destroy(context.Context) error
 	// SSH server hostname or IP address, or empty string if unknown pending creation.
 	Address() string
 }
 
 type Provider interface {
-	Create(context.Context, arvados.InstanceType, ImageID, []InstanceTag) (Instance, error)
+	Create(context.Context, arvados.InstanceType, ImageID, map[string]string) (Instance, error)
 	Instances(context.Context) ([]Instance, error)
 }
