@@ -413,6 +413,7 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
+    HTTPRequestTimeout: 30s
     PostgreSQL:
       ConnectionPool: 32
       Connection:
