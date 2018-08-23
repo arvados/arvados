@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
-import { openUpdater } from "~/store/collections/updater/collection-updater-action";
+import { openUpdater } from "~/store/collections/collection-updater-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
 import { openProjectCopyDialog } from '~/store/project-copy-project-dialog/project-copy-project-dialog';
