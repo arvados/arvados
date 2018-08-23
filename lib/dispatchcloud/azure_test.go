@@ -31,6 +31,7 @@ func (*VirtualMachinesClientStub) CreateOrUpdate(ctx context.Context,
 	VMName string,
 	parameters compute.VirtualMachine) (result compute.VirtualMachine, err error) {
 	parameters.ID = &VMName
+	parameters.Name = &VMName
 	return parameters, nil
 }
 
@@ -167,9 +168,12 @@ func (*AzureProviderSuite) TestDeleteFake(c *check.C) {
 
 	_, err = ap.(*AzureProvider).netClient.Delete(context.Background(), "fakefakefake", "fakefakefake")
 
-	rq := err.(autorest.DetailedError).Original.(*azure.RequestError)
+	de, ok := err.(autorest.DetailedError)
+	if ok {
+		rq := de.Original.(*azure.RequestError)
 
-	log.Printf("%v %q %q", rq.Response.StatusCode, rq.ServiceError.Code, rq.ServiceError.Message)
+		log.Printf("%v %q %q", rq.Response.StatusCode, rq.ServiceError.Code, rq.ServiceError.Message)
+	}
 }
 
 func (*AzureProviderSuite) TestWrapError(c *check.C) {
