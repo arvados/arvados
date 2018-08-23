@@ -14,7 +14,7 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 
 export const COLLECTION_COPY_DIALOG = 'projectCopy';
 
-export interface CopyFormDialogData {
+export interface CollectionCopyFormDialogData {
     name: string;
     ownerUuid: string;
     uuid: string;
@@ -23,12 +23,12 @@ export interface CopyFormDialogData {
 export const openCollectionCopyDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
-        const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: '', uuid: resource.uuid };
+        const initialData: CollectionCopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: '', uuid: resource.uuid };
         dispatch<any>(initialize(COLLECTION_COPY_DIALOG, initialData));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_DIALOG, data: {} }));
     };
 
-export const copyCollection = (resource: CopyFormDialogData) =>
+export const copyCollection = (resource: CollectionCopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_COPY_DIALOG));
         try {

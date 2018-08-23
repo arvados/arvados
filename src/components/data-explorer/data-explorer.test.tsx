@@ -13,6 +13,7 @@ import { SearchInput } from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
 import { ProjectIcon } from '../icon/icon';
 import { DefaultView } from '../default-view/default-view';
+import { SortDirection } from '../data-table/data-column';
 
 configure({ adapter: new Adapter() });
 
@@ -20,11 +21,13 @@ describe("<DataExplorer />", () => {
 
     it("communicates with <SearchInput/>", () => {
         const onSearch = jest.fn();
+        const onSetColumns = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             items={[{ name: "item 1" }]}
             searchValue="search value"
-            onSearch={onSearch} />);
+            onSearch={onSearch}
+            onSetColumns={onSetColumns} />);
         expect(dataExplorer.find(SearchInput).prop("value")).toEqual("search value");
         dataExplorer.find(SearchInput).prop("onSearch")("new value");
         expect(onSearch).toHaveBeenCalledWith("new value");
@@ -32,12 +35,14 @@ describe("<DataExplorer />", () => {
 
     it("communicates with <ColumnSelector/>", () => {
         const onColumnToggle = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true }];
+        const onSetColumns = jest.fn();
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: [] }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             columns={columns}
             onColumnToggle={onColumnToggle}
-            items={[{ name: "item 1" }]} />);
+            items={[{ name: "item 1" }]}
+            onSetColumns={onSetColumns} />);
         expect(dataExplorer.find(ColumnSelector).prop("columns")).toBe(columns);
         dataExplorer.find(ColumnSelector).prop("onColumnToggle")("columns");
         expect(onColumnToggle).toHaveBeenCalledWith("columns");
@@ -47,7 +52,8 @@ describe("<DataExplorer />", () => {
         const onFiltersChange = jest.fn();
         const onSortToggle = jest.fn();
         const onRowClick = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true }];
+        const onSetColumns = jest.fn();
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: [] }];
         const items = [{ name: "item 1" }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
@@ -55,7 +61,8 @@ describe("<DataExplorer />", () => {
             items={items}
             onFiltersChange={onFiltersChange}
             onSortToggle={onSortToggle}
-            onRowClick={onRowClick} />);
+            onRowClick={onRowClick}
+            onSetColumns={onSetColumns} />);
         expect(dataExplorer.find(DataTable).prop("columns").slice(0, -1)).toEqual(columns);
         expect(dataExplorer.find(DataTable).prop("items")).toBe(items);
         dataExplorer.find(DataTable).prop("onRowClick")("event", "rowClick");
@@ -70,7 +77,7 @@ describe("<DataExplorer />", () => {
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             items={[]}
-        />);
+            onSetColumns={jest.fn()} />);
         expect(dataExplorer.find(DataTable)).toHaveLength(0);
         expect(dataExplorer.find(DefaultView)).toHaveLength(1);
     });
@@ -78,6 +85,7 @@ describe("<DataExplorer />", () => {
     it("communicates with <TablePagination/>", () => {
         const onChangePage = jest.fn();
         const onChangeRowsPerPage = jest.fn();
+        const onSetColumns = jest.fn();
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             items={[{ name: "item 1" }]}
@@ -85,7 +93,7 @@ describe("<DataExplorer />", () => {
             rowsPerPage={50}
             onChangePage={onChangePage}
             onChangeRowsPerPage={onChangeRowsPerPage}
-        />);
+            onSetColumns={onSetColumns} />);
         expect(dataExplorer.find(TablePagination).prop("page")).toEqual(10);
         expect(dataExplorer.find(TablePagination).prop("rowsPerPage")).toEqual(50);
         dataExplorer.find(TablePagination).prop("onChangePage")(undefined, 6);
@@ -114,5 +122,6 @@ const mockDataExplorerProps = () => ({
     onChangeRowsPerPage: jest.fn(),
     onContextMenu: jest.fn(),
     defaultIcon: ProjectIcon,
+    onSetColumns: jest.fn(),
     defaultMessages: ['testing'],
 });
