@@ -6,7 +6,7 @@ import * as React from "react";
 import { compose } from "redux";
 import { reduxForm, InjectedFormProps } from 'redux-form';
 import { withDialog, WithDialogProps } from '~/store/dialog/with-dialog';
-import { CollectionPartialCopyFields } from '../form-dialog/collection-form-dialog';
+import { CollectionPartialCopyFields } from '../collection-form-fields/collection-form-fields';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { COLLECTION_PARTIAL_COPY, doCollectionPartialCopy, CollectionPartialCopyFormData } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 

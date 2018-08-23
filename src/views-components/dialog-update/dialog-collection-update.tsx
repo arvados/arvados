@@ -3,12 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { InjectedFormProps, Field } from 'redux-form';
+import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { CollectionUpdateFormDialogData } from '~/store/collections/collection-updater-actions';
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from '~/validators/validators';
-import { TextField } from '~/components/text-field/text-field';
+import { CollectionUpdateFormDialogData } from '~/store/collections/collection-update-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
+import { CollectionNameField, CollectionDescriptionField } from '~/views-components/collection-form-fields/collection-form-fields';
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionUpdateFormDialogData>;
 
@@ -21,14 +20,6 @@ export const DialogCollectionUpdate = (props: DialogCollectionProps) =>
     />;
 
 const CollectionEditFields = () => <span>
-    <Field
-        name='name'
-        component={TextField}
-        validate={COLLECTION_NAME_VALIDATION}
-        label="Collection Name" />
-    <Field
-        name="description"
-        component={TextField}
-        validate={COLLECTION_DESCRIPTION_VALIDATION} 
-        label="Description - optional" />
+    <CollectionNameField />
+    <CollectionDescriptionField />
 </span>;
