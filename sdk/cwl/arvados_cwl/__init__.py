@@ -216,7 +216,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             if not runtime_status.get('error'):
                 runtime_status.update({
                     'error': error_msg,
-                    'errorDetail': error_log
+                    'errorDetail': error_log or "No error logs available"
                 })
             # Further errors are only mentioned as a count
             else:

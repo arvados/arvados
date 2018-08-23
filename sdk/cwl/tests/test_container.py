@@ -488,10 +488,66 @@ class TestContainer(unittest.TestCase):
         })
 
         self.assertFalse(api.collections().create.called)
+        self.assertFalse(runner.runtime_status_error.called)
 
         arvjob.collect_outputs.assert_called_with("keep:abc+123")
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
+
+    @mock.patch("arvados_cwl.done.logtail")
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("arvados.collection.Collection")
+    def test_child_failure(self, col, reader, logtail):
+        api = mock.MagicMock()
+
+        runner = mock.MagicMock()
+        runner.api = api
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.num_retries = 0
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.label.return_value = '[container testjob]'
+
+        runner.api.containers().get().execute.return_value = {
+            "state":"Complete",
+            "output": "abc+123",
+            "exit_code": 1,
+            "log": "def+234"
+        }
+
+        col().open.return_value = []
+        logtail.return_value = 'some error detail'
+
+        arvjob = arvados_cwl.ArvadosContainer(runner,
+                                              mock.MagicMock(),
+                                              {},
+                                              None,
+                                              [],
+                                              [],
+                                              "testjob")
+        arvjob.output_callback = mock.MagicMock()
+        arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
+        arvjob.outdir = "/var/spool/cwl"
+        arvjob.output_ttl = 3600
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
+
+        arvjob.done({
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z"
+        })
+
+        runner.runtime_status_error.assert_called_with(
+            '[container testjob]',
+            'zzzzz-xvhdp-zzzzzzzzzzzzzzz',
+            'some error detail'
+        )
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "permanentFail")
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
