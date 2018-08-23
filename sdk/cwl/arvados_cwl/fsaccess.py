@@ -81,8 +81,8 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     def get_collection(self, path):
         sp = path.split("/", 1)
         p = sp[0]
-        if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
-            pdh = p[5:]
+        if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(urllib.unquote(p[5:])):
+            pdh = urllib.unquote(p[5:])
             return (self.collection_cache.get(pdh), sp[1] if len(sp) == 2 else None)
         else:
             return (None, path)
