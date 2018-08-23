@@ -83,14 +83,16 @@ func GetProvider() (Provider, ImageID, arvados.Cluster, error) {
 		if err != nil {
 			return nil, ImageID(""), cluster, err
 		}
-		ap, err := NewAzureProvider(cfg, cluster)
+		ap, err := NewAzureProvider(cfg, cluster, "test123")
 		return ap, ImageID(cfg.Image), cluster, err
 	} else {
 		ap := AzureProvider{
 			azconfig: AzureProviderConfig{
 				BlobContainer: "vhds",
 			},
-			arvconfig: cluster,
+			arvconfig:    cluster,
+			dispatcherID: "test123",
+			namePrefix:   "compute-test123-",
 		}
 		ap.vmClient = &VirtualMachinesClientStub{}
 		ap.netClient = &InterfacesClientStub{}
@@ -106,7 +108,7 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 
 	inst, err := ap.Create(context.Background(),
 		cluster.InstanceTypes["tiny"],
-		img, []InstanceTag{"tag1"})
+		img, map[string]string{"tag1": "bleep"})
 
 	c.Assert(err, check.IsNil)
 
@@ -124,7 +126,8 @@ func (*AzureProviderSuite) TestListInstances(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
-		log.Printf("%v %v %v", i.String(), i.Address(), i.InstanceType())
+		tg, _ := i.GetTags(context.Background())
+		log.Printf("%v %v %v %v", i.String(), i.Address(), i.InstanceType(), tg)
 	}
 }
 
@@ -207,4 +210,27 @@ func (*AzureProviderSuite) TestWrapError(c *check.C) {
 	wrapped = WrapAzureError(quotaError)
 	_, ok = wrapped.(QuotaError)
 	c.Check(ok, check.Equals, true)
+}
+
+func (*AzureProviderSuite) TestSetTags(c *check.C) {
+	ap, _, _, err := GetProvider()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+	l, err := ap.Instances(context.Background())
+	c.Assert(err, check.IsNil)
+
+	if len(l) > 0 {
+		err = l[0].SetTags(context.Background(), map[string]string{"foo": "bar"})
+		if err != nil {
+			c.Fatal("Error setting tags", err)
+		}
+	}
+	l, err = ap.Instances(context.Background())
+	c.Assert(err, check.IsNil)
+
+	if len(l) > 0 {
+		tg, _ := l[0].GetTags(context.Background())
+		log.Printf("tags are %v", tg)
+	}
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -191,18 +192,20 @@ type AzureProvider struct {
 	storageAcctClient storageacct.AccountsClient
 	azureEnv          azure.Environment
 	interfaces        map[string]network.Interface
+	dispatcherID      string
+	namePrefix        string
 }
 
-func NewAzureProvider(azcfg AzureProviderConfig, arvcfg arvados.Cluster) (prv Provider, err error) {
+func NewAzureProvider(azcfg AzureProviderConfig, arvcfg arvados.Cluster, dispatcherID string) (prv Provider, err error) {
 	ap := AzureProvider{}
-	err = ap.setup(azcfg, arvcfg)
+	err = ap.setup(azcfg, arvcfg, dispatcherID)
 	if err != nil {
 		return nil, err
 	}
 	return &ap, nil
 }
 
-func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster) (err error) {
+func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster, dispatcherID string) (err error) {
 	az.azconfig = azcfg
 	az.arvconfig = arvcfg
 	vmClient := compute.NewVirtualMachinesClient(az.azconfig.SubscriptionID)
@@ -233,31 +236,36 @@ func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster
 	az.netClient = &InterfacesClientImpl{netClient}
 	az.storageAcctClient = storageAcctClient
 
+	az.dispatcherID = dispatcherID
+	az.namePrefix = fmt.Sprintf("compute-%s-", az.dispatcherID)
+
 	return nil
 }
 
 func (az *AzureProvider) Create(ctx context.Context,
 	instanceType arvados.InstanceType,
 	imageId ImageID,
-	instanceTag []InstanceTag) (Instance, error) {
+	newTags map[string]string) (Instance, error) {
 
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
 		return nil, err
 	}
 
-	name = "compute-" + name
+	name = az.namePrefix + name
 	log.Printf("name is %v", name)
 
 	timestamp := time.Now().Format(time.RFC3339Nano)
 
+	tags := make(map[string]*string)
+	tags["created-at"] = &timestamp
+	for k, v := range newTags {
+		tags["dispatch-"+k] = &v
+	}
+
 	nicParameters := network.Interface{
 		Location: &az.azconfig.Location,
-		Tags: map[string]*string{
-			"arvados-class":   to.StringPtr("crunch-dynamic-compute"),
-			"arvados-cluster": &az.arvconfig.ClusterID,
-			"created-at":      &timestamp,
-		},
+		Tags:     tags,
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				network.InterfaceIPConfiguration{
@@ -292,14 +300,11 @@ func (az *AzureProvider) Create(ctx context.Context,
 
 	log.Printf("URI instance vhd %v", instance_vhd)
 
+	tags["arvados-instance-type"] = &instanceType.Name
+
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
-		Tags: map[string]*string{
-			"arvados-class":         to.StringPtr("crunch-dynamic-compute"),
-			"arvados-instance-type": &instanceType.Name,
-			"arvados-cluster":       &az.arvconfig.ClusterID,
-			"created-at":            &timestamp,
-		},
+		Tags:     tags,
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(instanceType.ProviderType),
@@ -307,7 +312,7 @@ func (az *AzureProvider) Create(ctx context.Context,
 			StorageProfile: &compute.StorageProfile{
 				OsDisk: &compute.OSDisk{
 					OsType:       compute.Linux,
-					Name:         to.StringPtr(fmt.Sprintf("%v-os", name)),
+					Name:         to.StringPtr(name + "-os"),
 					CreateOption: compute.FromImage,
 					Image: &compute.VirtualHardDisk{
 						URI: to.StringPtr(string(imageId)),
@@ -376,9 +381,8 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 		if err != nil {
 			return nil, WrapAzureError(err)
 		}
-		if result.Value().Tags["arvados-class"] != nil &&
-			result.Value().Tags["arvados-instance-type"] != nil &&
-			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
+		if strings.HasPrefix(*result.Value().Name, az.namePrefix) &&
+			result.Value().Tags["arvados-instance-type"] != nil {
 			instances = append(instances, &AzureInstance{
 				provider:     az,
 				vm:           result.Value(),
@@ -425,15 +429,12 @@ func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Int
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
 			log.Printf("Error listing nics: %v", err)
-			return interfaces, WrapAzureError(nil)
+			return interfaces, nil
 		}
-		if result.Value().Tags["arvados-class"] != nil &&
-			(*result.Value().Tags["arvados-class"]) == "crunch-dynamic-compute" {
-
+		if strings.HasPrefix(*result.Value().Name, az.namePrefix) {
 			if result.Value().VirtualMachine != nil {
 				interfaces[*result.Value().ID] = result.Value()
 			} else {
-
 				if result.Value().Tags["created-at"] != nil {
 					created_at, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
 					if err == nil {
@@ -493,7 +494,7 @@ func (az *AzureProvider) ManageBlobs(ctx context.Context) {
 		}()
 	}
 
-	page := storage.ListBlobsParameters{Prefix: "compute-"}
+	page := storage.ListBlobsParameters{Prefix: az.namePrefix}
 
 	for {
 		response, err := blobcont.ListBlobs(page)
@@ -536,12 +537,41 @@ func (ai *AzureInstance) InstanceType() arvados.InstanceType {
 	return ai.instanceType
 }
 
-func (ai *AzureInstance) SetTags([]InstanceTag) error {
+func (ai *AzureInstance) SetTags(ctx context.Context, newTags map[string]string) error {
+	tags := make(map[string]*string)
+
+	for k, v := range ai.vm.Tags {
+		if !strings.HasPrefix(k, "dispatch-") {
+			tags[k] = v
+		}
+	}
+	for k, v := range newTags {
+		tags["dispatch-"+k] = &v
+	}
+
+	vmParameters := compute.VirtualMachine{
+		Location: &ai.provider.azconfig.Location,
+		Tags:     tags,
+	}
+	vm, err := ai.provider.vmClient.CreateOrUpdate(ctx, ai.provider.azconfig.ResourceGroup, *ai.vm.Name, vmParameters)
+	if err != nil {
+		return WrapAzureError(err)
+	}
+	ai.vm = vm
+
 	return nil
 }
 
-func (ai *AzureInstance) GetTags() ([]InstanceTag, error) {
-	return nil, nil
+func (ai *AzureInstance) GetTags(ctx context.Context) (map[string]string, error) {
+	tags := make(map[string]string)
+
+	for k, v := range ai.vm.Tags {
+		if strings.HasPrefix(k, "dispatch-") {
+			tags[k[9:]] = *v
+		}
+	}
+
+	return tags, nil
 }
 
 func (ai *AzureInstance) Destroy(ctx context.Context) error {
