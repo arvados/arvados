@@ -245,7 +245,7 @@ func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster
 func (az *AzureProvider) Create(ctx context.Context,
 	instanceType arvados.InstanceType,
 	imageId ImageID,
-	newTags map[string]string) (Instance, error) {
+	newTags InstanceTags) (Instance, error) {
 
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
@@ -537,7 +537,7 @@ func (ai *AzureInstance) InstanceType() arvados.InstanceType {
 	return ai.instanceType
 }
 
-func (ai *AzureInstance) SetTags(ctx context.Context, newTags map[string]string) error {
+func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) error {
 	tags := make(map[string]*string)
 
 	for k, v := range ai.vm.Tags {
@@ -562,7 +562,7 @@ func (ai *AzureInstance) SetTags(ctx context.Context, newTags map[string]string)
 	return nil
 }
 
-func (ai *AzureInstance) GetTags(ctx context.Context) (map[string]string, error) {
+func (ai *AzureInstance) GetTags(ctx context.Context) (InstanceTags, error) {
 	tags := make(map[string]string)
 
 	for k, v := range ai.vm.Tags {

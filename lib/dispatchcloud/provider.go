@@ -32,7 +32,7 @@ type QuotaError interface {
 	error
 }
 
-type InstanceTag string
+type InstanceTags map[string]string
 type InstanceID string
 type ImageID string
 
@@ -43,9 +43,9 @@ type Instance interface {
 	// Configured Arvados instance type
 	InstanceType() arvados.InstanceType
 	// Get tags
-	GetTags(context.Context) (map[string]string, error)
+	GetTags(context.Context) (InstanceTags, error)
 	// Replace tags with the given tags
-	SetTags(context.Context, map[string]string) error
+	SetTags(context.Context, InstanceTags) error
 	// Shut down the node
 	Destroy(context.Context) error
 	// SSH server hostname or IP address, or empty string if unknown pending creation.
@@ -53,6 +53,6 @@ type Instance interface {
 }
 
 type Provider interface {
-	Create(context.Context, arvados.InstanceType, ImageID, map[string]string) (Instance, error)
+	Create(context.Context, arvados.InstanceType, ImageID, InstanceTags) (Instance, error)
 	Instances(context.Context) ([]Instance, error)
 }
