@@ -18,7 +18,7 @@ RUN gpg --import /tmp/D39DC0E3.asc && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler && \
-    /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
+    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install golang binary
 ADD generated/go1.10.1.linux-amd64.tar.gz /usr/local/
