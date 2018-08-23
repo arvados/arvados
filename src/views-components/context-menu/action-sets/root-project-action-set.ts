@@ -6,9 +6,8 @@ import { reset } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { projectActions } from "~/store/project/project-action";
-import { collectionCreateActions } from "~/store/collections/creator/collection-creator-action";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
-import { COLLECTION_CREATE_DIALOG } from "../../dialog-create/dialog-collection-create";
+import { COLLECTION_CREATE_FORM_NAME, openCreateModal } from '~/store/collections/collection-create-actions';
 import { NewProjectIcon, CollectionIcon } from "~/components/icon/icon";
 
 export const rootProjectActionSet: ContextMenuActionSet =  [[
@@ -24,8 +23,8 @@ export const rootProjectActionSet: ContextMenuActionSet =  [[
         icon: CollectionIcon,
         name: "New Collection",
         execute: (dispatch, resource) => {
-            dispatch(reset(COLLECTION_CREATE_DIALOG));
-            dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: resource.uuid }));
+            dispatch(reset(COLLECTION_CREATE_FORM_NAME));
+            dispatch<any>(openCreateModal());
         }
     }
 ]];
