@@ -102,6 +102,7 @@ class ArvPathMapper(PathMapper):
             src, srcpath = self.arvrunner.fs_access.get_collection(self._pathmap[obj["location"]].resolved)
             if srcpath == "":
                 srcpath = "."
+            logger.info("addentry: after get_collection on pathmap entry %s got src=%s srcpath=%s, calling copy to path=%s basename=%s", repr(self._pathmap[obj["location"]]), src, srcpath, path, obj["basename"])
             c.copy(srcpath, path + "/" + obj["basename"], source_collection=src, overwrite=True)
             remap.append((obj["location"], path + "/" + obj["basename"]))
             for l in obj.get("secondaryFiles", []):
