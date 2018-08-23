@@ -53,7 +53,7 @@ import { UploadCollectionFilesDialog } from '~/views-components/upload-collectio
 import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
-import { ProjectCopyDialog } from '~/views-components/project-copy-project-dialog/project-copy-project-dialog';
+import { CollectionCopyDialog } from '~/views-components/copy-dialog/copy-collection-dialog';
 
 const DRAWER_WITDH = 240;
 const APP_BAR_HEIGHT = 100;
@@ -250,7 +250,7 @@ export const Workbench = withStyles(styles)(
                         <CollectionPartialCopyDialog />
                         <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
-                        <ProjectCopyDialog />
+                        <CollectionCopyDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <UploadCollectionFilesDialog />

@@ -9,26 +9,26 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
 import { COPY_NAME_VALIDATION, COPY_PROJECT_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
-import { ProjectCopyFormDialogData } from "~/store/project-copy-dialog/project-copy-dialog";
+import { CopyFormDialogData } from "~/store/collection-copy-dialog/collection-copy-dialog";
 
-type ProjectCopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<ProjectCopyFormDialogData>;
+type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CopyFormDialogData>;
 
-export const ProjectCopyFormDialog = (props: ProjectCopyFormDialogProps) =>
+export const CopyFormDialog = (props: CopyFormDialogProps) =>
     <FormDialog
         dialogTitle='Make a copy'
-        formFields={ProjectCopyFields}
+        formFields={CopyFields}
         submitLabel='Copy'
         {...props}
     />;
 
-const ProjectCopyFields = () => <span>
+const CopyFields = () => <span>
     <Field
         name='name'
         component={TextField}
         validate={COPY_NAME_VALIDATION}
         label="Enter a new name for the copy" />
     <Field
-        name="projectUuid"
+        name="ownerUuid"
         component={ProjectTreePickerField}
         validate={COPY_PROJECT_VALIDATION} />
 </span>;
