@@ -12,7 +12,6 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
 import { openMoveProjectDialog } from '~/store/move-project-dialog/move-project-dialog';
-import { openProjectCopyDialog } from "~/store/project-copy-project-dialog/project-copy-project-dialog";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -48,7 +47,7 @@ export const projectActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            dispatch<any>(openProjectCopyDialog({name: resource.name, projectUuid: resource.uuid}));
+            // add code
         }
-    }
+    },
 ]];
