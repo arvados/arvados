@@ -14,8 +14,9 @@ export const CreateCollectionDialog = compose(
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            console.log('onSubmit: ', data);
             dispatch(addCollection(data));
         }
     })
 )(DialogCollectionCreate);
+
+// onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;

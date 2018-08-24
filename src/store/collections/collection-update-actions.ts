@@ -22,9 +22,9 @@ export interface CollectionUpdateFormDialogData {
     description: string;
 }
 
-export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateDialog';
+export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
 
-export const openUpdateModal = (resource: ContextMenuResource) =>
+export const openCollectionUpdateDialog = (resource: ContextMenuResource) =>
     (dispatch: Dispatch) => {
         dispatch(initialize(COLLECTION_UPDATE_FORM_NAME, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: {} }));

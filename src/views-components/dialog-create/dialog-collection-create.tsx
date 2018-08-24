@@ -6,8 +6,19 @@ import * as React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
+import { collectionUploaderActions, UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { CollectionNameField, CollectionDescriptionField } from '~/views-components/collection-form-fields/collection-form-fields';
+import { FileUpload } from '~/components/file-upload/file-upload';
+
+// interface DialogCollectionDataProps {
+//     open: boolean;
+//     handleSubmit: any;
+//     submitting: boolean;
+//     invalid: boolean;
+//     pristine: boolean;
+//     files: UploadFile[];
+// }
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -23,7 +34,7 @@ const CollectionAddFields = () => <span>
     <CollectionNameField />
     <CollectionDescriptionField />
     {/* <FileUpload
-        files={files}
+        files={this.props.files}
         disabled={busy}
         onDrop={files => this.props.dispatch(collectionUploaderActions.SET_UPLOAD_FILES(files))} /> */}
 </span>;

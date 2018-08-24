@@ -19,9 +19,9 @@ export interface CollectionCreateFormDialogData {
     files: File[];
 }
 
-export const COLLECTION_CREATE_FORM_NAME = "collectionCreateDialog";
+export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
-export const openCreateModal = () =>
+export const openCollectionCreateDialog = () =>
     (dispatch: Dispatch) => {
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: {} }));
     };
@@ -44,7 +44,6 @@ export const createCollection = (collection: Partial<CollectionResource>) =>
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));
-            // return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {

@@ -37,10 +37,11 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection, loadCollectionTags } from '~/store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '~/models/collection';
-import { COLLECTION_CREATE_FORM_NAME, openCreateModal } from '~/store/collections/collection-create-actions';
+import { COLLECTION_CREATE_FORM_NAME, openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
 import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
+import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
@@ -385,7 +386,7 @@ export const Workbench = withStyles(styles)(
 
             handleCollectionCreationDialogOpen = (itemUuid: string) => {
                 this.props.dispatch(reset(COLLECTION_CREATE_FORM_NAME));
-                this.props.dispatch<any>(openCreateModal());
+                this.props.dispatch<any>(openCollectionCreateDialog());
             }
 
             openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; kind: ContextMenuKind; }) => {
