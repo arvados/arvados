@@ -12,7 +12,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from '~/com
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
-export const COLLECTION_COPY_FORM_NAME = 'projectCopy';
+export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 
 export interface CollectionCopyFormDialogData {
     name: string;

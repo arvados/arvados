@@ -16,12 +16,12 @@ type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<Collectio
 export const DialogCollectionCopy = (props: CopyFormDialogProps) =>
     <FormDialog
         dialogTitle='Make a copy'
-        formFields={DialogCollectionCopyFields}
+        formFields={CollectionCopyFields}
         submitLabel='Copy'
         {...props}
     />;
 
-const DialogCollectionCopyFields = () => <span>
+const CollectionCopyFields = () => <span>
     <Field
         name='name'
         component={TextField}
