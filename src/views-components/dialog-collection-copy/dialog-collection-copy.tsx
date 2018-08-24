@@ -7,28 +7,28 @@ import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
-import { COPY_NAME_VALIDATION, COPY_PROJECT_VALIDATION } from '~/validators/validators';
+import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
-import { ProjectCopyFormDialogData } from "~/store/project-copy-dialog/project-copy-dialog";
+import { CollectionCopyFormDialogData } from "~/store/collections/collection-copy-actions";
 
-type ProjectCopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<ProjectCopyFormDialogData>;
+type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CollectionCopyFormDialogData>;
 
-export const ProjectCopyFormDialog = (props: ProjectCopyFormDialogProps) =>
+export const DialogCollectionCopy = (props: CopyFormDialogProps) =>
     <FormDialog
         dialogTitle='Make a copy'
-        formFields={ProjectCopyFields}
+        formFields={CollectionCopyFields}
         submitLabel='Copy'
         {...props}
     />;
 
-const ProjectCopyFields = () => <span>
+const CollectionCopyFields = () => <span>
     <Field
         name='name'
         component={TextField}
         validate={COPY_NAME_VALIDATION}
         label="Enter a new name for the copy" />
     <Field
-        name="projectUuid"
+        name="ownerUuid"
         component={ProjectTreePickerField}
-        validate={COPY_PROJECT_VALIDATION} />
+        validate={COPY_FILE_VALIDATION} />
 </span>;

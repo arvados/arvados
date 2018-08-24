@@ -9,7 +9,7 @@ import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } 
 import { openUpdater } from "~/store/collections/updater/collection-updater-action";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
-import { openProjectCopyDialog } from '~/store/project-copy-project-dialog/project-copy-project-dialog';
+import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -43,7 +43,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            dispatch<any>(openProjectCopyDialog({name: resource.name, projectUuid: resource.uuid}));
+            dispatch<any>(openCollectionCopyDialog(resource));
         },
     },
     {
