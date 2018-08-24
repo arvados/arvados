@@ -44,7 +44,7 @@ centos7|networkx|1.11|0|python|all
 centos7|psutil|5.0.1|0|python|all
 debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|lockfile|0.12.2|2|python|all|--epoch 1
 debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|subprocess32|3.5.1|2|python|all
-centos7,debian8,debian9,ubuntu1404,ubuntu1604|ruamel.yaml|0.15.34|1|python|amd64|--python-setup-py-arguments --single-version-externally-managed
+centos7,debian8,debian9,ubuntu1404,ubuntu1604|ruamel.yaml|0.15.26|1|python|amd64|--python-setup-py-arguments --single-version-externally-managed
 all|cwltest|1.0.20180518074130|4|python|all|--depends 'python-futures >= 3.0.5' --depends 'python-subprocess32 >= 3.5.0'
 all|junit-xml|1.8|3|python|all
 all|rdflib-jsonld|0.4.0|2|python|all
