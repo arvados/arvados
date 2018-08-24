@@ -375,7 +375,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 1],
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
     ['active_no_prefs', nil, 0],
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
