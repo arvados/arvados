@@ -289,14 +289,14 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies',
-            }), ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input',
-            }), ensure_unique_name=True),
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 61df2ed9ee3eb7dd9b799e5ca35305fa+1217 0:1217:workflow.cwl\n',
@@ -485,14 +485,14 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies',
-            }), ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input',
-            }), ensure_unique_name=True)])
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False)])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
