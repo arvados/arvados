@@ -6,10 +6,12 @@ package main
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -292,6 +294,101 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	bodyPart = hdrsAndBody[1]
 	bodySize = int64(len(bodyPart)) + discarded
 	return
+}
+
+func (s *IntegrationSuite) TestMetrics(c *check.C) {
+	origin := "http://" + s.testServer.Addr
+	req, _ := http.NewRequest("GET", origin+"/notfound", nil)
+	_, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	req, _ = http.NewRequest("GET", origin+"/by_id/", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	for i := 0; i < 2; i++ {
+		req, _ = http.NewRequest("GET", origin+"/foo", nil)
+		req.Host = arvadostest.FooCollection + ".example.com"
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp, err = http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		buf, _ := ioutil.ReadAll(resp.Body)
+		c.Check(buf, check.DeepEquals, []byte("foo"))
+		resp.Body.Close()
+	}
+
+	s.testServer.Config.Cache.updateGauges()
+
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	type summary struct {
+		SampleCount string  `json:"sample_count"`
+		SampleSum   float64 `json:"sample_sum"`
+		Quantile    []struct {
+			Quantile float64
+			Value    float64
+		}
+	}
+	type counter struct {
+		Value int64
+	}
+	type gauge struct {
+		Value float64
+	}
+	var ents []struct {
+		Name   string
+		Help   string
+		Type   string
+		Metric []struct {
+			Label []struct {
+				Name  string
+				Value string
+			}
+			Counter counter
+			Gauge   gauge
+			Summary summary
+		}
+	}
+	json.NewDecoder(resp.Body).Decode(&ents)
+	summaries := map[string]summary{}
+	gauges := map[string]gauge{}
+	counters := map[string]counter{}
+	for _, e := range ents {
+		for _, m := range e.Metric {
+			labels := map[string]string{}
+			for _, lbl := range m.Label {
+				labels[lbl.Name] = lbl.Value
+			}
+			summaries[e.Name+"/"+labels["method"]+"/"+labels["code"]] = m.Summary
+			counters[e.Name+"/"+labels["method"]+"/"+labels["code"]] = m.Counter
+			gauges[e.Name+"/"+labels["method"]+"/"+labels["code"]] = m.Gauge
+		}
+	}
+	c.Check(summaries["request_duration_seconds/get/200"].SampleSum, check.Not(check.Equals), 0)
+	c.Check(summaries["request_duration_seconds/get/200"].SampleCount, check.Equals, "3")
+	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
+	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
+	c.Check(counters["arvados_keepweb_collectioncache_requests//"].Value, check.Equals, int64(2))
+	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(1))
+	c.Check(counters["arvados_keepweb_collectioncache_hits//"].Value, check.Equals, int64(1))
+	c.Check(counters["arvados_keepweb_collectioncache_pdh_hits//"].Value, check.Equals, int64(1))
+	c.Check(counters["arvados_keepweb_collectioncache_permission_hits//"].Value, check.Equals, int64(1))
+	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifests//"].Value, check.Equals, float64(1))
+	// FooCollection's cached manifest size is 45 ("1f4b0....+45") plus one 51-byte blob signature
+	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifest_bytes//"].Value, check.Equals, float64(45+51))
+
+	// If the Host header indicates a collection, /metrics.json
+	// refers to a file in the collection -- the metrics handler
+	// must not intercept that route.
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req.Host = strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + ".example.com"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {

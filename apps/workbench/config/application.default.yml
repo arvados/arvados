@@ -72,6 +72,7 @@ production:
   i18n.fallbacks: true
   active_support.deprecation: :notify
   profiling_enabled: false
+  log_level: info
 
   arvados_insecure_https: false
 
@@ -199,6 +200,11 @@ common:
   # Rails.root (included in vendor packages) or determined by invoking
   # "git log".
   source_version: false
+
+  # Override the automatic package string. With the default value of
+  # false, the package string is read from package-build.version in
+  # Rails.root (included in vendor packages).
+  package_version: false
 
   # report notification to and from addresses
   issue_reporter_email_from: arvados@example.com

@@ -132,7 +132,8 @@ def stubs(func):
                     "listing": [{
                         "basename": "renamed.txt",
                         "class": "File",
-                        "location": "keep:99999999999999999999999999999998+99/file1.txt"
+                        "location": "keep:99999999999999999999999999999998+99/file1.txt",
+                        "size": 0
                     }],
                     'class': 'Directory'
                 },
@@ -164,7 +165,8 @@ def stubs(func):
                                   {
                                       'basename': 'renamed.txt',
                                       'class': 'File', 'location':
-                                      'keep:99999999999999999999999999999998+99/file1.txt'
+                                      'keep:99999999999999999999999999999998+99/file1.txt',
+                                      'size': 0
                                   }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
@@ -225,7 +227,8 @@ def stubs(func):
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
                              'class': 'File',
-                             'location': 'keep:99999999999999999999999999999998+99/file1.txt'
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
+                             'size': 0
                             }
                         ]}
                     },
@@ -331,6 +334,15 @@ class TestSubmit(unittest.TestCase):
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
+
+    @stubs
+    def test_error_when_multiple_storage_classes_specified(self, stubs):
+        storage_classes = "foo,bar"
+        exited = arvados_cwl.main(
+                ["--debug", "--storage-classes", storage_classes,
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                sys.stdin, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 1)
 
     @mock.patch("time.sleep")
     @stubs
@@ -603,6 +615,72 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
+    @stubs
+    def test_submit_storage_classes(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate',
+                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--enable-reuse', "--debug",
+                                       "--storage-classes=foo", '--on-error=continue',
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+    @mock.patch("arvados_cwl.task_queue.TaskQueue")
+    @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
+    @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
+    @stubs
+    def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
+        def set_final_output(job_order, output_callback, runtimeContext):
+            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            return []
+        job.side_effect = set_final_output
+
+        try:
+            exited = arvados_cwl.main(
+                ["--debug", "--local", "--storage-classes=foo",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+
+    @mock.patch("arvados_cwl.task_queue.TaskQueue")
+    @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
+    @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
+    @stubs
+    def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
+        def set_final_output(job_order, output_callback, runtimeContext):
+            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            return []
+        job.side_effect = set_final_output
+
+        try:
+            exited = arvados_cwl.main(
+                ["--debug", "--local",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
 
     @stubs
     def test_submit_container_output_ttl(self, stubs):
@@ -706,6 +784,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
         capture_stdout = cStringIO.StringIO()
+        collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_keepref_wf.cwl"],
@@ -1050,6 +1129,42 @@ class TestSubmit(unittest.TestCase):
         stubs.expect_container_spec["priority"] = 669
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_wf_runner_resources(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug",
+                 "tests/wf/submit_wf_runner_resources.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["runtime_constraints"] = {
+            "API": True,
+            "vcpus": 2,
+            "ram": 2000 * 2**20
+        }
+        expect_container["name"] = "submit_wf_runner_resources.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+            {
+                "class": "http://arvados.org/cwl#WorkflowRunnerResources",
+                "coresMin": 2,
+                "ramMin": 2000
+            }
+        ]
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+            "arv": "http://arvados.org/cwl#",
+        }
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),

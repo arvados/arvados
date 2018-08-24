@@ -154,8 +154,8 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         super(JobQueueMonitorActorTestCase, self).build_monitor(*args, **kwargs)
         self.client.jobs().queue().execute.side_effect = side_effect
 
-    @mock.patch("subprocess.check_call")
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_call")
+    @mock.patch("subprocess32.check_output")
     def test_unsatisfiable_jobs(self, mock_squeue, mock_scancel):
         job_uuid = 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'
         container_uuid = 'yyyyy-dz642-yyyyyyyyyyyyyyy'
@@ -169,7 +169,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.client.jobs().cancel.assert_called_with(uuid=job_uuid)
         mock_scancel.assert_called_with(['scancel', '--name='+container_uuid])
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_subscribers_get_server_lists(self, mock_squeue):
         mock_squeue.return_value = ""
 
@@ -179,7 +179,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.subscriber.assert_called_with([testutil.MockSize(1),
                                             testutil.MockSize(2)])
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_squeue_server_list(self, mock_squeue):
         mock_squeue.return_value = """1|1024|0|(Resources)|zzzzz-dz642-zzzzzzzzzzzzzzy|(null)|1234567890
 2|1024|0|(Resources)|zzzzz-dz642-zzzzzzzzzzzzzzz|(null)|1234567890
@@ -193,7 +193,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.subscriber.assert_called_with([testutil.MockSize(1),
                                             testutil.MockSize(2)])
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_squeue_server_list_suffix(self, mock_squeue):
         mock_squeue.return_value = """1|1024M|0|(ReqNodeNotAvail, UnavailableNodes:compute123)|zzzzz-dz642-zzzzzzzzzzzzzzy|(null)|1234567890
 1|2G|0|(ReqNodeNotAvail)|zzzzz-dz642-zzzzzzzzzzzzzzz|(null)|1234567890
@@ -207,7 +207,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.subscriber.assert_called_with([testutil.MockSize(1),
                                             testutil.MockSize(2)])
 
-    @mock.patch("subprocess.check_output")
+    @mock.patch("subprocess32.check_output")
     def test_squeue_server_list_instancetype_constraint(self, mock_squeue):
         mock_squeue.return_value = """1|1024|0|(Resources)|zzzzz-dz642-zzzzzzzzzzzzzzy|instancetype=z2.test|1234567890\n"""
         super(JobQueueMonitorActorTestCase, self).build_monitor(jobqueue.ServerCalculator(

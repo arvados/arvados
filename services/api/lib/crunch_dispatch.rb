@@ -29,6 +29,7 @@ class CrunchDispatch
     @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
     @docker_run_args = ENV['CRUNCH_JOB_DOCKER_RUN_ARGS']
     @cgroup_root = ENV['CRUNCH_CGROUP_ROOT']
+    @srun_sync_timeout = ENV['CRUNCH_SRUN_SYNC_TIMEOUT']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exist? @arvados_internal
@@ -297,7 +298,7 @@ class CrunchDispatch
     @fetched_commits[sha1] = ($? == 0)
   end
 
-  def tag_commit(commit_hash, tag_name)
+  def tag_commit(job, commit_hash, tag_name)
     # @git_tags[T]==V if we know commit V has been tagged T in the
     # arvados_internal repository.
     if not @git_tags[tag_name]
@@ -381,20 +382,20 @@ class CrunchDispatch
           next
         end
         ready &&= get_commit repo.server_path, job.script_version
-        ready &&= tag_commit job.script_version, job.uuid
+        ready &&= tag_commit job, job.script_version, job.uuid
       end
 
       # This should be unnecessary, because API server does it during
       # job create/update, but it's still not a bad idea to verify the
       # tag is correct before starting the job:
-      ready &&= tag_commit job.script_version, job.uuid
+      ready &&= tag_commit job, job.script_version, job.uuid
 
       # The arvados_sdk_version doesn't support use of arbitrary
       # remote URLs, so the requested version isn't necessarily copied
       # into the internal repository yet.
       if job.arvados_sdk_version
         ready &&= get_commit @arvados_repo_path, job.arvados_sdk_version
-        ready &&= tag_commit job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"
+        ready &&= tag_commit job, job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"
       end
 
       if not ready
@@ -417,6 +418,10 @@ class CrunchDispatch
 
       if @docker_run_args
         cmd_args += ['--docker-run-args', @docker_run_args]
+      end
+
+      if @srun_sync_timeout
+        cmd_args += ['--srun-sync-timeout', @srun_sync_timeout]
       end
 
       if have_job_lock?(job)

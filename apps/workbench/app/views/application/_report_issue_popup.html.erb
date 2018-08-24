@@ -14,8 +14,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
   additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
 
   additional_info['api_source_version'] = api_source_version
+  additional_info['api_package_version'] = api_package_version
   additional_info['generated_at'] = generated_at
   additional_info['workbench_version'] = AppVersion.hash
+  additional_info['workbench_package_version'] = AppVersion.package_version
   additional_info['arvados_base'] = arvados_base
   additional_info['support_email'] = support_email
   additional_info['error_message'] = params[:error_message] if params[:error_message]
@@ -73,7 +75,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <label for="wb_version" class="col-sm-4 control-label"> Workbench version </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="wb_version">
-              <%= link_to AppVersion.hash, version_link_target(AppVersion.hash) %>
+              <%= AppVersion.package_version %> (<%= link_to AppVersion.hash, version_link_target(AppVersion.hash) %>)
             </p>
           </div>
         </div>
@@ -82,7 +84,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <label for="server_version" class="col-sm-4 control-label"> API version </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="server_version">
-              <%= link_to api_source_version, version_link_target(api_source_version) %>
+              <%= api_package_version %> (<%= link_to api_source_version, version_link_target(api_source_version) %>)
             </p>
           </div>
         </div>

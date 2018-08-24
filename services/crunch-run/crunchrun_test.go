@@ -793,7 +793,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+	"runtime_constraints": {}
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -803,6 +803,26 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
+}
+
+func (s *TestSuite) TestRunTimeExceeded(c *C) {
+	api, _, _ := s.fullRunHelper(c, `{
+    "command": ["sleep", "3"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+	"runtime_constraints": {},
+	"scheduling_parameters":{"max_run_time": 1}
+}`, nil, 0, func(t *TestDockerClient) {
+		time.Sleep(3 * time.Second)
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
@@ -2046,4 +2066,50 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
 	c.Check(api.CalledWith("collection.manifest_text", ""), NotNil)
+}
+
+type FakeProcess struct {
+	cmdLine []string
+}
+
+func (fp FakeProcess) CmdlineSlice() ([]string, error) {
+	return fp.cmdLine, nil
+}
+
+func (s *TestSuite) helpCheckContainerd(c *C, lp func() ([]PsProcess, error)) error {
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{callraw: true}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr.checkContainerd = time.Duration(100 * time.Millisecond)
+	c.Assert(err, IsNil)
+	cr.ListProcesses = lp
+
+	s.docker.fn = func(t *TestDockerClient) {
+		time.Sleep(1 * time.Second)
+		t.logWriter.Close()
+	}
+
+	err = cr.CreateContainer()
+	c.Check(err, IsNil)
+
+	err = cr.StartContainer()
+	c.Check(err, IsNil)
+
+	err = cr.WaitFinish()
+	return err
+
+}
+
+func (s *TestSuite) TestCheckContainerdPresent(c *C) {
+	err := s.helpCheckContainerd(c, func() ([]PsProcess, error) {
+		return []PsProcess{FakeProcess{[]string{"docker-containerd"}}}, nil
+	})
+	c.Check(err, IsNil)
+}
+
+func (s *TestSuite) TestCheckContainerdMissing(c *C) {
+	err := s.helpCheckContainerd(c, func() ([]PsProcess, error) {
+		return []PsProcess{FakeProcess{[]string{"abc"}}}, nil
+	})
+	c.Check(err, ErrorMatches, `'containerd' not found in process list.`)
 }

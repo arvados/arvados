@@ -161,7 +161,8 @@ class ApiClientAuthorization < ArvadosModel
           end
         end
 
-        if Rails.configuration.new_users_are_active
+        if Rails.configuration.new_users_are_active ||
+           Rails.configuration.auto_activate_users_from.include?(remote_user['uuid'][0..4])
           # Update is_active to whatever it is at the remote end
           user.is_active = remote_user['is_active']
         elsif !remote_user['is_active']

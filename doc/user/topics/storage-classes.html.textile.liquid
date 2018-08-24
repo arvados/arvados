@@ -1,0 +1,53 @@
+---
+layout: default
+navsection: userguide
+title: Using storage classes
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Storage classes (alternately known as "storage tiers") allow you to control which volumes should be used to store particular collection data blocks.  This can be used to implement data storage policies such as moving data to archival storage.
+
+Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.
+
+h3. arv-put
+
+You may specify the desired storage class for a collection uploaded using @arv-put@:
+
+<pre>
+$ arv-put --storage-classes=hot myfile.txt
+</pre>
+
+h3. arvados-cwl-runner
+
+You may also specify the desired storage class for the final output collection produced by @arvados-cwl-runner@:
+
+<pre>
+$ arvados-cwl-runner --storage-classes=hot myworkflow.cwl myinput.yml
+</pre>
+
+(Note: intermediate collections produced by a workflow run will have "default" storage class.)
+
+h3. arv command line
+
+You may set the storage class on an existing collection by setting the "storage_classes_desired" field of a Collection.  For example, at the command line:
+
+<pre>
+$ arv collection update --uuid zzzzz-4zz18-dhhm0ay8k8cqkvg --collection '{"storage_classes_desired": ["archival"]}'
+</pre>
+
+By setting "storage_classes_desired" to "archival", the blocks that make up the collection will be preferentially moved to keepstore volumes which are configured with the "archival" storage class.
+
+h3. Storage class notes
+
+Collection blocks will be in the "default" storage class if not otherwise specified.
+
+Currently, a collection may only have one desired storage class.
+
+Any user with write access to a collection may set any storage class on that collection.
+
+Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.

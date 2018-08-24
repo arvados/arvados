@@ -158,16 +158,53 @@ Example @application.yml@:
 </code></pre>
 </notextile>
 
+h3(#disable_api_methods). disable_api_methods
+
+Set the @disable_api_methods@ configuration option to disable the deprecated @jobs@ API.  This will prevent users from accidentally submitting jobs that won't run.  "All new installations should use the containers API.":crunch2-slurm/install-prerequisites.html
+
+<notextile>
+<pre><code>
+  disable_api_methods:
+    - jobs.create
+    - pipeline_instances.create
+    - pipeline_templates.create
+    - jobs.get
+    - pipeline_instances.get
+    - pipeline_templates.get
+    - jobs.list
+    - pipeline_instances.list
+    - pipeline_templates.list
+    - jobs.index
+    - pipeline_instances.index
+    - pipeline_templates.index
+    - jobs.update
+    - pipeline_instances.update
+    - pipeline_templates.update
+    - jobs.queue
+    - jobs.queue_size
+    - job_tasks.create
+    - job_tasks.get
+    - job_tasks.list
+    - job_tasks.index
+    - job_tasks.update
+    - jobs.show
+    - pipeline_instances.show
+    - pipeline_templates.show
+    - job_tasks.show
+</code></pre>
+</notextile>
+
 h2(#set_up). Set up Nginx and Passenger
 
 The Nginx server will serve API requests using Passenger. It will also be used to proxy SSL requests to other services which are covered later in this guide.
 
 First, "Install Nginx and Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
 
-Edit the http section of your Nginx configuration to run the Passenger server, and serve SSL requests. Add a block like the following, adding SSL and logging parameters to taste:
+Edit the http section of your Nginx configuration to run the Passenger server. Add a block like the following, adding SSL and logging parameters to taste:
 
 <notextile>
-<pre><code>server {
+<pre><code>
+server {
   listen 127.0.0.1:8000;
   server_name localhost-api;
 
@@ -201,33 +238,6 @@ proxy_http_version 1.1;
 geo $external_client {
   default        1;
   <span class="userinput">10.20.30.0/24</span>  0;
-}
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
-
-  ssl on;
-  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
-
-  index  index.html index.htm index.php;
-
-  # Refer to the comment about this setting in the server section above.
-  client_max_body_size 128m;
-
-  location / {
-    proxy_pass            http://api;
-    proxy_redirect        off;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout    300s;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-External-Client $external_client;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
 }
 </code></pre>
 </notextile>

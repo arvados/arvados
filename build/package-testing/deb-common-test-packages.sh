@@ -27,7 +27,13 @@ cd /tmp/opts
 
 export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
-dpkg-deb -x $(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb | head -n1) .
+if [[ -f $(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb 2>/dev/null | head -n1) ]] ; then
+    debpkg=$(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb | head -n1)
+else
+    debpkg=$(ls -t "$ARV_PACKAGES_DIR/processed/$1"_*.deb | head -n1)
+fi
+
+dpkg-deb -x $debpkg .
 
 while read so && [ -n "$so" ]; do
     echo

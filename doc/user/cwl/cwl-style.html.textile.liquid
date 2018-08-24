@@ -113,6 +113,8 @@ steps:
         tmpdirMin: 90000
 </pre>
 
+* Available compute nodes types vary over time and across different cloud providers, so try to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
+
 * Instead of scattering separate steps, prefer to scatter over a subworkflow.
 
 With the following pattern, @step1@ has to wait for all samples to complete before @step2@ can start computing on any samples.  This means a single long-running sample can prevent the rest of the workflow from moving on:
@@ -174,7 +176,9 @@ steps:
           run: tool3.cwl
 </pre>
 
-* When migrating from crunch v1 API (--api=jobs) to the crunch v2 API (--api=containers) there are a few differences in behavior:
+h2(#migrate). Migrating running CWL on jobs API to containers API
+
+* When migrating from jobs API (--api=jobs) (sometimes referred to as "crunch v1") to the containers API (--api=containers) ("crunch v2") there are a few differences in behavior:
 ** The tool is limited to accessing only collections which are explicitly listed in the input, and further limited to only the subdirectories of collections listed in input.  For example, given an explicit file input @/dir/subdir/file1.txt@, a tool will not be able to implicitly access the file @/dir/file2.txt@.  Use @secondaryFiles@ or a @Directory@ input to describe trees of files.
 ** Files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted.  These files will be added to the output collection but without any additional copies of the underlying data.
 ** Tools are disallowed network access by default.  Tools which require network access must include @arv:APIRequirement: {}@ in their @requirements@ section.

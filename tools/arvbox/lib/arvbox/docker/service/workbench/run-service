@@ -40,8 +40,8 @@ fi
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   secret_token: $secret_token
-  arvados_login_base: https://$localip:${services[api]}/login
-  arvados_v1_base: https://$localip:${services[api]}/arvados/v1
+  arvados_login_base: https://$localip:${services[controller-ssl]}/login
+  arvados_v1_base: https://$localip:${services[controller-ssl]}/arvados/v1
   arvados_insecure_https: true
   keep_web_download_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
   keep_web_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
@@ -52,4 +52,4 @@ EOF
 
 bundle exec rake assets:precompile
 
-(cd config && /usr/local/lib/arvbox/application_yml_override.py)
+(cd config && /usr/local/lib/arvbox/yml_override.py application.yml)

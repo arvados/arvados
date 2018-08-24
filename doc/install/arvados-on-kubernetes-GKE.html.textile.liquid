@@ -1,0 +1,62 @@
+---
+layout: default
+navsection: installguide
+title: Arvados on Kubernetes - Google Kubernetes Engine
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page documents the setup of the prerequisites to run the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Google Kubernetes Engine@ (GKE).
+
+h3. Install tooling
+
+Install @gcloud@:
+
+* Follow the instructions at "https://cloud.google.com/sdk/downloads":https://cloud.google.com/sdk/downloads
+
+Install @kubectl@:
+
+<pre>
+$ gcloud components install kubectl
+</pre>
+
+Install @helm@:
+
+* Follow the instructions at "https://docs.helm.sh/using_helm/#installing-helm":https://docs.helm.sh/using_helm/#installing-helm
+
+h3. Boot the GKE cluster
+
+This can be done via the "cloud console":https://console.cloud.google.com/kubernetes/ or via the command line:
+
+<pre>
+$ gcloud container clusters create <CLUSTERNAME> --zone us-central1-a --machine-type n1-standard-2 --cluster-version 1.10
+</pre>
+
+It takes a few minutes for the cluster to be initialized.
+
+h3. Reserve a static IP
+
+Reserve a "static IP":https://console.cloud.google.com/networking/addresses in GCE. Make sure the IP is in the same region as your GKE cluster, and is of the "Regional" type.
+
+h3. Connect to the GKE cluster.
+
+Via the web:
+* Click the "Connect" button next to your "GKE cluster"https://console.cloud.google.com/kubernetes/.
+* Execute the "Command-line access" command on your development machine.
+
+Alternatively, use this command:
+
+<pre>
+$ gcloud container clusters get-credentials <CLUSTERNAME> --zone us-central1-a --project <YOUR-PROJECT>
+</pre>
+
+Test the connection:
+
+<pre>
+$ kubectl get nodes
+</pre>
+
+Now proceed to the "Initialize helm on the Kubernetes cluster":/install/arvados-on-kubernetes.html#helm section.

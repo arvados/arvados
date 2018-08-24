@@ -1,0 +1,50 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
+. /usr/local/lib/arvbox/go-setup.sh
+
+flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/cmd/arvados-server"
+install $GOPATH/bin/arvados-server /usr/local/bin
+(cd /usr/local/bin && ln -sf arvados-server arvados-controller)
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
+
+uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+database_pw=$(cat /var/lib/arvados/api_database_pw)
+
+mkdir -p /etc/arvados
+
+cat >/var/lib/arvados/cluster_config.yml <<EOF
+Clusters:
+  ${uuid_prefix}:
+    NodeProfiles:
+      "*":
+        arvados-controller:
+          Listen: ":${services[controller]}" # choose a port
+        arvados-api-server:
+          Listen: ":${services[api]}" # must match Rails server port in your Nginx config
+    PostgreSQL:
+      ConnectionPool: 32 # max concurrent connections per arvados server daemon
+      Connection:
+        # All parameters here are passed to the PG client library in a connection string;
+        # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
+        Host: localhost
+        User: arvados
+        Password: ${database_pw}
+        DBName: arvados_development
+        client_encoding: utf8
+EOF
+
+/usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
+
+cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+
+exec /usr/local/lib/arvbox/runsu.sh /usr/local/bin/arvados-controller

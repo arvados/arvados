@@ -24,6 +24,7 @@ navbar:
     - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
+      - user/composer/composer.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
@@ -37,6 +38,7 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
@@ -146,32 +148,52 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
+    - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
-      - install/cheat_sheet.html.textile.liquid
-      - user/topics/arvados-sync-groups.html.textile.liquid
-      - admin/migrating-providers.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
+    - Users and Groups:
+      - install/cheat_sheet.html.textile.liquid
+      - admin/activation.html.textile.liquid
+      - admin/merge-remote-account.html.textile.liquid
+      - admin/migrating-providers.html.textile.liquid
+      - user/topics/arvados-sync-groups.html.textile.liquid
+    - Monitoring:
+      - admin/health-checks.html.textile.liquid
+      - admin/metrics.html.textile.liquid
+      - admin/management-token.html.textile.liquid
+    - Cloud:
+      - admin/storage-classes.html.textile.liquid
+      - admin/spot-instances.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Arvados on Kubernetes:
+      - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/install-components.html.textile.liquid
+    - Core:
       - install/install-postgresql.html.textile.liquid
-      - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
-      - install/install-ws.html.textile.liquid
-      - install/install-arv-git-httpd.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
-      - install/create-standard-objects.html.textile.liquid
+      - install/install-controller.html.textile.liquid
+    - Keep:
       - install/install-keepstore.html.textile.liquid
+      - install/configure-fs-storage.html.textile.liquid
+      - install/configure-s3-object-storage.html.textile.liquid
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
       - install/install-keep-balance.html.textile.liquid
+    - User interface:
+      - install/install-sso.html.textile.liquid
+      - install/install-workbench-app.html.textile.liquid
+      - install/install-composer.html.textile.liquid
+    - Additional services:
+      - install/install-ws.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-slurm.html.textile.liquid

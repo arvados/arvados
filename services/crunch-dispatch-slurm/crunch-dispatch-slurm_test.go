@@ -55,11 +55,12 @@ func (s *IntegrationSuite) TearDownTest(c *C) {
 }
 
 type slurmFake struct {
-	didBatch   [][]string
-	didCancel  []string
-	didRelease []string
-	didRenice  [][]string
-	queue      string
+	didBatch      [][]string
+	didCancel     []string
+	didRelease    []string
+	didRenice     [][]string
+	queue         string
+	rejectNice10K bool
 	// If non-nil, run this func during the 2nd+ call to Cancel()
 	onCancel func()
 	// Error returned by Batch()
@@ -82,6 +83,9 @@ func (sf *slurmFake) Release(name string) error {
 
 func (sf *slurmFake) Renice(name string, nice int64) error {
 	sf.didRenice = append(sf.didRenice, []string{name, fmt.Sprintf("%d", nice)})
+	if sf.rejectNice10K && nice > 10000 {
+		return errors.New("scontrol: error: Invalid nice value, must be between -10000 and 10000")
+	}
 	return nil
 }
 
@@ -112,7 +116,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	var containers arvados.ContainerList
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Check(len(containers.Items), Equals, 1)
+	c.Assert(len(containers.Items), Equals, 1)
 
 	s.disp.CrunchRunCommand = []string{"echo"}
 
@@ -242,7 +246,7 @@ func (s *StubbedSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	s.testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
+	s.testWithServerStub(c, apiStubResponses, "echo", "error getting count of containers")
 }
 
 func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
@@ -367,17 +371,17 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 	}
 
 	for _, trial := range []struct {
-		types      []arvados.InstanceType
+		types      map[string]arvados.InstanceType
 		sbatchArgs []string
 		err        error
 	}{
 		// Choose node type => use --constraint arg
 		{
-			types: []arvados.InstanceType{
-				{Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
-				{Name: "a1.small", Price: 0.04, RAM: 256000000, VCPUs: 2},
-				{Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
-				{Name: "a1.large", Price: 0.16, RAM: 1024000000, VCPUs: 8},
+			types: map[string]arvados.InstanceType{
+				"a1.tiny":   {Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
+				"a1.small":  {Name: "a1.small", Price: 0.04, RAM: 256000000, VCPUs: 2},
+				"a1.medium": {Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
+				"a1.large":  {Name: "a1.large", Price: 0.16, RAM: 1024000000, VCPUs: 8},
 			},
 			sbatchArgs: []string{"--constraint=instancetype=a1.medium"},
 		},
@@ -388,19 +392,21 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 		},
 		// No node type is big enough => error
 		{
-			types: []arvados.InstanceType{
-				{Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
+			types: map[string]arvados.InstanceType{
+				"a1.tiny": {Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
 			},
-			err: dispatchcloud.ErrConstraintsNotSatisfiable,
+			err: dispatchcloud.ConstraintsNotSatisfiableError{},
 		},
 	} {
 		c.Logf("%#v", trial)
 		s.disp.cluster = &arvados.Cluster{InstanceTypes: trial.types}
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(err, Equals, trial.err)
+		c.Check(err == nil, Equals, trial.err == nil)
 		if trial.err == nil {
 			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--nice=10000"}, trial.sbatchArgs...))
+		} else {
+			c.Check(len(err.(dispatchcloud.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
 		}
 	}
 }

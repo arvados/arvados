@@ -5,17 +5,36 @@
 package main
 
 import (
+	"bytes"
+
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"gopkg.in/check.v1"
 )
+
+func (s *UnitSuite) checkCacheMetrics(c *check.C, reg *prometheus.Registry, regs ...string) {
+	mfs, err := reg.Gather()
+	c.Check(err, check.IsNil)
+	buf := &bytes.Buffer{}
+	enc := expfmt.NewEncoder(buf, expfmt.FmtText)
+	for _, mf := range mfs {
+		c.Check(enc.Encode(mf), check.IsNil)
+	}
+	mm := buf.String()
+	for _, reg := range regs {
+		c.Check(mm, check.Matches, `(?ms).*collectioncache_`+reg+`\n.*`)
+	}
+}
 
 func (s *UnitSuite) TestCache(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
 	cache := DefaultConfig().Cache
+	cache.registry = prometheus.NewRegistry()
 
 	// Hit the same collection 5 times using the same token. Only
 	// the first req should cause an API call; the next 4 should
@@ -29,11 +48,12 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
 		c.Check(coll.ManifestText[:2], check.Equals, ". ")
 	}
-	c.Check(cache.Stats().Requests, check.Equals, uint64(5))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(1))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 5",
+		"hits 4",
+		"permission_hits 4",
+		"pdh_hits 4",
+		"api_calls 1")
 
 	// Hit the same collection 2 more times, this time requesting
 	// it by PDH and using a different token. The first req should
@@ -49,11 +69,12 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
 	c.Check(coll2.ManifestText, check.Not(check.Equals), coll.ManifestText)
 
-	c.Check(cache.Stats().Requests, check.Equals, uint64(5+1))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+0))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+0))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 6",
+		"hits 4",
+		"permission_hits 4",
+		"pdh_hits 4",
+		"api_calls 2")
 
 	coll2, err = cache.Get(arv, arvadostest.FooPdh, false)
 	c.Check(err, check.Equals, nil)
@@ -61,11 +82,12 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooPdh)
 	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
 
-	c.Check(cache.Stats().Requests, check.Equals, uint64(5+2))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+1))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+1))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 7",
+		"hits 5",
+		"permission_hits 5",
+		"pdh_hits 4",
+		"api_calls 2")
 
 	// Alternating between two collections N times should produce
 	// only 2 more API calls.
@@ -80,11 +102,12 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		_, err := cache.Get(arv, target, false)
 		c.Check(err, check.Equals, nil)
 	}
-	c.Check(cache.Stats().Requests, check.Equals, uint64(5+2+20))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+1+18))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+1+18))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0+18))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1+2))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 27",
+		"hits 23",
+		"permission_hits 23",
+		"pdh_hits 22",
+		"api_calls 4")
 }
 
 func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
@@ -92,17 +115,19 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	cache := DefaultConfig().Cache
+	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {
 		_, err := cache.Get(arv, arvadostest.FooPdh, forceReload)
 		c.Check(err, check.Equals, nil)
 	}
 
-	c.Check(cache.Stats().Requests, check.Equals, uint64(4))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(3))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(1))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(0))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(3))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 4",
+		"hits 3",
+		"permission_hits 1",
+		"pdh_hits 0",
+		"api_calls 3")
 }
 
 func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
@@ -110,15 +135,17 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	cache := DefaultConfig().Cache
+	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {
 		_, err := cache.Get(arv, arvadostest.FooCollection, forceReload)
 		c.Check(err, check.Equals, nil)
 	}
 
-	c.Check(cache.Stats().Requests, check.Equals, uint64(4))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(3))
-	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(1))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(3))
-	c.Check(cache.Stats().APICalls, check.Equals, uint64(3))
+	s.checkCacheMetrics(c, cache.registry,
+		"requests 4",
+		"hits 3",
+		"permission_hits 1",
+		"pdh_hits 3",
+		"api_calls 3")
 }

@@ -31,6 +31,7 @@ import (
 
 type handler struct {
 	Config        *Config
+	MetricsAPI    http.Handler
 	clientPool    *arvadosclient.ClientPool
 	setupOnce     sync.Once
 	healthHandler http.Handler
@@ -90,14 +91,7 @@ func (h *handler) setup() {
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
-	status := struct {
-		cacheStats
-		Version string
-	}{
-		cacheStats: h.Config.Cache.Stats(),
-		Version:    version,
-	}
-	json.NewEncoder(w).Encode(status)
+	json.NewEncoder(w).Encode(struct{ Version string }{version})
 }
 
 // updateOnSuccess wraps httpserver.ResponseWriter. If the handler
@@ -141,6 +135,11 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 }
 
 var (
+	corsAllowHeadersHeader = strings.Join([]string{
+		"Authorization", "Content-Type", "Range",
+		// WebDAV request headers:
+		"Depth", "Destination", "If", "Lock-Token", "Overwrite", "Timeout",
+	}, ", ")
 	writeMethod = map[string]bool{
 		"COPY":   true,
 		"DELETE": true,
@@ -183,6 +182,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		remoteAddr = xff + "," + remoteAddr
 	}
+	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
+		r.URL.Scheme = xfp
+	}
 
 	w := httpserver.WrapResponseWriter(wOrig)
 	defer func() {
@@ -209,7 +211,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusMethodNotAllowed
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
+		w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
 		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
@@ -255,6 +257,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		credentialsOK = true
 	} else if r.URL.Path == "/status.json" {
 		h.serveStatus(w, r)
+		return
+	} else if strings.HasPrefix(r.URL.Path, "/metrics") {
+		h.MetricsAPI.ServeHTTP(w, r)
 		return
 	} else if siteFSDir[pathParts[0]] {
 		useSiteFS = true
@@ -773,6 +778,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		u = newu
 	}
 	redir := (&url.URL{
+		Scheme:   r.URL.Scheme,
 		Host:     r.Host,
 		Path:     u.Path,
 		RawQuery: redirQuery.Encode(),

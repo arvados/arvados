@@ -18,6 +18,7 @@ FakeRESTService <- R6::R6Class(
         createCallCount               = NULL,
         deleteCallCount               = NULL,
         moveCallCount                 = NULL,
+        copyCallCount                 = NULL,
         getCollectionContentCallCount = NULL,
         getResourceSizeCallCount      = NULL,
         readCallCount                 = NULL,
@@ -31,7 +32,7 @@ FakeRESTService <- R6::R6Class(
         collectionContent = NULL,
         returnContent     = NULL,
 
-        initialize = function(collectionContent = NULL, returnContent = NULL, 
+        initialize = function(collectionContent = NULL, returnContent = NULL,
                               expectedFilterContent = NULL)
         {
             self$getResourceCallCount    <- 0
@@ -44,6 +45,7 @@ FakeRESTService <- R6::R6Class(
             self$createCallCount               <- 0
             self$deleteCallCount               <- 0
             self$moveCallCount                 <- 0
+            self$copyCallCount                 <- 0
             self$getCollectionContentCallCount <- 0
             self$getResourceSizeCallCount      <- 0
             self$readCallCount                 <- 0
@@ -135,6 +137,12 @@ FakeRESTService <- R6::R6Class(
             self$returnContent
         },
 
+        copy = function(from, to, uuid)
+        {
+            self$copyCallCount <- self$copyCallCount + 1
+            self$returnContent
+        },
+
         getCollectionContent = function(uuid)
         {
             self$getCollectionContentCallCount <- self$getCollectionContentCallCount + 1
@@ -146,21 +154,21 @@ FakeRESTService <- R6::R6Class(
             self$getResourceSizeCallCount <- self$getResourceSizeCallCount + 1
             self$returnContent
         },
-        
+
         read = function(relativePath, uuid, contentType = "text", offset = 0, length = 0)
         {
             self$readCallCount <- self$readCallCount + 1
             self$returnContent
         },
 
-        write = function(uuid, relativePath, content, contentType)
+        write = function(relativePath, uuid, content, contentType)
         {
             self$writeBuffer <- content
             self$writeCallCount <- self$writeCallCount + 1
             self$returnContent
         },
 
-        getConnection = function(relativePath, uuid, openMode)
+        getConnection = function(uuid, relativePath, openMode)
         {
             self$getConnectionCallCount <- self$getConnectionCallCount + 1
             self$returnContent

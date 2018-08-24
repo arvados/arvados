@@ -45,7 +45,7 @@ if ! (ps x | grep -v grep | grep "crunch-dispatch") > /dev/null ; then
     waiting="$waiting crunch-dispatch"
 fi
 
-export ARVADOS_API_HOST=$localip:${services[api]}
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 
 vm_ok=0
@@ -93,5 +93,3 @@ echo "Your Arvados-in-a-box is ready!"
 echo "Workbench is running at http://$localip"
 
 rm -r /tmp/arvbox-ready
-
-sv stop ready >/dev/null

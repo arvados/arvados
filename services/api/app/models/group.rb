@@ -12,6 +12,8 @@ class Group < ArvadosModel
   include CanBeAnOwner
   include Trashable
 
+  serialize :properties, Hash
+
   after_create :invalidate_permissions_cache
   after_update :maybe_invalidate_permissions_cache
   before_create :assign_name
@@ -24,6 +26,7 @@ class Group < ArvadosModel
     t.add :delete_at
     t.add :trash_at
     t.add :is_trashed
+    t.add :properties
   end
 
   def maybe_invalidate_permissions_cache

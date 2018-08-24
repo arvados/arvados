@@ -21,11 +21,7 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update
-    # container updates can trigger container request lookups, which
-    # can deadlock if we don't lock the container_requests table
-    # first.
-    @object.transaction do
-      ActiveRecord::Base.connection.execute('LOCK container_requests, containers IN EXCLUSIVE MODE')
+    @object.with_lock do
       @object.reload
       super
     end

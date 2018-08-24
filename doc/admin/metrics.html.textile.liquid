@@ -1,0 +1,189 @@
+---
+layout: default
+navsection: admin
+title: Metrics
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Some Arvados services publish Prometheus/OpenMetrics-compatible metrics at @/metrics@, and some provide additional runtime status at @/status.json@.  Metrics can help you understand how components perform under load, find performance bottlenecks, and detect and diagnose problems.
+
+To access metrics endpoints, services must be configured with a "management token":management-token.html. When accessing a metrics endpoint, prefix the management token with @"Bearer "@ and supply it in the @Authorization@ request header.
+
+<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "https://0.0.0.0:25107/status.json"
+</pre>
+
+h2. Keep-web
+
+Keep-web exports metrics at @/metrics@ -- e.g., @https://collections.zzzzz.arvadosapi.com/metrics@.
+
+table(table table-bordered table-condensed).
+|_. Name|_. Type|_. Description|
+|request_duration_seconds|summary|elapsed time between receiving a request and sending the last byte of the response body (segmented by HTTP request method and response status code)|
+|time_to_status_seconds|summary|elapsed time between receiving a request and sending the HTTP response status code (segmented by HTTP request method and response status code)|
+
+Metrics in the @arvados_keepweb_collectioncache@ namespace report keep-web's internal cache of Arvados collection metadata.
+
+table(table table-bordered table-condensed).
+|_. Name|_. Type|_. Description|
+|arvados_keepweb_collectioncache_requests|counter|cache lookups|
+|arvados_keepweb_collectioncache_api_calls|counter|outgoing API calls|
+|arvados_keepweb_collectioncache_permission_hits|counter|collection-to-permission cache hits|
+|arvados_keepweb_collectioncache_pdh_hits|counter|UUID-to-PDH cache hits|
+|arvados_keepweb_collectioncache_hits|counter|PDH-to-manifest cache hits|
+|arvados_keepweb_collectioncache_cached_manifests|gauge|number of collections in the cache|
+|arvados_keepweb_collectioncache_cached_manifest_bytes|gauge|memory consumed by cached collection manifests|
+
+h2. Keepstore
+
+Keepstore exports metrics at @/status.json@ -- e.g., @http://keep0.zzzzz.arvadosapi.com:25107/status.json@.
+
+h3. Root
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Volumes|         array of "volumeStatusEnt":#volumeStatusEnt ||
+|BufferPool|      "PoolStatus":#PoolStatus ||
+|PullQueue|       "WorkQueueStatus":#WorkQueueStatus ||
+|TrashQueue|      "WorkQueueStatus":#WorkQueueStatus ||
+|RequestsCurrent| int ||
+|RequestsMax|     int ||
+|Version|         string ||
+
+h3(#volumeStatusEnt). volumeStatusEnt
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Label|         string||
+|Status|        "VolumeStatus":#VolumeStatus ||
+|VolumeStats|   "ioStats":#ioStats ||
+
+h3(#VolumeStatus). VolumeStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|MountPoint| string||
+|DeviceNum|  uint64||
+|BytesFree|  uint64||
+|BytesUsed|  uint64||
+
+h3(#ioStats). ioStats
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|Errors|     uint64||
+|Ops|        uint64||
+|CompareOps| uint64||
+|GetOps|     uint64||
+|PutOps|     uint64||
+|TouchOps|   uint64||
+|InBytes|    uint64||
+|OutBytes|   uint64||
+
+h3(#PoolStatus). PoolStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|BytesAllocatedCumulative|	 uint64||
+|BuffersMax|	int||
+|BuffersInUse|	int||
+
+h3(#WorkQueueStatus). WorkQueueStatus
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|InProgress| int||
+|Queued|     int||
+
+h3. Example response
+
+<pre>
+{
+  "Volumes": [
+    {
+      "Label": "[UnixVolume /var/lib/arvados/keep0]",
+      "Status": {
+        "MountPoint": "/var/lib/arvados/keep0",
+        "DeviceNum": 65029,
+        "BytesFree": 222532972544,
+        "BytesUsed": 435456679936
+      },
+      "InternalStats": {
+        "Errors": 0,
+        "InBytes": 1111,
+        "OutBytes": 0,
+        "OpenOps": 1,
+        "StatOps": 4,
+        "FlockOps": 0,
+        "UtimesOps": 0,
+        "CreateOps": 0,
+        "RenameOps": 0,
+        "UnlinkOps": 0,
+        "ReaddirOps": 0
+      }
+    }
+  ],
+  "BufferPool": {
+    "BytesAllocatedCumulative": 67108864,
+    "BuffersMax": 20,
+    "BuffersInUse": 0
+  },
+  "PullQueue": {
+    "InProgress": 0,
+    "Queued": 0
+  },
+  "TrashQueue": {
+    "InProgress": 0,
+    "Queued": 0
+  },
+  "RequestsCurrent": 1,
+  "RequestsMax": 40,
+  "Version": "dev"
+}
+</pre>
+
+h2. Node manager
+
+The node manager status end point provides a snapshot of internal status at the time of the most recent wishlist update.
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|nodes_booting|int|Number of nodes in booting state|
+|nodes_unpaired|int|Number of nodes in unpaired state|
+|nodes_busy|int|Number of nodes in busy state|
+|nodes_idle|int|Number of nodes in idle state|
+|nodes_fail|int|Number of nodes in fail state|
+|nodes_down|int|Number of nodes in down state|
+|nodes_shutdown|int|Number of nodes in shutdown state|
+|nodes_wish|int|Number of nodes in the current wishlist|
+|node_quota|int|Current node count ceiling due to cloud quota limits|
+|config_max_nodes|int|Configured max node count|
+
+h3. Example
+
+<pre>
+{
+  "actor_exceptions": 0,
+  "idle_times": {
+    "compute1": 0,
+    "compute3": 0,
+    "compute2": 0,
+    "compute4": 0
+  },
+  "create_node_errors": 0,
+  "destroy_node_errors": 0,
+  "nodes_idle": 0,
+  "config_max_nodes": 8,
+  "list_nodes_errors": 0,
+  "node_quota": 8,
+  "Version": "1.1.4.20180719160944",
+  "nodes_wish": 0,
+  "nodes_unpaired": 0,
+  "nodes_busy": 4,
+  "boot_failures": 0
+}
+</pre>

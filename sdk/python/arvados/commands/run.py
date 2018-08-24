@@ -150,20 +150,21 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", 
 
     return prefix+fn
 
-def write_file(collection, pathprefix, fn):
+def write_file(collection, pathprefix, fn, flush=False):
     with open(os.path.join(pathprefix, fn)) as src:
         dst = collection.open(fn, "w")
         r = src.read(1024*128)
         while r:
             dst.write(r)
             r = src.read(1024*128)
-        dst.close(flush=False)
+        dst.close(flush=flush)
 
 def uploadfiles(files, api, dry_run=False, num_retries=0,
                 project=None,
                 fnPattern="$(file %s/%s)",
                 name=None,
-                collection=None):
+                collection=None,
+                packed=True):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file paths no longer have a common parent.
@@ -213,12 +214,12 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
                 continue
             prev = localpath
             if os.path.isfile(localpath):
-                write_file(collection, pathprefix, f.fn)
+                write_file(collection, pathprefix, f.fn, not packed)
             elif os.path.isdir(localpath):
                 for root, dirs, iterfiles in os.walk(localpath):
                     root = root[len(pathprefix):]
                     for src in iterfiles:
-                        write_file(collection, pathprefix, os.path.join(root, src))
+                        write_file(collection, pathprefix, os.path.join(root, src), not packed)
 
         pdh = None
         if len(collection) > 0:

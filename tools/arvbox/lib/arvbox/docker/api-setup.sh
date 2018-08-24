@@ -33,6 +33,11 @@ if ! test -s /var/lib/arvados/blob_signing_key ; then
 fi
 blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
 
+if ! test -s /var/lib/arvados/management_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/management_token
+fi
+management_token=$(cat /var/lib/arvados/management_token)
+
 # self signed key will be created by SSO server script.
 test -s /var/lib/arvados/self-signed.key
 
@@ -66,9 +71,10 @@ $RAILS_ENV:
   default_collection_replication: 1
   docker_image_formats: ["v2"]
   keep_web_service_url: http://$localip:${services[keep-web]}/
+  ManagementToken: $management_token
 EOF
 
-(cd config && /usr/local/lib/arvbox/application_yml_override.py)
+(cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
 
 if ! test -f /var/lib/arvados/api_database_pw ; then
     ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw

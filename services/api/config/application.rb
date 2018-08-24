@@ -30,6 +30,9 @@ end
 
 module Server
   class Application < Rails::Application
+    # The following is to avoid SafeYAML's warning message
+    SafeYAML::OPTIONS[:default_mode] = :safe
+
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded.

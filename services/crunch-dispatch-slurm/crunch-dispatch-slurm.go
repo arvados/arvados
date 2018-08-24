@@ -7,6 +7,7 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -56,6 +57,9 @@ type Dispatcher struct {
 
 	// Minimum time between two attempts to run the same container
 	MinRetryPeriod arvados.Duration
+
+	// Batch size for container queries
+	BatchSize int64
 }
 
 func main() {
@@ -163,6 +167,7 @@ func (disp *Dispatcher) setup() {
 	}
 	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
+		BatchSize:      disp.BatchSize,
 		RunContainer:   disp.runContainer,
 		PollPeriod:     time.Duration(disp.PollPeriod),
 		MinRetryPeriod: time.Duration(disp.MinRetryPeriod),
@@ -251,9 +256,6 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
 
-	disp.sqCheck.L.Lock()
-	defer disp.sqCheck.L.Unlock()
-
 	sbArgs, err := disp.sbatchArgs(container)
 	if err != nil {
 		return err
@@ -274,8 +276,21 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		if err := disp.submit(ctr, disp.CrunchRunCommand); err != nil {
 			var text string
-			if err == dispatchcloud.ErrConstraintsNotSatisfiable {
-				text = fmt.Sprintf("cannot run container %s: %s", ctr.UUID, err)
+			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
+				var logBuf bytes.Buffer
+				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
+				if len(err.AvailableTypes) == 0 {
+					fmt.Fprint(&logBuf, "No instance types are configured.\n")
+				} else {
+					fmt.Fprint(&logBuf, "Available instance types:\n")
+					for _, t := range err.AvailableTypes {
+						fmt.Fprintf(&logBuf,
+							"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
+							t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
+						)
+					}
+				}
+				text = logBuf.String()
 				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
 			} else {
 				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
@@ -341,10 +356,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	}
 }
 func (disp *Dispatcher) scancel(ctr arvados.Container) {
-	disp.sqCheck.L.Lock()
 	err := disp.slurm.Cancel(ctr.UUID)
-	disp.sqCheck.L.Unlock()
-
 	if err != nil {
 		log.Printf("scancel: %s", err)
 		time.Sleep(time.Second)

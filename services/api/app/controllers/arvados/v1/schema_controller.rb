@@ -33,6 +33,8 @@ class Arvados::V1::SchemaController < ApplicationController
         version: "v1",
         revision: "20131114",
         source_version: AppVersion.hash,
+        sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
+        packageVersion: AppVersion.package_version,
         generatedAt: db_current_time.iso8601,
         title: "Arvados API",
         description: "The API to interact with Arvados.",

@@ -28,11 +28,13 @@ class ContainerRequest < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
-  before_validation :validate_scheduling_parameters
+  before_validation :set_default_preemptible_scheduling_parameter
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validate :validate_datatypes
+  validate :validate_scheduling_parameters
   validate :validate_state_change
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
@@ -83,10 +85,10 @@ class ContainerRequest < ArvadosModel
     Committed => [Final]
   }
 
-  AttrsPermittedAlways = [:owner_uuid, :state, :name, :description]
+  AttrsPermittedAlways = [:owner_uuid, :state, :name, :description, :properties]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority, :properties,
+  :output_path, :priority,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
@@ -197,6 +199,18 @@ class ContainerRequest < ArvadosModel
     end
   end
 
+  def set_default_preemptible_scheduling_parameter
+    c = get_requesting_container()
+    if self.state == Committed
+      # If preemptible instances (eg: AWS Spot Instances) are allowed,
+      # ask them on child containers by default.
+      if Rails.configuration.preemptible_instances and !c.nil? and
+        self.scheduling_parameters['preemptible'].nil?
+          self.scheduling_parameters['preemptible'] = true
+      end
+    end
+  end
+
   def validate_runtime_constraints
     case self.state
     when Committed
@@ -215,6 +229,43 @@ class ContainerRequest < ArvadosModel
     end
   end
 
+  def validate_datatypes
+    command.each do |c|
+      if !c.is_a? String
+        errors.add(:command, "must be an array of strings but has entry #{c.class}")
+      end
+    end
+    environment.each do |k,v|
+      if !k.is_a?(String) || !v.is_a?(String)
+        errors.add(:environment, "must be an map of String to String but has entry #{k.class} to #{v.class}")
+      end
+    end
+    [:mounts, :secret_mounts].each do |m|
+      self[m].each do |k, v|
+        if !k.is_a?(String) || !v.is_a?(Hash)
+          errors.add(m, "must be an map of String to Hash but is has entry #{k.class} to #{v.class}")
+        end
+        if v["kind"].nil?
+          errors.add(m, "each item must have a 'kind' field")
+        end
+        [[String, ["kind", "portable_data_hash", "uuid", "device_type",
+                   "path", "commit", "repository_name", "git_url"]],
+         [Integer, ["capacity"]]].each do |t, fields|
+          fields.each do |f|
+            if !v[f].nil? && !v[f].is_a?(t)
+              errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
+            end
+          end
+        end
+        ["writable", "exclude_from_output"].each do |f|
+          if !v[f].nil? && !v[f].is_a?(TrueClass) && !v[f].is_a?(FalseClass)
+            errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
+          end
+        end
+      end
+    end
+  end
+
   def validate_scheduling_parameters
     if self.state == Committed
       if scheduling_parameters.include? 'partitions' and
@@ -222,6 +273,14 @@ class ContainerRequest < ArvadosModel
           scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"
+      end
+      if !Rails.configuration.preemptible_instances and scheduling_parameters['preemptible']
+        errors.add :scheduling_parameters, "preemptible instances are not allowed"
+      end
+      if scheduling_parameters.include? 'max_run_time' and
+        (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
+          scheduling_parameters['max_run_time'] < 0)
+          errors.add :scheduling_parameters, "max_run_time must be positive integer"
       end
     end
   end
@@ -297,10 +356,18 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    return if !current_api_client_authorization
-    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
+    c = get_requesting_container()
+    if !c.nil?
       self.requesting_container_uuid = c.uuid
       self.priority = c.priority>0 ? 1 : 0
+    end
+  end
+
+  def get_requesting_container
+    return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
+    return if !current_api_client_authorization
+    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
+      return c
     end
   end
 end

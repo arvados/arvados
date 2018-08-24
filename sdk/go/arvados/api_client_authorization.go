@@ -14,3 +14,7 @@ type APIClientAuthorization struct {
 type APIClientAuthorizationList struct {
 	Items []APIClientAuthorization `json:"items"`
 }
+
+func (aca APIClientAuthorization) TokenV2() string {
+	return "v2/" + aca.UUID + "/" + aca.APIToken
+}

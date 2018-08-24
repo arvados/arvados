@@ -130,7 +130,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @RetryMixin._retry()
     def create_cloud_node(self):
         self._logger.info("Sending create_node request for node size %s.",
-                          self.cloud_size.name)
+                          self.cloud_size.id)
         try:
             self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                       self.arvados_node)
@@ -243,12 +243,15 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return super(ComputeNodeShutdownActor, self)._finished()
 
     def cancel_shutdown(self, reason, **kwargs):
+        if not self.cancellable:
+            return False
         if self.cancel_reason is not None:
             # already cancelled
-            return
+            return False
         self.cancel_reason = reason
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
+        return True
 
     def _cancel_on_exception(orig_func):
         @functools.wraps(orig_func)
@@ -282,6 +285,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._logger.info("Starting shutdown")
         arv_node = self._arvados_node()
         if self._cloud.destroy_node(self.cloud_node):
+            self.cancellable = False
             self._logger.info("Shutdown success")
             if arv_node:
                 self._later.clean_arvados_node(arv_node)
@@ -335,7 +339,7 @@ class ComputeNodeMonitorActor(config.actor_class):
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
                  timer_actor, update_actor, cloud_client,
                  arvados_node=None, poll_stale_after=600, node_stale_after=3600,
-                 boot_fail_after=1800
+                 boot_fail_after=1800, consecutive_idle_count=0
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.tell_proxy()
@@ -350,6 +354,8 @@ class ComputeNodeMonitorActor(config.actor_class):
         self.boot_fail_after = boot_fail_after
         self.subscribers = set()
         self.arvados_node = None
+        self.consecutive_idle_count = consecutive_idle_count
+        self.consecutive_idle = 0
         self._later.update_arvados_node(arvados_node)
         self.last_shutdown_opening = None
         self._later.consider_shutdown()
@@ -432,6 +438,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         reason for the decision.
         """
 
+        # If this node's size is invalid (because it has a stale arvados_node_size
+        # tag), return True so that it's properly shut down.
+        if self.cloud_node.size.id == 'invalid':
+            return (True, "node's size tag '%s' not recognizable" % (self.cloud_node.extra['arvados_node_size'],))
+
         # Collect states and then consult state transition table whether we
         # should shut down.  Possible states are:
         # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
@@ -451,8 +462,14 @@ class ComputeNodeMonitorActor(config.actor_class):
         else:
             boot_grace = "boot exceeded"
 
-        # API server side not implemented yet.
-        idle_grace = 'idle exceeded'
+        if crunch_worker_state == "idle":
+            # Must report as "idle" at least "consecutive_idle_count" times
+            if self.consecutive_idle < self.consecutive_idle_count:
+                idle_grace = 'idle wait'
+            else:
+                idle_grace = 'idle exceeded'
+        else:
+            idle_grace = 'not idle'
 
         node_state = (crunch_worker_state, window, boot_grace, idle_grace)
         t = transitions[node_state]
@@ -512,4 +529,8 @@ class ComputeNodeMonitorActor(config.actor_class):
         if arvados_node is not None:
             self.arvados_node = arvados_node
             self._update.sync_node(self.cloud_node, self.arvados_node)
+            if self.arvados_node['crunch_worker_state'] == "idle":
+                self.consecutive_idle += 1
+            else:
+                self.consecutive_idle = 0
             self._later.consider_shutdown()

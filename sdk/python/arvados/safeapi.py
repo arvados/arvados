@@ -26,6 +26,12 @@ class ThreadSafeApiCache(object):
         self.apiconfig = copy.copy(apiconfig)
         self.api_params = api_params
         self.local = threading.local()
+
+        # Initialize an API object for this thread before creating
+        # KeepClient, this will report if ARVADOS_API_HOST or
+        # ARVADOS_API_TOKEN are missing.
+        self.localapi()
+
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
     def localapi(self):

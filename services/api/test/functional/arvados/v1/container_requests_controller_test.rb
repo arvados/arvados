@@ -32,7 +32,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
 
     post :create, {
            container_request: minimal_cr.merge(
-             secret_mounts: {'/foo' => {'type' => 'json', 'content' => 'bar'}}),
+             secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}}),
          }
     assert_response :success
 
@@ -50,7 +50,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     patch :update, {
             id: req.uuid,
             container_request: {
-              secret_mounts: {'/foo' => {'type' => 'json', 'content' => 'bar'}},
+              secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}},
             },
           }
     assert_response :success
@@ -65,7 +65,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   test "update without deleting secret_mounts" do
     authorize_with :active
     req = container_requests(:uncommitted)
-    req.update_attributes!(secret_mounts: {'/foo' => {'type' => 'json', 'content' => 'bar'}})
+    req.update_attributes!(secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}})
 
     patch :update, {
             id: req.uuid,

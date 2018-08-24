@@ -56,9 +56,32 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver.create_node(testutil.MockSize(1), arv_node)
         create_method = self.driver_mock().create_node
         self.assertTrue(create_method.called)
+        self.assertIn(
+            ('test', 'testvalue'),
+            create_method.call_args[1].get('ex_metadata', {'arg': 'missing'}).items()
+        )
+
+    def test_create_includes_arvados_node_size(self):
+        arv_node = testutil.arvados_node_mock()
+        size = testutil.MockSize(1)
+        driver = self.new_driver()
+        driver.create_node(size, arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertTrue(create_method.called)
+        self.assertIn(
+            ('arvados_node_size', size.id),
+            create_method.call_args[1].get('ex_metadata', {'arg': 'missing'}).items()
+        )
+
+    def test_create_preemptible_instance(self):
+        arv_node = testutil.arvados_node_mock()
+        driver = self.new_driver()
+        driver.create_node(testutil.MockSize(1, preemptible=True), arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertTrue(create_method.called)
         self.assertEqual(
-            {'test':'testvalue'},
-            create_method.call_args[1].get('ex_metadata', {'arg': 'missing'})
+            True,
+            create_method.call_args[1].get('ex_spot_market', 'arg missing')
         )
 
     def test_hostname_from_arvados_node(self):
