@@ -1823,10 +1823,10 @@ CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON public.collectio
 
 
 --
--- Name: index_collections_on_portable_data_hash; Type: INDEX; Schema: public; Owner: -
+-- Name: index_collections_on_portable_data_hash_and_trash_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_collections_on_portable_data_hash ON public.collections USING btree (portable_data_hash);
+CREATE INDEX index_collections_on_portable_data_hash_and_trash_at ON public.collections USING btree (portable_data_hash, trash_at);
 
 
 --
@@ -1925,6 +1925,13 @@ CREATE INDEX index_containers_on_modified_at_uuid ON public.containers USING btr
 --
 
 CREATE INDEX index_containers_on_owner_uuid ON public.containers USING btree (owner_uuid);
+
+
+--
+-- Name: index_containers_on_queued_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_queued_state ON public.containers USING btree (state, ((priority > 0)));
 
 
 --
@@ -3136,4 +3143,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180608123145');
 INSERT INTO schema_migrations (version) VALUES ('20180806133039');
 
 INSERT INTO schema_migrations (version) VALUES ('20180820132617');
+
+INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 
