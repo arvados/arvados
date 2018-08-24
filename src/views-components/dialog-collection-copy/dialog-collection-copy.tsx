@@ -7,7 +7,7 @@ import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
-import { COPY_NAME_VALIDATION, COPY_PROJECT_VALIDATION } from '~/validators/validators';
+import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
 import { CollectionCopyFormDialogData } from "~/store/collections/collection-copy-actions";
 
@@ -30,5 +30,5 @@ const DialogCopyFields = () => <span>
     <Field
         name="ownerUuid"
         component={ProjectTreePickerField}
-        validate={COPY_PROJECT_VALIDATION} />
+        validate={COPY_FILE_VALIDATION} />
 </span>;
