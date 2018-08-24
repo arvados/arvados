@@ -228,13 +228,13 @@ class Container < ArvadosModel
 
   def self.find_reusable(attrs)
     log_reuse_info { "starting with #{Container.all.count} container records in database" }
-    candidates = Container.where_serialized(:command, attrs[:command])
+    candidates = Container.where_serialized(:command, attrs[:command], md5: true)
     log_reuse_info(candidates) { "after filtering on command #{attrs[:command].inspect}" }
 
     candidates = candidates.where('cwd = ?', attrs[:cwd])
     log_reuse_info(candidates) { "after filtering on cwd #{attrs[:cwd].inspect}" }
 
-    candidates = candidates.where_serialized(:environment, attrs[:environment])
+    candidates = candidates.where_serialized(:environment, attrs[:environment], md5: true)
     log_reuse_info(candidates) { "after filtering on environment #{attrs[:environment].inspect}" }
 
     candidates = candidates.where('output_path = ?', attrs[:output_path])
@@ -244,13 +244,14 @@ class Container < ArvadosModel
     candidates = candidates.where('container_image = ?', image)
     log_reuse_info(candidates) { "after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
 
-    candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
+    candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]), md5: true)
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
-    candidates = candidates.where('secret_mounts_md5 = ?', Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts]))))
-    log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
+    secret_mounts_md5 = Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts])))
+    candidates = candidates.where('secret_mounts_md5 = ?', secret_mounts_md5)
+    log_reuse_info(candidates) { "after filtering on secret_mounts_md5 #{secret_mounts_md5.inspect}" }
 
-    candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
+    candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]), md5: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }
