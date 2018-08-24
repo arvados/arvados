@@ -25,7 +25,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     }
 });
 
-interface BreadcrumbsProps {
+export interface BreadcrumbsProps {
     items: Breadcrumb[];
     onClick: (breadcrumb: Breadcrumb) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;

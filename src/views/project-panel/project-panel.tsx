@@ -31,6 +31,7 @@ import { collectionCreateActions } from '~/store/collections/creator/collection-
 import { navigateToResource } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
+import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -181,6 +182,7 @@ export const ProjectPanel = withStyles(styles)(
                             New project
                         </Button>
                     </div>
+                    <Breadcrumbs />
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}

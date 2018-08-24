@@ -41,7 +41,7 @@ import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-p
 import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
-import { navigateToResource } from '../../store/navigation/navigation-action';
+import { navigateToResource } from '~/store/navigation/navigation-action';
 
 const APP_BAR_HEIGHT = 100;
 
