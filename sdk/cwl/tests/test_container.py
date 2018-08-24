@@ -4,6 +4,7 @@
 
 import arvados_cwl
 from arvados_cwl.arvdocker import arv_docker_clear_cache
+import arvados.config
 import logging
 import mock
 import unittest
@@ -19,6 +20,32 @@ from .matcher import JsonDiffMatcher
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
+
+class CollectionMock(object):
+    def __init__(self, vwdmock, *args, **kwargs):
+        self.vwdmock = vwdmock
+        self.count = 0
+
+    def open(self, *args, **kwargs):
+        self.count += 1
+        return self.vwdmock.open(*args, **kwargs)
+
+    def copy(self, *args, **kwargs):
+        self.count += 1
+        self.vwdmock.copy(*args, **kwargs)
+
+    def save_new(self, *args, **kwargs):
+        pass
+
+    def __len__(self):
+        return self.count
+
+    def portable_data_hash(self):
+        if self.count == 0:
+            return arvados.config.EMPTY_BLOCK_LOCATOR
+        else:
+            return "99999999999999999999999999999996+99"
 
 
 class TestContainer(unittest.TestCase):
@@ -215,8 +242,7 @@ class TestContainer(unittest.TestCase):
         runner.fs_access.get_collection.side_effect = get_collection_mock
 
         vwdmock = mock.MagicMock()
-        collection_mock.return_value = vwdmock
-        vwdmock.portable_data_hash.return_value = "99999999999999999999999999999996+99"
+        collection_mock.side_effect = lambda *args, **kwargs: CollectionMock(vwdmock, *args, **kwargs)
 
         tool = cmap({
             "inputs": [],

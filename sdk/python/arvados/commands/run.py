@@ -248,10 +248,19 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
                         logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
                     except arvados.errors.ApiError as ae:
                         tries -= 1
+            if pdh is None:
+                # Something weird going on here, probably a collection
+                # with a conflicting name but wrong PDH.  We won't
+                # able to reuse it but we still need to save our
+                # collection, so so save it with unique name.
+                logger.info("Name conflict on '%s', existing collection has an unexpected portable data hash", name_pdh)
+                collection.save_new(name=name_pdh, owner_uuid=project, ensure_unique_name=True)
+                pdh = collection.portable_data_hash()
+                logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
         else:
             # empty collection
             pdh = collection.portable_data_hash()
-            assert (pdh == config.EMPTY_BLOCK_LOCATOR), "Empty collection portable_data_hash did not have expected locator"
+            assert (pdh == config.EMPTY_BLOCK_LOCATOR), "Empty collection portable_data_hash did not have expected locator, was %s" % pdh
             logger.info("Using empty collection %s", pdh)
 
     for c in files:
