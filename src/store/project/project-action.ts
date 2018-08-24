@@ -13,10 +13,6 @@ import { projectPanelActions } from "~/store/project-panel/project-panel-action"
 import { updateDetails } from "~/store/details-panel/details-panel-action";
 
 export const projectActions = unionize({
-    OPEN_PROJECT_CREATOR: ofType<{ ownerUuid: string }>(),
-    CLOSE_PROJECT_CREATOR: ofType<{}>(),
-    CREATE_PROJECT: ofType<Partial<ProjectResource>>(),
-    CREATE_PROJECT_SUCCESS: ofType<ProjectResource>(),
     OPEN_PROJECT_UPDATER: ofType<{ uuid: string}>(),
     CLOSE_PROJECT_UPDATER: ofType<{}>(),
     UPDATE_PROJECT_SUCCESS: ofType<ProjectResource>(),
@@ -45,16 +41,6 @@ export const getProjectList = (parentUuid: string = '') =>
             dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
             return projects;
         });
-    };
-
-export const createProject = (project: Partial<ProjectResource>) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { ownerUuid } = getState().projects.creator;
-        const projectData = { ownerUuid, ...project };
-        dispatch(projectActions.CREATE_PROJECT(projectData));
-        return services.projectService
-            .create(projectData)
-            .then(project => dispatch(projectActions.CREATE_PROJECT_SUCCESS(project)));
     };
 
 export const updateProject = (project: Partial<ProjectResource>) =>

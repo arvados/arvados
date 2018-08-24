@@ -8,7 +8,7 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { collectionUploaderActions, UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { CollectionNameField, CollectionDescriptionField } from '~/views-components/collection-form-fields/collection-form-fields';
+import { CollectionNameField, CollectionDescriptionField } from '~/views-components/form-fields/collection-form-fields';
 import { FileUpload } from '~/components/file-upload/file-upload';
 
 // interface DialogCollectionDataProps {

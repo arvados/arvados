@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit } from "redux-form";
+import { reset, startSubmit, stopSubmit, initialize } from 'redux-form';
 import { RootState } from '~/store/store';
 import { uploadCollectionFiles } from '~/store/collections/uploader/collection-uploader-actions';
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
@@ -14,6 +14,7 @@ import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
 
 export interface CollectionCreateFormDialogData {
+    ownerUuid: string;
     name: string;
     description: string;
     files: File[];
@@ -21,9 +22,10 @@ export interface CollectionCreateFormDialogData {
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
-export const openCollectionCreateDialog = () =>
+export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch) => {
-        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: {} }));
+        dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: { ownerUuid } }));
     };
 
 export const addCollection = (data: CollectionCreateFormDialogData) =>

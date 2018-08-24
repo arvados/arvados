@@ -11,15 +11,8 @@ import { ProjectResource } from "~/models/project";
 export type ProjectState = {
     items: Array<TreeItem<ProjectResource>>,
     currentItemId: string,
-    creator: ProjectCreator,
     updater: ProjectUpdater
 };
-
-interface ProjectCreator {
-    opened: boolean;
-    ownerUuid: string;
-    error?: string;
-}
 
 interface ProjectUpdater {
     opened: boolean;
@@ -98,14 +91,6 @@ function updateProjectTree(tree: Array<TreeItem<ProjectResource>>, projects: Pro
     return items;
 }
 
-const updateCreator = (state: ProjectState, creator: Partial<ProjectCreator>) => ({
-    ...state,
-    creator: {
-        ...state.creator,
-        ...creator
-    }
-});
-
 const updateProject = (state: ProjectState, updater?: Partial<ProjectUpdater>) => ({
     ...state,
     updater: {
@@ -117,10 +102,6 @@ const updateProject = (state: ProjectState, updater?: Partial<ProjectUpdater>) =
 const initialState: ProjectState = {
     items: [],
     currentItemId: "",
-    creator: {
-        opened: false,
-        ownerUuid: ""
-    },
     updater: {
         opened: false,
         uuid: ''
@@ -130,10 +111,6 @@ const initialState: ProjectState = {
 
 export const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
     return projectActions.match(action, {
-        OPEN_PROJECT_CREATOR: ({ ownerUuid }) => updateCreator(state, { ownerUuid, opened: true }),
-        CLOSE_PROJECT_CREATOR: () => updateCreator(state, { opened: false }),
-        CREATE_PROJECT: () => updateCreator(state, { error: undefined }),
-        CREATE_PROJECT_SUCCESS: () => updateCreator(state, { opened: false, ownerUuid: "" }),
         OPEN_PROJECT_UPDATER: ({ uuid }) => updateProject(state, { uuid, opened: true }),
         CLOSE_PROJECT_UPDATER: () => updateProject(state, { opened: false, uuid: "" }),
         UPDATE_PROJECT_SUCCESS: () => updateProject(state, { opened: false, uuid: "" }),
