@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -25,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/Sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -138,7 +138,11 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	}
 
 	s.disp.slurm = &s.slurm
-	s.disp.sqCheck = &SqueueChecker{Period: 500 * time.Millisecond, Slurm: s.disp.slurm}
+	s.disp.sqCheck = &SqueueChecker{
+		Logger: logrus.StandardLogger(),
+		Period: 500 * time.Millisecond,
+		Slurm:  s.disp.slurm,
+	}
 
 	err = s.disp.Dispatcher.Run(ctx)
 	<-doneRun
@@ -264,8 +268,8 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	}
 
 	buf := bytes.NewBuffer(nil)
-	log.SetOutput(io.MultiWriter(buf, os.Stderr))
-	defer log.SetOutput(os.Stderr)
+	logrus.SetOutput(io.MultiWriter(buf, os.Stderr))
+	defer logrus.SetOutput(os.Stderr)
 
 	s.disp.CrunchRunCommand = []string{crunchCmd}
 

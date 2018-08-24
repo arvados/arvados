@@ -23,8 +23,14 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+type logger interface {
+	dispatch.Logger
+	Fatalf(string, ...interface{})
+}
 
 const initialNiceValue int64 = 10000
 
@@ -35,6 +41,7 @@ var (
 
 type Dispatcher struct {
 	*dispatch.Dispatcher
+	logger  logrus.FieldLogger
 	cluster *arvados.Cluster
 	sqCheck *SqueueChecker
 	slurm   Slurm
@@ -63,10 +70,17 @@ type Dispatcher struct {
 }
 
 func main() {
-	disp := &Dispatcher{}
+	logger := logrus.StandardLogger()
+	if os.Getenv("DEBUG") != "" {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+	logger.Formatter = &logrus.JSONFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
+	}
+	disp := &Dispatcher{logger: logger}
 	err := disp.Run(os.Args[0], os.Args[1:])
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatalf("%s", err)
 	}
 }
 
@@ -104,7 +118,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		return nil
 	}
 
-	log.Printf("crunch-dispatch-slurm %s started", version)
+	disp.logger.Printf("crunch-dispatch-slurm %s started", version)
 
 	err := disp.readConfig(*configPath)
 	if err != nil {
@@ -132,7 +146,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(disp.Client.KeepServiceURIs, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
-		log.Printf("warning: Client credentials missing from config, so falling back on environment variables (deprecated).")
+		disp.logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}
 
 	if *dumpConfig {
@@ -141,7 +155,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 	siteConfig, err := arvados.GetConfig(arvados.DefaultConfigFile)
 	if os.IsNotExist(err) {
-		log.Printf("warning: no cluster config (%s), proceeding with no node types defined", err)
+		disp.logger.Warnf("no cluster config (%s), proceeding with no node types defined", err)
 	} else if err != nil {
 		return fmt.Errorf("error loading config: %s", err)
 	} else if disp.cluster, err = siteConfig.GetCluster(""); err != nil {
@@ -153,20 +167,25 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 // setup() initializes private fields after configure().
 func (disp *Dispatcher) setup() {
+	if disp.logger == nil {
+		disp.logger = logrus.StandardLogger()
+	}
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatalf("Error making Arvados client: %v", err)
+		disp.logger.Fatalf("Error making Arvados client: %v", err)
 	}
 	arv.Retries = 25
 
 	disp.slurm = &slurmCLI{}
 	disp.sqCheck = &SqueueChecker{
+		Logger:         disp.logger,
 		Period:         time.Duration(disp.PollPeriod),
 		PrioritySpread: disp.PrioritySpread,
 		Slurm:          disp.slurm,
 	}
 	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
+		Logger:         disp.logger,
 		BatchSize:      disp.BatchSize,
 		RunContainer:   disp.runContainer,
 		PollPeriod:     time.Duration(disp.PollPeriod),
@@ -325,7 +344,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		case <-ctx.Done():
 			// Disappeared from squeue
 			if err := disp.Arv.Get("containers", ctr.UUID, nil, &ctr); err != nil {
-				log.Printf("Error getting final container state for %s: %s", ctr.UUID, err)
+				log.Printf("error getting final container state for %s: %s", ctr.UUID, err)
 			}
 			switch ctr.State {
 			case dispatch.Running:
