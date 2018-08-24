@@ -9,7 +9,7 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
 import { COPY_NAME_VALIDATION, COPY_PROJECT_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
-import { CollectionCopyFormDialogData } from "~/store/collections/copy/collection-copy-actions";
+import { CollectionCopyFormDialogData } from "~/store/collections/collection-copy-actions";
 
 type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CollectionCopyFormDialogData>;
 
