@@ -8,6 +8,8 @@ import { User } from "~/models/user";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { AxiosInstance } from "axios";
+import { initSidePanelTree } from '../side-panel-tree/side-panel-tree-actions';
+import { updateResources } from '../resources/resources-actions';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -17,9 +19,9 @@ export const authActions = unionize({
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>()
 }, {
-    tag: 'type',
-    value: 'payload'
-});
+        tag: 'type',
+        value: 'payload'
+    });
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {
@@ -34,16 +36,17 @@ function removeAuthorizationHeader(client: AxiosInstance) {
     delete client.defaults.headers.common.Authorization;
 }
 
-export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const user = services.authService.getUser();
-    const token = services.authService.getApiToken();
-    if (token) {
-        setAuthorizationHeader(services, token);
-    }
-    if (token && user) {
-        dispatch(authActions.INIT({ user, token }));
-    }
-};
+export const initAuth = () =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const user = services.authService.getUser();
+        const token = services.authService.getApiToken();
+        if (token) {
+            setAuthorizationHeader(services, token);
+        }
+        if (token && user) {
+            dispatch(authActions.INIT({ user, token }));
+        }
+    };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     services.authService.saveApiToken(token);

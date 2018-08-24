@@ -49,7 +49,7 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const columns: DataColumns<string, FavoritePanelFilter> = [
+export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
@@ -147,7 +147,6 @@ interface FavoritePanelActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
-    onMount: () => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
@@ -166,10 +165,7 @@ const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateToResource(uuid));
-    },
-    onMount: () => {
-        dispatch(loadFavoritePanel());
-    },
+    }
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
@@ -181,16 +177,11 @@ export const FavoritePanel = withStyles(styles)(
             render() {
                 return <DataExplorer
                     id={FAVORITE_PANEL_ID}
-                    columns={columns}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
                     defaultIcon={FavoriteIcon}
                     defaultMessages={['Your favorites list is empty.']} />;
-            }
-
-            componentDidMount() {
-                this.props.onMount();
             }
         }
     )

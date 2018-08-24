@@ -40,7 +40,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
             });
     };
 
-export const checkPresenceInFavorites = (resourceUuids: string[]) =>
+export const updateFavorites = (resourceUuids: string[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
@@ -50,4 +50,3 @@ export const checkPresenceInFavorites = (resourceUuids: string[]) =>
                 dispatch(favoritesActions.UPDATE_FAVORITES(results));
             });
     };
-

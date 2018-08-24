@@ -14,23 +14,18 @@ import { DataColumns } from "~/components/data-table/data-table";
 
 interface Props {
     id: string;
-    columns: DataColumns<any>;
     onRowClick: (item: any) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
 }
 
-const mapStateToProps = (state: RootState, { id, columns }: Props) => {
-    const s = getDataExplorer(state.dataExplorer, id);
-    if (s.columns.length === 0) {
-        s.columns = columns;
-    }
-    return s;
+const mapStateToProps = (state: RootState, { id }: Props) => {
+    return getDataExplorer(state.dataExplorer, id);
 };
 
 const mapDispatchToProps = () => {
-    return (dispatch: Dispatch, { id, columns, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
+    return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
         onSetColumns: (columns: DataColumns<any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
         },

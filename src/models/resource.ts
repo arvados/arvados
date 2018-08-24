@@ -30,16 +30,22 @@ export enum ResourceObjectType {
     COLLECTION = '4zz18'
 }
 
+export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
+export const RESOURCE_UUID_REGEX = new RegExp(RESOURCE_UUID_PATTERN);
+
+export const isResourceUuid = (uuid: string) =>
+    RESOURCE_UUID_REGEX.test(uuid);
+
 export const extractUuidObjectType = (uuid: string) => {
-    const match = /(.{5})-(.{5})-(.{15})/.exec(uuid);
+    const match = RESOURCE_UUID_REGEX.exec(uuid);
     return match
-        ? match[2]
+        ? match[0].split('-')[1]
         : undefined;
 };
 
 export const extractUuidKind = (uuid: string = '') => {
     const objectType = extractUuidObjectType(uuid);
-    switch(objectType){
+    switch (objectType) {
         case ResourceObjectType.USER:
             return ResourceKind.USER;
         case ResourceObjectType.GROUP:

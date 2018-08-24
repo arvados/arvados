@@ -21,7 +21,6 @@ import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
-import { loadCollection } from '../../store/collection-panel/collection-panel-action';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
@@ -160,13 +159,6 @@ export const CollectionPanel = withStyles(styles)(
                     message: "Uuid has been copied",
                     hideDuration: 2000
                 }));
-            }
-
-            componentDidMount() {
-                const { match, item } = this.props;
-                if (!item && match.params.id) {
-                    this.props.dispatch<any>(loadCollection(match.params.id));
-                }
             }
 
         }

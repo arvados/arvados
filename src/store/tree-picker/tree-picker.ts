@@ -4,6 +4,7 @@
 
 import { Tree } from "~/models/tree";
 import { TreeItemStatus } from "~/components/tree/tree";
+import { RootState } from '~/store/store';
 
 export type TreePicker = { [key: string]: Tree<TreePickerNode> };
 
@@ -21,3 +22,5 @@ export const createTreePickerNode = (data: { nodeId: string, value: any }) => ({
     collapsed: true,
     status: TreeItemStatus.INITIAL
 });
+
+export const getTreePicker = (id: string) => (state: TreePicker): Tree<TreePickerNode> | undefined => state[id];

@@ -111,6 +111,7 @@ export class CommonResourceService<T extends Resource> {
                 .put<T>(this.resourceType + uuid, data && CommonResourceService.mapKeys(_.snakeCase)(data)));
 
     }
+
 }
 
 export const getCommonResourceServiceError = (errorResponse: any) => {

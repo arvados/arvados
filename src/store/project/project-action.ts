@@ -7,7 +7,7 @@ import { ProjectResource } from "~/models/project";
 import { Dispatch } from "redux";
 import { FilterBuilder } from "~/common/api/filter-builder";
 import { RootState } from "../store";
-import { checkPresenceInFavorites } from "../favorites/favorites-actions";
+import { updateFavorites } from "../favorites/favorites-actions";
 import { ServiceRepository } from "~/services/services";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { resourcesActions } from "~/store/resources/resources-actions";
@@ -40,7 +40,7 @@ export const getProjectList = (parentUuid: string = '') =>
                 .getFilters()
         }).then(({ items: projects }) => {
             dispatch(projectActions.PROJECTS_SUCCESS({ projects, parentItemId: parentUuid }));
-            dispatch<any>(checkPresenceInFavorites(projects.map(project => project.uuid)));
+            dispatch<any>(updateFavorites(projects.map(project => project.uuid)));
             return projects;
         });
     };

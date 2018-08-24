@@ -29,7 +29,7 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 
-export const loadCollection = (uuid: string) =>
+export const loadCollectionPanel = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
@@ -37,6 +37,7 @@ export const loadCollection = (uuid: string) =>
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         dispatch<any>(loadCollectionFiles(collection.uuid));
         dispatch<any>(loadCollectionTags(collection.uuid));
+        return collection;
     };
 
 export const loadCollectionTags = (uuid: string) =>

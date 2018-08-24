@@ -9,6 +9,7 @@ import { getUserDetails, saveApiToken } from "~/store/auth/auth-action";
 import { getProjectList } from "~/store/project/project-action";
 import { getUrlParameter } from "~/common/url";
 import { AuthService } from "~/services/auth-service/auth-service";
+import { loadWorkbench } from '../../store/navigation/navigation-action';
 
 interface ApiTokenProps {
     authService: AuthService;
@@ -22,7 +23,7 @@ export const ApiToken = connect()(
             this.props.dispatch(saveApiToken(apiToken));
             this.props.dispatch<any>(getUserDetails()).then(() => {
                 const rootUuid = this.props.authService.getRootUuid();
-                this.props.dispatch(getProjectList(rootUuid));
+                this.props.dispatch(loadWorkbench());
             });
         }
         render() {

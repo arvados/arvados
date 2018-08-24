@@ -16,7 +16,6 @@ import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
-import { restoreBranch, setProjectItem, ItemMode } from '~/store/navigation/navigation-action';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { ResourcesState, getResource } from '~/store/resources/resources';
@@ -30,6 +29,8 @@ import { reset } from 'redux-form';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
 import { navigateToResource } from '~/store/navigation/navigation-action';
+import { getProperty } from '~/store/properties/properties';
+import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -61,7 +62,7 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const columns: DataColumns<string, ProjectPanelFilter> = [
+export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
@@ -161,7 +162,10 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId, resources: state.resources }))(
+    connect((state: RootState) => ({
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+        resources: state.resources
+    }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
@@ -179,7 +183,6 @@ export const ProjectPanel = withStyles(styles)(
                     </div>
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
-                        columns={columns}
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
@@ -234,12 +237,6 @@ export const ProjectPanel = withStyles(styles)(
                 this.props.dispatch(loadDetailsPanel(uuid));
             }
 
-            async componentDidMount() {
-                if (this.props.match.params.id && this.props.currentItemId === '') {
-                    await this.props.dispatch<any>(restoreBranch(this.props.match.params.id));
-                    this.props.dispatch<any>(setProjectItem(this.props.match.params.id, ItemMode.BOTH));
-                }
-            }
         }
     )
 );

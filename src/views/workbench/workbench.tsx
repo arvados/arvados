@@ -14,14 +14,13 @@ import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import { TreeItem } from "~/components/tree/tree";
 import { getTreePath } from '~/store/project/project-reducer';
-import { ItemMode, setProjectItem } from "~/store/navigation/navigation-action";
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
 import { detailsPanelActions, loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { ProjectResource } from '~/models/project';
+import { ProjectResource, getProjectUrl } from '~/models/project';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
@@ -37,10 +36,12 @@ import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
 import { ProjectCopyDialog } from '~/views-components/project-copy-dialog/project-copy-dialog';
-import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
+import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
-import { NavigationPanel } from '~/views-components/navigation-panel/navigation-panel';
+import { SidePanel } from '~/views-components/side-panel/side-panel';
+import { Routes } from '~/routes/routes';
+import { navigateToResource } from '../../store/navigation/navigation-action';
 
 const APP_BAR_HEIGHT = 100;
 
@@ -165,6 +166,8 @@ export const Workbench = withStyles(styles)(
                     status: item.status
                 }));
 
+                const rootProjectUuid = this.props.authService.getUuid();
+
                 const { classes, user } = this.props;
                 return (
                     <div className={classes.root}>
@@ -177,14 +180,13 @@ export const Workbench = withStyles(styles)(
                                 buildInfo={this.props.buildInfo}
                                 {...this.mainAppBarActions} />
                         </div>
-                        {user && <NavigationPanel />}
+                        {user && <SidePanel />}
                         <main className={classes.contentWrapper}>
                             <div className={classes.content}>
                                 <Switch>
-                                    <Route path='/' exact render={() => <Redirect to={`/projects/${this.props.authService.getUuid()}`} />} />
-                                    <Route path="/projects/:id" component={ProjectPanel} />
-                                    <Route path="/favorites" component={FavoritePanel} />
-                                    <Route path="/collections/:id" component={CollectionPanel} />
+                                    <Route path={Routes.PROJECTS} component={ProjectPanel} />
+                                    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+                                    <Route path={Routes.FAVORITES} component={FavoritePanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
@@ -214,8 +216,7 @@ export const Workbench = withStyles(styles)(
 
             mainAppBarActions: MainAppBarActionProps = {
                 onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-                    this.props.dispatch(setProjectItem(itemId, ItemMode.BOTH));
-                    this.props.dispatch(loadDetailsPanel(itemId));
+                    this.props.dispatch(navigateToResource(itemId));
                 },
                 onSearch: searchText => {
                     this.setState({ searchText });
