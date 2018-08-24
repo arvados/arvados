@@ -20,17 +20,19 @@ debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
 }
 
-find_easy_install() {
-    for version_suffix in "$@"; do
-        if "easy_install$version_suffix" --version >/dev/null 2>&1; then
-            echo "easy_install$version_suffix"
+find_python_program() {
+    prog="$1"
+    shift
+    for prog in "$@"; do
+        if "$prog" --version >/dev/null 2>&1; then
+            echo "$prog"
             return 0
         fi
     done
     cat >&2 <<EOF
 $helpmessage
 
-Error: easy_install$1 (from Python setuptools module) not found
+Error: $prog (from Python setuptools module) not found
 
 EOF
     exit 1
@@ -264,7 +266,7 @@ test_package_presence() {
     # Get the list of packages from the repos
 
     if [[ "$FORMAT" == "deb" ]]; then
-      debian_distros="jessie precise stretch trusty wheezy xenial"
+      debian_distros="jessie precise stretch trusty wheezy xenial bionic"
 
       for D in ${debian_distros}; do
         if [ ${pkgname:0:3} = "lib" ]; then
@@ -391,7 +393,7 @@ fpm_build () {
           # Make sure we build with that for consistency.
           python=python2.7
           set -- "$@" --python-bin python2.7 \
-              --python-easyinstall "$EASY_INSTALL2" \
+              "${PYTHON_FPM_INSTALLER[@]}" \
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
               --prefix "$PYTHON2_PREFIX" \
               --python-install-lib "$PYTHON2_INSTALL_LIB" \
@@ -407,7 +409,7 @@ fpm_build () {
           PACKAGE_TYPE=python
           python=python3
           set -- "$@" --python-bin python3 \
-              --python-easyinstall "$EASY_INSTALL3" \
+              "${PYTHON3_FPM_INSTALLER[@]}" \
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
               --prefix "$PYTHON3_PREFIX" \
               --python-install-lib "$PYTHON3_INSTALL_LIB" \

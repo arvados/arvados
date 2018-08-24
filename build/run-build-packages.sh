@@ -104,19 +104,13 @@ PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 ## End Debian Python defaults.
 
 case "$TARGET" in
-    debian8)
+    debian*)
         FORMAT=deb
         ;;
-    debian9)
+    ubuntu*)
         FORMAT=deb
         ;;
-    ubuntu1404)
-        FORMAT=deb
-        ;;
-    ubuntu1604)
-        FORMAT=deb
-        ;;
-    centos7)
+    centos*)
         FORMAT=rpm
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
         PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
@@ -153,8 +147,13 @@ if [[ "$?" != 0 ]]; then
   exit 1
 fi
 
-EASY_INSTALL2=$(find_easy_install -$PYTHON2_VERSION "")
-EASY_INSTALL3=$(find_easy_install -$PYTHON3_VERSION 3)
+PYTHON2_FPM_INSTALLER=(--python-easyinstall "$(find_python_program easy_install-$PYTHON2_VERSION easy_install)")
+install3=$(find_python_program easy_install-$PYTHON3_VERSION easy_install3 pip-$PYTHON3_VERSION pip3)
+if [[ $install3 =~ easy_ ]]; then
+    PYTHON3_FPM_INSTALLER=(--python-easyinstall "$install3")
+else
+    PYTHON3_FPM_INSTALLER=(--python-pip "$install3")
+fi
 
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
 RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
