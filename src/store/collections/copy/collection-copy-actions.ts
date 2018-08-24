@@ -9,7 +9,7 @@ import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/common/api/common-resource-service';
-import { snackbarActions } from '../snackbar/snackbar-actions';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export const COLLECTION_COPY_DIALOG = 'projectCopy';

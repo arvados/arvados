@@ -5,11 +5,10 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { COLLECTION_COPY_DIALOG, CollectionCopyFormDialogData } from '~/store/collection-copy-dialog/collection-copy-dialog';
-import { CopyFormDialog } from "~/views-components/copy-dialog/copy-dialog";
-import { copyCollection } from '~/store/collection-copy-dialog/collection-copy-dialog';
+import { COLLECTION_COPY_DIALOG, CollectionCopyFormDialogData, copyCollection } from '~/store/collections/copy/collection-copy-actions';
+import { DialogCopy } from "~/views-components/dialog-copy/dialog-copy";
 
-export const CollectionCopyDialog = compose(
+export const CopyCollectionDialog = compose(
     withDialog(COLLECTION_COPY_DIALOG),
     reduxForm<CollectionCopyFormDialogData>({
         form: COLLECTION_COPY_DIALOG,
@@ -17,4 +16,4 @@ export const CollectionCopyDialog = compose(
             dispatch(copyCollection(data));
         }
     })
-)(CopyFormDialog);
+)(DialogCopy);
