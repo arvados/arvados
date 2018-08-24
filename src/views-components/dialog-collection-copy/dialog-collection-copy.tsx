@@ -13,15 +13,15 @@ import { CollectionCopyFormDialogData } from "~/store/collections/collection-cop
 
 type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CollectionCopyFormDialogData>;
 
-export const DialogCopy = (props: CopyFormDialogProps) =>
+export const DialogCollectionCopy = (props: CopyFormDialogProps) =>
     <FormDialog
         dialogTitle='Make a copy'
-        formFields={DialogCopyFields}
+        formFields={DialogCollectionCopyFields}
         submitLabel='Copy'
         {...props}
     />;
 
-const DialogCopyFields = () => <span>
+const DialogCollectionCopyFields = () => <span>
     <Field
         name='name'
         component={TextField}
