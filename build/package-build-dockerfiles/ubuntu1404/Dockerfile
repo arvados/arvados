@@ -11,12 +11,12 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip 
 
 # Install RVM
-RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler && \
-    /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
+    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install golang binary
 ADD generated/go1.10.1.linux-amd64.tar.gz /usr/local/
