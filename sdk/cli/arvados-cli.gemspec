@@ -36,7 +36,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'google-api-client', '~> 0.6', '>= 0.6.3', '<0.8.9'
   s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 5'
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
-  s.add_runtime_dependency 'trollop', '~> 2.0'
+  s.add_runtime_dependency 'optimist', '~> 3.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
   s.add_runtime_dependency 'oj', '~> 3.0'
   s.add_runtime_dependency 'curb', '~> 0.8'
