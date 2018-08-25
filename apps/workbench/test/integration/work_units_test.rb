@@ -93,7 +93,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
 
       assert_text 'created_at'
       if cancelable
-        assert_text 'priority: 1' if type.include?('container')
+        assert_text 'priority: 501' if type.include?('container')
         if type.include?('pipeline')
           assert_selector 'a', text: 'Pause'
           first('a,link', text: 'Pause').click
