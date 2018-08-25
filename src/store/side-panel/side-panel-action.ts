@@ -4,7 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { isSidePanelTreeCategory, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { navigateToFavorites, navigateToResource } from '../navigation/navigation-action';
+import { navigateToFavorites, navigateTo } from '../navigation/navigation-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 
 export const navigateFromSidePanel = (id: string) =>
@@ -12,7 +12,7 @@ export const navigateFromSidePanel = (id: string) =>
         if (isSidePanelTreeCategory(id)) {
             dispatch<any>(getSidePanelTreeCategoryAction(id));
         } else {
-            dispatch<any>(navigateToResource(id));
+            dispatch<any>(navigateTo(id));
         }
     };
 

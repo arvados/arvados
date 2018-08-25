@@ -4,13 +4,12 @@
 
 import { Tree } from "~/models/tree";
 import { TreeItemStatus } from "~/components/tree/tree";
-import { RootState } from '~/store/store';
 
 export type TreePicker = { [key: string]: Tree<TreePickerNode> };
 
-export interface TreePickerNode {
+export interface TreePickerNode<Value = any> {
     nodeId: string;
-    value: any;
+    value: Value;
     selected: boolean;
     collapsed: boolean;
     status: TreeItemStatus;
@@ -23,4 +22,4 @@ export const createTreePickerNode = (data: { nodeId: string, value: any }) => ({
     status: TreeItemStatus.INITIAL
 });
 
-export const getTreePicker = (id: string) => (state: TreePicker): Tree<TreePickerNode> | undefined => state[id];
+export const getTreePicker = <Value = {}>(id: string) => (state: TreePicker): Tree<TreePickerNode<Value>> | undefined => state[id];

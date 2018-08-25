@@ -22,7 +22,7 @@ import { Dispatch } from 'redux';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { loadDetailsPanel } from '../../store/details-panel/details-panel-action';
-import { navigateToResource } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -164,7 +164,7 @@ const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
         dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemDoubleClick: uuid => {
-        dispatch<any>(navigateToResource(uuid));
+        dispatch<any>(navigateTo(uuid));
     }
 });
 

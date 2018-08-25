@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { connect, DispatchProp } from "react-redux";
-import { Route, Switch, Redirect } from "react-router";
+import { Route, Switch } from "react-router";
 import { login, logout } from "~/store/auth/auth-action";
 import { User } from "~/models/user";
 import { RootState } from "~/store/store";
@@ -18,9 +18,9 @@ import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
-import { detailsPanelActions, loadDetailsPanel } from "~/store/details-panel/details-panel-action";
+import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { ProjectResource, getProjectUrl } from '~/models/project';
+import { ProjectResource } from '~/models/project';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
@@ -41,7 +41,9 @@ import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-p
 import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
-import { navigateToResource } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
+import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
+
 
 const APP_BAR_HEIGHT = 100;
 
@@ -173,7 +175,7 @@ export const Workbench = withStyles(styles)(
                     <div className={classes.root}>
                         <div className={classes.appBar}>
                             <MainAppBar
-                                breadcrumbs={breadcrumbs}
+                                breadcrumbs={Breadcrumbs}
                                 searchText={this.state.searchText}
                                 user={this.props.user}
                                 menuItems={this.state.menuItems}
@@ -216,7 +218,7 @@ export const Workbench = withStyles(styles)(
 
             mainAppBarActions: MainAppBarActionProps = {
                 onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-                    this.props.dispatch(navigateToResource(itemId));
+                    this.props.dispatch(navigateTo(itemId));
                 },
                 onSearch: searchText => {
                     this.setState({ searchText });

@@ -23,7 +23,7 @@ export interface MainAppBarMenuItems {
 interface MainAppBarDataProps {
     searchText: string;
     searchDebounce?: number;
-    breadcrumbs: Breadcrumb[];
+    breadcrumbs: React.ComponentType<any>;
     user?: User;
     menuItems: MainAppBarMenuItems;
     buildInfo: string;
@@ -68,15 +68,10 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
             </Grid>
         </Toolbar>
         <Toolbar >
-            {
-                props.user && <Breadcrumbs
-                    items={props.breadcrumbs}
-                    onClick={props.onBreadcrumbClick}
-                    onContextMenu={props.onContextMenu} />
-            }
-            { props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                    <DetailsIcon />
-                </IconButton>
+            {props.user && <props.breadcrumbs />}
+            {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
+                <DetailsIcon />
+            </IconButton>
             }
         </Toolbar>
     </AppBar>;

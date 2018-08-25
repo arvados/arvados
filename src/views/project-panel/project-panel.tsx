@@ -28,10 +28,9 @@ import { openProjectCreator } from '~/store/project/project-action';
 import { reset } from 'redux-form';
 import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
 import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
-import { navigateToResource } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
-import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -182,7 +181,6 @@ export const ProjectPanel = withStyles(styles)(
                             New project
                         </Button>
                     </div>
-                    <Breadcrumbs />
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}
@@ -232,7 +230,7 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleRowDoubleClick = (uuid: string) => {
-                this.props.dispatch<any>(navigateToResource(uuid));
+                this.props.dispatch<any>(navigateTo(uuid));
             }
 
             handleRowClick = (uuid: string) => {

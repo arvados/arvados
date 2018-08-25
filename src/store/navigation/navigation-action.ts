@@ -5,7 +5,7 @@
 import { Dispatch, compose } from 'redux';
 import { push } from "react-router-redux";
 import { RootState } from "../store";
-import { ResourceKind, Resource } from '~/models/resource';
+import { ResourceKind, Resource, extractUuidKind } from '~/models/resource';
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
 import { getResource } from '~/store/resources/resources';
@@ -23,12 +23,18 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
+import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 
-export const navigateToResource = (uuid: string) =>
+export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        const resource = getResource(uuid)(getState().resources);
-        if (resource) {
-            dispatch<any>(getResourceNavigationAction(resource));
+        const kind = extractUuidKind(uuid);
+        if (kind === ResourceKind.PROJECT || kind === ResourceKind.USER) {
+            dispatch<any>(navigateToProject(uuid));
+        } else if (kind === ResourceKind.COLLECTION) {
+            dispatch<any>(navigateToCollection(uuid));
+        }
+        if (uuid === SidePanelTreeCategory.FAVORITES) {
+            dispatch<any>(navigateToFavorites);
         }
     };
 
@@ -74,14 +80,16 @@ export const loadFavorites = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.FAVORITES));
         dispatch<any>(loadFavoritePanel());
+        dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
     };
 
 
 export const navigateToProject = compose(push, getProjectUrl);
 
 export const loadProject = (uuid: string) =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(activateSidePanelTreeItem(uuid));
+    async (dispatch: Dispatch) => {
+        await dispatch<any>(activateSidePanelTreeItem(uuid));
+        dispatch<any>(setProjectBreadcrumbs(uuid));
         dispatch<any>(openProjectPanel(uuid));
         dispatch(loadDetailsPanel(uuid));
     };
@@ -91,7 +99,8 @@ export const navigateToCollection = compose(push, getCollectionUrl);
 export const loadCollection = (uuid: string) =>
     async (dispatch: Dispatch) => {
         const collection = await dispatch<any>(loadCollectionPanel(uuid));
-        dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
+        await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
+        dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
         dispatch(loadDetailsPanel(uuid));
     };
 
