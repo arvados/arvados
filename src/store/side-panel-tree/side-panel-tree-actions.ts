@@ -102,9 +102,7 @@ export const activateSidePanelTreeProject = (nodeId: string) =>
         const node = getSidePanelTreeNode(nodeId)(getState());
         if (node && node.status !== TreeItemStatus.LOADED) {
             await dispatch<any>(loadSidePanelTreeProjects(nodeId));
-            if (node.collapsed) {
-                dispatch<any>(toggleSidePanelTreeItemCollapse(nodeId));
-            }
+            dispatch<any>(expandSidePanelTreeItem(nodeId));
         } else if (node === undefined) {
             await dispatch<any>(activateSidePanelTreeBranch(nodeId));
         }
@@ -117,9 +115,22 @@ export const activateSidePanelTreeBranch = (nodeId: string) =>
             await dispatch<any>(loadSidePanelTreeProjects(ancestor.uuid));
         }
         for (const ancestor of ancestors) {
-            dispatch<any>(toggleSidePanelTreeItemCollapse(ancestor.uuid));
+            dispatch<any>(expandSidePanelTreeItem(ancestor.uuid));
         }
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId: SIDE_PANEL_TREE }));
+    };
+
+export const toggleSidePanelTreeItemCollapse = (nodeId: string) =>
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId: SIDE_PANEL_TREE }));
+    };
+
+export const expandSidePanelTreeItem = (nodeId: string) =>
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        const node = getSidePanelTreeNode(nodeId)(getState());
+        if (node && node.collapsed) {
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId: SIDE_PANEL_TREE }));
+        }
     };
 
 const getSidePanelTreeNode = (nodeId: string) => (state: RootState) => {
@@ -129,7 +140,3 @@ const getSidePanelTreeNode = (nodeId: string) => (state: RootState) => {
         : undefined;
 };
 
-export const toggleSidePanelTreeItemCollapse = (nodeId: string) =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId: SIDE_PANEL_TREE }));
-    };
