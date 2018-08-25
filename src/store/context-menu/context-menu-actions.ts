@@ -6,6 +6,12 @@ import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { ContextMenuPosition, ContextMenuResource } from "./context-menu-reducer";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
+import { RootState } from '~/store/store';
+import { getResource } from '../resources/resources';
+import { ProjectResource } from '~/models/project';
+import { UserResource } from '../../models/user';
+import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { extractUuidKind, ResourceKind } from '~/models/resource';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -23,4 +29,40 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
                 resource
             })
         );
+    };
+
+export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const userResource = getResource<UserResource>(projectUuid)(getState().resources);
+        if (userResource) {
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: userResource.uuid,
+                kind: ContextMenuKind.ROOT_PROJECT
+            }));
+        }
+    };
+
+export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const projectResource = getResource<ProjectResource>(projectUuid)(getState().resources);
+        if (projectResource) {
+            dispatch<any>(openContextMenu(event, {
+                name: projectResource.name,
+                uuid: projectResource.uuid,
+                kind: ContextMenuKind.PROJECT
+            }));
+        }
+    };
+
+export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, id: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        if (!isSidePanelTreeCategory(id)) {
+            const kind = extractUuidKind(id);
+            if (kind === ResourceKind.USER) {
+                dispatch<any>(openRootProjectContextMenu(event, id));
+            } else if (kind === ResourceKind.PROJECT) {
+                dispatch<any>(openProjectContextMenu(event, id));
+            }
+        }
     };

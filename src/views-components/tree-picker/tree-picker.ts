@@ -11,6 +11,7 @@ import { Dispatch } from "redux";
 
 export interface TreePickerProps {
     pickerId: string;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, nodeId: string, pickerId: string) => void;
     toggleItemOpen: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
     toggleItemActive: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
 }
@@ -24,7 +25,7 @@ const mapStateToProps = (state: RootState, props: TreePickerProps): Pick<TreePro
 };
 
 const mapDispatchToProps = (dispatch: Dispatch, props: TreePickerProps): Pick<TreeProps<any>, 'onContextMenu' | 'toggleItemOpen' | 'toggleItemActive'> => ({
-    onContextMenu: () => { return; },
+    onContextMenu: (event, item) => props.onContextMenu(event, item.id, props.pickerId),
     toggleItemActive: (id, status) => props.toggleItemActive(id, status, props.pickerId),
     toggleItemOpen: (id, status) => props.toggleItemOpen(id, status, props.pickerId)
 });

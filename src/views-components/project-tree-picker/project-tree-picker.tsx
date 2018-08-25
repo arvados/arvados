@@ -17,9 +17,10 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from "~/common/api/filter-builder";
 
-type ProjectTreePickerProps = Pick<TreePickerProps, 'toggleItemActive' | 'toggleItemOpen'>;
+type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): ProjectTreePickerProps => ({
+    onContextMenu: () => { return; },
     toggleItemActive: (nodeId, status, pickerId) => {
         getNotSelectedTreePickerKind(pickerId)
             .forEach(pickerId => dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));

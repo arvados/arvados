@@ -6,6 +6,10 @@ import { Dispatch } from 'redux';
 import { isSidePanelTreeCategory, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { navigateToFavorites, navigateTo } from '../navigation/navigation-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { RootState } from '~/store/store';
+import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { openProjectContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openRootProjectContextMenu } from '../context-menu/context-menu-actions';
 
 export const navigateFromSidePanel = (id: string) =>
     (dispatch: Dispatch) => {

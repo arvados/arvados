@@ -12,14 +12,18 @@ import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-tex
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon } from '~/components/icon/icon';
 import { RecentIcon, WorkflowIcon } from '~/components/icon/icon';
 import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-actions';
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
 }
 
-type SidePanelTreeActionProps = Pick<TreePickerProps, 'toggleItemActive' | 'toggleItemOpen'>;
+type SidePanelTreeActionProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): SidePanelTreeActionProps => ({
+    onContextMenu: (event, id) => {
+        dispatch<any>(openSidePanelContextMenu(event, id));
+    },
     toggleItemActive: (nodeId) => {
         dispatch<any>(activateSidePanelTreeItem(nodeId));
         props.onItemActivation(nodeId);

@@ -20,7 +20,7 @@ const initialState: SnackbarState = {
 
 export const snackbarReducer = (state = initialState, action: SnackbarAction) => {
     return snackbarActions.match(action, {
-        OPEN_SNACKBAR: data => ({ ...data, open: true }),
+        OPEN_SNACKBAR: data => ({ ...initialState, ...data, open: true }),
         CLOSE_SNACKBAR: () => initialState,
         default: () => state,
     });
