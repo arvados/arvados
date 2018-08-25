@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 
 import { RootState } from "../../store";
@@ -16,10 +16,7 @@ export const collectionCreateActions = unionize({
     CLOSE_COLLECTION_CREATOR: ofType<{}>(),
     CREATE_COLLECTION: ofType<{}>(),
     CREATE_COLLECTION_SUCCESS: ofType<{}>(),
-}, {
-        tag: 'type',
-        value: 'payload'
-    });
+});
 
 export type CollectionCreateAction = UnionOf<typeof collectionCreateActions>;
 

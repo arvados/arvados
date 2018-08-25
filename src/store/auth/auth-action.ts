@@ -2,14 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ofType, default as unionize, UnionOf } from "unionize";
+import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
 import { User } from "~/models/user";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { AxiosInstance } from "axios";
-import { initSidePanelTree } from '../side-panel-tree/side-panel-tree-actions';
-import { updateResources } from '../resources/resources-actions';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -18,10 +16,7 @@ export const authActions = unionize({
     INIT: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>()
-}, {
-        tag: 'type',
-        value: 'payload'
-    });
+});
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {

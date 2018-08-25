@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
 import { ServiceRepository } from "~/services/services";
@@ -22,7 +22,7 @@ export const collectionPanelFilesAction = unionize({
     TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>(),
     SELECT_ALL_COLLECTION_FILES: ofType<{}>(),
     UNSELECT_ALL_COLLECTION_FILES: ofType<{}>(),
-}, { tag: 'type', value: 'payload' });
+});
 
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;
 

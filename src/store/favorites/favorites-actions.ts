@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
@@ -13,7 +13,7 @@ export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
     CHECK_PRESENCE_IN_FAVORITES: ofType<string[]>(),
     UPDATE_FAVORITES: ofType<Record<string, boolean>>()
-}, { tag: 'type', value: 'payload' });
+});
 
 export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
