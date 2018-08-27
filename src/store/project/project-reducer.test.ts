@@ -31,15 +31,7 @@ describe('project-reducer', () => {
                 status: TreeItemStatus.INITIAL
             }
             ],
-            currentItemId: "",
-            creator: {
-                opened: false,
-                ownerUuid: "",
-            },
-            updater: {
-                opened: false,
-                uuid: ''
-            }
+            currentItemId: ""
         });
     });
 
@@ -52,9 +44,7 @@ describe('project-reducer', () => {
                 active: true,
                 status: TreeItemStatus.PENDING
             }],
-            currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
+            currentItemId: "1"
         };
         const project = {
             items: [{
@@ -64,9 +54,7 @@ describe('project-reducer', () => {
                 active: false,
                 status: TreeItemStatus.PENDING
             }],
-            currentItemId: "",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
+            currentItemId: ""
         };
 
         const state = projectsReducer(initialState, projectActions.RESET_PROJECT_TREE_ACTIVITY(initialState.items[0].id));
@@ -82,9 +70,7 @@ describe('project-reducer', () => {
                 active: false,
                 status: TreeItemStatus.PENDING
             }],
-            currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
+            currentItemId: "1"
         };
         const project = {
             items: [{
@@ -94,9 +80,7 @@ describe('project-reducer', () => {
                 active: true,
                 status: TreeItemStatus.PENDING,
             }],
-            currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
+            currentItemId: "1"
         };
 
         const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_ACTIVE(initialState.items[0].id));
@@ -113,9 +97,7 @@ describe('project-reducer', () => {
                 active: false,
                 status: TreeItemStatus.PENDING,
             }],
-            currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
+            currentItemId: "1"
         };
         const project = {
             items: [{
@@ -125,10 +107,7 @@ describe('project-reducer', () => {
                 active: false,
                 status: TreeItemStatus.PENDING,
             }],
-            currentItemId: "1",
-            creator: { opened: false, ownerUuid: "" },
-            updater: { opened: false, uuid: '' }
-
+            currentItemId: "1"
         };
 
         const state = projectsReducer(initialState, projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN(initialState.items[0].id));

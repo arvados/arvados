@@ -5,16 +5,16 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { MoveToFormDialog } from '../move-to-dialog/move-to-dialog';
-import { MOVE_COLLECTION_DIALOG, moveCollection } from '~/store/move-collection-dialog/move-collection-dialog';
+import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
+import { COLLECTION_MOVE_FORM_NAME, moveCollection } from '~/store/collections/collection-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
 export const MoveCollectionDialog = compose(
-    withDialog(MOVE_COLLECTION_DIALOG),
+    withDialog(COLLECTION_MOVE_FORM_NAME),
     reduxForm<MoveToFormDialogData>({
-        form: MOVE_COLLECTION_DIALOG,
+        form: COLLECTION_MOVE_FORM_NAME,
         onSubmit: (data, dispatch) => {
             dispatch(moveCollection(data));
         }
     })
-)(MoveToFormDialog);
+)(DialogMoveTo);

@@ -21,11 +21,8 @@ import { sidePanelActions } from '~/store/side-panel/side-panel-action';
 import { SidePanel, SidePanelItem } from '~/components/side-panel/side-panel';
 import { ItemMode, setProjectItem } from "~/store/navigation/navigation-action";
 import { projectActions } from "~/store/project/project-action";
-import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
-import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
 
 import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-panel-action";
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
@@ -37,23 +34,27 @@ import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
-import { CreateCollectionDialog } from '~/views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { loadCollection, loadCollectionTags } from '~/store/collection-panel/collection-panel-action';
 import { getCollectionUrl } from '~/models/collection';
-import { UpdateCollectionDialog } from '~/views-components/update-collection-dialog/update-collection-dialog.';
-import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
+
+import { PROJECT_CREATE_FORM_NAME, openProjectCreateDialog } from '~/store/projects/project-create-actions';
+import { COLLECTION_CREATE_FORM_NAME, openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
+import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
+import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
+import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
+import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
+
+import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
-import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
-import { PROJECT_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-project-create';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
-import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
-import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-project-dialog';
-import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
+import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
+import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
+import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 
 const DRAWER_WITDH = 240;
@@ -397,13 +398,13 @@ export const Workbench = withStyles(styles)(
             }
 
             handleProjectCreationDialogOpen = (itemUuid: string) => {
-                this.props.dispatch(reset(PROJECT_CREATE_DIALOG));
-                this.props.dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: itemUuid }));
+                this.props.dispatch(reset(PROJECT_CREATE_FORM_NAME));
+                this.props.dispatch<any>(openProjectCreateDialog(itemUuid));
             }
 
             handleCollectionCreationDialogOpen = (itemUuid: string) => {
-                this.props.dispatch(reset(COLLECTION_CREATE_DIALOG));
-                this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: itemUuid }));
+                this.props.dispatch(reset(COLLECTION_CREATE_FORM_NAME));
+                this.props.dispatch<any>(openCollectionCreateDialog(itemUuid));
             }
 
             openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; kind: ContextMenuKind; }) => {
