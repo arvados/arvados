@@ -30,15 +30,6 @@ export const openCollectionUpdateDialog = (resource: ContextMenuResource) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: {} }));
     };
 
-export const editCollection = (data: CollectionUpdateFormDialogData) =>
-    async (dispatch: Dispatch) => {
-        await dispatch<any>(updateCollection(data));
-        dispatch(snackbarActions.OPEN_SNACKBAR({
-            message: "Collection has been successfully updated.",
-            hideDuration: 2000
-        }));
-    };
-
 export const updateCollection = (collection: Partial<CollectionResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
@@ -46,13 +37,13 @@ export const updateCollection = (collection: Partial<CollectionResource>) =>
         try {
             const updatedCollection = await services.collectionService.update(uuid, collection);
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
-            dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
-            dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
-        } catch(e) {
+            return updatedCollection;
+        } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' }));
             }
+            return;
         }
     };

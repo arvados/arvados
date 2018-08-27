@@ -9,8 +9,6 @@ import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/common/api/common-resource-service';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 
@@ -36,16 +34,16 @@ export const copyCollection = (resource: CollectionCopyFormDialogData) =>
             const uuidKey = 'uuid';
             delete collection[uuidKey];
             await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
-            dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied', hideDuration: 2000 }));
+            return collection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_COPY_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' }));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy the collection', hideDuration: 2000 }));
+                throw new Error('Could not copy the collection.');
             }
+            return ;
         }
     };

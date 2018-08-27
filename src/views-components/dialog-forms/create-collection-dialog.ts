@@ -5,16 +5,16 @@
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
-import { addCollection, COLLECTION_CREATE_FORM_NAME, CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
-import { UploadFile } from "~/store/collections/uploader/collection-uploader-actions";
+import { COLLECTION_CREATE_FORM_NAME, CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { DialogCollectionCreate } from "~/views-components/dialog-create/dialog-collection-create";
+import { createCollection } from "~/store/workbench/workbench-actions";
 
 export const CreateCollectionDialog = compose(
     withDialog(COLLECTION_CREATE_FORM_NAME),
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            dispatch(addCollection(data));
+            dispatch(createCollection(data));
         }
     })
 )(DialogCollectionCreate);

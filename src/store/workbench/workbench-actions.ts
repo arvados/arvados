@@ -10,20 +10,24 @@ import { snackbarActions } from '../snackbar/snackbar-actions';
 import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
 import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
-import { loadResource } from '../resources/resources-actions';
+import { loadResource, updateResources } from '../resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
 import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
-import * as projectCreateActions from '~/store/projects/project-create-actions';
-import * as projectMoveActions from '~/store/projects/project-move-actions';
-import * as projectUpdateActions from '~/store/projects/project-update-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '../resources/resources';
 import { getProjectPanelCurrentUuid } from '../project-panel/project-panel-action';
+import * as projectCreateActions from '~/store/projects/project-create-actions';
+import * as projectMoveActions from '~/store/projects/project-move-actions';
+import * as projectUpdateActions from '~/store/projects/project-update-actions';
+import * as collectionCreateActions from '~/store/collections/collection-create-actions';
+import * as collectionCopyActions from '~/store/collections/collection-copy-actions';
+import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
+import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 
 
 export const loadWorkbench = () =>
@@ -116,6 +120,56 @@ export const loadCollection = (uuid: string) =>
         await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
         dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
         dispatch(loadDetailsPanel(uuid));
+    };
+
+export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        const collection = await dispatch<any>(collectionCreateActions.createCollection(data));
+        if (collection) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Collection has been successfully created.",
+                hideDuration: 2000
+            }));
+            dispatch<any>(updateResources([collection]));
+            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+        }
+    };
+
+export const updateCollection = (data: collectionUpdateActions.CollectionUpdateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        const collection = await dispatch<any>(collectionUpdateActions.updateCollection(data));
+        if (collection) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Collection has been successfully updated.",
+                hideDuration: 2000
+            }));
+            dispatch<any>(updateResources([collection]));
+            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+        }
+    };
+
+export const copyCollection = (data: collectionCopyActions.CollectionCopyFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const collection = await dispatch<any>(collectionCopyActions.copyCollection(data));
+            dispatch<any>(updateResources([collection]));
+            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied.', hideDuration: 2000 }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
+    };
+
+export const moveCollection = (data: MoveToFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const collection = await dispatch<any>(collectionMoveActions.moveCollection(data));
+            dispatch<any>(updateResources([collection]));
+            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved.', hideDuration: 2000 }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
     };
 
 export const resourceIsNotLoaded = (uuid: string) =>

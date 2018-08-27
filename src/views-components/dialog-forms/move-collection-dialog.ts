@@ -6,8 +6,9 @@ import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
 import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
-import { COLLECTION_MOVE_FORM_NAME, moveCollection } from '~/store/collections/collection-move-actions';
+import { COLLECTION_MOVE_FORM_NAME } from '~/store/collections/collection-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
+import { moveCollection } from '~/store/workbench/workbench-actions';
 
 export const MoveCollectionDialog = compose(
     withDialog(COLLECTION_MOVE_FORM_NAME),
