@@ -42,8 +42,7 @@ import { COLLECTION_CREATE_FORM_NAME, openCollectionCreateDialog } from '~/store
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
-
-import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
+import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { AuthService } from "~/services/auth-service/auth-service";

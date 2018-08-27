@@ -10,8 +10,7 @@ import { ProjectResource } from "~/models/project";
 
 export type ProjectState = {
     items: Array<TreeItem<ProjectResource>>,
-    currentItemId: string,
-    updater: ProjectUpdater
+    currentItemId: string
 };
 
 interface ProjectUpdater {
@@ -91,29 +90,14 @@ function updateProjectTree(tree: Array<TreeItem<ProjectResource>>, projects: Pro
     return items;
 }
 
-const updateProject = (state: ProjectState, updater?: Partial<ProjectUpdater>) => ({
-    ...state,
-    updater: {
-        ...state.updater,
-        ...updater
-    }
-});
-
 const initialState: ProjectState = {
     items: [],
-    currentItemId: "",
-    updater: {
-        opened: false,
-        uuid: ''
-    }
+    currentItemId: ""
 };
 
 
 export const projectsReducer = (state: ProjectState = initialState, action: ProjectAction) => {
     return projectActions.match(action, {
-        OPEN_PROJECT_UPDATER: ({ uuid }) => updateProject(state, { uuid, opened: true }),
-        CLOSE_PROJECT_UPDATER: () => updateProject(state, { opened: false, uuid: "" }),
-        UPDATE_PROJECT_SUCCESS: () => updateProject(state, { opened: false, uuid: "" }),
         REMOVE_PROJECT: () => state,
         PROJECTS_REQUEST: itemId => {
             const items = _.cloneDeep(state.items);
