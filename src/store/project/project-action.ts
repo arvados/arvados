@@ -9,8 +9,6 @@ import { FilterBuilder } from "~/common/api/filter-builder";
 import { RootState } from "../store";
 import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { ServiceRepository } from "~/services/services";
-import { projectPanelActions } from "~/store/project-panel/project-panel-action";
-import { updateDetails } from "~/store/details-panel/details-panel-action";
 
 export const projectActions = unionize({
     REMOVE_PROJECT: ofType<string>(),
