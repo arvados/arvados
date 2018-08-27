@@ -12,6 +12,7 @@ import { loadProject, loadFavorites, loadCollection } from '../store/navigation/
 
 export const Routes = {
     ROOT: '/',
+    TOKEN: '/token',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',

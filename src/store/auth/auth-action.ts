@@ -31,17 +31,16 @@ function removeAuthorizationHeader(client: AxiosInstance) {
     delete client.defaults.headers.common.Authorization;
 }
 
-export const initAuth = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const user = services.authService.getUser();
-        const token = services.authService.getApiToken();
-        if (token) {
-            setAuthorizationHeader(services, token);
-        }
-        if (token && user) {
-            dispatch(authActions.INIT({ user, token }));
-        }
-    };
+export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const user = services.authService.getUser();
+    const token = services.authService.getApiToken();
+    if (token) {
+        setAuthorizationHeader(services, token);
+    }
+    if (token && user) {
+        dispatch(authActions.INIT({ user, token }));
+    }
+};
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     services.authService.saveApiToken(token);

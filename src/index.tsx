@@ -29,6 +29,7 @@ import { collectionActionSet } from './views-components/context-menu/action-sets
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 import { addRouteChangeHandlers } from './routes/routes';
 import { loadWorkbench } from './store/navigation/navigation-action';
+import { Routes } from '~/routes/routes';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -48,7 +49,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
 
 fetchConfig()
-    .then(async (config) => {
+    .then((config) => {
         const history = createBrowserHistory();
         const services = createServices(config);
         const store = configureStore(history, services);
@@ -65,8 +66,8 @@ fetchConfig()
                 <Provider store={store}>
                     <ConnectedRouter history={history}>
                         <div>
-                            <Route path="/token" component={TokenComponent} />
-                            <Route path="/" component={WorkbenchComponent} />
+                            <Route path={Routes.TOKEN} component={TokenComponent} />
+                            <Route path={Routes.ROOT} component={WorkbenchComponent} />
                         </div>
                     </ConnectedRouter>
                 </Provider>

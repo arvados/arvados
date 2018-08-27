@@ -13,7 +13,6 @@ import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '~/views-c
 import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import { TreeItem } from "~/components/tree/tree";
-import { getTreePath } from '~/store/project/project-reducer';
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -161,15 +160,6 @@ export const Workbench = withStyles(styles)(
             };
 
             render() {
-                const path = getTreePath(this.props.projects, this.props.currentProjectId);
-                const breadcrumbs = path.map(item => ({
-                    label: item.data.name,
-                    itemId: item.data.uuid,
-                    status: item.status
-                }));
-
-                const rootProjectUuid = this.props.authService.getUuid();
-
                 const { classes, user } = this.props;
                 return (
                     <div className={classes.root}>
