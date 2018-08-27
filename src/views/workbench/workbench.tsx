@@ -10,7 +10,6 @@ import { login, logout } from "~/store/auth/auth-action";
 import { User } from "~/models/user";
 import { RootState } from "~/store/store";
 import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '~/views-components/main-app-bar/main-app-bar';
-import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { push } from 'react-router-redux';
 import { TreeItem } from "~/components/tree/tree";
 import { ProjectPanel } from "~/views/project-panel/project-panel";
@@ -18,9 +17,8 @@ import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
 import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
-import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ProjectResource } from '~/models/project';
-import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
+import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
@@ -40,7 +38,6 @@ import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-p
 import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
-import { navigateTo } from '~/store/navigation/navigation-action';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 
 
@@ -94,10 +91,6 @@ interface WorkbenchActionProps {
 }
 
 type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
-
-interface NavBreadcrumb extends Breadcrumb {
-    itemId: string;
-}
 
 interface NavMenuItem extends MainAppBarMenuItem {
     action: () => void;
@@ -207,9 +200,6 @@ export const Workbench = withStyles(styles)(
             }
 
             mainAppBarActions: MainAppBarActionProps = {
-                onBreadcrumbClick: ({ itemId }: NavBreadcrumb) => {
-                    this.props.dispatch(navigateTo(itemId));
-                },
                 onSearch: searchText => {
                     this.setState({ searchText });
                     this.props.dispatch(push(`/search?q=${searchText}`));
@@ -218,13 +208,6 @@ export const Workbench = withStyles(styles)(
                 onDetailsPanelToggle: () => {
                     this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
                 },
-                onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: NavBreadcrumb) => {
-                    this.props.dispatch<any>(openContextMenu(event, {
-                        uuid: breadcrumb.itemId,
-                        name: breadcrumb.label,
-                        kind: ContextMenuKind.PROJECT
-                    }));
-                }
             };
 
             toggleCurrentTokenModal = () => {

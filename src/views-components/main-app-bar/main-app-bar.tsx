@@ -31,9 +31,7 @@ interface MainAppBarDataProps {
 
 export interface MainAppBarActionProps {
     onSearch: (searchText: string) => void;
-    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
     onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
     onDetailsPanelToggle: () => void;
 }
 

@@ -54,7 +54,7 @@ export interface CollectionRouteParams {
 }
 
 export const matchCollectionRoute = (route: string) =>
-    matchPath<ProjectRouteParams>(route, { path: Routes.COLLECTIONS });
+    matchPath<CollectionRouteParams>(route, { path: Routes.COLLECTIONS });
 
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
