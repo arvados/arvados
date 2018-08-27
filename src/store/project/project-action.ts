@@ -24,8 +24,6 @@ export const projectActions = unionize({
     value: 'payload'
 });
 
-export const PROJECT_FORM_NAME = 'projectEditDialog';
-
 export const getProjectList = (parentUuid: string = '') => 
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(projectActions.PROJECTS_REQUEST(parentUuid));

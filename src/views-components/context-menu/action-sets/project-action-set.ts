@@ -5,7 +5,6 @@
 import { reset, initialize } from "redux-form";
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions, PROJECT_FORM_NAME } from "~/store/project/project-action";
 import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
