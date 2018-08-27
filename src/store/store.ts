@@ -7,7 +7,6 @@ import { routerMiddleware, routerReducer } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 
-import { projectsReducer } from "./project/project-reducer";
 import { authReducer } from "./auth/auth-reducer";
 import { dataExplorerReducer } from './data-explorer/data-explorer-reducer';
 import { detailsPanelReducer } from './details-panel/details-panel-reducer';
@@ -61,7 +60,6 @@ export function configureStore(history: History, services: ServiceRepository): R
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
-    projects: projectsReducer,
     collections: collectionsReducer,
     router: routerReducer,
     dataExplorer: dataExplorerReducer,

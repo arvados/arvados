@@ -11,12 +11,10 @@ import { User } from "~/models/user";
 import { RootState } from "~/store/store";
 import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '~/views-components/main-app-bar/main-app-bar';
 import { push } from 'react-router-redux';
-import { TreeItem } from "~/components/tree/tree";
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
-import { ProjectResource } from '~/models/project';
 import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
@@ -75,8 +73,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface WorkbenchDataProps {
-    projects: Array<TreeItem<ProjectResource>>;
-    currentProjectId: string;
     user?: User;
     currentToken?: string;
 }
@@ -109,8 +105,6 @@ interface WorkbenchState {
 export const Workbench = withStyles(styles)(
     connect<WorkbenchDataProps>(
         (state: RootState) => ({
-            projects: state.projects.items,
-            currentProjectId: state.projects.currentItemId,
             user: state.auth.user,
             currentToken: state.auth.apiToken,
         })
