@@ -18,5 +18,5 @@ export const openProjectPanel = (projectUuid: string) =>
         dispatch(projectPanelActions.REQUEST_ITEMS());
     };
 
-export const getProjectPanelCurrentUuid = (state: RootState) => getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+export const getProjectPanelCurrentUuid = (state: RootState) => getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
 

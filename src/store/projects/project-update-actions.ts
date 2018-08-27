@@ -29,29 +29,19 @@ export const openProjectUpdateDialog = (resource: ContextMenuResource) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {} }));
     };
 
-export const editProject = (data: ProjectUpdateFormDialogData) =>
-    async (dispatch: Dispatch) => {
-        await dispatch<any>(updateProject(data));
-        dispatch(snackbarActions.OPEN_SNACKBAR({
-            message: "Project has been successfully updated.",
-            hideDuration: 2000
-        }));
-    };
-
 export const updateProject = (project: Partial<ProjectResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = project.uuid || '';
         dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
             const updatedProject = await services.projectService.update(uuid, project);
-            dispatch(projectPanelActions.REQUEST_ITEMS());
-            dispatch<any>(getProjectList(updatedProject.ownerUuid));
-            dispatch<any>(loadDetailsPanel(updatedProject.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
+            return updatedProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Project with the same name already exists.' }));
             }
+            return ;
         }
     };

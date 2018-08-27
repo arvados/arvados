@@ -8,12 +8,8 @@ import { startSubmit, stopSubmit, initialize } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { getProjectList } from '~/store/project/project-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { findTreeItem } from '~/store/project/project-reducer';
 
 export const PROJECT_MOVE_FORM_NAME = 'projectMoveFormName';
 
@@ -29,15 +25,9 @@ export const moveProject = (resource: MoveToFormDialogData) =>
         dispatch(startSubmit(PROJECT_MOVE_FORM_NAME));
         try {
             const project = await services.projectService.get(resource.uuid);
-            await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
-            dispatch(projectPanelActions.REQUEST_ITEMS());
-            dispatch<any>(getProjectList(project.ownerUuid));
-            const { projects } = getState();
-            if (findTreeItem(projects.items, resource.ownerUuid)) {
-                dispatch<any>(getProjectList(resource.ownerUuid));
-            }
+            const newProject = await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Project has been moved', hideDuration: 2000 }));
+            return newProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
@@ -46,7 +36,8 @@ export const moveProject = (resource: MoveToFormDialogData) =>
                 dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'Cannot move a project into itself.' }));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the project.', hideDuration: 2000 }));
+                throw new Error('Could not move the project.');
             }
+            return;
         }
     };

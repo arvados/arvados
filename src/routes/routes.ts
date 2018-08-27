@@ -8,7 +8,7 @@ import { matchPath } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
 import { getProjectUrl } from '../models/project';
 import { getCollectionUrl } from '~/models/collection';
-import { loadProject, loadFavorites, loadCollection } from '../store/navigation/navigation-action';
+import { loadProject, loadFavorites, loadCollection } from '../store/workbench/workbench-actions';
 
 export const Routes = {
     ROOT: '/',

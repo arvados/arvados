@@ -28,7 +28,7 @@ import { collectionFilesItemActionSet } from './views-components/context-menu/ac
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 import { addRouteChangeHandlers } from './routes/routes';
-import { loadWorkbench } from './store/navigation/navigation-action';
+import { loadWorkbench } from './store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");

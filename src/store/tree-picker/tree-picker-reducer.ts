@@ -7,6 +7,7 @@ import { TreePicker, TreePickerNode } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { TreeItemStatus } from "~/components/tree/tree";
 import { compose } from "redux";
+import { getNode } from '../../models/tree';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
@@ -50,11 +51,19 @@ const toggleSelect = (nodeId: string) => (value: TreePickerNode): TreePickerNode
         ? ({ ...value, selected: !value.selected })
         : ({ ...value, selected: false });
 
-const receiveNodes = (nodes: Array<TreePickerNode>) => (parent: string) => (state: Tree<TreePickerNode>) =>
-    nodes.reduce((tree, node) =>
-        setNode(
-            createTreeNode(parent)(node)
-        )(tree), state);
+const receiveNodes = (nodes: Array<TreePickerNode>) => (parent: string) => (state: Tree<TreePickerNode>) => {
+    const parentNode = getNode(parent)(state);
+    let newState = state;
+    if (parentNode) {
+        newState = setNode({ ...parentNode, children: [] })(state);
+    }
+    return nodes.reduce((tree, node) => {
+        const oldNode = getNode(node.nodeId)(state) || { value: {} };
+        const newNode = createTreeNode(parent)(node);
+        const value = { ...oldNode.value, ...newNode.value };
+        return setNode({ ...newNode, value })(tree);
+    }, newState);
+};
 
 const createTreeNode = (parent: string) => (node: TreePickerNode): TreeNode<TreePickerNode> => ({
     children: [],

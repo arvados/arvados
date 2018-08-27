@@ -11,7 +11,7 @@ import { FilterBuilder } from '~/common/api/filter-builder';
 import { resourcesActions } from '../resources/resources-actions';
 import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
 import { TreeItemStatus } from "~/components/tree/tree";
-import { getNodeAncestors, getNodeValue, getNodeAncestorsIds } from '~/models/tree';
+import { getNodeAncestors, getNodeValue, getNodeAncestorsIds, getNode } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
 
 export enum SidePanelTreeCategory {
@@ -71,19 +71,23 @@ export const initSidePanelTree = () =>
 
 export const loadSidePanelTreeProjects = (projectUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: projectUuid, pickerId: SIDE_PANEL_TREE }));
-        const params = {
-            filters: new FilterBuilder()
-                .addEqual('ownerUuid', projectUuid)
-                .getFilters()
-        };
-        const { items } = await services.projectService.list(params);
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-            nodeId: projectUuid,
-            pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => createTreePickerNode({ nodeId: item.uuid, value: item })),
-        }));
-        dispatch(resourcesActions.SET_RESOURCES(items));
+        const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
+        const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
+        if (node || projectUuid === '') {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: projectUuid, pickerId: SIDE_PANEL_TREE }));
+            const params = {
+                filters: new FilterBuilder()
+                    .addEqual('ownerUuid', projectUuid)
+                    .getFilters()
+            };
+            const { items } = await services.projectService.list(params);
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+                nodeId: projectUuid,
+                pickerId: SIDE_PANEL_TREE,
+                nodes: items.map(item => createTreePickerNode({ nodeId: item.uuid, value: item })),
+            }));
+            dispatch(resourcesActions.SET_RESOURCES(items));
+        }
     };
 
 export const activateSidePanelTreeItem = (nodeId: string) =>

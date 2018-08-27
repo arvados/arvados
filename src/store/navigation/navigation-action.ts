@@ -4,24 +4,12 @@
 
 import { Dispatch, compose } from 'redux';
 import { push } from "react-router-redux";
-import { RootState } from "../store";
-import { ResourceKind, Resource, extractUuidKind } from '~/models/resource';
+import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { loadCollectionPanel } from '~/store/collection-panel/collection-panel-action';
-import { snackbarActions } from '../snackbar/snackbar-actions';
-import { resourceLabel } from "~/common/labels";
-import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
-import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
+
+import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
 import { Routes } from '~/routes/routes';
-import { loadResource } from '../resources/resources-actions';
-import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
-import { projectPanelColumns } from '~/views/project-panel/project-panel';
-import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
-import { matchRootRoute } from '~/routes/routes';
-import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch) => {
@@ -36,74 +24,8 @@ export const navigateTo = (uuid: string) =>
         }
     };
 
-export const loadWorkbench = () =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
-        const { auth, router } = getState();
-        const { user } = auth;
-        if (user) {
-            const userResource = await dispatch<any>(loadResource(user.uuid));
-            if (userResource) {
-                dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
-                dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
-                dispatch<any>(initSidePanelTree());
-                if (router.location) {
-                    const match = matchRootRoute(router.location.pathname);
-                    if (match) {
-                        dispatch(navigateToProject(userResource.uuid));
-                    }
-                }
-            } else {
-                dispatch(userIsNotAuthenticated);
-            }
-        } else {
-            dispatch(userIsNotAuthenticated);
-        }
-    };
-
 export const navigateToFavorites = push(Routes.FAVORITES);
-
-export const loadFavorites = () =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.FAVORITES));
-        dispatch<any>(loadFavoritePanel());
-        dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
-    };
-
 
 export const navigateToProject = compose(push, getProjectUrl);
 
-export const loadProject = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        await dispatch<any>(activateSidePanelTreeItem(uuid));
-        dispatch<any>(setProjectBreadcrumbs(uuid));
-        dispatch<any>(openProjectPanel(uuid));
-        dispatch(loadDetailsPanel(uuid));
-    };
-
 export const navigateToCollection = compose(push, getCollectionUrl);
-
-export const loadCollection = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        const collection = await dispatch<any>(loadCollectionPanel(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
-        dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
-        dispatch(loadDetailsPanel(uuid));
-    };
-
-export const cannotNavigateToResource = ({ kind, uuid }: Resource) =>
-    snackbarActions.OPEN_SNACKBAR({
-        message: `${resourceLabel(kind)} identified by ${uuid} cannot be opened.`
-    });
-
-export const resourceIsNotLoaded = (uuid: string) =>
-    snackbarActions.OPEN_SNACKBAR({
-        message: `Resource identified by ${uuid} is not loaded.`
-    });
-
-export const userIsNotAuthenticated = snackbarActions.OPEN_SNACKBAR({
-    message: 'User is not authenticated'
-});
-
-export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
-    message: 'Could not load user'
-});
