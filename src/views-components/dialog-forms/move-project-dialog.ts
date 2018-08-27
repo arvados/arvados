@@ -5,18 +5,18 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { MOVE_PROJECT_DIALOG } from '~/store/move-project-dialog/move-project-dialog';
-import { moveProject } from '~/store/move-project-dialog/move-project-dialog';
+import { PROJECT_MOVE_FORM_NAME } from '~/store/projects/project-move-actions';
+import { moveProject } from '~/store/projects/project-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
-import { MoveToFormDialog } from '../move-to-dialog/move-to-dialog';
+import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
 
 export const MoveProjectDialog = compose(
-    withDialog(MOVE_PROJECT_DIALOG),
+    withDialog(PROJECT_MOVE_FORM_NAME),
     reduxForm<MoveToFormDialogData>({
-        form: MOVE_PROJECT_DIALOG,
+        form: PROJECT_MOVE_FORM_NAME,
         onSubmit: (data, dispatch) => {
             dispatch(moveProject(data));
         }
     })
-)(MoveToFormDialog);
+)(DialogMoveTo);
 
