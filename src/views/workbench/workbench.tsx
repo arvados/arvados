@@ -15,30 +15,30 @@ import { TreeItem } from "~/components/tree/tree";
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { CreateProjectDialog } from "~/views-components/create-project-dialog/create-project-dialog";
 import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
 import { ProjectResource } from '~/models/project';
 import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
-import { CreateCollectionDialog } from '~/views-components/create-collection-dialog/create-collection-dialog';
 import { CollectionPanel } from '../collection-panel/collection-panel';
-import { UpdateCollectionDialog } from '~/views-components/update-collection-dialog/update-collection-dialog.';
-import { UpdateProjectDialog } from '~/views-components/update-project-dialog/update-project-dialog';
 import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
-import { ProjectCopyDialog } from '~/views-components/project-copy-dialog/project-copy-dialog';
 import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
-import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-project-dialog';
-import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
+import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
+import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
+import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
+import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
+import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
+import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
+import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 
 
 const APP_BAR_HEIGHT = 100;
@@ -184,7 +184,7 @@ export const Workbench = withStyles(styles)(
                         <CollectionPartialCopyDialog />
                         <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
-                        <ProjectCopyDialog />
+                        <CopyCollectionDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <UploadCollectionFilesDialog />

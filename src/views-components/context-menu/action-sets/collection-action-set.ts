@@ -6,17 +6,17 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
-import { openUpdater } from "~/store/collections/updater/collection-updater-action";
+import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
-import { openProjectCopyDialog } from "~/views-components/project-copy-dialog/project-copy-dialog";
+import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
+import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
         execute: (dispatch, resource) => {
-            dispatch<any>(openUpdater(resource));
+            dispatch<any>(openCollectionUpdateDialog(resource));
         }
     },
     {
@@ -43,7 +43,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            dispatch<any>(openProjectCopyDialog({name: resource.name, projectUuid: resource.uuid}));
+            dispatch<any>(openCollectionCopyDialog(resource));
         }
     },
     {
