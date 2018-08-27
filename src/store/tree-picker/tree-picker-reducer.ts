@@ -18,8 +18,10 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
             updateOrCreatePicker(state, pickerId, setNodeValueWith(toggleCollapse)(nodeId)),
         TOGGLE_TREE_PICKER_NODE_SELECT: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, mapTreeValues(toggleSelect(nodeId))),
-        RESET_TREE_PICKER: ({ pickerId }) => 
+        RESET_TREE_PICKER: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, createTree),
+        EXPAND_TREE_PICKER_NODES: ({ pickerId, nodeIds }) =>
+            updateOrCreatePicker(state, pickerId, mapTreeValues(expand(nodeIds))),
         default: () => state
     });
 
@@ -28,6 +30,11 @@ const updateOrCreatePicker = (state: TreePicker, pickerId: string, func: (value:
     const updatedPicker = func(picker);
     return { ...state, [pickerId]: updatedPicker };
 };
+
+const expand = (ids: string[]) => (node: TreePickerNode): TreePickerNode =>
+    ids.some(id => id === node.nodeId)
+        ? { ...node, collapsed: false }
+        : node;
 
 const setPending = (value: TreePickerNode): TreePickerNode =>
     ({ ...value, status: TreeItemStatus.PENDING });
