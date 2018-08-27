@@ -10,7 +10,7 @@ import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon } from "~/components/i
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveProjectDialog } from '~/store/move-project-dialog/move-project-dialog';
+import { openMoveProjectDialog } from '~/store/projects/project-move-actions';
 import { PROJECT_CREATE_FORM_NAME, openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openProjectUpdateDialog } from '~/store/projects/project-update-actions';
 

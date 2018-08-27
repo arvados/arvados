@@ -51,9 +51,9 @@ import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-rem
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
-import { CollectionPartialCopyDialog } from '../../views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
-import { MoveProjectDialog } from '~/views-components/move-project-dialog/move-project-dialog';
-import { MoveCollectionDialog } from '~/views-components/move-collection-dialog/move-collection-dialog';
+import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
+import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
+import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 
 const DRAWER_WITDH = 240;

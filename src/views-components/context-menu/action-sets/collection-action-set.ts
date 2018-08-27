@@ -8,7 +8,7 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveCollectionDialog } from '~/store/move-collection-dialog/move-collection-dialog';
+import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
 import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
 
 export const collectionActionSet: ContextMenuActionSet = [[
