@@ -31,6 +31,7 @@ import { detailsPanelActions, loadDetails } from "~/store/details-panel/details-
 import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ProjectResource } from '~/models/project';
 import { ResourceKind } from '~/models/resource';
+import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { ContextMenu, ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
@@ -238,6 +239,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path="/projects/:id" render={this.renderProjectPanel} />
                                     <Route path="/favorites" render={this.renderFavoritePanel} />
                                     <Route path="/collections/:id" render={this.renderCollectionPanel} />
+                                    <Route path="/process/:id" render={this.renderProcessPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
@@ -264,6 +266,20 @@ export const Workbench = withStyles(styles)(
                     </div>
                 );
             }
+
+            renderProcessPanel = (props: RouteComponentProps<{ id: string }>) => <ProcessPanel
+                onItemRouteChange={(processId) => {
+                    return <span>a</span>;
+                }}
+                onContextMenu={(event, item) => {
+                    this.openContextMenu(event, {
+                        uuid: item.uuid,
+                        name: item.name,
+                        description: item.description,
+                        kind: ContextMenuKind.COLLECTION
+                    });
+                }}
+                {...props} />
 
             renderCollectionPanel = (props: RouteComponentProps<{ id: string }>) => <CollectionPanel
                 onItemRouteChange={(collectionId) => {
