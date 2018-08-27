@@ -21,7 +21,7 @@ import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
-import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
+import { contextMenuActions, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
@@ -134,7 +134,6 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                event.preventDefault();
                 const { uuid, name, description } = this.props.item;
                 const resource = {
                     uuid,
@@ -142,12 +141,7 @@ export const CollectionPanel = withStyles(styles)(
                     description,
                     kind: ContextMenuKind.COLLECTION
                 };
-                this.props.dispatch(
-                    contextMenuActions.OPEN_CONTEXT_MENU({
-                        position: { x: event.clientX, y: event.clientY },
-                        resource
-                    })
-                );
+                this.props.dispatch<any>(openContextMenu(event, resource));
             }
 
             handleDelete = (uuid: string) => () => {

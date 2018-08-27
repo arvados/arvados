@@ -15,6 +15,7 @@ import { ContextMenuKind } from "../context-menu/context-menu";
 import { Tree, getNodeChildrenIds, getNode } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
 import { openUploadCollectionFilesDialog } from '~/store/collections/uploader/collection-uploader-actions';
+import { openContextMenu } from '../../store/context-menu/context-menu-actions';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -43,17 +44,11 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id }));
     },
     onItemMenuOpen: (event, item) => {
-        event.preventDefault();
-        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
-            position: { x: event.clientX, y: event.clientY },
-            resource: { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }
-        }));
+        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }));
     },
-    onOptionsMenuOpen: (event) =>
-        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
-            position: { x: event.clientX, y: event.clientY },
-            resource: { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }
-        }))
+    onOptionsMenuOpen: (event) => {
+        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }));
+    },
 });
 
 

@@ -21,7 +21,7 @@ import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
+import { contextMenuActions, resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
@@ -198,31 +198,9 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                event.preventDefault();
-                const resource = getResource(resourceUuid)(this.props.resources) as CollectionResource | ProjectResource | undefined;
-                if (resource) {
-                    let kind: ContextMenuKind;
-
-                    if (resource.kind === ResourceKind.PROJECT) {
-                        kind = ContextMenuKind.PROJECT;
-                    } else if (resource.kind === ResourceKind.COLLECTION) {
-                        kind = ContextMenuKind.COLLECTION_RESOURCE;
-                    } else {
-                        kind = ContextMenuKind.RESOURCE;
-                    }
-                    if (kind !== ContextMenuKind.RESOURCE) {
-                        this.props.dispatch(
-                            contextMenuActions.OPEN_CONTEXT_MENU({
-                                position: { x: event.clientX, y: event.clientY },
-                                resource: {
-                                    uuid: resource.uuid,
-                                    name: resource.name || '',
-                                    description: resource.description,
-                                    kind,
-                                }
-                            })
-                        );
-                    }
+                const kind = resourceKindToContextMenuKind(resourceUuid);
+                if (kind) {
+                    this.props.dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
                 }
             }
 

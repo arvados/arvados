@@ -66,3 +66,17 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
             }
         }
     };
+
+export const resourceKindToContextMenuKind = (uuid: string) => {
+    const kind = extractUuidKind(uuid);
+    switch (kind) {
+        case ResourceKind.PROJECT:
+            return ContextMenuKind.PROJECT;
+        case ResourceKind.COLLECTION:
+            return ContextMenuKind.COLLECTION_RESOURCE;
+        case ResourceKind.USER:
+            return ContextMenuKind.ROOT_PROJECT;
+        default:
+            return;
+    }
+};

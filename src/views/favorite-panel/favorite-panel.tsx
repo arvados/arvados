@@ -18,7 +18,7 @@ import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action"
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner, ResourceName } from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
-import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
+import { contextMenuActions, openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { loadDetailsPanel } from '../../store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
@@ -150,13 +150,10 @@ interface FavoritePanelActionProps {
 
 const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        event.preventDefault();
-        dispatch(
-            contextMenuActions.OPEN_CONTEXT_MENU({
-                position: { x: event.clientX, y: event.clientY },
-                resource: { name: '', uuid: resourceUuid, kind: ContextMenuKind.RESOURCE }
-            })
-        );
+        const kind = resourceKindToContextMenuKind(resourceUuid);
+        if (kind) {
+            dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
+        }
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {
