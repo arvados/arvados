@@ -24,13 +24,11 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
 import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
-import { openProjectCreator } from '~/store/project/project-action';
-import { reset } from 'redux-form';
-import { COLLECTION_CREATE_DIALOG } from '~/views-components/dialog-create/dialog-collection-create';
-import { collectionCreateActions } from '~/store/collections/creator/collection-creator-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
+import { openCollectionCreateDialog } from '../../store/collections/collection-create-actions';
+import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -192,12 +190,11 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleNewProjectClick = () => {
-                this.props.dispatch<any>(openProjectCreator(this.props.currentItemId));
+                this.props.dispatch<any>(openProjectCreateDialog(this.props.currentItemId));
             }
 
             handleNewCollectionClick = () => {
-                this.props.dispatch(reset(COLLECTION_CREATE_DIALOG));
-                this.props.dispatch(collectionCreateActions.OPEN_COLLECTION_CREATOR({ ownerUuid: this.props.currentItemId }));
+                this.props.dispatch<any>(openCollectionCreateDialog(this.props.currentItemId));
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

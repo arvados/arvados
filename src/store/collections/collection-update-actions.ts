@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
-import { updateDetails } from "~/store/details-panel/details-panel-action";
+import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { dataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
@@ -46,7 +46,7 @@ export const updateCollection = (collection: Partial<CollectionResource>) =>
         try {
             const updatedCollection = await services.collectionService.update(uuid, collection);
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
-            dispatch<any>(updateDetails(updatedCollection));
+            dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
             dispatch(dataExplorerActions.REQUEST_ITEMS({ id: PROJECT_PANEL_ID }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
         } catch(e) {
