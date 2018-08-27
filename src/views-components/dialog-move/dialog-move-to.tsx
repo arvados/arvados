@@ -10,7 +10,7 @@ import { ProjectTreePickerField } from '~/views-components/project-tree-picker/p
 import { MOVE_TO_VALIDATION } from '~/validators/validators';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
-export const MoveToFormDialog = (props: WithDialogProps<string> & InjectedFormProps<MoveToFormDialogData>) =>
+export const DialogMoveTo = (props: WithDialogProps<string> & InjectedFormProps<MoveToFormDialogData>) =>
     <FormDialog
         dialogTitle='Move to'
         formFields={MoveToDialogFields}

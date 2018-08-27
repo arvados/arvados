@@ -8,7 +8,7 @@ import { reduxForm } from 'redux-form';
 import { PROJECT_MOVE_FORM_NAME } from '~/store/projects/project-move-actions';
 import { moveProject } from '~/store/projects/project-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
-import { MoveToFormDialog } from '~/views-components/dialog-move/move-to-dialog';
+import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
 
 export const MoveProjectDialog = compose(
     withDialog(PROJECT_MOVE_FORM_NAME),
@@ -18,5 +18,5 @@ export const MoveProjectDialog = compose(
             dispatch(moveProject(data));
         }
     })
-)(MoveToFormDialog);
+)(DialogMoveTo);
 

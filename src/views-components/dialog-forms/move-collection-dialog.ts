@@ -5,7 +5,7 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { MoveToFormDialog } from '~/views-components/dialog-move/move-to-dialog';
+import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
 import { COLLECTION_MOVE_FORM_NAME, moveCollection } from '~/store/collections/collection-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
@@ -17,4 +17,4 @@ export const MoveCollectionDialog = compose(
             dispatch(moveCollection(data));
         }
     })
-)(MoveToFormDialog);
+)(DialogMoveTo);
