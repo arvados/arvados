@@ -16,30 +16,27 @@ import { RootState } from '~/store/store';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText' | 'link';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'headerText' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         marginBottom: theme.spacing.unit * 2,
+        paddingBottom: theme.spacing.unit * 3,
+        position: 'relative'
     },
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.green700
     },
     label: {
+        display: 'flex',
+        justifyContent: 'flex-end',
         fontSize: '0.875rem',
+        marginRight: theme.spacing.unit * 3
     },
     value: {
         textTransform: 'none',
-        fontSize: '0.875rem'
-    },
-    content: {
-        display: 'flex',
-        paddingBottom: '0px ',
-        paddingTop: '0px',
-        '&:last-child': {
-            paddingBottom: '0px ',
-        }
+        fontSize: '0.875rem',
     },
     link: {
         fontSize: '0.875rem',
@@ -49,18 +46,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     chip: {
-        height: theme.spacing.unit * 2.5,
+        height: theme.spacing.unit * 3,
         width: theme.spacing.unit * 12,
         backgroundColor: theme.customs.colors.green700,
         color: theme.palette.common.white,
         fontSize: '0.875rem',
-        borderRadius: theme.spacing.unit * 0.625
+        borderRadius: theme.spacing.unit * 0.625,
+        position: 'absolute',
+        top: theme.spacing.unit * 2.5,
+        right: theme.spacing.unit * 8,
     },
     headerText: {
         fontSize: '0.875rem',
-        position: 'relative',
-        top: -theme.spacing.unit * 4.5,
-        left: theme.spacing.unit * 3,
+        marginLeft: theme.spacing.unit * 3,
     }
 });
 
@@ -87,38 +85,33 @@ export const InformationCard = withStyles(styles)(
                                     aria-label="More options"
                                     onClick={this.handleContextMenu}>
                                     <MoreOptionsIcon />
-                                </IconButton>
-                            }
-                            title="Pipeline template that generates a config file from a template" />
-                        <CardContent className={classes.content}>
-                            <Grid container direction="column">
-                                <Grid item xs={8}>
+                                </IconButton>}
+                            title="Pipeline template that generates a config file from a template"
+                            subheader="(no description)" />
+                            <Chip label="Complete" className={classes.chip} />
+                        <CardContent>
+                            <Grid container>
+                                <Grid item xs={6}>
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Status' value={<Chip label="Complete" className={classes.chip} />} />
+                                        label='From' value="1:25 PM 3/23/2018" />
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Started at' value="1:25 PM 3/23/2018" />
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Finished at' value='1:25 PM 3/23/2018' />
+                                        label='To' value='1:25 PM 3/23/2018' />
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.link}
+                                        label='Workflow' value='FastQC MultiQC' />
                                 </Grid>
-                            </Grid>
-                            <Grid container direction="column">
-                                <Grid item xs={8}>
+                                <Grid item xs={6}>
                                     <DetailsAttribute classLabel={classes.link} classValue={classes.value}
-                                        label='Container output' />
+                                        label='Outputs' />
                                     <DetailsAttribute classLabel={classes.link} classValue={classes.value}
-                                        label='Show inputs' />
-                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
-                                        label='Show command' />
+                                        label='Inputs' />
                                 </Grid>
                             </Grid>
                         </CardContent>
-                        <span className={classes.headerText}>This container request was created from the workflow <span className={classes.link}>FastQC MultiQC</span></span>
                     </Card>
                 </div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                // const { uuid, name, description } = this.props.item;
                 const resource = {
                     uuid: '',
                     name: '',
