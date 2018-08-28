@@ -63,5 +63,6 @@ export enum ContextMenuKind {
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_ITEM = "CollectionFilesItem",
     COLLECTION = 'Collection',
-    COLLECTION_RESOURCE = 'CollectionResource'
+    COLLECTION_RESOURCE = 'CollectionResource',
+    PROCESS = "Process"
 }

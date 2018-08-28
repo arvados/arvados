@@ -40,7 +40,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface DetailsAttributeDataProps {
     label: string;
     classLabel?: string;
-    value?: string | number;
+    value?: any;
     classValue?: string;
     lowercaseValue?: boolean;
     link?: string;

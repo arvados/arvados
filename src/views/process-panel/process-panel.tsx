@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid
+    CardHeader, IconButton, CardContent, Grid, Chip
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ProcessResource } from '~/models/process';
@@ -15,11 +15,12 @@ import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { RootState } from '~/store/store';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing.unit * 2,
+        width: '60%'
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -31,6 +32,30 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     value: {
         textTransform: 'none',
         fontSize: '0.875rem'
+    },
+    content: {
+        display: 'flex',
+        paddingBottom: '0px ',
+        paddingTop: '0px',
+        '&:last-child': {
+            paddingBottom: '0px ',
+        }
+    },
+    chip: {
+        height: theme.spacing.unit * 2.5,
+        width: theme.spacing.unit * 12,
+        backgroundColor: theme.customs.colors.green700,
+        color: theme.palette.common.white,
+        fontSize: '0.875rem',
+        borderRadius: theme.spacing.unit * 0.625
+    },
+    headerText: {
+        fontSize: '0.875rem',
+        display: 'flex',
+        position: 'relative',
+        justifyContent: 'flex-end',
+        top: -theme.spacing.unit * 4.5,
+        right: theme.spacing.unit * 2,
     }
 });
 
@@ -66,22 +91,30 @@ export const ProcessPanel = withStyles(styles)(
                                 </IconButton>
                             }
                             title="Pipeline template that generates a config file from a template"
-                            subheader="(no description)"
-                        />
-                        <CardContent>
+                             />
+                        <CardContent className={classes.content}>
                             <Grid container direction="column">
-                                <Grid item xs={6}>
+                                <Grid item xs={8}>
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Collection UUID' value="uuid" />
+                                        label='Status' value={<Chip label="Complete" className={classes.chip} />} />
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Number of files' value='14' />
+                                        label='Started at' value="1:25 PM 3/23/2018" />
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Content size' value='54 MB' />
+                                        label='Finished at' value='1:25 PM 3/23/2018' />
+                                </Grid>
+                            </Grid>
+                            <Grid container direction="column">
+                                <Grid item xs={8}>
                                     <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Owner' value="ownerUuid" />
+                                        label='Container output' />
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Show inputs' />
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Show command' />
                                 </Grid>
                             </Grid>
                         </CardContent>
+                        <span className={classes.headerText}>This container request was created from the workflow FastQC MultiQC</span>
                     </Card>
                 </div>;
             }

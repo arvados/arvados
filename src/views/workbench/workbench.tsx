@@ -50,7 +50,6 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
-import { DialogCollectionCreateWithSelectedFile } from '~/views-components/create-collection-dialog-with-selected/create-collection-dialog-with-selected';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
 import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
@@ -251,7 +250,6 @@ export const Workbench = withStyles(styles)(
                         <CreateCollectionDialog />
                         <RenameFileDialog />
                         <CollectionPartialCopyDialog />
-                        <DialogCollectionCreateWithSelectedFile />
                         <FileRemoveDialog />
                         <CopyCollectionDialog />
                         <MultipleFilesRemoveDialog />
@@ -274,10 +272,10 @@ export const Workbench = withStyles(styles)(
                 }}
                 onContextMenu={(event, item) => {
                     this.openContextMenu(event, {
-                        uuid: item.uuid,
-                        name: item.name,
-                        description: item.description,
-                        kind: ContextMenuKind.COLLECTION
+                        uuid: 'item.uuid',
+                        name: 'item.name',
+                        description: 'item.description',
+                        kind: ContextMenuKind.PROCESS
                     });
                 }}
                 {...props} />

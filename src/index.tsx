@@ -27,6 +27,7 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
+import { processActionSet } from './views-components/context-menu/action-sets/process-action-set';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -44,6 +45,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
+addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 
 fetchConfig()
     .then(config => {
