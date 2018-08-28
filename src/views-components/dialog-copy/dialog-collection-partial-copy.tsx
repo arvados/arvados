@@ -4,14 +4,14 @@
 
 import * as React from "react";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from '../form-fields/collection-form-fields';
+import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from '~/views-components/form-fields/collection-form-fields';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyFormData } from '../../store/collections/collection-partial-copy-actions';
+import { CollectionPartialCopyFormData } from '~/store/collections/collection-partial-copy-actions';
 
-type PartialCopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
 
-export const CollectionPartialCopyDialog = (props: PartialCopyFormDialogProps) =>
+export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyProps) =>
     <FormDialog
         dialogTitle='Create a collection'
         formFields={CollectionPartialCopyFields}

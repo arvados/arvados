@@ -34,8 +34,8 @@ import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-c
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
-import { CollectionFilesUploadDialog } from '~/views-components/dialog-forms/collection-files-upload-dialog';
-import { CollectionPartialCopyDialog } from '~/views-components/dialog-forms/collection-partial-copy-dialog';
+import { UploadCollectionFilesDialog } from '~/views-components/dialog-forms/upload-collection-files-dialog';
+import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
 
 const APP_BAR_HEIGHT = 100;
@@ -174,12 +174,12 @@ export const Workbench = withStyles(styles)(
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
                         <RenameFileDialog />
-                        <CollectionPartialCopyDialog />
+                        <PartialCopyCollectionDialog />
                         <FileRemoveDialog />
                         <CopyCollectionDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
-                        <CollectionFilesUploadDialog />
+                        <UploadCollectionFilesDialog />
                         <UpdateProjectDialog />
                         <MoveCollectionDialog />
                         <MoveProjectDialog />

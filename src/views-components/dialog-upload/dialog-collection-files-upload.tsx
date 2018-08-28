@@ -8,12 +8,12 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { require } from '~/validators/require';
-import { FileUploaderField } from '../file-uploader/file-uploader';
+import { FileUploaderField } from '~/views-components/file-uploader/file-uploader';
 
 
-type CollectionFilesUploadDialogProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
+type DialogCollectionFilesUploadProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
-export const CollectionFilesUploadDialog = (props: CollectionFilesUploadDialogProps) =>
+export const DialogCollectionFilesUpload = (props: DialogCollectionFilesUploadProps) =>
     <FormDialog
         dialogTitle='Upload data'
         formFields={UploadCollectionFilesFields}
