@@ -15,7 +15,7 @@ import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { RootState } from '~/store/store';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -27,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.green700
     },
     label: {
-        fontSize: '0.875rem'
+        fontSize: '0.875rem',
     },
     value: {
         textTransform: 'none',
@@ -39,6 +39,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: '0px',
         '&:last-child': {
             paddingBottom: '0px ',
+        }
+    },
+    link: {
+        fontSize: '0.875rem',
+        '&:hover': {
+            color: theme.palette.primary.main,
+            cursor: 'pointer'
         }
     },
     chip: {
@@ -53,9 +60,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '0.875rem',
         display: 'flex',
         position: 'relative',
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-start',
         top: -theme.spacing.unit * 4.5,
-        right: theme.spacing.unit * 2,
+        left: theme.spacing.unit * 3,
     }
 });
 
@@ -64,7 +71,6 @@ interface ProcessPanelDataProps {
 }
 
 interface ProcessPanelActionProps {
-    onItemRouteChange: (processId: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ProcessResource) => void;
 }
 
@@ -105,11 +111,11 @@ export const ProcessPanel = withStyles(styles)(
                             </Grid>
                             <Grid container direction="column">
                                 <Grid item xs={8}>
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
                                         label='Container output' />
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
                                         label='Show inputs' />
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
                                         label='Show command' />
                                 </Grid>
                             </Grid>
@@ -117,11 +123,6 @@ export const ProcessPanel = withStyles(styles)(
                         <span className={classes.headerText}>This container request was created from the workflow FastQC MultiQC</span>
                     </Card>
                 </div>;
-            }
-            componentWillReceiveProps({ match, item, onItemRouteChange }: ProcessPanelProps) {
-                if (!item || match.params.id !== item.uuid) {
-                    onItemRouteChange(match.params.id);
-                }
             }
         }
     )

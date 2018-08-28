@@ -267,9 +267,6 @@ export const Workbench = withStyles(styles)(
             }
 
             renderProcessPanel = (props: RouteComponentProps<{ id: string }>) => <ProcessPanel
-                onItemRouteChange={(processId) => {
-                    return <span>a</span>;
-                }}
                 onContextMenu={(event, item) => {
                     this.openContextMenu(event, {
                         uuid: 'item.uuid',
