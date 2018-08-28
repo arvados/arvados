@@ -24,7 +24,6 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
-import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
@@ -36,6 +35,7 @@ import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-proj
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { CollectionFilesUploadDialog } from '~/views-components/dialog-forms/collection-files-upload-dialog';
+import { CollectionPartialCopyDialog } from '~/views-components/dialog-forms/collection-partial-copy-dialog';
 
 
 const APP_BAR_HEIGHT = 100;
