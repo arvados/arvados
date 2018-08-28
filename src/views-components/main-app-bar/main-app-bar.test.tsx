@@ -5,7 +5,7 @@
 import * as React from "react";
 import { mount, configure } from "enzyme";
 import * as Adapter from "enzyme-adapter-react-16";
-import { MainAppBar } from "./main-app-bar";
+import { MainAppBar, MainAppBarProps } from './main-app-bar';
 import { SearchBar } from "~/components/search-bar/search-bar";
 import { Breadcrumbs } from "~/components/breadcrumbs/breadcrumbs";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
@@ -27,10 +27,7 @@ describe("<MainAppBar />", () => {
     it("renders all components and the menu for authenticated user if user prop has value", () => {
         const mainAppBar = mount(
             <MainAppBar
-                user={user}
-                onContextMenu={jest.fn()}
-                onDetailsPanelToggle={jest.fn()}
-                {...{ searchText: "", breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
+                {...mockMainAppBarProps({ user })}
             />
         );
         expect(mainAppBar.find(SearchBar)).toHaveLength(1);
@@ -42,10 +39,7 @@ describe("<MainAppBar />", () => {
         const menuItems = { accountMenu: [], helpMenu: [], anonymousMenu: [{ label: 'Sign in' }] };
         const mainAppBar = mount(
             <MainAppBar
-                menuItems={menuItems}
-                onDetailsPanelToggle={jest.fn()}
-                onContextMenu={jest.fn()}
-                {...{ searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
+                {...mockMainAppBarProps({ user: undefined, menuItems })}
             />
         );
         expect(mainAppBar.find(SearchBar)).toHaveLength(0);
@@ -58,12 +52,7 @@ describe("<MainAppBar />", () => {
         const onSearch = jest.fn();
         const mainAppBar = mount(
             <MainAppBar
-                searchText="search text"
-                searchDebounce={2000}
-                onContextMenu={jest.fn()}
-                onSearch={onSearch}
-                onDetailsPanelToggle={jest.fn()}
-                {...{ user, breadcrumbs: [], menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onBreadcrumbClick: jest.fn(), onMenuItemClick: jest.fn() }}
+                {...mockMainAppBarProps({ searchText: 'search text', searchDebounce: 2000, onSearch, user })}
             />
         );
         const searchBar = mainAppBar.find(SearchBar);
@@ -73,34 +62,12 @@ describe("<MainAppBar />", () => {
         expect(onSearch).toBeCalledWith("new search text");
     });
 
-    it("communicates with <Breadcrumbs />", () => {
-        const items = [{ label: "breadcrumb 1" }];
-        const onBreadcrumbClick = jest.fn();
-        const mainAppBar = mount(
-            <MainAppBar
-                breadcrumbs={items}
-                onContextMenu={jest.fn()}
-                onBreadcrumbClick={onBreadcrumbClick}
-                onDetailsPanelToggle={jest.fn()}
-                {...{ user, searchText: "", menuItems: { accountMenu: [], helpMenu: [], anonymousMenu: [] }, onSearch: jest.fn(), onMenuItemClick: jest.fn() }}
-            />
-        );
-        const breadcrumbs = mainAppBar.find(Breadcrumbs);
-        expect(breadcrumbs.prop("items")).toBe(items);
-        breadcrumbs.prop("onClick")(items[0]);
-        expect(onBreadcrumbClick).toBeCalledWith(items[0]);
-    });
-
     it("communicates with menu", () => {
         const onMenuItemClick = jest.fn();
-        const menuItems = { accountMenu: [{label: "log out"}], helpMenu: [], anonymousMenu: [] };
+        const menuItems = { accountMenu: [{ label: "log out" }], helpMenu: [], anonymousMenu: [] };
         const mainAppBar = mount(
             <MainAppBar
-                menuItems={menuItems}
-                onContextMenu={jest.fn()}
-                onMenuItemClick={onMenuItemClick}
-                onDetailsPanelToggle={jest.fn()}
-                {...{ user, searchText: "", breadcrumbs: [], onSearch: jest.fn(), onBreadcrumbClick: jest.fn() }}
+                {...mockMainAppBarProps({ menuItems, onMenuItemClick, user })}
             />
         );
 
@@ -108,4 +75,21 @@ describe("<MainAppBar />", () => {
         mainAppBar.find(DropdownMenu).at(0).find(MenuItem).at(1).simulate("click");
         expect(onMenuItemClick).toBeCalledWith(menuItems.accountMenu[0]);
     });
+});
+
+const Breadcrumbs = () => <span>Breadcrumbs</span>;
+
+const mockMainAppBarProps = (props: Partial<MainAppBarProps>): MainAppBarProps => ({
+    searchText: '',
+    breadcrumbs: Breadcrumbs,
+    menuItems: {
+        accountMenu: [],
+        helpMenu: [],
+        anonymousMenu: [],
+    },
+    buildInfo: '',
+    onSearch: jest.fn(),
+    onMenuItemClick: jest.fn(),
+    onDetailsPanelToggle: jest.fn(),
+    ...props,
 });

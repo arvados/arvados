@@ -6,7 +6,6 @@ import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
 import { User, getUserFullname } from "~/models/user";
 import { SearchBar } from "~/components/search-bar/search-bar";
-import { Breadcrumbs, Breadcrumb } from "~/components/breadcrumbs/breadcrumbs";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "~/components/icon/icon";
 
@@ -35,7 +34,7 @@ export interface MainAppBarActionProps {
     onDetailsPanelToggle: () => void;
 }
 
-type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
+export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
 
 export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
     return <AppBar position="static">
