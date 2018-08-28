@@ -5,8 +5,9 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { COLLECTION_COPY_FORM_NAME, CollectionCopyFormDialogData, copyCollection } from '~/store/collections/collection-copy-actions';
+import { COLLECTION_COPY_FORM_NAME, CollectionCopyFormDialogData } from '~/store/collections/collection-copy-actions';
 import { DialogCollectionCopy } from "~/views-components/dialog-copy/dialog-collection-copy";
+import { copyCollection } from '~/store/workbench/workbench-actions';
 
 export const CopyCollectionDialog = compose(
     withDialog(COLLECTION_COPY_FORM_NAME),

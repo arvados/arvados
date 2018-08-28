@@ -2,14 +2,31 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
-import { SidePanelId } from "~/store/side-panel/side-panel-reducer";
+import { Dispatch } from 'redux';
+import { isSidePanelTreeCategory, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { navigateToFavorites, navigateTo } from '../navigation/navigation-action';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 
-export const sidePanelActions = unionize({
-    TOGGLE_SIDE_PANEL_ITEM_OPEN: ofType<SidePanelId>()
-}, {
-    tag: 'type',
-    value: 'payload'
-});
+export const navigateFromSidePanel = (id: string) =>
+    (dispatch: Dispatch) => {
+        if (isSidePanelTreeCategory(id)) {
+            dispatch<any>(getSidePanelTreeCategoryAction(id));
+        } else {
+            dispatch<any>(navigateTo(id));
+        }
+    };
 
-export type SidePanelAction = UnionOf<typeof sidePanelActions>;
+const getSidePanelTreeCategoryAction = (id: string) => {
+    switch (id) {
+        case SidePanelTreeCategory.FAVORITES:
+            return navigateToFavorites;
+        default:
+            return sidePanelTreeCategoryNotAvailable(id);
+    }
+};
+
+const sidePanelTreeCategoryNotAvailable = (id: string) =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: `${id} not available`,
+        hideDuration: 3000,
+    });

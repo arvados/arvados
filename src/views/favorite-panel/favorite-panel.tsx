@@ -3,22 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { FavoritePanelItem } from './favorite-panel-item';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
-import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { renderName, renderStatus, renderType, renderOwner, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
 import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
+import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner, ResourceName } from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
+import { Dispatch } from 'redux';
+import { contextMenuActions, openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { loadDetailsPanel } from '../../store/details-panel/details-panel-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -45,14 +48,14 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
+export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: renderName,
+        render: uuid => <ResourceName uuid={uuid} />,
         width: "450px"
     },
     {
@@ -77,7 +80,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
                 type: ContainerRequestState.UNCOMMITTED
             }
         ],
-        render: renderStatus,
+        render: uuid => <ProcessStatus uuid={uuid} />,
         width: "75px"
     },
     {
@@ -102,7 +105,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
                 type: ResourceKind.PROJECT
             }
         ],
-        render: item => renderType(item.kind),
+        render: uuid => <ResourceType uuid={uuid} />,
         width: "125px"
     },
     {
@@ -111,7 +114,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderOwner(item.owner),
+        render: uuid => <ResourceOwner uuid={uuid} />,
         width: "200px"
     },
     {
@@ -120,7 +123,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderFileSize(item.fileSize),
+        render: uuid => <ResourceFileSize uuid={uuid} />,
         width: "50px"
     },
     {
@@ -129,7 +132,7 @@ export const columns: DataColumns<FavoritePanelItem, FavoritePanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: item => renderDate(item.lastModified),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />,
         width: "150px"
     }
 ];
@@ -139,36 +142,42 @@ interface FavoritePanelDataProps {
 }
 
 interface FavoritePanelActionProps {
-    onItemClick: (item: FavoritePanelItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: FavoritePanelItem) => void;
+    onItemClick: (item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: FavoritePanelItem) => void;
-    onItemRouteChange: (itemId: string) => void;
+    onItemDoubleClick: (item: string) => void;
 }
 
+const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
+    onContextMenu: (event, resourceUuid) => {
+        const kind = resourceKindToContextMenuKind(resourceUuid);
+        if (kind) {
+            dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
+        }
+    },
+    onDialogOpen: (ownerUuid: string) => { return; },
+    onItemClick: (resourceUuid: string) => {
+        dispatch<any>(loadDetailsPanel(resourceUuid));
+    },
+    onItemDoubleClick: uuid => {
+        dispatch<any>(navigateTo(uuid));
+    }
+});
+
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
-                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+    connect(undefined, mapDispatchToProps)(
         class extends React.Component<FavoritePanelProps> {
             render() {
                 return <DataExplorer
                     id={FAVORITE_PANEL_ID}
-                    columns={columns}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
-                    extractKey={(item: FavoritePanelItem) => item.uuid}
                     defaultIcon={FavoriteIcon}
-                    defaultMessages={['Your favorites list is empty.']}/>
-                ;
-            }
-
-            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: FavoritePanelProps) {
-                if (match.params.id !== currentItemId) {
-                    onItemRouteChange(match.params.id);
-                }
+                    defaultMessages={['Your favorites list is empty.']} />;
             }
         }
     )

@@ -3,21 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { detailsPanelActions, DetailsPanelAction } from "./details-panel-action";
-import { Resource } from "~/models/resource";
 
 export interface DetailsPanelState {
-    item: Resource | null;
+    resourceUuid: string;
     isOpened: boolean;
 }
 
 const initialState = {
-    item: null,
+    resourceUuid: '',
     isOpened: false
 };
 
 export const detailsPanelReducer = (state: DetailsPanelState = initialState, action: DetailsPanelAction) =>
     detailsPanelActions.match(action, {
         default: () => state,
-        LOAD_DETAILS_SUCCESS: ({ item }) => ({ ...state, item }),
+        LOAD_DETAILS_PANEL: resourceUuid => ({ ...state, resourceUuid }),
         TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened })
     });

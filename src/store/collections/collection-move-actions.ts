@@ -31,6 +31,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved', hideDuration: 2000 }));
+            return collection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
@@ -39,5 +40,6 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the collection.', hideDuration: 2000 }));
             }
+            return ;
         }
     };

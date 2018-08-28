@@ -2,77 +2,106 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, getDataExplorerColumnFilters, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from '../data-explorer/data-explorer-middleware-service';
 import { ProjectPanelColumnNames, ProjectPanelFilter } from "~/views/project-panel/project-panel";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
-import { ProjectPanelItem, resourceToDataItem } from "~/views/project-panel/project-panel-item";
 import { SortDirection } from "~/components/data-table/data-column";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
 import { FilterBuilder } from "~/common/api/filter-builder";
-import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { checkPresenceInFavorites } from "../favorites/favorites-actions";
-import { projectPanelActions } from "./project-panel-action";
+import { GroupContentsResourcePrefix, GroupContentsResource } from "~/services/groups-service/groups-service";
+import { updateFavorites } from "../favorites/favorites-actions";
+import { projectPanelActions, PROJECT_PANEL_CURRENT_UUID } from './project-panel-action';
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
+import { updateResources } from "~/store/resources/resources-actions";
+import { getProperty } from "~/store/properties/properties";
+import { snackbarActions } from '../snackbar/snackbar-actions';
+import { DataExplorer, getDataExplorer } from '../data-explorer/data-explorer-reducer';
+import { ListResults } from '~/common/api/common-resource-service';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
-        const dataExplorer = state.dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<ProjectPanelItem, ProjectPanelFilter>;
-        const typeFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.TYPE);
-        const statusFilters = this.getColumnFilters(columns, ProjectPanelColumnNames.STATUS);
-        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
-
-        const order = new OrderBuilder<ProjectResource>();
-
-        if (sortColumn) {
-            const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
-                ? OrderDirection.ASC
-                : OrderDirection.DESC;
-
-            const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
-            order
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const projectUuid = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+        if (!projectUuid) {
+            api.dispatch(projectPanelCurrentUuidIsNotSet());
+        } else if (!dataExplorer) {
+            api.dispatch(projectPanelDataExplorerIsNotSet());
+        } else {
+            try {
+                const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer));
+                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+                api.dispatch(updateResources(response.items));
+                api.dispatch(setItems(response));
+            } catch (e) {
+                api.dispatch(couldNotFetchProjectContents());
+            }
         }
-
-        this.services.groupsService
-            .contents(state.projects.currentItemId, {
-                limit: dataExplorer.rowsPerPage,
-                offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                order: order.getOrder(),
-                filters: new FilterBuilder()
-                    .addIsA("uuid", typeFilters.map(f => f.type))
-                    .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-                    .getFilters()
-            })
-            .then(response => {
-                api.dispatch(projectPanelActions.SET_ITEMS({
-                    items: response.items.map(resourceToDataItem),
-                    itemsAvailable: response.itemsAvailable,
-                    page: Math.floor(response.offset / response.limit),
-                    rowsPerPage: response.limit
-                }));
-                api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
-            })
-            .catch(() => {
-                api.dispatch(projectPanelActions.SET_ITEMS({
-                    items: [],
-                    itemsAvailable: 0,
-                    page: 0,
-                    rowsPerPage: dataExplorer.rowsPerPage
-                }));
-            });
     }
 }
+
+const setItems = (listResults: ListResults<GroupContentsResource>) =>
+    projectPanelActions.SET_ITEMS({
+        ...listResultsToDataExplorerItemsMeta(listResults),
+        items: listResults.items.map(resource => resource.uuid),
+    });
+
+const getParams = (dataExplorer: DataExplorer) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
+});
+
+const getFilters = (dataExplorer: DataExplorer) => {
+    const columns = dataExplorer.columns as DataColumns<string, ProjectPanelFilter>;
+    const typeFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE);
+    const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
+    return new FilterBuilder()
+        .addIsA("uuid", typeFilters.map(f => f.type))
+        .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+        .getFilters();
+};
+
+const getOrder = (dataExplorer: DataExplorer) => {
+    const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+    const order = new OrderBuilder<ProjectResource>();
+    if (sortColumn) {
+        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+            ? OrderDirection.ASC
+            : OrderDirection.DESC;
+
+        const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
+        return order
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT)
+            .getOrder();
+    } else {
+        return order.getOrder();
+    }
+};
+
+const projectPanelCurrentUuidIsNotSet = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Project panel is not opened.'
+    });
+
+const couldNotFetchProjectContents = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Could not fetch project contents.'
+    });
+
+const projectPanelDataExplorerIsNotSet = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Project panel is not ready.'
+    });

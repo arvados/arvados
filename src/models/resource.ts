@@ -20,5 +20,39 @@ export enum ResourceKind {
     GROUP = "arvados#group",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
-    WORKFLOW = "arvados#workflow"
+    WORKFLOW = "arvados#workflow",
+    USER = "arvados#user",
 }
+
+export enum ResourceObjectType {
+    USER = 'tpzed',
+    GROUP = 'j7d0g',
+    COLLECTION = '4zz18'
+}
+
+export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
+export const RESOURCE_UUID_REGEX = new RegExp(RESOURCE_UUID_PATTERN);
+
+export const isResourceUuid = (uuid: string) =>
+    RESOURCE_UUID_REGEX.test(uuid);
+
+export const extractUuidObjectType = (uuid: string) => {
+    const match = RESOURCE_UUID_REGEX.exec(uuid);
+    return match
+        ? match[0].split('-')[1]
+        : undefined;
+};
+
+export const extractUuidKind = (uuid: string = '') => {
+    const objectType = extractUuidObjectType(uuid);
+    switch (objectType) {
+        case ResourceObjectType.USER:
+            return ResourceKind.USER;
+        case ResourceObjectType.GROUP:
+            return ResourceKind.GROUP;
+        case ResourceObjectType.COLLECTION:
+            return ResourceKind.COLLECTION;
+        default:
+            return undefined;
+    }
+};
