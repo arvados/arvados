@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "unionize";
 import { Dispatch } from "redux";
 import { loadCollectionFiles } from "./collection-panel-files/collection-panel-files-actions";
-import { CollectionResource } from "~/models/collection";
+import { CollectionResource } from '~/models/collection';
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
 import { createTree } from "~/models/tree";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { TagResource, TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
+import { resourcesActions } from "~/store/resources/resources-actions";
+import { unionize, ofType, UnionOf } from '~/common/unionize';
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string }>(),
@@ -22,22 +23,21 @@ export const collectionPanelActions = unionize({
     CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: TagResource }>(),
     DELETE_COLLECTION_TAG: ofType<{ uuid: string }>(),
     DELETE_COLLECTION_TAG_SUCCESS: ofType<{ uuid: string }>()
-}, { tag: 'type', value: 'payload' });
+});
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 
-export const loadCollection = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const loadCollectionPanel = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
-        return services.collectionService
-            .get(uuid)
-            .then(item => {
-                dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item }));
-                dispatch<any>(loadCollectionFiles(uuid));
-            });
+        const collection = await services.collectionService.get(uuid);
+        dispatch(resourcesActions.SET_RESOURCES([collection]));
+        dispatch<any>(loadCollectionFiles(collection.uuid));
+        dispatch<any>(loadCollectionTags(collection.uuid));
+        return collection;
     };
 
 export const loadCollectionTags = (uuid: string) =>
@@ -49,7 +49,6 @@ export const loadCollectionTags = (uuid: string) =>
                 dispatch(collectionPanelActions.LOAD_COLLECTION_TAGS_SUCCESS({ tags }));
             });
     };
-
 
 export const createCollectionTag = (data: TagProperty) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

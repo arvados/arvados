@@ -6,9 +6,9 @@ import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
 import { PROJECT_MOVE_FORM_NAME } from '~/store/projects/project-move-actions';
-import { moveProject } from '~/store/projects/project-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
+import { moveProject } from '~/store/workbench/workbench-actions';
 
 export const MoveProjectDialog = compose(
     withDialog(PROJECT_MOVE_FORM_NAME),

@@ -107,7 +107,7 @@ export const Tree = withStyles(styles)(
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
-                            <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
+                            <i onClick={this.handleToggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
                                     {this.getProperArrowAnimation(it.status, it.items!)}
@@ -170,6 +170,11 @@ export const Tree = withStyles(styles)(
                     onSelectionChange(event, item);
                 }
                 : undefined;
+        }
+
+        handleToggleItemOpen = (id: string, status: TreeItemStatus) => (event: React.MouseEvent<HTMLElement>) => {
+            event.stopPropagation();
+            this.props.toggleItemOpen(id, status);
         }
     }
 );

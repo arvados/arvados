@@ -7,9 +7,9 @@ import { TreeItemStatus } from "~/components/tree/tree";
 
 export type TreePicker = { [key: string]: Tree<TreePickerNode> };
 
-export interface TreePickerNode {
+export interface TreePickerNode<Value = any> {
     nodeId: string;
-    value: any;
+    value: Value;
     selected: boolean;
     collapsed: boolean;
     status: TreeItemStatus;
@@ -21,3 +21,5 @@ export const createTreePickerNode = (data: { nodeId: string, value: any }) => ({
     collapsed: true,
     status: TreeItemStatus.INITIAL
 });
+
+export const getTreePicker = <Value = {}>(id: string) => (state: TreePicker): Tree<TreePickerNode<Value>> | undefined => state[id];

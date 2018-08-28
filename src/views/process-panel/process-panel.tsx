@@ -14,6 +14,8 @@ import { RouteComponentProps } from 'react-router';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { RootState } from '~/store/store';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText' | 'link';
 
@@ -83,7 +85,7 @@ export const ProcessPanel = withStyles(styles)(
     }))(
         class extends React.Component<ProcessPanelProps> {
             render() {
-                const { classes, onContextMenu, item } = this.props;
+                const { classes } = this.props;
 
                 return <div>
                     <Card className={classes.card}>
@@ -92,12 +94,11 @@ export const ProcessPanel = withStyles(styles)(
                             action={
                                 <IconButton
                                     aria-label="More options"
-                                    onClick={event => onContextMenu(event, item)}>
+                                    onClick={this.handleContextMenu}>
                                     <MoreOptionsIcon />
                                 </IconButton>
                             }
-                            title="Pipeline template that generates a config file from a template"
-                             />
+                            title="Pipeline template that generates a config file from a template" />
                         <CardContent className={classes.content}>
                             <Grid container direction="column">
                                 <Grid item xs={8}>
@@ -123,6 +124,17 @@ export const ProcessPanel = withStyles(styles)(
                         <span className={classes.headerText}>This container request was created from the workflow FastQC MultiQC</span>
                     </Card>
                 </div>;
+            }
+
+            handleContextMenu = (event: React.MouseEvent<any>) => {
+                // const { uuid, name, description } = this.props.item;
+                const resource = {
+                    uuid: '',
+                    name: '',
+                    description: '',
+                    kind: ContextMenuKind.PROCESS
+                };
+                this.props.dispatch<any>(openContextMenu(event, resource));
             }
         }
     )

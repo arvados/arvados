@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
@@ -13,7 +13,7 @@ export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
     CHECK_PRESENCE_IN_FAVORITES: ofType<string[]>(),
     UPDATE_FAVORITES: ofType<Record<string, boolean>>()
-}, { tag: 'type', value: 'payload' });
+});
 
 export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
@@ -40,7 +40,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
             });
     };
 
-export const checkPresenceInFavorites = (resourceUuids: string[]) =>
+export const updateFavorites = (resourceUuids: string[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
@@ -50,4 +50,3 @@ export const checkPresenceInFavorites = (resourceUuids: string[]) =>
                 dispatch(favoritesActions.UPDATE_FAVORITES(results));
             });
     };
-

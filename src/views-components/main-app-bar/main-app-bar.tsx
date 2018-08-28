@@ -6,7 +6,6 @@ import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
 import { User, getUserFullname } from "~/models/user";
 import { SearchBar } from "~/components/search-bar/search-bar";
-import { Breadcrumbs, Breadcrumb } from "~/components/breadcrumbs/breadcrumbs";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "~/components/icon/icon";
 
@@ -23,7 +22,7 @@ export interface MainAppBarMenuItems {
 interface MainAppBarDataProps {
     searchText: string;
     searchDebounce?: number;
-    breadcrumbs: Breadcrumb[];
+    breadcrumbs: React.ComponentType<any>;
     user?: User;
     menuItems: MainAppBarMenuItems;
     buildInfo: string;
@@ -31,13 +30,11 @@ interface MainAppBarDataProps {
 
 export interface MainAppBarActionProps {
     onSearch: (searchText: string) => void;
-    onBreadcrumbClick: (breadcrumb: Breadcrumb) => void;
     onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
     onDetailsPanelToggle: () => void;
 }
 
-type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
+export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
 
 export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
     return <AppBar position="static">
@@ -68,15 +65,10 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
             </Grid>
         </Toolbar>
         <Toolbar >
-            {
-                props.user && <Breadcrumbs
-                    items={props.breadcrumbs}
-                    onClick={props.onBreadcrumbClick}
-                    onContextMenu={props.onContextMenu} />
-            }
-            { props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                    <DetailsIcon />
-                </IconButton>
+            {props.user && <props.breadcrumbs />}
+            {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
+                <DetailsIcon />
+            </IconButton>
             }
         </Toolbar>
     </AppBar>;

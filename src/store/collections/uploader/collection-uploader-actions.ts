@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -26,9 +26,6 @@ export const collectionUploaderActions = unionize({
     START_UPLOAD: ofType(),
     SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>(),
     CLEAR_UPLOAD: ofType()
-}, {
-    tag: 'type',
-    value: 'payload'
 });
 
 export type CollectionUploaderAction = UnionOf<typeof collectionUploaderActions>;

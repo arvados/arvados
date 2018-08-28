@@ -14,6 +14,9 @@ import { CollectionFilesService } from "./collection-files-service/collection-fi
 import { KeepService } from "./keep-service/keep-service";
 import { WebDAV } from "../common/webdav";
 import { Config } from "../common/config";
+import { UserService } from './user-service/user-service';
+import { AncestorService } from "~/services/ancestors-service/ancestors-service";
+import { ResourceKind } from "~/models/resource";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -33,6 +36,8 @@ export const createServices = (config: Config) => {
     const collectionService = new CollectionService(apiClient, webdavClient, authService);
     const tagService = new TagService(linkService);
     const collectionFilesService = new CollectionFilesService(collectionService);
+    const userService = new UserService(apiClient);
+    const ancestorsService = new AncestorService(groupsService, userService);
 
     return {
         apiClient,
@@ -45,6 +50,21 @@ export const createServices = (config: Config) => {
         favoriteService,
         collectionService,
         tagService,
-        collectionFilesService
+        collectionFilesService,
+        userService,
+        ancestorsService,
     };
+};
+
+export const getResourceService = (kind?: ResourceKind) => (serviceRepository: ServiceRepository) => {
+    switch (kind) {
+        case ResourceKind.USER:
+            return serviceRepository.userService;
+        case ResourceKind.GROUP:
+            return serviceRepository.groupsService;
+        case ResourceKind.COLLECTION:
+            return serviceRepository.collectionService;
+        default:
+            return undefined;
+    }
 };

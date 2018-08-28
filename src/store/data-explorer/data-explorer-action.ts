@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataColumns } from "~/components/data-table/data-table";
 
@@ -17,7 +17,7 @@ export const dataExplorerActions = unionize({
     TOGGLE_COLUMN: ofType<{ id: string, columnName: string }>(),
     TOGGLE_SORT: ofType<{ id: string, columnName: string }>(),
     SET_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
-}, { tag: "type", value: "payload" });
+});
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
 
