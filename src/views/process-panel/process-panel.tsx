@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { InformationCard } from '~/views/process-panel/information-card';
+import { ProcessInformationCard } from '~/views/process-panel/information-card';
 import { Grid } from '@material-ui/core';
 
 export class ProcessPanel extends React.Component {
@@ -11,7 +11,7 @@ export class ProcessPanel extends React.Component {
         return <div>
             <Grid container>
                 <Grid item xs={7}>
-                    <InformationCard />
+                    <ProcessInformationCard />
                 </Grid>
             </Grid>
         </div>;

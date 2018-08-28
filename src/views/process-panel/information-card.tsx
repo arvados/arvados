@@ -66,13 +66,13 @@ interface ProcessInformationCardDataProps {
     item: ProcessResource;
 }
 
-type InformationCardProps = ProcessInformationCardDataProps & DispatchProp & WithStyles<CssRules>;
+type ProcessInformationCardProps = ProcessInformationCardDataProps & DispatchProp & WithStyles<CssRules>;
 
-export const InformationCard = withStyles(styles)(
+export const ProcessInformationCard = withStyles(styles)(
     connect((state: RootState) => ({
         item: state.collectionPanel.item
     }))(
-        class extends React.Component<InformationCardProps> {
+        class extends React.Component<ProcessInformationCardProps> {
             render() {
                 const { classes } = this.props;
 
@@ -100,10 +100,8 @@ export const InformationCard = withStyles(styles)(
                                         label='Workflow' value='FastQC MultiQC' />
                                 </Grid>
                                 <Grid item xs={6}>
-                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
-                                        label='Outputs' />
-                                    <DetailsAttribute classLabel={classes.link} classValue={classes.value}
-                                        label='Inputs' />
+                                    <DetailsAttribute classLabel={classes.link} label='Outputs' />
+                                    <DetailsAttribute classLabel={classes.link} label='Inputs' />
                                 </Grid>
                             </Grid>
                         </CardContent>

@@ -56,6 +56,24 @@ export const processActionSet: ContextMenuActionSet = [[
         }
     },
     {
+        name: "Inputs",
+        execute: (dispatch, resource) => {
+            // add code
+        }
+    },
+    {
+        name: "Outputs",
+        execute: (dispatch, resource) => {
+            // add code
+        }
+    },
+    {
+        name: "Command",
+        execute: (dispatch, resource) => {
+            // add code
+        }
+    },
+    {
         icon: DetailsIcon,
         name: "View details",
         execute: (dispatch, resource) => {
