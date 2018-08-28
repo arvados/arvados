@@ -25,7 +25,7 @@ import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-f
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
 import { UploadCollectionFilesDialog } from '~/views-components/upload-collection-files-dialog/upload-collection-files-dialog';
-import { CollectionPartialCopyDialog } from '~/views-components/collection-partial-copy-dialog/collection-partial-copy-dialog';
+import { CopyCollectionPartialDialog } from '~/views-components/dialog-forms/copy-collection-partial-dialog';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
@@ -175,9 +175,9 @@ export const Workbench = withStyles(styles)(
                         <CreateProjectDialog />
                         <CreateCollectionDialog />
                         <RenameFileDialog />
-                        <CollectionPartialCopyDialog />
-                        <FileRemoveDialog />
                         <CopyCollectionDialog />
+                        <CopyCollectionPartialDialog />
+                        <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
                         <UploadCollectionFilesDialog />
