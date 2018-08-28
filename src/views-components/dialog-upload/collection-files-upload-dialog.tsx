@@ -24,7 +24,9 @@ export const CollectionFilesUploadDialog = (props: CollectionFilesUploadDialogPr
 const UploadCollectionFilesFields = () =>
     <Field
         name='files'
-        validate={[require]}
+        validate={FILES_FIELD_VALIDATION}
         component={FileUploaderField} />;
+
+const FILES_FIELD_VALIDATION = [require];
 
 
