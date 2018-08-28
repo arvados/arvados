@@ -45,8 +45,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     link: {
         fontSize: '0.875rem',
+        color: theme.palette.primary.main,
         '&:hover': {
-            color: theme.palette.primary.main,
             cursor: 'pointer'
         }
     },
@@ -60,9 +60,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerText: {
         fontSize: '0.875rem',
-        display: 'flex',
         position: 'relative',
-        justifyContent: 'flex-start',
         top: -theme.spacing.unit * 4.5,
         left: theme.spacing.unit * 3,
     }
@@ -121,7 +119,7 @@ export const ProcessPanel = withStyles(styles)(
                                 </Grid>
                             </Grid>
                         </CardContent>
-                        <span className={classes.headerText}>This container request was created from the workflow FastQC MultiQC</span>
+                        <span className={classes.headerText}>This container request was created from the workflow <span className={classes.link}>FastQC MultiQC</span></span>
                     </Card>
                 </div>;
             }
