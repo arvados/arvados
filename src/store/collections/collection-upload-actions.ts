@@ -9,7 +9,7 @@ import { dialogActions } from '~/store/dialog/dialog-actions';
 import { loadCollectionFiles } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
-import { reset } from 'redux-form';
+import { reset, startSubmit } from 'redux-form';
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -19,18 +19,19 @@ export const uploadCollectionFiles = (collectionUuid: string) =>
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
     };
 
-export const UPLOAD_COLLECTION_FILES_DIALOG = 'uploadCollectionFilesDialog';
+export const COLLECTION_UPLOAD_FILES_DIALOG = 'uploadCollectionFilesDialog';
 
 export const openUploadCollectionFilesDialog = () => (dispatch: Dispatch) => {
-    dispatch(reset(UPLOAD_COLLECTION_FILES_DIALOG));
+    dispatch(reset(COLLECTION_UPLOAD_FILES_DIALOG));
     dispatch(fileUploaderActions.CLEAR_UPLOAD());
-    dispatch<any>(dialogActions.OPEN_DIALOG({ id: UPLOAD_COLLECTION_FILES_DIALOG, data: {} }));
+    dispatch<any>(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPLOAD_FILES_DIALOG, data: {} }));
 };
 
-export const uploadCurrentCollectionFiles = () =>
+export const submitCollectionFiles = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
+            dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
             await dispatch<any>(uploadCollectionFiles(currentCollection.uuid));
             dispatch<any>(loadCollectionFiles(currentCollection.uuid));
             dispatch(closeUploadCollectionFilesDialog());
@@ -38,7 +39,7 @@ export const uploadCurrentCollectionFiles = () =>
         }
     };
 
-export const closeUploadCollectionFilesDialog = () => dialogActions.CLOSE_DIALOG({ id: UPLOAD_COLLECTION_FILES_DIALOG });
+export const closeUploadCollectionFilesDialog = () => dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPLOAD_FILES_DIALOG });
 
 const handleUploadProgress = (dispatch: Dispatch) => (fileId: number, loaded: number, total: number, currentTime: number) => {
     dispatch(fileUploaderActions.SET_UPLOAD_PROGRESS({ fileId, loaded, total, currentTime }));
