@@ -18,5 +18,3 @@ export const CreateCollectionDialog = compose(
         }
     })
 )(DialogCollectionCreate);
-
-// onSubmit: (data: { name: string, description: string }, files: UploadFile[]) => void;
