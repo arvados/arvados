@@ -6,12 +6,13 @@ import { connect } from "react-redux";
 import { Dispatch, compose } from "redux";
 import { withDialog } from '~/store/dialog/with-dialog';
 import { FilesUploadDialog } from '~/components/file-upload-dialog/file-upload-dialog';
-import { RootState } from '../../store/store';
-import { uploadCurrentCollectionFiles, UPLOAD_COLLECTION_FILES_DIALOG, collectionUploaderActions } from '~/store/collections/uploader/collection-uploader-actions';
+import { RootState } from '~/store/store';
+import { UPLOAD_COLLECTION_FILES_DIALOG, uploadCurrentCollectionFiles } from '~/store/collections/collection-upload-actions';
+import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 
 const mapStateToProps = (state: RootState) => ({
-    files: state.collections.uploader,
-    uploading: state.collections.uploader.some(file => file.loaded < file.total)
+    files: state.fileUploader,
+    uploading: state.fileUploader.some(file => file.loaded < file.total)
 });
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
@@ -19,7 +20,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         dispatch<any>(uploadCurrentCollectionFiles());
     },
     onChange: (files: File[]) => {
-        dispatch(collectionUploaderActions.SET_UPLOAD_FILES(files));
+        dispatch(fileUploaderActions.SET_UPLOAD_FILES(files));
     }
 });
 
