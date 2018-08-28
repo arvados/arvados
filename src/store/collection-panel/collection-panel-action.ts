@@ -34,6 +34,7 @@ export const loadCollectionPanel = (uuid: string) =>
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         const collection = await services.collectionService.get(uuid);
+        dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         dispatch<any>(loadCollectionFiles(collection.uuid));
         dispatch<any>(loadCollectionTags(collection.uuid));

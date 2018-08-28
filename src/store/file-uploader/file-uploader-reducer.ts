@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionUploaderAction, collectionUploaderActions, UploadFile } from "./collection-uploader-actions";
+import { UploadFile, fileUploaderActions, FileUploaderAction } from "./file-uploader-actions";
 
-export type CollectionUploaderState = UploadFile[];
+export type UploaderState = UploadFile[];
 
-const initialState: CollectionUploaderState = [];
+const initialState: UploaderState = [];
 
-export const collectionUploaderReducer = (state: CollectionUploaderState = initialState, action: CollectionUploaderAction) => {
-    return collectionUploaderActions.match(action, {
+export const fileUploaderReducer = (state: UploaderState = initialState, action: FileUploaderAction) => {
+    return fileUploaderActions.match(action, {
         SET_UPLOAD_FILES: files => files.map((f, idx) => ({
             id: idx,
             file: f,
