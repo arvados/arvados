@@ -67,6 +67,17 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
         }
     };
 
+export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const resource = {
+            uuid: '',
+            name: '',
+            description: '',
+            kind: ContextMenuKind.PROCESS
+        };
+        dispatch<any>(openContextMenu(event, resource));
+    };
+
 export const resourceKindToContextMenuKind = (uuid: string) => {
     const kind = extractUuidKind(uuid);
     switch (kind) {
