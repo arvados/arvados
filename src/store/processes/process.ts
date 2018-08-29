@@ -37,6 +37,11 @@ export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => 
     }, []);
 };
 
+export const getProcessStatus = (process: Process) =>
+    process.container
+        ? process.container.state
+        : process.containerRequest.state;
+
 const isSubprocess = (uuid: string) => (resources: ResourcesState) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST
     && (resource as ContainerRequestResource).requestingContainerUuid === uuid;
