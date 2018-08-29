@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { compose } from 'redux';
-import { reduxForm, reset, startSubmit, stopSubmit, InjectedFormProps, Field } from 'redux-form';
+import { reduxForm, InjectedFormProps, Field } from 'redux-form';
 import { withDialog, WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { DialogContentText } from '@material-ui/core';

@@ -27,6 +27,7 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
+import { processActionSet } from './views-components/context-menu/action-sets/process-action-set';
 import { addRouteChangeHandlers } from './routes/routes';
 import { loadWorkbench } from './store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
@@ -47,6 +48,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
+addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 
 fetchConfig()
     .then((config) => {

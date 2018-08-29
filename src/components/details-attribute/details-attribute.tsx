@@ -33,7 +33,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '60%',
         color: theme.palette.primary.main,
         textDecoration: 'none',
-        overflowWrap: 'break-word'
+        overflowWrap: 'break-word',
+        cursor: 'pointer'
     }
 });
 
