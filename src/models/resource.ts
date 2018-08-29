@@ -27,7 +27,8 @@ export enum ResourceKind {
 export enum ResourceObjectType {
     USER = 'tpzed',
     GROUP = 'j7d0g',
-    COLLECTION = '4zz18'
+    COLLECTION = '4zz18',
+    CONTAINER_REQUEST = 'xvhdp'
 }
 
 export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
@@ -52,6 +53,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.GROUP;
         case ResourceObjectType.COLLECTION:
             return ResourceKind.COLLECTION;
+        case ResourceObjectType.CONTAINER_REQUEST:
+            return ResourceKind.CONTAINER_REQUEST;
         default:
             return undefined;
     }
