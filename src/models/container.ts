@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource, ResourceKind } from "./resource";
+import { MountType } from '~/models/mount-types';
+import { RuntimeConstraints } from "~/models/runtime-constraints";
+import { SchedulingParameters } from './scheduling-parameters';
 
 export enum ContainerState {
     QUEUED = 'Queued',
@@ -15,21 +18,21 @@ export enum ContainerState {
 export interface ContainerResource extends Resource {
     kind: ResourceKind.CONTAINER;
     state: string;
-    startedAt: string;
-    finishedAt: string;
-    log: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    log: string | null;
     environment: {};
     cwd: string;
     command: string[];
     outputPath: string;
-    mounts: {};
-    runtimeConstraints: {};
-    schedulingParameters: {};
-    output: string;
+    mounts: MountType[];
+    runtimeConstraints: RuntimeConstraints;
+    schedulingParameters: SchedulingParameters;
+    output: string | null;
     containerImage: string;
     progress: number;
     priority: number;
-    exitCode: number;
-    authUuid: string;
-    lockedByUuid: string;
+    exitCode: number | null;
+    authUuid: string | null;
+    lockedByUuid: string | null;
 }

@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource, ResourceKind } from "./resource";
+import { MountType } from "~/models/mount-types";
+import { RuntimeConstraints } from './runtime-constraints';
+import { SchedulingParameters } from './scheduling-parameters';
 
 export enum ContainerRequestState {
     UNCOMMITTED = "Uncommitted",
@@ -16,12 +19,12 @@ export interface ContainerRequestResource extends Resource {
     description: string;
     properties: any;
     state: ContainerRequestState;
-    requestingContainerUuid: string;
-    containerUuid: string;
+    requestingContainerUuid: string | null;
+    containerUuid: string | null;
     containerCountMax: number;
-    mounts: any;
-    runtimeConstraints: any;
-    schedulingParameters: any;
+    mounts: MountType[];
+    runtimeConstraints: RuntimeConstraints;
+    schedulingParameters: SchedulingParameters;
     containerImage: string;
     environment: any;
     cwd: string;
@@ -29,10 +32,10 @@ export interface ContainerRequestResource extends Resource {
     outputPath: string;
     outputName: string;
     outputTtl: number;
-    priority: number;
+    priority: number | null;
     expiresAt: string;
     useExisting: boolean;
-    logUuid: string;
-    outputUuid: string;
+    logUuid: string | null;
+    outputUuid: string | null;
     filters: string;
 }
