@@ -17,10 +17,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit
     },
     label: {
+        boxSizing: 'border-box',
         color: theme.palette.grey["500"],
         width: '40%'
     },
     value: {
+        boxSizing: 'border-box',
         width: '60%',
         display: 'flex',
         alignItems: 'flex-start',

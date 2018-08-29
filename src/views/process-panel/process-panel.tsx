@@ -16,6 +16,7 @@ import { DetailsAttribute } from '~/components/details-attribute/details-attribu
 import { RootState } from '~/store/store';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { SubprocessesCard } from '~/views/process-panel/subprocesses-card';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'content' | 'chip' | 'headerText' | 'link';
 
@@ -123,6 +124,7 @@ export const ProcessPanel = withStyles(styles)(
                         </CardContent>
                         <span className={classes.headerText}>This container request was created from the workflow FastQC MultiQC</span>
                     </Card>
+                    <SubprocessesCard />
                 </div>;
             }
 
