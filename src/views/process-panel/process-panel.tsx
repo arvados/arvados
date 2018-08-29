@@ -9,15 +9,13 @@ import { SubprocessesCard } from '~/views/process-panel/subprocesses-card';
 
 export class ProcessPanel extends React.Component {
     render() {
-        return <div>
-            <Grid container spacing={16}>
-                <Grid item xs={7}>
-                    <ProcessInformationCard />
-                </Grid>
-                <Grid item xs={5}>
-                    <SubprocessesCard />
-                </Grid>
+        return <Grid container spacing={16}>
+            <Grid item xs={7}>
+                <ProcessInformationCard />
             </Grid>
-        </div>;
+            <Grid item xs={5}>
+                <SubprocessesCard />
+            </Grid>
+        </Grid>;
     }
 }
