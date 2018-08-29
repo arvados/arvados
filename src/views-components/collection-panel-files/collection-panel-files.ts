@@ -10,12 +10,11 @@ import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFil
 import { FileTreeData } from "~/components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
 import { Tree, getNodeChildrenIds, getNode } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
-import { openUploadCollectionFilesDialog } from '~/store/collections/uploader/collection-uploader-actions';
-import { openContextMenu } from '../../store/context-menu/context-menu-actions';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;

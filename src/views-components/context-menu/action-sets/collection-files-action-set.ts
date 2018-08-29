@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { openCollectionPartialCopyDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { openCollectionPartialCopyDialog } from '~/store/collections/collection-partial-copy-actions';
 
 export const collectionFilesActionSet: ContextMenuActionSet = [[{
     name: "Select all",

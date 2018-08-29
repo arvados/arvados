@@ -22,12 +22,12 @@ import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-mid
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 import { dialogReducer } from './dialog/dialog-reducer';
-import { collectionsReducer } from './collections/collections-reducer';
 import { ServiceRepository } from "~/services/services";
 import { treePickerReducer } from './tree-picker/tree-picker-reducer';
 import { resourcesReducer } from '~/store/resources/resources-reducer';
 import { propertiesReducer } from './properties/properties-reducer';
 import { RootState } from './store';
+import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -60,18 +60,18 @@ export function configureStore(history: History, services: ServiceRepository): R
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
-    collections: collectionsReducer,
-    router: routerReducer,
-    dataExplorer: dataExplorerReducer,
     collectionPanel: collectionPanelReducer,
-    detailsPanel: detailsPanelReducer,
-    contextMenu: contextMenuReducer,
-    form: formReducer,
-    favorites: favoritesReducer,
-    snackbar: snackbarReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
+    contextMenu: contextMenuReducer,
+    dataExplorer: dataExplorerReducer,
+    detailsPanel: detailsPanelReducer,
     dialog: dialogReducer,
-    treePicker: treePickerReducer,
-    resources: resourcesReducer,
+    favorites: favoritesReducer,
+    form: formReducer,
     properties: propertiesReducer,
+    resources: resourcesReducer,
+    router: routerReducer,
+    snackbar: snackbarReducer,
+    treePicker: treePickerReducer,
+    fileUploader: fileUploaderReducer,
 });

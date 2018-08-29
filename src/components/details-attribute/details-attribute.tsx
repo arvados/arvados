@@ -35,14 +35,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '60%',
         color: theme.palette.primary.main,
         textDecoration: 'none',
-        overflowWrap: 'break-word'
+        overflowWrap: 'break-word',
+        cursor: 'pointer'
     }
 });
 
 interface DetailsAttributeDataProps {
     label: string;
     classLabel?: string;
-    value?: any;
+    value?: string | number;
     classValue?: string;
     lowercaseValue?: boolean;
     link?: string;

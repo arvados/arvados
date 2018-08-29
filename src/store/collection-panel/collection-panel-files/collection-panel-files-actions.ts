@@ -86,65 +86,6 @@ export const openMultipleFilesRemoveDialog = () =>
         }
     });
 
-export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'collectionPartialCopyFormName';
-
-export interface CollectionPartialCopyFormData {
-    name: string;
-    description: string;
-    projectUuid: string;
-}
-
-export const openCollectionPartialCopyDialog = () =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            const initialData = {
-                name: currentCollection.name,
-                description: currentCollection.description,
-                projectUuid: ''
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialData));
-            dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: {} }));
-        }
-    };
-
-
-export const copyCollectionPartial = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
-        const state = getState();
-        const currentCollection = state.collectionPanel.item;
-        if (currentCollection) {
-            try {
-                const collection = await services.collectionService.get(currentCollection.uuid);
-                const collectionCopy = {
-                    ...collection,
-                    name,
-                    description,
-                    ownerUuid: projectUuid,
-                    uuid: undefined
-                };
-                const newCollection = await services.collectionService.create(collectionCopy);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
-                await services.collectionService.deleteFiles(newCollection.uuid, paths);
-                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
-            } catch (e) {
-                const error = getCommonResourceServiceError(e);
-                if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' }));
-                } else if (error === CommonResourceServiceError.UNKNOWN) {
-                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000 }));
-                } else {
-                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000 }));
-                }
-            }
-        }
-    };
-
 export const RENAME_FILE_DIALOG = 'renameFileDialog';
 export interface RenameFileDialogData {
     name: string;

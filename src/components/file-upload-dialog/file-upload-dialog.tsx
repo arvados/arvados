@@ -4,10 +4,10 @@
 
 import * as React from 'react';
 import { FileUpload } from "~/components/file-upload/file-upload";
-import { UploadFile } from '~/store/collections/uploader/collection-uploader-actions';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core/';
 import { Button, CircularProgress } from '@material-ui/core';
-import { WithDialogProps } from '../../store/dialog/with-dialog';
+import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { UploadFile } from '~/store/file-uploader/file-uploader-actions';
 
 export interface FilesUploadDialogProps {
     files: UploadFile[];

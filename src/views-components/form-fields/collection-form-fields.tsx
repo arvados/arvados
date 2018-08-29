@@ -8,14 +8,6 @@ import { TextField } from "~/components/text-field/text-field";
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "~/validators/validators";
 import { ProjectTreePicker } from "~/views-components/project-tree-picker/project-tree-picker";
 
-export const CollectionPartialCopyFields = () => <div style={{ display: 'flex' }}>
-    <div>
-        <CollectionNameField />
-        <CollectionDescriptionField />
-    </div>
-    <CollectionProjectPickerField />
-</div>;
-
 export const CollectionNameField = () =>
     <Field
         name='name'
