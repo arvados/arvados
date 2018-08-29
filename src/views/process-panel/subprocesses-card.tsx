@@ -49,7 +49,7 @@ export const SubprocessesCard = withStyles(styles)(
             const { classes } = this.props;
             return (
                 <Card className={classes.root}>
-                    <CardHeader title="Subprocesses and filters" />
+                    <CardHeader title="Subprocess and filters" />
                     <CardContent>
                         <Grid container direction="row" spacing={16} justify="flex-start" alignItems="stretch">
                             <Grid item>
