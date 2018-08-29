@@ -18,6 +18,7 @@ import { UserService } from './user-service/user-service';
 import { AncestorService } from "~/services/ancestors-service/ancestors-service";
 import { ResourceKind } from "~/models/resource";
 import { ContainerRequestService } from './container-request-service/container-request-service';
+import { ContainerService } from './container-service/container-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -34,6 +35,7 @@ export const createServices = (config: Config) => {
     const projectService = new ProjectService(apiClient);
     const userService = new UserService(apiClient);
     const containerRequestService = new ContainerRequestService(apiClient);
+    const containerService = new ContainerService(apiClient);
     
     const ancestorsService = new AncestorService(groupsService, userService);
     const authService = new AuthService(apiClient, config.rootUrl);
@@ -49,6 +51,7 @@ export const createServices = (config: Config) => {
         collectionFilesService,
         collectionService,
         containerRequestService,
+        containerService,
         favoriteService,
         groupsService,
         keepService,
