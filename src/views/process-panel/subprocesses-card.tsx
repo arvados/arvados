@@ -6,7 +6,7 @@ import * as React from 'react';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, withStyles, WithStyles, Card, CardHeader, CardContent, Grid, Switch } from '@material-ui/core';
 
-type CssRules = 'root' | 'label' | 'value' | 'switch' | 'grid';
+type CssRules = 'root' | 'label' | 'value' | 'middleValue' | 'switch' | 'grid';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -18,6 +18,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     value: {
         marginBottom: theme.spacing.unit
+    },
+    middleValue: {
+        marginBottom: theme.spacing.unit - 2
     },
     switch: {
         '& span:first-child': {
@@ -62,7 +65,7 @@ export const SubprocessesCard = withStyles(styles)(
                             <Grid item>
                                 <Grid container direction="column" alignItems="flex-start" spacing={8}>
                                     <Grid item className={classes.value}>1</Grid>
-                                    <Grid item className={classes.value}>
+                                    <Grid item className={classes.middleValue}>
                                         2
                                         <Switch classes={{ root: classes.switch }}
                                             checked={this.state.queued}
@@ -90,7 +93,7 @@ export const SubprocessesCard = withStyles(styles)(
                             <Grid item>
                                 <Grid container direction="column" alignItems="flex-end" spacing={8}>
                                     <Grid item className={classes.value}>&nbsp;</Grid>
-                                    <Grid item className={classes.value}>
+                                    <Grid item className={classes.middleValue}>
                                         2
                                         <Switch classes={{ root: classes.switch }}
                                             checked={this.state.completed}
