@@ -3,19 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { History, Location } from 'history';
-import { RootStore } from '../store/store';
+import { RootStore } from '~/store/store';
 import { matchPath } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
 import { getProjectUrl } from '../models/project';
 import { getCollectionUrl } from '~/models/collection';
-import { loadProject, loadFavorites, loadCollection } from '../store/workbench/workbench-actions';
+import { loadProject, loadFavorites, loadCollection } from '~/store/workbench/workbench-actions';
+import { loadProcess } from '~/store/processes/processes-actions';
 
 export const Routes = {
     ROOT: '/',
     TOKEN: '/token',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
-    PROCESS: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
+    PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',
 };
 
@@ -56,7 +57,7 @@ export const matchCollectionRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.COLLECTIONS });
 
 export const matchProcessRoute = (route: string) =>
-    matchPath<ResourceRouteParams>(route, { path: Routes.COLLECTIONS });
+    matchPath<ResourceRouteParams>(route, { path: Routes.PROCESSES });
 
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
@@ -71,6 +72,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     } else if (favoriteMatch) {
         store.dispatch(loadFavorites());
     } else if (processMatch) {
-        store.dispatch(processMatch.params.id);
+        store.dispatch(loadProcess(processMatch.params.id));
     }
 };

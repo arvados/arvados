@@ -3,17 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ProcessInformationCard } from '~/views-components/process-information-card/process-information-card';
-import { Grid } from '@material-ui/core';
+import { RootState } from '~/store/store';
+import { connect } from 'react-redux';
+import { getProcess } from '~/store/processes/process';
+import { Dispatch } from 'redux';
+import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
+import { matchProcessRoute } from '~/routes/routes';
+import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
 
-export class ProcessPanel extends React.Component {
-    render() {
-        return <div>
-            <Grid container>
-                <Grid item xs={7}>
-                    <ProcessInformationCard />
-                </Grid>
-            </Grid>
-        </div>;
+const mapStateToProps = ({ router, resources }: RootState): ProcessPanelRootDataProps => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchProcessRoute(pathname);
+    const uuid = match ? match.params.id : '';
+    return {
+        process: getProcess(uuid)(resources)
+    };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
+    onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
+        dispatch<any>(openProcessContextMenu(event));
     }
-}
+});
+
+export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

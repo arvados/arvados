@@ -28,6 +28,8 @@ import * as collectionCreateActions from '~/store/collections/collection-create-
 import * as collectionCopyActions from '~/store/collections/collection-copy-actions';
 import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
+import * as processesActions from '../processes/processes-actions';
+import { getProcess } from '../processes/process';
 
 
 export const loadWorkbench = () =>
@@ -169,6 +171,17 @@ export const moveCollection = (data: MoveToFormDialogData) =>
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved.', hideDuration: 2000 }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
+    };
+
+export const loadProcess = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        await dispatch<any>(processesActions.loadProcess(uuid));
+        const process = getProcess(uuid)(getState().resources);
+        if (process) {
+            await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
+            dispatch<any>(setCollectionBreadcrumbs(process.containerRequest.ownerUuid));
+            dispatch(loadDetailsPanel(uuid));
         }
     };
 
