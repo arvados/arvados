@@ -15,6 +15,7 @@ export const Routes = {
     TOKEN: '/token',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
+    PROCESS: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',
 };
 

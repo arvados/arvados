@@ -34,6 +34,7 @@ import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-c
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
+import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { UploadCollectionFilesDialog } from '~/views-components/dialog-forms/upload-collection-files-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
@@ -165,6 +166,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                     <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                     <Route path={Routes.FAVORITES} component={FavoritePanel} />
+                                    <Route path={Routes.PROCESS} component={ProcessPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
