@@ -5,23 +5,27 @@
 import * as React from 'react';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, withStyles, WithStyles, Card, CardHeader, CardContent, Grid, Switch } from '@material-ui/core';
-import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 
-type CssRules = 'root' | 'label' | 'value' | 'switch';
+type CssRules = 'root' | 'label' | 'value' | 'switch' | 'grid';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-
+        fontSize: '0.875rem'
     },
     label: {
-        paddingRight: theme.spacing.unit * 2,
-        textAlign: 'right'
+        color: theme.palette.grey["500"],
+        marginBottom: theme.spacing.unit
     },
     value: {
-
+        marginBottom: theme.spacing.unit
     },
     switch: {
-        height: '18px'
+        '& span:first-child': {
+            height: '18px'
+        }
+    },
+    grid: {
+        marginLeft: '22px'
     }
 });
 
@@ -47,48 +51,62 @@ export const SubprocessesCard = withStyles(styles)(
                 <Card className={classes.root}>
                     <CardHeader title="Subprocesses and filters" />
                     <CardContent>
-                        <Grid container direction="row">
-                            <Grid item xs={3}>
-                                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                    label='Subprocesses:' value="6" />
+                        <Grid container direction="row" spacing={16} justify="flex-start" alignItems="stretch">
+                            <Grid item>
+                                <Grid container direction="column" alignItems="flex-end" spacing={8}>
+                                    <Grid item className={classes.label}>Subprocesses:</Grid>
+                                    <Grid item className={classes.label}>Queued:</Grid>
+                                    <Grid item className={classes.label}>Active:</Grid>
+                                </Grid>
                             </Grid>
-                        </Grid>
-                        <Grid container direction="row">
-                            <Grid item xs={3}>
-                                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                    label='Queued:' value='2'>
-                                    <Switch classes={{ bar: classes.switch }}
-                                        checked={this.state.queued}
-                                        onChange={this.handleChange('queued')}
-                                        value="queued"
-                                        color="primary" />
-                                </DetailsAttribute>
-                                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                    label='Active:' value='1'>
-                                    <Switch classes={{ bar: classes.switch }}
-                                        checked={this.state.active}
-                                        onChange={this.handleChange('active')}
-                                        value="active"
-                                        color="primary" />
-                                </DetailsAttribute>
+                            <Grid item>
+                                <Grid container direction="column" alignItems="flex-start" spacing={8}>
+                                    <Grid item className={classes.value}>1</Grid>
+                                    <Grid item className={classes.value}>
+                                        2
+                                        <Switch classes={{ root: classes.switch }}
+                                            checked={this.state.queued}
+                                            onChange={this.handleChange('queued')}
+                                            value="queued"
+                                            color="primary" />
+                                    </Grid>
+                                    <Grid item className={classes.value}>
+                                        3
+                                        <Switch classes={{ root: classes.switch }}
+                                            checked={this.state.active}
+                                            onChange={this.handleChange('active')}
+                                            value="active"
+                                            color="primary" />
+                                    </Grid>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={3}>
-                                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                    label='Completed:' value='2'>
-                                    <Switch classes={{ bar: classes.switch }}
-                                        checked={this.state.completed}
-                                        onChange={this.handleChange('completed')}
-                                        value="completed"
-                                        color="primary" />
-                                </DetailsAttribute>
-                                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                    label='Failed:' value='1'>
-                                    <Switch classes={{ bar: classes.switch }}
-                                        checked={this.state.failed}
-                                        onChange={this.handleChange('failed')}
-                                        value="failed"
-                                        color="primary" />
-                                </DetailsAttribute>
+                            <Grid item className={classes.grid}>
+                                <Grid container direction="column" alignItems="flex-end" spacing={8}>
+                                    <Grid item className={classes.label}>&nbsp;</Grid>
+                                    <Grid item className={classes.label}>Completed:</Grid>
+                                    <Grid item className={classes.label}>Failed:</Grid>
+                                </Grid>
+                            </Grid>
+                            <Grid item>
+                                <Grid container direction="column" alignItems="flex-end" spacing={8}>
+                                    <Grid item className={classes.value}>&nbsp;</Grid>
+                                    <Grid item className={classes.value}>
+                                        2
+                                        <Switch classes={{ root: classes.switch }}
+                                            checked={this.state.completed}
+                                            onChange={this.handleChange('completed')}
+                                            value="completed"
+                                            color="primary" />
+                                    </Grid>
+                                    <Grid item className={classes.value}>
+                                        1
+                                        <Switch classes={{ root: classes.switch }}
+                                            checked={this.state.failed}
+                                            onChange={this.handleChange('failed')}
+                                            value="failed"
+                                            color="primary" />
+                                    </Grid>
+                                </Grid>
                             </Grid>
                         </Grid>
                     </CardContent>
