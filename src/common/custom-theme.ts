@@ -24,6 +24,9 @@ export interface ArvadosTheme extends Theme {
 interface Colors {
     green700: string;
     yellow700: string;
+    red900: string;
+    blue500: string;
+    grey500: string;
 }
 
 const red900 = red["900"];
@@ -40,7 +43,10 @@ const themeOptions: ArvadosThemeOptions = {
     customs: {
         colors: {
             green700: green["700"],
-            yellow700: yellow["700"]
+            yellow700: yellow["700"],
+            red900: red['900'],
+            blue500: blue['500'],
+            grey500,
         }
     },
     overrides: {

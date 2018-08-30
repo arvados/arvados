@@ -7,11 +7,15 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
 } from '@material-ui/core';
+import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
+import { getBackgroundColorStatus } from '~/views/process-panel/process-panel';
+import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'headerText' | 'link' | 'content' | 'title' | 'avatar';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar'
+    | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -22,7 +26,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.green700,
     },
     avatar: {
-        alignSelf: 'flex-start'
+        alignSelf: 'flex-start',
+        paddingTop: theme.spacing.unit * 0.5
     },
     label: {
         display: 'flex',
@@ -45,14 +50,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     chip: {
         height: theme.spacing.unit * 3,
         width: theme.spacing.unit * 12,
-        backgroundColor: theme.customs.colors.green700,
         color: theme.palette.common.white,
         fontSize: '0.875rem',
         borderRadius: theme.spacing.unit * 0.625,
-    },
-    headerText: {
-        fontSize: '0.875rem',
-        marginLeft: theme.spacing.unit * 3,
     },
     content: {
         '&:last-child': {
@@ -61,8 +61,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     title: {
-        overflow: 'hidden'
-    }
+        overflow: 'hidden',
+        paddingTop: theme.spacing.unit * 0.5
+    },
+    headerActive: {
+        backgroundColor: theme.customs.colors.blue500,
+    },
+    headerCompleted: {
+        backgroundColor: theme.customs.colors.green700,
+    },
+    headerQueued: {
+        backgroundColor: theme.customs.colors.grey500,
+    },
+    headerFailed: {
+        backgroundColor: theme.customs.colors.red900,
+    },
+    headerCanceled: {
+        backgroundColor: theme.customs.colors.red900,
+    },
 });
 
 export interface ProcessInformationCardDataProps {
@@ -83,7 +99,8 @@ export const ProcessInformationCard = withStyles(styles)(
                 avatar={<ProcessIcon className={classes.iconHeader} />}
                 action={
                     <div>
-                        <Chip label="Complete" className={classes.chip} />
+                        <Chip label={SubprocessesStatus.ACTIVE}
+                            className={classnames([classes.chip, getBackgroundColorStatus(SubprocessesStatus.ACTIVE, classes)])} />
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
