@@ -11,7 +11,7 @@ import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { getBackgroundColorStatus } from '~/views/process-panel/process-panel';
+import { getBackgroundColorStatus } from '~/views/process-panel/process-panel-root';
 
 export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'
     | 'header' | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';

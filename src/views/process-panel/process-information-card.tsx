@@ -11,8 +11,9 @@ import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { getBackgroundColorStatus } from '~/views/process-panel/process-panel';
-import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses';
+import { Process } from '~/store/processes/process';
+import { getProcessStatus } from '~/store/processes/process';
+import { getBackgroundColorStatus } from '~/views/process-panel/process-panel-root';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar'
     | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -82,14 +83,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface ProcessInformationCardDataProps {
-    item: any;
+    process: Process;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules>;
 
 export const ProcessInformationCard = withStyles(styles)(
-    ({ classes, onContextMenu }: ProcessInformationCardProps) =>
+    ({ classes, process, onContextMenu }: ProcessInformationCardProps) =>
         <Card className={classes.card}>
             <CardHeader
                 classes={{
@@ -99,8 +100,8 @@ export const ProcessInformationCard = withStyles(styles)(
                 avatar={<ProcessIcon className={classes.iconHeader} />}
                 action={
                     <div>
-                        <Chip label={SubprocessesStatus.ACTIVE}
-                            className={classnames([classes.chip, getBackgroundColorStatus(SubprocessesStatus.ACTIVE, classes)])} />
+                        <Chip label={getProcessStatus(process)}
+                            className={classnames([classes.chip, getBackgroundColorStatus(getProcessStatus(process), classes)])} />
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
@@ -109,22 +110,22 @@ export const ProcessInformationCard = withStyles(styles)(
                     </div>
                 }
                 title={
-                    <Tooltip title="Pipeline template that generates a config file from a template">
+                    <Tooltip title={process.containerRequest.name}>
                         <Typography noWrap variant="title">
-                            Pipeline template that generates a config file from a template
+                           {process.containerRequest.name}
                         </Typography>
                     </Tooltip>
                 }
-                subheader="(no-description)" />
+                subheader={process.containerRequest.description} />
             <CardContent className={classes.content}>
                 <Grid container>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From' value="1:25 PM 3/23/2018" />
+                            label='From' value={process.container ? process.container.startedAt : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To' value='1:25 PM 3/23/2018' />
+                            label='To' value={process.container ? process.container.finishedAt : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.link}
-                            label='Workflow' value='FastQC MultiQC' />
+                            label='Workflow' value='???' />
                     </Grid>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.link} label='Outputs' />

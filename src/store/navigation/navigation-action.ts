@@ -9,7 +9,7 @@ import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
 
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes } from '~/routes/routes';
+import { Routes, getProcessUrl } from '~/routes/routes';
 
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch) => {
@@ -18,6 +18,8 @@ export const navigateTo = (uuid: string) =>
             dispatch<any>(navigateToProject(uuid));
         } else if (kind === ResourceKind.COLLECTION) {
             dispatch<any>(navigateToCollection(uuid));
+        } else if (kind === ResourceKind.CONTAINER_REQUEST) {
+            dispatch<any>(navigateToProcess(uuid));
         }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);
@@ -29,3 +31,5 @@ export const navigateToFavorites = push(Routes.FAVORITES);
 export const navigateToProject = compose(push, getProjectUrl);
 
 export const navigateToCollection = compose(push, getCollectionUrl);
+
+export const navigateToProcess = compose(push, getProcessUrl);

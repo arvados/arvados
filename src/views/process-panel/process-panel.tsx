@@ -3,40 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { } from '@material-ui/core';
-import { Grid } from '@material-ui/core';
-import { ProcessInformationCard } from '~/views-components/process-information-card/process-information-card';
-import { ProcessSubprocesses } from '~/views-components/process-subprocesses/process-subprocesses';
-import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses';
+import { RootState } from '~/store/store';
+import { connect } from 'react-redux';
+import { getProcess } from '~/store/processes/process';
+import { Dispatch } from 'redux';
+import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
+import { matchProcessRoute } from '~/routes/routes';
+import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
 
-export type CssRules = 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
-
-export class ProcessPanel extends React.Component {
-    render() {
-        return <div>
-            <Grid container>
-                <Grid item xs={7}>
-                    <ProcessInformationCard />
-                </Grid>
-            </Grid>
-            <ProcessSubprocesses />
-        </div>;
-    }
-}
-
-export const getBackgroundColorStatus = (status: SubprocessesStatus, classes: Record<CssRules, string>) => {
-    switch (status) {
-        case SubprocessesStatus.COMPLETED:
-            return classes.headerCompleted;
-        case SubprocessesStatus.CANCELED:
-            return classes.headerCanceled;
-        case SubprocessesStatus.QUEUED:
-            return classes.headerQueued;
-        case SubprocessesStatus.FAILED:
-            return classes.headerFailed;
-        case SubprocessesStatus.ACTIVE:
-            return classes.headerActive;
-        default:
-            return classes.headerQueued;
-    }
+const mapStateToProps = ({ router, resources }: RootState): ProcessPanelRootDataProps => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchProcessRoute(pathname);
+    const uuid = match ? match.params.id : '';
+    return {
+        process: getProcess(uuid)(resources)
+    };
 };
+
+const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
+    onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
+        dispatch<any>(openProcessContextMenu(event));
+    }
+});
+
+export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

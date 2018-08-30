@@ -7,9 +7,9 @@ import { reduxForm } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { COLLECTION_UPLOAD_FILES_DIALOG, submitCollectionFiles } from '~/store/collections/collection-upload-actions';
-import { DialogCollectionFilesUpload } from '../dialog-upload/dialog-collection-files-upload';
+import { DialogCollectionFilesUpload } from '~/views-components/dialog-upload/dialog-collection-files-upload';
 
-export const UploadCollectionFilesDialog = compose(
+export const FilesUploadCollectionDialog = compose(
     withDialog(COLLECTION_UPLOAD_FILES_DIALOG),
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_UPLOAD_FILES_DIALOG,

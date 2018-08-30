@@ -86,8 +86,6 @@ export const openMultipleFilesRemoveDialog = () =>
         }
     });
 
-
-
 export const RENAME_FILE_DIALOG = 'renameFileDialog';
 export interface RenameFileDialogData {
     name: string;

@@ -19,7 +19,7 @@ export const setResource = <T extends Resource>(id: string, data: T) =>
 
 export const deleteResource = (id: string) =>
     (state: ResourcesState) => {
-        const newState = {...state};
+        const newState = { ...state };
         delete newState[id];
         return newState;
     };
@@ -28,10 +28,14 @@ export const filterResources = (filter: (resource: Resource) => boolean) =>
     (state: ResourcesState) =>
         Object
             .keys(state)
-            .map(id => getResource(id)(state))
+            .reduce((resources, id) => {
+                const resource = getResource(id)(state);
+                return resource
+                    ? [...resources, resource]
+                    : resources;
+            }, [])
             .filter(filter);
 
 export const filterResourcesByKind = (kind: ResourceKind) =>
     (state: ResourcesState) =>
         filterResources(resource => resource.kind === kind)(state);
-
