@@ -35,7 +35,7 @@ export const openCollectionPartialCopyDialog = () =>
         }
     };
 
-export const doCollectionPartialCopy = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
+export const copyCollectionPartial = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
         const state = getState();
