@@ -6,7 +6,7 @@ import { RootStore } from '~/store/store';
 import { AuthService } from '~/services/auth-service/auth-service';
 import { Config } from '~/common/config';
 import { WebSocketService } from './websocket-service';
-import { ResourceEventMessage } from './resource-event-message';
+import { ResourceEventMessage, ResourceEventMessageType } from './resource-event-message';
 import { ResourceKind } from '~/models/resource';
 import { loadProcess } from '~/store/processes/processes-actions';
 import { loadContainers } from '../store/processes/processes-actions';
@@ -19,14 +19,17 @@ export const initWebSocket = (config: Config, authService: AuthService, store: R
 };
 
 const messageListener = (store: RootStore) => (message: ResourceEventMessage) => {
-    switch (message.objectKind) {
-        case ResourceKind.CONTAINER_REQUEST:
-            return store.dispatch(loadProcess(message.objectUuid));
-        case ResourceKind.CONTAINER:
-            return store.dispatch(loadContainers(
-                new FilterBuilder().addIn('uuid', [message.objectUuid]).getFilters()
-            ));
-        default:
-            return;
+    if (message.eventType === ResourceEventMessageType.CREATE || message.eventType === ResourceEventMessageType.UPDATE) {
+        switch (message.objectKind) {
+            case ResourceKind.CONTAINER_REQUEST:
+                return store.dispatch(loadProcess(message.objectUuid));
+            case ResourceKind.CONTAINER:
+                return store.dispatch(loadContainers(
+                    new FilterBuilder().addIn('uuid', [message.objectUuid]).getFilters()
+                ));
+            default:
+                return;
+        }
     }
+    return ;
 };
