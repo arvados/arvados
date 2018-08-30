@@ -38,7 +38,7 @@ export enum CommonResourceServiceError {
 
 export class CommonResourceService<T extends Resource> {
 
-    static mapResponseKeys = (response: any): Promise<any> =>
+    static mapResponseKeys = (response: { data: any }): Promise<any> =>
         CommonResourceService.mapKeys(_.camelCase)(response.data)
 
     static mapKeys = (mapFn: (key: string) => string) =>
