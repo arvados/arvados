@@ -40,7 +40,6 @@ import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/fil
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
-import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 
 const APP_BAR_HEIGHT = 100;
 
@@ -170,7 +169,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                     <Route path={Routes.FAVORITES} component={FavoritePanel} />
                                     <Route path={Routes.PROCESSES} component={ProcessPanel} />
-                                    <Route path="/trash" render={this.renderTrashPanel} />
+                                    <Route path={Routes.TRASH} component={TrashPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}

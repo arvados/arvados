@@ -11,6 +11,7 @@ import { AuthService } from "../auth-service/auth-service";
 import { mapTreeValues } from "~/models/tree";
 import { parseFilesResponse } from "./collection-service-files-response";
 import { fileToArrayBuffer } from "~/common/file";
+import * as _ from 'lodash';
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -84,5 +85,5 @@ export class CollectionService extends CommonResourceService<CollectionResource>
             })
             .then(CommonResourceService.mapResponseKeys);
     }
-    
+
 }

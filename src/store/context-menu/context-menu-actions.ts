@@ -27,7 +27,7 @@ export type ContextMenuResource = {
     description?: string;
     kind: ContextMenuKind;
     isTrashed?: boolean;
-}
+};
 
 export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) =>
     (dispatch: Dispatch) => {

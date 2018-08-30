@@ -8,7 +8,6 @@ import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
 import { FilterBuilder } from "~/common/api/filter-builder";
-import { checkPresenceInFavorites } from "../favorites/favorites-actions";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
@@ -17,6 +16,7 @@ import { resourceToDataItem, TrashPanelItem } from "~/views/trash-panel/trash-pa
 import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/trash-panel";
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
+import { updateFavorites } from "~/store/favorites/favorites-actions";
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -64,7 +64,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
-                api.dispatch<any>(checkPresenceInFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             })
             .catch(() => {
                 api.dispatch(trashPanelActions.SET_ITEMS({

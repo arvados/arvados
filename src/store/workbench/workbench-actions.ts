@@ -30,6 +30,8 @@ import * as collectionUpdateActions from '~/store/collections/collection-update-
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '../processes/processes-actions';
 import { getProcess } from '../processes/process';
+import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
+import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 
 
 export const loadWorkbench = () =>
@@ -41,6 +43,7 @@ export const loadWorkbench = () =>
             if (userResource) {
                 dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
+                dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -63,6 +66,12 @@ export const loadFavorites = () =>
         dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
     };
 
+export const loadTrash = () =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+        dispatch<any>(loadTrashPanel());
+        dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.TRASH));
+    };
 
 export const loadProject = (uuid: string) =>
     async (dispatch: Dispatch) => {

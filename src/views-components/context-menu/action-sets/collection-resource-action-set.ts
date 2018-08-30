@@ -11,6 +11,7 @@ import { openCollectionUpdateDialog } from "~/store/collections/collection-updat
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
 import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
+import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {

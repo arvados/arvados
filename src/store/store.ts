@@ -28,6 +28,8 @@ import { resourcesReducer } from '~/store/resources/resources-reducer';
 import { propertiesReducer } from './properties/properties-reducer';
 import { RootState } from './store';
 import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
+import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-middleware-service";
+import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&

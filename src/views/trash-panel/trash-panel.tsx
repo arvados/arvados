@@ -18,6 +18,8 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { renderName, renderType, renderFileSize, renderDate } from '~/views-components/data-explorer/renderers';
 import { TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
+import { getProperty } from "~/store/properties/properties";
+import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
 
 type CssRules = "toolbar" | "button";
 
@@ -43,7 +45,7 @@ export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind;
 }
 
-export const columns: DataColumns<TrashPanelItem, TrashPanelFilter> = [
+export const trashPanelColumns: DataColumns<TrashPanelItem, TrashPanelFilter> = [
     {
         name: TrashPanelColumnNames.NAME,
         selected: true,
@@ -119,16 +121,17 @@ interface TrashPanelActionProps {
     onItemRouteChange: (itemId: string) => void;
 }
 
-type TrashPanelProps = TrashPanelDataProps & TrashPanelActionProps & DispatchProp
-                        & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+type TrashPanelProps = TrashPanelDataProps & TrashPanelActionProps & DispatchProp & WithStyles<CssRules>;
 
 export const TrashPanel = withStyles(styles)(
-    connect((state: RootState) => ({ currentItemId: state.projects.currentItemId }))(
+    connect((state: RootState) => ({
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+        resources: state.resources
+    }))(
         class extends React.Component<TrashPanelProps> {
             render() {
                 return <DataExplorer
                     id={TRASH_PANEL_ID}
-                    columns={columns}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
@@ -136,12 +139,6 @@ export const TrashPanel = withStyles(styles)(
                     defaultIcon={TrashIcon}
                     defaultMessages={['Your trash list is empty.']}/>
                 ;
-            }
-
-            componentWillReceiveProps({ match, currentItemId, onItemRouteChange }: TrashPanelProps) {
-                if (match.params.id !== currentItemId) {
-                    onItemRouteChange(match.params.id);
-                }
             }
         }
     )

@@ -10,7 +10,6 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { ProcessState } from '~/models/process';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
@@ -18,17 +17,15 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
-import { ResourcesState, getResource } from '~/store/resources/resources';
+import { ResourcesState } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { contextMenuActions, resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { CollectionResource } from '~/models/collection';
-import { ProjectResource } from '~/models/project';
+import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 import { openCollectionCreateDialog } from '../../store/collections/collection-create-actions';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
+import { ContainerRequestState } from "~/models/container-request";
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -57,7 +54,7 @@ export enum ProjectPanelColumnNames {
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ProcessState;
+    type: ResourceKind | ContainerRequestState;
 }
 
 export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
@@ -77,19 +74,19 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
         sortDirection: SortDirection.NONE,
         filters: [
             {
-                name: ProcessState.COMMITTED,
+                name: ContainerRequestState.COMMITTED,
                 selected: true,
-                type: ProcessState.COMMITTED
+                type: ContainerRequestState.COMMITTED
             },
             {
-                name: ProcessState.FINAL,
+                name: ContainerRequestState.FINAL,
                 selected: true,
-                type: ProcessState.FINAL
+                type: ContainerRequestState.FINAL
             },
             {
-                name: ProcessState.UNCOMMITTED,
+                name: ContainerRequestState.UNCOMMITTED,
                 selected: true,
-                type: ProcessState.UNCOMMITTED
+                type: ContainerRequestState.UNCOMMITTED
             }
         ],
         render: uuid => <ProcessStatus uuid={uuid} />,

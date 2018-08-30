@@ -2,32 +2,30 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { reset, initialize } from "redux-form";
-
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { projectActions, PROJECT_FORM_NAME, toggleProjectTrashed } from "~/store/project/project-action";
-import { NewProjectIcon, RenameIcon } from "~/components/icon/icon";
+import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon } from "~/components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { PROJECT_CREATE_DIALOG } from "../../dialog-create/dialog-project-create";
+import { openMoveProjectDialog } from '~/store/projects/project-move-actions';
+import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
+import { openProjectUpdateDialog } from '~/store/projects/project-update-actions';
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
+import { toggleProjectTrashed } from "~/store/trash/trash-actions";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: NewProjectIcon,
         name: "New project",
         execute: (dispatch, resource) => {
-            dispatch(reset(PROJECT_CREATE_DIALOG));
-            dispatch(projectActions.OPEN_PROJECT_CREATOR({ ownerUuid: resource.uuid }));
+            dispatch<any>(openProjectCreateDialog(resource.uuid));
         }
     },
     {
         icon: RenameIcon,
         name: "Edit project",
         execute: (dispatch, resource) => {
-            dispatch(projectActions.OPEN_PROJECT_UPDATER({ uuid: resource.uuid }));
-            dispatch(initialize(PROJECT_FORM_NAME, { name: resource.name, description: resource.description }));
+            dispatch<any>(openProjectUpdateDialog(resource));
         }
     },
     {
@@ -43,5 +41,17 @@ export const projectActionSet: ContextMenuActionSet = [[
         execute: (dispatch, resource) => {
             dispatch<any>(toggleProjectTrashed(resource));
         }
-    }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => dispatch<any>(openMoveProjectDialog(resource))
+    },
+    {
+        icon: CopyIcon,
+        name: "Copy to project",
+        execute: (dispatch, resource) => {
+            // add code
+        }
+    },
 ]];

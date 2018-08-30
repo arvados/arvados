@@ -9,7 +9,6 @@ import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { ProcessState } from '~/models/process';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
@@ -18,10 +17,10 @@ import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action"
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner, ResourceName } from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
-import { contextMenuActions, openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { loadDetailsPanel } from '../../store/details-panel/details-panel-action';
+import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
+import { ContainerRequestState } from "~/models/container-request";
 
 type CssRules = "toolbar" | "button";
 
@@ -45,7 +44,7 @@ export enum FavoritePanelColumnNames {
 }
 
 export interface FavoritePanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ProcessState;
+    type: ResourceKind | ContainerRequestState;
 }
 
 export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
@@ -65,19 +64,19 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         sortDirection: SortDirection.NONE,
         filters: [
             {
-                name: ProcessState.COMMITTED,
+                name: ContainerRequestState.COMMITTED,
                 selected: true,
-                type: ProcessState.COMMITTED
+                type: ContainerRequestState.COMMITTED
             },
             {
-                name: ProcessState.FINAL,
+                name: ContainerRequestState.FINAL,
                 selected: true,
-                type: ProcessState.FINAL
+                type: ContainerRequestState.FINAL
             },
             {
-                name: ProcessState.UNCOMMITTED,
+                name: ContainerRequestState.UNCOMMITTED,
                 selected: true,
-                type: ProcessState.UNCOMMITTED
+                type: ContainerRequestState.UNCOMMITTED
             }
         ],
         render: uuid => <ProcessStatus uuid={uuid} />,
