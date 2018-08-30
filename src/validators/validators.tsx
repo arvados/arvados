@@ -14,3 +14,8 @@ export const PROJECT_DESCRIPTION_VALIDATION = [maxLength(255)];
 export const COLLECTION_NAME_VALIDATION = [require, maxLength(255)];
 export const COLLECTION_DESCRIPTION_VALIDATION = [maxLength(255)];
 export const COLLECTION_PROJECT_VALIDATION = [require];
+
+export const COPY_NAME_VALIDATION = [require, maxLength(255)];
+export const COPY_FILE_VALIDATION = [require];
+
+export const MOVE_TO_VALIDATION = [require];

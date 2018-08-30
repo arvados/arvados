@@ -3,42 +3,52 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { Tree, TreeProps, TreeItem } from "~/components/tree/tree";
+import { Tree, TreeProps, TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { RootState } from "~/store/store";
-import { TreePicker as TTreePicker, TreePickerNode, createTreePickerNode } from "~/store/tree-picker/tree-picker";
-import { getNodeValue, getNodeChildren } from "~/models/tree";
+import { createTreePickerNode, TreePickerNode } from "~/store/tree-picker/tree-picker";
+import { getNodeValue, getNodeChildrenIds, Tree as Ttree, createTree } from "~/models/tree";
+import { Dispatch } from "redux";
+
+export interface TreePickerProps {
+    pickerId: string;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, nodeId: string, pickerId: string) => void;
+    toggleItemOpen: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
+    toggleItemActive: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
+}
 
 const memoizedMapStateToProps = () => {
-    let prevState: TTreePicker;
-    let prevTree: Array<TreeItem<any>>;
-
-    return (state: RootState): Pick<TreeProps<any>, 'items'> => {
-        if (prevState !== state.treePicker) {
-            prevState = state.treePicker;
-            prevTree = getNodeChildren('')(state.treePicker)
-                .map(treePickerToTreeItems(state.treePicker));
+    let prevTree: Ttree<TreePickerNode>;
+    let mappedProps: Pick<TreeProps<any>, 'items'>;
+    return (state: RootState, props: TreePickerProps): Pick<TreeProps<any>, 'items'> => {
+        const tree = state.treePicker[props.pickerId] || createTree();
+        if(tree !== prevTree){
+            prevTree = tree;
+            mappedProps = {
+                items: getNodeChildrenIds('')(tree)
+                    .map(treePickerToTreeItems(tree))
+            };
         }
-        return {
-            items: prevTree
-        };
+        return mappedProps;
     };
 };
 
-const mapDispatchToProps = (): Pick<TreeProps<any>, 'onContextMenu'> => ({
-    onContextMenu: () => { return; },
+const mapDispatchToProps = (dispatch: Dispatch, props: TreePickerProps): Pick<TreeProps<any>, 'onContextMenu' | 'toggleItemOpen' | 'toggleItemActive'> => ({
+    onContextMenu: (event, item) => props.onContextMenu(event, item.id, props.pickerId),
+    toggleItemActive: (id, status) => props.toggleItemActive(id, status, props.pickerId),
+    toggleItemOpen: (id, status) => props.toggleItemOpen(id, status, props.pickerId)
 });
 
 export const TreePicker = connect(memoizedMapStateToProps(), mapDispatchToProps)(Tree);
 
-const treePickerToTreeItems = (tree: TTreePicker) =>
+const treePickerToTreeItems = (tree: Ttree<TreePickerNode>) =>
     (id: string): TreeItem<any> => {
-        const node: TreePickerNode = getNodeValue(id)(tree) || createTreePickerNode({ id: '', value: 'InvalidNode' });
-        const items = getNodeChildren(node.id)(tree)
+        const node: TreePickerNode = getNodeValue(id)(tree) || createTreePickerNode({ nodeId: '', value: 'InvalidNode' });
+        const items = getNodeChildrenIds(node.nodeId)(tree)
             .map(treePickerToTreeItems(tree));
         return {
             active: node.selected,
             data: node.value,
-            id: node.id,
+            id: node.nodeId,
             items: items.length > 0 ? items : undefined,
             open: !node.collapsed,
             status: node.status

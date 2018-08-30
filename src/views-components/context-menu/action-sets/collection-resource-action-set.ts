@@ -4,19 +4,20 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
+import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
-import { openUpdater } from "~/store/collections/updater/collection-updater-action";
+import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
-import { toggleCollectionTrashed } from "~/store/collections/collection-trash-actions";
+import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
+import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
         execute: (dispatch, resource) => {
-            dispatch<any>(openUpdater(resource));
+            dispatch<any>(openCollectionUpdateDialog(resource));
         }
     },
     {
@@ -29,9 +30,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
     },
     {
         component: ToggleFavoriteAction,
@@ -51,8 +50,8 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         icon: CopyIcon,
         name: "Copy to project",
         execute: (dispatch, resource) => {
-            // add code
-        }
+            dispatch<any>(openCollectionCopyDialog(resource));
+        },
     },
     {
         icon: DetailsIcon,

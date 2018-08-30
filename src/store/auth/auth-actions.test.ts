@@ -17,15 +17,16 @@ import 'jest-localstorage-mock';
 import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
+import { mockConfig } from '~/common/config';
 
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     let store: RootStore;
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
+        store = configureStore(createBrowserHistory(), createServices(mockConfig({})));
         localStorage.clear();
-        reducer = authReducer(createServices({ apiHost: "/arvados/v1", keepWebHost: "" }));
+        reducer = authReducer(createServices(mockConfig({})));
     });
 
     it('should initialise state with user and api token from local storage', () => {
@@ -72,3 +73,5 @@ describe('auth-actions', () => {
     });
     */
 });
+
+

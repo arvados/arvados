@@ -20,8 +20,9 @@ import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
+import { getResource } from '../../store/resources/resources';
 
-type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
+type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'headerTitle' | 'tabContainer';
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -45,7 +46,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'center'
     },
     headerIcon: {
-        fontSize: "34px"
+        fontSize: '2.125rem'
+    },
+    headerTitle: {
+        overflowWrap: 'break-word',
+        wordWrap: 'break-word'
     },
     tabContainer: {
         padding: theme.spacing.unit * 3
@@ -66,10 +71,13 @@ const getItem = (resource: DetailsResource): DetailsData => {
     }
 };
 
-const mapStateToProps = ({ detailsPanel }: RootState) => ({
-    isOpened: detailsPanel.isOpened,
-    item: getItem(detailsPanel.item as DetailsResource)
-});
+const mapStateToProps = ({ detailsPanel, resources }: RootState) => {
+    const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource;
+    return {
+        isOpened: detailsPanel.isOpened,
+        item: getItem(resource)
+    };
+};
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {
@@ -106,7 +114,7 @@ export const DetailsPanel = withStyles(styles)(
                 const { tabsValue } = this.state;
                 return (
                     <Typography component="div"
-                                className={classnames([classes.container, { [classes.opened]: isOpened }])}>
+                        className={classnames([classes.container, { [classes.opened]: isOpened }])}>
                         <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
                             <Typography component="div" className={classes.headerContainer}>
                                 <Grid container alignItems='center' justify='space-around'>
@@ -114,20 +122,20 @@ export const DetailsPanel = withStyles(styles)(
                                         {item.getIcon(classes.headerIcon)}
                                     </Grid>
                                     <Grid item xs={8}>
-                                        <Typography variant="title">
+                                        <Typography variant="title" className={classes.headerTitle}>
                                             {item.getTitle()}
                                         </Typography>
                                     </Grid>
                                     <Grid item>
                                         <IconButton color="inherit" onClick={onCloseDrawer}>
-                                            {<CloseIcon/>}
+                                            {<CloseIcon />}
                                         </IconButton>
                                     </Grid>
                                 </Grid>
                             </Typography>
                             <Tabs value={tabsValue} onChange={this.handleChange}>
-                                <Tab disableRipple label="Details"/>
-                                <Tab disableRipple label="Activity" disabled/>
+                                <Tab disableRipple label="Details" />
+                                <Tab disableRipple label="Activity" disabled />
                             </Tabs>
                             {tabsValue === 0 && this.renderTabContainer(
                                 <Grid container direction="column">
@@ -135,7 +143,7 @@ export const DetailsPanel = withStyles(styles)(
                                 </Grid>
                             )}
                             {tabsValue === 1 && this.renderTabContainer(
-                                <Grid container direction="column"/>
+                                <Grid container direction="column" />
                             )}
                         </Drawer>
                     </Typography>

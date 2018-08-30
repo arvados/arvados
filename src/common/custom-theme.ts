@@ -99,6 +99,9 @@ const themeOptions: ArvadosThemeOptions = {
             }
         },
         MuiInput: {
+            root: {
+                fontSize: '0.875rem'
+            },
             underline: {
                 '&:after': {
                     borderBottomColor: purple800
@@ -109,6 +112,9 @@ const themeOptions: ArvadosThemeOptions = {
             }
         },
         MuiFormLabel: {
+            root: {
+                fontSize: '0.875rem'
+            },
             focused: {
                 "&$focused:not($error)": {
                     color: purple800

@@ -7,14 +7,14 @@ import * as ReactDOM from 'react-dom';
 import { Provider } from "react-redux";
 import { Workbench } from './views/workbench/workbench';
 import './index.css';
-import { Route } from "react-router";
+import { Route } from 'react-router';
 import createBrowserHistory from "history/createBrowserHistory";
-import { configureStore } from "./store/store";
+import { History } from "history";
+import { configureStore, RootStore } from './store/store';
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "./views-components/api-token/api-token";
 import { initAuth } from "./store/auth/auth-action";
 import { createServices } from "./services/services";
-import { getProjectList } from "./store/project/project-action";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from './common/custom-theme';
 import { fetchConfig } from './common/config';
@@ -27,9 +27,13 @@ import { collectionFilesActionSet } from './views-components/context-menu/action
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
+import { processActionSet } from './views-components/context-menu/action-sets/process-action-set';
+import { addRouteChangeHandlers } from './routes/routes';
+import { loadWorkbench } from './store/workbench/workbench-actions';
+import { Routes } from '~/routes/routes';
 
-const getBuildNumber = () => "BN-" + (process.env.BUILD_NUMBER || "dev");
-const getGitCommit = () => "GIT-" + (process.env.GIT_COMMIT || "latest").substr(0, 7);
+const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
+const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
 const getBuildInfo = () => getBuildNumber() + " / " + getGitCommit();
 
 const buildInfo = getBuildInfo();
@@ -44,26 +48,28 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
+addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 
 fetchConfig()
-    .then(config => {
+    .then((config) => {
         const history = createBrowserHistory();
         const services = createServices(config);
         const store = configureStore(history, services);
 
-        store.dispatch(initAuth());
-        store.dispatch(getProjectList(services.authService.getUuid()));
+        store.subscribe(initListener(history, store));
 
-        const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props}/>;
-        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props}/>;
+        store.dispatch(initAuth());
+
+        const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
+        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props} />;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
                 <Provider store={store}>
                     <ConnectedRouter history={history}>
                         <div>
-                            <Route path="/" component={WorkbenchComponent} />
-                            <Route path="/token" component={TokenComponent} />
+                            <Route path={Routes.TOKEN} component={TokenComponent} />
+                            <Route path={Routes.ROOT} component={WorkbenchComponent} />
                         </div>
                     </ConnectedRouter>
                 </Provider>
@@ -73,6 +79,20 @@ fetchConfig()
             <App />,
             document.getElementById('root') as HTMLElement
         );
+
+
     });
+
+const initListener = (history: History, store: RootStore) => {
+    let initialized = false;
+    return async () => {
+        const { router, auth } = store.getState();
+        if (router.location && auth.user && !initialized) {
+            initialized = true;
+            await store.dispatch(loadWorkbench());
+            addRouteChangeHandlers(history, store);
+        }
+    };
+};
 
 

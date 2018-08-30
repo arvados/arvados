@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
+
 import { TreePickerNode } from "./tree-picker";
 
 export const treePickerActions = unionize({
-    LOAD_TREE_PICKER_NODE: ofType<{ id: string }>(),
-    LOAD_TREE_PICKER_NODE_SUCCESS: ofType<{ id: string, nodes: Array<TreePickerNode> }>(),
-    TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ id: string }>(),
-    TOGGLE_TREE_PICKER_NODE_SELECT: ofType<{ id: string }>()
-}, {
-        tag: 'type',
-        value: 'payload'
-    });
+    LOAD_TREE_PICKER_NODE: ofType<{ nodeId: string, pickerId: string }>(),
+    LOAD_TREE_PICKER_NODE_SUCCESS: ofType<{ nodeId: string, nodes: Array<TreePickerNode>, pickerId: string }>(),
+    TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ nodeId: string, pickerId: string }>(),
+    TOGGLE_TREE_PICKER_NODE_SELECT: ofType<{ nodeId: string, pickerId: string }>(),
+    EXPAND_TREE_PICKER_NODES: ofType<{ nodeIds: string[], pickerId: string }>(),
+    RESET_TREE_PICKER: ofType<{ pickerId: string }>()
+});
 
 export type TreePickerAction = UnionOf<typeof treePickerActions>;

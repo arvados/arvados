@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip
+    CardHeader, IconButton, CardContent, Grid, Chip, Tooltip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -19,8 +19,12 @@ import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { getResource } from '~/store/resources/resources';
+import { contextMenuActions, openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'value';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -40,8 +44,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["500"],
         cursor: 'pointer'
     },
+    label: {
+        fontSize: '0.875rem'
+    },
     value: {
-        textTransform: 'none'
+        textTransform: 'none',
+        fontSize: '0.875rem'
     }
 });
 
@@ -50,85 +58,100 @@ interface CollectionPanelDataProps {
     tags: TagResource[];
 }
 
-interface CollectionPanelActionProps {
-    onItemRouteChange: (collectionId: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: CollectionResource) => void;
-}
-
-type CollectionPanelProps = CollectionPanelDataProps & CollectionPanelActionProps & DispatchProp
-                            & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
+    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 
 export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState) => ({
-        item: state.collectionPanel.item,
-        tags: state.collectionPanel.tags
-    }))(
+    connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
+        const collection = getResource(props.match.params.id)(state.resources);
+        return {
+            item: collection,
+            tags: state.collectionPanel.tags
+        };
+    })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, tags, onContextMenu } = this.props;
+                const { classes, item, tags } = this.props;
                 return <div>
-                        <Card className={classes.card}>
-                            <CardHeader
-                                avatar={ <CollectionIcon className={classes.iconHeader} /> }
-                                action={
-                                    <IconButton
-                                        aria-label="More options"
-                                        onClick={event => onContextMenu(event, item)}>
-                                        <MoreOptionsIcon />
-                                    </IconButton>
-                                }
-                                title={item && item.name }
-                                subheader={item && item.description} />
-                            <CardContent>
-                                <Grid container direction="column">
-                                    <Grid item xs={6}>
-                                    <DetailsAttribute classValue={classes.value}
-                                            label='Collection UUID'
-                                            value={item && item.uuid}>
-                                        <CopyToClipboard text={item && item.uuid}>
-                                            <CopyIcon className={classes.copyIcon} />
-                                        </CopyToClipboard>
+                    <Card className={classes.card}>
+                        <CardHeader
+                            avatar={<CollectionIcon className={classes.iconHeader} />}
+                            action={
+                                <IconButton
+                                    aria-label="More options"
+                                    onClick={this.handleContextMenu}>
+                                    <MoreOptionsIcon />
+                                </IconButton>
+                            }
+                            title={item && item.name}
+                            subheader={item && item.description} />
+                        <CardContent>
+                            <Grid container direction="column">
+                                <Grid item xs={6}>
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Collection UUID'
+                                        value={item && item.uuid}>
+                                        <Tooltip title="Copy uuid">
+                                            <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy()}>
+                                                <CopyIcon className={classes.copyIcon} />
+                                            </CopyToClipboard>
+                                        </Tooltip>
                                     </DetailsAttribute>
-                                    <DetailsAttribute label='Number of files' value='14' />
-                                    <DetailsAttribute label='Content size' value='54 MB' />
-                                    <DetailsAttribute classValue={classes.value} label='Owner' value={item && item.ownerUuid} />
-                                    </Grid>
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Number of files' value='14' />
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Content size' value='54 MB' />
+                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                        label='Owner' value={item && item.ownerUuid} />
                                 </Grid>
-                            </CardContent>
-                        </Card>
+                            </Grid>
+                        </CardContent>
+                    </Card>
 
-                        <Card className={classes.card}>
-                            <CardHeader title="Properties" />
-                            <CardContent>
-                                <Grid container direction="column">
-                                    <Grid item xs={12}><CollectionTagForm /></Grid>
-                                    <Grid item xs={12}>
-                                        {
-                                            tags.map(tag => {
-                                                return <Chip key={tag.etag} className={classes.tag}
-                                                    onDelete={this.handleDelete(tag.uuid)}
-                                                    label={renderTagLabel(tag)}  />;
-                                            })
-                                        }
-                                    </Grid>
+                    <Card className={classes.card}>
+                        <CardHeader title="Properties" />
+                        <CardContent>
+                            <Grid container direction="column">
+                                <Grid item xs={12}><CollectionTagForm /></Grid>
+                                <Grid item xs={12}>
+                                    {
+                                        tags.map(tag => {
+                                            return <Chip key={tag.etag} className={classes.tag}
+                                                onDelete={this.handleDelete(tag.uuid)}
+                                                label={renderTagLabel(tag)} />;
+                                        })
+                                    }
                                 </Grid>
-                            </CardContent>
-                        </Card>
-                        <div className={classes.card}>
-                            <CollectionPanelFiles/>
-                        </div>
-                    </div>;
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                    <div className={classes.card}>
+                        <CollectionPanelFiles />
+                    </div>
+                </div>;
+            }
+
+            handleContextMenu = (event: React.MouseEvent<any>) => {
+                const { uuid, name, description } = this.props.item;
+                const resource = {
+                    uuid,
+                    name,
+                    description,
+                    kind: ContextMenuKind.COLLECTION
+                };
+                this.props.dispatch<any>(openContextMenu(event, resource));
             }
 
             handleDelete = (uuid: string) => () => {
                 this.props.dispatch<any>(deleteCollectionTag(uuid));
             }
 
-            componentWillReceiveProps({ match, item, onItemRouteChange }: CollectionPanelProps) {
-                if (!item || match.params.id !== item.uuid) {
-                    onItemRouteChange(match.params.id);
-                }
+            onCopy = () => {
+                this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Uuid has been copied",
+                    hideDuration: 2000
+                }));
             }
         }
     )

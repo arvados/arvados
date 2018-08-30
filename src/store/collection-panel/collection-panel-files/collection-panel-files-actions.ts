@@ -2,15 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { default as unionize, ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
 import { snackbarActions } from "../../snackbar/snackbar-actions";
-import { dialogActions } from "../../dialog/dialog-actions";
-import { getNodeValue, getNodeDescendants } from "~/models/tree";
-import { CollectionPanelDirectory, CollectionPanelFile } from "./collection-panel-files-state";
+import { dialogActions } from '../../dialog/dialog-actions';
+import { getNodeValue } from "~/models/tree";
+import { filterCollectionFilesBySelection } from './collection-panel-files-state';
+import { startSubmit, initialize, stopSubmit, reset } from 'redux-form';
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getDialog } from "~/store/dialog/dialog-reducer";
+import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -18,7 +22,7 @@ export const collectionPanelFilesAction = unionize({
     TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>(),
     SELECT_ALL_COLLECTION_FILES: ofType<{}>(),
     UNSELECT_ALL_COLLECTION_FILES: ofType<{}>(),
-}, { tag: 'type', value: 'payload' });
+});
 
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;
 
@@ -30,30 +34,23 @@ export const loadCollectionFiles = (uuid: string) =>
 
 export const removeCollectionFiles = (filePaths: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { item } = getState().collectionPanel;
-        if (item) {
+        const currentCollection = getState().collectionPanel.item;
+        if (currentCollection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-            const promises = filePaths.map(filePath => services.collectionService.deleteFile(item.uuid, filePath));
-            await Promise.all(promises);
-            dispatch<any>(loadCollectionFiles(item.uuid));
+            await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
+            dispatch<any>(loadCollectionFiles(currentCollection.uuid));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
         }
     };
 
 export const removeCollectionsSelectedFiles = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const tree = getState().collectionPanelFiles;
-        const allFiles = getNodeDescendants('')(tree)
-            .map(id => getNodeValue(id)(tree))
-            .filter(file => file !== undefined) as Array<CollectionPanelDirectory | CollectionPanelFile>;
-
-        const selectedDirectories = allFiles.filter(file => file.selected && file.type === CollectionFileType.DIRECTORY);
-        const selectedFiles = allFiles.filter(file => file.selected && !selectedDirectories.some(dir => dir.id === file.path));
-        const paths = [...selectedDirectories, ...selectedFiles].map(file => file.id);
+        const paths = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).map(file => file.id);
         dispatch<any>(removeCollectionFiles(paths));
     };
 
 export const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
+
 export const openFileRemoveDialog = (filePath: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const file = getNodeValue(filePath)(getState().collectionPanelFiles);
@@ -78,6 +75,7 @@ export const openFileRemoveDialog = (filePath: string) =>
     };
 
 export const MULTIPLE_FILES_REMOVE_DIALOG = 'multipleFilesRemoveDialog';
+
 export const openMultipleFilesRemoveDialog = () =>
     dialogActions.OPEN_DIALOG({
         id: MULTIPLE_FILES_REMOVE_DIALOG,
@@ -87,3 +85,34 @@ export const openMultipleFilesRemoveDialog = () =>
             confirmButtonLabel: 'Remove'
         }
     });
+
+export const RENAME_FILE_DIALOG = 'renameFileDialog';
+export interface RenameFileDialogData {
+    name: string;
+    id: string;
+}
+
+export const openRenameFileDialog = (data: RenameFileDialogData) =>
+    (dispatch: Dispatch) => {
+        dispatch(reset(RENAME_FILE_DIALOG));
+        dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_FILE_DIALOG, data }));
+    };
+
+export const renameFile = (newName: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const dialog = getDialog<RenameFileDialogData>(getState().dialog, RENAME_FILE_DIALOG);
+        const currentCollection = getState().collectionPanel.item;
+        if (dialog && currentCollection) {
+            dispatch(startSubmit(RENAME_FILE_DIALOG));
+            const oldPath = dialog.data.id;
+            const newPath = dialog.data.id.replace(dialog.data.name, newName);
+            try {
+                await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
+                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
+            } catch (e) {
+                dispatch(stopSubmit(RENAME_FILE_DIALOG, { name: 'Could not rename the file' }));
+            }
+        }
+    };

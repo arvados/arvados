@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ofType, default as unionize, UnionOf } from "unionize";
+import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
 import { User } from "~/models/user";
 import { RootState } from "../store";
@@ -16,9 +16,6 @@ export const authActions = unionize({
     INIT: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>()
-}, {
-    tag: 'type',
-    value: 'payload'
 });
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {

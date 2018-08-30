@@ -7,7 +7,7 @@ import * as Enzyme from 'enzyme';
 import * as Adapter from 'enzyme-adapter-react-16';
 import ListItem from "@material-ui/core/ListItem/ListItem";
 
-import { Tree, TreeItem } from './tree';
+import { Tree, TreeItem, TreeItemStatus } from './tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
 import { Checkbox } from '@material-ui/core';
@@ -22,7 +22,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED
         };
         const wrapper = mount(<Tree
             render={project => <div />}
@@ -39,7 +39,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED,
         };
         const wrapper = mount(<Tree
             render={project => <div />}
@@ -56,7 +56,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED
         };
         const wrapper = mount(<Tree
             showSelection={true}
@@ -74,7 +74,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED,
         };
         const spy = jest.fn();
         const onSelectionChanged = (event: any, item: TreeItem<any>) => spy(item);
@@ -92,7 +92,7 @@ describe("Tree component", () => {
             id: "3",
             open: true,
             active: true,
-            status: 1,
+            status: TreeItemStatus.LOADED,
         });
     });
 

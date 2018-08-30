@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import Axios, { AxiosInstance } from "axios";
+import Axios from "axios";
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
 import { ProjectService } from "./project-service/project-service";
@@ -12,40 +12,66 @@ import { CollectionService } from "./collection-service/collection-service";
 import { TagService } from "./tag-service/tag-service";
 import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 import { KeepService } from "./keep-service/keep-service";
-import { WebDAV } from "~/common/webdav";
-import { Config } from "~/common/config";
+import { WebDAV } from "../common/webdav";
+import { Config } from "../common/config";
+import { UserService } from './user-service/user-service';
+import { AncestorService } from "~/services/ancestors-service/ancestors-service";
+import { ResourceKind } from "~/models/resource";
+import { ContainerRequestService } from './container-request-service/container-request-service';
+import { ContainerService } from './container-service/container-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
 export const createServices = (config: Config) => {
     const apiClient = Axios.create();
-    apiClient.defaults.baseURL = `${config.apiHost}/arvados/v1`;
+    apiClient.defaults.baseURL = config.baseUrl;
 
     const webdavClient = new WebDAV();
-    webdavClient.defaults.baseURL = config.keepWebHost;
+    webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
-    const authService = new AuthService(apiClient, config.apiHost);
-    const keepService = new KeepService(apiClient);
     const groupsService = new GroupsService(apiClient);
-    const projectService = new ProjectService(apiClient);
+    const keepService = new KeepService(apiClient);
     const linkService = new LinkService(apiClient);
-    const favoriteService = new FavoriteService(linkService, groupsService);
-    const collectionService = new CollectionService(apiClient, keepService, webdavClient, authService);
-    const tagService = new TagService(linkService);
+    const projectService = new ProjectService(apiClient);
+    const userService = new UserService(apiClient);
+    const containerRequestService = new ContainerRequestService(apiClient);
+    const containerService = new ContainerService(apiClient);
+    
+    const ancestorsService = new AncestorService(groupsService, userService);
+    const authService = new AuthService(apiClient, config.rootUrl);
+    const collectionService = new CollectionService(apiClient, webdavClient, authService);
     const collectionFilesService = new CollectionFilesService(collectionService);
+    const favoriteService = new FavoriteService(linkService, groupsService);
+    const tagService = new TagService(linkService);
 
     return {
+        ancestorsService,
         apiClient,
-        webdavClient,
         authService,
-        keepService,
-        groupsService,
-        projectService,
-        linkService,
-        favoriteService,
+        collectionFilesService,
         collectionService,
+        containerRequestService,
+        containerService,
+        favoriteService,
+        groupsService,
+        keepService,
+        linkService,
+        projectService,
         tagService,
-        collectionFilesService
+        userService,
+        webdavClient,
     };
 };
 
+export const getResourceService = (kind?: ResourceKind) => (serviceRepository: ServiceRepository) => {
+    switch (kind) {
+        case ResourceKind.USER:
+            return serviceRepository.userService;
+        case ResourceKind.GROUP:
+            return serviceRepository.groupsService;
+        case ResourceKind.COLLECTION:
+            return serviceRepository.collectionService;
+        default:
+            return undefined;
+    }
+};

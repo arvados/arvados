@@ -10,10 +10,11 @@ import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFil
 import { FileTreeData } from "~/components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { Tree, getNodeChildren, getNode } from "~/models/tree";
+import { Tree, getNodeChildrenIds, getNode } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -22,7 +23,7 @@ const memoizedMapStateToProps = () => {
     return (state: RootState): Pick<CollectionPanelFilesProps, "items"> => {
         if (prevState !== state.collectionPanelFiles) {
             prevState = state.collectionPanelFiles;
-            prevTree = getNodeChildren('')(state.collectionPanelFiles)
+            prevTree = getNodeChildrenIds('')(state.collectionPanelFiles)
                 .map(collectionItemToTreeItem(state.collectionPanelFiles));
         }
         return {
@@ -32,7 +33,9 @@ const memoizedMapStateToProps = () => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
-    onUploadDataClick: () => { return; },
+    onUploadDataClick: () => {
+        dispatch<any>(openUploadCollectionFilesDialog());
+    },
     onCollapseToggle: (id) => {
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id }));
     },
@@ -40,17 +43,11 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id }));
     },
     onItemMenuOpen: (event, item) => {
-        event.preventDefault();
-        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
-            position: { x: event.clientX, y: event.clientY },
-            resource: { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }
-        }));
+        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }));
     },
-    onOptionsMenuOpen: (event) =>
-        dispatch(contextMenuActions.OPEN_CONTEXT_MENU({
-            position: { x: event.clientX, y: event.clientY },
-            resource: { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }
-        }))
+    onOptionsMenuOpen: (event) => {
+        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }));
+    },
 });
 
 
@@ -77,7 +74,7 @@ const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | Collecti
                 type: node.value.type
             },
             id: node.id,
-            items: getNodeChildren(node.id)(tree)
+            items: getNodeChildrenIds(node.id)(tree)
                 .map(collectionItemToTreeItem(tree)),
             open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
             selected: node.value.selected,

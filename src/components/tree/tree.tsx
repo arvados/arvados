@@ -65,9 +65,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum TreeItemStatus {
-    INITIAL,
-    PENDING,
-    LOADED
+    INITIAL = 'initial',
+    PENDING = 'pending',
+    LOADED = 'loaded'
 }
 
 export interface TreeItem<T> {
@@ -107,10 +107,10 @@ export const Tree = withStyles(styles)(
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
-                            <i onClick={() => this.props.toggleItemOpen(it.id, it.status)}
+                            <i onClick={this.handleToggleItemOpen(it.id, it.status)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {it.status !== TreeItemStatus.INITIAL && it.items && it.items.length === 0 ? <span /> : <SidePanelRightArrowIcon />}
+                                    {this.getProperArrowAnimation(it.status, it.items!)}
                                 </ListItemIcon>
                             </i>
                             {this.props.showSelection &&
@@ -140,6 +140,16 @@ export const Tree = withStyles(styles)(
             </List>;
         }
 
+        getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
+            return this.isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon />;
+        }
+
+        isSidePanelIconNotNeeded = (status: string, items: Array<TreeItem<T>>) => {
+            return status === TreeItemStatus.PENDING ||
+                (status === TreeItemStatus.LOADED && !items) ||
+                (status === TreeItemStatus.LOADED && items && items.length === 0);
+        }
+
         getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {
             const { iconOpen, iconClose, active, toggableIcon } = this.props.classes;
             return classnames(toggableIcon, {
@@ -160,6 +170,11 @@ export const Tree = withStyles(styles)(
                     onSelectionChange(event, item);
                 }
                 : undefined;
+        }
+
+        handleToggleItemOpen = (id: string, status: TreeItemStatus) => (event: React.MouseEvent<HTMLElement>) => {
+            event.stopPropagation();
+            this.props.toggleItemOpen(id, status);
         }
     }
 );
