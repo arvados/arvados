@@ -17,6 +17,8 @@ import { Config } from "../common/config";
 import { UserService } from './user-service/user-service';
 import { AncestorService } from "~/services/ancestors-service/ancestors-service";
 import { ResourceKind } from "~/models/resource";
+import { ContainerRequestService } from './container-request-service/container-request-service';
+import { ContainerService } from './container-service/container-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -27,32 +29,37 @@ export const createServices = (config: Config) => {
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
-    const authService = new AuthService(apiClient, config.rootUrl);
-    const keepService = new KeepService(apiClient);
     const groupsService = new GroupsService(apiClient);
-    const projectService = new ProjectService(apiClient);
+    const keepService = new KeepService(apiClient);
     const linkService = new LinkService(apiClient);
-    const favoriteService = new FavoriteService(linkService, groupsService);
-    const collectionService = new CollectionService(apiClient, webdavClient, authService);
-    const tagService = new TagService(linkService);
-    const collectionFilesService = new CollectionFilesService(collectionService);
+    const projectService = new ProjectService(apiClient);
     const userService = new UserService(apiClient);
+    const containerRequestService = new ContainerRequestService(apiClient);
+    const containerService = new ContainerService(apiClient);
+    
     const ancestorsService = new AncestorService(groupsService, userService);
+    const authService = new AuthService(apiClient, config.rootUrl);
+    const collectionService = new CollectionService(apiClient, webdavClient, authService);
+    const collectionFilesService = new CollectionFilesService(collectionService);
+    const favoriteService = new FavoriteService(linkService, groupsService);
+    const tagService = new TagService(linkService);
 
     return {
-        apiClient,
-        webdavClient,
-        authService,
-        keepService,
-        groupsService,
-        projectService,
-        linkService,
-        favoriteService,
-        collectionService,
-        tagService,
-        collectionFilesService,
-        userService,
         ancestorsService,
+        apiClient,
+        authService,
+        collectionFilesService,
+        collectionService,
+        containerRequestService,
+        containerService,
+        favoriteService,
+        groupsService,
+        keepService,
+        linkService,
+        projectService,
+        tagService,
+        userService,
+        webdavClient,
     };
 };
 

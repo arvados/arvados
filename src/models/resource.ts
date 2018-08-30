@@ -16,18 +16,21 @@ export interface Resource {
 
 export enum ResourceKind {
     COLLECTION = "arvados#collection",
+    CONTAINER = "arvados#container",
     CONTAINER_REQUEST = "arvados#containerRequest",
     GROUP = "arvados#group",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
-    WORKFLOW = "arvados#workflow",
     USER = "arvados#user",
+    WORKFLOW = "arvados#workflow",
 }
 
 export enum ResourceObjectType {
-    USER = 'tpzed',
+    COLLECTION = '4zz18',
+    CONTAINER = 'dz642',
+    CONTAINER_REQUEST = 'xvhdp',
     GROUP = 'j7d0g',
-    COLLECTION = '4zz18'
+    USER = 'tpzed',
 }
 
 export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
@@ -52,6 +55,10 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.GROUP;
         case ResourceObjectType.COLLECTION:
             return ResourceKind.COLLECTION;
+        case ResourceObjectType.CONTAINER_REQUEST:
+            return ResourceKind.CONTAINER_REQUEST;
+        case ResourceObjectType.CONTAINER:
+            return ResourceKind.CONTAINER;
         default:
             return undefined;
     }

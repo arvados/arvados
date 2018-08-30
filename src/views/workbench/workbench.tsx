@@ -166,7 +166,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                     <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                     <Route path={Routes.FAVORITES} component={FavoritePanel} />
-                                    <Route path={Routes.PROCESS} component={ProcessPanel} />
+                                    <Route path={Routes.PROCESSES} component={ProcessPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
