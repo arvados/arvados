@@ -24,8 +24,9 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
 import { FileRemoveDialog } from '~/views-components/file-remove-dialog/file-remove-dialog';
 import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog/multiple-files-remove-dialog';
-import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { Routes } from '~/routes/routes';
+import { SidePanel } from '~/views-components/side-panel/side-panel';
+import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
@@ -34,10 +35,9 @@ import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-c
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
-import { ProcessPanel } from '~/views/process-panel/process-panel';
-import { UploadCollectionFilesDialog } from '~/views-components/dialog-forms/upload-collection-files-dialog';
-import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
+import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
+import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
 const APP_BAR_HEIGHT = 100;
 
@@ -179,9 +179,10 @@ export const Workbench = withStyles(styles)(
                         <PartialCopyCollectionDialog />
                         <FileRemoveDialog />
                         <CopyCollectionDialog />
+                        <FileRemoveDialog />
                         <MultipleFilesRemoveDialog />
                         <UpdateCollectionDialog />
-                        <UploadCollectionFilesDialog />
+                        <FilesUploadCollectionDialog />
                         <UpdateProjectDialog />
                         <MoveCollectionDialog />
                         <MoveProjectDialog />
