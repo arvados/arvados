@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Grid } from '@material-ui/core';
-import { ProcessInformationCard } from '~/views/process-panel/information-card';
+import { ProcessInformationCard } from '~/views-components/process-information-card/process-information-card';
 import { SubprocessesCard } from '~/views/process-panel/subprocesses-card';
 import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
