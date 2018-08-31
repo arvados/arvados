@@ -608,35 +608,39 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 		return err
 	}
 
-	nodetoken, err := sess.Output("cat /home/crunch/node-token")
+	nodetokenbytes, err := sess.Output("cat /home/crunch/node-token")
 	if err != nil {
 		return err
 	}
 
+	nodetoken := strings.TrimSpace(string(nodetokenbytes))
+
 	expectedToken := fmt.Sprintf("%s-%s", *ai.vm.Name, tags["node-token"])
-	log.Printf("%q %q", string(nodetoken), expectedToken)
+	log.Printf("%q %q", nodetoken, expectedToken)
 
-	if string(nodetoken) == expectedToken {
-		sess, err := client.NewSession()
-		if err != nil {
-			return err
-		}
-
-		keyfingerprintbytes, err := sess.Output("ssh-keygen -E sha256 -l -f /etc/ssh/ssh_host_rsa_key.pub")
-		if err != nil {
-			return err
-		}
-
-		sp := strings.Split(string(keyfingerprintbytes), " ")
-
-		log.Printf("%q %q", remoteFingerprint, sp[1])
-
-		if remoteFingerprint == sp[1] {
-			tags["ssh-pubkey-fingerprint"] = sp[1]
-			ai.SetTags(ctx, tags)
-			return nil
-		}
+	if strings.TrimSpace(nodetoken) != expectedToken {
+		return fmt.Errorf("Node token did not match")
 	}
 
-	return fmt.Errorf("Key fingerprint did not match")
+	sess, err = client.NewSession()
+	if err != nil {
+		return err
+	}
+
+	keyfingerprintbytes, err := sess.Output("ssh-keygen -E sha256 -l -f /etc/ssh/ssh_host_rsa_key.pub")
+	if err != nil {
+		return err
+	}
+
+	sp := strings.Split(string(keyfingerprintbytes), " ")
+
+	log.Printf("%q %q", remoteFingerprint, sp[1])
+
+	if remoteFingerprint != sp[1] {
+		return fmt.Errorf("Key fingerprint did not match")
+	}
+
+	tags["ssh-pubkey-fingerprint"] = sp[1]
+	ai.SetTags(ctx, tags)
+	return nil
 }
