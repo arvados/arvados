@@ -588,3 +588,55 @@ func (ai *AzureInstance) Destroy(ctx context.Context) error {
 func (ai *AzureInstance) Address() string {
 	return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
 }
+
+func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.PublicKey, client *ssh.Client) error {
+	remoteFingerprint := ssh.FingerprintSHA256(receivedKey)
+
+	tags, _ := ai.Tags(ctx)
+
+	tg := tags["ssh-pubkey-fingerprint"]
+	if tg != "" {
+		if remoteFingerprint == tg {
+			return nil
+		} else {
+			return fmt.Errorf("Key fingerprint did not match")
+		}
+	}
+
+	sess, err := client.NewSession()
+	if err != nil {
+		return err
+	}
+
+	nodetoken, err := sess.Output("cat /home/crunch/node-token")
+	if err != nil {
+		return err
+	}
+
+	expectedToken := fmt.Sprintf("%s-%s", *ai.vm.Name, tags["node-token"])
+	log.Printf("%q %q", string(nodetoken), expectedToken)
+
+	if string(nodetoken) == expectedToken {
+		sess, err := client.NewSession()
+		if err != nil {
+			return err
+		}
+
+		keyfingerprintbytes, err := sess.Output("ssh-keygen -E sha256 -l -f /etc/ssh/ssh_host_rsa_key.pub")
+		if err != nil {
+			return err
+		}
+
+		sp := strings.Split(string(keyfingerprintbytes), " ")
+
+		log.Printf("%q %q", remoteFingerprint, sp[1])
+
+		if remoteFingerprint == sp[1] {
+			tags["ssh-pubkey-fingerprint"] = sp[1]
+			ai.SetTags(ctx, tags)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Key fingerprint did not match")
+}

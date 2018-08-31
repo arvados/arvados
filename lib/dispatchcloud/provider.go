@@ -57,6 +57,13 @@ type Instance interface {
 
 	// SSH server hostname or IP address, or empty string if unknown pending creation.
 	Address() string
+
+	// Return nil if the given public key matches the instance's
+	// SSH server key. If the provided ssh client is not nil,
+	// VerifyPublicKey can use it to make outgoing network
+	// connections from the instance -- e.g., to use the cloud's
+	// "this instance's metadata" API.
+	VerifyPublicKey(context.Context, ssh.PublicKey, *ssh.Client) error
 }
 
 type InstanceProvider interface {
