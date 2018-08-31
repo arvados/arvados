@@ -9,20 +9,21 @@ import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/common/api/filter-builder';
 import { ContainerRequestResource } from '../../models/container-request';
 
-export const loadProcess = (uuid: string) =>
+export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const containerRequest = await services.containerRequestService.get(uuid);
+        const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
+            await dispatch<any>(loadSubprocesses(containerRequest.containerUuid));
         }
     };
 
-export const loadSubprocesses = (uuid: string) =>
+export const loadSubprocesses = (containerUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const containerRequests = await dispatch<any>(loadContainerRequests(
-            new FilterBuilder().addEqual('requestingContainerUuid', uuid).getFilters()
+            new FilterBuilder().addEqual('requestingContainerUuid', containerUuid).getFilters()
         )) as ContainerRequestResource[];
 
         const containerUuids: string[] = containerRequests.reduce((uuids, { containerUuid }) =>

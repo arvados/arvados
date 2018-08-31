@@ -28,13 +28,17 @@ export const getProcess = (uuid: string) => (resources: ResourcesState): Process
 };
 
 export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => {
-    const containerRequests = filterResources(isSubprocess(uuid))(resources) as ContainerRequestResource[];
-    return containerRequests.reduce((subprocesses, { uuid }) => {
-        const process = getProcess(uuid)(resources);
-        return process
-            ? [...subprocesses, process]
-            : subprocesses;
-    }, []);
+    const process = getProcess(uuid)(resources);
+    if (process && process.container) {
+        const containerRequests = filterResources(isSubprocess(process.container.uuid))(resources) as ContainerRequestResource[];
+        return containerRequests.reduce((subprocesses, { uuid }) => {
+            const process = getProcess(uuid)(resources);
+            return process
+                ? [...subprocesses, process]
+                : subprocesses;
+        }, []);
+    }
+    return [];
 };
 
 export const getProcessStatus = (process: Process) =>
@@ -42,6 +46,6 @@ export const getProcessStatus = (process: Process) =>
         ? process.container.state
         : process.containerRequest.state;
 
-const isSubprocess = (uuid: string) => (resource: Resource) =>
+const isSubprocess = (containerUuid: string) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST
-    && (resource as ContainerRequestResource).requestingContainerUuid === uuid;
+    && (resource as ContainerRequestResource).requestingContainerUuid === containerUuid;
