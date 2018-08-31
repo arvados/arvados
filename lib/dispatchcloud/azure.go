@@ -264,7 +264,8 @@ func (az *AzureProvider) Create(ctx context.Context,
 	tags := make(map[string]*string)
 	tags["created-at"] = &timestamp
 	for k, v := range newTags {
-		tags["dispatch-"+k] = &v
+		newstr := v
+		tags["dispatch-"+k] = &newstr
 	}
 
 	tags["dispatch-instance-type"] = &instanceType.Name
@@ -552,7 +553,8 @@ func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) erro
 		}
 	}
 	for k, v := range newTags {
-		tags["dispatch-"+k] = &v
+		newstr := v
+		tags["dispatch-"+k] = &newstr
 	}
 
 	vmParameters := compute.VirtualMachine{
@@ -599,7 +601,7 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 		if remoteFingerprint == tg {
 			return nil
 		} else {
-			return fmt.Errorf("Key fingerprint did not match")
+			return fmt.Errorf("Key fingerprint did not match, expected %q got %q", tg, remoteFingerprint)
 		}
 	}
 
@@ -619,7 +621,7 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 	log.Printf("%q %q", nodetoken, expectedToken)
 
 	if strings.TrimSpace(nodetoken) != expectedToken {
-		return fmt.Errorf("Node token did not match")
+		return fmt.Errorf("Node token did not match, expected %q got %q", expectedToken, nodetoken)
 	}
 
 	sess, err = client.NewSession()
@@ -637,7 +639,7 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 	log.Printf("%q %q", remoteFingerprint, sp[1])
 
 	if remoteFingerprint != sp[1] {
-		return fmt.Errorf("Key fingerprint did not match")
+		return fmt.Errorf("Key fingerprint did not match, expected %q got %q", sp[1], remoteFingerprint)
 	}
 
 	tags["ssh-pubkey-fingerprint"] = sp[1]
