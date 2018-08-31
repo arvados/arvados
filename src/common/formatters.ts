@@ -19,6 +19,17 @@ export const formatFileSize = (size?: number) => {
     return "";
 };
 
+export const msToTime = (time: number) => {
+    const minutes = Math.floor(time / (1000 * 60) % 60).toFixed(0);
+    const hours = Math.floor(time / (1000 * 60 * 60)).toFixed(0);
+
+    return hours + "h " + minutes + "m";
+};
+
+export const getDiffTime = (endTime: string, startTime: string) => {
+    return new Date(endTime).getTime() - new Date(startTime).getTime();
+};
+
 export const formatProgress = (loaded: number, total: number) => {
     const progress = loaded >= 0 && total > 0 ? loaded * 100 / total : 0;
     return `${progress.toFixed(2)}%`;

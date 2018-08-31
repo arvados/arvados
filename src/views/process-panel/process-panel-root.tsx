@@ -10,12 +10,13 @@ import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
 import { ProcessSubprocesses } from '~/views-components/process-subprocesses/process-subprocesses';
-import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses';
+import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses-card';
 
 type CssRules = 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
+    subprocesses: Array<Process>;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -63,7 +64,10 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                     onToggle={() => { return; }}
                 />
             </Grid>
-            <ProcessSubprocesses />
+            <Grid item xs={12}>
+                <ProcessSubprocesses
+                    subprocesses={props.subprocesses} />
+            </Grid>
         </Grid>
         : <Grid container
             alignItems='center'

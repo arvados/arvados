@@ -12,6 +12,8 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { getBackgroundColorStatus } from '~/views/process-panel/process-panel-root';
+import { Process, getProcessStatus, getProcessRuntime } from '~/store/processes/process';
+import { msToTime } from '~/common/formatters';
 
 export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'
     | 'header' | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -73,23 +75,37 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
+export enum SubprocessesStatus {
+    ACTIVE = 'Active',
+    COMPLETED = 'Completed',
+    QUEUED = 'Queued',
+    FAILED = 'Failed',
+    CANCELED = 'Canceled'
+}
+
+export interface SubprocessItemProps {
+    title: string;
+    status: string;
+    runtime?: string;
+}
+
 export interface ProcessSubprocessesCardDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
-    items: any;
+    subprocess: Process;
 }
 
 type ProcessSubprocessesCardProps = ProcessSubprocessesCardDataProps & WithStyles<CssRules>;
 
 export const ProcessSubprocessesCard = withStyles(styles)(
-    ({ classes, onContextMenu, items }: ProcessSubprocessesCardProps) => {
+    ({ classes, onContextMenu, subprocess }: ProcessSubprocessesCardProps) => {
         return <Card>
             <CardHeader
-                className={classnames([classes.header, getBackgroundColorStatus(items.status, classes)])}
+                className={classnames([classes.header, getBackgroundColorStatus(getProcessStatus(subprocess), classes)])}
                 classes={{ content: classes.title, action: classes.action }}
                 action={
                     <div className={classes.rightSideHeader}>
                         <Typography noWrap variant="body2" className={classes.status}>
-                            {items.status}
+                            {getProcessStatus(subprocess)}
                         </Typography>
                         <IconButton
                             className={classes.options}
@@ -100,15 +116,15 @@ export const ProcessSubprocessesCard = withStyles(styles)(
                     </div>
                 }
                 title={
-                    <Tooltip title={items.title}>
+                    <Tooltip title={subprocess.containerRequest.name}>
                         <Typography noWrap variant="body2" className={classes.titleHeader}>
-                            {items.title}
+                            {subprocess.containerRequest.name}
                         </Typography>
                     </Tooltip>
                 } />
             <CardContent className={classes.content}>
                 <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label='Runtime' value="0h 2m" />
+                    label="Runtime" value={msToTime(getProcessRuntime(subprocess))} />
             </CardContent>
         </Card>;
     });
