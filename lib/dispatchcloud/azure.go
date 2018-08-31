@@ -6,6 +6,7 @@ package dispatchcloud
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -246,6 +247,10 @@ func (az *AzureProvider) Create(ctx context.Context,
 	newTags InstanceTags,
 	publicKey ssh.PublicKey) (Instance, error) {
 
+	if len(newTags["node-token"]) == 0 {
+		return nil, fmt.Errorf("Must provide tag 'node-token'")
+	}
+
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
 		return nil, err
@@ -255,6 +260,8 @@ func (az *AzureProvider) Create(ctx context.Context,
 	log.Printf("name is %v", name)
 
 	timestamp := time.Now().Format(time.RFC3339Nano)
+
+	newTags["instance-type"] = instanceType.Name
 
 	tags := make(map[string]*string)
 	tags["created-at"] = &timestamp
@@ -298,6 +305,9 @@ func (az *AzureProvider) Create(ctx context.Context,
 		name)
 
 	log.Printf("URI instance vhd %v", instance_vhd)
+
+	customData := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`#!/bin/sh
+echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
@@ -343,7 +353,7 @@ func (az *AzureProvider) Create(ctx context.Context,
 						},
 					},
 				},
-				//CustomData: to.StringPtr(""),
+				CustomData: &customData,
 			},
 		},
 	}
