@@ -605,6 +605,11 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 		}
 	}
 
+	nodetokenTag := tags["node-token"]
+	if nodetokenTag == "" {
+		return fmt.Errorf("Missing node token tag")
+	}
+
 	sess, err := client.NewSession()
 	if err != nil {
 		return err
@@ -617,7 +622,7 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 
 	nodetoken := strings.TrimSpace(string(nodetokenbytes))
 
-	expectedToken := fmt.Sprintf("%s-%s", *ai.vm.Name, tags["node-token"])
+	expectedToken := fmt.Sprintf("%s-%s", *ai.vm.Name, nodetokenTag)
 	log.Printf("%q %q", nodetoken, expectedToken)
 
 	if strings.TrimSpace(nodetoken) != expectedToken {
