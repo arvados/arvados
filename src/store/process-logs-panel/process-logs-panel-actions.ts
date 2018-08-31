@@ -42,7 +42,7 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService) 
         .addAsc('eventAt')
         .getOrder();
     const requestParams = {
-        limit: 10000,
+        limit: MAX_AMOUNT_OF_LOGS,
         filters: requestFilters,
         order: requestOrder,
     };
@@ -64,6 +64,7 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
     return { filters, logs };
 };
 
+const MAX_AMOUNT_OF_LOGS = 10000;
 
 const SUMMARIZED_FILTER_TYPE = 'Summarized';
 
