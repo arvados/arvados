@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"golang.org/x/crypto/ssh"
 )
 
 // A RateLimitError should be returned by a Provider when the cloud
@@ -38,21 +39,44 @@ type ImageID string
 
 // instance is implemented by the provider-specific instance types.
 type Instance interface {
+	// ID returns the provider's instance ID. It must be stable
+	// for the life of the instance.
+	ID() InstanceID
+
 	// String typically returns the cloud-provided instance ID.
 	String() string
-	// Configured Arvados instance type
-	InstanceType() arvados.InstanceType
+
 	// Get tags
-	GetTags(context.Context) (InstanceTags, error)
+	Tags(context.Context) (InstanceTags, error)
+
 	// Replace tags with the given tags
 	SetTags(context.Context, InstanceTags) error
+
 	// Shut down the node
 	Destroy(context.Context) error
+
 	// SSH server hostname or IP address, or empty string if unknown pending creation.
 	Address() string
 }
 
-type Provider interface {
-	Create(context.Context, arvados.InstanceType, ImageID, InstanceTags) (Instance, error)
+type InstanceProvider interface {
+	// Create a new instance. If supported by the driver, add the
+	// provided public key to /root/.ssh/authorized_keys.
+	//
+	// The returned error should implement RateLimitError and
+	// QuotaError where applicable.
+	Create(context.Context, arvados.InstanceType, ImageID, InstanceTags, ssh.PublicKey) (Instance, error)
+
+	// Return all instances, including ones that are booting or
+	// shutting down.
+	//
+	// An instance returned by successive calls to Instances() may
+	// -- but does not need to -- be represented by the same
+	// Instance object each time. Thus, the caller is responsible
+	// for de-duplicating the returned instances by comparing the
+	// InstanceIDs returned by the instances' ID() methods.
 	Instances(context.Context) ([]Instance, error)
+
+	// Stop any background tasks and release other resources.
+	Stop()
 }

@@ -6,9 +6,14 @@ package dispatchcloud
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"os"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
@@ -17,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
+	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
 
@@ -64,7 +70,7 @@ func (*InterfacesClientStub) ListComplete(ctx context.Context, resourceGroupName
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetProvider() (Provider, ImageID, arvados.Cluster, error) {
+func GetProvider() (InstanceProvider, ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": arvados.InstanceType{
@@ -83,14 +89,13 @@ func GetProvider() (Provider, ImageID, arvados.Cluster, error) {
 		if err != nil {
 			return nil, ImageID(""), cluster, err
 		}
-		ap, err := NewAzureProvider(cfg, cluster, "test123")
+		ap, err := NewAzureProvider(cfg, "test123")
 		return ap, ImageID(cfg.Image), cluster, err
 	} else {
 		ap := AzureProvider{
 			azconfig: AzureProviderConfig{
 				BlobContainer: "vhds",
 			},
-			arvconfig:    cluster,
 			dispatcherID: "test123",
 			namePrefix:   "compute-test123-",
 		}
@@ -106,13 +111,24 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
+	f, err := os.Open("azconfig_sshkey.pub")
+	c.Assert(err, check.IsNil)
+
+	keybytes, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+
+	pk, _, _, _, err := ssh.ParseAuthorizedKey(keybytes)
+	c.Assert(err, check.IsNil)
+
 	inst, err := ap.Create(context.Background(),
 		cluster.InstanceTypes["tiny"],
-		img, map[string]string{"tag1": "bleep"})
+		img, map[string]string{"tag1": "bleep"},
+		pk)
 
 	c.Assert(err, check.IsNil)
 
 	log.Printf("Result %v %v", inst.String(), inst.Address())
+
 }
 
 func (*AzureProviderSuite) TestListInstances(c *check.C) {
@@ -126,8 +142,8 @@ func (*AzureProviderSuite) TestListInstances(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
-		tg, _ := i.GetTags(context.Background())
-		log.Printf("%v %v %v %v", i.String(), i.Address(), i.InstanceType(), tg)
+		tg, _ := i.Tags(context.Background())
+		log.Printf("%v %v %v", i.String(), i.Address(), tg)
 	}
 }
 
@@ -230,7 +246,75 @@ func (*AzureProviderSuite) TestSetTags(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
-		tg, _ := l[0].GetTags(context.Background())
+		tg, _ := l[0].Tags(context.Background())
 		log.Printf("tags are %v", tg)
 	}
+}
+
+func (*AzureProviderSuite) TestSSH(c *check.C) {
+	ap, _, _, err := GetProvider()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+	l, err := ap.Instances(context.Background())
+	c.Assert(err, check.IsNil)
+
+	if len(l) > 0 {
+
+		sshclient, err := SetupSSHClient(c, l[0].Address()+":2222")
+		c.Assert(err, check.IsNil)
+
+		sess, err := sshclient.NewSession()
+		c.Assert(err, check.IsNil)
+
+		out, err := sess.Output("ls /")
+		c.Assert(err, check.IsNil)
+
+		log.Printf("%v", out)
+
+		sshclient.Conn.Close()
+	}
+}
+
+func SetupSSHClient(c *check.C, addr string) (*ssh.Client, error) {
+	if addr == "" {
+		return nil, errors.New("instance has no address")
+	}
+
+	f, err := os.Open("azconfig_sshkey")
+	c.Assert(err, check.IsNil)
+
+	keybytes, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+
+	priv, err := ssh.ParsePrivateKey(keybytes)
+	c.Assert(err, check.IsNil)
+
+	var receivedKey ssh.PublicKey
+	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
+		User: "crunch",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(priv),
+		},
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			receivedKey = key
+			return nil
+		},
+		Timeout: time.Minute,
+	})
+
+	if err != nil {
+		return nil, err
+	} else if receivedKey == nil {
+		return nil, errors.New("BUG: key was never provided to HostKeyCallback")
+	}
+
+	/*if wkr.publicKey == nil || !bytes.Equal(wkr.publicKey.Marshal(), receivedKey.Marshal()) {
+		err = wkr.instance.VerifyPublicKey(receivedKey, client)
+		if err != nil {
+			return nil, err
+		}
+		wkr.publicKey = receivedKey
+	}*/
+	return client, nil
 }
