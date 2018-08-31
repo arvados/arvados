@@ -316,19 +316,8 @@ func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
 		return nil, errors.New("BUG: key was never provided to HostKeyCallback")
 	}
 
-	log.Printf("receivedKey %v", receivedKey)
-	log.Printf("fingerprint %v", ssh.FingerprintSHA256(receivedKey))
-	tags, err := inst.Tags(context.Background())
+	err = inst.VerifyPublicKey(context.Background(), receivedKey, client)
 	c.Assert(err, check.IsNil)
 
-	log.Printf("ssh-pubkey %q", tags["ssh-pubkey"])
-
-	/*if wkr.publicKey == nil || !bytes.Equal(wkr.publicKey.Marshal(), receivedKey.Marshal()) {
-		err = wkr.instance.VerifyPublicKey(receivedKey, client)
-		if err != nil {
-			return nil, err
-		}
-		wkr.publicKey = receivedKey
-	}*/
 	return client, nil
 }
