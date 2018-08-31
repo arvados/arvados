@@ -270,7 +270,7 @@ func (*AzureProviderSuite) TestSSH(c *check.C) {
 		out, err := sess.Output("ls /")
 		c.Assert(err, check.IsNil)
 
-		log.Printf("%v", out)
+		log.Printf("%v", string(out))
 
 		sshclient.Conn.Close()
 	}
