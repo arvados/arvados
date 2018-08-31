@@ -11,9 +11,9 @@ import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { getBackgroundColorStatus } from '~/views/process-panel/process-panel-root';
+import { getStatusColor } from '~/views/process-panel/process-panel-root';
 import { Process, getProcessStatus, getProcessRuntime } from '~/store/processes/process';
-import { msToTime } from '~/common/formatters';
+import { formatTime } from '~/common/formatters';
 
 export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'
     | 'header' | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -100,7 +100,7 @@ export const ProcessSubprocessesCard = withStyles(styles)(
     ({ classes, onContextMenu, subprocess }: ProcessSubprocessesCardProps) => {
         return <Card>
             <CardHeader
-                className={classnames([classes.header, getBackgroundColorStatus(getProcessStatus(subprocess), classes)])}
+                className={classnames([classes.header, getStatusColor(getProcessStatus(subprocess), classes)])}
                 classes={{ content: classes.title, action: classes.action }}
                 action={
                     <div className={classes.rightSideHeader}>
@@ -110,7 +110,7 @@ export const ProcessSubprocessesCard = withStyles(styles)(
                         <IconButton
                             className={classes.options}
                             aria-label="More options"
-                            onClick={event => onContextMenu(event)}>
+                            onClick={onContextMenu}>
                             <MoreOptionsIcon />
                         </IconButton>
                     </div>
@@ -124,7 +124,7 @@ export const ProcessSubprocessesCard = withStyles(styles)(
                 } />
             <CardContent className={classes.content}>
                 <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label="Runtime" value={msToTime(getProcessRuntime(subprocess))} />
+                    label="Runtime" value={formatTime(getProcessRuntime(subprocess))} />
             </CardContent>
         </Card>;
     });

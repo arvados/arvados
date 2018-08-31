@@ -7,7 +7,7 @@ import { ContainerResource } from '../../models/container';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { filterResources } from '../resources/resources';
 import { ResourceKind, Resource } from '~/models/resource';
-import { getDiffTime } from '~/common/formatters';
+import { getTimeDiff } from '~/common/formatters';
 
 export interface Process {
     containerRequest: ContainerRequestResource;
@@ -44,7 +44,7 @@ export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => 
 
 export const getProcessRuntime = (subprocess: Process) =>
     subprocess.container
-        ? getDiffTime(subprocess.container.finishedAt || '', subprocess.container.startedAt || '')
+        ? getTimeDiff(subprocess.container.finishedAt || '', subprocess.container.startedAt || '')
         : 0;
 
 export const getProcessStatus = (process: Process) =>

@@ -72,13 +72,14 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
         </Grid>
         : <Grid container
             alignItems='center'
-            justify='center'>
+            justify='center'
+            style={{ minHeight: '100%' }}>
             <DefaultView
                 icon={ProcessIcon}
                 messages={['Process not found']} />
         </Grid>;
 
-export const getBackgroundColorStatus = (status: string, classes: Record<CssRules, string>) => {
+export const getStatusColor = (status: string, classes: Record<CssRules, string>) => {
     switch (status) {
         case SubprocessesStatus.COMPLETED:
             return classes.headerCompleted;

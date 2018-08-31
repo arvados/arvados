@@ -13,7 +13,7 @@ import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { Process } from '~/store/processes/process';
 import { getProcessStatus } from '~/store/processes/process';
-import { getBackgroundColorStatus } from '~/views/process-panel/process-panel-root';
+import { getStatusColor } from '~/views/process-panel/process-panel-root';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar'
     | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -101,7 +101,7 @@ export const ProcessInformationCard = withStyles(styles)(
                 action={
                     <div>
                         <Chip label={getProcessStatus(process)}
-                            className={classnames([classes.chip, getBackgroundColorStatus(getProcessStatus(process), classes)])} />
+                            className={classnames([classes.chip, getStatusColor(getProcessStatus(process), classes)])} />
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
