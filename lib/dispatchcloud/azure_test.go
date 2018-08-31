@@ -126,13 +126,14 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 
 	inst, err := ap.Create(context.Background(),
 		cluster.InstanceTypes["tiny"],
-		img, map[string]string{"instance-type": "tiny",
+		img, map[string]string{
 			"node-token": nodetoken},
 		pk)
 
 	c.Assert(err, check.IsNil)
 
-	log.Printf("Result %v %v", inst.String(), inst.Address())
+	tg, _ := inst.Tags(context.Background())
+	log.Printf("Result %v %v %v", inst.String(), inst.Address(), tg)
 
 }
 
@@ -266,7 +267,7 @@ func (*AzureProviderSuite) TestSSH(c *check.C) {
 
 	if len(l) > 0 {
 
-		sshclient, err := SetupSSHClient(c, l[0].Address()+":2222")
+		sshclient, err := SetupSSHClient(c, l[0])
 		c.Assert(err, check.IsNil)
 
 		sess, err := sshclient.NewSession()
@@ -281,7 +282,8 @@ func (*AzureProviderSuite) TestSSH(c *check.C) {
 	}
 }
 
-func SetupSSHClient(c *check.C, addr string) (*ssh.Client, error) {
+func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
+	addr := inst.Address() + ":2222"
 	if addr == "" {
 		return nil, errors.New("instance has no address")
 	}
@@ -313,6 +315,13 @@ func SetupSSHClient(c *check.C, addr string) (*ssh.Client, error) {
 	} else if receivedKey == nil {
 		return nil, errors.New("BUG: key was never provided to HostKeyCallback")
 	}
+
+	log.Printf("receivedKey %v", receivedKey)
+	log.Printf("fingerprint %v", ssh.FingerprintSHA256(receivedKey))
+	tags, err := inst.Tags(context.Background())
+	c.Assert(err, check.IsNil)
+
+	log.Printf("ssh-pubkey %q", tags["ssh-pubkey"])
 
 	/*if wkr.publicKey == nil || !bytes.Equal(wkr.publicKey.Marshal(), receivedKey.Marshal()) {
 		err = wkr.instance.VerifyPublicKey(receivedKey, client)

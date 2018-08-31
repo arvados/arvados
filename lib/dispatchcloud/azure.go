@@ -261,13 +261,13 @@ func (az *AzureProvider) Create(ctx context.Context,
 
 	timestamp := time.Now().Format(time.RFC3339Nano)
 
-	newTags["instance-type"] = instanceType.Name
-
 	tags := make(map[string]*string)
 	tags["created-at"] = &timestamp
 	for k, v := range newTags {
 		tags["dispatch-"+k] = &v
 	}
+
+	tags["dispatch-instance-type"] = &instanceType.Name
 
 	nicParameters := network.Interface{
 		Location: &az.azconfig.Location,
