@@ -28,6 +28,8 @@ export const navigateTo = (uuid: string) =>
 
 export const navigateToFavorites = push(Routes.FAVORITES);
 
+export const navigateToTrash = push(Routes.TRASH);
+
 export const navigateToProject = compose(push, getProjectUrl);
 
 export const navigateToCollection = compose(push, getCollectionUrl);

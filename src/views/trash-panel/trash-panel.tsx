@@ -20,6 +20,7 @@ import { TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { getProperty } from "~/store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
+import { openContextMenu, resourceKindToContextMenuKind } from "~/store/context-menu/context-menu-actions";
 
 type CssRules = "toolbar" | "button";
 
@@ -139,6 +140,13 @@ export const TrashPanel = withStyles(styles)(
                     defaultIcon={TrashIcon}
                     defaultMessages={['Your trash list is empty.']}/>
                 ;
+            }
+
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const kind = resourceKindToContextMenuKind(resourceUuid);
+                if (kind) {
+                    this.props.dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
+                }
             }
         }
     )

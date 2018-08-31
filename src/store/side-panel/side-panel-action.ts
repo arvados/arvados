@@ -4,7 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { isSidePanelTreeCategory, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { navigateToFavorites, navigateTo } from '../navigation/navigation-action';
+import { navigateToFavorites, navigateTo, navigateToTrash } from '../navigation/navigation-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 
 export const navigateFromSidePanel = (id: string) =>
@@ -20,6 +20,8 @@ const getSidePanelTreeCategoryAction = (id: string) => {
     switch (id) {
         case SidePanelTreeCategory.FAVORITES:
             return navigateToFavorites;
+        case SidePanelTreeCategory.TRASH:
+            return navigateToTrash;
         default:
             return sidePanelTreeCategoryNotAvailable(id);
     }
