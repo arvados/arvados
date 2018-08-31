@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/jmcvetta/randutil"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -120,9 +121,13 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 	pk, _, _, _, err := ssh.ParseAuthorizedKey(keybytes)
 	c.Assert(err, check.IsNil)
 
+	nodetoken, err := randutil.String(40, "abcdefghijklmnopqrstuvwxyz0123456789")
+	c.Assert(err, check.IsNil)
+
 	inst, err := ap.Create(context.Background(),
 		cluster.InstanceTypes["tiny"],
-		img, map[string]string{"tag1": "bleep"},
+		img, map[string]string{"instance-type": "tiny",
+			"node-token": nodetoken},
 		pk)
 
 	c.Assert(err, check.IsNil)
@@ -267,7 +272,7 @@ func (*AzureProviderSuite) TestSSH(c *check.C) {
 		sess, err := sshclient.NewSession()
 		c.Assert(err, check.IsNil)
 
-		out, err := sess.Output("ls /")
+		out, err := sess.Output("cat /home/crunch/node-token")
 		c.Assert(err, check.IsNil)
 
 		log.Printf("%v", string(out))
