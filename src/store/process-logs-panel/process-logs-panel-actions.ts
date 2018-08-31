@@ -23,6 +23,9 @@ export const processLogsPanelActions = unionize({
 
 export type ProcessLogsPanelAction = UnionOf<typeof processLogsPanelActions>;
 
+export const setProcessLogsPanelFilter = (filter: string) =>
+     processLogsPanelActions.SET_PROCESS_LOGS_PANEL_FILTER(filter);
+
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         const process = await dispatch<any>(loadProcess(processUuid));

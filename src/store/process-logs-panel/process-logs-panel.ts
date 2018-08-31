@@ -1,4 +1,3 @@
-import { LogEventType } from '../../models/log';
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
@@ -13,6 +12,6 @@ export interface ProcessLogs {
     [logType: string]: string[];
 }
 
-export const getProcessLogs = ({ selectedFilter, logs }: ProcessLogsPanel) => {
+export const getProcessPanelLogs = ({ selectedFilter, logs }: ProcessLogsPanel) => {
     return logs[selectedFilter];
 };
