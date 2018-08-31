@@ -19,6 +19,7 @@ import { AncestorService } from "~/services/ancestors-service/ancestors-service"
 import { ResourceKind } from "~/models/resource";
 import { ContainerRequestService } from './container-request-service/container-request-service';
 import { ContainerService } from './container-service/container-service';
+import { LogService } from './log-service/log-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -29,13 +30,14 @@ export const createServices = (config: Config) => {
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
+    const containerRequestService = new ContainerRequestService(apiClient);
+    const containerService = new ContainerService(apiClient);
     const groupsService = new GroupsService(apiClient);
     const keepService = new KeepService(apiClient);
     const linkService = new LinkService(apiClient);
+    const logService = new LogService(apiClient);
     const projectService = new ProjectService(apiClient);
     const userService = new UserService(apiClient);
-    const containerRequestService = new ContainerRequestService(apiClient);
-    const containerService = new ContainerService(apiClient);
     
     const ancestorsService = new AncestorService(groupsService, userService);
     const authService = new AuthService(apiClient, config.rootUrl);
@@ -56,6 +58,7 @@ export const createServices = (config: Config) => {
         groupsService,
         keepService,
         linkService,
+        logService,
         projectService,
         tagService,
         userService,
