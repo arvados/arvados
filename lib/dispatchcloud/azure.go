@@ -643,6 +643,7 @@ func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.Pu
 	}
 
 	tags["ssh-pubkey-fingerprint"] = sp[1]
+	delete(tags, "node-token")
 	ai.SetTags(ctx, tags)
 	return nil
 }
