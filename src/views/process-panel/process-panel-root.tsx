@@ -9,7 +9,7 @@ import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
-import { ProcessSubprocesses } from '~/views-components/process-subprocesses/process-subprocesses';
+import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
 import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses-card';
 
 type CssRules = 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -66,7 +66,8 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
             </Grid>
             <Grid item xs={12}>
                 <ProcessSubprocesses
-                    subprocesses={props.subprocesses} />
+                    subprocesses={props.subprocesses}
+                    onContextMenu={props.onContextMenu} />
             </Grid>
         </Grid>
         : <Grid container
