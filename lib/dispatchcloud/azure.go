@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/jmcvetta/randutil"
+	"golang.org/x/crypto/ssh"
 )
 
 type AzureProviderConfig struct {
@@ -40,7 +41,6 @@ type AzureProviderConfig struct {
 	StorageAccount               string  `json:"storage_account"`
 	BlobContainer                string  `json:"blob_container"`
 	Image                        string  `json:"image"`
-	AuthorizedKey                string  `json:"authorized_key"`
 	DeleteDanglingResourcesAfter float64 `json:"delete_dangling_resources_after"`
 }
 
@@ -186,7 +186,6 @@ func WrapAzureError(err error) error {
 
 type AzureProvider struct {
 	azconfig          AzureProviderConfig
-	arvconfig         arvados.Cluster
 	vmClient          VirtualMachinesClientWrapper
 	netClient         InterfacesClientWrapper
 	storageAcctClient storageacct.AccountsClient
@@ -196,18 +195,17 @@ type AzureProvider struct {
 	namePrefix        string
 }
 
-func NewAzureProvider(azcfg AzureProviderConfig, arvcfg arvados.Cluster, dispatcherID string) (prv Provider, err error) {
+func NewAzureProvider(azcfg AzureProviderConfig, dispatcherID string) (prv InstanceProvider, err error) {
 	ap := AzureProvider{}
-	err = ap.setup(azcfg, arvcfg, dispatcherID)
+	err = ap.setup(azcfg, dispatcherID)
 	if err != nil {
 		return nil, err
 	}
 	return &ap, nil
 }
 
-func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster, dispatcherID string) (err error) {
+func (az *AzureProvider) setup(azcfg AzureProviderConfig, dispatcherID string) (err error) {
 	az.azconfig = azcfg
-	az.arvconfig = arvcfg
 	vmClient := compute.NewVirtualMachinesClient(az.azconfig.SubscriptionID)
 	netClient := network.NewInterfacesClient(az.azconfig.SubscriptionID)
 	storageAcctClient := storageacct.NewAccountsClient(az.azconfig.SubscriptionID)
@@ -245,7 +243,8 @@ func (az *AzureProvider) setup(azcfg AzureProviderConfig, arvcfg arvados.Cluster
 func (az *AzureProvider) Create(ctx context.Context,
 	instanceType arvados.InstanceType,
 	imageId ImageID,
-	newTags InstanceTags) (Instance, error) {
+	newTags InstanceTags,
+	publicKey ssh.PublicKey) (Instance, error) {
 
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
@@ -300,8 +299,6 @@ func (az *AzureProvider) Create(ctx context.Context,
 
 	log.Printf("URI instance vhd %v", instance_vhd)
 
-	tags["arvados-instance-type"] = &instanceType.Name
-
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
 		Tags:     tags,
@@ -334,14 +331,14 @@ func (az *AzureProvider) Create(ctx context.Context,
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  &name,
-				AdminUsername: to.StringPtr("arvados"),
+				AdminUsername: to.StringPtr("crunch"),
 				LinuxConfiguration: &compute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.BoolPtr(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							compute.SSHPublicKey{
-								Path:    to.StringPtr("/home/arvados/.ssh/authorized_keys"),
-								KeyData: to.StringPtr(az.azconfig.AuthorizedKey),
+								Path:    to.StringPtr("/home/crunch/.ssh/authorized_keys"),
+								KeyData: to.StringPtr(string(ssh.MarshalAuthorizedKey(publicKey))),
 							},
 						},
 					},
@@ -357,10 +354,9 @@ func (az *AzureProvider) Create(ctx context.Context,
 	}
 
 	return &AzureInstance{
-		instanceType: instanceType,
-		provider:     az,
-		nic:          nic,
-		vm:           vm,
+		provider: az,
+		nic:      nic,
+		vm:       vm,
 	}, nil
 }
 
@@ -381,13 +377,11 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 		if err != nil {
 			return nil, WrapAzureError(err)
 		}
-		if strings.HasPrefix(*result.Value().Name, az.namePrefix) &&
-			result.Value().Tags["arvados-instance-type"] != nil {
+		if strings.HasPrefix(*result.Value().Name, az.namePrefix) {
 			instances = append(instances, &AzureInstance{
-				provider:     az,
-				vm:           result.Value(),
-				nic:          interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID],
-				instanceType: az.arvconfig.InstanceTypes[(*result.Value().Tags["arvados-instance-type"])]})
+				provider: az,
+				vm:       result.Value(),
+				nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID]})
 		}
 	}
 	return instances, nil
@@ -522,19 +516,21 @@ func (az *AzureProvider) ManageBlobs(ctx context.Context) {
 	}
 }
 
+func (az *AzureProvider) Stop() {
+}
+
 type AzureInstance struct {
-	instanceType arvados.InstanceType
-	provider     *AzureProvider
-	nic          network.Interface
-	vm           compute.VirtualMachine
+	provider *AzureProvider
+	nic      network.Interface
+	vm       compute.VirtualMachine
+}
+
+func (ai *AzureInstance) ID() InstanceID {
+	return InstanceID(*ai.vm.ID)
 }
 
 func (ai *AzureInstance) String() string {
 	return *ai.vm.Name
-}
-
-func (ai *AzureInstance) InstanceType() arvados.InstanceType {
-	return ai.instanceType
 }
 
 func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) error {
@@ -562,7 +558,7 @@ func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) erro
 	return nil
 }
 
-func (ai *AzureInstance) GetTags(ctx context.Context) (InstanceTags, error) {
+func (ai *AzureInstance) Tags(ctx context.Context) (InstanceTags, error) {
 	tags := make(map[string]string)
 
 	for k, v := range ai.vm.Tags {
