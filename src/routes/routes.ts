@@ -8,7 +8,7 @@ import { matchPath } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
 import { getProjectUrl } from '../models/project';
 import { getCollectionUrl } from '~/models/collection';
-import { loadProject, loadFavorites, loadCollection } from '~/store/workbench/workbench-actions';
+import { loadProject, loadFavorites, loadCollection, loadProcessLog } from '~/store/workbench/workbench-actions';
 import { loadProcess } from '~/store/processes/processes-actions';
 
 export const Routes = {
@@ -18,6 +18,7 @@ export const Routes = {
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',
+    PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -33,6 +34,8 @@ export const getResourceUrl = (uuid: string) => {
 };
 
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
+
+export const getProcessLogUrl = (uuid: string) => `/process-logs/${uuid}`;
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -59,12 +62,16 @@ export const matchCollectionRoute = (route: string) =>
 export const matchProcessRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROCESSES });
 
+export const matchProcessLogRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.PROCESS_LOGS });
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const projectMatch = matchProjectRoute(pathname);
     const collectionMatch = matchCollectionRoute(pathname);
     const favoriteMatch = matchFavoritesRoute(pathname);
     const processMatch = matchProcessRoute(pathname);
+    const processLogMatch = matchProcessLogRoute(pathname);
+    
     if (projectMatch) {
         store.dispatch(loadProject(projectMatch.params.id));
     } else if (collectionMatch) {
@@ -73,5 +80,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadFavorites());
     } else if (processMatch) {
         store.dispatch(loadProcess(processMatch.params.id));
+    } else if (processLogMatch) {
+        store.dispatch(loadProcessLog(processLogMatch.params.id));
     }
 };
