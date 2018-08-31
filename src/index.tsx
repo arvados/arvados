@@ -31,6 +31,9 @@ import { processActionSet } from './views-components/context-menu/action-sets/pr
 import { addRouteChangeHandlers } from './routes/routes';
 import { loadWorkbench } from './store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
+import { ServiceRepository } from '~/services/services';
+import { initWebSocket } from '~/websocket/websocket';
+import { Config } from '~/common/config';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -56,8 +59,7 @@ fetchConfig()
         const services = createServices(config);
         const store = configureStore(history, services);
 
-        store.subscribe(initListener(history, store));
-
+        store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth());
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
@@ -83,12 +85,13 @@ fetchConfig()
 
     });
 
-const initListener = (history: History, store: RootStore) => {
+const initListener = (history: History, store: RootStore, services: ServiceRepository, config: Config) => {
     let initialized = false;
     return async () => {
         const { router, auth } = store.getState();
         if (router.location && auth.user && !initialized) {
             initialized = true;
+            initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
         }
