@@ -82,7 +82,7 @@ class ArvadosContainer(object):
             self.tmpdir: {
                 "kind": "tmp",
                 "capacity": resources.get("tmpdirSize", 0) * 2**20
-            }
+            },
             "/keep": {
                 "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
                 "kind": "collection",
