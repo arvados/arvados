@@ -7,18 +7,15 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
-import { reloadProjectMatchingUuid } from "~/store/workbench/workbench-actions";
+import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
+import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 
 export const toggleProjectTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         if (resource.isTrashed) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
             return services.groupsService.untrash(resource.uuid).then(() => {
-                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
-                // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
-                //     dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
-                //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
-                // });
+                dispatch<any>(activateSidePanelTreeItem(resource.uuid));
                 dispatch(trashPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.CLOSE_SNACKBAR());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -27,11 +24,9 @@ export const toggleProjectTrashed = (resource: { uuid: string; name: string, isT
                 }));
             });
         } else {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
             return services.groupsService.trash(resource.uuid).then(() => {
-                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
-                // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
-                //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
-                // });
+                dispatch<any>(loadSidePanelTreeProjects(resource.ownerUuid!!));
                 dispatch(snackbarActions.CLOSE_SNACKBAR());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Added to trash",
@@ -43,24 +38,19 @@ export const toggleProjectTrashed = (resource: { uuid: string; name: string, isT
 
 export const toggleCollectionTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         if (resource.isTrashed) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
             return services.collectionService.untrash(resource.uuid).then(() => {
-                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
-                // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
-                //     dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
-                //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
-                // });
                 dispatch(trashPanelActions.REQUEST_ITEMS());
-                dispatch(snackbarActions.CLOSE_SNACKBAR());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Restored from trash",
                     hideDuration: 2000
                 }));
             });
         } else {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
             return services.collectionService.trash(resource.uuid).then(() => {
-                dispatch(snackbarActions.CLOSE_SNACKBAR());
+                dispatch(projectPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Added to trash",
                     hideDuration: 2000
