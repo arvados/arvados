@@ -7,12 +7,14 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
+import { reloadProjectMatchingUuid } from "~/store/workbench/workbench-actions";
 
 export const toggleProjectTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         if (resource.isTrashed) {
             return services.groupsService.untrash(resource.uuid).then(() => {
+                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
                 // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
                 //     dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
                 //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
@@ -26,6 +28,7 @@ export const toggleProjectTrashed = (resource: { uuid: string; name: string, isT
             });
         } else {
             return services.groupsService.trash(resource.uuid).then(() => {
+                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
                 // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
                 //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));
                 // });
@@ -43,6 +46,7 @@ export const toggleCollectionTrashed = (resource: { uuid: string; name: string, 
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         if (resource.isTrashed) {
             return services.collectionService.untrash(resource.uuid).then(() => {
+                dispatch<any>(reloadProjectMatchingUuid([resource.uuid]));
                 // dispatch<any>(getProjectList(resource.ownerUuid)).then(() => {
                 //     dispatch(sidePanelActions.TOGGLE_SIDE_PANEL_ITEM_OPEN(SidePanelId.PROJECTS));
                 //     dispatch(projectActions.TOGGLE_PROJECT_TREE_ITEM_OPEN({ itemId: resource.ownerUuid!!, open: true, recursive: true }));

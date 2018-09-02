@@ -10,6 +10,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
+import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
@@ -17,16 +18,15 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
-import { ResourcesState } from '~/store/resources/resources';
+import { ResourcesState, getResource } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 import { openCollectionCreateDialog } from '../../store/collections/collection-create-actions';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
-import { ContainerRequestState } from "~/models/container-request";
-import { ProjectResource } from "~/models/project";
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -58,14 +58,14 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilter> = [
+export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: res => <ResourceName uuid={res.uuid} />,
+        render: uuid => <ResourceName uuid={uuid} />,
         width: "450px"
     },
     {
@@ -90,7 +90,7 @@ export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilte
                 type: ContainerRequestState.UNCOMMITTED
             }
         ],
-        render: res => <ProcessStatus uuid={res.uuid} />,
+        render: uuid => <ProcessStatus uuid={uuid} />,
         width: "75px"
     },
     {
@@ -115,7 +115,7 @@ export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilte
                 type: ResourceKind.PROJECT
             }
         ],
-        render: res => <ResourceType uuid={res.uuid} />,
+        render: uuid => <ResourceType uuid={uuid} />,
         width: "125px"
     },
     {
@@ -124,7 +124,7 @@ export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilte
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: res => <ResourceOwner uuid={res.uuid} />,
+        render: uuid => <ResourceOwner uuid={uuid} />,
         width: "200px"
     },
     {
@@ -133,7 +133,7 @@ export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilte
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: res => <ResourceFileSize uuid={res.uuid} />,
+        render: uuid => <ResourceFileSize uuid={uuid} />,
         width: "50px"
     },
     {
@@ -142,7 +142,7 @@ export const projectPanelColumns: DataColumns<ProjectResource, ProjectPanelFilte
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: res => <ResourceLastModifiedDate uuid={res.uuid} />,
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />,
         width: "150px"
     }
 ];
@@ -195,9 +195,10 @@ export const ProjectPanel = withStyles(styles)(
                 this.props.dispatch<any>(openCollectionCreateDialog(this.props.currentItemId));
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ProjectResource) => {
-                const kind = resourceKindToContextMenuKind(resource.uuid);
-                if (kind) {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const kind = resourceKindToContextMenuKind(resourceUuid);
+                const resource = getResource(resourceUuid)(this.props.resources) as ProjectResource;
+                if (kind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
                         uuid: resource.uuid,

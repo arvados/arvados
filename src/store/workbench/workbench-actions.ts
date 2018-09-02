@@ -207,7 +207,7 @@ export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
     message: 'Could not load user'
 });
 
-const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
+export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentProjectPanelUuid = getProjectPanelCurrentUuid(getState());
         if (currentProjectPanelUuid && matchingUuids.some(uuid => uuid === currentProjectPanelUuid)) {

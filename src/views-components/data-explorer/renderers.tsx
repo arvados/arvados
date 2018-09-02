@@ -5,13 +5,13 @@
 import * as React from 'react';
 import { Grid, Typography } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, TrashResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { getResource } from '../../store/resources/resources';
+import { getResource } from '~/store/resources/resources';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { ProcessResource } from '~/models/process';
 
@@ -60,6 +60,18 @@ export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource(props.uuid)(state.resources) as GroupContentsResource | undefined;
         return { date: resource ? resource.modifiedAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+
+export const ResourceTrashDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource(props.uuid)(state.resources) as TrashResource | undefined;
+        return { date: resource ? resource.trashAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+
+export const ResourceDeleteDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource(props.uuid)(state.resources) as TrashResource | undefined;
+        return { date: resource ? resource.deleteAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
 export const renderFileSize = (fileSize?: number) =>

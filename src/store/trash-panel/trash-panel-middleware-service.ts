@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
+import {
+    DataExplorerMiddlewareService, dataExplorerToListParams,
+    listResultsToDataExplorerItemsMeta
+} from "../data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
@@ -11,12 +14,15 @@ import { FilterBuilder } from "~/common/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
-import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { resourceToDataItem, TrashPanelItem } from "~/views/trash-panel/trash-panel-item";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/trash-panel";
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
+import { TrashResource } from "~/models/resource";
+import { ListResults } from "~/common/api/common-resource-service";
+import { snackbarActions } from "~/store/snackbar/snackbar-actions";
+import { updateResources } from "~/store/resources/resources-actions";
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -25,7 +31,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
     requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<TrashPanelItem, TrashPanelFilter>;
+        const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
         const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
         const typeFilters = this.getColumnFilters(columns, TrashPanelColumnNames.TYPE);
 
@@ -46,8 +52,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
         this.services.groupsService
             .contents(userUuid, {
-                limit: dataExplorer.rowsPerPage,
-                offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                ...dataExplorerToListParams(dataExplorer),
                 order: order.getOrder(),
                 filters: new FilterBuilder()
                     .addIsA("uuid", typeFilters.map(f => f.type))
@@ -57,22 +62,25 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 recursive: true,
                 includeTrash: true
             })
-            .then(response => {
+            .then((listResults: ListResults<GroupContentsResource>) => {
+                const items = listResults.items
+                    .filter(it => (it as TrashResource).isTrashed)
+                    .map(it => it.uuid);
+
                 api.dispatch(trashPanelActions.SET_ITEMS({
-                    items: response.items.map(resourceToDataItem).filter(it => it.isTrashed),
-                    itemsAvailable: response.itemsAvailable,
-                    page: Math.floor(response.offset / response.limit),
-                    rowsPerPage: response.limit
+                    ...listResultsToDataExplorerItemsMeta(listResults),
+                    items
                 }));
-                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updateFavorites(items));
+                api.dispatch(updateResources(listResults.items));
             })
             .catch(() => {
-                api.dispatch(trashPanelActions.SET_ITEMS({
-                    items: [],
-                    itemsAvailable: 0,
-                    page: 0,
-                    rowsPerPage: dataExplorer.rowsPerPage
-                }));
+                api.dispatch(couldNotFetchTrashContents());
             });
     }
 }
+
+const couldNotFetchTrashContents = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Could not fetch trash contents.'
+    });
