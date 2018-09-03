@@ -12,6 +12,7 @@ import { loadProcess } from '~/store/processes/processes-actions';
 import { loadContainers } from '../store/processes/processes-actions';
 import { FilterBuilder } from '~/common/api/filter-builder';
 import { LogEventType } from '../models/log';
+import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-logs-panel-actions';
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     const webSocketService = new WebSocketService(config.websocketUrl, authService);
@@ -31,6 +32,7 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
             default:
                 return;
         }
+    } else {
+        return store.dispatch(addProcessLogsPanelItem(message as ResourceEventMessage<{text: string}>));
     }
-    return ;
 };

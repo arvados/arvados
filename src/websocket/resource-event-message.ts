@@ -3,7 +3,7 @@ import { LogEventType } from '../models/log';
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export interface ResourceEventMessage {
+export interface ResourceEventMessage<Properties = {}> {
     eventAt: string;
     eventType: LogEventType;
     id: string;
@@ -11,6 +11,6 @@ export interface ResourceEventMessage {
     objectKind: string;
     objectOwnerUuid: string;
     objectUuid: string;
-    properties: {};
+    properties: Properties;
     uuid: string;
 }

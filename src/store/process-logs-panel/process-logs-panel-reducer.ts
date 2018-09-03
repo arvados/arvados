@@ -14,6 +14,7 @@ const initialState: ProcessLogsPanel = {
 
 export const processLogsPanelReducer = (state = initialState, action: ProcessLogsPanelAction): ProcessLogsPanel =>
     processLogsPanelActions.match(action, {
+        RESET_PROCESS_LOGS_PANEL: () => initialState,
         INIT_PROCESS_LOGS_PANEL: ({ filters, logs }) => ({
             filters,
             logs,
@@ -24,7 +25,8 @@ export const processLogsPanelReducer = (state = initialState, action: ProcessLog
             selectedFilter
         }),
         ADD_PROCESS_LOGS_PANEL_ITEM: ({ logType, log }) => {
-            const logsOfType = [...state.logs[logType], log];
+            const currentLogs = state.logs[logType] || [];
+            const logsOfType = [...currentLogs, log];
             const logs = { ...state.logs, [logType]: logsOfType };
             return { ...state, logs };
         },

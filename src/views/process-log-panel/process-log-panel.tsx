@@ -12,6 +12,7 @@ import { matchProcessLogRoute } from '~/routes/routes';
 import { ProcessLogPanelRootDataProps, ProcessLogPanelRootActionProps, ProcessLogPanelRoot } from './process-log-panel-root';
 import { getProcessPanelLogs } from '~/store/process-logs-panel/process-logs-panel';
 import { setProcessLogsPanelFilter } from '~/store/process-logs-panel/process-logs-panel-actions';
+import { getProcessLogsPanelCurrentUuid } from '../../store/process-logs-panel/process-logs-panel';
 
 export interface Log {
     object_uuid: string;
@@ -26,10 +27,9 @@ export interface FilterOption {
     value: string;
 }
 
-const mapStateToProps = ({ router, resources, processLogsPanel }: RootState): ProcessLogPanelRootDataProps => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProcessLogRoute(pathname);
-    const uuid = match ? match.params.id : '';
+const mapStateToProps = (state: RootState): ProcessLogPanelRootDataProps => {
+    const { resources, processLogsPanel } = state;
+    const uuid = getProcessLogsPanelCurrentUuid(state) || '';
     return {
         process: getProcess(uuid)(resources),
         selectedFilter: { label: processLogsPanel.selectedFilter, value: processLogsPanel.selectedFilter },

@@ -187,7 +187,7 @@ export const loadProcess = (uuid: string) =>
     };
 
 export const loadProcessLog = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
+    async (dispatch: Dispatch) => {
         dispatch<any>(initProcessLogsPanel(uuid));
     };
 

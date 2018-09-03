@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { ProcessLogs } from './process-logs-panel';
+import { ProcessLogs, getProcessLogsPanelCurrentUuid } from './process-logs-panel';
 import { LogEventType } from '~/models/log';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -14,8 +14,11 @@ import { loadProcess } from '~/store/processes/processes-actions';
 import { OrderBuilder } from '~/common/api/order-builder';
 import { LogResource } from '~/models/log';
 import { LogService } from '~/services/log-service/log-service';
+import { ResourceEventMessage } from '../../websocket/resource-event-message';
+import { getProcess } from '~/store/processes/process';
 
 export const processLogsPanelActions = unionize({
+    RESET_PROCESS_LOGS_PANEL: ofType<{}>(),
     INIT_PROCESS_LOGS_PANEL: ofType<{ filters: string[], logs: ProcessLogs }>(),
     SET_PROCESS_LOGS_PANEL_FILTER: ofType<string>(),
     ADD_PROCESS_LOGS_PANEL_ITEM: ofType<{ logType: string, log: string }>(),
@@ -28,11 +31,36 @@ export const setProcessLogsPanelFilter = (filter: string) =>
 
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
+        dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
         const process = await dispatch<any>(loadProcess(processUuid));
         if (process.container) {
             const logResources = await loadContainerLogs(process.container.uuid, logService);
             const initialState = createInitialLogPanelState(logResources);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
+        }
+    };
+
+export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: string }>) =>
+    async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
+        if (PROCESS_PANEL_LOG_EVENT_TYPES.indexOf(message.eventType) > -1) {
+            const uuid = getProcessLogsPanelCurrentUuid(getState());
+            if (uuid) {
+                const process = getProcess(uuid)(getState().resources);
+                if (process) {
+                    const { containerRequest, container } = process;
+                    if (message.objectUuid === containerRequest.uuid
+                        || container && message.objectUuid === container.uuid) {
+                        dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
+                            logType: SUMMARIZED_FILTER_TYPE,
+                            log: message.properties.text
+                        }));
+                        dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
+                            logType: message.eventType,
+                            log: message.properties.text
+                        }));
+                    }
+                }
+            }
         }
     };
 
@@ -67,8 +95,8 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
     return { filters, logs };
 };
 
-const logsToLines = (logs: LogResource[]) => 
-    logs.map(({properties}) => properties.text);
+const logsToLines = (logs: LogResource[]) =>
+    logs.map(({ properties }) => properties.text);
 
 const MAX_AMOUNT_OF_LOGS = 10000;
 
