@@ -11,7 +11,7 @@ import green from '@material-ui/core/colors/green';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
 
-interface ArvadosThemeOptions extends ThemeOptions {
+export interface ArvadosThemeOptions extends ThemeOptions {
     customs: any;
 }
 
@@ -24,6 +24,9 @@ export interface ArvadosTheme extends Theme {
 interface Colors {
     green700: string;
     yellow700: string;
+    red900: string;
+    blue500: string;
+    grey500: string;
 }
 
 const red900 = red["900"];
@@ -36,11 +39,14 @@ const grey700 = grey["700"];
 const grey900 = grey["900"];
 const rocheBlue = '#06C';
 
-const themeOptions: ArvadosThemeOptions = {
+export const themeOptions: ArvadosThemeOptions = {
     customs: {
         colors: {
             green700: green["700"],
-            yellow700: yellow["700"]
+            yellow700: yellow["700"],
+            red900: red['900'],
+            blue500: blue['500'],
+            grey500,
         }
     },
     overrides: {

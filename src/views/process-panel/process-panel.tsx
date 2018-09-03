@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { RootState } from '~/store/store';
 import { connect } from 'react-redux';
-import { getProcess } from '~/store/processes/process';
+import { getProcess, getSubprocesses } from '~/store/processes/process';
 import { Dispatch } from 'redux';
 import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
 import { matchProcessRoute } from '~/routes/routes';
@@ -16,7 +16,8 @@ const mapStateToProps = ({ router, resources }: RootState): ProcessPanelRootData
     const match = matchProcessRoute(pathname);
     const uuid = match ? match.params.id : '';
     return {
-        process: getProcess(uuid)(resources)
+        process: getProcess(uuid)(resources),
+        subprocesses: getSubprocesses(uuid)(resources)
     };
 };
 

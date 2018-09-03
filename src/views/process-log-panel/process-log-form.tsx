@@ -31,7 +31,7 @@ export const ProcessLogForm = withStyles(styles)(
         <form autoComplete="off">
             <FormControl className={classes.formControl}>
                 <InputLabel shrink htmlFor="log-label-placeholder">
-                    Log
+                    Event Type
                 </InputLabel>
                 <Select
                     value={selectedFilter.value}
