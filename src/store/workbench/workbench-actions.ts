@@ -185,6 +185,12 @@ export const loadProcess = (uuid: string) =>
         }
     };
 
+export const loadProcessLog = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(loadProcess(uuid));
+        // ToDo: loadLog();
+    };
+
 export const resourceIsNotLoaded = (uuid: string) =>
     snackbarActions.OPEN_SNACKBAR({
         message: `Resource identified by ${uuid} is not loaded.`
