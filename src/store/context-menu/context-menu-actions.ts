@@ -12,6 +12,7 @@ import { ProjectResource } from '~/models/project';
 import { UserResource } from '../../models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { matchProcessRoute } from '~/routes/routes';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -69,8 +70,15 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
 
 export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>) =>
     (dispatch: Dispatch, getState: () => RootState) => {
+        const { location } = getState().router;
+        const pathname = location ? location.pathname : '';
+        // ToDo: We get error from matchProcessRoute
+        // const match = matchProcessRoute(pathname); 
+        // console.log('match: ', match);
+        // const uuid = match ? match.params.id : '';
+        const uuid = pathname.split('/').slice(-1)[0];
         const resource = {
-            uuid: '',
+            uuid,
             name: '',
             description: '',
             kind: ContextMenuKind.PROCESS

@@ -27,6 +27,7 @@ import { MultipleFilesRemoveDialog } from '~/views-components/file-remove-dialog
 import { Routes } from '~/routes/routes';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { ProcessPanel } from '~/views/process-panel/process-panel';
+import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
 import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
@@ -35,7 +36,6 @@ import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-c
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
-
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
@@ -167,6 +167,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                     <Route path={Routes.FAVORITES} component={FavoritePanel} />
                                     <Route path={Routes.PROCESSES} component={ProcessPanel} />
+                                    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 </Switch>
                             </div>
                             {user && <DetailsPanel />}
