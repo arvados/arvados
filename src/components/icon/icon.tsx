@@ -32,7 +32,7 @@ import Person from '@material-ui/icons/Person';
 import PersonAdd from '@material-ui/icons/PersonAdd';
 import PlayArrow from '@material-ui/icons/PlayArrow';
 import RateReview from '@material-ui/icons/RateReview';
-import RestoreFromTrash from '@material-ui/icons/RestoreFromTrash';
+import RestoreFromTrash from '@material-ui/icons/History';
 import Search from '@material-ui/icons/Search';
 import SettingsApplications from '@material-ui/icons/SettingsApplications';
 import Star from '@material-ui/icons/Star';

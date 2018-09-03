@@ -183,7 +183,8 @@ export const ProjectPanel = withStyles(styles)(
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
                         defaultIcon={ProjectIcon}
-                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
+                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']}
+                        contextMenuColumn={true}/>
                 </div>;
             }
 

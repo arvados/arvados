@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { IconButton, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -13,13 +13,14 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { TrashIcon } from '~/components/icon/icon';
+import { RestoreFromTrashIcon, TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { getProperty } from "~/store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
 import { openContextMenu, resourceKindToContextMenuKind } from "~/store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "~/store/resources/resources";
 import {
+    renderDate,
     ResourceDeleteDate,
     ResourceFileSize,
     ResourceName,
@@ -28,6 +29,8 @@ import {
 } from "~/views-components/data-explorer/renderers";
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
+import { toggleCollectionTrashed, toggleProjectTrashed } from "~/store/trash/trash-actions";
+import { Dispatch } from "redux";
 
 type CssRules = "toolbar" | "button";
 
@@ -52,6 +55,31 @@ export enum TrashPanelColumnNames {
 export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind;
 }
+
+export const ResourceRestore =
+    connect((state: RootState, props: { uuid: string, dispatch?: Dispatch<any> }) => {
+        const resource = getResource<TrashableResource>(props.uuid)(state.resources);
+        return { resource, dispatch: props.dispatch };
+    })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
+        <IconButton onClick={() => {
+            if (props.resource && props.dispatch) {
+                const ctxRes = {
+                    name: '',
+                    uuid: props.resource.uuid,
+                    isTrashed: props.resource.isTrashed,
+                    ownerUuid: props.resource.ownerUuid
+                };
+
+                if (props.resource.kind === ResourceKind.PROJECT) {
+                    props.dispatch(toggleProjectTrashed(ctxRes));
+                } else if (props.resource.kind === ResourceKind.COLLECTION) {
+                    props.dispatch(toggleCollectionTrashed(ctxRes));
+                }
+            }
+        }}>
+            <RestoreFromTrashIcon/>
+        </IconButton>
+    );
 
 export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
     {
@@ -115,6 +143,15 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         render: uuid => <ResourceDeleteDate uuid={uuid} />,
         width: "50px"
     },
+    {
+        name: '',
+        selected: true,
+        configurable: false,
+        sortDirection: SortDirection.NONE,
+        filters: [],
+        render: uuid => <ResourceRestore uuid={uuid}/>,
+        width: "50px"
+    }
 ];
 
 interface TrashPanelDataProps {
@@ -137,7 +174,8 @@ export const TrashPanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     defaultIcon={TrashIcon}
-                    defaultMessages={['Your trash list is empty.']}/>
+                    defaultMessages={['Your trash list is empty.']}
+                    contextMenuColumn={false}/>
                 ;
             }
 

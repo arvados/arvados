@@ -176,7 +176,8 @@ export const FavoritePanel = withStyles(styles)(
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu}
                     defaultIcon={FavoriteIcon}
-                    defaultMessages={['Your favorites list is empty.']} />;
+                    defaultMessages={['Your favorites list is empty.']}
+                    contextMenuColumn={true}/>;
             }
         }
     )
