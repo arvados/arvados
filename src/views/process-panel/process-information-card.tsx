@@ -10,8 +10,9 @@ import {
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { Process, getProcessStatusColor } from '~/store/processes/process';
-import { getProcessStatus } from '~/store/processes/process';
+import { Process } from '~/store/processes/process';
+import { getProcessStatus, getProcessStatusColor } from '../../store/processes/process';
+import { formatDate } from '~/common/formatters';
 
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar';
@@ -105,9 +106,9 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                 <Grid container>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From' value={process.container ? process.container.startedAt : 'N/A'} />
+                            label='From' value={process.container ? formatDate(process.container.startedAt!) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To' value={process.container ? process.container.finishedAt : 'N/A'} />
+                            label='To' value={process.container ? formatDate(process.container.finishedAt!) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.link}
                             label='Workflow' value='???' />
                     </Grid>

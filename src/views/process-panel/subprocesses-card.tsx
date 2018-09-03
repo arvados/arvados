@@ -7,6 +7,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, withStyles, WithStyles, Card, CardHeader, CardContent, Grid, Switch } from '@material-ui/core';
 import { SubprocessFilter } from '~/components/subprocess-filter/subprocess-filter';
 import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
+import { Process } from '~/store/processes/process';
 
 type CssRules = 'root';
 
@@ -17,7 +18,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface SubprocessesDataProps {
-    subprocesses: number;
+    subprocesses: Array<Process>;
     filters: SubprocessFilterDataProps[];
     onToggle: (filter: SubprocessFilterDataProps) => void;
 }
@@ -31,7 +32,7 @@ export const SubprocessesCard = withStyles(styles)(
             <CardContent>
                 <Grid container direction="column" spacing={16}>
                     <Grid item xs={12} container spacing={16}>
-                        <SubprocessFilter label='Subprocesses' value={subprocesses} />     
+                        <SubprocessFilter label='Subprocesses' value={subprocesses.length} />     
                     </Grid>
                     <Grid item xs={12} container spacing={16}>
                         {
