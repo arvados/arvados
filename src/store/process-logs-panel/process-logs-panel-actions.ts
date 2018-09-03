@@ -24,7 +24,7 @@ export const processLogsPanelActions = unionize({
 export type ProcessLogsPanelAction = UnionOf<typeof processLogsPanelActions>;
 
 export const setProcessLogsPanelFilter = (filter: string) =>
-     processLogsPanelActions.SET_PROCESS_LOGS_PANEL_FILTER(filter);
+    processLogsPanelActions.SET_PROCESS_LOGS_PANEL_FILTER(filter);
 
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
@@ -54,18 +54,21 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService) 
 };
 
 const createInitialLogPanelState = (logResources: LogResource[]) => {
-    const allLogs = logResources.map(({ properties }) => properties.text);
+    const allLogs = logsToLines(logResources);
     const groupedLogResources = groupBy(logResources, log => log.eventType);
     const groupedLogs = Object
         .keys(groupedLogResources)
         .reduce((grouped, key) => ({
             ...grouped,
-            [key]: groupedLogResources[key].map(({ properties }) => properties.text)
+            [key]: logsToLines(groupedLogResources[key])
         }), {});
     const filters = [SUMMARIZED_FILTER_TYPE, ...Object.keys(groupedLogs)];
     const logs = { [SUMMARIZED_FILTER_TYPE]: allLogs, ...groupedLogs };
     return { filters, logs };
 };
+
+const logsToLines = (logs: LogResource[]) => 
+    logs.map(({properties}) => properties.text);
 
 const MAX_AMOUNT_OF_LOGS = 10000;
 

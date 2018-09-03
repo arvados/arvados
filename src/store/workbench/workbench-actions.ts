@@ -30,6 +30,7 @@ import * as collectionUpdateActions from '~/store/collections/collection-update-
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '../processes/processes-actions';
 import { getProcess } from '../processes/process';
+import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
 
 
 export const loadWorkbench = () =>
@@ -187,8 +188,7 @@ export const loadProcess = (uuid: string) =>
 
 export const loadProcessLog = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch<any>(loadProcess(uuid));
-        // ToDo: loadLog();
+        dispatch<any>(initProcessLogsPanel(uuid));
     };
 
 export const resourceIsNotLoaded = (uuid: string) =>

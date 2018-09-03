@@ -30,7 +30,7 @@ export const CodeSnippet = withStyles(styles)(
         <Typography component="div" className={classes.root}>
             {
                 lines.map((line: string, index: number) => {
-                    return <Typography key={index} component="div">{line}</Typography>;
+                    return <Typography key={index} component="pre">{line}</Typography>;
                 })
             }
         </Typography>
