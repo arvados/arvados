@@ -10,6 +10,7 @@ import {
     AdvancedIcon, RemoveIcon, ReRunProcessIcon, LogIcon
 } from "~/components/icon/icon";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -84,7 +85,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: LogIcon,
         name: "Log",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(navigateToProcessLogs(resource.uuid));
         }
     },
     {

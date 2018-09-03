@@ -12,7 +12,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         width: '100%',
-        height: '550px',
+        height: 'auto',
+        maxHeight: '550px',
         overflow: 'scroll',
         padding: theme.spacing.unit
     }
