@@ -78,20 +78,3 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                 icon={ProcessIcon}
                 messages={['Process not found']} />
         </Grid>;
-
-export const getStatusColor = (status: string, classes: Record<CssRules, string>) => {
-    switch (status) {
-        case SubprocessesStatus.COMPLETED:
-            return classes.headerCompleted;
-        case SubprocessesStatus.CANCELED:
-            return classes.headerCanceled;
-        case SubprocessesStatus.QUEUED:
-            return classes.headerQueued;
-        case SubprocessesStatus.FAILED:
-            return classes.headerFailed;
-        case SubprocessesStatus.ACTIVE:
-            return classes.headerActive;
-        default:
-            return classes.headerQueued;
-    }
-};

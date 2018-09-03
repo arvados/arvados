@@ -7,13 +7,12 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
 } from '@material-ui/core';
-import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { Process } from '~/store/processes/process';
+import { Process, getProcessStatusColor } from '~/store/processes/process';
 import { getProcessStatus } from '~/store/processes/process';
-import { getStatusColor } from '~/views/process-panel/process-panel-root';
+
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar'
     | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -89,8 +88,8 @@ export interface ProcessInformationCardDataProps {
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules>;
 
-export const ProcessInformationCard = withStyles(styles)(
-    ({ classes, process, onContextMenu }: ProcessInformationCardProps) =>
+export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
+    ({ classes, process, onContextMenu, theme }: ProcessInformationCardProps) =>
         <Card className={classes.card}>
             <CardHeader
                 classes={{
@@ -101,7 +100,8 @@ export const ProcessInformationCard = withStyles(styles)(
                 action={
                     <div>
                         <Chip label={getProcessStatus(process)}
-                            className={classnames([classes.chip, getStatusColor(getProcessStatus(process), classes)])} />
+                            className={classes.chip} 
+                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }}/>
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>

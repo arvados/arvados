@@ -7,13 +7,12 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Typography, Tooltip
 } from '@material-ui/core';
-import * as classnames from "classnames";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { getStatusColor } from '~/views/process-panel/process-panel-root';
 import { Process, getProcessStatus, getProcessRuntime } from '~/store/processes/process';
 import { formatTime } from '~/common/formatters';
+import { getProcessStatusColor } from '~/store/processes/process';
 
 export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'
     | 'header' | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
@@ -96,11 +95,12 @@ export interface ProcessSubprocessesCardDataProps {
 
 type ProcessSubprocessesCardProps = ProcessSubprocessesCardDataProps & WithStyles<CssRules>;
 
-export const ProcessSubprocessesCard = withStyles(styles)(
-    ({ classes, onContextMenu, subprocess }: ProcessSubprocessesCardProps) => {
+export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
+    ({ classes, onContextMenu, subprocess, theme }: ProcessSubprocessesCardProps) => {
         return <Card>
             <CardHeader
-                className={classnames([classes.header, getStatusColor(getProcessStatus(subprocess), classes)])}
+                className={classes.header}
+                style={{ backgroundColor: getProcessStatusColor(getProcessStatus(subprocess), theme as ArvadosTheme) }}
                 classes={{ content: classes.title, action: classes.action }}
                 action={
                     <div className={classes.rightSideHeader}>

@@ -8,6 +8,8 @@ import { ResourcesState, getResource } from '~/store/resources/resources';
 import { filterResources } from '../resources/resources';
 import { ResourceKind, Resource } from '~/models/resource';
 import { getTimeDiff } from '~/common/formatters';
+import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses-card';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 export interface Process {
     containerRequest: ContainerRequestResource;
@@ -47,6 +49,23 @@ export const getProcessRuntime = (subprocess: Process) =>
         ? getTimeDiff(subprocess.container.finishedAt || '', subprocess.container.startedAt || '')
         : 0;
 
+export const getProcessStatusColor = (status: string, {customs}: ArvadosTheme) => {
+    switch (status) {
+        case SubprocessesStatus.COMPLETED:
+            return customs.colors.green700;
+        case SubprocessesStatus.CANCELED:
+            return customs.colors.red900;
+        case SubprocessesStatus.QUEUED:
+            return customs.colors.grey500;
+        case SubprocessesStatus.FAILED:
+            return customs.colors.red900;
+        case SubprocessesStatus.ACTIVE:
+            return customs.colors.blue500;
+        default:
+            return customs.colors.grey500;
+    }
+};
+
 export const getProcessStatus = (process: Process) =>
     process.container
         ? process.container.state
@@ -55,3 +74,4 @@ export const getProcessStatus = (process: Process) =>
 const isSubprocess = (containerUuid: string) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST
     && (resource as ContainerRequestResource).requestingContainerUuid === containerUuid;
+
