@@ -10,12 +10,12 @@ import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 
-export const toggleProjectTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
+export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-        if (resource.isTrashed) {
+        if (isTrashed) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
-            await services.groupsService.untrash(resource.uuid);
-            dispatch<any>(activateSidePanelTreeItem(resource.uuid));
+            await services.groupsService.untrash(uuid);
+            dispatch<any>(activateSidePanelTreeItem(uuid));
             dispatch(trashPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.CLOSE_SNACKBAR());
             dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -24,8 +24,8 @@ export const toggleProjectTrashed = (resource: { uuid: string; name: string, isT
             }));
         } else {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
-            await services.groupsService.trash(resource.uuid);
-            dispatch<any>(loadSidePanelTreeProjects(resource.ownerUuid!!));
+            await services.groupsService.trash(uuid);
+            dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
             dispatch(snackbarActions.CLOSE_SNACKBAR());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Added to trash",
@@ -34,11 +34,11 @@ export const toggleProjectTrashed = (resource: { uuid: string; name: string, isT
         }
     };
 
-export const toggleCollectionTrashed = (resource: { uuid: string; name: string, isTrashed?: boolean, ownerUuid?: string }) =>
+export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-        if (resource.isTrashed) {
+        if (isTrashed) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
-            await services.collectionService.untrash(resource.uuid);
+            await services.collectionService.untrash(uuid);
             dispatch(trashPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Restored from trash",
@@ -46,7 +46,7 @@ export const toggleCollectionTrashed = (resource: { uuid: string; name: string, 
             }));
         } else {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
-            await services.collectionService.trash(resource.uuid);
+            await services.collectionService.trash(uuid);
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Added to trash",

@@ -34,7 +34,7 @@ export const mockCommonResource = (data: Partial<Resource>): Resource => ({
     createdAt: "",
     etag: "",
     href: "",
-    kind: "",
+    kind: ResourceKind.NONE,
     modifiedAt: "",
     modifiedByClientUuid: "",
     modifiedByUserUuid: "",

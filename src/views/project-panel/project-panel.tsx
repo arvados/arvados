@@ -197,15 +197,16 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const kind = resourceKindToContextMenuKind(resourceUuid);
+                const menuKind = resourceKindToContextMenuKind(resourceUuid);
                 const resource = getResource<ProjectResource>(resourceUuid)(this.props.resources);
-                if (kind && resource) {
+                if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
                         isTrashed: resource.isTrashed,
-                        kind
+                        kind: resource.kind,
+                        menuKind
                     }));
                 }
             }

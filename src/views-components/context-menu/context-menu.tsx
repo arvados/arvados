@@ -4,10 +4,9 @@
 
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
-import { contextMenuActions } from "~/store/context-menu/context-menu-actions";
+import { contextMenuActions, ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "~/components/context-menu/context-menu";
 import { createAnchorAt } from "~/components/popover/helpers";
-import { ContextMenuResource } from "~/store/context-menu/context-menu-reducer";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 
@@ -52,7 +51,7 @@ export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) =>
 };
 
 const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
-    return resource ? menuActionSets.get(resource.kind) || [] : [];
+    return resource ? menuActionSets.get(resource.menuKind) || [] : [];
 };
 
 export enum ContextMenuKind {
@@ -60,6 +59,7 @@ export enum ContextMenuKind {
     PROJECT = "Project",
     RESOURCE = "Resource",
     FAVORITE = "Favorite",
+    TRASH = "Trash",
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_ITEM = "CollectionFilesItem",
     COLLECTION = 'Collection',

@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DispatchProp, connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
@@ -14,7 +14,14 @@ import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
-import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner, ResourceName } from '~/views-components/data-explorer/renderers';
+import {
+    ProcessStatus,
+    ResourceFileSize,
+    ResourceLastModifiedDate,
+    ResourceName,
+    ResourceOwner,
+    ResourceType
+} from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
@@ -151,7 +158,13 @@ const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const kind = resourceKindToContextMenuKind(resourceUuid);
         if (kind) {
-            dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: resourceUuid,
+                ownerUuid: '',
+                kind: ResourceKind.NONE,
+                menuKind: kind
+            }));
         }
     },
     onDialogOpen: (ownerUuid: string) => { return; },

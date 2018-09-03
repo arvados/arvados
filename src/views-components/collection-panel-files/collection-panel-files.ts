@@ -3,18 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { CollectionPanelFiles as Component, CollectionPanelFilesProps } from "~/components/collection-panel-files/collection-panel-files";
+import {
+    CollectionPanelFiles as Component,
+    CollectionPanelFilesProps
+} from "~/components/collection-panel-files/collection-panel-files";
 import { RootState } from "~/store/store";
-import { TreeItemStatus, TreeItem } from "~/components/tree/tree";
-import { CollectionPanelFilesState, CollectionPanelDirectory, CollectionPanelFile } from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import {
+    CollectionPanelDirectory,
+    CollectionPanelFile,
+    CollectionPanelFilesState
+} from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { FileTreeData } from "~/components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { Tree, getNodeChildrenIds, getNode } from "~/models/tree";
+import { getNode, getNodeChildrenIds, Tree } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
+import { ResourceKind } from "~/models/resource";
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -43,10 +51,10 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id }));
     },
     onItemMenuOpen: (event, item) => {
-        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES_ITEM, name: item.data.name, uuid: item.id }));
+        dispatch<any>(openContextMenu(event, { menuKind: ContextMenuKind.COLLECTION_FILES_ITEM, kind: ResourceKind.COLLECTION, name: item.data.name, uuid: item.id, ownerUuid: '' }));
     },
     onOptionsMenuOpen: (event) => {
-        dispatch<any>(openContextMenu(event, { kind: ContextMenuKind.COLLECTION_FILES, name: '', uuid: '' }));
+        dispatch<any>(openContextMenu(event, { menuKind: ContextMenuKind.COLLECTION_FILES, kind: ResourceKind.COLLECTION, name: '', uuid: '', ownerUuid: '' }));
     },
 });
 

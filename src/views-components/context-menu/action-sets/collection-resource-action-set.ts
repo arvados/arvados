@@ -44,7 +44,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         component: ToggleTrashAction,
         execute: (dispatch, resource) => {
-            dispatch<any>(toggleCollectionTrashed(resource));
+            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
         }
     },
     {

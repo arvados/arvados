@@ -39,7 +39,7 @@ export const projectActionSet: ContextMenuActionSet = [[
     {
         component: ToggleTrashAction,
         execute: (dispatch, resource) => {
-            dispatch<any>(toggleProjectTrashed(resource));
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
         }
     },
     {

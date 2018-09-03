@@ -31,6 +31,7 @@ import { processActionSet } from './views-components/context-menu/action-sets/pr
 import { addRouteChangeHandlers } from './routes/routes';
 import { loadWorkbench } from './store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
+import { trashActionSet } from "~/views-components/context-menu/action-sets/trash-action-set";
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -49,6 +50,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActio
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
+addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 
 fetchConfig()
     .then((config) => {

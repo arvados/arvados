@@ -10,7 +10,7 @@ export interface Resource {
     modifiedByUserUuid: string;
     modifiedAt: string;
     href: string;
-    kind: string;
+    kind: ResourceKind;
     etag: string;
 }
 
@@ -29,6 +29,7 @@ export enum ResourceKind {
     PROJECT = "arvados#group",
     USER = "arvados#user",
     WORKFLOW = "arvados#workflow",
+    NONE = "arvados#none"
 }
 
 export enum ResourceObjectType {

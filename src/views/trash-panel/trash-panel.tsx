@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { IconButton, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DispatchProp, connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
@@ -17,10 +17,9 @@ import { RestoreFromTrashIcon, TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { getProperty } from "~/store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
-import { openContextMenu, resourceKindToContextMenuKind } from "~/store/context-menu/context-menu-actions";
+import { ContextMenuResource, openContextMenu } from "~/store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "~/store/resources/resources";
 import {
-    renderDate,
     ResourceDeleteDate,
     ResourceFileSize,
     ResourceName,
@@ -30,6 +29,7 @@ import {
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { toggleCollectionTrashed, toggleProjectTrashed } from "~/store/trash/trash-actions";
+import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
 
 type CssRules = "toolbar" | "button";
@@ -63,17 +63,12 @@ export const ResourceRestore =
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
         <IconButton onClick={() => {
             if (props.resource && props.dispatch) {
-                const ctxRes = {
-                    name: '',
-                    uuid: props.resource.uuid,
-                    isTrashed: props.resource.isTrashed,
-                    ownerUuid: props.resource.ownerUuid
-                };
+                const res = props.resource;
 
                 if (props.resource.kind === ResourceKind.PROJECT) {
-                    props.dispatch(toggleProjectTrashed(ctxRes));
+                    props.dispatch(toggleProjectTrashed(res.uuid, res.ownerUuid, res.isTrashed));
                 } else if (props.resource.kind === ResourceKind.COLLECTION) {
-                    props.dispatch(toggleCollectionTrashed(ctxRes));
+                    props.dispatch(toggleCollectionTrashed(res.uuid, res.isTrashed));
                 }
             }
         }}>
@@ -180,15 +175,15 @@ export const TrashPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const kind = resourceKindToContextMenuKind(resourceUuid);
-                const resource = getResource(resourceUuid)(this.props.resources) as TrashableResource;
-                if (kind && resource) {
+                const resource = getResource<TrashableResource>(resourceUuid)(this.props.resources);
+                if (resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
                         isTrashed: resource.isTrashed,
-                        kind
+                        kind: resource.kind,
+                        menuKind: ContextMenuKind.TRASH
                     }));
                 }
             }

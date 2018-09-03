@@ -6,15 +6,11 @@ import { Dispatch } from "redux";
 import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { dataExplorerActions } from "~/store/data-explorer/data-explorer-action";
-import { snackbarActions } from "~/store/snackbar/snackbar-actions";
-import { ContextMenuResource } from '~/store/context-menu/context-menu-reducer';
-import { PROJECT_PANEL_ID } from "~/views/project-panel/project-panel";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { ServiceRepository } from "~/services/services";
 import { CollectionResource } from '~/models/collection';
+import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
