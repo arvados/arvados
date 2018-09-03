@@ -9,9 +9,14 @@ import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
+import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
+import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses-card';
+
+type CssRules = 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
+    subprocesses: Array<Process>;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -59,10 +64,16 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                     onToggle={() => { return; }}
                 />
             </Grid>
+            <Grid item xs={12}>
+                <ProcessSubprocesses
+                    subprocesses={props.subprocesses}
+                    onContextMenu={props.onContextMenu} />
+            </Grid>
         </Grid>
         : <Grid container
             alignItems='center'
-            justify='center'>
+            justify='center'
+            style={{ minHeight: '100%' }}>
             <DefaultView
                 icon={ProcessIcon}
                 messages={['Process not found']} />

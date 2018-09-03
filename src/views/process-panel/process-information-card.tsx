@@ -10,10 +10,11 @@ import {
 import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { Process } from '~/store/processes/process';
-import { getProcessStatus } from '../../store/processes/process';
+import { Process, getProcessStatusColor } from '~/store/processes/process';
+import { getProcessStatus } from '~/store/processes/process';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'headerText' | 'link' | 'content' | 'title' | 'avatar';
+
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -24,7 +25,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.green700,
     },
     avatar: {
-        alignSelf: 'flex-start'
+        alignSelf: 'flex-start',
+        paddingTop: theme.spacing.unit * 0.5
     },
     label: {
         display: 'flex',
@@ -47,14 +49,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     chip: {
         height: theme.spacing.unit * 3,
         width: theme.spacing.unit * 12,
-        backgroundColor: theme.customs.colors.green700,
         color: theme.palette.common.white,
         fontSize: '0.875rem',
         borderRadius: theme.spacing.unit * 0.625,
-    },
-    headerText: {
-        fontSize: '0.875rem',
-        marginLeft: theme.spacing.unit * 3,
     },
     content: {
         '&:last-child': {
@@ -63,7 +60,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     title: {
-        overflow: 'hidden'
+        overflow: 'hidden',
+        paddingTop: theme.spacing.unit * 0.5
     }
 });
 
@@ -74,8 +72,8 @@ export interface ProcessInformationCardDataProps {
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules>;
 
-export const ProcessInformationCard = withStyles(styles)(
-    ({ classes, process, onContextMenu }: ProcessInformationCardProps) =>
+export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
+    ({ classes, process, onContextMenu, theme }: ProcessInformationCardProps) =>
         <Card className={classes.card}>
             <CardHeader
                 classes={{
@@ -85,7 +83,9 @@ export const ProcessInformationCard = withStyles(styles)(
                 avatar={<ProcessIcon className={classes.iconHeader} />}
                 action={
                     <div>
-                        <Chip label={getProcessStatus(process)} className={classes.chip} />
+                        <Chip label={getProcessStatus(process)}
+                            className={classes.chip} 
+                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }}/>
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
@@ -94,7 +94,7 @@ export const ProcessInformationCard = withStyles(styles)(
                     </div>
                 }
                 title={
-                    <Tooltip title={process.containerRequest.name} placement="bottom-start">
+                    <Tooltip title={process.containerRequest.name} placement="bottom-start" color='inherit'>
                         <Typography noWrap variant="title">
                            {process.containerRequest.name}
                         </Typography>
