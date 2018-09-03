@@ -71,7 +71,7 @@ export const ProcessLogMainCard = withStyles(styles)(
                         </div>
                     }
                     title={
-                        <Tooltip title={process.containerRequest.name}>
+                        <Tooltip title={process.containerRequest.name} placement="bottom-start">
                             <Typography noWrap variant="title" className={classes.title}>
                                 {process.containerRequest.name}
                             </Typography>
@@ -85,7 +85,7 @@ export const ProcessLogMainCard = withStyles(styles)(
                         </Grid>
                         <Grid item xs={6} className={classes.link}>
                             <Typography component='div'>
-                                Container log for request {process.containerRequest.uuid}
+                                Go to Log collection
                             </Typography>
                         </Grid>
                         <Grid item xs={12}>

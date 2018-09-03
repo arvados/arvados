@@ -94,7 +94,7 @@ export const ProcessInformationCard = withStyles(styles)(
                     </div>
                 }
                 title={
-                    <Tooltip title={process.containerRequest.name}>
+                    <Tooltip title={process.containerRequest.name} placement="bottom-start">
                         <Typography noWrap variant="title">
                            {process.containerRequest.name}
                         </Typography>
