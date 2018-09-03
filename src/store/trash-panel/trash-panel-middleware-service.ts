@@ -14,13 +14,12 @@ import { FilterBuilder } from "~/common/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
+import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/trash-panel";
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
 import { TrashResource } from "~/models/resource";
-import { ListResults } from "~/common/api/common-resource-service";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 
@@ -29,7 +28,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         super(id);
     }
 
-    requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
         const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
@@ -48,35 +47,34 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
         }
 
-        const userUuid = this.services.authService.getUuid()!;
+        try {
+            const userUuid = this.services.authService.getUuid()!;
+            const listResults = await this.services.groupsService
+                .contents(userUuid, {
+                    ...dataExplorerToListParams(dataExplorer),
+                    order: order.getOrder(),
+                    filters: new FilterBuilder()
+                        .addIsA("uuid", typeFilters.map(f => f.type))
+                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+                        .getFilters(),
+                    recursive: true,
+                    includeTrash: true
+                });
 
-        this.services.groupsService
-            .contents(userUuid, {
-                ...dataExplorerToListParams(dataExplorer),
-                order: order.getOrder(),
-                filters: new FilterBuilder()
-                    .addIsA("uuid", typeFilters.map(f => f.type))
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-                    .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-                    .getFilters(),
-                recursive: true,
-                includeTrash: true
-            })
-            .then((listResults: ListResults<GroupContentsResource>) => {
-                const items = listResults.items
-                    .filter(it => (it as TrashResource).isTrashed)
-                    .map(it => it.uuid);
+            const items = listResults.items
+                .filter(it => (it as TrashResource).isTrashed)
+                .map(it => it.uuid);
 
-                api.dispatch(trashPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(listResults),
-                    items
-                }));
-                api.dispatch<any>(updateFavorites(items));
-                api.dispatch(updateResources(listResults.items));
-            })
-            .catch(() => {
-                api.dispatch(couldNotFetchTrashContents());
-            });
+            api.dispatch(trashPanelActions.SET_ITEMS({
+                ...listResultsToDataExplorerItemsMeta(listResults),
+                items
+            }));
+            api.dispatch<any>(updateFavorites(items));
+            api.dispatch(updateResources(listResults.items));
+        } catch (e) {
+            api.dispatch(couldNotFetchTrashContents());
+        }
     }
 }
 
