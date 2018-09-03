@@ -64,7 +64,7 @@ export const ProcessLogMainCard = withStyles(styles)(
                     </Grid>
                     <Grid item xs={6} className={classes.link}>
                         <Typography component='div'>
-                            Container log for request ardev-xvhdp-q3uqbfxeb6w64pm
+                            Container log for request {process.containerRequest.uuid}
                         </Typography>
                     </Grid>
                     <Grid item xs={12}>
