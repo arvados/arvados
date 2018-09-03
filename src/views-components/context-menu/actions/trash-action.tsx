@@ -22,8 +22,6 @@ export const ToggleTrashAction = connect(mapStateToProps)((props: { isTrashed?: 
                 : <TrashIcon/>}
         </ListItemIcon>
         <ListItemText style={{ textDecoration: 'none' }}>
-            {props.isTrashed
-                ? <>Restore</>
-                : <>Move to trash</>}
+            {props.isTrashed ? "Restore" : "Move to trash"}
         </ListItemText>
     </ListItem >);

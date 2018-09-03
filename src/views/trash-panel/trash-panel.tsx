@@ -60,10 +60,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: uuid => {
-            console.log(uuid);
-            return <ResourceName uuid={uuid}/>;
-        },
+        render: uuid => <ResourceName uuid={uuid}/>,
         width: "450px"
     },
     {
