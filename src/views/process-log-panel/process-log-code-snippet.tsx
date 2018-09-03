@@ -19,7 +19,7 @@ const theme = createMuiTheme({
         }
     },
     typography: {
-        fontFamily: 'VT323'
+        fontFamily: 'monospace'
     }
 });
 

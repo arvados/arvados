@@ -15,6 +15,7 @@ import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
 import { BackIcon } from '~/components/icon/icon';
+import { DefaultView } from '~/components/default-view/default-view';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -55,10 +56,10 @@ interface ProcessLogMainCardDataProps {
 export type ProcessLogMainCardProps = ProcessLogMainCardDataProps & CodeSnippetDataProps & ProcessLogFormDataProps & ProcessLogFormActionProps;
 
 export const ProcessLogMainCard = withStyles(styles)(
-    ({ classes, process, selectedFilter, filters, onChange, lines }: ProcessLogMainCardProps & WithStyles<CssRules>) => 
+    ({ classes, process, selectedFilter, filters, onChange, lines }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
         <Grid item xs={12}>
             <Link to={`/processes/${process.containerRequest.uuid}`} className={classes.backLink}>
-                <BackIcon className={classes.backIcon}/> Back
+                <BackIcon className={classes.backIcon} /> Back
             </Link>
             <Card className={classes.card}>
                 <CardHeader
@@ -79,20 +80,25 @@ export const ProcessLogMainCard = withStyles(styles)(
                     }
                     subheader={process.containerRequest.description} />
                 <CardContent>
-                    <Grid container spacing={24} alignItems='center'>
-                        <Grid item xs={6}>
-                            <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
+                    {lines.length > 0
+                        ? < Grid container spacing={24} alignItems='center'>
+                            <Grid item xs={6}>
+                                <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
+                            </Grid>
+                            <Grid item xs={6} className={classes.link}>
+                                <Typography component='div'>
+                                    Go to Log collection
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <ProcessLogCodeSnippet lines={lines} />
+                            </Grid>
                         </Grid>
-                        <Grid item xs={6} className={classes.link}>
-                            <Typography component='div'>
-                                Go to Log collection
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <ProcessLogCodeSnippet lines={lines}/>
-                        </Grid>
-                    </Grid>
+                        : <DefaultView
+                            icon={ProcessIcon}
+                            messages={['No logs yet']} />
+                    }
                 </CardContent>
             </Card>
-        </Grid>
+        </Grid >
 );
