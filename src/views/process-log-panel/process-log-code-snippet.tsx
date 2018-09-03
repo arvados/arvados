@@ -11,10 +11,10 @@ const theme = createMuiTheme({
     overrides: {
         MuiTypography: {
             body1: {
-                color: grey["900"]
+                color: grey["200"]
             },
             root: {
-                backgroundColor: grey["200"]
+                backgroundColor: '#000'
             }
         }
     },
@@ -23,9 +23,9 @@ const theme = createMuiTheme({
     }
 });
 
-type DefaultCodeSnippet = CodeSnippetDataProps;
+type ProcessLogCodeSnippet = CodeSnippetDataProps;
 
-export const DefaultCodeSnippet = (props: DefaultCodeSnippet) => 
+export const ProcessLogCodeSnippet = (props: ProcessLogCodeSnippet) => 
     <MuiThemeProvider theme={theme}>
         <CodeSnippet lines={props.lines} />
     </MuiThemeProvider>;

@@ -9,10 +9,11 @@ import { ProcessLogMainCard } from '~/views/process-log-panel/process-log-main-c
 import { ProcessLogFormDataProps, ProcessLogFormActionProps } from '~/views/process-log-panel/process-log-form';
 import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
+import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
 
 export type ProcessLogPanelRootDataProps = {
     process?: Process;
-} & ProcessLogFormDataProps;
+} & ProcessLogFormDataProps & CodeSnippetDataProps;
 
 export type ProcessLogPanelRootActionProps = {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;

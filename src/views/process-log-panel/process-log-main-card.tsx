@@ -8,22 +8,25 @@ import {
     CardHeader, IconButton, CardContent, Grid, Typography, Tooltip
 } from '@material-ui/core';
 import { Process } from '~/store/processes/process';
+import { ProcessLogCodeSnippet } from '~/views/process-log-panel/process-log-code-snippet';
 import { ProcessLogForm, ProcessLogFormDataProps, ProcessLogFormActionProps } from '~/views/process-log-panel/process-log-form';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';
+import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
 
-type CssRules = 'root' | 'card' | 'iconHeader';
+type CssRules = 'card' | 'iconHeader' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-
-    },
     card: {
         width: '100%'
     },
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.green700
+    },
+    link: {
+        alignSelf: 'flex-end',
+        textAlign: 'right'
     }
 });
 
@@ -32,10 +35,10 @@ interface ProcessLogMainCardDataProps {
     process: Process;
 }
 
-export type ProcessLogMainCardProps = ProcessLogMainCardDataProps & ProcessLogFormDataProps & ProcessLogFormActionProps;
+export type ProcessLogMainCardProps = ProcessLogMainCardDataProps & CodeSnippetDataProps & ProcessLogFormDataProps & ProcessLogFormActionProps;
 
 export const ProcessLogMainCard = withStyles(styles)(
-    ({ classes, process, selectedFilter, filters, onChange }: ProcessLogMainCardProps & WithStyles<CssRules>) => 
+    ({ classes, process, selectedFilter, filters, onChange, lines }: ProcessLogMainCardProps & WithStyles<CssRules>) => 
         <Card className={classes.card}>
             <CardHeader
                 avatar={<ProcessIcon className={classes.iconHeader} />}
@@ -59,11 +62,13 @@ export const ProcessLogMainCard = withStyles(styles)(
                     <Grid item xs={6}>
                         <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
                     </Grid>
-                    <Grid item xs={6}>
-                        Container log for request ardev-xvhdp-q3uqbfxeb6w64pm
+                    <Grid item xs={6} className={classes.link}>
+                        <Typography component='div'>
+                            Container log for request ardev-xvhdp-q3uqbfxeb6w64pm
+                        </Typography>
                     </Grid>
                     <Grid item xs={12}>
-                        {/* add snippet */}
+                        <ProcessLogCodeSnippet lines={lines}/>
                     </Grid>
                 </Grid>
             </CardContent>

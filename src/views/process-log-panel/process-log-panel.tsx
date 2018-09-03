@@ -22,6 +22,8 @@ const SELECT_OPTIONS = [
     { label: 'Stderr', value: 'stderr' }
 ];
 
+const lines = ['Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum'];
+
 export interface Log {
     object_uuid: string;
     event_at: string;
@@ -42,8 +44,8 @@ const mapStateToProps = ({ router, resources }: RootState): ProcessLogPanelRootD
     return {
         process: getProcess(uuid)(resources),
         selectedFilter: SELECT_OPTIONS[0],
-        filters: SELECT_OPTIONS
-        // lines: string[]
+        filters: SELECT_OPTIONS,
+        lines
     };
 };
 
