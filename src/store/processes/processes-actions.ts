@@ -8,16 +8,19 @@ import { ServiceRepository } from '~/services/services';
 import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/common/api/filter-builder';
 import { ContainerRequestResource } from '../../models/container-request';
+import { Process } from './process';
 
 export const loadProcess = (containerRequestUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
             await dispatch<any>(loadSubprocesses(containerRequest.containerUuid));
+            return { containerRequest, container };
         }
+        return { containerRequest };
     };
 
 export const loadSubprocesses = (containerUuid: string) =>

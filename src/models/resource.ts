@@ -19,6 +19,7 @@ export enum ResourceKind {
     CONTAINER = "arvados#container",
     CONTAINER_REQUEST = "arvados#containerRequest",
     GROUP = "arvados#group",
+    LOG = "arvados#log",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
     USER = "arvados#user",
@@ -30,6 +31,7 @@ export enum ResourceObjectType {
     CONTAINER = 'dz642',
     CONTAINER_REQUEST = 'xvhdp',
     GROUP = 'j7d0g',
+    LOG = '57u5n',
     USER = 'tpzed',
 }
 
@@ -59,6 +61,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.CONTAINER_REQUEST;
         case ResourceObjectType.CONTAINER:
             return ResourceKind.CONTAINER;
+        case ResourceObjectType.LOG:
+            return ResourceKind.LOG;
         default:
             return undefined;
     }
