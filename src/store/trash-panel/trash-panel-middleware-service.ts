@@ -10,16 +10,16 @@ import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { FilterBuilder } from "~/services/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
-import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
+import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
 import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/trash-panel";
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
-import { TrashResource } from "~/models/resource";
+import { TrashableResource } from "~/models/resource";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 
@@ -63,7 +63,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 });
 
             const items = listResults.items
-                .filter(it => (it as TrashResource).isTrashed)
+                .filter(it => (it as TrashableResource).isTrashed)
                 .map(it => it.uuid);
 
             api.dispatch(trashPanelActions.SET_ITEMS({

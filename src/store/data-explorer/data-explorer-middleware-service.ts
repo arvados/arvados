@@ -7,7 +7,7 @@ import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataExplorer } from './data-explorer-reducer';
-import { ListResults } from '~/common/api/common-resource-service';
+import { ListResults } from '~/services/common-service/common-resource-service';
 
 export abstract class DataExplorerMiddlewareService {
     protected readonly id: string;

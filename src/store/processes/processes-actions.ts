@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { updateResources } from '~/store/resources/resources-actions';
-import { FilterBuilder } from '~/common/api/filter-builder';
+import { FilterBuilder } from '~/services/api/filter-builder';
 import { ContainerRequestResource } from '../../models/container-request';
 
 export const loadProcess = (uuid: string) =>

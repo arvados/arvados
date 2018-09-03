@@ -8,7 +8,7 @@ import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/common/api/common-resource-service';
+import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 

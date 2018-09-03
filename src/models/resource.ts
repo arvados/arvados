@@ -14,7 +14,7 @@ export interface Resource {
     etag: string;
 }
 
-export interface TrashResource extends Resource {
+export interface TrashableResource extends Resource {
     trashAt: string;
     deleteAt: string;
     isTrashed: boolean;

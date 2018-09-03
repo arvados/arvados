@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind, TrashResource } from "./resource";
+import { ResourceKind, TrashableResource } from "./resource";
 
-export interface GroupResource extends TrashResource {
+export interface GroupResource extends TrashableResource {
     kind: ResourceKind.GROUP;
     name: string;
     groupClass: GroupClass | null;

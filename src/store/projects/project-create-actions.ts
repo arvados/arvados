@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { reset, startSubmit, stopSubmit, initialize } from 'redux-form';
 import { RootState } from '~/store/store';
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/common/api/common-resource-service';
+import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 

@@ -4,9 +4,9 @@
 
 import { LinkService } from "../link-service/link-service";
 import { LinkClass } from "~/models/link";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { FilterBuilder } from "~/services/api/filter-builder";
 import { TagTailType, TagResource } from "~/models/tag";
-import { OrderBuilder } from "~/common/api/order-builder";
+import { OrderBuilder } from "~/services/api/order-builder";
 
 export class TagService {
 

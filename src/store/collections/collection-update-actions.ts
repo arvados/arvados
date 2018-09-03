@@ -12,7 +12,7 @@ import { dataExplorerActions } from "~/store/data-explorer/data-explorer-action"
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { ContextMenuResource } from '~/store/context-menu/context-menu-reducer';
 import { PROJECT_PANEL_ID } from "~/views/project-panel/project-panel";
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { ServiceRepository } from "~/services/services";
 import { CollectionResource } from '~/models/collection';
 

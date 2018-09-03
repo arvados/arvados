@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Grid, Typography } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
-import { ResourceKind, TrashResource } from '~/models/resource';
+import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
@@ -64,13 +64,13 @@ export const ResourceLastModifiedDate = connect(
 
 export const ResourceTrashDate = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<TrashResource>(props.uuid)(state.resources);
+        const resource = getResource<TrashableResource>(props.uuid)(state.resources);
         return { date: resource ? resource.trashAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceDeleteDate = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<TrashResource>(props.uuid)(state.resources);
+        const resource = getResource<TrashableResource>(props.uuid)(state.resources);
         return { date: resource ? resource.deleteAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 

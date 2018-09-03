@@ -10,7 +10,7 @@ import { dialogActions } from '~/store/dialog/dialog-actions';
 import { ServiceRepository } from '~/services/services';
 import { filterCollectionFilesBySelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/common/api/common-resource-service';
+import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 

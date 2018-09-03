@@ -10,7 +10,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind, TrashResource } from '~/models/resource';
+import { ResourceKind, TrashableResource } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { TrashIcon } from '~/components/icon/icon';
@@ -143,7 +143,7 @@ export const TrashPanel = withStyles(styles)(
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const kind = resourceKindToContextMenuKind(resourceUuid);
-                const resource = getResource(resourceUuid)(this.props.resources) as TrashResource;
+                const resource = getResource(resourceUuid)(this.props.resources) as TrashableResource;
                 if (kind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',
