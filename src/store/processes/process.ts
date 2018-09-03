@@ -44,12 +44,12 @@ export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => 
     return [];
 };
 
-export const getProcessRuntime = (subprocess: Process) =>
-    subprocess.container
-        ? getTimeDiff(subprocess.container.finishedAt || '', subprocess.container.startedAt || '')
+export const getProcessRuntime = ({ container }: Process) =>
+    container
+        ? getTimeDiff(container.finishedAt || '', container.startedAt || '')
         : 0;
 
-export const getProcessStatusColor = (status: string, {customs}: ArvadosTheme) => {
+export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
     switch (status) {
         case SubprocessesStatus.COMPLETED:
             return customs.colors.green700;
