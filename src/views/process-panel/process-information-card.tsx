@@ -14,8 +14,7 @@ import { Process, getProcessStatusColor } from '~/store/processes/process';
 import { getProcessStatus } from '~/store/processes/process';
 
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar'
-    | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -63,22 +62,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     title: {
         overflow: 'hidden',
         paddingTop: theme.spacing.unit * 0.5
-    },
-    headerActive: {
-        backgroundColor: theme.customs.colors.blue500,
-    },
-    headerCompleted: {
-        backgroundColor: theme.customs.colors.green700,
-    },
-    headerQueued: {
-        backgroundColor: theme.customs.colors.grey500,
-    },
-    headerFailed: {
-        backgroundColor: theme.customs.colors.red900,
-    },
-    headerCanceled: {
-        backgroundColor: theme.customs.colors.red900,
-    },
+    }
 });
 
 export interface ProcessInformationCardDataProps {
@@ -111,7 +95,7 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                 }
                 title={
                     <Tooltip title={process.containerRequest.name}>
-                        <Typography noWrap variant="title">
+                        <Typography noWrap variant="title" color='inherit'>
                            {process.containerRequest.name}
                         </Typography>
                     </Tooltip>

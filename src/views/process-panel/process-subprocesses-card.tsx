@@ -14,8 +14,7 @@ import { Process, getProcessStatus, getProcessRuntime } from '~/store/processes/
 import { formatTime } from '~/common/formatters';
 import { getProcessStatusColor } from '~/store/processes/process';
 
-export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'
-    | 'header' | 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
+export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'| 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
@@ -56,21 +55,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     header: {
         paddingTop: 0,
         paddingBottom: 0,
-    },
-    headerActive: {
-        backgroundColor: theme.customs.colors.blue500,
-    },
-    headerCompleted: {
-        backgroundColor: theme.customs.colors.green700,
-    },
-    headerQueued: {
-        backgroundColor: theme.customs.colors.grey500,
-    },
-    headerFailed: {
-        backgroundColor: theme.customs.colors.red900,
-    },
-    headerCanceled: {
-        backgroundColor: theme.customs.colors.red900,
     },
 });
 
