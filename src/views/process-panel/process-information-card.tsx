@@ -85,8 +85,8 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                 action={
                     <div>
                         <Chip label={getProcessStatus(process)}
-                            className={classes.chip} 
-                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }}/>
+                            className={classes.chip}
+                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
@@ -95,13 +95,18 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                     </div>
                 }
                 title={
-                    <Tooltip title={process.containerRequest.name} placement="bottom-start" color='inherit'>
-                        <Typography noWrap variant="title">
-                           {process.containerRequest.name}
+                    <Tooltip title={process.containerRequest.name} placement="bottom-start">
+                        <Typography noWrap variant="title" color='inherit'>
+                            {process.containerRequest.name}
                         </Typography>
                     </Tooltip>
                 }
-                subheader={process.containerRequest.description} />
+                subheader={
+                    <Tooltip title={process.containerRequest.description || '(no-description)'} placement="bottom-start">
+                        <Typography noWrap variant="body2" color='inherit'>
+                            {process.containerRequest.description || '(no-description)'}
+                        </Typography>
+                    </Tooltip>} />
             <CardContent className={classes.content}>
                 <Grid container>
                     <Grid item xs={6}>
