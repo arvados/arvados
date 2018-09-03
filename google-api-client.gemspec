@@ -2,7 +2,7 @@
 require File.join(File.dirname(__FILE__), 'lib/google/api_client', 'version')
 
 Gem::Specification.new do |s|
-  s.name = "google-api-client"
+  s.name = "cure-google-api-client"
   s.version = Google::APIClient::VERSION::STRING
 
   s.required_rubygems_version = ">= 1.3.5"
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.files += Dir.glob("vendor/**/*.rb")
   s.files += Dir.glob("tasks/**/*")
   s.files += Dir.glob("website/**/*")
-  s.homepage = "https://github.com/google/google-api-ruby-client/"
+  s.homepage = "https://github.com/cure/google-api-ruby-client/"
   s.rdoc_options = ["--main", "README.md"]
   s.summary = "The Google API Ruby Client makes it trivial to discover and access Google's REST APIs."
 

@@ -1,3 +1,6 @@
+# 0.8.8
+* Do not put CR/LF in http headers
+
 # 0.8.7
 * Lock activesupport version to < 5.0
 
