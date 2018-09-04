@@ -11,7 +11,7 @@ const initialState: ProcessPanel = {
 
 export const processPanelReducer = (state = initialState, action: ProcessPanelAction): ProcessPanel =>
     procesPanelActions.match(action, {
-        INIT_PROCESS_PANEL_FILTERS: statuses => {
+        SET_PROCESS_PANEL_FILTERS: statuses => {
             const filters = statuses.reduce((filters, status) => ({ ...filters, [status]: true }), {});
             return { filters };
         },

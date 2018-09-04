@@ -8,15 +8,12 @@ import { StyleRulesCallback, withStyles, WithStyles, Card, CardHeader, CardConte
 import { SubprocessFilter } from '~/components/subprocess-filter/subprocess-filter';
 import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
-type CssRules = 'root' | 'subtitle' | 'title' | 'gridFilter';
+type CssRules = 'root' | 'title' | 'gridFilter';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         fontSize: '0.875rem',
         height: '100%'
-    },
-    subtitle: {
-        paddingBottom: '32px!important'
     },
     title: {
         color: theme.customs.colors.grey700
@@ -49,7 +46,7 @@ export const SubprocessesCard = withStyles(styles)(
             <CardContent>
                 <Grid container direction="column" spacing={16}>
                     <Grid item xs={12} container spacing={16}>
-                        <Grid item md={12} lg={6} className={classes.subtitle}>
+                        <Grid item md={12} lg={6}>
                             <SubprocessFilter label='Subprocesses' value={subprocessesAmount} />
                         </Grid>
                         <Grid item md={12} lg={6}/>

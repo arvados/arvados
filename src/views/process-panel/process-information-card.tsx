@@ -101,18 +101,18 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                     </Tooltip>
                 }
                 subheader={
-                    <Tooltip title={process.containerRequest.description || '(no-description)'} placement="bottom-start">
+                    <Tooltip title={getDescription(process)} placement="bottom-start">
                         <Typography noWrap variant="body2" color='inherit'>
-                            {process.containerRequest.description || '(no-description)'}
+                            {getDescription(process)}
                         </Typography>
                     </Tooltip>} />
             <CardContent className={classes.content}>
                 <Grid container>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From' value={process.container ? formatDate(process.container.startedAt) : 'N/A'} />
+                            label='From' value={process.container ? formatDate(process.container.startedAt!) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To' value={process.container ? formatDate(process.container.finishedAt) : 'N/A'} />
+                            label='To' value={process.container ? formatDate(process.container.finishedAt!) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.link}
                             label='Workflow' value='???' />
                     </Grid>
@@ -124,3 +124,6 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
             </CardContent>
         </Card>
 );
+
+const getDescription = (process: Process) =>
+    process.containerRequest.description || '(no-description)';

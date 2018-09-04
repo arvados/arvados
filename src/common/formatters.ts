@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export const formatDate = (isoDate?: string | null) => {
+export const formatDate = (isoDate?: string) => {
     if (isoDate) {
         const date = new Date(isoDate);
         const text = date.toLocaleString();

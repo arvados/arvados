@@ -8,7 +8,7 @@ import { Dispatch } from 'redux';
 import { ProcessStatus } from '~/store/processes/process';
 
 export const procesPanelActions = unionize({
-    INIT_PROCESS_PANEL_FILTERS: ofType<string[]>(),
+    SET_PROCESS_PANEL_FILTERS: ofType<string[]>(),
     TOGGLE_PROCESS_PANEL_FILTER: ofType<string>(),
 });
 
@@ -22,7 +22,7 @@ export const loadProcessPanel = (uuid: string) =>
         dispatch(initProcessPanelFilters);
     };
 
-export const initProcessPanelFilters = procesPanelActions.INIT_PROCESS_PANEL_FILTERS([
+export const initProcessPanelFilters = procesPanelActions.SET_PROCESS_PANEL_FILTERS([
     ProcessStatus.QUEUED,
     ProcessStatus.COMPLETED,
     ProcessStatus.FAILED,
