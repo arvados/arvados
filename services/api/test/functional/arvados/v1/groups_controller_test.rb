@@ -194,25 +194,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert actually_checked_anything, "Didn't even find two items to compare."
   end
 
-  test 'list objects across multiple projects' do
-    authorize_with :project_viewer
-    get :contents, {
-      format: :json,
-      filters: [['uuid', 'is_a', 'arvados#specimen']]
-    }
-    assert_response :success
-    found_uuids = json_response['items'].collect { |i| i['uuid'] }
-    [[:in_aproject, true],
-     [:in_asubproject, true],
-     [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
-      if should_find
-        assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
-      else
-        refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
-      end
-    end
-  end
-
   # Even though the project_viewer tests go through other controllers,
   # I'm putting them here so they're easy to find alongside the other
   # project tests.
