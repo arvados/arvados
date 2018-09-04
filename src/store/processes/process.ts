@@ -2,38 +2,42 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContainerRequestResource } from '../../models/container-request';
-import { ContainerResource } from '../../models/container';
+import { ContainerRequestResource, ContainerRequestState } from '../../models/container-request';
+import { ContainerResource, ContainerState } from '../../models/container';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { filterResources } from '../resources/resources';
-import { ResourceKind, Resource } from '~/models/resource';
+import { ResourceKind, Resource, extractUuidKind } from '~/models/resource';
 import { getTimeDiff } from '~/common/formatters';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { groupBy } from 'lodash';
 
 export interface Process {
     containerRequest: ContainerRequestResource;
     container?: ContainerResource;
 }
 
-enum ProcessStatus {
-    ACTIVE = 'Active',
-    COMPLETED = 'Complete',
-    QUEUED = 'Queued',
+export enum ProcessStatus {
+    CANCELLED = 'Cancelled',
+    COMPLETED = 'Completed',
+    DRAFT = 'Draft',
     FAILED = 'Failed',
-    CANCELED = 'Canceled'
+    LOCKED = 'Locked',
+    QUEUED = 'Queued',
+    RUNNING = 'Running',
+    UNKNOWN = 'Unknown',
 }
 
 export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
-    const containerRequest = getResource<ContainerRequestResource>(uuid)(resources);
-    if (containerRequest) {
-        if (containerRequest.containerUuid) {
-            const container = getResource<ContainerResource>(containerRequest.containerUuid)(resources);
-            if (container) {
-                return { containerRequest, container };
+    if (extractUuidKind(uuid) === ResourceKind.CONTAINER_REQUEST) {
+        const containerRequest = getResource<ContainerRequestResource>(uuid)(resources);
+        if (containerRequest) {
+            if (containerRequest.containerUuid) {
+                const container = getResource<ContainerResource>(containerRequest.containerUuid)(resources);
+                if (container) {
+                    return { containerRequest, container };
+                }
             }
+            return { containerRequest };
         }
-        return { containerRequest };
     }
     return;
 };
@@ -59,25 +63,46 @@ export const getProcessRuntime = ({ container }: Process) =>
 
 export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
     switch (status) {
+        case ProcessStatus.RUNNING:
+            return customs.colors.blue500;
         case ProcessStatus.COMPLETED:
             return customs.colors.green700;
-        case ProcessStatus.CANCELED:
-            return customs.colors.red900;
-        case ProcessStatus.QUEUED:
-            return customs.colors.grey500;
+        case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
             return customs.colors.red900;
-        case ProcessStatus.ACTIVE:
-            return customs.colors.blue500;
         default:
             return customs.colors.grey500;
     }
 };
 
-export const getProcessStatus = (process: Process) =>
-    process.container
-        ? process.container.state
-        : process.containerRequest.state;
+export const getProcessStatus = ({ containerRequest, container }: Process): ProcessStatus => {
+    switch (true) {
+        case containerRequest.state === ContainerRequestState.UNCOMMITTED:
+            return ProcessStatus.DRAFT;
+
+        case containerRequest.priority === 0:
+        case container && container.state === ContainerState.CANCELLED:
+            return ProcessStatus.CANCELLED;
+
+        case container && container.state === ContainerState.QUEUED:
+            return ProcessStatus.QUEUED;
+
+        case container && container.state === ContainerState.LOCKED:
+            return ProcessStatus.LOCKED;
+
+        case container && container.state === ContainerState.RUNNING:
+            return ProcessStatus.RUNNING;
+
+        case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
+            return ProcessStatus.COMPLETED;
+
+        case container && container.state === ContainerState.COMPLETE && container.exitCode !== 0:
+            return ProcessStatus.FAILED;
+
+        default:
+            return ProcessStatus.UNKNOWN;
+    }
+};
 
 const isSubprocess = (containerUuid: string) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST

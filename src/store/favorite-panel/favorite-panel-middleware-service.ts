@@ -18,17 +18,18 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/g
 import { resourcesActions } from "~/store/resources/resources-actions";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
+import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
-         } else {
+        } else {
 
             const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
             const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
@@ -48,36 +49,35 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     .addOrder(direction, "name", GroupContentsResourcePrefix.PROCESS)
                     .addOrder(direction, "name", GroupContentsResourcePrefix.PROJECT);
             }
-
-            this.services.favoriteService
-                .list(this.services.authService.getUuid()!, {
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    linkOrder: linkOrder.getOrder(),
-                    contentOrder: contentOrder.getOrder(),
-                    filters: new FilterBuilder()
-                        .addIsA("headUuid", typeFilters.map(filter => filter.type))
-                        .addILike("name", dataExplorer.searchValue)
-                        .getFilters()
-                })
-                .then(response => {
-                    api.dispatch(resourcesActions.SET_RESOURCES(response.items));
-                    api.dispatch(favoritePanelActions.SET_ITEMS({
-                        items: response.items.map(resource => resource.uuid),
-                        itemsAvailable: response.itemsAvailable,
-                        page: Math.floor(response.offset / response.limit),
-                        rowsPerPage: response.limit
-                    }));
-                    api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
-                })
-                .catch(() => {
-                    api.dispatch(favoritePanelActions.SET_ITEMS({
-                        items: [],
-                        itemsAvailable: 0,
-                        page: 0,
-                        rowsPerPage: dataExplorer.rowsPerPage
-                    }));
-                });
+            try {
+                const response = await this.services.favoriteService
+                    .list(this.services.authService.getUuid()!, {
+                        limit: dataExplorer.rowsPerPage,
+                        offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                        linkOrder: linkOrder.getOrder(),
+                        contentOrder: contentOrder.getOrder(),
+                        filters: new FilterBuilder()
+                            .addIsA("headUuid", typeFilters.map(filter => filter.type))
+                            .addILike("name", dataExplorer.searchValue)
+                            .getFilters()
+                    });
+                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
+                await api.dispatch<any>(loadMissingProcessesInformation(response.items));
+                api.dispatch(favoritePanelActions.SET_ITEMS({
+                    items: response.items.map(resource => resource.uuid),
+                    itemsAvailable: response.itemsAvailable,
+                    page: Math.floor(response.offset / response.limit),
+                    rowsPerPage: response.limit
+                }));
+                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+            } catch (e) {
+                api.dispatch(favoritePanelActions.SET_ITEMS({
+                    items: [],
+                    itemsAvailable: 0,
+                    page: 0,
+                    rowsPerPage: dataExplorer.rowsPerPage
+                }));
+            }
         }
     }
 }

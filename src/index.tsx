@@ -28,13 +28,13 @@ import { collectionFilesItemActionSet } from './views-components/context-menu/ac
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 import { processActionSet } from './views-components/context-menu/action-sets/process-action-set';
-import { addRouteChangeHandlers } from './routes/routes';
 import { loadWorkbench } from './store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
 import { trashActionSet } from "~/views-components/context-menu/action-sets/trash-action-set";
 import { ServiceRepository } from '~/services/services';
 import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
+import { addRouteChangeHandlers } from './routes/route-change-handlers';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);

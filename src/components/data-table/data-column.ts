@@ -10,7 +10,7 @@ export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterIt
     name: string;
     selected: boolean;
     configurable: boolean;
-    sortDirection: SortDirection;
+    sortDirection?: SortDirection;
     filters: F[];
     render: (item: T) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;

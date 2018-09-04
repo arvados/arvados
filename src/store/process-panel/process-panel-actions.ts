@@ -5,6 +5,7 @@
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { loadProcess } from '~/store/processes/processes-actions';
 import { Dispatch } from 'redux';
+import { ProcessStatus } from '~/store/processes/process';
 
 export const procesPanelActions = unionize({
     INIT_PROCESS_PANEL_FILTERS: ofType<string[]>(),
@@ -22,8 +23,10 @@ export const loadProcessPanel = (uuid: string) =>
     };
 
 export const initProcessPanelFilters = procesPanelActions.INIT_PROCESS_PANEL_FILTERS([
-    'Queued',
-    'Complete',
-    'Active',
-    'Failed'
+    ProcessStatus.QUEUED,
+    ProcessStatus.COMPLETED,
+    ProcessStatus.FAILED,
+    ProcessStatus.RUNNING,
+    ProcessStatus.LOCKED,
+    ProcessStatus.CANCELLED
 ]);

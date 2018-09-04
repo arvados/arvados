@@ -7,11 +7,13 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from '~/common/custom-theme';
 import { Typography, Switch } from '@material-ui/core';
 
-type CssRules = 'container' | 'label' | 'value' | 'switch';
+type CssRules = 'container' | 'label' | 'value';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         display: 'flex',
+        alignItems: 'center',
+        height: '20px'
     },
     label: {
         width: '86px',
@@ -21,12 +23,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     value: {
         width: '24px',
         paddingLeft: theme.spacing.unit,
-    },
-    switch: {
-        height: '20px',
-        '& span:first-child': {
-            height: '18px'
-        }
     }
 });
 
@@ -45,7 +41,7 @@ export const SubprocessFilter = withStyles(styles)(
         <div className={classes.container} >
             <Typography component="span" className={classes.label}>{label}:</Typography>
             <Typography component="span" className={classes.value}>{value}</Typography>
-            {onToggle && <Switch classes={{ root: classes.switch }}
+            {onToggle && <Switch
                 checked={checked}
                 onChange={onToggle}
                 value={key}

@@ -2,14 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { History, Location } from 'history';
-import { RootStore } from '~/store/store';
 import { matchPath } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
 import { getProjectUrl } from '~/models/project';
 import { getCollectionUrl } from '~/models/collection';
-import { loadProject, loadFavorites, loadCollection, loadTrash, loadProcessLog } from '~/store/workbench/workbench-actions';
-import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 
 export const Routes = {
     ROOT: '/',
@@ -38,12 +34,6 @@ export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
 
 export const getProcessLogUrl = (uuid: string) => `/process-logs/${uuid}`;
 
-export const addRouteChangeHandlers = (history: History, store: RootStore) => {
-    const handler = handleLocationChange(store);
-    handler(history.location);
-    history.listen(handler);
-};
-
 export interface ResourceRouteParams {
     id: string;
 }
@@ -68,26 +58,3 @@ export const matchProcessRoute = (route: string) =>
 
 export const matchProcessLogRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROCESS_LOGS });
-
-const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
-    const projectMatch = matchProjectRoute(pathname);
-    const collectionMatch = matchCollectionRoute(pathname);
-    const favoriteMatch = matchFavoritesRoute(pathname);
-    const trashMatch = matchTrashRoute(pathname);
-    const processMatch = matchProcessRoute(pathname);
-    const processLogMatch = matchProcessLogRoute(pathname);
-    
-    if (projectMatch) {
-        store.dispatch(loadProject(projectMatch.params.id));
-    } else if (collectionMatch) {
-        store.dispatch(loadCollection(collectionMatch.params.id));
-    } else if (favoriteMatch) {
-        store.dispatch(loadFavorites());
-    } else if (trashMatch) {
-        store.dispatch(loadTrash());
-    } else if (processMatch) {
-        store.dispatch(loadProcessPanel(processMatch.params.id));
-    } else if (processLogMatch) {
-        store.dispatch(loadProcessLog(processLogMatch.params.id));
-    }
-};

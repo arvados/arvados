@@ -9,6 +9,7 @@ import { getResource } from '~/store/resources/resources';
 import { TreePicker } from '../tree-picker/tree-picker';
 import { getSidePanelTreeBranch } from '../side-panel-tree/side-panel-tree-actions';
 import { propertiesActions } from '../properties/properties-actions';
+import { getProcess } from '~/store/processes/process';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -42,5 +43,13 @@ export const setCollectionBreadcrumbs = (collectionUuid: string) =>
         const collection = getResource(collectionUuid)(resources);
         if (collection) {
             dispatch<any>(setProjectBreadcrumbs(collection.ownerUuid));
+        }
+    };
+export const setProcessBreadcrumbs = (processUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const { resources } = getState();
+        const process = getProcess(processUuid)(resources);
+        if (process) {
+            dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
         }
     };

@@ -15,7 +15,7 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -29,10 +29,10 @@ import * as collectionCopyActions from '~/store/collections/collection-copy-acti
 import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '../processes/processes-actions';
-import { getProcess } from '../processes/process';
 import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
+import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 
 
 export const loadWorkbench = () =>
@@ -186,17 +186,19 @@ export const moveCollection = (data: MoveToFormDialogData) =>
 
 export const loadProcess = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        await dispatch<any>(processesActions.loadProcess(uuid));
-        const process = getProcess(uuid)(getState().resources);
-        if (process) {
-            await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
-            dispatch<any>(setCollectionBreadcrumbs(process.containerRequest.ownerUuid));
-            dispatch(loadDetailsPanel(uuid));
-        }
+        dispatch<any>(loadProcessPanel(uuid));
+        const process = await dispatch<any>(processesActions.loadProcess(uuid));
+        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
+        dispatch<any>(setProcessBreadcrumbs(uuid));
+        dispatch(loadDetailsPanel(uuid));
+        
     };
 
 export const loadProcessLog = (uuid: string) =>
     async (dispatch: Dispatch) => {
+        const process = await dispatch<any>(processesActions.loadProcess(uuid));
+        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
+        dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch<any>(initProcessLogsPanel(uuid));
     };
 

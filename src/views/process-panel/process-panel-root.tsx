@@ -29,7 +29,7 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
     props.process
         ? <Grid container spacing={16} alignItems="stretch">
-            <Grid item sm={12} md={7} alignItems="stretch">
+            <Grid item sm={12} md={7}>
                 <ProcessInformationCard
                     process={props.process}
                     onContextMenu={props.onContextMenu} />

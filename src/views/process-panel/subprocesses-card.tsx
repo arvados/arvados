@@ -55,7 +55,7 @@ export const SubprocessesCard = withStyles(styles)(
                         <Grid item md={12} lg={6}/>
                         {
                             filters.map(filter =>
-                                <Grid item md={12} lg={6} key={filter.key} spacing={0} className={classes.gridFilter}>
+                                <Grid item md={12} lg={6} key={filter.key} className={classes.gridFilter}>
                                     <SubprocessFilter {...filter} onToggle={() => onToggle(filter.label)} />
                                 </Grid>
                             )
