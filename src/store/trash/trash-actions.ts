@@ -9,6 +9,7 @@ import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
+import { ResourceKind, TrashableResource } from "~/models/resource";
 
 export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
@@ -52,5 +53,14 @@ export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
                 message: "Added to trash",
                 hideDuration: 2000
             }));
+        }
+    };
+
+export const toggleTrashed = (kind: ResourceKind, uuid: string, ownerUuid: string, isTrashed: boolean) =>
+    (dispatch: Dispatch) => {
+        if (kind === ResourceKind.PROJECT) {
+            dispatch<any>(toggleProjectTrashed(uuid, ownerUuid, isTrashed!!));
+        } else if (kind === ResourceKind.COLLECTION) {
+            dispatch<any>(toggleCollectionTrashed(uuid, isTrashed!!));
         }
     };

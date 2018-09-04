@@ -17,7 +17,7 @@ import { RestoreFromTrashIcon, TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { getProperty } from "~/store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
-import { ContextMenuResource, openContextMenu } from "~/store/context-menu/context-menu-actions";
+import { openContextMenu } from "~/store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "~/store/resources/resources";
 import {
     ResourceDeleteDate,
@@ -28,7 +28,7 @@ import {
 } from "~/views-components/data-explorer/renderers";
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
-import { toggleCollectionTrashed, toggleProjectTrashed } from "~/store/trash/trash-actions";
+import { toggleCollectionTrashed, toggleProjectTrashed, toggleTrashed } from "~/store/trash/trash-actions";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
 
@@ -63,13 +63,12 @@ export const ResourceRestore =
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
         <IconButton onClick={() => {
             if (props.resource && props.dispatch) {
-                const res = props.resource;
-
-                if (props.resource.kind === ResourceKind.PROJECT) {
-                    props.dispatch(toggleProjectTrashed(res.uuid, res.ownerUuid, res.isTrashed));
-                } else if (props.resource.kind === ResourceKind.COLLECTION) {
-                    props.dispatch(toggleCollectionTrashed(res.uuid, res.isTrashed));
-                }
+                props.dispatch(toggleTrashed(
+                    props.resource.kind,
+                    props.resource.uuid,
+                    props.resource.ownerUuid,
+                    props.resource.isTrashed
+                ));
             }
         }}>
             <RestoreFromTrashIcon/>
