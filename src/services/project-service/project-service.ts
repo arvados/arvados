@@ -5,8 +5,8 @@
 import { GroupsService } from "../groups-service/groups-service";
 import { ProjectResource } from "~/models/project";
 import { GroupClass } from "~/models/group";
-import { ListArguments } from "~/common/api/common-resource-service";
-import { FilterBuilder, joinFilters } from "~/common/api/filter-builder";
+import { ListArguments } from "~/services/common-service/common-resource-service";
+import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 
 export class ProjectService extends GroupsService<ProjectResource> {
 

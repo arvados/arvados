@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { ContextMenuItem } from "~/components/context-menu/context-menu";
-import { ContextMenuResource } from "~/store/context-menu/context-menu-reducer";
+import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 
 export interface ContextMenuAction extends ContextMenuItem {
     execute(dispatch: Dispatch, resource: ContextMenuResource): void;

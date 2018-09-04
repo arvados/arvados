@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "~/common/api/common-resource-service";
 import { CollectionResource } from "~/models/collection";
 import { AxiosInstance } from "axios";
 import { CollectionFile, CollectionDirectory } from "~/models/collection-file";
@@ -11,10 +10,11 @@ import { AuthService } from "../auth-service/auth-service";
 import { mapTreeValues } from "~/models/tree";
 import { parseFilesResponse } from "./collection-service-files-response";
 import { fileToArrayBuffer } from "~/common/file";
+import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
-export class CollectionService extends CommonResourceService<CollectionResource> {
+export class CollectionService extends TrashableResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService) {
         super(serverApi, "collections");
     }
@@ -67,5 +67,4 @@ export class CollectionService extends CommonResourceService<CollectionResource>
         return this.webdavClient.put(fileURL, fileContent, requestConfig);
 
     }
-
 }

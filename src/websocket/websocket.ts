@@ -9,10 +9,10 @@ import { WebSocketService } from './websocket-service';
 import { ResourceEventMessage } from './resource-event-message';
 import { ResourceKind } from '~/models/resource';
 import { loadProcess } from '~/store/processes/processes-actions';
-import { loadContainers } from '../store/processes/processes-actions';
-import { FilterBuilder } from '~/common/api/filter-builder';
-import { LogEventType } from '../models/log';
+import { loadContainers } from '~/store/processes/processes-actions';
+import { LogEventType } from '~/models/log';
 import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-logs-panel-actions';
+import { FilterBuilder } from "~/services/api/filter-builder";
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     const webSocketService = new WebSocketService(config.websocketUrl, authService);

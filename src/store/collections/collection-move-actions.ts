@@ -7,7 +7,7 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { startSubmit, stopSubmit, initialize } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';

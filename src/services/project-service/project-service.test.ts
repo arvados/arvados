@@ -4,7 +4,7 @@
 
 import axios from "axios";
 import { ProjectService } from "./project-service";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { FilterBuilder } from "~/services/api/filter-builder";
 
 describe("CommonResourceService", () => {
     const axiosInstance = axios.create();

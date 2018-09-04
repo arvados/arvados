@@ -6,9 +6,9 @@ import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
 import { matchPath } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
-import { getProjectUrl } from '../models/project';
+import { getProjectUrl } from '~/models/project';
 import { getCollectionUrl } from '~/models/collection';
-import { loadProject, loadFavorites, loadCollection, loadProcessLog } from '~/store/workbench/workbench-actions';
+import { loadProject, loadFavorites, loadCollection, loadTrash, loadProcessLog } from '~/store/workbench/workbench-actions';
 import { loadProcess } from '~/store/processes/processes-actions';
 
 export const Routes = {
@@ -18,6 +18,7 @@ export const Routes = {
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',
+    TRASH: '/trash',
     PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`
 };
 
@@ -43,15 +44,18 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     history.listen(handler);
 };
 
+export interface ResourceRouteParams {
+    id: string;
+}
+
 export const matchRootRoute = (route: string) =>
     matchPath(route, { path: Routes.ROOT, exact: true });
 
 export const matchFavoritesRoute = (route: string) =>
     matchPath(route, { path: Routes.FAVORITES });
 
-export interface ResourceRouteParams {
-    id: string;
-}
+export const matchTrashRoute = (route: string) =>
+    matchPath(route, { path: Routes.TRASH });
 
 export const matchProjectRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROJECTS });
@@ -69,6 +73,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const projectMatch = matchProjectRoute(pathname);
     const collectionMatch = matchCollectionRoute(pathname);
     const favoriteMatch = matchFavoritesRoute(pathname);
+    const trashMatch = matchTrashRoute(pathname);
     const processMatch = matchProcessRoute(pathname);
     const processLogMatch = matchProcessLogRoute(pathname);
     
@@ -78,6 +83,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadCollection(collectionMatch.params.id));
     } else if (favoriteMatch) {
         store.dispatch(loadFavorites());
+    } else if (trashMatch) {
+        store.dispatch(loadTrash());
     } else if (processMatch) {
         store.dispatch(loadProcess(processMatch.params.id));
     } else if (processLogMatch) {

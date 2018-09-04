@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { Resource } from "~/models/resource";
+import { Resource } from "src/models/resource";
 
 export enum OrderDirection { ASC, DESC }
 

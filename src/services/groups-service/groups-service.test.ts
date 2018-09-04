@@ -16,7 +16,7 @@ describe("GroupsService", () => {
 
     it("#contents", async () => {
         axiosMock
-            .onGet("/groups/1/contents/")
+            .onGet("/groups/1/contents")
             .reply(200, {
                 kind: "kind",
                 offset: 2,

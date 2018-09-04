@@ -8,8 +8,8 @@ import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
-import { OrderBuilder, OrderDirection } from "~/common/api/order-builder";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
+import { FilterBuilder } from "~/services/api/filter-builder";
 import { GroupContentsResourcePrefix, GroupContentsResource } from "~/services/groups-service/groups-service";
 import { updateFavorites } from "../favorites/favorites-actions";
 import { projectPanelActions, PROJECT_PANEL_CURRENT_UUID } from './project-panel-action';
@@ -19,7 +19,7 @@ import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from "~/store/properties/properties";
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from '../data-explorer/data-explorer-reducer';
-import { ListResults } from '~/common/api/common-resource-service';
+import { ListResults } from '~/services/common-service/common-resource-service';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

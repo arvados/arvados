@@ -21,7 +21,7 @@ import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
-import { contextMenuActions, openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
@@ -71,7 +71,6 @@ export const CollectionPanel = withStyles(styles)(
         };
     })(
         class extends React.Component<CollectionPanelProps> {
-
             render() {
                 const { classes, item, tags } = this.props;
                 return <div>
@@ -134,12 +133,14 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, name, description } = this.props.item;
+                const { uuid, ownerUuid, name, description, kind } = this.props.item;
                 const resource = {
                     uuid,
+                    ownerUuid,
                     name,
                     description,
-                    kind: ContextMenuKind.COLLECTION
+                    kind,
+                    menuKind: ContextMenuKind.COLLECTION
                 };
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
@@ -154,7 +155,6 @@ export const CollectionPanel = withStyles(styles)(
                     hideDuration: 2000
                 }));
             }
-
         }
     )
 );

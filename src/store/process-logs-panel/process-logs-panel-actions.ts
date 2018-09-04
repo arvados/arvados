@@ -8,14 +8,14 @@ import { LogEventType } from '~/models/log';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { Dispatch } from 'redux';
-import { FilterBuilder } from '~/common/api/filter-builder';
 import { groupBy } from 'lodash';
 import { loadProcess } from '~/store/processes/processes-actions';
-import { OrderBuilder } from '~/common/api/order-builder';
 import { LogResource } from '~/models/log';
 import { LogService } from '~/services/log-service/log-service';
-import { ResourceEventMessage } from '../../websocket/resource-event-message';
+import { ResourceEventMessage } from '~/websocket/resource-event-message';
 import { getProcess } from '~/store/processes/process';
+import { FilterBuilder } from "~/services/api/filter-builder";
+import { OrderBuilder } from "~/services/api/order-builder";
 
 export const processLogsPanelActions = unionize({
     RESET_PROCESS_LOGS_PANEL: ofType<{}>(),

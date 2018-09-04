@@ -6,8 +6,8 @@ import { LinkService } from "../link-service/link-service";
 import { GroupsService } from "../groups-service/groups-service";
 import { FavoriteService } from "./favorite-service";
 import { LinkClass } from "~/models/link";
-import { mockResourceService } from "~/common/api/common-resource-service.test";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { mockResourceService } from "~/services/common-service/common-resource-service.test";
+import { FilterBuilder } from "~/services/api/filter-builder";
 
 describe("FavoriteService", () => {
 

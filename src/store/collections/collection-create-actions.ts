@@ -7,7 +7,7 @@ import { reset, startSubmit, stopSubmit, initialize } from 'redux-form';
 import { RootState } from '~/store/store';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { ServiceRepository } from '~/services/services';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { uploadCollectionFiles } from './collection-upload-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 
