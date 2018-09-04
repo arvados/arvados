@@ -1900,6 +1900,20 @@ CREATE INDEX index_containers_on_auth_uuid ON public.containers USING btree (aut
 
 
 --
+-- Name: index_containers_on_locked_by_uuid_and_priority; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_locked_by_uuid_and_priority ON public.containers USING btree (locked_by_uuid, priority);
+
+
+--
+-- Name: index_containers_on_locked_by_uuid_and_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_locked_by_uuid_and_uuid ON public.containers USING btree (locked_by_uuid, uuid);
+
+
+--
 -- Name: index_containers_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1911,6 +1925,13 @@ CREATE INDEX index_containers_on_modified_at_uuid ON public.containers USING btr
 --
 
 CREATE INDEX index_containers_on_owner_uuid ON public.containers USING btree (owner_uuid);
+
+
+--
+-- Name: index_containers_on_queued_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_queued_state ON public.containers USING btree (state, ((priority > 0)));
 
 
 --
@@ -3130,7 +3151,11 @@ INSERT INTO schema_migrations (version) VALUES ('20180806133039');
 
 INSERT INTO schema_migrations (version) VALUES ('20180820130357');
 
+INSERT INTO schema_migrations (version) VALUES ('20180820132617');
+
 INSERT INTO schema_migrations (version) VALUES ('20180820135808');
 
 INSERT INTO schema_migrations (version) VALUES ('20180824152014');
+
+INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 
