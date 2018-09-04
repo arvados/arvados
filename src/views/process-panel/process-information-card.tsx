@@ -110,9 +110,9 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                 <Grid container>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From' value={process.container ? formatDate(process.container.startedAt!) : 'N/A'} />
+                            label='From' value={process.container ? formatDate(process.container.startedAt) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To' value={process.container ? formatDate(process.container.finishedAt!) : 'N/A'} />
+                            label='To' value={process.container ? formatDate(process.container.finishedAt) : 'N/A'} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.link}
                             label='Workflow' value='???' />
                     </Grid>
