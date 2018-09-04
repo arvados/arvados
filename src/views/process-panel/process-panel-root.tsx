@@ -7,19 +7,20 @@ import { Grid } from '@material-ui/core';
 import { ProcessInformationCard } from './process-information-card';
 import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
-import { Process, getProcessStatus } from '~/store/processes/process';
+import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
-import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
-import { groupBy } from 'lodash';
 import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
+import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
     subprocesses: Array<Process>;
+    filters: Array<SubprocessFilterDataProps>;
 }
 
 export interface ProcessPanelRootActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
+    onToggle: (status: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
@@ -31,13 +32,13 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                 <ProcessInformationCard
                     process={props.process}
                     onContextMenu={props.onContextMenu} />
-                {console.log(props.subprocesses)}
             </Grid>
             <Grid item xs={5}>
                 <SubprocessesCard
                     subprocesses={props.subprocesses}
-                    filters={mapGroupedProcessesToFilters(groupSubprocessesByStatus(props.subprocesses))}
-                    onToggle={() => { return; }} />
+                    filters={props.filters}
+                    onToggle={props.onToggle}
+                />
             </Grid>
             <Grid item xs={12}>
                 <ProcessSubprocesses
@@ -54,14 +55,3 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                 messages={['Process not found']} />
         </Grid>;
 
-const groupSubprocessesByStatus = (processes: Process[]) =>
-    groupBy(processes, getProcessStatus);
-
-const mapGroupedProcessesToFilters = (groupedProcesses: { [status: string]: Process[] }): SubprocessFilterDataProps[] =>
-    Object
-        .keys(groupedProcesses)
-        .map(status => ({
-            label: status,
-            key: status,
-            value: groupedProcesses[status].length
-        }));

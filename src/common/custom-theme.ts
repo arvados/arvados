@@ -27,6 +27,7 @@ interface Colors {
     red900: string;
     blue500: string;
     grey500: string;
+    grey700: string;
 }
 
 const red900 = red["900"];
@@ -47,6 +48,7 @@ export const themeOptions: ArvadosThemeOptions = {
             red900: red['900'],
             blue500: blue['500'],
             grey500,
+            grey700
         }
     },
     overrides: {

@@ -9,7 +9,7 @@ import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/r
 import { getProjectUrl } from '../models/project';
 import { getCollectionUrl } from '~/models/collection';
 import { loadProject, loadFavorites, loadCollection, loadProcessLog } from '~/store/workbench/workbench-actions';
-import { loadProcess } from '~/store/processes/processes-actions';
+import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 
 export const Routes = {
     ROOT: '/',
@@ -79,7 +79,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     } else if (favoriteMatch) {
         store.dispatch(loadFavorites());
     } else if (processMatch) {
-        store.dispatch(loadProcess(processMatch.params.id));
+        store.dispatch(loadProcessPanel(processMatch.params.id));
     } else if (processLogMatch) {
         store.dispatch(loadProcessLog(processLogMatch.params.id));
     }

@@ -12,7 +12,6 @@ import { ProjectResource } from '~/models/project';
 import { UserResource } from '../../models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
-import { matchProcessRoute } from '~/routes/routes';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),

@@ -11,18 +11,23 @@ type CssRules = 'grid' | 'label' | 'value' | 'switch';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     grid: {
-        display: 'flex'
+        display: 'flex',
+        height: '20px',
+        paddingTop: '0px!important',
+        paddingBottom: '0px!important',
+        marginBottom: theme.spacing.unit
     },
     label: {
         width: '86px',
         color: theme.palette.grey["500"],
-        textAlign: 'right'
+        textAlign: 'right',
     },
     value: {
         width: '24px',
-        paddingLeft: theme.spacing.unit
+        paddingLeft: theme.spacing.unit,
     },
     switch: {
+        height: '20px',
         '& span:first-child': {
             height: '18px'
         }

@@ -16,7 +16,7 @@ export const ProcessSubprocesses = ({ onContextMenu, subprocesses }: ProcessSubp
     return <Grid container spacing={16}>
         {subprocesses.map(subprocess =>
             <Grid item xs={2} key={subprocess.containerRequest.uuid}>
-                <ProcessSubprocessesCard onContextMenu={onContextMenu} subprocess={subprocess}/>
+                <ProcessSubprocessesCard onContextMenu={onContextMenu} subprocess={subprocess} />
             </Grid>
         )}
     </Grid>;

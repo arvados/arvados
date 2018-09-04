@@ -29,6 +29,7 @@ import { propertiesReducer } from './properties/properties-reducer';
 import { RootState } from './store';
 import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
 import { processLogsPanelReducer } from './process-logs-panel/process-logs-panel-reducer';
+import { processPanelReducer } from '~/store/process-panel/process-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -76,4 +77,5 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,
     fileUploader: fileUploaderReducer,
+    processPanel: processPanelReducer
 });
