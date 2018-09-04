@@ -68,24 +68,7 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         name: "Status",
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: [
-            {
-                name: ContainerRequestState.COMMITTED,
-                selected: true,
-                type: ContainerRequestState.COMMITTED
-            },
-            {
-                name: ContainerRequestState.FINAL,
-                selected: true,
-                type: ContainerRequestState.FINAL
-            },
-            {
-                name: ContainerRequestState.UNCOMMITTED,
-                selected: true,
-                type: ContainerRequestState.UNCOMMITTED
-            }
-        ],
+        filters: [],
         render: uuid => <ProcessStatus uuid={uuid} />,
         width: "75px"
     },
@@ -93,7 +76,6 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: resourceLabel(ResourceKind.COLLECTION),
@@ -118,7 +100,6 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.OWNER,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: [],
         render: uuid => <ResourceOwner uuid={uuid} />,
         width: "200px"
@@ -127,7 +108,6 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: [],
         render: uuid => <ResourceFileSize uuid={uuid} />,
         width: "50px"

@@ -20,6 +20,8 @@ import { getProperty } from "~/store/properties/properties";
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from '../data-explorer/data-explorer-reducer';
 import { ListResults } from '~/services/common-service/common-resource-service';
+import { loadContainers } from '../processes/processes-actions';
+import { ResourceKind } from '~/models/resource';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -39,6 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
                 api.dispatch(updateResources(response.items));
+                await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
                 api.dispatch(couldNotFetchProjectContents());
@@ -46,6 +49,22 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         }
     }
 }
+
+export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) =>
+    async (dispatch: Dispatch) => {
+        const containerUuids = resources.reduce((uuids, resource) => {
+            return resource.kind === ResourceKind.CONTAINER_REQUEST
+                ? resource.containerUuid
+                    ? [...uuids, resource.containerUuid]
+                    : uuids
+                : uuids;
+        }, []);
+        if (containerUuids.length > 0) {
+            await dispatch<any>(loadContainers(
+                new FilterBuilder().addIn('uuid', containerUuids).getFilters()
+            ));
+        }
+    };
 
 const setItems = (listResults: ListResults<GroupContentsResource>) =>
     projectPanelActions.SET_ITEMS({
@@ -65,7 +84,6 @@ const getFilters = (dataExplorer: DataExplorer) => {
     const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
     return new FilterBuilder()
         .addIsA("uuid", typeFilters.map(f => f.type))
-        .addIn("state", statusFilters.map(f => f.type), GroupContentsResourcePrefix.PROCESS)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)

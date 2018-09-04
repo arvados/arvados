@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography } from '@material-ui/core';
+import { Grid, Typography, withStyles } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
@@ -13,8 +13,9 @@ import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { ProcessResource } from '~/models/process';
-
+import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { compose } from 'redux';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -107,13 +108,17 @@ export const ResourceType = connect(
         return { type: resource ? resource.kind : '' };
     })((props: { type: string }) => renderType(props.type));
 
-export const renderStatus = (item: { status?: string }) =>
-    <Typography noWrap align="center" >
-        {item.status || "-"}
-    </Typography>;
-
-export const ProcessStatus = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<ProcessResource>(props.uuid)(state.resources);
-        return { status: resource ? resource.state : '-' };
-    })((props: { status: string }) => renderType(props.status));
+export const ProcessStatus = compose(
+    connect((state: RootState, props: { uuid: string }) => {
+        return { process: getProcess(props.uuid)(state.resources) };
+    }),
+    withStyles({}, { withTheme: true }))
+    ((props: { process?: Process, theme: ArvadosTheme }) => {
+        const status = props.process ? getProcessStatus(props.process) : "-";
+        return <Typography
+            noWrap
+            align="center"
+            style={{ color: getProcessStatusColor(status, props.theme) }} >
+            {status}
+        </Typography>;
+    });
