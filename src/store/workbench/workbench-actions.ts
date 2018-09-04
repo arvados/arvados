@@ -197,9 +197,9 @@ export const loadProcess = (uuid: string) =>
 export const loadProcessLog = (uuid: string) =>
     async (dispatch: Dispatch) => {
         const process = await dispatch<any>(processesActions.loadProcess(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
         dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch<any>(initProcessLogsPanel(uuid));
+        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
     };
 
 export const resourceIsNotLoaded = (uuid: string) =>
