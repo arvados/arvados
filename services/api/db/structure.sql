@@ -1935,6 +1935,13 @@ CREATE INDEX index_containers_on_queued_state ON public.containers USING btree (
 
 
 --
+-- Name: index_containers_on_reuse_columns; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree (md5(command), cwd, md5(environment), output_path, container_image, md5(mounts), secret_mounts_md5, md5(runtime_constraints));
+
+
+--
 -- Name: index_containers_on_secret_mounts_md5; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3147,6 +3154,8 @@ INSERT INTO schema_migrations (version) VALUES ('20180820130357');
 INSERT INTO schema_migrations (version) VALUES ('20180820132617');
 
 INSERT INTO schema_migrations (version) VALUES ('20180820135808');
+
+INSERT INTO schema_migrations (version) VALUES ('20180824152014');
 
 INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 

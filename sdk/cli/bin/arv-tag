@@ -113,11 +113,11 @@ begin
   require 'json'
   require 'pp'
   require 'oj'
-  require 'trollop'
+  require 'optimist'
 rescue LoadError
   abort <<-EOS
 #{$0}: fatal: some runtime dependencies are missing.
-Try: gem install pp google-api-client json trollop
+Try: gem install pp google-api-client json optimist
   EOS
 end
 
@@ -156,7 +156,7 @@ class Google::APIClient
   end
 end
 
-global_opts = Trollop::options do
+global_opts = Optimist::options do
   banner usage_string
   banner ""
   opt :dry_run, "Don't actually do anything", :short => "-n"
@@ -169,7 +169,7 @@ global_opts = Trollop::options do
   stop_on ['add', 'remove']
 end
 
-p = Trollop::Parser.new do
+p = Optimist::Parser.new do
   opt(:all,
       "Remove this tag from all objects under your ownership. Only valid with `tag remove'.",
       :short => :none)
@@ -180,7 +180,7 @@ p = Trollop::Parser.new do
       :short => :o)
 end
 
-$options = Trollop::with_standard_exception_handling p do
+$options = Optimist::with_standard_exception_handling p do
   p.parse ARGV
 end
 

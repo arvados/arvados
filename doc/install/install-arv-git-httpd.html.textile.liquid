@@ -345,10 +345,10 @@ h2. Clone Arvados repository
 Here we create a repository object which will be used to set up a hosted clone of the arvados repository on this cluster.
 
 <notextile>
-<pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
-~$ <span class="userinput">all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"</span>
-~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"arvados\"}"`</span>
+<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
+~$ <span class="userinput">echo "Site prefix is '$uuid_prefix'"</span>
+~$ <span class="userinput">all_users_group_uuid="$uuid_prefix-j7d0g-fffffffffffffff"</span>
+~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository "{\"owner_uuid\":\"$uuid_prefix-tpzed-000000000000000\", \"name\":\"arvados\"}"`</span>
 ~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
 </code></pre></notextile>
 

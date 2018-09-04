@@ -173,8 +173,11 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 		ApiServer:   c.APIHost,
 		ApiToken:    c.AuthToken,
 		ApiInsecure: c.Insecure,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: MakeTLSConfig(c.Insecure)}},
+		Client: &http.Client{
+			Timeout: 5 * time.Minute,
+			Transport: &http.Transport{
+				TLSClientConfig: MakeTLSConfig(c.Insecure)},
+		},
 		External:          false,
 		Retries:           2,
 		KeepServiceURIs:   c.KeepServiceURIs,

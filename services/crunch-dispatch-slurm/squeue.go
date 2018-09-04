@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -27,6 +26,7 @@ type slurmJob struct {
 // Squeue implements asynchronous polling monitor of the SLURM queue using the
 // command 'squeue'.
 type SqueueChecker struct {
+	Logger         logger
 	Period         time.Duration
 	PrioritySpread int64
 	Slurm          Slurm
@@ -121,7 +121,7 @@ func (sqc *SqueueChecker) reniceAll() {
 		}
 		err := sqc.Slurm.Renice(job.uuid, niceNew)
 		if err != nil && niceNew > slurm15NiceLimit && strings.Contains(err.Error(), "Invalid nice value") {
-			log.Printf("container %q clamping nice values at %d, priority order will not be correct -- see https://dev.arvados.org/projects/arvados/wiki/SLURM_integration#Limited-nice-values-SLURM-15", job.uuid, slurm15NiceLimit)
+			sqc.Logger.Warnf("container %q clamping nice values at %d, priority order will not be correct -- see https://dev.arvados.org/projects/arvados/wiki/SLURM_integration#Limited-nice-values-SLURM-15", job.uuid, slurm15NiceLimit)
 			job.hitNiceLimit = true
 		}
 	}
@@ -143,7 +143,7 @@ func (sqc *SqueueChecker) check() {
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Run(); err != nil {
-		log.Printf("Error running %q %q: %s %q", cmd.Path, cmd.Args, err, stderr.String())
+		sqc.Logger.Warnf("Error running %q %q: %s %q", cmd.Path, cmd.Args, err, stderr.String())
 		return
 	}
 
@@ -156,7 +156,7 @@ func (sqc *SqueueChecker) check() {
 		var uuid, state, reason string
 		var n, p int64
 		if _, err := fmt.Sscan(line, &uuid, &n, &p, &state, &reason); err != nil {
-			log.Printf("warning: ignoring unparsed line in squeue output: %q", line)
+			sqc.Logger.Warnf("ignoring unparsed line in squeue output: %q", line)
 			continue
 		}
 
@@ -192,10 +192,10 @@ func (sqc *SqueueChecker) check() {
 			// "launch failed requeued held" seems to be
 			// another manifestation of this problem,
 			// resolved the same way.
-			log.Printf("releasing held job %q (priority=%d, state=%q, reason=%q)", uuid, p, state, reason)
+			sqc.Logger.Printf("releasing held job %q (priority=%d, state=%q, reason=%q)", uuid, p, state, reason)
 			sqc.Slurm.Release(uuid)
 		} else if state != "RUNNING" && p <= 2*slurm15NiceLimit && replacing.wantPriority > 0 {
-			log.Printf("warning: job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
+			sqc.Logger.Warnf("job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
 		}
 	}
 	sqc.lock.Lock()

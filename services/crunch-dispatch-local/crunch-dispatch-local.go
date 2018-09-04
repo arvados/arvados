@@ -10,7 +10,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -21,6 +20,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/Sirupsen/logrus"
 )
 
 var version = "dev"
@@ -28,7 +28,7 @@ var version = "dev"
 func main() {
 	err := doMain()
 	if err != nil {
-		log.Fatalf("%q", err)
+		logrus.Fatalf("%q", err)
 	}
 }
 
@@ -40,6 +40,14 @@ var (
 )
 
 func doMain() error {
+	logger := logrus.StandardLogger()
+	if os.Getenv("DEBUG") != "" {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+	logger.Formatter = &logrus.JSONFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
+	}
+
 	flags := flag.NewFlagSet("crunch-dispatch-local", flag.ExitOnError)
 
 	pollInterval := flags.Int(
@@ -66,18 +74,19 @@ func doMain() error {
 		return nil
 	}
 
-	log.Printf("crunch-dispatch-local %s started", version)
+	logger.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Printf("Error making Arvados client: %v", err)
+		logger.Errorf("error making Arvados client: %v", err)
 		return err
 	}
 	arv.Retries = 25
 
 	dispatcher := dispatch.Dispatcher{
+		Logger:       logger,
 		Arv:          arv,
 		RunContainer: run,
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
@@ -92,7 +101,7 @@ func doMain() error {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	sig := <-c
-	log.Printf("Received %s, shutting down", sig)
+	logger.Printf("Received %s, shutting down", sig)
 	signal.Stop(c)
 
 	cancel()
@@ -138,7 +147,7 @@ func run(dispatcher *dispatch.Dispatcher,
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
 
-		log.Printf("Starting container %v", uuid)
+		dispatcher.Logger.Printf("starting container %v", uuid)
 
 		// Add this crunch job to the list of runningCmds only if we
 		// succeed in starting crunch-run.
@@ -146,7 +155,7 @@ func run(dispatcher *dispatch.Dispatcher,
 		runningCmdsMutex.Lock()
 		if err := startCmd(container, cmd); err != nil {
 			runningCmdsMutex.Unlock()
-			log.Printf("Error starting %v for %v: %q", *crunchRunCommand, uuid, err)
+			dispatcher.Logger.Warnf("error starting %q for %s: %s", *crunchRunCommand, uuid, err)
 			dispatcher.UpdateState(uuid, dispatch.Cancelled)
 		} else {
 			runningCmds[uuid] = cmd
@@ -157,9 +166,9 @@ func run(dispatcher *dispatch.Dispatcher,
 
 			go func() {
 				if _, err := cmd.Process.Wait(); err != nil {
-					log.Printf("Error while waiting for crunch job to finish for %v: %q", uuid, err)
+					dispatcher.Logger.Warnf("error while waiting for crunch job to finish for %v: %q", uuid, err)
 				}
-				log.Printf("sending done")
+				dispatcher.Logger.Debugf("sending done")
 				done <- struct{}{}
 			}()
 
@@ -171,14 +180,14 @@ func run(dispatcher *dispatch.Dispatcher,
 				case c := <-status:
 					// Interrupt the child process if priority changes to 0
 					if (c.State == dispatch.Locked || c.State == dispatch.Running) && c.Priority == 0 {
-						log.Printf("Sending SIGINT to pid %d to cancel container %v", cmd.Process.Pid, uuid)
+						dispatcher.Logger.Printf("sending SIGINT to pid %d to cancel container %v", cmd.Process.Pid, uuid)
 						cmd.Process.Signal(os.Interrupt)
 					}
 				}
 			}
 			close(done)
 
-			log.Printf("Finished container run for %v", uuid)
+			dispatcher.Logger.Printf("finished container run for %v", uuid)
 
 			// Remove the crunch job from runningCmds
 			runningCmdsMutex.Lock()
@@ -191,11 +200,11 @@ func run(dispatcher *dispatch.Dispatcher,
 	// If the container is not finalized, then change it to "Cancelled".
 	err := dispatcher.Arv.Get("containers", uuid, nil, &container)
 	if err != nil {
-		log.Printf("Error getting final container state: %v", err)
+		dispatcher.Logger.Warnf("error getting final container state: %v", err)
 	}
 	if container.State == dispatch.Locked || container.State == dispatch.Running {
-		log.Printf("After %s process termination, container state for %v is %q.  Updating it to %q",
-			*crunchRunCommand, container.State, uuid, dispatch.Cancelled)
+		dispatcher.Logger.Warnf("after %q process termination, container state for %v is %q; updating it to %q",
+			*crunchRunCommand, uuid, container.State, dispatch.Cancelled)
 		dispatcher.UpdateState(uuid, dispatch.Cancelled)
 	}
 
@@ -203,5 +212,5 @@ func run(dispatcher *dispatch.Dispatcher,
 	for range status {
 	}
 
-	log.Printf("Finalized container %v", uuid)
+	dispatcher.Logger.Printf("finalized container %v", uuid)
 }
