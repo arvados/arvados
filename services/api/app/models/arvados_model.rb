@@ -596,16 +596,24 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
-  def self.where_serialized(colname, value)
+  def self.where_serialized(colname, value, md5: false)
+    colsql = colname.to_s
+    if md5
+      colsql = "md5(#{colsql})"
+    end
     if value.empty?
       # rails4 stores as null, rails3 stored as serialized [] or {}
-      sql = "#{colname.to_s} is null or #{colname.to_s} IN (?)"
+      sql = "#{colsql} is null or #{colsql} IN (?)"
       sorted = value
     else
-      sql = "#{colname.to_s} IN (?)"
+      sql = "#{colsql} IN (?)"
       sorted = deep_sort_hash(value)
     end
-    where(sql, [sorted.to_yaml, SafeJSON.dump(sorted)])
+    params = [sorted.to_yaml, SafeJSON.dump(sorted)]
+    if md5
+      params = params.map { |x| Digest::MD5.hexdigest(x) }
+    end
+    where(sql, params)
   end
 
   Serializer = {
