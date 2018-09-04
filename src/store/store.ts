@@ -31,6 +31,7 @@ import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
 import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-middleware-service";
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { processLogsPanelReducer } from './process-logs-panel/process-logs-panel-reducer';
+import { processPanelReducer } from '~/store/process-panel/process-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -82,4 +83,5 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,
     fileUploader: fileUploaderReducer,
+    processPanel: processPanelReducer
 });

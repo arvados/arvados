@@ -58,14 +58,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export enum SubprocessesStatus {
-    ACTIVE = 'Active',
-    COMPLETED = 'Completed',
-    QUEUED = 'Queued',
-    FAILED = 'Failed',
-    CANCELED = 'Canceled'
-}
-
 export interface SubprocessItemProps {
     title: string;
     status: string;

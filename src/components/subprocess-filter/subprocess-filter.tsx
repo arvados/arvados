@@ -5,27 +5,24 @@
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { Grid, Typography, Switch } from '@material-ui/core';
+import { Typography, Switch } from '@material-ui/core';
 
-type CssRules = 'grid' | 'label' | 'value' | 'switch';
+type CssRules = 'container' | 'label' | 'value';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    grid: {
-        display: 'flex'
+    container: {
+        display: 'flex',
+        alignItems: 'center',
+        height: '20px'
     },
     label: {
         width: '86px',
         color: theme.palette.grey["500"],
-        textAlign: 'right'
+        textAlign: 'right',
     },
     value: {
         width: '24px',
-        paddingLeft: theme.spacing.unit
-    },
-    switch: {
-        '& span:first-child': {
-            height: '18px'
-        }
+        paddingLeft: theme.spacing.unit,
     }
 });
 
@@ -41,14 +38,14 @@ type SubprocessFilterProps = SubprocessFilterDataProps & WithStyles<CssRules>;
 
 export const SubprocessFilter = withStyles(styles)(
     ({ classes, label, value, key, checked, onToggle }: SubprocessFilterProps) =>
-        <Grid item className={classes.grid} md={12} lg={6} >
+        <div className={classes.container} >
             <Typography component="span" className={classes.label}>{label}:</Typography>
             <Typography component="span" className={classes.value}>{value}</Typography>
-            {onToggle && <Switch classes={{ root: classes.switch }}
+            {onToggle && <Switch
                 checked={checked}
                 onChange={onToggle}
                 value={key}
                 color="primary" />
             }
-        </Grid>
+        </div>
 );

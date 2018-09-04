@@ -10,58 +10,35 @@ import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
 import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
-import { SubprocessesStatus } from '~/views/process-panel/process-subprocesses-card';
-
-type CssRules = 'headerActive' | 'headerCompleted' | 'headerQueued' | 'headerFailed' | 'headerCanceled';
+import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
     subprocesses: Array<Process>;
+    filters: Array<SubprocessFilterDataProps>;
+    totalSubprocessesLength: number;
 }
 
 export interface ProcessPanelRootActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
+    onToggle: (status: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
 
 export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
     props.process
-        ? <Grid container spacing={16}>
-            <Grid item xs={7}>
+        ? <Grid container spacing={16} alignItems="stretch">
+            <Grid item sm={12} md={7}>
                 <ProcessInformationCard
                     process={props.process}
                     onContextMenu={props.onContextMenu} />
             </Grid>
-            <Grid item xs={5}>
+            <Grid item sm={12} md={5}>
                 <SubprocessesCard
-                    subprocesses={4}
-                    filters={[
-                        {
-                            key: 'queued',
-                            value: 1,
-                            label: 'Queued',
-                            checked: true
-                        }, {
-                            key: 'active',
-                            value: 2,
-                            label: 'Active',
-                            checked: true
-                        },
-                        {
-                            key: 'completed',
-                            value: 2,
-                            label: 'Completed',
-                            checked: true
-                        },
-                        {
-                            key: 'failed',
-                            value: 2,
-                            label: 'Failed',
-                            checked: true
-                        }
-                    ]}
-                    onToggle={() => { return; }}
+                    subprocessesAmount={props.totalSubprocessesLength}
+                    filters={props.filters}
+                    onToggle={props.onToggle}
                 />
             </Grid>
             <Grid item xs={12}>
@@ -78,3 +55,4 @@ export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
                 icon={ProcessIcon}
                 messages={['Process not found']} />
         </Grid>;
+

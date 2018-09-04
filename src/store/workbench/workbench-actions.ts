@@ -32,6 +32,7 @@ import * as processesActions from '../processes/processes-actions';
 import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
+import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 
 
 export const loadWorkbench = () =>
@@ -185,10 +186,12 @@ export const moveCollection = (data: MoveToFormDialogData) =>
 
 export const loadProcess = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(loadProcessPanel(uuid));
         const process = await dispatch<any>(processesActions.loadProcess(uuid));
         await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
         dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
+        
     };
 
 export const loadProcessLog = (uuid: string) =>

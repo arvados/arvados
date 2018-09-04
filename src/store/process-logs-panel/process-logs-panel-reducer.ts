@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ProcessLogsPanel } from './process-logs-panel';
-import { RootState } from '~/store/store';
 import { ProcessLogsPanelAction, processLogsPanelActions } from './process-logs-panel-actions';
 
 const initialState: ProcessLogsPanel = {
