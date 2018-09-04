@@ -15,7 +15,7 @@ export interface ProcessSubprocessesDataProps {
 export const ProcessSubprocesses = ({ onContextMenu, subprocesses }: ProcessSubprocessesDataProps) => {
     return <Grid container spacing={16}>
         {subprocesses.map(subprocess =>
-            <Grid item xs={2} key={subprocess.containerRequest.uuid}>
+            <Grid item xs={12} sm={6} md={4} lg={2} key={subprocess.containerRequest.uuid}>
                 <ProcessSubprocessesCard onContextMenu={onContextMenu} subprocess={subprocess} />
             </Grid>
         )}

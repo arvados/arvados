@@ -19,7 +19,7 @@ type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'c
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
-        marginBottom: theme.spacing.unit * 2
+        height: '100%'
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -57,7 +57,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
         '&:last-child': {
             paddingBottom: theme.spacing.unit * 2,
-            paddingTop: '0px'
         }
     },
     title: {

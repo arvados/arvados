@@ -21,7 +21,8 @@ const mapStateToProps = ({ router, resources, processPanel }: RootState): Proces
     return {
         process: getProcess(uuid)(resources),
         subprocesses: subprocesses.filter(subprocess => processPanel.filters[getProcessStatus(subprocess)]),
-        filters: getFilters(processPanel, subprocesses)
+        filters: getFilters(processPanel, subprocesses),
+        totalSubprocessesLength: subprocesses.length,
     };
 };
 

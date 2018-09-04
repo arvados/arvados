@@ -16,6 +16,7 @@ export interface ProcessPanelRootDataProps {
     process?: Process;
     subprocesses: Array<Process>;
     filters: Array<SubprocessFilterDataProps>;
+    totalSubprocessesLength: number;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -27,15 +28,15 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
     props.process
-        ? <Grid container spacing={16}>
-            <Grid item xs={7}>
+        ? <Grid container spacing={16} alignItems="stretch">
+            <Grid item sm={12} md={7} alignItems="stretch">
                 <ProcessInformationCard
                     process={props.process}
                     onContextMenu={props.onContextMenu} />
             </Grid>
-            <Grid item xs={5}>
+            <Grid item sm={12} md={5}>
                 <SubprocessesCard
-                    subprocesses={props.subprocesses}
+                    subprocessesAmount={props.totalSubprocessesLength}
                     filters={props.filters}
                     onToggle={props.onToggle}
                 />
