@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { ContextMenuPosition, ContextMenuResource } from "./context-menu-reducer";
+import { ContextMenuPosition } from "./context-menu-reducer";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { getResource } from '../resources/resources';
 import { ProjectResource } from '~/models/project';
-import { UserResource } from '../../models/user';
+import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { extractUuidKind, ResourceKind, TrashableResource } from '~/models/resource';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -20,7 +20,17 @@ export const contextMenuActions = unionize({
 
 export type ContextMenuAction = UnionOf<typeof contextMenuActions>;
 
-export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: { name: string; uuid: string; description?: string; kind: ContextMenuKind; }) =>
+export type ContextMenuResource = {
+    name: string;
+    uuid: string;
+    ownerUuid: string;
+    description?: string;
+    kind: ResourceKind,
+    menuKind: ContextMenuKind;
+    isTrashed?: boolean;
+};
+
+export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) =>
     (dispatch: Dispatch) => {
         event.preventDefault();
         dispatch(
@@ -33,24 +43,30 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
 
 export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const userResource = getResource<UserResource>(projectUuid)(getState().resources);
-        if (userResource) {
+        const res = getResource<UserResource>(projectUuid)(getState().resources);
+        if (res) {
             dispatch<any>(openContextMenu(event, {
                 name: '',
-                uuid: userResource.uuid,
-                kind: ContextMenuKind.ROOT_PROJECT
+                uuid: res.uuid,
+                ownerUuid: res.uuid,
+                kind: res.kind,
+                menuKind: ContextMenuKind.ROOT_PROJECT,
+                isTrashed: false
             }));
         }
     };
 
 export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const projectResource = getResource<ProjectResource>(projectUuid)(getState().resources);
-        if (projectResource) {
+        const res = getResource<ProjectResource>(projectUuid)(getState().resources);
+        if (res) {
             dispatch<any>(openContextMenu(event, {
-                name: projectResource.name,
-                uuid: projectResource.uuid,
-                kind: ContextMenuKind.PROJECT
+                name: res.name,
+                uuid: res.uuid,
+                kind: res.kind,
+                menuKind: ContextMenuKind.PROJECT,
+                ownerUuid: res.ownerUuid,
+                isTrashed: res.isTrashed
             }));
         }
     };
@@ -77,10 +93,12 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>) =>
         // const uuid = match ? match.params.id : '';
         const uuid = pathname.split('/').slice(-1)[0];
         const resource = {
-            uuid,
+            uuid: '',
+            ownerUuid: '',
+            kind: ResourceKind.PROCESS,
             name: '',
             description: '',
-            kind: ContextMenuKind.PROCESS
+            menuKind: ContextMenuKind.PROCESS
         };
         dispatch<any>(openContextMenu(event, resource));
     };

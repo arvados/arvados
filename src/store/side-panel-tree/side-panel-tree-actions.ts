@@ -7,7 +7,7 @@ import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 import { createTreePickerNode, TreePickerNode } from '~/store/tree-picker/tree-picker';
 import { RootState } from '../store';
 import { ServiceRepository } from '~/services/services';
-import { FilterBuilder } from '~/common/api/filter-builder';
+import { FilterBuilder } from '~/services/api/filter-builder';
 import { resourcesActions } from '../resources/resources-actions';
 import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
 import { TreeItemStatus } from "~/components/tree/tree";

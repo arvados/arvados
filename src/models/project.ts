@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupResource, GroupClass } from "./group";
+import { GroupClass, GroupResource } from "./group";
 
 export interface ProjectResource extends GroupResource {
     groupClass: GroupClass.PROJECT;

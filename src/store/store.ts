@@ -28,6 +28,8 @@ import { resourcesReducer } from '~/store/resources/resources-reducer';
 import { propertiesReducer } from './properties/properties-reducer';
 import { RootState } from './store';
 import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
+import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-middleware-service";
+import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { processLogsPanelReducer } from './process-logs-panel/process-logs-panel-reducer';
 import { processPanelReducer } from '~/store/process-panel/process-panel-reducer';
 
@@ -49,12 +51,16 @@ export function configureStore(history: History, services: ServiceRepository): R
     const favoritePanelMiddleware = dataExplorerMiddleware(
         new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID)
     );
+    const trashPanelMiddleware = dataExplorerMiddleware(
+        new TrashPanelMiddlewareService(services, TRASH_PANEL_ID)
+    );
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
         projectPanelMiddleware,
-        favoritePanelMiddleware
+        favoritePanelMiddleware,
+        trashPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

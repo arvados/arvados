@@ -15,7 +15,7 @@ import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon } from "~/componen
 import { createTreePickerNode } from "~/store/tree-picker/tree-picker";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
-import { FilterBuilder } from "~/common/api/filter-builder";
+import { FilterBuilder } from "~/services/api/filter-builder";
 import { WrappedFieldProps } from 'redux-form';
 
 type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;

@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService, ListResults } from "~/common/api/common-resource-service";
+import { CommonResourceService, ListResults } from "~/services/common-service/common-resource-service";
 import { AxiosInstance } from "axios";
-import { GroupResource } from "~/models/group";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
+import { TrashableResource } from "~/models/resource";
+import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 
 export interface ContentsArguments {
     limit?: number;
@@ -16,6 +17,7 @@ export interface ContentsArguments {
     order?: string;
     filters?: string;
     recursive?: boolean;
+    includeTrash?: boolean;
 }
 
 export type GroupContentsResource =
@@ -23,7 +25,7 @@ export type GroupContentsResource =
     ProjectResource |
     ProcessResource;
 
-export class GroupsService<T extends GroupResource = GroupResource> extends CommonResourceService<T> {
+export class GroupsService<T extends TrashableResource = TrashableResource> extends TrashableResourceService<T> {
 
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "groups");
@@ -37,7 +39,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Comm
             order: order ? order : undefined
         };
         return this.serverApi
-            .get(this.resourceType + `${uuid}/contents/`, {
+            .get(this.resourceType + `${uuid}/contents`, {
                 params: CommonResourceService.mapKeys(_.snakeCase)(params)
             })
             .then(CommonResourceService.mapResponseKeys);

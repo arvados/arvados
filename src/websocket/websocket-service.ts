@@ -4,8 +4,8 @@
 
 import { AuthService } from '~/services/auth-service/auth-service';
 import { ResourceEventMessage } from './resource-event-message';
-import { CommonResourceService } from '~/common/api/common-resource-service';
 import { camelCase } from 'lodash';
+import { CommonResourceService } from "~/services/common-service/common-resource-service";
 
 type MessageListener = (message: ResourceEventMessage) => void;
 

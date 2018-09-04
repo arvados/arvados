@@ -4,7 +4,7 @@
 
 import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
-import { Resource } from "~/models/resource";
+import { Resource } from "src/models/resource";
 
 export interface ListArguments {
     limit?: number;

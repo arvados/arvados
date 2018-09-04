@@ -6,7 +6,7 @@ import { GroupsService } from "~/services/groups-service/groups-service";
 import { UserService } from '../user-service/user-service';
 import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
-import { extractUuidObjectType, ResourceObjectType } from "~/models/resource";
+import { extractUuidObjectType, ResourceObjectType, TrashableResource } from "~/models/resource";
 
 export class AncestorService {
     constructor(
@@ -14,7 +14,7 @@ export class AncestorService {
         private userService: UserService
     ) { }
 
-    async ancestors(uuid: string, rootUuid: string): Promise<Array<UserResource | GroupResource>> {
+    async ancestors(uuid: string, rootUuid: string): Promise<Array<UserResource | GroupResource | TrashableResource>> {
         const service = this.getService(extractUuidObjectType(uuid));
         if (service) {
             const resource = await service.get(uuid);

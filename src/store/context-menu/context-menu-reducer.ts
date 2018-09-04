@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { contextMenuActions, ContextMenuAction } from "./context-menu-actions";
+import { contextMenuActions, ContextMenuAction, ContextMenuResource } from "./context-menu-actions";
 
 export interface ContextMenuState {
     open: boolean;
@@ -13,13 +13,6 @@ export interface ContextMenuState {
 export interface ContextMenuPosition {
     x: number;
     y: number;
-}
-
-export interface ContextMenuResource {
-    uuid: string;
-    kind: string;
-    name: string;
-    description?: string;
 }
 
 const initialState = {

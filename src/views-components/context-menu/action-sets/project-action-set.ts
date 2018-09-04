@@ -10,6 +10,8 @@ import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-acti
 import { openMoveProjectDialog } from '~/store/projects/project-move-actions';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openProjectUpdateDialog } from '~/store/projects/project-update-actions';
+import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
+import { toggleProjectTrashed } from "~/store/trash/trash-actions";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -32,6 +34,12 @@ export const projectActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        component: ToggleTrashAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
         }
     },
     {

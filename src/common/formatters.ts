@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    const text = date.toLocaleString();
-    return text === 'Invalid Date' ? "" : text;
+export const formatDate = (isoDate?: string) => {
+    if (isoDate) {
+        const date = new Date(isoDate);
+        const text = date.toLocaleString();
+        return text === 'Invalid Date' ? "" : text;
+    }
+    return "";
 };
 
 export const formatFileSize = (size?: number) => {

@@ -39,6 +39,8 @@ import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-colle
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
+import { TrashPanel } from "~/views/trash-panel/trash-panel";
+
 const APP_BAR_HEIGHT = 100;
 
 type CssRules = 'root' | 'appBar' | 'content' | 'contentWrapper';
@@ -167,6 +169,7 @@ export const Workbench = withStyles(styles)(
                                     <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                     <Route path={Routes.FAVORITES} component={FavoritePanel} />
                                     <Route path={Routes.PROCESSES} component={ProcessPanel} />
+                                    <Route path={Routes.TRASH} component={TrashPanel} />
                                     <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 </Switch>
                             </div>

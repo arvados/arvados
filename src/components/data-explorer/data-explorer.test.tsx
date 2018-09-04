@@ -124,4 +124,5 @@ const mockDataExplorerProps = () => ({
     defaultIcon: ProjectIcon,
     onSetColumns: jest.fn(),
     defaultMessages: ['testing'],
+    contextMenuColumn: true
 });

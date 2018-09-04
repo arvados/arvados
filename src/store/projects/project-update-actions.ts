@@ -6,10 +6,10 @@ import { Dispatch } from "redux";
 import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { ContextMenuResource } from '~/store/context-menu/context-menu-reducer';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/common/api/common-resource-service";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { ServiceRepository } from "~/services/services";
 import { ProjectResource } from '~/models/project';
+import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;

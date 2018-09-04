@@ -5,8 +5,8 @@
 import { LinkService } from "../link-service/link-service";
 import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
 import { LinkClass } from "~/models/link";
-import { FilterBuilder, joinFilters } from "~/common/api/filter-builder";
-import { ListResults } from "~/common/api/common-resource-service";
+import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
+import { ListResults } from "~/services/common-service/common-resource-service";
 
 export interface FavoriteListArguments {
     limit?: number;

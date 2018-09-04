@@ -48,6 +48,7 @@ interface DataExplorerDataProps<T> {
     page: number;
     defaultIcon: IconType;
     defaultMessages: string[];
+    contextMenuColumn: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -95,7 +96,7 @@ export const DataExplorer = withStyles(styles)(
                             </Grid>
                         </Toolbar>
                         <DataTable
-                            columns={[...columns, this.contextMenuColumn]}
+                            columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                             items={items}
                             onRowClick={(_, item: T) => onRowClick(item)}
                             onContextMenu={onContextMenu}
@@ -142,7 +143,7 @@ export const DataExplorer = withStyles(styles)(
                 </IconButton>
             </Grid>
 
-        contextMenuColumn = {
+        contextMenuColumn: DataColumn<any> = {
             name: "Actions",
             selected: true,
             configurable: false,

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommonResourceService } from "~/common/api/common-resource-service";
 import { AxiosInstance } from "axios";
 import { LogResource } from '~/models/log';
+import { CommonResourceService } from "~/services/common-service/common-resource-service";
 
 export class LogService extends CommonResourceService<LogResource> {
     constructor(serverApi: AxiosInstance) {

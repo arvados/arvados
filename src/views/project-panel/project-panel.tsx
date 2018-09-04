@@ -20,9 +20,7 @@ import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { contextMenuActions, resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { CollectionResource } from '~/models/collection';
+import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
@@ -185,7 +183,8 @@ export const ProjectPanel = withStyles(styles)(
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
                         defaultIcon={ProjectIcon}
-                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
+                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']}
+                        contextMenuColumn={true}/>
                 </div>;
             }
 
@@ -198,9 +197,17 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const kind = resourceKindToContextMenuKind(resourceUuid);
-                if (kind) {
-                    this.props.dispatch<any>(openContextMenu(event, { name: '', uuid: resourceUuid, kind }));
+                const menuKind = resourceKindToContextMenuKind(resourceUuid);
+                const resource = getResource<ProjectResource>(resourceUuid)(this.props.resources);
+                if (menuKind && resource) {
+                    this.props.dispatch<any>(openContextMenu(event, {
+                        name: resource.name,
+                        uuid: resource.uuid,
+                        ownerUuid: resource.ownerUuid,
+                        isTrashed: resource.isTrashed,
+                        kind: resource.kind,
+                        menuKind
+                    }));
                 }
             }
 
