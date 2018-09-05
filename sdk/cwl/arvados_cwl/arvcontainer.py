@@ -10,6 +10,7 @@ import time
 import datetime
 import ciso8601
 import uuid
+import math
 
 from arvados_cwl.util import get_current_container, get_intermediate_collection_info
 import ruamel.yaml as yaml
@@ -81,17 +82,17 @@ class ArvadosContainer(JobBase):
 
         resources = self.builder.resources
         if resources is not None:
-            runtime_constraints["vcpus"] = resources.get("cores", 1)
-            runtime_constraints["ram"] = resources.get("ram") * 2**20
+            runtime_constraints["vcpus"] = math.ceil(resources.get("cores", 1))
+            runtime_constraints["ram"] = math.ceil(resources.get("ram") * 2**20)
 
         mounts = {
             self.outdir: {
                 "kind": "tmp",
-                "capacity": resources.get("outdirSize", 0) * 2**20
+                "capacity": math.ceil(resources.get("outdirSize", 0) * 2**20)
             },
             self.tmpdir: {
                 "kind": "tmp",
-                "capacity": resources.get("tmpdirSize", 0) * 2**20
+                "capacity": math.ceil(resources.get("tmpdirSize", 0) * 2**20)
             }
         }
         secret_mounts = {}
@@ -222,7 +223,7 @@ class ArvadosContainer(JobBase):
         runtime_req, _ = self.get_requirement("http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
             if "keep_cache" in runtime_req:
-                runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"] * 2**20
+                runtime_constraints["keep_cache_ram"] = math.ceil(runtime_req["keep_cache"] * 2**20)
             if "outputDirType" in runtime_req:
                 if runtime_req["outputDirType"] == "local_output_dir":
                     # Currently the default behavior.
@@ -393,8 +394,8 @@ class RunnerContainer(Runner):
             },
             "secret_mounts": secret_mounts,
             "runtime_constraints": {
-                "vcpus": self.submit_runner_cores,
-                "ram": 1024*1024 * self.submit_runner_ram,
+                "vcpus": math.ceil(self.submit_runner_cores),
+                "ram": math.ceil(1024*1024 * self.submit_runner_ram),
                 "API": True
             },
             "use_existing": self.enable_reuse,
