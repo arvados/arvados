@@ -29,5 +29,6 @@ class ArvRuntimeContext(RuntimeContext):
         self.cwl_runner_job = None
         self.storage_classes = "default"
         self.current_container = None
+        self.http_timeout = 300
 
         super(ArvRuntimeContext, self).__init__(kwargs)
