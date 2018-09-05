@@ -278,7 +278,11 @@ class ProxyWorkUnit < WorkUnit
     end
 
     if is_failed?
-      resp << " Check the Log tab for more detail about why it failed."
+      if runtime_status.andand[:error]
+        resp << " Check the error information below."
+      else
+        resp << " Check the Log tab for more detail about why it failed."
+      end
     end
     resp << "</p>"
 
