@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
+import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem, Tooltip } from "@material-ui/core";
 import { User, getUserFullname } from "~/models/user";
 import { SearchBar } from "~/components/search-bar/search-bar";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
@@ -67,7 +67,9 @@ export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
         <Toolbar >
             {props.user && <props.breadcrumbs />}
             {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <DetailsIcon />
+                <Tooltip title="Additional Info">
+                    <DetailsIcon />
+                </Tooltip>
             </IconButton>
             }
         </Toolbar>
@@ -78,17 +80,19 @@ const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps
     return (
         <>
             <IconButton color="inherit">
-                <Badge badgeContent={3} color="primary">
-                    <NotificationIcon />
-                </Badge>
+                <Tooltip title="Notification">
+                    <Badge badgeContent={3} color="primary">
+                        <NotificationIcon />
+                    </Badge>
+                </Tooltip>
             </IconButton>
-            <DropdownMenu icon={<UserPanelIcon />} id="account-menu">
+            <DropdownMenu icon={<UserPanelIcon />} id="account-menu" title="Account Management">
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
                 {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
             </DropdownMenu>
-            <DropdownMenu icon={<HelpIcon />} id="help-menu">
+            <DropdownMenu icon={<HelpIcon />} id="help-menu" title="Help">
                 {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
             </DropdownMenu>
         </>
