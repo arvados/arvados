@@ -25,10 +25,10 @@ import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
-import { openCollectionCreateDialog } from '../../store/collections/collection-create-actions';
+import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
-import { filterResources } from '../../store/resources/resources';
-import { DefaultView } from '~/components/default-view/default-view';
+import { filterResources } from '~/store/resources/resources';
+import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -166,7 +166,7 @@ export const ProjectPanel = withStyles(styles)(
                             onRowDoubleClick={this.handleRowDoubleClick}
                             onContextMenu={this.handleContextMenu}
                             contextMenuColumn={true} />
-                        : <DefaultView
+                        : <PanelDefaultView
                             icon={ProjectIcon}
                             messages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
                     }

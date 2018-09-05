@@ -28,9 +28,9 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
-import { DefaultView } from '~/components/default-view/default-view';
 import { FavoritesState } from '../../store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
+import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -176,7 +176,7 @@ export const FavoritePanel = withStyles(styles)(
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
                         contextMenuColumn={true} />
-                    : <DefaultView
+                    : <PanelDefaultView
                         icon={FavoriteIcon}
                         messages={['Your favorites list is empty.']} />;
             }
