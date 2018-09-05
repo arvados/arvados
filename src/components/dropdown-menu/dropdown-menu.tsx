@@ -22,8 +22,8 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
     };
 
     transformOrigin: PopoverOrigin = {
-        vertical: "top",
-        horizontal: "center"
+        vertical: -50,
+        horizontal: 0
     };
 
     render() {
@@ -44,7 +44,6 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
                     open={Boolean(anchorEl)}
                     onClose={this.handleClose}
                     onClick={this.handleClose}
-                    anchorOrigin={this.transformOrigin}
                     transformOrigin={this.transformOrigin}>
                     {children}
                 </Menu>
