@@ -32,7 +32,7 @@ interface DataExplorerDataProps<T> {
     rowsPerPageOptions: number[];
     page: number;
     contextMenuColumn: boolean;
-    noItemsPlaceholder?: React.ReactNode;
+    dataTableDefaultView?: React.ReactNode;
 }
 
 interface DataExplorerActionProps<T> {
@@ -63,7 +63,7 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                noItemsPlaceholder
+                dataTableDefaultView
             } = this.props;
             return <Paper>
                 <Toolbar className={classes.toolbar}>
@@ -87,7 +87,7 @@ export const DataExplorer = withStyles(styles)(
                     onFiltersChange={onFiltersChange}
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
-                    noItemsPlaceholder={noItemsPlaceholder}
+                    defaultView={dataTableDefaultView}
                 />
                 <Toolbar>
                     <Grid container justify="flex-end">

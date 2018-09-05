@@ -31,6 +31,7 @@ import { ContainerRequestState } from "~/models/container-request";
 import { FavoritesState } from '../../store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -175,7 +176,8 @@ export const FavoritePanel = withStyles(styles)(
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
-                        contextMenuColumn={true} />
+                        contextMenuColumn={true}
+                        dataTableDefaultView={<DataTableDefaultView icon={FavoriteIcon}/>} />
                     : <PanelDefaultView
                         icon={FavoriteIcon}
                         messages={['Your favorites list is empty.']} />;

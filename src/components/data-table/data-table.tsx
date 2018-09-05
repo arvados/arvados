@@ -6,8 +6,7 @@ import * as React from 'react';
 import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableFilters, DataTableFilterItem } from "../data-table-filters/data-table-filters";
-import { DefaultView } from '~/components/default-view/default-view';
-import { DetailsIcon } from '~/components/icon/icon';
+import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
 
 export type DataColumns<T, F extends DataTableFilterItem = DataTableFilterItem> = Array<DataColumn<T, F>>;
 
@@ -20,10 +19,10 @@ export interface DataTableDataProps<T> {
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     extractKey?: (item: T) => React.Key;
-    noItemsPlaceholder?: React.ReactNode;
+    defaultView?: React.ReactNode;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | "noItemsPlaceholder";
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -40,10 +39,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         textAlign: "center",
         padding: theme.spacing.unit
     },
-    noItemsPlaceholder: {
-        marginTop: theme.spacing.unit * 4,
-        marginBottom: theme.spacing.unit * 4,
-    }
 });
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -70,11 +65,9 @@ export const DataTable = withStyles(styles)(
         }
 
         renderNoItemsPlaceholder = () => {
-            return this.props.noItemsPlaceholder
-                ? this.props.noItemsPlaceholder
-                : <div className={this.props.classes.noItemsPlaceholder}>
-                    <DefaultView icon={DetailsIcon} messages={['No items found']} />
-                </div>;
+            return this.props.defaultView
+                ? this.props.defaultView
+                : <DataTableDefaultView />;
         }
 
         renderHeadCell = (column: DataColumn<T>, index: number) => {

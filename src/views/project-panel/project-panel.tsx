@@ -29,6 +29,7 @@ import { openCollectionCreateDialog } from '~/store/collections/collection-creat
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { filterResources } from '~/store/resources/resources';
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -165,7 +166,8 @@ export const ProjectPanel = withStyles(styles)(
                             onRowClick={this.handleRowClick}
                             onRowDoubleClick={this.handleRowDoubleClick}
                             onContextMenu={this.handleContextMenu}
-                            contextMenuColumn={true} />
+                            contextMenuColumn={true}
+                            dataTableDefaultView={<DataTableDefaultView icon={ProjectIcon}/>} />
                         : <PanelDefaultView
                             icon={ProjectIcon}
                             messages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />

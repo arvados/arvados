@@ -32,6 +32,7 @@ import { toggleTrashed } from "~/store/trash/trash-actions";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -169,7 +170,8 @@ export const TrashPanel = withStyles(styles)(
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={false} />
+                        contextMenuColumn={false}
+                        dataTableDefaultView={<DataTableDefaultView icon={TrashIcon}/>} />
                     : <PanelDefaultView
                         icon={TrashIcon}
                         messages={['Your trash list is empty.']} />;
