@@ -4,10 +4,23 @@
 
 import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem } from "@material-ui/core";
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { Link } from "react-router-dom";
 import { User, getUserFullname } from "~/models/user";
 import { SearchBar } from "~/components/search-bar/search-bar";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "~/components/icon/icon";
+import { Routes } from '~/routes/routes';
+
+type CssRules = 'link';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    link: {
+        textDecoration: 'none',
+        color: 'inherit'
+    }
+});
 
 export interface MainAppBarMenuItem {
     label: string;
@@ -34,45 +47,49 @@ export interface MainAppBarActionProps {
     onDetailsPanelToggle: () => void;
 }
 
-export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps;
+export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
 
-export const MainAppBar: React.SFC<MainAppBarProps> = (props) => {
-    return <AppBar position="static">
-        <Toolbar>
-            <Grid container justify="space-between">
-                <Grid item xs={3}>
-                    <Typography variant="headline" color="inherit" noWrap>
-                        Arvados 2
-                    </Typography>
-                    <Typography variant="body1" color="inherit" noWrap >
-                        {props.buildInfo}
-                    </Typography>
+export const MainAppBar = withStyles(styles)(
+    (props: MainAppBarProps) => {
+        return <AppBar position="static">
+            <Toolbar>
+                <Grid container justify="space-between">
+                    <Grid item xs={3}>
+                        <Typography variant="headline" color="inherit" noWrap>
+                            <Link to={Routes.ROOT} className={props.classes.link}>
+                                Arvados 2
+                            </Link>
+                        </Typography>
+                        <Typography variant="body1" color="inherit" noWrap >
+                            {props.buildInfo}
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={6} container alignItems="center">
+                        {
+                            props.user && <SearchBar
+                                value={props.searchText}
+                                onSearch={props.onSearch}
+                                debounce={props.searchDebounce}
+                            />
+                        }
+                    </Grid>
+                    <Grid item xs={3} container alignItems="center" justify="flex-end">
+                        {
+                            props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
+                        }
+                    </Grid>
                 </Grid>
-                <Grid item xs={6} container alignItems="center">
-                    {
-                        props.user && <SearchBar
-                            value={props.searchText}
-                            onSearch={props.onSearch}
-                            debounce={props.searchDebounce}
-                        />
-                    }
-                </Grid>
-                <Grid item xs={3} container alignItems="center" justify="flex-end">
-                    {
-                        props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
-                    }
-                </Grid>
-            </Grid>
-        </Toolbar>
-        <Toolbar >
-            {props.user && <props.breadcrumbs />}
-            {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <DetailsIcon />
-            </IconButton>
-            }
-        </Toolbar>
-    </AppBar>;
-};
+            </Toolbar>
+            <Toolbar >
+                {props.user && <props.breadcrumbs />}
+                {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
+                    <DetailsIcon />
+                </IconButton>
+                }
+            </Toolbar>
+        </AppBar>;
+    }
+);
 
 const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
     return (
