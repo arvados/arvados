@@ -148,7 +148,7 @@ export const ProjectPanel = withStyles(styles)(
                 return <div className={classes.root}>
                     <div className={classes.toolbar}>
                         <Button color="primary" onClick={this.handleNewCollectionClick} variant="raised" className={classes.button}>
-                            Create a collection
+                            New collection
                         </Button>
                         <Button color="primary" variant="raised" className={classes.button}>
                             Run a process

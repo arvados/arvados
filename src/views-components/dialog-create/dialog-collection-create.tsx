@@ -16,7 +16,7 @@ type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionC
 
 export const DialogCollectionCreate = (props: DialogCollectionProps) =>
     <FormDialog
-        dialogTitle='Create a collection'
+        dialogTitle='New collection'
         formFields={CollectionAddFields}
         submitLabel='Create a Collection'
         {...props}

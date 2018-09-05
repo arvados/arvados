@@ -13,7 +13,7 @@ type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<ProjectCrea
 
 export const DialogProjectCreate = (props: DialogCollectionProps) =>
     <FormDialog
-        dialogTitle='Create a project'
+        dialogTitle='New project'
         formFields={ProjectAddFields}
         submitLabel='Create a Project'
         {...props}
