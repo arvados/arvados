@@ -543,7 +543,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             runnerjob.run(submitargs)
             return (runnerjob.uuid, "success")
 
-        self.poll_api = arvados.api('v1')
+        self.poll_api = arvados.api('v1', timeout=kwargs["http_timeout"])
         self.polling_thread = threading.Thread(target=self.poll_states)
         self.polling_thread.start()
 
@@ -772,6 +772,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--thread-count", type=int,
                         default=4, help="Number of threads to use for job submit and output collection.")
 
+    parser.add_argument("--http-timeout", type=int,
+                        default=5*60, dest="http_timeout", help="Http timeout. Default is 5 minutes.")
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",
                         default=False, dest="trash_intermediate",
@@ -844,7 +847,9 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
 
     try:
         if api_client is None:
-            api_client = arvados.safeapi.ThreadSafeApiCache(api_params={"model": OrderedJsonModel()}, keep_params={"num_retries": 4})
+            api_client = arvados.safeapi.ThreadSafeApiCache(
+                api_params={"model": OrderedJsonModel(), "timeout": arvargs.http_timeout},
+                keep_params={"num_retries": 4})
             keep_client = api_client.keep
             # Make an API object now so errors are reported early.
             api_client.users().current().execute()
