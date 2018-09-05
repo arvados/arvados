@@ -361,11 +361,7 @@ class ContainerRequest < ArvadosModel
       self.requesting_container_uuid = c.uuid
       # Determine the priority of container request for the requesting
       # container.
-      self.priority = ContainerRequest.
-            where('container_uuid=? and priority>0', self.requesting_container_uuid).
-            map do |cr|
-        cr.priority
-      end.max || 0
+      self.priority = ContainerRequest.where(container_uuid: self.requesting_container_uuid).maximum("priority") || 0
     end
   end
 
