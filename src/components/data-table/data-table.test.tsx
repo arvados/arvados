@@ -9,6 +9,7 @@ import * as Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
 import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { SortDirection, createDataColumn } from "./data-column";
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 configure({ adapter: new Adapter() });
 
@@ -200,5 +201,25 @@ describe("<DataTable />", () => {
         expect(dataTable.find(DataTableFilters).prop("filters")).toBe(columns[0].filters);
         dataTable.find(DataTableFilters).prop("onChange")([]);
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
+    });
+
+    it("shows default view if there is no items", () => {
+        const columns: DataColumns<string> = [
+            createDataColumn({
+                name: "Column 1",
+                render: () => <span />,
+                selected: true,
+                configurable: true
+            }),
+        ];
+        const dataTable = mount(<DataTable
+            columns={columns}
+            items={[]}
+            onFiltersChange={jest.fn()}
+            onRowClick={jest.fn()}
+            onRowDoubleClick={jest.fn()}
+            onContextMenu={jest.fn()}
+            onSortToggle={jest.fn()} />);
+        expect(dataTable.find(DataTableDefaultView)).toHaveLength(1);
     });
 });
