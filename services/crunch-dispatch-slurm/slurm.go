@@ -20,7 +20,15 @@ type Slurm interface {
 	Renice(name string, nice int64) error
 }
 
-type slurmCLI struct{}
+type slurmCLI struct{
+	runSemaphore chan bool
+}
+
+func NewSlurmCLI() *slurmCLI {
+	return &slurmCLI{
+	       runSemaphore: make(chan bool, 3),
+	}
+}
 
 func (scli *slurmCLI) Batch(script io.Reader, args []string) error {
 	return scli.run(script, "sbatch", args)
@@ -64,6 +72,8 @@ func (scli *slurmCLI) Renice(name string, nice int64) error {
 }
 
 func (scli *slurmCLI) run(stdin io.Reader, prog string, args []string) error {
+	scli.runSemaphore <- true
+	defer func() { <-scli.runSemaphore }()
 	cmd := exec.Command(prog, args...)
 	cmd.Stdin = stdin
 	out, err := cmd.CombinedOutput()
