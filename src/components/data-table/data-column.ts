@@ -14,7 +14,6 @@ export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterIt
     filters: F[];
     render: (item: T) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
-    width?: string;
 }
 
 export enum SortDirection {

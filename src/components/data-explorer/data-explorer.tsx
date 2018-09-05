@@ -150,8 +150,7 @@ export const DataExplorer = withStyles(styles)(
             sortDirection: SortDirection.NONE,
             filters: [],
             key: "context-actions",
-            render: this.renderContextMenuTrigger,
-            width: "auto"
+            render: this.renderContextMenuTrigger
         };
     }
 );

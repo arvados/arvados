@@ -23,7 +23,7 @@ export const renderName = (item: { name: string; uuid: string, kind: string }) =
             {renderIcon(item)}
         </Grid>
         <Grid item>
-            <Typography color="primary">
+            <Typography color="primary" style={{ width: '450px' }}>
                 {item.name}
             </Typography>
         </Grid>
@@ -54,7 +54,7 @@ export const renderIcon = (item: { kind: string }) => {
 };
 
 export const renderDate = (date?: string) => {
-    return <Typography noWrap>{formatDate(date)}</Typography>;
+    return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
 
 export const ResourceLastModifiedDate = connect(
@@ -76,7 +76,7 @@ export const ResourceDeleteDate = connect(
     })((props: { date: string }) => renderDate(props.date));
 
 export const renderFileSize = (fileSize?: number) =>
-    <Typography noWrap>
+    <Typography noWrap style={{ minWidth: '45px' }}>
         {formatFileSize(fileSize)}
     </Typography>;
 

@@ -82,8 +82,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: uuid => <ResourceName uuid={uuid}/>,
-        width: "450px"
+        render: uuid => <ResourceName uuid={uuid}/>
     },
     {
         name: TrashPanelColumnNames.TYPE,
@@ -108,7 +107,6 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
             }
         ],
         render: uuid => <ResourceType uuid={uuid}/>,
-        width: "125px"
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -116,8 +114,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceFileSize uuid={uuid} />,
-        width: "50px"
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,
@@ -125,8 +122,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceTrashDate uuid={uuid} />,
-        width: "50px"
+        render: uuid => <ResourceTrashDate uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TO_BE_DELETED,
@@ -134,8 +130,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceDeleteDate uuid={uuid} />,
-        width: "50px"
+        render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
     {
         name: '',
@@ -143,8 +138,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: false,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceRestore uuid={uuid}/>,
-        width: "50px"
+        render: uuid => <ResourceRestore uuid={uuid}/>
     }
 ];
 
