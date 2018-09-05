@@ -11,7 +11,6 @@ import { DataColumn, SortDirection } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
-import { DefaultView } from '../default-view/default-view';
 import { IconType } from '../icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | 'defaultRoot' | 'defaultMessage' | 'defaultIcon';
@@ -49,6 +48,7 @@ interface DataExplorerDataProps<T> {
     defaultIcon: IconType;
     defaultMessages: string[];
     contextMenuColumn: boolean;
+    noItemsPlaceholder?: React.ReactNode;
 }
 
 interface DataExplorerActionProps<T> {
@@ -78,54 +78,46 @@ export const DataExplorer = withStyles(styles)(
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
-                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes
+                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes,
+                noItemsPlaceholder
             } = this.props;
-            return <div>
-                { items.length > 0 ? (
-                    <Paper>
-                        <Toolbar className={classes.toolbar}>
-                            <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                                <div className={classes.searchBox}>
-                                    <SearchInput
-                                        value={searchValue}
-                                        onSearch={onSearch}/>
-                                </div>
-                                <ColumnSelector
-                                    columns={columns}
-                                    onColumnToggle={onColumnToggle}/>
-                            </Grid>
-                        </Toolbar>
-                        <DataTable
-                            columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
-                            items={items}
-                            onRowClick={(_, item: T) => onRowClick(item)}
-                            onContextMenu={onContextMenu}
-                            onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
-                            onFiltersChange={onFiltersChange}
-                            onSortToggle={onSortToggle}
-                            extractKey={extractKey}/>
-                        <Toolbar>
-                            <Grid container justify="flex-end">
-                                <TablePagination
-                                    count={itemsAvailable}
-                                    rowsPerPage={rowsPerPage}
-                                    rowsPerPageOptions={rowsPerPageOptions}
-                                    page={this.props.page}
-                                    onChangePage={this.changePage}
-                                    onChangeRowsPerPage={this.changeRowsPerPage}
-                                    component="div" />
-                            </Grid>
-                        </Toolbar>
-                    </Paper>
-                ) : (
-                    <DefaultView
-                        classRoot={classes.defaultRoot}
-                        icon={defaultIcon}
-                        classIcon={classes.defaultIcon}
-                        messages={defaultMessages}
-                        classMessage={classes.defaultMessage} />
-                )}
-            </div>;
+            return <Paper>
+                <Toolbar className={classes.toolbar}>
+                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                        <div className={classes.searchBox}>
+                            <SearchInput
+                                value={searchValue}
+                                onSearch={onSearch} />
+                        </div>
+                        <ColumnSelector
+                            columns={columns}
+                            onColumnToggle={onColumnToggle} />
+                    </Grid>
+                </Toolbar>
+                <DataTable
+                    columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
+                    items={items}
+                    onRowClick={(_, item: T) => onRowClick(item)}
+                    onContextMenu={onContextMenu}
+                    onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
+                    onFiltersChange={onFiltersChange}
+                    onSortToggle={onSortToggle}
+                    extractKey={extractKey}
+                    noItemsPlaceholder={noItemsPlaceholder}
+                />
+                <Toolbar>
+                    <Grid container justify="flex-end">
+                        <TablePagination
+                            count={itemsAvailable}
+                            rowsPerPage={rowsPerPage}
+                            rowsPerPageOptions={rowsPerPageOptions}
+                            page={this.props.page}
+                            onChangePage={this.changePage}
+                            onChangeRowsPerPage={this.changeRowsPerPage}
+                            component="div" />
+                    </Grid>
+                </Toolbar>
+            </Paper>;
         }
 
         changePage = (event: React.MouseEvent<HTMLButtonElement>, page: number) => {
@@ -139,7 +131,7 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) =>
             <Grid container justify="flex-end">
                 <IconButton onClick={event => this.props.onContextMenu(event, item)}>
-                    <MoreVertIcon/>
+                    <MoreVertIcon />
                 </IconButton>
             </Grid>
 
