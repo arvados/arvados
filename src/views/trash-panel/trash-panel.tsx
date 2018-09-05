@@ -31,6 +31,7 @@ import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { toggleCollectionTrashed, toggleProjectTrashed, toggleTrashed } from "~/store/trash/trash-actions";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
+import { DefaultView } from '~/components/default-view/default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -71,7 +72,7 @@ export const ResourceRestore =
                 ));
             }
         }}>
-            <RestoreFromTrashIcon/>
+            <RestoreFromTrashIcon />
         </IconButton>
     );
 
@@ -82,7 +83,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: uuid => <ResourceName uuid={uuid}/>,
+        render: uuid => <ResourceName uuid={uuid} />,
         width: "450px"
     },
     {
@@ -107,7 +108,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
                 type: ResourceKind.PROJECT
             }
         ],
-        render: uuid => <ResourceType uuid={uuid}/>,
+        render: uuid => <ResourceType uuid={uuid} />,
         width: "125px"
     },
     {
@@ -143,7 +144,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: false,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceRestore uuid={uuid}/>,
+        render: uuid => <ResourceRestore uuid={uuid} />,
         width: "50px"
     }
 ];
@@ -162,15 +163,22 @@ export const TrashPanel = withStyles(styles)(
     }))(
         class extends React.Component<TrashPanelProps> {
             render() {
-                return <DataExplorer
-                    id={TRASH_PANEL_ID}
-                    onRowClick={this.handleRowClick}
-                    onRowDoubleClick={this.handleRowDoubleClick}
-                    onContextMenu={this.handleContextMenu}
-                    defaultIcon={TrashIcon}
-                    defaultMessages={['Your trash list is empty.']}
-                    contextMenuColumn={false}/>
-                ;
+                return this.hasAnyTrashedResources()
+                    ? <DataExplorer
+                        id={TRASH_PANEL_ID}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={false} />
+                    : <DefaultView
+                        icon={TrashIcon}
+                        messages={['Your trash list is empty.']} />;
+            }
+
+            hasAnyTrashedResources = () => {
+                // TODO: implement check if there is anything in the trash,
+                //       without taking pagination into the account
+                return true;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

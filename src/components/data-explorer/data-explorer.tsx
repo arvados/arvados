@@ -45,8 +45,6 @@ interface DataExplorerDataProps<T> {
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     page: number;
-    defaultIcon: IconType;
-    defaultMessages: string[];
     contextMenuColumn: boolean;
     noItemsPlaceholder?: React.ReactNode;
 }
@@ -78,7 +76,7 @@ export const DataExplorer = withStyles(styles)(
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
-                items, itemsAvailable, onRowClick, onRowDoubleClick, defaultIcon, defaultMessages, classes,
+                items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 noItemsPlaceholder
             } = this.props;
             return <Paper>
