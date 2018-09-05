@@ -20,13 +20,13 @@ type Slurm interface {
 	Renice(name string, nice int64) error
 }
 
-type slurmCLI struct{
+type slurmCLI struct {
 	runSemaphore chan bool
 }
 
 func NewSlurmCLI() *slurmCLI {
 	return &slurmCLI{
-	       runSemaphore: make(chan bool, 3),
+		runSemaphore: make(chan bool, 3),
 	}
 }
 
