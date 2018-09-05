@@ -11,9 +11,8 @@ import { DataColumn, SortDirection } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
-import { IconType } from '../icon/icon';
 
-type CssRules = 'searchBox' | "toolbar" | 'defaultRoot' | 'defaultMessage' | 'defaultIcon';
+type CssRules = 'searchBox' | "toolbar";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -22,19 +21,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
         paddingTop: theme.spacing.unit * 2
     },
-    defaultRoot: {
-        position: 'absolute',
-        width: '80%',
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)'
-    },
-    defaultMessage: {
-        fontSize: '1.75rem',
-    },
-    defaultIcon: {
-        fontSize: '6rem'
-    }
 });
 
 interface DataExplorerDataProps<T> {
