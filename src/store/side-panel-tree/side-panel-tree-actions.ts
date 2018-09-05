@@ -18,7 +18,7 @@ export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
     WORKFLOWS = 'Workflows',
-    RECENT_OPEN = 'Recent open',
+    RECENT_OPEN = 'Recently open',
     FAVORITES = 'Favorites',
     TRASH = 'Trash'
 }
