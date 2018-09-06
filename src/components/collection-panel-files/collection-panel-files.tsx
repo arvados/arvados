@@ -6,7 +6,7 @@ import * as React from 'react';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { FileTree } from '../file-tree/file-tree';
-import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button } from '@material-ui/core';
+import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip } from '@material-ui/core';
 import { CustomizeTableIcon } from '../icon/icon';
 
 export interface CollectionPanelFilesProps {
@@ -54,7 +54,9 @@ export const CollectionPanelFiles =
                     className={classes.cardSubheader}
                     action={
                         <IconButton onClick={onOptionsMenuOpen}>
-                            <CustomizeTableIcon />
+                            <Tooltip title="More options">
+                                <CustomizeTableIcon />
+                            </Tooltip>
                         </IconButton>
                     } />
                 <Grid container justify="space-between">

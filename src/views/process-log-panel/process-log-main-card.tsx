@@ -67,7 +67,9 @@ export const ProcessLogMainCard = withStyles(styles)(
                     action={
                         <div>
                             <IconButton aria-label="More options">
-                                <MoreOptionsIcon />
+                                <Tooltip title="More options">
+                                    <MoreOptionsIcon />
+                                </Tooltip>
                             </IconButton>
                         </div>
                     }
