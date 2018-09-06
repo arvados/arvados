@@ -21,7 +21,7 @@ export const navigateTo = (uuid: string) =>
             dispatch<any>(navigateToCollection(uuid));
         } else if (kind === ResourceKind.CONTAINER_REQUEST) {
             dispatch<any>(navigateToProcess(uuid));
-        } 
+        }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);
         }
@@ -41,7 +41,7 @@ export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const rootProjectUuid = services.authService.getUuid();
-    if(rootProjectUuid){
+    if (rootProjectUuid) {
         dispatch(navigateToProject(rootProjectUuid));
     }
 };
