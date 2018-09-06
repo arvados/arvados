@@ -81,7 +81,9 @@ export const CollectionPanel = withStyles(styles)(
                                 <IconButton
                                     aria-label="More options"
                                     onClick={this.handleContextMenu}>
-                                    <MoreOptionsIcon />
+                                    <Tooltip title="More options">
+                                        <MoreOptionsIcon />
+                                    </Tooltip>
                                 </IconButton>
                             }
                             title={item && item.name}

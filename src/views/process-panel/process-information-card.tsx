@@ -89,7 +89,9 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                         <IconButton
                             aria-label="More options"
                             onClick={event => onContextMenu(event)}>
-                            <MoreOptionsIcon />
+                            <Tooltip title="More options">
+                                <MoreOptionsIcon />
+                            </Tooltip>
                         </IconButton>
                     </div>
                 }

@@ -14,7 +14,7 @@ import { Process, getProcessStatus, getProcessRuntime } from '~/store/processes/
 import { formatTime } from '~/common/formatters';
 import { getProcessStatusColor } from '~/store/processes/process';
 
-export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader'| 'header';
+export type CssRules = 'label' | 'value' | 'title' | 'content' | 'action' | 'options' | 'status' | 'rightSideHeader' | 'titleHeader' | 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
@@ -87,7 +87,9 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                             className={classes.options}
                             aria-label="More options"
                             onClick={onContextMenu}>
-                            <MoreOptionsIcon />
+                            <Tooltip title="More options">
+                                <MoreOptionsIcon />
+                            </Tooltip>
                         </IconButton>
                     </div>
                 }

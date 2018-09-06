@@ -73,7 +73,7 @@ export const ResourceRestore =
                 ));
             }
         }}>
-            <Tooltip title="Filters">
+            <Tooltip title="Restore">
                 <RestoreFromTrashIcon />
             </Tooltip>
         </IconButton>
