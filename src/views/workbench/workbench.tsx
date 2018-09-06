@@ -6,10 +6,9 @@ import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { connect, DispatchProp } from "react-redux";
 import { Route, Switch } from "react-router";
-import { login, logout } from "~/store/auth/auth-action";
 import { User } from "~/models/user";
 import { RootState } from "~/store/store";
-import { MainAppBar, MainAppBarActionProps, MainAppBarMenuItem } from '~/views-components/main-app-bar/main-app-bar';
+import { MainAppBar } from '~/views-components/main-app-bar/main-app-bar';
 import { push } from 'react-router-redux';
 import { ProjectPanel } from "~/views/project-panel/project-panel";
 import { DetailsPanel } from '~/views-components/details-panel/details-panel';
@@ -28,7 +27,6 @@ import { Routes } from '~/routes/routes';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
-import { Breadcrumbs } from '~/views-components/breadcrumbs/breadcrumbs';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
@@ -86,24 +84,12 @@ interface WorkbenchGeneralProps {
     buildInfo: string;
 }
 
-interface WorkbenchActionProps {
-}
-
-type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & WorkbenchActionProps & DispatchProp<any> & WithStyles<CssRules>;
-
-interface NavMenuItem extends MainAppBarMenuItem {
-    action: () => void;
-}
+type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface WorkbenchState {
     isCurrentTokenDialogOpen: boolean;
     anchorEl: any;
     searchText: string;
-    menuItems: {
-        accountMenu: NavMenuItem[],
-        helpMenu: NavMenuItem[],
-        anonymousMenu: NavMenuItem[]
-    };
 }
 
 export const Workbench = withStyles(styles)(
@@ -118,35 +104,6 @@ export const Workbench = withStyles(styles)(
                 isCurrentTokenDialogOpen: false,
                 anchorEl: null,
                 searchText: "",
-                breadcrumbs: [],
-                menuItems: {
-                    accountMenu: [
-                        {
-                            label: 'Current token',
-                            action: () => this.toggleCurrentTokenModal()
-                        },
-                        {
-                            label: "Logout",
-                            action: () => this.props.dispatch(logout())
-                        },
-                        {
-                            label: "My account",
-                            action: () => this.props.dispatch(push("/my-account"))
-                        }
-                    ],
-                    helpMenu: [
-                        {
-                            label: "Help",
-                            action: () => this.props.dispatch(push("/help"))
-                        }
-                    ],
-                    anonymousMenu: [
-                        {
-                            label: "Sign in",
-                            action: () => this.props.dispatch(login())
-                        }
-                    ]
-                }
             };
 
             render() {
@@ -155,12 +112,9 @@ export const Workbench = withStyles(styles)(
                     <div className={classes.root}>
                         <div className={classes.appBar}>
                             <MainAppBar
-                                breadcrumbs={Breadcrumbs}
                                 searchText={this.state.searchText}
                                 user={this.props.user}
-                                menuItems={this.state.menuItems}
-                                buildInfo={this.props.buildInfo}
-                                {...this.mainAppBarActions} />
+                                onSearch={this.onSearch} />
                         </div>
                         {user && <SidePanel />}
                         <main className={classes.contentWrapper}>
@@ -200,16 +154,10 @@ export const Workbench = withStyles(styles)(
                 );
             }
 
-            mainAppBarActions: MainAppBarActionProps = {
-                onSearch: searchText => {
-                    this.setState({ searchText });
-                    this.props.dispatch(push(`/search?q=${searchText}`));
-                },
-                onMenuItemClick: (menuItem: NavMenuItem) => menuItem.action(),
-                onDetailsPanelToggle: () => {
-                    this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-                },
-            };
+            onSearch = (searchText: string) => {
+                this.setState({ searchText });
+                this.props.dispatch(push(`/search?q=${searchText}`));
+            }
 
             toggleDetailsPanel = () => {
                 this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
