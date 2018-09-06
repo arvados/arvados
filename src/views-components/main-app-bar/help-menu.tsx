@@ -37,6 +37,32 @@ enum helpMenuLinks {
     SDK_REFERENCE = "http://doc.arvados.org/sdk/"
 }
 
+enum helpMenuTitles {
+    PIPELINES_DATASETS = "Public Pipelines and Data sets",
+    TUTORIALS = "Tutorials and User guide",
+    API_REFERENCE = "API Reference",
+    SDK_REFERENCE = "SDK Reference"
+}
+
+const links = [
+    {
+        title: helpMenuTitles.PIPELINES_DATASETS,
+        link: helpMenuLinks.PIPELINES_DATASETS
+    },
+    {
+        title: helpMenuTitles.TUTORIALS,
+        link: helpMenuLinks.TUTORIALS
+    },
+    {
+        title: helpMenuTitles.API_REFERENCE,
+        link: helpMenuLinks.API_REFERENCE
+    },
+    {
+        title: helpMenuTitles.SDK_REFERENCE,
+        link: helpMenuLinks.SDK_REFERENCE
+    },
+];
+
 export const HelpMenu = withStyles(styles)(
     ({ classes }: WithStyles<CssRules>) =>
         <DropdownMenu
@@ -44,18 +70,14 @@ export const HelpMenu = withStyles(styles)(
             id="help-menu"
             title="Help">
             <Typography variant="body1" className={classes.title}>Help</Typography>
-            {menuItem("Public Pipelines and Data sets", helpMenuLinks.PIPELINES_DATASETS, classes)}
-            {menuItem("Tutorials and User guide", helpMenuLinks.TUTORIALS, classes)}
-            {menuItem("API Reference", helpMenuLinks.API_REFERENCE, classes)}
-            {menuItem("SDK Reference", helpMenuLinks.SDK_REFERENCE, classes)}
+            {
+                links.map(link =>
+                <a key={link.title} href={link.link} target="_blank" className={classes.link}>
+                    <MenuItem>
+                        <HelpIcon className={classes.icon} />
+                        <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                    </MenuItem>
+                </a>)
+            }
         </DropdownMenu>
 );
-
-    // Todo: change help icon
-const menuItem = (title: string, link: string, classes: Record<CssRules, string>) =>
-    <a href={link} target="_blank" className={classes.link}>
-        <MenuItem>
-            <HelpIcon className={classes.icon} />
-            <Typography variant="body1" className={classes.linkTitle}>{title}</Typography>
-        </MenuItem>
-    </a>;
