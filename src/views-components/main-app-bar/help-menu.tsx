@@ -9,24 +9,29 @@ import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 
-type CssRules = 'link' | 'icon' | 'title' | 'linkTitle';
+type CssRules = 'link' | 'icon' | 'title' | 'linkTitle' | 'linkContent';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
-        color: 'inherit'
+        color: 'inherit',
+        width: '100%',
     },
     icon: {
         width: '16px',
         height: '16px'
     },
     title: {
-        marginLeft: theme.spacing.unit * 2,
         paddingBottom: theme.spacing.unit * 0.5,
+        paddingLeft: theme.spacing.unit * 2,
+        paddingTop: theme.spacing.unit * 0.5,
         outline: 'none',
     },
     linkTitle: {
         marginLeft: theme.spacing.unit
+    },
+    linkContent: {
+        display: 'flex'
     }
 });
 
@@ -55,15 +60,20 @@ export const HelpMenu = withStyles(styles)(
             icon={<HelpIcon />}
             id="help-menu"
             title="Help">
-            <Typography variant="body1" className={classes.title}>Help</Typography>
+            <li className={classes.title}>
+                <Typography variant="body1">Help</Typography>
+            </li>
             {
                 links.map(link =>
-                    <a key={link.title} href={link.link} target="_blank" className={classes.link}>
-                        <MenuItem>
-                            <ImportContactsIcon className={classes.icon} />
-                            <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
-                        </MenuItem>
-                    </a>)
+                    <MenuItem key={link.title}>
+                        <a href={link.link} target="_blank" className={classes.link}>
+                            <div className={classes.linkContent}>
+                                <ImportContactsIcon className={classes.icon} />
+                                <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                            </div>
+                        </a>
+                    </MenuItem>
+                )
             }
         </DropdownMenu>
 );

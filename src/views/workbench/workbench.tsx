@@ -40,6 +40,7 @@ import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/fil
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { HelpMenu } from '~/views-components/main-app-bar/help-menu.tsx';
 
 const APP_BAR_HEIGHT = 100;
 
@@ -153,6 +154,7 @@ export const Workbench = withStyles(styles)(
                 return (
                     <div className={classes.root}>
                         <div className={classes.appBar}>
+                        <HelpMenu/>
                             <MainAppBar
                                 breadcrumbs={Breadcrumbs}
                                 searchText={this.state.searchText}
