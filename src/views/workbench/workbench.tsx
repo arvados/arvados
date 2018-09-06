@@ -40,6 +40,7 @@ import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/fil
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
 
 const APP_BAR_HEIGHT = 100;
 
@@ -163,6 +164,7 @@ export const Workbench = withStyles(styles)(
                         </div>
                         {user && <SidePanel />}
                         <main className={classes.contentWrapper}>
+                            {this.props.user && <MainContentBar />}
                             <div className={classes.content}>
                                 <Switch>
                                     <Route path={Routes.PROJECTS} component={ProjectPanel} />
@@ -208,6 +210,10 @@ export const Workbench = withStyles(styles)(
                     this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
                 },
             };
+
+            toggleDetailsPanel = () => {
+                this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+            }
 
             toggleCurrentTokenModal = () => {
                 this.setState({ isCurrentTokenDialogOpen: !this.state.isCurrentTokenDialogOpen });
