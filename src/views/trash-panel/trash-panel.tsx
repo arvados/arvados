@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconButton, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { IconButton, StyleRulesCallback, WithStyles, withStyles, Tooltip } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -73,7 +73,9 @@ export const ResourceRestore =
                 ));
             }
         }}>
-            <RestoreFromTrashIcon />
+            <Tooltip title="Filters">
+                <RestoreFromTrashIcon />
+            </Tooltip>
         </IconButton>
     );
 
@@ -84,7 +86,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: uuid => <ResourceName uuid={uuid}/>
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TYPE,
@@ -108,7 +110,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
                 type: ResourceKind.PROJECT
             }
         ],
-        render: uuid => <ResourceType uuid={uuid}/>,
+        render: uuid => <ResourceType uuid={uuid} />,
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -140,7 +142,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         configurable: false,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceRestore uuid={uuid}/>
+        render: uuid => <ResourceRestore uuid={uuid} />
     }
 ];
 
@@ -165,7 +167,7 @@ export const TrashPanel = withStyles(styles)(
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
                         contextMenuColumn={false}
-                        dataTableDefaultView={<DataTableDefaultView icon={TrashIcon}/>} />
+                        dataTableDefaultView={<DataTableDefaultView icon={TrashIcon} />} />
                     : <PanelDefaultView
                         icon={TrashIcon}
                         messages={['Your trash list is empty.']} />;
