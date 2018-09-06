@@ -12,6 +12,9 @@ import { SearchBar } from "~/components/search-bar/search-bar";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "~/components/icon/icon";
 import { Routes } from '~/routes/routes';
+import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
+import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
+import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
 
 type CssRules = 'link';
 
@@ -54,15 +57,15 @@ export const MainAppBar = withStyles(styles)(
         return <AppBar position="static">
             <Toolbar>
                 <Grid container justify="space-between">
-                    <Grid item xs={3}>
+                    <Grid container item xs={3} alignItems="center">
                         <Typography variant="headline" color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
-                                Arvados 2
+                                arvados workbench
                             </Link>
                         </Typography>
-                        <Typography variant="body1" color="inherit" noWrap >
+                        {/* <Typography variant="body1" color="inherit" noWrap >
                             {props.buildInfo}
-                        </Typography>
+                        </Typography> */}
                     </Grid>
                     <Grid item xs={6} container alignItems="center">
                         {
@@ -75,58 +78,24 @@ export const MainAppBar = withStyles(styles)(
                     </Grid>
                     <Grid item xs={3} container alignItems="center" justify="flex-end">
                         {
-                            props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
+                            props.user
+                                ? <>
+                                    <NotificationsMenu />
+                                    <AccountMenu />
+                                </>
+                                : <AnonymousMenu />
                         }
                     </Grid>
                 </Grid>
             </Toolbar>
-            <Toolbar >
+            {/* <Toolbar >
                 {props.user && <props.breadcrumbs />}
                 {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
                     <Tooltip title="Additional Info">
                         <DetailsIcon />
                     </Tooltip>
                 </IconButton>}
-            </Toolbar>
+            </Toolbar> */}
         </AppBar>;
     }
 );
-
-const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
-    return (
-        <>
-            <IconButton color="inherit">
-                <Tooltip title="Notification">
-                    <Badge badgeContent={3} color="primary">
-                        <NotificationIcon />
-                    </Badge>
-                </Tooltip>
-            </IconButton>
-            <DropdownMenu icon={<UserPanelIcon />} id="account-menu" title="Account Management">
-                <MenuItem>
-                    {getUserFullname(user)}
-                </MenuItem>
-                {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
-            </DropdownMenu>
-            <DropdownMenu icon={<HelpIcon />} id="help-menu" title="Help">
-                {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
-            </DropdownMenu>
-        </>
-    );
-};
-
-const renderMenuForAnonymous = ({ onMenuItemClick, menuItems }: MainAppBarProps) => {
-    return menuItems.anonymousMenu.map((item, index) => (
-        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>
-            {item.label}
-        </Button>
-    ));
-};
-
-const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menuItem: MainAppBarMenuItem) => void) => {
-    return menuItems.map((item, index) => (
-        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>
-            {item.label}
-        </MenuItem>
-    ));
-};
