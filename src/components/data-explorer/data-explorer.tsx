@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataColumns } from "../data-table/data-table";
@@ -115,7 +115,9 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) =>
             <Grid container justify="flex-end">
                 <IconButton onClick={event => this.props.onContextMenu(event, item)}>
-                    <MoreVertIcon />
+                    <Tooltip title="More options">
+                        <MoreVertIcon />
+                    </Tooltip>
                 </IconButton>
             </Grid>
 

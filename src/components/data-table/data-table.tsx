@@ -31,6 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     content: {
         display: 'inline-block',
+        width: '100%'
     },
     tableBody: {
         background: theme.palette.background.paper
