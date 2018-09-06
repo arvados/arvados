@@ -12,6 +12,7 @@ import { Routes } from '~/routes/routes';
 import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
 import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
 import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
+import { HelpMenu } from './help-menu';
 
 type CssRules = 'link';
 
@@ -67,6 +68,7 @@ export const MainAppBar = withStyles(styles)(
                             ? <>
                                 <NotificationsMenu />
                                 <AccountMenu />
+                                <HelpMenu />
                             </>
                             : <AnonymousMenu />}
                     </Grid>
