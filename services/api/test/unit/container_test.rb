@@ -135,7 +135,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = {
       environment: {},
-      mounts: {"BAR" => "FOO"},
+      mounts: {"BAR" => {"kind" => "FOO"}},
       output_path: "/tmp",
       priority: 1,
       runtime_constraints: {"vcpus" => 1, "ram" => 1}

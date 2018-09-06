@@ -120,6 +120,8 @@ class ContainerWorkUnit < ProxyWorkUnit
     when 'Running'
       if runtime_status[:error]
         'Failing'
+      elsif runtime_status[:warning]
+        'Warning'
       else
         state
       end
@@ -137,6 +139,8 @@ class ContainerWorkUnit < ProxyWorkUnit
     case state_label
     when 'Failing'
       'danger'
+    when 'Warning'
+      'warning'
     else
       super
     end
