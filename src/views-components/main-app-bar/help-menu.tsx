@@ -9,13 +9,14 @@ import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 
-type CssRules = 'link' | 'icon' | 'title' | 'linkTitle' | 'linkContent';
+type CssRules = 'link' | 'icon' | 'title' | 'linkTitle';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
         color: 'inherit',
         width: '100%',
+        display: 'flex'
     },
     icon: {
         width: '16px',
@@ -30,9 +31,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     linkTitle: {
         marginLeft: theme.spacing.unit
     },
-    linkContent: {
-        display: 'flex'
-    }
 });
 
 const links = [
@@ -67,10 +65,8 @@ export const HelpMenu = withStyles(styles)(
                 links.map(link =>
                     <MenuItem key={link.title}>
                         <a href={link.link} target="_blank" className={classes.link}>
-                            <div className={classes.linkContent}>
                                 <ImportContactsIcon className={classes.icon} />
                                 <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
-                            </div>
                         </a>
                     </MenuItem>
                 )
