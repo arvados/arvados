@@ -68,8 +68,7 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: uuid => <ResourceName uuid={uuid} />,
-        width: "450px"
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
@@ -77,7 +76,6 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
         configurable: true,
         filters: [],
         render: uuid => <ProcessStatus uuid={uuid} />,
-        width: "75px"
     },
     {
         name: ProjectPanelColumnNames.TYPE,
@@ -100,24 +98,21 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
                 type: ResourceKind.PROJECT
             }
         ],
-        render: uuid => <ResourceType uuid={uuid} />,
-        width: "125px"
+        render: uuid => <ResourceType uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: [],
-        render: uuid => <ResourceOwner uuid={uuid} />,
-        width: "200px"
+        render: uuid => <ResourceOwner uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: [],
-        render: uuid => <ResourceFileSize uuid={uuid} />,
-        width: "50px"
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
@@ -125,8 +120,7 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: [],
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />,
-        width: "150px"
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];
 

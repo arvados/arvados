@@ -22,7 +22,7 @@ export interface DataTableDataProps<T> {
     defaultView?: React.ReactNode;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo";
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -39,6 +39,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         textAlign: "center",
         padding: theme.spacing.unit
     },
+    tableCell: {
+        wordWrap: 'break-word'
+    }
 });
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -73,7 +76,7 @@ export const DataTable = withStyles(styles)(
         renderHeadCell = (column: DataColumn<T>, index: number) => {
             const { name, key, renderHeader, filters, sortDirection } = column;
             const { onSortToggle, onFiltersChange } = this.props;
-            return <TableCell key={key || index} style={{ width: column.width, minWidth: column.width }}>
+            return <TableCell key={key || index}>
                 {renderHeader ?
                     renderHeader() :
                     filters.length > 0
@@ -101,7 +104,7 @@ export const DataTable = withStyles(styles)(
         }
 
         renderBodyRow = (item: T, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes } = this.props;
             return <TableRow
                 hover
                 key={extractKey ? extractKey(item) : index}
@@ -109,7 +112,7 @@ export const DataTable = withStyles(styles)(
                 onContextMenu={this.handleRowContextMenu(item)}
                 onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}>
                 {this.mapVisibleColumns((column, index) => (
-                    <TableCell key={column.key || index}>
+                    <TableCell key={column.key || index} className={classes.tableCell}>
                         {column.render(item)}
                     </TableCell>
                 ))}
