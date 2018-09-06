@@ -93,10 +93,12 @@ common:
   ### Overriding default advertised hostnames/URLs
   ###
 
-  # If not false, this is the hostname that will be used for root_url and
-  # advertised in the discovery document.  By default, use the default Rails
-  # logic for deciding on a hostname.
+  # If not false, this is the hostname, port, and protocol that will be used
+  # for root_url and advertised in the discovery document.  By default, use
+  # the default Rails logic for deciding on a hostname.
   host: false
+  port: false
+  protocol: false
 
   # Base part of SSH git clone url given with repository resources. If
   # true, the default "git@git.(uuid_prefix).arvadosapi.com:" is

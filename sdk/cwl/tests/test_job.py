@@ -19,6 +19,7 @@ from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 from .mock_discovery import get_rootDesc
 from .matcher import JsonDiffMatcher, StripYAMLComments
+from .test_container import CollectionMock
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -388,7 +389,9 @@ class TestWorkflow(unittest.TestCase):
         tool, metadata = loadingContext.loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
-        mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
+        mockc = mock.MagicMock()
+        mockcollection.side_effect = lambda *args, **kwargs: CollectionMock(mockc, *args, **kwargs)
+        mockcollectionreader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "token.txt")
 
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
@@ -411,8 +414,8 @@ class TestWorkflow(unittest.TestCase):
                         'HOME': '$(task.outdir)',
                         'TMPDIR': '$(task.tmpdir)'},
                                'task.vwd': {
-                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
-                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.yml'
+                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999996+99/workflow.cwl',
+                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999996+99/cwl.input.yml'
                                },
                     'command': [u'cwltool', u'--no-container', u'--move-outputs', u'--preserve-entire-environment', u'workflow.cwl#main', u'cwl.input.yml'],
                     'task.stdout': 'cwl.output.json'}]},
@@ -429,13 +432,14 @@ class TestWorkflow(unittest.TestCase):
                      ['docker_image_locator', 'in docker', 'arvados/jobs']],
             find_or_create=True)
 
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call(
+        mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
+        mockc.open().__enter__().write.assert_has_calls([mock.call(
 '''{
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
-    "location": "/keep/99999999999999999999999999999999+118/token.txt"
+    "location": "/keep/99999999999999999999999999999999+118/token.txt",
+    "size": 0
   },
   "sleeptime": 5
 }''')])
@@ -467,7 +471,7 @@ class TestWorkflow(unittest.TestCase):
         tool, metadata = loadingContext.loader.resolve_ref("tests/wf/echo-wf.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
-        mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
+        mockcollection.side_effect = lambda *args, **kwargs: CollectionMock(mock.MagicMock(), *args, **kwargs)
 
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
@@ -489,8 +493,8 @@ class TestWorkflow(unittest.TestCase):
                         'HOME': '$(task.outdir)',
                         'TMPDIR': '$(task.tmpdir)'},
                                'task.vwd': {
-                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
-                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.yml'
+                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999996+99/workflow.cwl',
+                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999996+99/cwl.input.yml'
                                },
                     'command': [u'cwltool', u'--no-container', u'--move-outputs', u'--preserve-entire-environment', u'workflow.cwl#main', u'cwl.input.yml'],
                     'task.stdout': 'cwl.output.json'}]},

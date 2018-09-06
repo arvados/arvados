@@ -132,7 +132,8 @@ def stubs(func):
                     "listing": [{
                         "basename": "renamed.txt",
                         "class": "File",
-                        "location": "keep:99999999999999999999999999999998+99/file1.txt"
+                        "location": "keep:99999999999999999999999999999998+99/file1.txt",
+                        "size": 0
                     }],
                     'class': 'Directory'
                 },
@@ -164,7 +165,8 @@ def stubs(func):
                                   {
                                       'basename': 'renamed.txt',
                                       'class': 'File', 'location':
-                                      'keep:99999999999999999999999999999998+99/file1.txt'
+                                      'keep:99999999999999999999999999999998+99/file1.txt',
+                                      'size': 0
                                   }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
@@ -225,7 +227,8 @@ def stubs(func):
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
                              'class': 'File',
-                             'location': 'keep:99999999999999999999999999999998+99/file1.txt'
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
+                             'size': 0
                             }
                         ]}
                     },
@@ -286,14 +289,14 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies',
-            }), ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input',
-            }), ensure_unique_name=True),
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 61df2ed9ee3eb7dd9b799e5ca35305fa+1217 0:1217:workflow.cwl\n',
@@ -482,14 +485,14 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies',
-            }), ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
+            }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input',
-            }), ensure_unique_name=True)])
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False)])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -781,6 +784,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
         capture_stdout = cStringIO.StringIO()
+        collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_keepref_wf.cwl"],

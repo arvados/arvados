@@ -69,7 +69,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.container_image = "img3"
     cr.cwd = "/tmp3"
     cr.environment = {"BUP" => "BOP"}
-    cr.mounts = {"BAR" => "BAZ"}
+    cr.mounts = {"BAR" => {"kind" => "BAZ"}}
     cr.output_path = "/tmp4"
     cr.priority = 2
     cr.runtime_constraints = {"vcpus" => 4}
@@ -81,29 +81,33 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    {"vcpus" => 1},
-    {"vcpus" => 1, "ram" => nil},
-    {"vcpus" => 0, "ram" => 123},
-    {"vcpus" => "1", "ram" => "123"}
-  ].each do |invalid_constraints|
-    test "Create with #{invalid_constraints}" do
+    {"runtime_constraints" => {"vcpus" => 1}},
+    {"runtime_constraints" => {"vcpus" => 1, "ram" => nil}},
+    {"runtime_constraints" => {"vcpus" => 0, "ram" => 123}},
+    {"runtime_constraints" => {"vcpus" => "1", "ram" => "123"}},
+    {"mounts" => {"FOO" => "BAR"}},
+    {"mounts" => {"FOO" => {}}},
+    {"mounts" => {"FOO" => {"kind" => "tmp", "capacity" => 42.222}}},
+    {"command" => ["echo", 55]},
+    {"environment" => {"FOO" => 55}}
+  ].each do |value|
+    test "Create with invalid #{value}" do
       set_user_from_auth :active
       assert_raises(ActiveRecord::RecordInvalid) do
-        cr = create_minimal_req!(state: "Committed",
-                                 priority: 1,
-                                 runtime_constraints: invalid_constraints)
+        cr = create_minimal_req!({state: "Committed",
+               priority: 1}.merge(value))
         cr.save!
       end
     end
 
-    test "Update with #{invalid_constraints}" do
+    test "Update with invalid #{value}" do
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
       assert_raises(ActiveRecord::RecordInvalid) do
         cr = ContainerRequest.find_by_uuid cr.uuid
-        cr.update_attributes!(state: "Committed",
-                              runtime_constraints: invalid_constraints)
+        cr.update_attributes!({state: "Committed",
+                               priority: 1}.merge(value))
       end
     end
   end
@@ -375,7 +379,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 1],
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
     ['active_no_prefs', nil, 0],
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do

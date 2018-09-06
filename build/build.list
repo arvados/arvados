@@ -4,35 +4,35 @@
 
 #distribution(s)|name|version|iteration|type|architecture|extra fpm arguments
 debian8,debian9,centos7|python-gflags|2.0|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|google-api-python-client|1.6.2|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|google-api-python-client|1.6.2|2|python|all
 debian8,debian9,ubuntu1404,centos7|oauth2client|1.5.2|2|python|all
 debian8,debian9,ubuntu1404,centos7|pyasn1|0.1.7|2|python|all
 debian8,debian9,ubuntu1404,centos7|pyasn1-modules|0.0.5|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|rsa|3.4.2|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|uritemplate|3.0.0|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|httplib2|0.9.2|3|python|all
-debian8,debian9,centos7|ws4py|0.3.5|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|rsa|3.4.2|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|uritemplate|3.0.0|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|httplib2|0.9.2|3|python|all
+debian8,debian9,centos7,ubuntu1404,ubuntu1604|ws4py|0.4.2|2|python|all
 debian8,debian9,centos7|pykka|1.2.1|2|python|all
 debian8,debian9,ubuntu1404,centos7|six|1.10.0|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|ciso8601|1.0.6|3|python|amd64
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|ciso8601|1.0.6|3|python|amd64
 debian8,debian9,centos7|pycrypto|2.6.1|3|python|amd64
-debian8,debian9,ubuntu1404,ubuntu1604|backports.ssl_match_hostname|3.5.0.1|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|llfuse|1.2|3|python|amd64
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804|backports.ssl_match_hostname|3.5.0.1|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|llfuse|1.2|3|python|amd64
 debian8,debian9,ubuntu1404,centos7|pycurl|7.19.5.3|3|python|amd64
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|pyyaml|3.12|2|python|amd64
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|rdflib|4.2.2|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|pyyaml|3.12|2|python|amd64
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|rdflib|4.2.2|2|python|all
 debian8,debian9,ubuntu1404,centos7|shellescape|3.4.1|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|mistune|0.7.3|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|typing|3.5.3.0|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|avro|1.8.1|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|mistune|0.7.3|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|typing|3.6.4|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|avro|1.8.1|2|python|all
 debian8,debian9,ubuntu1404,centos7|ruamel.ordereddict|0.4.9|2|python|amd64
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|cachecontrol|0.11.7|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|pathlib2|2.3.2|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|scandir|1.7|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|docker-py|1.7.2|2|python3|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|cachecontrol|0.11.7|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|pathlib2|2.3.2|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|scandir|1.7|2|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|docker-py|1.7.2|2|python3|all
 debian8,debian9,centos7|six|1.10.0|2|python3|all
 debian8,debian9,ubuntu1404,centos7|requests|2.12.4|2|python3|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|websocket-client|0.37.0|2|python3|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|websocket-client|0.37.0|2|python3|all
 ubuntu1404|requests|2.4.3|2|python|all
 centos7|contextlib2|0.5.4|2|python|all
 centos7|isodate|0.5.4|2|python|all
@@ -40,8 +40,10 @@ centos7|python-daemon|2.1.2|1|python|all
 centos7|pbr|0.11.1|2|python|all
 centos7|pyparsing|2.1.10|2|python|all
 centos7|keepalive|0.5|2|python|all
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|lockfile|0.12.2|2|python|all|--epoch 1
-debian8,debian9,ubuntu1404,ubuntu1604,centos7|subprocess32|3.5.1|2|python|all
+centos7|networkx|1.11|0|python|all
+centos7|psutil|5.0.1|0|python|all
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|lockfile|0.12.2|2|python|all|--epoch 1
+debian8,debian9,ubuntu1404,ubuntu1604,ubuntu1804,centos7|subprocess32|3.5.1|2|python|all
 all|ruamel.yaml|0.14.12|2|python|amd64|--python-setup-py-arguments --single-version-externally-managed
 all|cwltest|1.0.20180518074130|4|python|all|--depends 'python-futures >= 3.0.5' --depends 'python-subprocess32 >= 3.5.0'
 all|junit-xml|1.8|3|python|all
@@ -50,3 +52,6 @@ all|futures|3.0.5|2|python|all
 all|future|0.16.0|2|python|all
 all|future|0.16.0|2|python3|all
 all|mypy-extensions|0.3.0|1|python|all
+all|prov|1.5.1|0|python|all
+all|bagit|1.6.4|0|python|all
+all|typing-extensions|3.6.5|0|python|all

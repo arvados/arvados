@@ -1,0 +1,3 @@
+fastq1:
+  class: File
+  location: keep:20850f01122e860fb878758ac1320877+71/sample1_S01_R1_001.fastq.gz

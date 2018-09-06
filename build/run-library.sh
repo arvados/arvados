@@ -20,17 +20,19 @@ debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
 }
 
-find_easy_install() {
-    for version_suffix in "$@"; do
-        if "easy_install$version_suffix" --version >/dev/null 2>&1; then
-            echo "easy_install$version_suffix"
+find_python_program() {
+    prog="$1"
+    shift
+    for prog in "$@"; do
+        if "$prog" --version >/dev/null 2>&1; then
+            echo "$prog"
             return 0
         fi
     done
     cat >&2 <<EOF
 $helpmessage
 
-Error: easy_install$1 (from Python setuptools module) not found
+Error: $prog (from Python setuptools module) not found
 
 EOF
     exit 1
@@ -60,7 +62,7 @@ version_from_git() {
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
     ARVADOS_BUILDING_VERSION="$(git describe --abbrev=0).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
-} 
+}
 
 nohash_version_from_git() {
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
@@ -264,7 +266,7 @@ test_package_presence() {
     # Get the list of packages from the repos
 
     if [[ "$FORMAT" == "deb" ]]; then
-      debian_distros="jessie precise stretch trusty wheezy xenial"
+      debian_distros="jessie precise stretch trusty wheezy xenial bionic"
 
       for D in ${debian_distros}; do
         if [ ${pkgname:0:3} = "lib" ]; then
@@ -273,11 +275,14 @@ test_package_presence() {
           repo_subdir=${pkgname:0:1}
         fi
 
-        repo_pkg_list=$(curl -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
+        repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
         echo ${repo_pkg_list} |grep -q ${complete_pkgname}
-        if [ $? -eq 0 ]; then
+        if [ $? -eq 0 ] ; then
           echo "Package $complete_pkgname exists, not rebuilding!"
           curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+          return 1
+	elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+          echo "Package $complete_pkgname exists, not rebuilding!"
           return 1
         else
           echo "Package $complete_pkgname not found, building"
@@ -388,7 +393,7 @@ fpm_build () {
           # Make sure we build with that for consistency.
           python=python2.7
           set -- "$@" --python-bin python2.7 \
-              --python-easyinstall "$EASY_INSTALL2" \
+              "${PYTHON_FPM_INSTALLER[@]}" \
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
               --prefix "$PYTHON2_PREFIX" \
               --python-install-lib "$PYTHON2_INSTALL_LIB" \
@@ -404,7 +409,7 @@ fpm_build () {
           PACKAGE_TYPE=python
           python=python3
           set -- "$@" --python-bin python3 \
-              --python-easyinstall "$EASY_INSTALL3" \
+              "${PYTHON3_FPM_INSTALLER[@]}" \
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
               --prefix "$PYTHON3_PREFIX" \
               --python-install-lib "$PYTHON3_INSTALL_LIB" \

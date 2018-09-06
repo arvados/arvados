@@ -129,6 +129,8 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     sc = []
     def only_real(obj):
+        # Only interested in local files than need to be uploaded,
+        # don't include file literals, keep references, etc.
         if obj.get("location", "").startswith("file:"):
             sc.append(obj)
 
@@ -168,8 +170,13 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     visit_class(workflowobj, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
 
-    for d in discovered:
-        sc.extend(discovered[d])
+    for d in list(discovered.keys()):
+        # Only interested in discovered secondaryFiles which are local
+        # files that need to be uploaded.
+        if d.startswith("file:"):
+            sc.extend(discovered[d])
+        else:
+            del discovered[d]
 
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",

@@ -78,14 +78,21 @@ class ApplicationController < ActionController::Base
     @distinct = nil
     @response_resource_name = nil
     @attrs = nil
+    @extra_included = nil
   end
 
   def default_url_options
+    options = {}
     if Rails.configuration.host
-      {:host => Rails.configuration.host}
-    else
-      {}
+      options[:host] = Rails.configuration.host
     end
+    if Rails.configuration.port
+      options[:port] = Rails.configuration.port
+    end
+    if Rails.configuration.protocol
+      options[:protocol] = Rails.configuration.protocol
+    end
+    options
   end
 
   def index
@@ -382,7 +389,9 @@ class ApplicationController < ActionController::Base
       req_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
     end
     response.headers['X-Request-Id'] = Thread.current[:request_id] = req_id
-    yield
+    Rails.logger.tagged(req_id) do
+      yield
+    end
     Thread.current[:request_id] = nil
   end
 
@@ -492,6 +501,9 @@ class ApplicationController < ActionController::Base
       :limit => @limit,
       :items => @objects.as_api_response(nil, {select: @select})
     }
+    if @extra_included
+      list[:included] = @extra_included.as_api_response(nil, {select: @select})
+    end
     case params[:count]
     when nil, '', 'exact'
       if @objects.respond_to? :except

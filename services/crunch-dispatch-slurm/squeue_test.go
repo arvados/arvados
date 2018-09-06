@@ -7,6 +7,7 @@ package main
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -24,6 +25,7 @@ func (s *SqueueSuite) TestReleasePending(c *C) {
 		queue: uuids[0] + " 10000 4294000000 PENDING Resources\n" + uuids[1] + " 10000 4294000111 PENDING Resources\n" + uuids[2] + " 10000 0 PENDING BadConstraints\n",
 	}
 	sqc := &SqueueChecker{
+		Logger: logrus.StandardLogger(),
 		Slurm:  slurm,
 		Period: time.Hour,
 	}
@@ -88,6 +90,7 @@ func (s *SqueueSuite) TestReniceAll(c *C) {
 			queue: test.squeue,
 		}
 		sqc := &SqueueChecker{
+			Logger:         logrus.StandardLogger(),
 			Slurm:          slurm,
 			PrioritySpread: test.spread,
 			Period:         time.Hour,
@@ -112,6 +115,7 @@ func (s *SqueueSuite) TestReniceInvalidNiceValue(c *C) {
 		rejectNice10K: true,
 	}
 	sqc := &SqueueChecker{
+		Logger:         logrus.StandardLogger(),
 		Slurm:          slurm,
 		PrioritySpread: 1,
 		Period:         time.Hour,
@@ -155,6 +159,7 @@ func (s *SqueueSuite) TestSetPriorityBeforeQueued(c *C) {
 
 	slurm := &slurmFake{}
 	sqc := &SqueueChecker{
+		Logger: logrus.StandardLogger(),
 		Slurm:  slurm,
 		Period: time.Hour,
 	}

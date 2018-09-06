@@ -55,7 +55,8 @@ h2. Create a project for Docker images
 Here we create a default project for the standard Arvados Docker images, and give all users read access to it. The project is owned by the system user.
 
 <notextile>
-<pre><code>~$ <span class="userinput">project_uuid=`arv --format=uuid group create --group "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`</span>
+<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
+~$ <span class="userinput">project_uuid=`arv --format=uuid group create --group "{\"owner_uuid\":\"$uuid_prefix-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`</span>
 ~$ <span class="userinput">echo "Arvados project uuid is '$project_uuid'"</span>
 ~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
 <span class="userinput">{
