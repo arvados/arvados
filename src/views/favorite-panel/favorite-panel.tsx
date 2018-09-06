@@ -28,6 +28,10 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
+import { FavoritesState } from '../../store/favorites/favorites-reducer';
+import { RootState } from '~/store/store';
+import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -118,7 +122,7 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
 ];
 
 interface FavoritePanelDataProps {
-    currentItemId: string;
+    favorites: FavoritesState;
 }
 
 interface FavoritePanelActionProps {
@@ -127,6 +131,9 @@ interface FavoritePanelActionProps {
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
+const mapStateToProps = ({ favorites }: RootState): FavoritePanelDataProps => ({
+    favorites
+});
 
 const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
@@ -154,17 +161,26 @@ type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & Di
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
-    connect(undefined, mapDispatchToProps)(
+    connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<FavoritePanelProps> {
             render() {
-                return <DataExplorer
-                    id={FAVORITE_PANEL_ID}
-                    onRowClick={this.props.onItemClick}
-                    onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu}
-                    defaultIcon={FavoriteIcon}
-                    defaultMessages={['Your favorites list is empty.']}
-                    contextMenuColumn={true}/>;
+                return this.hasAnyFavorites()
+                    ? <DataExplorer
+                        id={FAVORITE_PANEL_ID}
+                        onRowClick={this.props.onItemClick}
+                        onRowDoubleClick={this.props.onItemDoubleClick}
+                        onContextMenu={this.props.onContextMenu}
+                        contextMenuColumn={true}
+                        dataTableDefaultView={<DataTableDefaultView icon={FavoriteIcon}/>} />
+                    : <PanelDefaultView
+                        icon={FavoriteIcon}
+                        messages={['Your favorites list is empty.']} />;
+            }
+
+            hasAnyFavorites = () => {
+                return Object
+                    .keys(this.props.favorites)
+                    .find(uuid => this.props.favorites[uuid]);
             }
         }
     )

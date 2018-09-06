@@ -12,7 +12,7 @@ import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, Resource } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
@@ -25,8 +25,11 @@ import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
-import { openCollectionCreateDialog } from '../../store/collections/collection-create-actions';
+import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
+import { filterResources } from '~/store/resources/resources';
+import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = 'root' | "toolbar" | "button";
 
@@ -151,15 +154,29 @@ export const ProjectPanel = withStyles(styles)(
                             New project
                         </Button>
                     </div>
-                    <DataExplorer
-                        id={PROJECT_PANEL_ID}
-                        onRowClick={this.handleRowClick}
-                        onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
-                        defaultIcon={ProjectIcon}
-                        defaultMessages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']}
-                        contextMenuColumn={true}/>
+                    {this.hasAnyItems()
+                        ? <DataExplorer
+                            id={PROJECT_PANEL_ID}
+                            onRowClick={this.handleRowClick}
+                            onRowDoubleClick={this.handleRowDoubleClick}
+                            onContextMenu={this.handleContextMenu}
+                            contextMenuColumn={true}
+                            dataTableDefaultView={<DataTableDefaultView icon={ProjectIcon}/>} />
+                        : <PanelDefaultView
+                            icon={ProjectIcon}
+                            messages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
+                    }
+
                 </div>;
+            }
+
+            hasAnyItems = () => {
+                const resources = filterResources(this.isCurrentItemChild)(this.props.resources);
+                return resources.length > 0;
+            }
+
+            isCurrentItemChild = (resource: Resource) => {
+                return resource.ownerUuid === this.props.currentItemId;
             }
 
             handleNewProjectClick = () => {

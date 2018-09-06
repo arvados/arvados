@@ -73,15 +73,6 @@ describe("<DataExplorer />", () => {
         expect(onRowClick).toHaveBeenCalledWith("rowClick");
     });
 
-    it("does not render <DataTable/> if there is no items", () => {
-        const dataExplorer = mount(<DataExplorer
-            {...mockDataExplorerProps()}
-            items={[]}
-            onSetColumns={jest.fn()} />);
-        expect(dataExplorer.find(DataTable)).toHaveLength(0);
-        expect(dataExplorer.find(DefaultView)).toHaveLength(1);
-    });
-
     it("communicates with <TablePagination/>", () => {
         const onChangePage = jest.fn();
         const onChangeRowsPerPage = jest.fn();

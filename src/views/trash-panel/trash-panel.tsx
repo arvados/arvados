@@ -28,9 +28,11 @@ import {
 } from "~/views-components/data-explorer/renderers";
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
-import { toggleCollectionTrashed, toggleProjectTrashed, toggleTrashed } from "~/store/trash/trash-actions";
+import { toggleTrashed } from "~/store/trash/trash-actions";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
+import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = "toolbar" | "button";
 
@@ -71,7 +73,7 @@ export const ResourceRestore =
                 ));
             }
         }}>
-            <RestoreFromTrashIcon/>
+            <RestoreFromTrashIcon />
         </IconButton>
     );
 
@@ -156,15 +158,23 @@ export const TrashPanel = withStyles(styles)(
     }))(
         class extends React.Component<TrashPanelProps> {
             render() {
-                return <DataExplorer
-                    id={TRASH_PANEL_ID}
-                    onRowClick={this.handleRowClick}
-                    onRowDoubleClick={this.handleRowDoubleClick}
-                    onContextMenu={this.handleContextMenu}
-                    defaultIcon={TrashIcon}
-                    defaultMessages={['Your trash list is empty.']}
-                    contextMenuColumn={false}/>
-                ;
+                return this.hasAnyTrashedResources()
+                    ? <DataExplorer
+                        id={TRASH_PANEL_ID}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={false}
+                        dataTableDefaultView={<DataTableDefaultView icon={TrashIcon}/>} />
+                    : <PanelDefaultView
+                        icon={TrashIcon}
+                        messages={['Your trash list is empty.']} />;
+            }
+
+            hasAnyTrashedResources = () => {
+                // TODO: implement check if there is anything in the trash,
+                //       without taking pagination into the account
+                return true;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
