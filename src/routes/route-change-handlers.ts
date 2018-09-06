@@ -4,8 +4,9 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import {  matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute } from './routes';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute } from './routes';
 import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog } from '~/store/workbench/workbench-actions';
+import { navigateToRootProject } from '~/store/navigation/navigation-action';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -14,6 +15,7 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 };
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
+    const rootMatch = matchRootRoute(pathname);
     const projectMatch = matchProjectRoute(pathname);
     const collectionMatch = matchCollectionRoute(pathname);
     const favoriteMatch = matchFavoritesRoute(pathname);
@@ -33,5 +35,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadProcess(processMatch.params.id));
     } else if (processLogMatch) {
         store.dispatch(loadProcessLog(processLogMatch.params.id));
+    } else if (rootMatch) {
+        store.dispatch(navigateToRootProject);
     }
 };

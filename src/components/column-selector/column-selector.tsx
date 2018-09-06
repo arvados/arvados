@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem } from '@material-ui/core';
+import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
 import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
@@ -56,5 +56,7 @@ export const ColumnSelector = withStyles(styles)(
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>
     <IconButton {...props}>
-        <MenuIcon />
+        <Tooltip title="Filters">
+            <MenuIcon />
+        </Tooltip>
     </IconButton>;
