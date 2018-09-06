@@ -5,7 +5,7 @@
 import * as React from "react";
 import { TreeItem } from "../tree/tree";
 import { ProjectIcon, MoreOptionsIcon, DefaultIcon, CollectionIcon } from "../icon/icon";
-import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles } from "@material-ui/core";
+import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles, Tooltip } from '@material-ui/core';
 import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
 import { FileTreeData } from "./file-tree-data";
@@ -50,7 +50,9 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                 <IconButton
                     className={classes.button}
                     onClick={this.handleClick}>
-                    <MoreOptionsIcon />
+                    <Tooltip title="More options">
+                        <MoreOptionsIcon />
+                    </Tooltip>
                 </IconButton>
             </div >;
         }
@@ -61,7 +63,7 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
     });
 
 const getIcon = (item: TreeItem<FileTreeData>) => {
-    switch(item.data.type){
+    switch (item.data.type) {
         case 'directory':
             return ProjectIcon;
         case 'file':
