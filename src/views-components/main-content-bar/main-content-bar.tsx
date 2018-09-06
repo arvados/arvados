@@ -17,12 +17,16 @@ export const MainContentBar = connect(undefined, {
     onDetailsPanelToggle: detailsPanelActions.TOGGLE_DETAILS_PANEL
 })((props: MainContentBarProps) =>
     <Toolbar>
-        <Grid justify="space-between">
-            <Breadcrumbs />
-            <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                <Tooltip title="Additional Info">
-                    <DetailsIcon />
-                </Tooltip>
-            </IconButton>
+        <Grid container>
+            <Grid container item xs alignItems="center">
+                <Breadcrumbs />
+            </Grid>
+            <Grid item>
+                <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
+                    <Tooltip title="Additional Info">
+                        <DetailsIcon />
+                    </Tooltip>
+                </IconButton>
+            </Grid>
         </Grid>
     </Toolbar>);

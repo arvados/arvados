@@ -39,39 +39,29 @@ import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/par
 
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
+import { Grid } from '@material-ui/core';
 
-const APP_BAR_HEIGHT = 100;
-
-type CssRules = 'root' | 'appBar' | 'content' | 'contentWrapper';
+type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        flexGrow: 1,
-        zIndex: 1,
         overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
         width: '100vw',
         height: '100vh'
     },
-    appBar: {
-        zIndex: theme.zIndex.drawer + 1,
-        position: "absolute",
-        width: "100%"
-    },
     contentWrapper: {
-        backgroundColor: theme.palette.background.default,
-        display: "flex",
-        flexGrow: 1,
+        background: theme.palette.background.default,
         minWidth: 0,
-        paddingTop: APP_BAR_HEIGHT
     },
     content: {
-        padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
-        overflowY: "auto",
-        flexGrow: 1,
-        position: 'relative'
+        minWidth: 0,
+        overflow: 'auto',
+        paddingLeft: theme.spacing.unit * 3,
+        paddingRight: theme.spacing.unit * 3,
     },
+    appBar: {
+        zIndex: 1,
+    }
 });
 
 interface WorkbenchDataProps {
@@ -107,51 +97,73 @@ export const Workbench = withStyles(styles)(
             };
 
             render() {
-                const { classes, user } = this.props;
-                return (
-                    <div className={classes.root}>
-                        <div className={classes.appBar}>
+                return <>
+                    <Grid
+                        container
+                        direction="column"
+                        className={this.props.classes.root}>
+                        <Grid className={this.props.classes.appBar}>
                             <MainAppBar
                                 searchText={this.state.searchText}
                                 user={this.props.user}
                                 onSearch={this.onSearch} />
-                        </div>
-                        {user && <SidePanel />}
-                        <main className={classes.contentWrapper}>
-                            {this.props.user && <MainContentBar />}
-                            <div className={classes.content}>
-                                <Switch>
-                                    <Route path={Routes.PROJECTS} component={ProjectPanel} />
-                                    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
-                                    <Route path={Routes.FAVORITES} component={FavoritePanel} />
-                                    <Route path={Routes.PROCESSES} component={ProcessPanel} />
-                                    <Route path={Routes.TRASH} component={TrashPanel} />
-                                    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
-                                </Switch>
-                            </div>
-                            {user && <DetailsPanel />}
-                        </main>
-                        <ContextMenu />
-                        <Snackbar />
-                        <CreateProjectDialog />
-                        <CreateCollectionDialog />
-                        <RenameFileDialog />
-                        <PartialCopyCollectionDialog />
-                        <FileRemoveDialog />
-                        <CopyCollectionDialog />
-                        <FileRemoveDialog />
-                        <MultipleFilesRemoveDialog />
-                        <UpdateCollectionDialog />
-                        <FilesUploadCollectionDialog />
-                        <UpdateProjectDialog />
-                        <MoveCollectionDialog />
-                        <MoveProjectDialog />
-                        <CurrentTokenDialog
-                            currentToken={this.props.currentToken}
-                            open={this.state.isCurrentTokenDialogOpen}
-                            handleClose={this.toggleCurrentTokenModal} />
-                    </div>
-                );
+                        </Grid>
+                        {this.props.user &&
+                            <Grid
+                                container
+                                item
+                                xs
+                                alignItems="stretch"
+                                wrap="nowrap">
+                                <Grid item>
+                                    <SidePanel />
+                                </Grid>
+                                <Grid
+                                    container
+                                    item
+                                    xs
+                                    component="main"
+                                    direction="column"
+                                    className={this.props.classes.contentWrapper}>
+                                    <Grid item>
+                                        <MainContentBar />
+                                    </Grid>
+                                    <Grid xs className={this.props.classes.content}>
+                                        <Switch>
+                                            <Route path={Routes.PROJECTS} component={ProjectPanel} />
+                                            <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+                                            <Route path={Routes.FAVORITES} component={FavoritePanel} />
+                                            <Route path={Routes.PROCESSES} component={ProcessPanel} />
+                                            <Route path={Routes.TRASH} component={TrashPanel} />
+                                            <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
+                                        </Switch>
+                                    </Grid>
+                                </Grid>
+                                <Grid item>
+                                    <DetailsPanel />
+                                </Grid>
+                            </Grid>}
+                    </Grid>
+                    <ContextMenu />
+                    <Snackbar />
+                    <CreateProjectDialog />
+                    <CreateCollectionDialog />
+                    <RenameFileDialog />
+                    <PartialCopyCollectionDialog />
+                    <FileRemoveDialog />
+                    <CopyCollectionDialog />
+                    <FileRemoveDialog />
+                    <MultipleFilesRemoveDialog />
+                    <UpdateCollectionDialog />
+                    <FilesUploadCollectionDialog />
+                    <UpdateProjectDialog />
+                    <MoveCollectionDialog />
+                    <MoveProjectDialog />
+                    <CurrentTokenDialog
+                        currentToken={this.props.currentToken}
+                        open={this.state.isCurrentTokenDialogOpen}
+                        handleClose={this.toggleCurrentTokenModal} />
+                </>;
             }
 
             onSearch = (searchText: string) => {

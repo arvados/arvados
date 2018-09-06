@@ -22,20 +22,24 @@ import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 import { getResource } from '../../store/resources/resources';
 
-type CssRules = 'drawerPaper' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'headerTitle' | 'tabContainer';
+type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'headerTitle' | 'tabContainer';
 
 const drawerWidth = 320;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    container: {
+    root: {
         width: 0,
-        position: 'relative',
-        height: 'auto',
+        overflowX: 'hidden',
         transition: 'width 0.5s ease',
-        '&$opened': {
-            width: drawerWidth
-        }
+        background: theme.palette.background.paper,
+        borderLeft: `1px solid ${theme.palette.divider}`,
+        height: '100%',
     },
-    opened: {},
+    opened: {
+        width: drawerWidth,
+    },
+    container: {
+        width: drawerWidth,
+    },
     drawerPaper: {
         position: 'relative',
         width: drawerWidth
@@ -113,10 +117,9 @@ export const DetailsPanel = withStyles(styles)(
                 const { classes, onCloseDrawer, isOpened, item } = this.props;
                 const { tabsValue } = this.state;
                 return (
-                    <Typography component="div"
-                        className={classnames([classes.container, { [classes.opened]: isOpened }])}>
-                        <Drawer variant="permanent" anchor="right" classes={{ paper: classes.drawerPaper }}>
-                            <Typography component="div" className={classes.headerContainer}>
+                    <div className={classnames([classes.root, { [classes.opened]: isOpened }])}>
+                        <div className={classes.container}>
+                            <div className={classes.headerContainer}>
                                 <Grid container alignItems='center' justify='space-around'>
                                     <Grid item xs={2}>
                                         {item.getIcon(classes.headerIcon)}
@@ -132,7 +135,7 @@ export const DetailsPanel = withStyles(styles)(
                                         </IconButton>
                                     </Grid>
                                 </Grid>
-                            </Typography>
+                            </div>
                             <Tabs value={tabsValue} onChange={this.handleChange}>
                                 <Tab disableRipple label="Details" />
                                 <Tab disableRipple label="Activity" disabled />
@@ -145,8 +148,8 @@ export const DetailsPanel = withStyles(styles)(
                             {tabsValue === 1 && this.renderTabContainer(
                                 <Grid container direction="column" />
                             )}
-                        </Drawer>
-                    </Typography>
+                        </div>
+                    </div>
                 );
             }
         }

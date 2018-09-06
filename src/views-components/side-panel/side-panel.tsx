@@ -13,18 +13,16 @@ import { navigateFromSidePanel } from '../../store/side-panel/side-panel-action'
 
 const DRAWER_WITDH = 240;
 
-type CssRules = 'drawerPaper' | 'toolbar';
+type CssRules = 'root';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    drawerPaper: {
-        position: 'relative',
+    root: {
+        background: theme.palette.background.paper,
+        borderRight: `1px solid ${theme.palette.divider}`,
+        height: '100%',
+        overflowX: 'auto',
         width: DRAWER_WITDH,
-        display: 'flex',
-        flexDirection: 'column',
-        paddingTop: 58,
-        overflow: 'auto',
-    },
-    toolbar: theme.mixins.toolbar
+    }
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
@@ -37,9 +35,6 @@ export const SidePanel = compose(
     withStyles(styles),
     connect(undefined, mapDispatchToProps)
 )(({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
-    <Drawer
-        variant="permanent"
-        classes={{ paper: classes.drawerPaper }}>
-        <div className={classes.toolbar} />
+    <div className={classes.root}>
         <SidePanelTree {...props} />
-    </Drawer>);
+    </div>);
