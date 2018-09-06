@@ -22,7 +22,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         marginLeft: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 0.5,
+        paddingBottom: theme.spacing.unit * 0.5,
         outline: 'none',
     },
     linkTitle: {
@@ -30,36 +30,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-enum helpMenuLinks {
-    PIPELINES_DATASETS = "https://dev.arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets",
-    TUTORIALS = "http://doc.arvados.org/user/",
-    API_REFERENCE = "http://doc.arvados.org/api/",
-    SDK_REFERENCE = "http://doc.arvados.org/sdk/"
-}
-
-enum helpMenuTitles {
-    PIPELINES_DATASETS = "Public Pipelines and Data sets",
-    TUTORIALS = "Tutorials and User guide",
-    API_REFERENCE = "API Reference",
-    SDK_REFERENCE = "SDK Reference"
-}
-
 const links = [
     {
-        title: helpMenuTitles.PIPELINES_DATASETS,
-        link: helpMenuLinks.PIPELINES_DATASETS
+        title: "Public Pipelines and Data sets",
+        link: "https://dev.arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets",
     },
     {
-        title: helpMenuTitles.TUTORIALS,
-        link: helpMenuLinks.TUTORIALS
+        title: "Tutorials and User guide",
+        link: "http://doc.arvados.org/user/",
     },
     {
-        title: helpMenuTitles.API_REFERENCE,
-        link: helpMenuLinks.API_REFERENCE
+        title: "API Reference",
+        link: "http://doc.arvados.org/api/",
     },
     {
-        title: helpMenuTitles.SDK_REFERENCE,
-        link: helpMenuLinks.SDK_REFERENCE
+        title: "SDK Reference",
+        link: "http://doc.arvados.org/sdk/"
     },
 ];
 
@@ -72,12 +58,12 @@ export const HelpMenu = withStyles(styles)(
             <Typography variant="body1" className={classes.title}>Help</Typography>
             {
                 links.map(link =>
-                <a key={link.title} href={link.link} target="_blank" className={classes.link}>
-                    <MenuItem>
-                        <HelpIcon className={classes.icon} />
-                        <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
-                    </MenuItem>
-                </a>)
+                    <a key={link.title} href={link.link} target="_blank" className={classes.link}>
+                        <MenuItem>
+                            <HelpIcon className={classes.icon} />
+                            <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                        </MenuItem>
+                    </a>)
             }
         </DropdownMenu>
 );

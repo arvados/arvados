@@ -38,7 +38,6 @@ import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-import { HelpMenu } from '~/views-components/main-app-bar/help-menu';
 
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 
@@ -154,7 +153,6 @@ export const Workbench = withStyles(styles)(
                 return (
                     <div className={classes.root}>
                         <div className={classes.appBar}>
-                        <HelpMenu/>
                             <MainAppBar
                                 breadcrumbs={Breadcrumbs}
                                 searchText={this.state.searchText}
