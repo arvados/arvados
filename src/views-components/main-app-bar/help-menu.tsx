@@ -5,7 +5,7 @@
 import * as React from "react";
 import { MenuItem, Typography } from "@material-ui/core";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { HelpIcon } from "~/components/icon/icon";
+import { ImportContacts } from "~/components/icon/icon";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 
@@ -60,7 +60,7 @@ export const HelpMenu = withStyles(styles)(
                 links.map(link =>
                     <a key={link.title} href={link.link} target="_blank" className={classes.link}>
                         <MenuItem>
-                            <HelpIcon className={classes.icon} />
+                            <ImportContacts className={classes.icon} />
                             <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
                         </MenuItem>
                     </a>)
