@@ -63,7 +63,8 @@ export const MainAppBar = withStyles(styles)(
                         xs={3}
                         container
                         alignItems="center"
-                        justify="flex-end">
+                        justify="flex-end"
+                        wrap="nowrap">
                         {props.user
                             ? <>
                                 <NotificationsMenu />
