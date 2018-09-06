@@ -31,18 +31,20 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         minWidth: "20px",
     },
     dialogActions: {
-        marginBottom: "24px"
+        marginBottom: theme.spacing.unit * 3
     }
 });
 
-interface DialogProjectProps {
+interface DialogProjectDataProps {
     cancelLabel?: string;
     dialogTitle: string;
     formFields: React.ComponentType<InjectedFormProps<any> & WithDialogProps<any>>;
     submitLabel?: string;
 }
 
-export const FormDialog = withStyles(styles)((props: DialogProjectProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>) =>
+type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>;
+
+export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
     <Dialog
         open={props.open}
         onClose={props.closeDialog}
