@@ -27,6 +27,7 @@ interface MainAppBarDataProps {
     searchText: string;
     searchDebounce?: number;
     user?: User;
+    buildInfo?: string;
 }
 
 export interface MainAppBarActionProps {
@@ -40,12 +41,13 @@ export const MainAppBar = withStyles(styles)(
         return <AppBar position="static">
             <Toolbar>
                 <Grid container justify="space-between">
-                    <Grid container item xs={3} alignItems="center">
-                        <Typography variant="headline" color="inherit" noWrap>
+                    <Grid container item xs={3} direction="column" justify="center">
+                        <Typography variant="title" color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
                                 arvados workbench
                             </Link>
                         </Typography>
+                        <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
                     </Grid>
                     <Grid
                         item

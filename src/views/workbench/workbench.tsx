@@ -102,7 +102,8 @@ export const Workbench = withStyles(styles)(
                             <MainAppBar
                                 searchText={this.state.searchText}
                                 user={this.props.user}
-                                onSearch={this.onSearch} />
+                                onSearch={this.onSearch}
+                                buildInfo={this.props.buildInfo} />
                         </Grid>
                         {this.props.user &&
                             <Grid
