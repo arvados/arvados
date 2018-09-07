@@ -194,15 +194,14 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             self.task_queue.add(partial(j.done, record))
             del self.processes[uuid]
 
-    def runtime_status_error(self, child_label, child_uuid, error_log):
+    def runtime_status_update(self, kind, message, detail=None):
         """
-        Called from a failing child container. Records the first child error
-        on this runner's runtime_status field.
-        On subsequent errors, updates the 'error' key to show how many additional
-        failures happened.
+        Updates the runtime_status field on the runner container.
+        Called from a failing child container: records the first child error
+        or updates the error count on subsequent error statuses.
+        Also called from other parts that need to report errros, warnings or just
+        activity statuses.
         """
-        error_msg = "%s %s failed" % (child_label, child_uuid)
-        logger.info(error_msg)
         with self.workflow_eval_lock:
             try:
                 current = self.api.containers().current().execute(num_retries=self.num_retries)
@@ -212,34 +211,49 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     logger.info("Getting current container: %s", e)
                 return
             runtime_status = current.get('runtime_status', {})
-            # Save first fatal error
-            if not runtime_status.get('error'):
-                runtime_status.update({
-                    'error': error_msg,
-                    'errorDetail': error_log or "No error logs available"
-                })
-            # Further errors are only mentioned as a count
-            else:
-                error_msg = re.match(
-                    r'^(.*failed)\s*\(?', runtime_status.get('error')).groups()[0]
-                more_failures = re.match(
-                    r'.*\(.*(\d+) more\)', runtime_status.get('error'))
-                if more_failures:
-                    failure_qty = int(more_failures.groups()[0])
+            # In case of status being an error, only report the first one.
+            if kind == 'error':
+                if not runtime_status.get('error'):
                     runtime_status.update({
-                        'error': "%s (and %d more)" % (error_msg, failure_qty+1)
+                        'error': message,
+                        'errorDetail': detail or "No error logs available"
                     })
+                # Further errors are only mentioned as a count.
                 else:
+                    # Get anything before an optional 'and N more' string.
+                    error_msg = re.match(
+                        r'^(.*?)(?=\s*\(and \d+ more\)|$)', runtime_status.get('error')).groups()[0]
+                    more_failures = re.match(
+                        r'.*\(and (\d+) more\)', runtime_status.get('error'))
+                    if more_failures:
+                        failure_qty = int(more_failures.groups()[0])
+                        runtime_status.update({
+                            'error': "%s (and %d more)" % (error_msg, failure_qty+1)
+                        })
+                    else:
+                        runtime_status.update({
+                            'error': "%s (and 1 more)" % error_msg
+                        })
+            elif kind in ['warning', 'activity']:
+                # Record the last warning/activity status without regard of
+                # previous occurences.
+                runtime_status.update({
+                    kind: message
+                })
+                if detail is not None:
                     runtime_status.update({
-                        'error': "%s (and 1 more)" % error_msg
+                        kind+"Detail": detail
                     })
+            else:
+                # Ignore any other status kind
+                return
             try:
                 self.api.containers().update(uuid=current['uuid'],
                                             body={
                                                 'runtime_status': runtime_status,
                                             }).execute(num_retries=self.num_retries)
             except Exception as e:
-                logger.error("Updating runtime_status: %s", e)
+                logger.info("Couldn't update runtime_status: %s", e)
 
     def wrapped_callback(self, cb, obj, st):
         with self.workflow_eval_lock:

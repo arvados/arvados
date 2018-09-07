@@ -324,7 +324,10 @@ class ArvadosContainer(JobBase):
                 error_log = done.logtail(
                     logc, logger.error,
                     "%s (%s) error log:" % (label, record["uuid"]), maxlen=40)
-                self.arvrunner.runtime_status_error(label, record["uuid"], error_log)
+                self.arvrunner.runtime_status_update(
+                    "error",
+                    "%s %s failed" % (label, record["uuid"]),
+                    error_log)
 
             if record["output_uuid"]:
                 if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:

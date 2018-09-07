@@ -542,9 +542,9 @@ class TestContainer(unittest.TestCase):
             "modified_at": "2017-05-26T12:01:22Z"
         })
 
-        runner.runtime_status_error.assert_called_with(
-            '[container testjob]',
-            'zzzzz-xvhdp-zzzzzzzzzzzzzzz',
+        runner.runtime_status_update.assert_called_with(
+            'error',
+            '[container testjob] zzzzz-xvhdp-zzzzzzzzzzzzzzz failed',
             'some error detail'
         )
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "permanentFail")
