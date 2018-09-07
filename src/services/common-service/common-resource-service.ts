@@ -32,7 +32,7 @@ export interface Errors {
 export enum CommonResourceServiceError {
     UNIQUE_VIOLATION = 'UniqueViolation',
     OWNERSHIP_CYCLE = 'OwnershipCycle',
-    MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingFinalState',
+    MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }

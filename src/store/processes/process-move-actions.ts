@@ -28,6 +28,8 @@ export const openMoveProcessDialog = (resource: { name: string, uuid: string }) 
             } else {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'You can move only draft processes.', hideDuration: 2000 }));
             }
+        } else {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 2000 }));
         }
     };
 
@@ -46,7 +48,7 @@ export const moveProcess = (resource: MoveToFormDialogData) =>
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'A process with the same name already exists in the target project.' }));
             } else if (error === CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE) {
-                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'You can move only uncommitted process.' }));
+                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'You can move only draft processes.' }));
             }
             else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));
