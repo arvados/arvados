@@ -5,12 +5,16 @@
 package controller
 
 import (
+	"bufio"
 	"bytes"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -18,14 +22,19 @@ import (
 )
 
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
+var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
 
-func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	m := wfRe.FindStringSubmatch(req.URL.Path)
-	if len(m) < 2 || m[1] == h.Cluster.ClusterID {
-		next.ServeHTTP(w, req)
-		return
-	}
-	remoteID := m[1]
+type GenericFederatedRequestHandler struct {
+	next    http.Handler
+	handler *Handler
+}
+
+type CollectionFederatedRequestHandler struct {
+	next    http.Handler
+	handler *Handler
+}
+
+func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, req *http.Request, filter ResponseFilter) {
 	remote, ok := h.Cluster.RemoteClusters[remoteID]
 	if !ok {
 		httpserver.Error(w, "no proxy available for cluster "+remoteID, http.StatusNotFound)
@@ -51,7 +60,98 @@ func (h *Handler) proxyRemoteCluster(w http.ResponseWriter, req *http.Request, n
 	if remote.Insecure {
 		client = h.insecureClient
 	}
-	h.proxy.Do(w, req, urlOut, client)
+	h.proxy.Do(w, req, urlOut, client, filter)
+}
+
+func (h *GenericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	m := wfRe.FindStringSubmatch(req.URL.Path)
+	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
+		h.next.ServeHTTP(w, req)
+		return
+	}
+	h.handler.remoteClusterRequest(m[1], w, req, nil)
+}
+
+var SignedLocatorPattern = regexp.MustCompile(
+	`^([0-9a-fA-F]{32}\+[0-9]+)((\+[B-Z][A-Za-z0-9@_-]*)*)(\+A[A-Za-z0-9@_-]*)((\+[B-Z][A-Za-z0-9@_-]*)*)$`)
+
+type rewriteSignaturesClusterId string
+
+func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response) (newResponse *http.Response, err error) {
+	if resp.StatusCode != 200 {
+		return resp, nil
+	}
+
+	originalBody := resp.Body
+	defer originalBody.Close()
+
+	var col arvados.Collection
+	err = json.NewDecoder(resp.Body).Decode(&col)
+	if err != nil {
+		return nil, err
+	}
+
+	// rewriting signatures will make manifest text 5-10% bigger so calculate
+	// capacity accordingly
+	updatedManifest := bytes.NewBuffer(make([]byte, 0, len(col.ManifestText)+(len(col.ManifestText)/10)))
+
+	scanner := bufio.NewScanner(strings.NewReader(col.ManifestText))
+	scanner.Buffer(make([]byte, 1048576), len(col.ManifestText))
+	for scanner.Scan() {
+		line := scanner.Text()
+		tokens := strings.Split(line, " ")
+		if len(tokens) < 3 {
+			return nil, fmt.Errorf("Invalid stream (<3 tokens): %q", line)
+		}
+
+		updatedManifest.WriteString(tokens[0])
+		for _, token := range tokens[1:] {
+			updatedManifest.WriteString(" ")
+			m := SignedLocatorPattern.FindStringSubmatch(token)
+			if m != nil {
+				// Rewrite the block signature to be a remote signature
+				fmt.Fprintf(updatedManifest, "%s%s+R%s-%s%s", m[1], m[2], clusterId, m[4][2:], m[5])
+			} else {
+				updatedManifest.WriteString(token)
+			}
+
+		}
+		updatedManifest.WriteString("\n")
+	}
+
+	col.ManifestText = updatedManifest.String()
+
+	newbody, err := json.Marshal(col)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := bytes.NewBuffer(newbody)
+	resp.Body = ioutil.NopCloser(buf)
+	resp.ContentLength = int64(buf.Len())
+	resp.Header.Set("Content-Length", fmt.Sprintf("%v", buf.Len()))
+
+	return resp, nil
+}
+
+func (h *CollectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	m := collectionRe.FindStringSubmatch(req.URL.Path)
+	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
+		h.next.ServeHTTP(w, req)
+		return
+	}
+	h.handler.remoteClusterRequest(m[1], w, req,
+		rewriteSignaturesClusterId(m[1]).rewriteSignatures)
+}
+
+func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/arvados/v1/workflows", next)
+	mux.Handle("/arvados/v1/workflows/", &GenericFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/collections/", &CollectionFederatedRequestHandler{next, h})
+	mux.Handle("/", next)
+
+	return mux
 }
 
 type CurrentUser struct {

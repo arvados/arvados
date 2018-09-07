@@ -68,8 +68,7 @@ func (h *Handler) setup() {
 	})
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
-	hs = prepend(hs, h.handleGoAPI)
-	hs = prepend(hs, h.proxyRemoteCluster)
+	hs = h.setupProxyRemoteCluster(hs)
 	mux.Handle("/", hs)
 	h.handlerStack = mux
 
@@ -139,7 +138,7 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next h
 	if insecure {
 		client = h.insecureClient
 	}
-	h.proxy.Do(w, req, urlOut, client)
+	h.proxy.Do(w, req, urlOut, client, nil)
 }
 
 // For now, findRailsAPI always uses the rails API running on this

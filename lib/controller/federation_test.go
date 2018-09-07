@@ -299,3 +299,25 @@ func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *http.Response,
 	c.Assert(len(jresp.Errors), check.Equals, 1)
 	c.Check(jresp.Errors[0], check.Matches, re)
 }
+
+func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+Rzzzzz-[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+
+	// Confirm the regular expression identifies other groups of hints correctly
+	c.Check(SignedLocatorPattern.FindStringSubmatch(`6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4`),
+		check.DeepEquals,
+		[]string{"6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4",
+			"6a4ff0499484c6c79c95cd8c566bd25f+249025",
+			"+B1+C2", "+C2",
+			"+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b",
+			"+D3+E4", "+E4"})
+}
