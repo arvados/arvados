@@ -125,7 +125,7 @@ export const Workbench = withStyles(styles)(
                                     <Grid item>
                                         <MainContentBar />
                                     </Grid>
-                                    <Grid xs className={this.props.classes.content}>
+                                    <Grid item xs className={this.props.classes.content}>
                                         <Switch>
                                             <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                             <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
