@@ -34,11 +34,11 @@ import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-c
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
+import { MoveProcessDialog } from '~/views-components/dialog-forms/move-process-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 
 const APP_BAR_HEIGHT = 100;
@@ -189,6 +189,7 @@ export const Workbench = withStyles(styles)(
                         <FilesUploadCollectionDialog />
                         <UpdateProjectDialog />
                         <MoveCollectionDialog />
+                        <MoveProcessDialog />
                         <MoveProjectDialog />
                         <CurrentTokenDialog
                             currentToken={this.props.currentToken}

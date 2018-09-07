@@ -32,6 +32,7 @@ export interface Errors {
 export enum CommonResourceServiceError {
     UNIQUE_VIOLATION = 'UniqueViolation',
     OWNERSHIP_CYCLE = 'OwnershipCycle',
+    MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingFinalState',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -121,6 +122,8 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.UNIQUE_VIOLATION;
             case /ownership cycle/.test(error):
                 return CommonResourceServiceError.OWNERSHIP_CYCLE;
+            case /Mounts cannot be modified in state 'Final'/.test(error):
+                return CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }
