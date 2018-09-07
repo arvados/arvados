@@ -35,6 +35,7 @@ import { ServiceRepository } from '~/services/services';
 import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
+import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -56,13 +57,14 @@ addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 
 fetchConfig()
-    .then((config) => {
+    .then(({ config, apiHost }) => {
         const history = createBrowserHistory();
         const services = createServices(config);
         const store = configureStore(history, services);
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth());
+        store.dispatch(setCurrentTokenDialogApiHost(apiHost));
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props} />;

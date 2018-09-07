@@ -77,8 +77,6 @@ interface WorkbenchGeneralProps {
 type WorkbenchProps = WorkbenchDataProps & WorkbenchGeneralProps & DispatchProp<any> & WithStyles<CssRules>;
 
 interface WorkbenchState {
-    isCurrentTokenDialogOpen: boolean;
-    anchorEl: any;
     searchText: string;
 }
 
@@ -91,8 +89,6 @@ export const Workbench = withStyles(styles)(
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
             state = {
-                isCurrentTokenDialogOpen: false,
-                anchorEl: null,
                 searchText: "",
             };
 
@@ -159,10 +155,7 @@ export const Workbench = withStyles(styles)(
                     <UpdateProjectDialog />
                     <MoveCollectionDialog />
                     <MoveProjectDialog />
-                    <CurrentTokenDialog
-                        currentToken={this.props.currentToken}
-                        open={this.state.isCurrentTokenDialogOpen}
-                        handleClose={this.toggleCurrentTokenModal} />
+                    <CurrentTokenDialog />
                 </>;
             }
 
@@ -175,9 +168,6 @@ export const Workbench = withStyles(styles)(
                 this.props.dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
             }
 
-            toggleCurrentTokenModal = () => {
-                this.setState({ isCurrentTokenDialogOpen: !this.state.isCurrentTokenDialogOpen });
-            }
         }
     )
 );
