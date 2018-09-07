@@ -14,12 +14,15 @@ import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
 import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
 import { HelpMenu } from './help-menu';
 
-type CssRules = 'link';
+type CssRules = 'toolbar' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'
+    },
+    toolbar: {
+        height: '56px'
     }
 });
 
@@ -39,7 +42,7 @@ export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & With
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
         return <AppBar position="static">
-            <Toolbar>
+            <Toolbar className={props.classes.toolbar}>
                 <Grid container justify="space-between">
                     <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant="title" color="inherit" noWrap>
