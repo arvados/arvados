@@ -40,6 +40,7 @@ import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/par
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
+import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
 
 type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
 
@@ -133,6 +134,7 @@ export const Workbench = withStyles(styles)(
                                             <Route path={Routes.PROCESSES} component={ProcessPanel} />
                                             <Route path={Routes.TRASH} component={TrashPanel} />
                                             <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
+                                            <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
                                         </Switch>
                                     </Grid>
                                 </Grid>

@@ -45,3 +45,5 @@ export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootSt
         dispatch(navigateToProject(rootProjectUuid));
     }
 };
+
+export const navigateToSharedWithMe = push(Routes.SHARED_WITH_ME);

@@ -4,9 +4,11 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute } from './routes';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute } from './routes';
 import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { navigateToSharedWithMe } from '../store/navigation/navigation-action';
+import { loadSharedWithMe } from '../store/workbench/workbench-actions';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -22,7 +24,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const trashMatch = matchTrashRoute(pathname);
     const processMatch = matchProcessRoute(pathname);
     const processLogMatch = matchProcessLogRoute(pathname);
-    
+    const sharedWithMeMatch = matchSharedWithMeRoute(pathname);
+
     if (projectMatch) {
         store.dispatch(loadProject(projectMatch.params.id));
     } else if (collectionMatch) {
@@ -37,5 +40,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadProcessLog(processLogMatch.params.id));
     } else if (rootMatch) {
         store.dispatch(navigateToRootProject);
+    } else if (sharedWithMeMatch) {
+        store.dispatch(loadSharedWithMe);
     }
 };

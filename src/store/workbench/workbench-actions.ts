@@ -33,6 +33,8 @@ import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
 import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
+import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
 
 
 export const loadWorkbench = () =>
@@ -45,6 +47,7 @@ export const loadWorkbench = () =>
                 dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
+                dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -191,7 +194,7 @@ export const loadProcess = (uuid: string) =>
         await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
         dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
-        
+
     };
 
 export const loadProcessLog = (uuid: string) =>
@@ -222,3 +225,9 @@ export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
             dispatch<any>(loadProject(currentProjectPanelUuid));
         }
     };
+
+export const loadSharedWithMe = (dispatch: Dispatch) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+    dispatch<any>(loadSharedWithMePanel());
+    dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
+};
