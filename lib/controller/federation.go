@@ -24,6 +24,7 @@ import (
 
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
 var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
+var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
 type genericFederatedRequestHandler struct {
 	next    http.Handler
@@ -132,8 +133,49 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 	return resp, nil
 }
 
+type searchLocalClusterForPDH struct {
+	needSearchFederation bool
+}
+
+func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response) (newResponse *http.Response, err error) {
+	if resp.StatusCode == 404 {
+		// Suppress returning this result, because we want to
+		// search the federation.
+		s.needSearchFederation = true
+		return nil, nil
+	}
+	return resp, nil
+}
+
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := collectionRe.FindStringSubmatch(req.URL.Path)
+	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
+	if len(m) == 2 {
+		urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
+		if err != nil {
+			httpserver.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		urlOut = &url.URL{
+			Scheme:   urlOut.Scheme,
+			Host:     urlOut.Host,
+			Path:     req.URL.Path,
+			RawPath:  req.URL.RawPath,
+			RawQuery: req.URL.RawQuery,
+		}
+		client := h.handler.secureClient
+		if insecure {
+			client = h.handler.insecureClient
+		}
+		sf := &searchLocalClusterForPDH{false}
+		h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
+		if !sf.needSearchFederation {
+			// a response was sent
+			return
+		}
+	}
+
+	m = collectionRe.FindStringSubmatch(req.URL.Path)
 	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
 		return
