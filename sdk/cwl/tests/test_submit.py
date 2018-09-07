@@ -48,6 +48,7 @@ def stubs(func):
         stubs.keep_client = keep_client2
         stubs.keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
+        stubs.fake_container_uuid = "zzzzz-dz642-zzzzzzzzzzzzzzz"
 
         stubs.api = mock.MagicMock()
         stubs.api._rootDesc = get_rootDesc()
@@ -56,6 +57,9 @@ def stubs(func):
             "uuid": stubs.fake_user_uuid,
         }
         stubs.api.collections().list().execute.return_value = {"items": []}
+        stubs.api.containers().current().execute.return_value = {
+            "uuid": stubs.fake_container_uuid,
+        }
 
         class CollectionExecute(object):
             def __init__(self, exe):
