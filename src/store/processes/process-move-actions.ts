@@ -49,8 +49,7 @@ export const moveProcess = (resource: MoveToFormDialogData) =>
                 dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'A process with the same name already exists in the target project.' }));
             } else if (error === CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE) {
                 dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'You can move only draft processes.' }));
-            }
-            else {
+            } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the process.', hideDuration: 2000 }));
             }
