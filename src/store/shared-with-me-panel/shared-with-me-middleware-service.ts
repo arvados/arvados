@@ -9,7 +9,7 @@ import { RootState } from '~/store/store';
 import { getDataExplorer, DataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { updateFavorites } from '~/store/favorites/favorites-actions';
 import { updateResources } from '~/store/resources/resources-actions';
-import { loadMissingProcessesInformation, getFilters } from '~/store/project-panel/project-panel-middleware-service';
+import { loadMissingProcessesInformation } from '~/store/project-panel/project-panel-middleware-service';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from '~/services/common-service/common-resource-service';
@@ -18,6 +18,7 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
+import { FilterBuilder } from '~/services/api/filter-builder';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -43,7 +44,14 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
 });
+
+export const getFilters = (dataExplorer: DataExplorer) => {
+    return new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue)
+        .getFilters();
+};
 
 export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
