@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService, ListResults } from "~/services/common-service/common-resource-service";
+import { CommonResourceService, ListResults, ListArguments } from '~/services/common-service/common-resource-service';
 import { AxiosInstance } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
@@ -18,6 +18,10 @@ export interface ContentsArguments {
     filters?: string;
     recursive?: boolean;
     includeTrash?: boolean;
+}
+
+export interface SharedArguments extends ListArguments {
+    include?: string;
 }
 
 export type GroupContentsResource =
@@ -42,6 +46,12 @@ export class GroupsService<T extends TrashableResource = TrashableResource> exte
             .get(this.resourceType + `${uuid}/contents`, {
                 params: CommonResourceService.mapKeys(_.snakeCase)(params)
             })
+            .then(CommonResourceService.mapResponseKeys);
+    }
+
+    shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {
+        return this.serverApi
+            .get(this.resourceType + 'shared', { params })
             .then(CommonResourceService.mapResponseKeys);
     }
 }

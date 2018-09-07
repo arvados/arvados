@@ -79,9 +79,9 @@ export const loadTrash = () =>
 
 export const loadProject = (uuid: string) =>
     async (dispatch: Dispatch) => {
+        dispatch<any>(openProjectPanel(uuid));
         await dispatch<any>(activateSidePanelTreeItem(uuid));
         dispatch<any>(setProjectBreadcrumbs(uuid));
-        dispatch<any>(openProjectPanel(uuid));
         dispatch(loadDetailsPanel(uuid));
     };
 

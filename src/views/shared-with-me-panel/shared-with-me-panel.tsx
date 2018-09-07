@@ -56,7 +56,7 @@ export const SharedWithMePanel = withStyles(styles)(
             hasAnyTrashedResources = () => {
                 // TODO: implement check if there is anything in the trash,
                 //       without taking pagination into the account
-                return false;
+                return true;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
