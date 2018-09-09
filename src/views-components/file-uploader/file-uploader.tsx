@@ -21,8 +21,10 @@ const mapStateToProps = (state: RootState, { disabled }: FileUploaderProps): Pic
 
 const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): Pick<FileUploadProps, 'onDrop'> => ({
     onDrop: files => {
-        dispatch(fileUploaderActions.SET_UPLOAD_FILES(files));
-        onDrop(files);
+        if (files.length > 0) {
+            dispatch(fileUploaderActions.SET_UPLOAD_FILES(files));
+            onDrop(files);
+        }
     },
 });
 

@@ -68,6 +68,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
                     {props.cancelLabel || 'Cancel'}
                 </Button>
                 <Button
+                    type="submit"
                     onClick={props.handleSubmit}
                     className={props.classes.lastButton}
                     color="primary"
