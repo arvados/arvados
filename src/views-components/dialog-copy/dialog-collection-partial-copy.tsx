@@ -20,7 +20,7 @@ export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyPr
     />;
 
 export const CollectionPartialCopyFields = () => <div>
-        <CollectionNameField />
-        <CollectionDescriptionField />
-        <CollectionProjectPickerField />
-    </div>;
+    <CollectionNameField />
+    <CollectionDescriptionField />
+    <CollectionProjectPickerField />
+</div>;
