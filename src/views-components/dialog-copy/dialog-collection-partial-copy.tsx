@@ -19,10 +19,8 @@ export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyPr
         {...props}
     />;
 
-export const CollectionPartialCopyFields = () => <div style={{ display: 'flex' }}>
-    <div>
-        <CollectionNameField />
-        <CollectionDescriptionField />
-    </div>
+export const CollectionPartialCopyFields = () => <div>
+    <CollectionNameField />
+    <CollectionDescriptionField />
     <CollectionProjectPickerField />
 </div>;
