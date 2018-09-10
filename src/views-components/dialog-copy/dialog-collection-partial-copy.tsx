@@ -8,6 +8,7 @@ import { CollectionNameField, CollectionDescriptionField, CollectionProjectPicke
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
 import { CollectionPartialCopyFormData } from '~/store/collections/collection-partial-copy-actions';
+import { Grid } from '@material-ui/core';
 
 type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
 
@@ -19,10 +20,11 @@ export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyPr
         {...props}
     />;
 
-export const CollectionPartialCopyFields = () => <div style={{ display: 'flex' }}>
-    <div>
-        <CollectionNameField />
-        <CollectionDescriptionField />
-    </div>
-    <CollectionProjectPickerField />
-</div>;
+export const CollectionPartialCopyFields = () =>
+    <Grid container direction={"row"}>
+        <Grid item xs={12}>
+            <CollectionNameField />
+            <CollectionDescriptionField />
+            <CollectionProjectPickerField />
+        </Grid>
+    </Grid>;
