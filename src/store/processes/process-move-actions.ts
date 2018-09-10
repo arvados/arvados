@@ -41,7 +41,6 @@ export const moveProcess = (resource: MoveToFormDialogData) =>
             await services.containerRequestService.update(resource.uuid, { ...process, ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been moved', hideDuration: 2000 }));
             return process;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
