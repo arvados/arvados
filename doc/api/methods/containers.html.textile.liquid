@@ -43,7 +43,7 @@ Generally this will contain additional keys that are not present in any correspo
 }</code></pre>See "Runtime constraints":#runtime_constraints for more details.|
 |runtime_status|hash|Information related to the container's run, including its steps. Some keys have specific meaning and are described later in this page.|e.g.,
 <pre><code>{
-  "error": "This container won't be successful because at least one step have already failed."
+  "error": "This container won't be successful because at least one step has already failed."
 }</code></pre>See "Runtime status":#runtime_status for more details.|
 |scheduling_parameters|hash|Parameters to be passed to the container scheduler when running this container.|e.g.,<pre><code>{
 "partitions":["fastcpu","vfastcpu"]
@@ -70,7 +70,20 @@ h2(#mount_types). {% include 'mount_types' %}
 
 h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
 
-h2(#runtime_status). {% include 'container_runtime_status' %}
+h2(#runtime_status). Runtime status
+
+Runtime status provides container's relevant information about its progress even while it's still in Running state. This is used to avoid reusing containers that have not yet failed but will definitely do, and also for easier workflow debugging.
+
+The following keys have well known meanings:
+
+table(table table-bordered table-condensed).
+|_. Key|_. Type|_. Description|_. Notes|
+|error|string|The existance of this key indicates the container will definitely fail, or has already failed.|Optional.|
+|warning|string|Indicates something unusual happened or is currently happening, but isn't considered fatal.|Optional.|
+|activity|string|A message for the end user about what state the container is currently in.|Optional.|
+|errorDetails|string|Additional structured error details.|Optional.|
+|warningDetails|string|Additional structured warning details.|Optional.|
+|activityDetails|string|Additional structured activity details.|Optional.|
 
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
