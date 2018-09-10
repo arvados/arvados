@@ -7,14 +7,17 @@ package controller
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -62,6 +65,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	if remote.Insecure {
 		client = h.insecureClient
 	}
+	log.Printf("Remote cluster request to %v %v", remoteID, urlOut)
 	h.proxy.Do(w, req, urlOut, client, filter)
 }
 
@@ -76,7 +80,11 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 
 type rewriteSignaturesClusterId string
 
-func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response) (newResponse *http.Response, err error) {
+func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	if requestError != nil {
+		return resp, requestError
+	}
+
 	if resp.StatusCode != 200 {
 		return resp, nil
 	}
@@ -134,22 +142,108 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 }
 
 type searchLocalClusterForPDH struct {
-	needSearchFederation bool
+	sentResponse bool
 }
 
-func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response) (newResponse *http.Response, err error) {
+func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	if requestError != nil {
+		return resp, requestError
+	}
+
 	if resp.StatusCode == 404 {
 		// Suppress returning this result, because we want to
 		// search the federation.
-		s.needSearchFederation = true
+		s.sentResponse = false
 		return nil, nil
 	}
+	s.sentResponse = true
 	return resp, nil
+}
+
+type searchRemoteClusterForPDH struct {
+	remoteID      string
+	mtx           *sync.Mutex
+	sentResponse  *bool
+	sharedContext *context.Context
+	cancelFunc    func()
+	errors        *[]string
+	statusCode    *int
+}
+
+func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	if *s.sentResponse {
+		// Another request already returned a response
+		return nil, nil
+	}
+
+	if requestError != nil {
+		*s.errors = append(*s.errors, fmt.Sprintf("Request error contacting %q: %v", s.remoteID, requestError))
+		// Record the error and suppress response
+		return nil, nil
+	}
+
+	if resp.StatusCode != 200 {
+		// Suppress returning unsuccessful result.  Maybe
+		// another request will find it.
+		// TODO collect and return error responses.
+		*s.errors = append(*s.errors, fmt.Sprintf("Response from %q: %v", s.remoteID, resp.Status))
+		if resp.StatusCode == 404 && (*s.statusCode == 0 || *s.statusCode == 404) {
+			// Only return 404 if every response is 404
+			*s.statusCode = http.StatusNotFound
+		} else {
+			// Got a non-404 error response, convert into BadGateway
+			*s.statusCode = http.StatusBadGateway
+		}
+		return nil, nil
+	}
+
+	s.mtx.Unlock()
+
+	// This reads the response body.  We don't want to hold the
+	// lock while doing this because other remote requests could
+	// also have made it to this point, and we want don't want a
+	// slow response holding the lock to block a faster response
+	// that is waiting on the lock.
+	newResponse, err = rewriteSignaturesClusterId(s.remoteID).rewriteSignatures(resp, nil)
+
+	s.mtx.Lock()
+
+	if *s.sentResponse {
+		// Another request already returned a response
+		return nil, nil
+	}
+
+	if err != nil {
+		// Suppress returning unsuccessful result.  Maybe
+		// another request will be successful.
+		*s.errors = append(*s.errors, fmt.Sprintf("Error parsing response from %q: %v", s.remoteID, err))
+		return nil, nil
+	}
+
+	// We have a successful response.  Suppress/cancel all the
+	// other requests/responses.
+	*s.sentResponse = true
+	s.cancelFunc()
+
+	return newResponse, nil
 }
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
 	if len(m) == 2 {
+		bearer := req.Header.Get("Authorization")
+		if strings.HasPrefix(bearer, "Bearer v2/") &&
+			len(bearer) > 10 &&
+			bearer[10:15] != h.handler.Cluster.ClusterID {
+			// Salted token from another cluster, just
+			// fall back to query local cluster only.
+			h.next.ServeHTTP(w, req)
+			return
+		}
+
 		urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusInternalServerError)
@@ -167,12 +261,48 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		if insecure {
 			client = h.handler.insecureClient
 		}
-		sf := &searchLocalClusterForPDH{false}
+		sf := &searchLocalClusterForPDH{}
 		h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
-		if !sf.needSearchFederation {
-			// a response was sent
+		if sf.sentResponse {
+			// a response was sent, nothing more to do
 			return
 		}
+
+		sharedContext, cancelFunc := context.WithCancel(req.Context())
+		defer cancelFunc()
+		req = req.WithContext(sharedContext)
+
+		// Create a goroutine that will contact each cluster
+		// in the RemoteClusters map.  The first one to return
+		// a valid result gets returned to the client.  When
+		// that happens, all other outstanding requests are
+		// cancelled or suppressed.
+		sentResponse := false
+		mtx := sync.Mutex{}
+		wg := sync.WaitGroup{}
+		var errors []string
+		var errorCode int = 0
+		for remoteID := range h.handler.Cluster.RemoteClusters {
+			search := &searchRemoteClusterForPDH{remoteID, &mtx, &sentResponse,
+				&sharedContext, cancelFunc, &errors, &errorCode}
+			wg.Add(1)
+			go func() {
+				h.handler.remoteClusterRequest(search.remoteID, w, req, search.filterRemoteClusterResponse)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		if sentResponse {
+			return
+		}
+
+		if errorCode == 0 {
+			errorCode = http.StatusBadGateway
+		}
+
+		// No successful responses, so return an error
+		httpserver.Errors(w, errors, errorCode)
+		return
 	}
 
 	m = collectionRe.FindStringSubmatch(req.URL.Path)

@@ -19,3 +19,10 @@ func Error(w http.ResponseWriter, error string, code int) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(ErrorResponse{Errors: []string{error}})
 }
+
+func Errors(w http.ResponseWriter, errors []string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(ErrorResponse{Errors: errors})
+}
