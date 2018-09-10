@@ -9,24 +9,19 @@ import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
+import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
-
-export interface CollectionCopyFormDialogData {
-    name: string;
-    ownerUuid: string;
-    uuid: string;
-}
 
 export const openCollectionCopyDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
-        const initialData: CollectionCopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: '', uuid: resource.uuid };
+        const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: '', uuid: resource.uuid };
         dispatch<any>(initialize(COLLECTION_COPY_FORM_NAME, initialData));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_FORM_NAME, data: {} }));
     };
 
-export const copyCollection = (resource: CollectionCopyFormDialogData) =>
+export const copyCollection = (resource: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
         try {
