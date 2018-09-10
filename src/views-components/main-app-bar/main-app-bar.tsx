@@ -3,48 +3,38 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { AppBar, Toolbar, Typography, Grid, IconButton, Badge, Button, MenuItem, Tooltip } from "@material-ui/core";
+import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
 import { Link } from "react-router-dom";
-import { User, getUserFullname } from "~/models/user";
+import { User } from "~/models/user";
 import { SearchBar } from "~/components/search-bar/search-bar";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { DetailsIcon, NotificationIcon, UserPanelIcon, HelpIcon } from "~/components/icon/icon";
 import { Routes } from '~/routes/routes';
+import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
+import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
+import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
+import { HelpMenu } from './help-menu';
 
-type CssRules = 'link';
+type CssRules = 'toolbar' | 'link';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: StyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'
+    },
+    toolbar: {
+        height: '56px'
     }
 });
-
-export interface MainAppBarMenuItem {
-    label: string;
-}
-
-export interface MainAppBarMenuItems {
-    accountMenu: MainAppBarMenuItem[];
-    helpMenu: MainAppBarMenuItem[];
-    anonymousMenu: MainAppBarMenuItem[];
-}
 
 interface MainAppBarDataProps {
     searchText: string;
     searchDebounce?: number;
-    breadcrumbs: React.ComponentType<any>;
     user?: User;
-    menuItems: MainAppBarMenuItems;
-    buildInfo: string;
+    buildInfo?: string;
 }
 
 export interface MainAppBarActionProps {
     onSearch: (searchText: string) => void;
-    onMenuItemClick: (menuItem: MainAppBarMenuItem) => void;
-    onDetailsPanelToggle: () => void;
 }
 
 export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
@@ -52,81 +42,44 @@ export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & With
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
         return <AppBar position="static">
-            <Toolbar>
+            <Toolbar className={props.classes.toolbar}>
                 <Grid container justify="space-between">
-                    <Grid item xs={3}>
-                        <Typography variant="headline" color="inherit" noWrap>
+                    <Grid container item xs={3} direction="column" justify="center">
+                        <Typography variant="title" color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
-                                Arvados 2
+                                arvados workbench
                             </Link>
                         </Typography>
-                        <Typography variant="body1" color="inherit" noWrap >
-                            {props.buildInfo}
-                        </Typography>
+                        <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
                     </Grid>
-                    <Grid item xs={6} container alignItems="center">
-                        {
-                            props.user && <SearchBar
-                                value={props.searchText}
-                                onSearch={props.onSearch}
-                                debounce={props.searchDebounce}
-                            />
-                        }
+                    <Grid
+                        item
+                        xs={6}
+                        container
+                        alignItems="center">
+                        {props.user && <SearchBar
+                            value={props.searchText}
+                            onSearch={props.onSearch}
+                            debounce={props.searchDebounce}
+                        />}
                     </Grid>
-                    <Grid item xs={3} container alignItems="center" justify="flex-end">
-                        {
-                            props.user ? renderMenuForUser(props) : renderMenuForAnonymous(props)
-                        }
+                    <Grid
+                        item
+                        xs={3}
+                        container
+                        alignItems="center"
+                        justify="flex-end"
+                        wrap="nowrap">
+                        {props.user
+                            ? <>
+                                <NotificationsMenu />
+                                <AccountMenu />
+                                <HelpMenu />
+                            </>
+                            : <AnonymousMenu />}
                     </Grid>
                 </Grid>
-            </Toolbar>
-            <Toolbar >
-                {props.user && <props.breadcrumbs />}
-                {props.user && <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                    <Tooltip title="Additional Info">
-                        <DetailsIcon />
-                    </Tooltip>
-                </IconButton>}
             </Toolbar>
         </AppBar>;
     }
 );
-
-const renderMenuForUser = ({ user, menuItems, onMenuItemClick }: MainAppBarProps) => {
-    return (
-        <>
-            <IconButton color="inherit">
-                <Tooltip title="Notification">
-                    <Badge badgeContent={3} color="primary">
-                        <NotificationIcon />
-                    </Badge>
-                </Tooltip>
-            </IconButton>
-            <DropdownMenu icon={<UserPanelIcon />} id="account-menu" title="Account Management">
-                <MenuItem>
-                    {getUserFullname(user)}
-                </MenuItem>
-                {renderMenuItems(menuItems.accountMenu, onMenuItemClick)}
-            </DropdownMenu>
-            <DropdownMenu icon={<HelpIcon />} id="help-menu" title="Help">
-                {renderMenuItems(menuItems.helpMenu, onMenuItemClick)}
-            </DropdownMenu>
-        </>
-    );
-};
-
-const renderMenuForAnonymous = ({ onMenuItemClick, menuItems }: MainAppBarProps) => {
-    return menuItems.anonymousMenu.map((item, index) => (
-        <Button key={index} color="inherit" onClick={() => onMenuItemClick(item)}>
-            {item.label}
-        </Button>
-    ));
-};
-
-const renderMenuItems = (menuItems: MainAppBarMenuItem[], onMenuItemClick: (menuItem: MainAppBarMenuItem) => void) => {
-    return menuItems.map((item, index) => (
-        <MenuItem key={index} onClick={() => onMenuItemClick(item)}>
-            {item.label}
-        </MenuItem>
-    ));
-};

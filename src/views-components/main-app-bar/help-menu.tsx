@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { MenuItem, Typography } from "@material-ui/core";
+import { MenuItem, Typography, ListSubheader } from "@material-ui/core";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -58,15 +58,13 @@ export const HelpMenu = withStyles(styles)(
             icon={<HelpIcon />}
             id="help-menu"
             title="Help">
-            <li className={classes.title}>
-                <Typography variant="body1">Help</Typography>
-            </li>
+            <MenuItem disabled>Help</MenuItem>
             {
                 links.map(link =>
                     <MenuItem key={link.title}>
                         <a href={link.link} target="_blank" className={classes.link}>
-                                <ImportContactsIcon className={classes.icon} />
-                                <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                            <ImportContactsIcon className={classes.icon} />
+                            <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
                         </a>
                     </MenuItem>
                 )
