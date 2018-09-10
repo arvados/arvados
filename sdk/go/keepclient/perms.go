@@ -65,7 +65,9 @@ func SignLocator(blobLocator, apiToken string, expiry time.Time, blobSignatureTT
 		"@" + timestampHex
 }
 
-var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{40})@([[:xdigit:]]{8})`)
+var SignedLocatorRe = regexp.MustCompile(
+	//1                 2          34                         5   6                  7                 89
+	`^([[:xdigit:]]{32})(\+[0-9]+)?((\+[B-Z][A-Za-z0-9@_-]*)*)(\+A([[:xdigit:]]{40})@([[:xdigit:]]{8}))((\+[B-Z][A-Za-z0-9@_-]*)*)$`)
 
 // VerifySignature returns nil if the signature on the signedLocator
 // can be verified using the given apiToken. Otherwise it returns
@@ -78,13 +80,13 @@ var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
 func VerifySignature(signedLocator, apiToken string, blobSignatureTTL time.Duration, permissionSecret []byte) error {
-	matches := signedLocatorRe.FindStringSubmatch(signedLocator)
+	matches := SignedLocatorRe.FindStringSubmatch(signedLocator)
 	if matches == nil {
 		return ErrSignatureMissing
 	}
 	blobHash := matches[1]
-	signatureHex := matches[2]
-	expiryHex := matches[3]
+	signatureHex := matches[6]
+	expiryHex := matches[7]
 	if expiryTime, err := parseHexTimestamp(expiryHex); err != nil {
 		return ErrSignatureInvalid
 	} else if expiryTime.Before(time.Now()) {

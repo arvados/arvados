@@ -19,6 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
@@ -72,9 +73,6 @@ func (h *GenericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 	h.handler.remoteClusterRequest(m[1], w, req, nil)
 }
 
-var SignedLocatorPattern = regexp.MustCompile(
-	`^([0-9a-fA-F]{32}\+[0-9]+)((\+[B-Z][A-Za-z0-9@_-]*)*)(\+A[A-Za-z0-9@_-]*)((\+[B-Z][A-Za-z0-9@_-]*)*)$`)
-
 type rewriteSignaturesClusterId string
 
 func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response) (newResponse *http.Response, err error) {
@@ -93,7 +91,7 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 
 	// rewriting signatures will make manifest text 5-10% bigger so calculate
 	// capacity accordingly
-	updatedManifest := bytes.NewBuffer(make([]byte, 0, len(col.ManifestText)+(len(col.ManifestText)/10)))
+	updatedManifest := bytes.NewBuffer(make([]byte, 0, int(float64(len(col.ManifestText))*1.1)))
 
 	scanner := bufio.NewScanner(strings.NewReader(col.ManifestText))
 	scanner.Buffer(make([]byte, 1048576), len(col.ManifestText))
@@ -107,10 +105,10 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 		updatedManifest.WriteString(tokens[0])
 		for _, token := range tokens[1:] {
 			updatedManifest.WriteString(" ")
-			m := SignedLocatorPattern.FindStringSubmatch(token)
+			m := keepclient.SignedLocatorRe.FindStringSubmatch(token)
 			if m != nil {
 				// Rewrite the block signature to be a remote signature
-				fmt.Fprintf(updatedManifest, "%s%s+R%s-%s%s", m[1], m[2], clusterId, m[4][2:], m[5])
+				fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], clusterId, m[5][2:], m[8])
 			} else {
 				updatedManifest.WriteString(token)
 			}

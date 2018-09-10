@@ -16,6 +16,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/Sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -313,11 +314,13 @@ func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
 `)
 
 	// Confirm the regular expression identifies other groups of hints correctly
-	c.Check(SignedLocatorPattern.FindStringSubmatch(`6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4`),
+	c.Check(keepclient.SignedLocatorRe.FindStringSubmatch(`6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4`),
 		check.DeepEquals,
 		[]string{"6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4",
-			"6a4ff0499484c6c79c95cd8c566bd25f+249025",
+			"6a4ff0499484c6c79c95cd8c566bd25f",
+			"+249025",
 			"+B1+C2", "+C2",
 			"+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b",
+			"05227438989d04712ea9ca1c91b556cef01d5cc7", "5ba5405b",
 			"+D3+E4", "+E4"})
 }
