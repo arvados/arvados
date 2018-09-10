@@ -88,7 +88,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { location } = getState().router;
         const pathname = location ? location.pathname : '';
-        const match = matchProcessRoute(pathname); 
+        const match = matchProcessRoute(pathname);
         const uuid = match ? match.params.id : '';
         const resource = {
             uuid,
@@ -108,6 +108,8 @@ export const resourceKindToContextMenuKind = (uuid: string) => {
             return ContextMenuKind.PROJECT;
         case ResourceKind.COLLECTION:
             return ContextMenuKind.COLLECTION_RESOURCE;
+        case ResourceKind.PROCESS:
+            return ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
             return ContextMenuKind.ROOT_PROJECT;
         default:

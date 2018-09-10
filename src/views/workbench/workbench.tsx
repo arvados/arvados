@@ -32,11 +32,11 @@ import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-c
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
+import { MoveProcessDialog } from '~/views-components/dialog-forms/move-process-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
@@ -155,6 +155,7 @@ export const Workbench = withStyles(styles)(
                     <FilesUploadCollectionDialog />
                     <UpdateProjectDialog />
                     <MoveCollectionDialog />
+                    <MoveProcessDialog />
                     <MoveProjectDialog />
                     <CurrentTokenDialog />
                 </>;

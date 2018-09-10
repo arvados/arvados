@@ -5,15 +5,11 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import {
-    RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon,
-    AdvancedIcon, RemoveIcon, ReRunProcessIcon, LogIcon, InputIcon, CommandIcon, OutputIcon
-} from "~/components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 
-export const processActionSet: ContextMenuActionSet = [[
+export const processResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
@@ -49,57 +45,8 @@ export const processActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: ReRunProcessIcon,
-        name: "Re-run process",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: InputIcon,
-        name: "Inputs",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: OutputIcon,
-        name: "Outputs",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: CommandIcon,
-        name: "Command",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
         icon: DetailsIcon,
         name: "View details",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: LogIcon,
-        name: "Log",
-        execute: (dispatch, resource) => {
-            dispatch<any>(navigateToProcessLogs(resource.uuid));
-        }
-    },
-    {
-        icon: ProvenanceGraphIcon,
-        name: "Provenance graph",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
-    {
-        icon: AdvancedIcon,
-        name: "Advanced",
         execute: (dispatch, resource) => {
             // add code
         }
