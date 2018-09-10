@@ -5,13 +5,14 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { COLLECTION_COPY_FORM_NAME, CollectionCopyFormDialogData } from '~/store/collections/collection-copy-actions';
-import { DialogCopy } from "~/views-components/dialog-copy/dialog-collection-copy";
+import { COLLECTION_COPY_FORM_NAME } from '~/store/collections/collection-copy-actions';
+import { DialogCopy } from "~/views-components/dialog-copy/dialog-copy";
 import { copyCollection } from '~/store/workbench/workbench-actions';
+import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
 export const CopyCollectionDialog = compose(
     withDialog(COLLECTION_COPY_FORM_NAME),
-    reduxForm<CollectionCopyFormDialogData>({
+    reduxForm<CopyFormDialogData>({
         form: COLLECTION_COPY_FORM_NAME,
         onSubmit: (data, dispatch) => {
             dispatch(copyCollection(data));
