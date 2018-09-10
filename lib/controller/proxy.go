@@ -70,6 +70,7 @@ func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, 
 		httpserver.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
+	defer resp.Body.Close()
 	for k, v := range resp.Header {
 		for _, v := range v {
 			w.Header().Add(k, v)
