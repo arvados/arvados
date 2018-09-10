@@ -11,6 +11,7 @@ import { ServiceRepository } from '~/services/services';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { getProcess, ProcessStatus, getProcessStatus } from '~/store/processes/process';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
 
@@ -43,7 +44,8 @@ export const copyProcess = (resource: CopyFormDialogData) =>
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
             return process;
         } catch (e) {
-            if (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNKNOWN) {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
                 throw new Error('Could not copy the process.');
             }
