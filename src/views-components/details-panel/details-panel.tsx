@@ -23,45 +23,38 @@ import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
 
-type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'headerTitle' | 'tabContainer';
+type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
 const DRAWER_WIDTH = 320;
 const SLIDE_TIMEOUT = 500;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        width: 0,
-        overflow: 'hidden',
-        transition: `width ${SLIDE_TIMEOUT}ms ease`,
         background: theme.palette.background.paper,
         borderLeft: `1px solid ${theme.palette.divider}`,
         height: '100%',
+        overflow: 'hidden',
+        transition: `width ${SLIDE_TIMEOUT}ms ease`,
+        width: 0,
     },
     opened: {
         width: DRAWER_WIDTH,
     },
     container: {
+        maxWidth: 'none',
         width: DRAWER_WIDTH,
-    },
-    drawerPaper: {
-        position: 'relative',
-        width: DRAWER_WIDTH
     },
     headerContainer: {
         color: theme.palette.grey["600"],
         margin: `${theme.spacing.unit}px 0`,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     headerIcon: {
-        fontSize: '2.125rem'
-    },
-    headerTitle: {
-        overflowWrap: 'break-word',
-        wordWrap: 'break-word'
+        fontSize: '2.125rem',
     },
     tabContainer: {
-        padding: theme.spacing.unit * 3,
         overflow: 'auto',
-    }
+        padding: theme.spacing.unit * 3,
+    },
 });
 
 const getItem = (resource: DetailsResource): DetailsData => {
@@ -131,24 +124,33 @@ export const DetailsPanel = withStyles(styles)(
             renderContent() {
                 const { classes, onCloseDrawer, item } = this.props;
                 const { tabsValue } = this.state;
-                return <Grid container direction="column" item xs className={classes.container} >
-                    <Grid item className={classes.headerContainer}>
-                        <Grid container alignItems='center' justify='space-around' wrap="nowrap">
-                            <Grid item xs={2}>
-                                {item.getIcon(classes.headerIcon)}
-                            </Grid>
-                            <Grid item xs={8}>
-                                <Tooltip title={item.getTitle()}>
-                                    <Typography variant="title" noWrap className={classes.headerTitle}>
-                                        {item.getTitle()}
-                                    </Typography>
-                                </Tooltip>
-                            </Grid>
-                            <Grid item>
-                                <IconButton color="inherit" onClick={onCloseDrawer}>
-                                    {<CloseIcon />}
-                                </IconButton>
-                            </Grid>
+                return <Grid
+                    container
+                    direction="column"
+                    item
+                    xs
+                    className={classes.container} >
+                    <Grid
+                        item
+                        className={classes.headerContainer}
+                        container
+                        alignItems='center'
+                        justify='space-around'
+                        wrap="nowrap">
+                        <Grid item xs={2}>
+                            {item.getIcon(classes.headerIcon)}
+                        </Grid>
+                        <Grid item xs={8}>
+                            <Tooltip title={item.getTitle()}>
+                                <Typography variant="title" noWrap>
+                                    {item.getTitle()}
+                                </Typography>
+                            </Tooltip>
+                        </Grid>
+                        <Grid item>
+                            <IconButton color="inherit" onClick={onCloseDrawer}>
+                                {<CloseIcon />}
+                            </IconButton>
                         </Grid>
                     </Grid>
                     <Grid item>
@@ -158,11 +160,9 @@ export const DetailsPanel = withStyles(styles)(
                         </Tabs>
                     </Grid>
                     <Grid item xs className={this.props.classes.tabContainer} >
-                        <Grid container direction="column">
-                            {tabsValue === 0
-                                ? item.getDetails()
-                                : null}
-                        </Grid>
+                        {tabsValue === 0
+                            ? item.getDetails()
+                            : null}
                     </Grid>
                 </Grid >;
             }
