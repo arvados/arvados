@@ -149,7 +149,7 @@ export const DetailsPanel = withStyles(styles)(
                         </Grid>
                         <Grid item>
                             <IconButton color="inherit" onClick={onCloseDrawer}>
-                                {<CloseIcon />}
+                                <CloseIcon />
                             </IconButton>
                         </Grid>
                     </Grid>
