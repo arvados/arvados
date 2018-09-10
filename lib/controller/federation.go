@@ -233,7 +233,7 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
-	if len(m) == 2 {
+	if len(m) == 2 && len(h.handler.Cluster.RemoteClusters) > 0 {
 		bearer := req.Header.Get("Authorization")
 		if strings.HasPrefix(bearer, "Bearer v2/") &&
 			len(bearer) > 10 &&

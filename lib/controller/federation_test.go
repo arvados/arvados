@@ -436,7 +436,7 @@ func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
 	resp := s.testRequest(req)
 	defer resp.Body.Close()
 
-	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
