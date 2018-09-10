@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -65,7 +64,6 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	if remote.Insecure {
 		client = h.insecureClient
 	}
-	log.Printf("Remote cluster request to %v %v", remoteID, urlOut)
 	h.proxy.Do(w, req, urlOut, client, filter)
 }
 
@@ -233,17 +231,23 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
-	if len(m) == 2 && len(h.handler.Cluster.RemoteClusters) > 0 {
+	if len(m) == 2 {
 		bearer := req.Header.Get("Authorization")
-		if strings.HasPrefix(bearer, "Bearer v2/") &&
-			len(bearer) > 10 &&
-			bearer[10:15] != h.handler.Cluster.ClusterID {
-			// Salted token from another cluster, just
-			// fall back to query local cluster only.
+		if len(h.handler.Cluster.RemoteClusters) == 0 ||
+			(strings.HasPrefix(bearer, "Bearer v2/") &&
+				len(bearer) > 10 &&
+				bearer[10:15] != h.handler.Cluster.ClusterID) {
+			// Either there are no remote clusters to
+			// bother searching, or we got a salted token
+			// from another cluster (and it's not our job
+			// to perform searches for users from other
+			// clusters), so just continue down the
+			// handler stack.
 			h.next.ServeHTTP(w, req)
 			return
 		}
 
+		// First, query the local cluster.
 		urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusInternalServerError)
@@ -264,7 +268,6 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		sf := &searchLocalClusterForPDH{}
 		h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
 		if sf.sentResponse {
-			// a response was sent, nothing more to do
 			return
 		}
 
@@ -272,11 +275,11 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		defer cancelFunc()
 		req = req.WithContext(sharedContext)
 
-		// Create a goroutine that will contact each cluster
-		// in the RemoteClusters map.  The first one to return
-		// a valid result gets returned to the client.  When
-		// that happens, all other outstanding requests are
-		// cancelled or suppressed.
+		// Create a goroutine for each cluster in the
+		// RemoteClusters map.  The first valid result gets
+		// returned to the client.  When that happens, all
+		// other outstanding requests are cancelled or
+		// suppressed.
 		sentResponse := false
 		mtx := sync.Mutex{}
 		wg := sync.WaitGroup{}
@@ -297,10 +300,13 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		}
 
 		if errorCode == 0 {
+			// If all connections failed/timed out on all
+			// remote clusters, no status code could have
+			// been returned, so make sure to set one.
 			errorCode = http.StatusBadGateway
 		}
 
-		// No successful responses, so return an error
+		// No successful responses, so return the error
 		httpserver.Errors(w, errors, errorCode)
 		return
 	}
