@@ -25,12 +25,12 @@ import (
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
 var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
 
-type GenericFederatedRequestHandler struct {
+type genericFederatedRequestHandler struct {
 	next    http.Handler
 	handler *Handler
 }
 
-type CollectionFederatedRequestHandler struct {
+type collectionFederatedRequestHandler struct {
 	next    http.Handler
 	handler *Handler
 }
@@ -64,7 +64,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	h.proxy.Do(w, req, urlOut, client, filter)
 }
 
-func (h *GenericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := wfRe.FindStringSubmatch(req.URL.Path)
 	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
@@ -132,7 +132,7 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 	return resp, nil
 }
 
-func (h *CollectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := collectionRe.FindStringSubmatch(req.URL.Path)
 	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
@@ -145,8 +145,8 @@ func (h *CollectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/arvados/v1/workflows", next)
-	mux.Handle("/arvados/v1/workflows/", &GenericFederatedRequestHandler{next, h})
-	mux.Handle("/arvados/v1/collections/", &CollectionFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)
 
 	return mux
