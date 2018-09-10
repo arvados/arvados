@@ -13,6 +13,7 @@ import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-acti
 import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
+import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -43,9 +44,7 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: (dispatch, resource) => dispatch<any>(openCopyProcessDialog(resource))
     },
     {
         icon: ReRunProcessIcon,

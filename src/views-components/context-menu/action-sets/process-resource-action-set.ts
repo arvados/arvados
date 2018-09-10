@@ -9,6 +9,7 @@ import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } 
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
+import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 
 export const processResourceActionSet: ContextMenuActionSet = [[
     {
@@ -39,9 +40,7 @@ export const processResourceActionSet: ContextMenuActionSet = [[
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: (dispatch, resource) => dispatch<any>(openCopyProcessDialog(resource))
     },
     {
         icon: DetailsIcon,

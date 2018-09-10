@@ -9,19 +9,19 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
 import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
-import { CollectionCopyFormDialogData } from "~/store/collections/collection-copy-actions";
+import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
-type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CollectionCopyFormDialogData>;
+type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CopyFormDialogData>;
 
-export const DialogCollectionCopy = (props: CopyFormDialogProps) =>
+export const DialogCopy = (props: CopyFormDialogProps) =>
     <FormDialog
         dialogTitle='Make a copy'
-        formFields={CollectionCopyFields}
+        formFields={CopyDialogFields}
         submitLabel='Copy'
         {...props}
     />;
 
-const CollectionCopyFields = () => <span>
+const CopyDialogFields = () => <span>
     <Field
         name='name'
         component={TextField}

@@ -30,6 +30,7 @@ import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
+import { CopyProcessDialog } from '~/views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
 import { UpdateProcessDialog } from '~/views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
@@ -150,6 +151,7 @@ export const Workbench = withStyles(styles)(
                     <PartialCopyCollectionDialog />
                     <FileRemoveDialog />
                     <CopyCollectionDialog />
+                    <CopyProcessDialog />
                     <FileRemoveDialog />
                     <MultipleFilesRemoveDialog />
                     <UpdateCollectionDialog />
