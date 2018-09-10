@@ -56,8 +56,10 @@ export const fetchConfig = () => {
         .get<ConfigJSON>(CONFIG_URL + "?nocache=" + (new Date()).getTime())
         .then(response => response.data)
         .catch(() => Promise.resolve(getDefaultConfig()))
-        .then(config => Axios.get<Config>(getDiscoveryURL(config.API_HOST)))
-        .then(response => response.data);
+        .then(config => Axios
+            .get<Config>(getDiscoveryURL(config.API_HOST))
+            .then(response => ({ config: response.data, apiHost: config.API_HOST })));
+
 };
 
 export const mockConfig = (config: Partial<Config>): Config => ({

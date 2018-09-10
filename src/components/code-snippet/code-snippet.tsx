@@ -14,7 +14,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         height: 'auto',
         maxHeight: '550px',
-        overflow: 'scroll',
+        overflow: 'auto',
         padding: theme.spacing.unit
     }
 });
