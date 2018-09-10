@@ -18,9 +18,7 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProcessUpdateDialog(resource));
-        }
+        execute: (dispatch, resource) => dispatch<any>(openProcessUpdateDialog(resource))
     },
     {
         icon: ShareIcon,
