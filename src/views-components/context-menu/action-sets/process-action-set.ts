@@ -12,13 +12,14 @@ import {
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
+import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 
 export const processActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProcessUpdateDialog(resource));
         }
     },
     {

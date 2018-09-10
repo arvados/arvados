@@ -8,13 +8,14 @@ import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
+import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 
 export const processResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProcessUpdateDialog(resource));
         }
     },
     {

@@ -30,6 +30,8 @@ import * as collectionUpdateActions from '~/store/collections/collection-update-
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '../processes/processes-actions';
 import * as processMoveActions from '~/store/processes/process-move-actions';
+import * as processUpdateActions from '~/store/processes/process-update-actions';
+
 import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
@@ -193,6 +195,19 @@ export const loadProcess = (uuid: string) =>
         dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
 
+    };
+
+export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        const process = await dispatch<any>(processUpdateActions.updateProcess(data));
+        if (process) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Process has been successfully updated.",
+                hideDuration: 2000
+            }));
+            dispatch<any>(updateResources([process]));
+            dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+        }
     };
 
 export const moveProcess = (data: MoveToFormDialogData) =>
