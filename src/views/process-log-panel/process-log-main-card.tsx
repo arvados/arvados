@@ -16,7 +16,6 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
 import { BackIcon } from '~/components/icon/icon';
 import { DefaultView } from '~/components/default-view/default-view';
-import { openContextMenu } from '../../store/context-menu/context-menu-actions';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
