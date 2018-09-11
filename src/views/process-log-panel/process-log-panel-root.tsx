@@ -10,14 +10,13 @@ import { ProcessLogFormDataProps, ProcessLogFormActionProps } from '~/views/proc
 import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
 import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
+import { ProcessLogMainCardActionProps } from './process-log-main-card';
 
 export type ProcessLogPanelRootDataProps = {
     process?: Process;
 } & ProcessLogFormDataProps & CodeSnippetDataProps;
 
-export type ProcessLogPanelRootActionProps = {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
-} & ProcessLogFormActionProps;
+export type ProcessLogPanelRootActionProps = ProcessLogMainCardActionProps & ProcessLogFormActionProps;
 
 export type ProcessLogPanelRootProps = ProcessLogPanelRootDataProps & ProcessLogPanelRootActionProps;
 
