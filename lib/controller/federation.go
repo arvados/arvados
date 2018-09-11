@@ -285,16 +285,29 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		wg := sync.WaitGroup{}
 		var errors []string
 		var errorCode int = 0
+
+		// use channel as a semaphore to limit it to 4
+		// parallel requests at a time
+		sem := make(chan bool, 4)
+		defer close(sem)
 		for remoteID := range h.handler.Cluster.RemoteClusters {
+			// blocks until it can put a value into the
+			// channel (which has a max queue capacity)
+			sem <- true
+			if sentResponse {
+				break
+			}
 			search := &searchRemoteClusterForPDH{remoteID, &mtx, &sentResponse,
 				&sharedContext, cancelFunc, &errors, &errorCode}
 			wg.Add(1)
 			go func() {
 				h.handler.remoteClusterRequest(search.remoteID, w, req, search.filterRemoteClusterResponse)
 				wg.Done()
+				<-sem
 			}()
 		}
 		wg.Wait()
+
 		if sentResponse {
 			return
 		}
