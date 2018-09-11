@@ -16,6 +16,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
 import { BackIcon } from '~/components/icon/icon';
 import { DefaultView } from '~/components/default-view/default-view';
+import { openContextMenu } from '../../store/context-menu/context-menu-actions';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -53,10 +54,18 @@ interface ProcessLogMainCardDataProps {
     process: Process;
 }
 
-export type ProcessLogMainCardProps = ProcessLogMainCardDataProps & CodeSnippetDataProps & ProcessLogFormDataProps & ProcessLogFormActionProps;
+export interface ProcessLogMainCardActionProps {
+    onContextMenu: (event: React.MouseEvent<any>, process: Process) => void;
+}
+
+export type ProcessLogMainCardProps = ProcessLogMainCardDataProps
+    & ProcessLogMainCardActionProps
+    & CodeSnippetDataProps
+    & ProcessLogFormDataProps
+    & ProcessLogFormActionProps;
 
 export const ProcessLogMainCard = withStyles(styles)(
-    ({ classes, process, selectedFilter, filters, onChange, lines }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
+    ({ classes, process, selectedFilter, filters, onChange, lines, onContextMenu }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
         <Grid item xs={12}>
             <Link to={`/processes/${process.containerRequest.uuid}`} className={classes.backLink}>
                 <BackIcon className={classes.backIcon} /> Back
@@ -65,34 +74,35 @@ export const ProcessLogMainCard = withStyles(styles)(
                 <CardHeader
                     avatar={<ProcessIcon className={classes.iconHeader} />}
                     action={
-                        <div>
-                            <IconButton aria-label="More options">
-                                <Tooltip title="More options">
-                                    <MoreOptionsIcon />
-                                </Tooltip>
-                            </IconButton>
-                        </div>
-                    }
+                        <IconButton onClick={event => onContextMenu(event, process)} aria-label="More options">
+                            <Tooltip title="More options">
+                                <MoreOptionsIcon />
+                            </Tooltip>
+                        </IconButton>}
                     title={
                         <Tooltip title={process.containerRequest.name} placement="bottom-start">
                             <Typography noWrap variant="title" className={classes.title}>
                                 {process.containerRequest.name}
                             </Typography>
-                        </Tooltip>
-                    }
+                        </Tooltip>}
                     subheader={process.containerRequest.description} />
                 <CardContent>
                     {lines.length > 0
-                        ? < Grid container spacing={24} alignItems='center'>
-                            <Grid item xs={6}>
-                                <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
-                            </Grid>
-                            <Grid item xs={6} className={classes.link}>
-                                <Typography component='div'>
-                                    Go to Log collection
+                        ? < Grid
+                            container
+                            spacing={24}
+                            direction='column'>
+                            <Grid container item>
+                                <Grid item xs={6}>
+                                    <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
+                                </Grid>
+                                <Grid item xs={6} className={classes.link}>
+                                    <Typography component='div'>
+                                        Go to Log collection
                                 </Typography>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid item xs>
                                 <ProcessLogCodeSnippet lines={lines} />
                             </Grid>
                         </Grid>

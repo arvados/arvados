@@ -20,19 +20,19 @@ export interface ProcessPanelRootDataProps {
 }
 
 export interface ProcessPanelRootActionProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
     onToggle: (status: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
 
-export const ProcessPanelRoot = (props: ProcessPanelRootProps) =>
-    props.process
+export const ProcessPanelRoot = ({process, ...props}: ProcessPanelRootProps) =>
+    process
         ? <Grid container spacing={16} alignItems="stretch">
             <Grid item sm={12} md={7}>
                 <ProcessInformationCard
-                    process={props.process}
-                    onContextMenu={props.onContextMenu} />
+                    process={process}
+                    onContextMenu={event => props.onContextMenu(event, process)} />
             </Grid>
             <Grid item sm={12} md={5}>
                 <SubprocessesCard
