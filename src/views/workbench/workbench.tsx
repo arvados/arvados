@@ -32,6 +32,7 @@ import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-c
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 import { CopyProcessDialog } from '~/views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
+import { UpdateProcessDialog } from '~/views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProcessDialog } from '~/views-components/dialog-forms/move-process-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
@@ -154,6 +155,7 @@ export const Workbench = withStyles(styles)(
                     <FileRemoveDialog />
                     <MultipleFilesRemoveDialog />
                     <UpdateCollectionDialog />
+                    <UpdateProcessDialog />
                     <FilesUploadCollectionDialog />
                     <UpdateProjectDialog />
                     <MoveCollectionDialog />
