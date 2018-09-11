@@ -21,7 +21,7 @@ describe("FilterBuilder", () => {
     it("should add 'equal' rule (boolean)", () => {
         expect(
             filters.addEqual("is_trashed", true).getFilters()
-        ).toEqual(`["etag","=",true]`);
+        ).toEqual(`["is_trashed","=",true]`);
     });
 
     it("should add 'like' rule", () => {
