@@ -100,7 +100,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
             end
             %>
             <% if wu.is_finished? %>
-            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=runtime_status_tooltip%>">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=sanitize(runtime_status_tooltip)%>">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>
@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
             </div>
             <% else %>
-            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=runtime_status_tooltip%>">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=sanitize(runtime_status_tooltip)%>">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>

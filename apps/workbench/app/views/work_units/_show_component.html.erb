@@ -42,29 +42,43 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <div class="container">
   <div class="col-md-12">
     <div class="panel panel-danger">
-      <div class="panel-heading">Error Information</div>
-      <div class="panel-body">
-        <%= wu.runtime_status[:error] %>
-        <%# Show collapsable detailed error information, if any %>
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a class="component-detail-panel" data-toggle="collapse" href="#errorDetail">
+            <span class="caret"></span> Error: <%= sanitize(wu.runtime_status[:error]) %>
+          </a>
+        </h4>
+      </div>
+      <div id="errorDetail" class="panel-body panel-collapse collapse">
         <% if wu.runtime_status[:errorDetail] %>
-        <a class="btn btn-sm btn-primary pull-right" data-toggle="collapse" data-target="#errorDetail">Toggle details</a>
-        <div class="clearfix"></div>
-        <div id="errorDetail" class="collapse">
-          <pre><%= wu.runtime_status[:errorDetail] %></pre>
-        </div>
+          <pre><%= sanitize(wu.runtime_status[:errorDetail]) %></pre>
+        <% else %>
+          No detailed information available.
         <% end %>
       </div>
     </div>
   </div>
 </div>
+<% end %>
+
 <%# Display runtime warning message %>
-<% elsif wu.runtime_status.andand[:warning] %>
+<% if wu.runtime_status.andand[:warning] %>
 <div class="container">
   <div class="col-md-12">
     <div class="panel panel-warning">
-      <div class="panel-heading">Warning</div>
-      <div class="panel-body">
-        <%= wu.runtime_status[:warning] %>
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a class="component-detail-panel" data-toggle="collapse" href="#warningDetail">
+            <span class="caret"></span> Warning: <%= sanitize(wu.runtime_status[:warning]) %>
+          </a>
+        </h4>
+      </div>
+      <div id="warningDetail" class="panel-body panel-collapse collapse">
+        <% if wu.runtime_status[:warningDetail] %>
+          <pre><%= sanitize(wu.runtime_status[:warningDetail]) %></pre>
+        <% else %>
+          No detailed information available.
+        <% end %>
       </div>
     </div>
   </div>
