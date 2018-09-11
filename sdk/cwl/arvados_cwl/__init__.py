@@ -81,16 +81,16 @@ class RuntimeStatusLoggingHandler(logging.Handler):
             kind = 'error'
         elif record.levelno == logging.WARNING:
             kind = 'warning'
-        elif record.levelno == logging.INFO:
-            kind = 'activity'
         if kind is not None:
             log_msg = record.getMessage()
             if '\n' in log_msg:
-                # If the logged message is multi-line, include it as a detail
+                # If the logged message is multi-line, use its first line as status
+                # and the rest as detail.
+                status, detail = log_msg.split('\n', 1)
                 self.runtime_status_update(
                     kind,
-                    "%s from %s (please see details)" % (kind, record.name),
-                    log_msg
+                    "%s: %s" % (record.name, status),
+                    detail
                 )
             else:
                 self.runtime_status_update(
@@ -250,9 +250,12 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             if kind == 'error':
                 if not runtime_status.get('error'):
                     runtime_status.update({
-                        'error': message,
-                        'errorDetail': detail or "No error logs available"
+                        'error': message
                     })
+                    if detail is not None:
+                        runtime_status.update({
+                            'errorDetail': detail
+                        })
                 # Further errors are only mentioned as a count.
                 else:
                     # Get anything before an optional 'and N more' string.
