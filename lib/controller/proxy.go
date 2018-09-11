@@ -32,7 +32,14 @@ var dropHeaders = map[string]bool{
 	"Upgrade":           true,
 }
 
-func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, client *http.Client) {
+type ResponseFilter func(*http.Response) (*http.Response, error)
+
+func (p *proxy) Do(w http.ResponseWriter,
+	reqIn *http.Request,
+	urlOut *url.URL,
+	client *http.Client,
+	filter ResponseFilter) {
+
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
 	hdrOut := http.Header{}
@@ -69,6 +76,30 @@ func (p *proxy) Do(w http.ResponseWriter, reqIn *http.Request, urlOut *url.URL, 
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadGateway)
 		return
+	}
+
+	// make sure original response body gets closed
+	originalBody := resp.Body
+	defer originalBody.Close()
+
+	if filter != nil {
+		resp, err = filter(resp)
+
+		if err != nil {
+			httpserver.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		if resp == nil {
+			// filter() returned a nil response, this means suppress
+			// writing a response, for the case where there might
+			// be multiple response writers.
+			return
+		}
+
+		// the filter gave us a new response body, make sure that gets closed too.
+		if resp.Body != originalBody {
+			defer resp.Body.Close()
+		}
 	}
 	for k, v := range resp.Header {
 		for _, v := range v {
