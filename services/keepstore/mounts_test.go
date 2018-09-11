@@ -28,7 +28,7 @@ func (s *MountsSuite) SetUpTest(c *check.C) {
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
 	theConfig.Start()
-	s.rtr = MakeRESTRouter()
+	s.rtr = MakeRESTRouter(testCluster)
 }
 
 func (s *MountsSuite) TearDownTest(c *check.C) {

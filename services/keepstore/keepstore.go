@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -149,6 +150,22 @@ func main() {
 		}
 	}
 
+	var cluster *arvados.Cluster
+	cfg, err := arvados.GetConfig(arvados.DefaultConfigFile)
+	if err != nil && os.IsNotExist(err) {
+		log.Warnf("DEPRECATED: proceeding without cluster configuration file %q (%s)", arvados.DefaultConfigFile, err)
+		cluster = &arvados.Cluster{
+			ClusterID: "xxxxx",
+		}
+	} else if err != nil {
+		log.Fatalf("load config %q: %s", arvados.DefaultConfigFile, err)
+	} else {
+		cluster, err = cfg.GetCluster("")
+		if err != nil {
+			log.Fatalf("config error in %q: %s", arvados.DefaultConfigFile, err)
+		}
+	}
+
 	log.Println("keepstore starting, pid", os.Getpid())
 	defer log.Println("keepstore exiting, pid", os.Getpid())
 
@@ -156,7 +173,7 @@ func main() {
 	KeepVM = MakeRRVolumeManager(theConfig.Volumes)
 
 	// Middleware/handler stack
-	router := MakeRESTRouter()
+	router := MakeRESTRouter(cluster)
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", theConfig.Listen)
