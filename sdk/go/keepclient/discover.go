@@ -23,7 +23,10 @@ func RefreshServiceDiscovery() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
 	for _, ent := range svcListCache {
-		ent.clear <- struct{}{}
+		select {
+		case ent.clear <- struct{}{}:
+		default:
+		}
 	}
 }
 
@@ -136,7 +139,7 @@ func (kc *KeepClient) discoverServices() error {
 		arv := *kc.Arvados
 		cacheEnt = cachedSvcList{
 			latest: make(chan svcList),
-			clear:  make(chan struct{}),
+			clear:  make(chan struct{}, 1),
 			arv:    &arv,
 		}
 		go cacheEnt.poll()
