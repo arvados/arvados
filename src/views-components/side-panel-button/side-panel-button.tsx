@@ -51,7 +51,7 @@ const transformOrigin: PopoverOrigin = {
 const checkButtonVisibility = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
     const match = matchProjectRoute(pathname);
-    return match ? true : false;
+    return !!match;
 };
 
 export const SidePanelButton = withStyles(styles)(
