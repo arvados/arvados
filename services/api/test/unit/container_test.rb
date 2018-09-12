@@ -131,6 +131,42 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container runtime_status data types" do
+    set_user_from_auth :active
+    attrs = {
+      environment: {},
+      mounts: {"BAR" => {"kind" => "FOO"}},
+      output_path: "/tmp",
+      priority: 1,
+      runtime_constraints: {"vcpus" => 1, "ram" => 1}
+    }
+    c, _ = minimal_new(attrs)
+    assert_equal c.runtime_status, {}
+    assert_equal Container::Queued, c.state
+
+    set_user_from_auth :dispatch1
+    c.update_attributes! state: Container::Locked
+    c.update_attributes! state: Container::Running
+
+    [
+      'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
+    ].each do |k|
+      # String type is allowed
+      string_val = 'A string is accepted'
+      c.update_attributes! runtime_status: {k => string_val}
+      assert_equal string_val, c.runtime_status[k]
+
+      # Other types aren't allowed
+      [
+        42, false, [], {}, nil
+      ].each do |unallowed_val|
+        assert_raises ActiveRecord::RecordInvalid do
+          c.update_attributes! runtime_status: {k => unallowed_val}
+        end
+      end
+    end
+  end
+
   test "Container runtime_status updates" do
     set_user_from_auth :active
     attrs = {

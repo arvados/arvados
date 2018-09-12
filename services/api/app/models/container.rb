@@ -29,6 +29,7 @@ class Container < ArvadosModel
   before_validation :set_timestamps
   validates :command, :container_image, :output_path, :cwd, :priority, { presence: true }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validate :validate_runtime_status
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
@@ -402,6 +403,17 @@ class Container < ArvadosModel
 
     if self.state_changed? and [Complete, Cancelled].include? self.state
       self.finished_at ||= db_current_time
+    end
+  end
+
+  # Check that well-known runtime status keys have desired data types
+  def validate_runtime_status
+    [
+      'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
+    ].each do |k|
+      if self.runtime_status.andand.include?(k) && !self.runtime_status[k].is_a?(String)
+        errors.add(:runtime_status, "'#{k}' value must be a string")
+      end
     end
   end
 
