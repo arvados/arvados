@@ -53,7 +53,7 @@ export const SidePanelButton = withStyles(styles)(
 
             transformOrigin: PopoverOrigin = {
                 vertical: -50,
-                horizontal: 25
+                horizontal: 45
             };
 
             render() {
