@@ -8,7 +8,6 @@ import { connect } from 'react-redux';
 import { getProcess } from '~/store/processes/process';
 import { Dispatch } from 'redux';
 import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
-import { matchProcessLogRoute } from '~/routes/routes';
 import { ProcessLogPanelRootDataProps, ProcessLogPanelRootActionProps, ProcessLogPanelRoot } from './process-log-panel-root';
 import { getProcessPanelLogs } from '~/store/process-logs-panel/process-logs-panel';
 import { setProcessLogsPanelFilter } from '~/store/process-logs-panel/process-logs-panel-actions';

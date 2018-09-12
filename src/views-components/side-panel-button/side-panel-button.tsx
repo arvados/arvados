@@ -13,6 +13,7 @@ import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, Menu
 import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/icon/icon';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
+import { matchProjectRoute } from '~/routes/routes';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -33,6 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SidePanelDataProps {
     currentItemId: string;
+    showButton: boolean;
 }
 
 interface SidePanelState {
@@ -41,9 +43,21 @@ interface SidePanelState {
 
 type SidePanelProps = SidePanelDataProps & DispatchProp & WithStyles<CssRules>;
 
+const transformOrigin: PopoverOrigin = {
+    vertical: -50,
+    horizontal: 45
+};
+
+const checkButtonVisibility = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchProjectRoute(pathname);
+    return match ? true : false;
+};
+
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties)
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+        showButton: checkButtonVisibility(state)
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -51,16 +65,11 @@ export const SidePanelButton = withStyles(styles)(
                 anchorEl: undefined
             };
 
-            transformOrigin: PopoverOrigin = {
-                vertical: -50,
-                horizontal: 45
-            };
-
             render() {
-                const { classes } = this.props;
+                const { classes, showButton } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
-                    <Grid container>
+                    {showButton && <Grid container>
                         <Grid container item xs alignItems="center" justify="center">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
@@ -75,7 +84,7 @@ export const SidePanelButton = withStyles(styles)(
                                 open={Boolean(anchorEl)}
                                 onClose={this.handleClose}
                                 onClick={this.handleClose}
-                                transformOrigin={this.transformOrigin}>
+                                transformOrigin={transformOrigin}>
                                 <MenuItem className={classes.menuItem} onClick={this.handleNewCollectionClick}>
                                     <CollectionIcon className={classes.icon} /> New collection
                                 </MenuItem>
@@ -87,7 +96,7 @@ export const SidePanelButton = withStyles(styles)(
                                 </MenuItem>
                             </Menu>
                         </Grid>
-                    </Grid>
+                    </Grid> }
                 </Toolbar>;
             }
 
