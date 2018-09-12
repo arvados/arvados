@@ -16,7 +16,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%'
     },
     title: {
-        color: theme.customs.colors.grey700
+        color: theme.palette.grey["700"]
     },
     gridFilter: {
         height: '20px',
