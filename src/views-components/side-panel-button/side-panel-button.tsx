@@ -1,0 +1,111 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import * as React from 'react';
+import { connect, DispatchProp } from 'react-redux';
+import { RootState } from '~/store/store';
+import { getProperty } from '~/store/properties/properties';
+import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { PopoverOrigin } from '@material-ui/core/Popover';
+import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, MenuItem, Menu } from '@material-ui/core';
+import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/icon/icon';
+import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
+import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
+
+type CssRules = 'button' | 'menuItem' | 'icon';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    button: {
+        boxShadow: 'none',
+        padding: '2px 10px 2px 5px',
+        fontSize: '0.75rem'
+    },
+    menuItem: {
+        fontSize: '0.875rem',
+        color: theme.palette.grey["700"]
+    },
+    icon: {
+        marginRight: theme.spacing.unit
+    }
+});
+
+interface SidePanelDataProps {
+    currentItemId: string;
+}
+
+interface SidePanelState {
+    anchorEl: any;
+}
+
+type SidePanelProps = SidePanelDataProps & DispatchProp & WithStyles<CssRules>;
+
+export const SidePanelButton = withStyles(styles)(
+    connect((state: RootState) => ({
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties)
+    }))(
+        class extends React.Component<SidePanelProps> {
+
+            state: SidePanelState = {
+                anchorEl: undefined
+            };
+
+            transformOrigin: PopoverOrigin = {
+                vertical: -50,
+                horizontal: 25
+            };
+
+            render() {
+                const { classes } = this.props;
+                const { anchorEl } = this.state;
+                return <Toolbar>
+                    <Grid container>
+                        <Grid container item xs alignItems="center" justify="center">
+                            <Button variant="contained" color="primary" size="small" className={classes.button}
+                                aria-owns={anchorEl ? 'aside-menu-list' : undefined}
+                                aria-haspopup="true"
+                                onClick={this.handleOpen}>
+                                <AddIcon />
+                                New
+                            </Button>
+                            <Menu
+                                id='aside-menu-list'
+                                anchorEl={anchorEl}
+                                open={Boolean(anchorEl)}
+                                onClose={this.handleClose}
+                                onClick={this.handleClose}
+                                transformOrigin={this.transformOrigin}>
+                                <MenuItem className={classes.menuItem} onClick={this.handleNewCollectionClick}>
+                                    <CollectionIcon className={classes.icon} /> New collection
+                                </MenuItem>
+                                <MenuItem className={classes.menuItem}>
+                                    <ProcessIcon className={classes.icon} /> Run a process
+                                </MenuItem>
+                                <MenuItem className={classes.menuItem} onClick={this.handleNewProjectClick}>
+                                    <ProjectIcon className={classes.icon} /> New project
+                                </MenuItem>
+                            </Menu>
+                        </Grid>
+                    </Grid>
+                </Toolbar>;
+            }
+
+            handleNewProjectClick = () => {
+                this.props.dispatch<any>(openProjectCreateDialog(this.props.currentItemId));
+            }
+
+            handleNewCollectionClick = () => {
+                this.props.dispatch<any>(openCollectionCreateDialog(this.props.currentItemId));
+            }
+
+            handleClose = () => {
+                this.setState({ anchorEl: undefined });
+            }
+
+            handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+                this.setState({ anchorEl: event.currentTarget });
+            }
+        }
+    )
+);
