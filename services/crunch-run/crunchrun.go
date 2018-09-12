@@ -1428,11 +1428,11 @@ func (runner *ContainerRunner) Run() (err error) {
 		// hasn't already been assigned when Run() returns,
 		// this cleanup func will cause Run() to return the
 		// first non-nil error that is passed to checkErr().
-		checkErr := func(e error) {
+		checkErr := func(prefix string, e error) {
 			if e == nil {
 				return
 			}
-			runner.CrunchLog.Print(e)
+			runner.CrunchLog.Printf("%s error: %v", prefix, e)
 			if err == nil {
 				err = e
 			}
@@ -1443,7 +1443,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		}
 
 		// Log the error encountered in Run(), if any
-		checkErr(err)
+		checkErr("Run", err)
 
 		if runner.finalState == "Queued" {
 			runner.UpdateContainerFinal()
@@ -1456,10 +1456,10 @@ func (runner *ContainerRunner) Run() (err error) {
 			// capture partial output and write logs
 		}
 
-		checkErr(runner.CaptureOutput())
-		checkErr(runner.stopHoststat())
-		checkErr(runner.CommitLogs())
-		checkErr(runner.UpdateContainerFinal())
+		checkErr("CaptureOutput", runner.CaptureOutput())
+		checkErr("stopHoststat", runner.stopHoststat())
+		checkErr("CommitLogs", runner.CommitLogs())
+		checkErr("UpdateContainerFinal", runner.UpdateContainerFinal())
 	}()
 
 	err = runner.fetchContainerRecord()

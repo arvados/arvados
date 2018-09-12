@@ -70,22 +70,22 @@ type copier struct {
 func (cp *copier) Copy() (string, error) {
 	err := cp.walkMount("", cp.ctrOutputDir, limitFollowSymlinks, true)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("in walkMount: %v", err)
 	}
 	fs, err := (&arvados.Collection{ManifestText: cp.manifest}).FileSystem(cp.client, cp.keepClient)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating Collection.FileSystem: %v", err)
 	}
 	for _, d := range cp.dirs {
 		err = fs.Mkdir(d, 0777)
-		if err != nil {
-			return "", err
+		if err != nil && err != os.ErrExist {
+			return "", fmt.Errorf("Could not Mkdir %v: %v", d, err)
 		}
 	}
 	for _, f := range cp.files {
 		err = cp.copyFile(fs, f)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("Could not copyFile %v: %v", f, err)
 		}
 	}
 	return fs.MarshalManifest(".")
