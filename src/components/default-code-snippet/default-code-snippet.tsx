@@ -23,9 +23,7 @@ const theme = createMuiTheme({
     }
 });
 
-type DefaultCodeSnippet = CodeSnippetDataProps;
-
-export const DefaultCodeSnippet = (props: DefaultCodeSnippet) => 
+export const DefaultCodeSnippet = (props: CodeSnippetDataProps) => 
     <MuiThemeProvider theme={theme}>
-        <CodeSnippet lines={props.lines} />
+        <CodeSnippet {...props} />
     </MuiThemeProvider>;

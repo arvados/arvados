@@ -26,6 +26,8 @@ export const getResourceUrl = (uuid: string) => {
             return getProjectUrl(uuid);
         case ResourceKind.COLLECTION:
             return getCollectionUrl(uuid);
+        case ResourceKind.PROCESS:
+            return getProcessUrl(uuid);
         default:
             return undefined;
     }

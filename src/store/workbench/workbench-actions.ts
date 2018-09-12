@@ -29,6 +29,9 @@ import * as collectionCopyActions from '~/store/collections/collection-copy-acti
 import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '../processes/processes-actions';
+import * as processMoveActions from '~/store/processes/process-move-actions';
+import * as processUpdateActions from '~/store/processes/process-update-actions';
+import * as processCopyActions from '~/store/processes/process-copy-actions';
 import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
@@ -36,6 +39,7 @@ import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
 
+import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
 export const loadWorkbench = () =>
     async (dispatch: Dispatch, getState: () => RootState) => {
@@ -163,7 +167,7 @@ export const updateCollection = (data: collectionUpdateActions.CollectionUpdateF
         }
     };
 
-export const copyCollection = (data: collectionCopyActions.CollectionCopyFormDialogData) =>
+export const copyCollection = (data: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             const collection = await dispatch<any>(collectionCopyActions.copyCollection(data));
@@ -195,6 +199,47 @@ export const loadProcess = (uuid: string) =>
         dispatch<any>(setProcessBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
 
+    };
+
+export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        try {
+            const process = await dispatch<any>(processUpdateActions.updateProcess(data));
+            if (process) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Process has been successfully updated.",
+                    hideDuration: 2000
+                }));
+                dispatch<any>(updateResources([process]));
+                dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+            }
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
+    };
+
+export const moveProcess = (data: MoveToFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await dispatch<any>(processMoveActions.moveProcess(data));
+            dispatch<any>(updateResources([process]));
+            dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been moved.', hideDuration: 2000 }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
+    };
+
+export const copyProcess = (data: CopyFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await dispatch<any>(processCopyActions.copyProcess(data));
+            dispatch<any>(updateResources([process]));
+            dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been copied.', hideDuration: 2000 }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+        }
     };
 
 export const loadProcessLog = (uuid: string) =>

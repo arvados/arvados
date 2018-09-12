@@ -13,6 +13,7 @@ import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { matchProcessRoute } from '~/routes/routes';
+import { Process } from '~/store/processes/process';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -84,14 +85,10 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
         }
     };
 
-export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { location } = getState().router;
-        const pathname = location ? location.pathname : '';
-        const match = matchProcessRoute(pathname); 
-        const uuid = match ? match.params.id : '';
         const resource = {
-            uuid,
+            uuid: process.containerRequest.uuid,
             ownerUuid: '',
             kind: ResourceKind.PROCESS,
             name: '',
@@ -108,6 +105,8 @@ export const resourceKindToContextMenuKind = (uuid: string) => {
             return ContextMenuKind.PROJECT;
         case ResourceKind.COLLECTION:
             return ContextMenuKind.COLLECTION_RESOURCE;
+        case ResourceKind.PROCESS:
+            return ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
             return ContextMenuKind.ROOT_PROJECT;
         default:

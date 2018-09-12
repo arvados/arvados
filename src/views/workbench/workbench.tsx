@@ -30,17 +30,20 @@ import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
+import { CopyProcessDialog } from '~/views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
+import { UpdateProcessDialog } from '~/views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
+import { MoveProcessDialog } from '~/views-components/dialog-forms/move-process-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
-import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
+import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
+import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
 type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
 
@@ -144,21 +147,25 @@ export const Workbench = withStyles(styles)(
                             </Grid>}
                     </Grid>
                     <ContextMenu />
-                    <Snackbar />
-                    <CreateProjectDialog />
-                    <CreateCollectionDialog />
-                    <RenameFileDialog />
-                    <PartialCopyCollectionDialog />
-                    <FileRemoveDialog />
                     <CopyCollectionDialog />
-                    <FileRemoveDialog />
-                    <MultipleFilesRemoveDialog />
-                    <UpdateCollectionDialog />
-                    <FilesUploadCollectionDialog />
-                    <UpdateProjectDialog />
-                    <MoveCollectionDialog />
-                    <MoveProjectDialog />
+                    <CopyProcessDialog />
+                    <CreateCollectionDialog />
+                    <CreateProjectDialog />
                     <CurrentTokenDialog />
+                    <FileRemoveDialog />
+                    <FileRemoveDialog />
+                    <FilesUploadCollectionDialog />
+                    <MoveCollectionDialog />
+                    <MoveProcessDialog />
+                    <MoveProjectDialog />
+                    <MultipleFilesRemoveDialog />
+                    <PartialCopyCollectionDialog />
+                    <ProcessCommandDialog />
+                    <RenameFileDialog />
+                    <Snackbar />
+                    <UpdateCollectionDialog />
+                    <UpdateProcessDialog />
+                    <UpdateProjectDialog />
                 </>;
             }
 

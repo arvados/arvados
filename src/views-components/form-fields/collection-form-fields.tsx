@@ -29,6 +29,6 @@ export const CollectionProjectPickerField = () =>
         validate={COLLECTION_PROJECT_VALIDATION} />;
 
 const ProjectPicker = (props: WrappedFieldProps) =>
-    <div style={{ width: '400px', height: '144px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '144px', display: 'flex', flexDirection: 'column' }}>
         <ProjectTreePicker onChange={projectUuid => props.input.onChange(projectUuid)} />
     </div>;

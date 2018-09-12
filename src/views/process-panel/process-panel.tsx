@@ -27,8 +27,8 @@ const mapStateToProps = ({ router, resources, processPanel }: RootState): Proces
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
-    onContextMenu: event => {
-        dispatch<any>(openProcessContextMenu(event));
+    onContextMenu: (event, process) => {
+        dispatch<any>(openProcessContextMenu(event, process));
     },
     onToggle: status => {
         dispatch<any>(toggleProcessPanelFilter(status));

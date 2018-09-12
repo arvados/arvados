@@ -36,6 +36,7 @@ import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
+import { processResourceActionSet } from './views-components/context-menu/action-sets/process-resource-action-set';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -54,6 +55,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActio
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
+addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 
 fetchConfig()

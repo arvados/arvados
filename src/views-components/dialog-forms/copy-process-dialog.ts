@@ -5,17 +5,17 @@
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
-import { COLLECTION_COPY_FORM_NAME } from '~/store/collections/collection-copy-actions';
+import { PROCESS_COPY_FORM_NAME } from '~/store/processes/process-copy-actions';
 import { DialogCopy } from "~/views-components/dialog-copy/dialog-copy";
-import { copyCollection } from '~/store/workbench/workbench-actions';
+import { copyProcess } from '~/store/workbench/workbench-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
-export const CopyCollectionDialog = compose(
-    withDialog(COLLECTION_COPY_FORM_NAME),
+export const CopyProcessDialog = compose(
+    withDialog(PROCESS_COPY_FORM_NAME),
     reduxForm<CopyFormDialogData>({
-        form: COLLECTION_COPY_FORM_NAME,
+        form: PROCESS_COPY_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            dispatch(copyCollection(data));
+            dispatch(copyProcess(data));
         }
     })
 )(DialogCopy);
