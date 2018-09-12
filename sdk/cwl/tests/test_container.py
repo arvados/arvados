@@ -516,9 +516,8 @@ class TestContainer(unittest.TestCase):
         gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
         self.assertTrue(gcc_mock.called)
         root_logger = logging.getLogger('')
-        self.assertEqual(1, len(root_logger.handlers))
-        handler = root_logger.handlers[0]
-        self.assertEqual(arvados_cwl.RuntimeStatusLoggingHandler, handler.__class__)
+        handlerClasses = [h.__class__ for h in root_logger.handlers]
+        self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
 
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
