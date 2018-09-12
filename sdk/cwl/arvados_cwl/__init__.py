@@ -236,10 +236,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
     def runtime_status_update(self, kind, message, detail=None):
         """
         Updates the runtime_status field on the runner container.
-        Called from a failing child container: records the first child error
-        or updates the error count on subsequent error statuses.
-        Also called from other parts that need to report errros, warnings or just
-        activity statuses.
+        Called when there's a need to report errors, warnings or just
+        activity statuses, for example in the RuntimeStatusLoggingHandler.
         """
         with self.workflow_eval_lock:
             current = get_current_container(self.api, self.num_retries, logger)

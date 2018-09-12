@@ -5,6 +5,7 @@
 import arvados_cwl
 import arvados_cwl.context
 from arvados_cwl.arvdocker import arv_docker_clear_cache
+import copy
 import arvados.config
 import logging
 import mock
@@ -17,6 +18,7 @@ from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 
 from .matcher import JsonDiffMatcher
+from .mock_discovery import get_rootDesc
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -494,19 +496,36 @@ class TestContainer(unittest.TestCase):
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
 
-    @mock.patch("arvados_cwl.done.logtail")
+    @mock.patch("arvados_cwl.get_current_container")
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("arvados.collection.Collection")
-    def test_child_failure(self, col, reader, logtail):
+    def test_child_failure(self, col, reader, gcc_mock):
         api = mock.MagicMock()
+        api._rootDesc = copy.deepcopy(get_rootDesc())
+        del api._rootDesc.get('resources')['jobs']['methods']['create']
 
-        runner = mock.MagicMock()
-        runner.api = api
+        # Set up runner with mocked runtime_status_update()
+        self.assertFalse(gcc_mock.called)
+        runtime_status_update = mock.MagicMock()
+        arvados_cwl.ArvCwlRunner.runtime_status_update = runtime_status_update
+        runner = arvados_cwl.ArvCwlRunner(api)
+        self.assertEqual(runner.work_api, 'containers')
+
+        # Make sure ArvCwlRunner thinks it's running inside a container so it
+        # adds the logging handler that will call runtime_status_update() mock
+        gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
+        self.assertTrue(gcc_mock.called)
+        root_logger = logging.getLogger('')
+        self.assertEqual(1, len(root_logger.handlers))
+        handler = root_logger.handlers[0]
+        self.assertEqual(arvados_cwl.RuntimeStatusLoggingHandler, handler.__class__)
+
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.label = mock.MagicMock()
         runner.label.return_value = '[container testjob]'
 
         runner.api.containers().get().execute.return_value = {
@@ -517,7 +536,6 @@ class TestContainer(unittest.TestCase):
         }
 
         col().open.return_value = []
-        logtail.return_value = 'some error detail'
 
         arvjob = arvados_cwl.ArvadosContainer(runner,
                                               mock.MagicMock(),
@@ -542,10 +560,10 @@ class TestContainer(unittest.TestCase):
             "modified_at": "2017-05-26T12:01:22Z"
         })
 
-        runner.runtime_status_update.assert_called_with(
+        runtime_status_update.assert_called_with(
             'error',
-            '[container testjob] zzzzz-xvhdp-zzzzzzzzzzzzzzz failed',
-            'some error detail'
+            'arvados.cwl-runner: [container testjob] (zzzzz-xvhdp-zzzzzzzzzzzzzzz) error log:',
+            '  ** log is empty **'
         )
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "permanentFail")
 
