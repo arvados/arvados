@@ -44,13 +44,17 @@ import { MainContentBar } from '~/views-components/main-content-bar/main-content
 import { Grid } from '@material-ui/core';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
-type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
+type CssRules = 'root' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         overflow: 'hidden',
         width: '100vw',
         height: '100vh'
+    },
+    asidePanel: {
+        maxWidth: '240px',
+        background: theme.palette.background.default
     },
     contentWrapper: {
         background: theme.palette.background.default,
@@ -94,14 +98,11 @@ export const Workbench = withStyles(styles)(
             state = {
                 searchText: "",
             };
-
             render() {
+                const { classes } = this.props;
                 return <>
-                    <Grid
-                        container
-                        direction="column"
-                        className={this.props.classes.root}>
-                        <Grid className={this.props.classes.appBar}>
+                    <Grid container direction="column" className={classes.root}>
+                        <Grid className={classes.appBar}>
                             <MainAppBar
                                 searchText={this.state.searchText}
                                 user={this.props.user}
@@ -109,26 +110,15 @@ export const Workbench = withStyles(styles)(
                                 buildInfo={this.props.buildInfo} />
                         </Grid>
                         {this.props.user &&
-                            <Grid
-                                container
-                                item
-                                xs
-                                alignItems="stretch"
-                                wrap="nowrap">
-                                <Grid item>
+                            <Grid container item xs alignItems="stretch" wrap="nowrap">
+                                <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                                     <SidePanel />
                                 </Grid>
-                                <Grid
-                                    container
-                                    item
-                                    xs
-                                    component="main"
-                                    direction="column"
-                                    className={this.props.classes.contentWrapper}>
+                                <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
                                     <Grid item>
                                         <MainContentBar />
                                     </Grid>
-                                    <Grid item xs className={this.props.classes.content}>
+                                    <Grid item xs className={classes.content}>
                                         <Switch>
                                             <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                             <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
