@@ -131,6 +131,93 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container runtime_status data types" do
+    set_user_from_auth :active
+    attrs = {
+      environment: {},
+      mounts: {"BAR" => {"kind" => "FOO"}},
+      output_path: "/tmp",
+      priority: 1,
+      runtime_constraints: {"vcpus" => 1, "ram" => 1}
+    }
+    c, _ = minimal_new(attrs)
+    assert_equal c.runtime_status, {}
+    assert_equal Container::Queued, c.state
+
+    set_user_from_auth :dispatch1
+    c.update_attributes! state: Container::Locked
+    c.update_attributes! state: Container::Running
+
+    [
+      'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
+    ].each do |k|
+      # String type is allowed
+      string_val = 'A string is accepted'
+      c.update_attributes! runtime_status: {k => string_val}
+      assert_equal string_val, c.runtime_status[k]
+
+      # Other types aren't allowed
+      [
+        42, false, [], {}, nil
+      ].each do |unallowed_val|
+        assert_raises ActiveRecord::RecordInvalid do
+          c.update_attributes! runtime_status: {k => unallowed_val}
+        end
+      end
+    end
+  end
+
+  test "Container runtime_status updates" do
+    set_user_from_auth :active
+    attrs = {
+      environment: {},
+      mounts: {"BAR" => {"kind" => "FOO"}},
+      output_path: "/tmp",
+      priority: 1,
+      runtime_constraints: {"vcpus" => 1, "ram" => 1}
+    }
+    c1, _ = minimal_new(attrs)
+    assert_equal c1.runtime_status, {}
+
+    assert_equal Container::Queued, c1.state
+    assert_raises ActiveRecord::RecordInvalid do
+      c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+    end
+
+    set_user_from_auth :dispatch1
+
+    # Allow updates when state = Locked
+    c1.update_attributes! state: Container::Locked
+    c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+    assert c1.runtime_status.key? 'error'
+
+    # Reset when transitioning from Locked to Queued
+    c1.update_attributes! state: Container::Queued
+    assert_equal c1.runtime_status, {}
+
+    # Allow updates when state = Running
+    c1.update_attributes! state: Container::Locked
+    c1.update_attributes! state: Container::Running
+    c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+    assert c1.runtime_status.key? 'error'
+
+    # Don't allow updates on other states
+    c1.update_attributes! state: Container::Complete
+    assert_raises ActiveRecord::RecordInvalid do
+      c1.update_attributes! runtime_status: {'error' => 'Some other error'}
+    end
+
+    set_user_from_auth :active
+    c2, _ = minimal_new(attrs)
+    assert_equal c2.runtime_status, {}
+    set_user_from_auth :dispatch1
+    c2.update_attributes! state: Container::Locked
+    c2.update_attributes! state: Container::Running
+    c2.update_attributes! state: Container::Cancelled
+    assert_raises ActiveRecord::RecordInvalid do
+      c2.update_attributes! runtime_status: {'error' => 'Oops!'}
+    end
+  end
 
   test "Container serialized hash attributes sorted before save" do
     env = {"C" => "3", "B" => "2", "A" => "1"}
@@ -275,6 +362,32 @@ class ContainerTest < ActiveSupport::TestCase
     assert_not_nil reused
     # Selected container is the one with most progress done
     assert_equal reused.uuid, c_faster_started_second.uuid
+  end
+
+  test "find_reusable method should select non-failing running container" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running2"}})
+    c_slower, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_first, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    # Confirm the 3 container UUIDs are different.
+    assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
+    set_user_from_auth :dispatch1
+    c_slower.update_attributes!({state: Container::Locked})
+    c_slower.update_attributes!({state: Container::Running,
+                                 progress: 0.1})
+    c_faster_started_first.update_attributes!({state: Container::Locked})
+    c_faster_started_first.update_attributes!({state: Container::Running,
+                                               runtime_status: {'warning' => 'This is not an error'},
+                                               progress: 0.15})
+    c_faster_started_second.update_attributes!({state: Container::Locked})
+    c_faster_started_second.update_attributes!({state: Container::Running,
+                                                runtime_status: {'error' => 'Something bad happened'},
+                                                progress: 0.2})
+    reused = Container.find_reusable(common_attrs)
+    assert_not_nil reused
+    # Selected the non-failing container even if it's the one with less progress done
+    assert_equal reused.uuid, c_faster_started_first.uuid
   end
 
   test "find_reusable method should select locked container most likely to start sooner" do

@@ -211,4 +211,8 @@ class WorkUnit
   def template_uuid
     # return the uuid of this work unit's template, if one exists
   end
+
+  def runtime_status
+    # Returns this work unit's runtime_status, if any
+  end
 end
