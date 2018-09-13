@@ -40,8 +40,9 @@ import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-colle
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
-import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
+import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
+import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
 type CssRules = 'root' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
 
@@ -134,24 +135,25 @@ export const Workbench = withStyles(styles)(
                             </Grid>}
                     </Grid>
                     <ContextMenu />
-                    <Snackbar />
-                    <CreateProjectDialog />
-                    <CreateCollectionDialog />
-                    <RenameFileDialog />
-                    <PartialCopyCollectionDialog />
-                    <FileRemoveDialog />
                     <CopyCollectionDialog />
                     <CopyProcessDialog />
+                    <CreateCollectionDialog />
+                    <CreateProjectDialog />
+                    <CurrentTokenDialog />
                     <FileRemoveDialog />
-                    <MultipleFilesRemoveDialog />
-                    <UpdateCollectionDialog />
-                    <UpdateProcessDialog />
+                    <FileRemoveDialog />
                     <FilesUploadCollectionDialog />
-                    <UpdateProjectDialog />
                     <MoveCollectionDialog />
                     <MoveProcessDialog />
                     <MoveProjectDialog />
-                    <CurrentTokenDialog />
+                    <MultipleFilesRemoveDialog />
+                    <PartialCopyCollectionDialog />
+                    <ProcessCommandDialog />
+                    <RenameFileDialog />
+                    <Snackbar />
+                    <UpdateCollectionDialog />
+                    <UpdateProcessDialog />
+                    <UpdateProjectDialog />
                 </>;
             }
 

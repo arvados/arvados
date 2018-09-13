@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
 import { RootState } from '~/store/store';
 import { connect } from 'react-redux';
 import { getProcess } from '~/store/processes/process';
@@ -38,10 +37,10 @@ const mapStateToProps = (state: RootState): ProcessLogPanelRootDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessLogPanelRootActionProps => ({
-    onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
-        dispatch<any>(openProcessContextMenu(event));
+    onContextMenu: (event, process) => {
+        dispatch<any>(openProcessContextMenu(event, process));
     },
-    onChange: (filter: FilterOption) => {
+    onChange: filter => {
         dispatch(setProcessLogsPanelFilter(filter.value));
     }
 });
