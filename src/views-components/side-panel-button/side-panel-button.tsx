@@ -34,7 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SidePanelDataProps {
     currentItemId: string;
-    showButton: boolean;
+    buttonVisible: boolean;
 }
 
 interface SidePanelState {
@@ -48,7 +48,7 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 45
 };
 
-const checkButtonVisibility = ({ router }: RootState) => {
+const isButtonVisible = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
     const match = matchProjectRoute(pathname);
     return !!match;
@@ -57,7 +57,7 @@ const checkButtonVisibility = ({ router }: RootState) => {
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
-        showButton: checkButtonVisibility(state)
+        buttonVisible: isButtonVisible(state)
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -66,10 +66,10 @@ export const SidePanelButton = withStyles(styles)(
             };
 
             render() {
-                const { classes, showButton } = this.props;
+                const { classes, buttonVisible  } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
-                    {showButton && <Grid container>
+                    {buttonVisible  && <Grid container>
                         <Grid container item xs alignItems="center" justify="center">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
