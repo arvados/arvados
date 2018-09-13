@@ -19,7 +19,6 @@ import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/tra
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
-import { TrashableResource } from "~/models/resource";
 import { snackbarActions } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 
@@ -57,14 +56,13 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                         .addIsA("uuid", typeFilters.map(f => f.type))
                         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
                         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+                        .addEqual("is_trashed", true)
                         .getFilters(),
                     recursive: true,
                     includeTrash: true
                 });
 
-            const items = listResults.items
-                .filter(it => (it as TrashableResource).isTrashed)
-                .map(it => it.uuid);
+            const items = listResults.items.map(it => it.uuid);
 
             api.dispatch(trashPanelActions.SET_ITEMS({
                 ...listResultsToDataExplorerItemsMeta(listResults),
