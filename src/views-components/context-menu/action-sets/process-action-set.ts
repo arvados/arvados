@@ -12,15 +12,15 @@ import {
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
+import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
+import { openProcessCommandDialog } from '../../../store/processes/process-command-actions';
 
 export const processActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: (dispatch, resource) => dispatch<any>(openProcessUpdateDialog(resource))
     },
     {
         icon: ShareIcon,
@@ -72,7 +72,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: CommandIcon,
         name: "Command",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProcessCommandDialog(resource.uuid));
         }
     },
     {

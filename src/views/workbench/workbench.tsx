@@ -32,6 +32,7 @@ import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-c
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
 import { CopyProcessDialog } from '~/views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from '~/views-components/dialog-forms/update-collection-dialog';
+import { UpdateProcessDialog } from '~/views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from '~/views-components/dialog-forms/update-project-dialog';
 import { MoveProcessDialog } from '~/views-components/dialog-forms/move-process-dialog';
 import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-dialog';
@@ -39,17 +40,22 @@ import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-colle
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
-import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
+import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { WorkbenchProgress } from '~/views-components/progress/workbench-progress';
+import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
-type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
+type CssRules = 'root' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         overflow: 'hidden',
         width: '100vw',
         height: '100vh'
+    },
+    asidePanel: {
+        maxWidth: '240px',
+        background: theme.palette.background.default
     },
     contentWrapper: {
         background: theme.palette.background.default,
@@ -93,14 +99,11 @@ export const Workbench = withStyles(styles)(
             state = {
                 searchText: "",
             };
-
             render() {
+                const { classes } = this.props;
                 return <>
-                    <Grid
-                        container
-                        direction="column"
-                        className={this.props.classes.root}>
-                        <Grid className={this.props.classes.appBar}>
+                    <Grid container direction="column" className={classes.root}>
+                        <Grid className={classes.appBar}>
                             <MainAppBar
                                 searchText={this.state.searchText}
                                 user={this.props.user}
@@ -108,27 +111,16 @@ export const Workbench = withStyles(styles)(
                                 buildInfo={this.props.buildInfo} />
                         </Grid>
                         {this.props.user &&
-                            <Grid
-                                container
-                                item
-                                xs
-                                alignItems="stretch"
-                                wrap="nowrap">
-                                <Grid item>
+                            <Grid container item xs alignItems="stretch" wrap="nowrap">
+                                <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                                     <SidePanel />
                                 </Grid>
-                                <Grid
-                                    container
-                                    item
-                                    xs
-                                    component="main"
-                                    direction="column"
-                                    className={this.props.classes.contentWrapper}>
+                                <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
                                     <Grid item>
                                         <WorkbenchProgress />
                                         <MainContentBar />
                                     </Grid>
-                                    <Grid item xs className={this.props.classes.content}>
+                                    <Grid item xs className={classes.content}>
                                         <Switch>
                                             <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                             <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
@@ -145,23 +137,25 @@ export const Workbench = withStyles(styles)(
                             </Grid>}
                     </Grid>
                     <ContextMenu />
-                    <Snackbar />
-                    <CreateProjectDialog />
-                    <CreateCollectionDialog />
-                    <RenameFileDialog />
-                    <PartialCopyCollectionDialog />
-                    <FileRemoveDialog />
                     <CopyCollectionDialog />
                     <CopyProcessDialog />
+                    <CreateCollectionDialog />
+                    <CreateProjectDialog />
+                    <CurrentTokenDialog />
                     <FileRemoveDialog />
-                    <MultipleFilesRemoveDialog />
-                    <UpdateCollectionDialog />
+                    <FileRemoveDialog />
                     <FilesUploadCollectionDialog />
-                    <UpdateProjectDialog />
                     <MoveCollectionDialog />
                     <MoveProcessDialog />
                     <MoveProjectDialog />
-                    <CurrentTokenDialog />
+                    <MultipleFilesRemoveDialog />
+                    <PartialCopyCollectionDialog />
+                    <ProcessCommandDialog />
+                    <RenameFileDialog />
+                    <Snackbar />
+                    <UpdateCollectionDialog />
+                    <UpdateProcessDialog />
+                    <UpdateProjectDialog />
                 </>;
             }
 

@@ -100,11 +100,6 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
                 type: ResourceKind.COLLECTION
             },
             {
-                name: resourceLabel(ResourceKind.PROCESS),
-                selected: true,
-                type: ResourceKind.PROCESS
-            },
-            {
                 name: resourceLabel(ResourceKind.PROJECT),
                 selected: true,
                 type: ResourceKind.PROJECT

@@ -31,17 +31,13 @@ import { filterResources } from '~/store/resources/resources';
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
-type CssRules = 'root' | "toolbar" | "button";
+type CssRules = 'root' | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         width: '100%',
         height: '100%'
-    },
-    toolbar: {
-        paddingBottom: theme.spacing.unit * 3,
-        textAlign: "right"
     },
     button: {
         marginLeft: theme.spacing.unit
@@ -143,17 +139,6 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div className={classes.root}>
-                    <div className={classes.toolbar}>
-                        <Button color="primary" onClick={this.handleNewCollectionClick} variant="raised" className={classes.button}>
-                            New collection
-                        </Button>
-                        <Button color="primary" variant="raised" className={classes.button}>
-                            Run a process
-                        </Button>
-                        <Button color="primary" onClick={this.handleNewProjectClick} variant="raised" className={classes.button}>
-                            New project
-                        </Button>
-                    </div>
                     {this.hasAnyItems()
                         ? <DataExplorer
                             id={PROJECT_PANEL_ID}
@@ -177,14 +162,6 @@ export const ProjectPanel = withStyles(styles)(
 
             isCurrentItemChild = (resource: Resource) => {
                 return resource.ownerUuid === this.props.currentItemId;
-            }
-
-            handleNewProjectClick = () => {
-                this.props.dispatch<any>(openProjectCreateDialog(this.props.currentItemId));
-            }
-
-            handleNewCollectionClick = () => {
-                this.props.dispatch<any>(openCollectionCreateDialog(this.props.currentItemId));
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

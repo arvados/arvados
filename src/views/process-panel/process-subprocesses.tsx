@@ -9,14 +9,16 @@ import { Process } from '~/store/processes/process';
 
 export interface ProcessSubprocessesDataProps {
     subprocesses: Array<Process>;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
 }
 
 export const ProcessSubprocesses = ({ onContextMenu, subprocesses }: ProcessSubprocessesDataProps) => {
     return <Grid container spacing={16}>
         {subprocesses.map(subprocess =>
             <Grid item xs={12} sm={6} md={4} lg={2} key={subprocess.containerRequest.uuid}>
-                <ProcessSubprocessesCard onContextMenu={onContextMenu} subprocess={subprocess} />
+                <ProcessSubprocessesCard
+                    onContextMenu={event => onContextMenu(event, subprocess)}
+                    subprocess={subprocess} />
             </Grid>
         )}
     </Grid>;
