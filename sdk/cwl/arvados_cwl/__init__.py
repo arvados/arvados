@@ -77,9 +77,9 @@ class RuntimeStatusLoggingHandler(logging.Handler):
 
     def emit(self, record):
         kind = None
-        if record.levelno == logging.ERROR:
+        if record.levelno >= logging.ERROR:
             kind = 'error'
-        elif record.levelno == logging.WARNING:
+        elif record.levelno >= logging.WARNING:
             kind = 'warning'
         if kind is not None:
             log_msg = record.getMessage()
