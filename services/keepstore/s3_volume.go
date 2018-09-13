@@ -235,6 +235,10 @@ func (v *S3Volume) Start() error {
 	}
 
 	client := s3.New(auth, region)
+	if region.EC2Endpoint.Signer == aws.V4Signature {
+		// Currently affects only eu-central-1
+		client.Signature = aws.V4Signature
+	}
 	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
 	client.ReadTimeout = time.Duration(v.ReadTimeout)
 	v.bucket = &s3bucket{

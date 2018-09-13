@@ -116,6 +116,25 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
+  test "list trashed collections and projects" do
+    authorize_with :active
+    get(:contents, {
+          format: :json,
+          include_trash: true,
+          filters: [
+            ['uuid', 'is_a', ['arvados#collection', 'arvados#group']],
+            ['is_trashed', '=', true],
+          ],
+          limit: 10000,
+        })
+    assert_response :success
+    found_uuids = json_response['items'].collect { |i| i['uuid'] }
+    assert_includes found_uuids, groups(:trashed_project).uuid
+    refute_includes found_uuids, groups(:aproject).uuid
+    assert_includes found_uuids, collections(:expired_collection).uuid
+    refute_includes found_uuids, collections(:w_a_z_file).uuid
+  end
+
   test "list objects in home project" do
     authorize_with :active
     get :contents, {
@@ -192,25 +211,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       previous = entry
     end
     assert actually_checked_anything, "Didn't even find two items to compare."
-  end
-
-  test 'list objects across multiple projects' do
-    authorize_with :project_viewer
-    get :contents, {
-      format: :json,
-      filters: [['uuid', 'is_a', 'arvados#specimen']]
-    }
-    assert_response :success
-    found_uuids = json_response['items'].collect { |i| i['uuid'] }
-    [[:in_aproject, true],
-     [:in_asubproject, true],
-     [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
-      if should_find
-        assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
-      else
-        refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
-      end
-    end
   end
 
   # Even though the project_viewer tests go through other controllers,

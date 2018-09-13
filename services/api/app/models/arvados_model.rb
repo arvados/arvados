@@ -596,16 +596,24 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
-  def self.where_serialized(colname, value)
+  def self.where_serialized(colname, value, md5: false)
+    colsql = colname.to_s
+    if md5
+      colsql = "md5(#{colsql})"
+    end
     if value.empty?
       # rails4 stores as null, rails3 stored as serialized [] or {}
-      sql = "#{colname.to_s} is null or #{colname.to_s} IN (?)"
+      sql = "#{colsql} is null or #{colsql} IN (?)"
       sorted = value
     else
-      sql = "#{colname.to_s} IN (?)"
+      sql = "#{colsql} IN (?)"
       sorted = deep_sort_hash(value)
     end
-    where(sql, [sorted.to_yaml, SafeJSON.dump(sorted)])
+    params = [sorted.to_yaml, SafeJSON.dump(sorted)]
+    if md5
+      params = params.map { |x| Digest::MD5.hexdigest(x) }
+    end
+    where(sql, params)
   end
 
   Serializer = {
@@ -763,36 +771,51 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  def is_audit_logging_enabled?
+    return !(Rails.configuration.max_audit_log_age.to_i == 0 &&
+             Rails.configuration.max_audit_log_delete_batch.to_i > 0)
+  end
+
   def log_start_state
-    @old_attributes = Marshal.load(Marshal.dump(attributes))
-    @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
+    if is_audit_logging_enabled?
+      @old_attributes = Marshal.load(Marshal.dump(attributes))
+      @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
+    end
   end
 
   def log_change(event_type)
-    log = Log.new(event_type: event_type).fill_object(self)
-    yield log
-    log.save!
-    log_start_state
+    if is_audit_logging_enabled?
+      log = Log.new(event_type: event_type).fill_object(self)
+      yield log
+      log.save!
+      log_start_state
+    end
   end
 
   def log_create
-    log_change('create') do |log|
-      log.fill_properties('old', nil, nil)
-      log.update_to self
+    if is_audit_logging_enabled?
+      log_change('create') do |log|
+        log.fill_properties('old', nil, nil)
+        log.update_to self
+      end
     end
   end
 
   def log_update
-    log_change('update') do |log|
-      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
-      log.update_to self
+    if is_audit_logging_enabled?
+      log_change('update') do |log|
+        log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
+        log.update_to self
+      end
     end
   end
 
   def log_destroy
-    log_change('delete') do |log|
-      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
-      log.update_to nil
+    if is_audit_logging_enabled?
+      log_change('delete') do |log|
+        log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
+        log.update_to nil
+      end
     end
   end
 end

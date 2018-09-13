@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-LIBCLOUD_PIN=2.3.1.dev1
+LIBCLOUD_PIN=2.3.1.dev2
 
 using_fork=true
 if [[ $using_fork = true ]]; then

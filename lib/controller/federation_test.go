@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/Sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -298,4 +300,50 @@ func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *http.Response,
 	c.Check(err, check.IsNil)
 	c.Assert(len(jresp.Errors), check.Equals, 1)
 	c.Check(jresp.Errors[0], check.Matches, re)
+}
+
+func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.ClusterID = "zzzzz"
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+A[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+}
+
+func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+Rzzzzz-[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+
+	// Confirm the regular expression identifies other groups of hints correctly
+	c.Check(keepclient.SignedLocatorRe.FindStringSubmatch(`6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4`),
+		check.DeepEquals,
+		[]string{"6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4",
+			"6a4ff0499484c6c79c95cd8c566bd25f",
+			"+249025",
+			"+B1+C2", "+C2",
+			"+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b",
+			"05227438989d04712ea9ca1c91b556cef01d5cc7", "5ba5405b",
+			"+D3+E4", "+E4"})
 }
