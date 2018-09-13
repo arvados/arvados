@@ -41,6 +41,7 @@ import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/par
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '../../views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
+import { WorkbenchProgress } from '~/views-components/progress/workbench-progress';
 
 type CssRules = 'root' | 'contentWrapper' | 'content' | 'appBar';
 
@@ -124,6 +125,7 @@ export const Workbench = withStyles(styles)(
                                     direction="column"
                                     className={this.props.classes.contentWrapper}>
                                     <Grid item>
+                                        <WorkbenchProgress />
                                         <MainContentBar />
                                     </Grid>
                                     <Grid item xs className={this.props.classes.content}>
