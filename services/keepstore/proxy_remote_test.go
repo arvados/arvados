@@ -86,7 +86,7 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	s.remoteKeepproxy = httptest.NewServer(http.HandlerFunc(s.remoteKeepproxyHandler))
 	s.remoteAPI = httptest.NewUnstartedServer(http.HandlerFunc(s.remoteAPIHandler))
 	s.remoteAPI.StartTLS()
-	s.cluster = arvadostest.IntegrationTestCluster(c)
+	s.cluster = arvados.IntegrationTestCluster()
 	s.cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		s.remoteClusterID: arvados.RemoteCluster{
 			Host:     strings.Split(s.remoteAPI.URL, "//")[1],
