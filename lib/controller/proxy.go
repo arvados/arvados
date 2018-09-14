@@ -29,6 +29,7 @@ var dropHeaders = map[string]bool{
 	"TE":                true,
 	"Trailer":           true,
 	"Transfer-Encoding": true,
+	"Content-Encoding":  true, // interfers with Go's automatic compression/decompression
 	"Upgrade":           true,
 }
 
