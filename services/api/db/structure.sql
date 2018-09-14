@@ -172,7 +172,9 @@ CREATE TABLE public.collections (
     is_trashed boolean DEFAULT false NOT NULL,
     storage_classes_desired jsonb DEFAULT '["default"]'::jsonb,
     storage_classes_confirmed jsonb DEFAULT '[]'::jsonb,
-    storage_classes_confirmed_at timestamp without time zone
+    storage_classes_confirmed_at timestamp without time zone,
+    current_version_uuid character varying,
+    version integer DEFAULT 1 NOT NULL
 );
 
 
@@ -1782,6 +1784,13 @@ CREATE INDEX index_collections_on_created_at ON public.collections USING btree (
 
 
 --
+-- Name: index_collections_on_current_version_uuid_and_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_collections_on_current_version_uuid_and_version ON public.collections USING btree (current_version_uuid, version);
+
+
+--
 -- Name: index_collections_on_delete_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3168,4 +3177,8 @@ INSERT INTO schema_migrations (version) VALUES ('20180824152014');
 INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 
 INSERT INTO schema_migrations (version) VALUES ('20180904110712');
+
+INSERT INTO schema_migrations (version) VALUES ('20180913175443');
+
+INSERT INTO schema_migrations (version) VALUES ('20180915155335');
 
