@@ -3,23 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ProgressIndicatorAction, progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { Dispatch } from 'redux';
+import { RootState } from '~/store/store';
+import { ServiceRepository } from '~/services/services';
 
 export interface ProgressIndicatorState {
-    'workbenchProgress': { started: boolean };
+    'sidePanelProgress': { started: boolean };
     'contentProgress': { started: boolean };
-    'detailsProgress': { started: boolean };
+    // 'workbenchProgress': { started: boolean };
 }
 
 const initialState: ProgressIndicatorState = {
-    'workbenchProgress': { started: false },
+    'sidePanelProgress': { started: false },
     'contentProgress': { started: false },
-    'detailsProgress': { started: false }
+    // 'workbenchProgress': { started: false }
 };
 
 export enum ProgressIndicatorData {
-    WORKBENCH_PROGRESS = 'workbenchProgress',
+    SIDE_PANEL_PROGRESS = 'sidePanelProgress',
     CONTENT_PROGRESS = 'contentProgress',
-    DETAILS_PROGRESS = 'detailsProgress'
+    // WORKBENCH_PROGRESS = 'workbenchProgress',
 }
 
 export const progressIndicatorReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorAction) => {
@@ -32,3 +35,13 @@ export const progressIndicatorReducer = (state: ProgressIndicatorState = initial
         default: () => state,
     });
 };
+
+// export const getProgress = () =>
+//     (dispatch: Dispatch, getState: () => RootState) => {
+//         const progress = getState().progressIndicator;
+//         if (progress.sidePanelProgress.started || progress.contentProgress.started) {
+//             dispatch(progressIndicatorActions.START_SUBMIT({ id: ProgressIndicatorData.WORKBENCH_PROGRESS }));
+//         } else {
+//             dispatch(progressIndicatorActions.STOP_SUBMIT({ id: ProgressIndicatorData.WORKBENCH_PROGRESS }));
+//         }
+//     };

@@ -41,8 +41,7 @@ import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/fil
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
-import { Grid } from '@material-ui/core';
-import { WorkbenchProgress } from '~/views-components/progress/workbench-progress';
+import { Grid, LinearProgress } from '@material-ui/core';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
 type CssRules = 'root' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
@@ -75,6 +74,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface WorkbenchDataProps {
     user?: User;
     currentToken?: string;
+    loadingSidePanel: boolean;
+    loadingContent: boolean;
 }
 
 interface WorkbenchGeneralProps {
@@ -93,6 +94,8 @@ export const Workbench = withStyles(styles)(
         (state: RootState) => ({
             user: state.auth.user,
             currentToken: state.auth.apiToken,
+            loadingSidePanel: state.progressIndicator.sidePanelProgress.started,
+            loadingContent: state.progressIndicator.contentProgress.started
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
@@ -110,6 +113,7 @@ export const Workbench = withStyles(styles)(
                                 onSearch={this.onSearch}
                                 buildInfo={this.props.buildInfo} />
                         </Grid>
+                        {this.props.loadingContent || this.props.loadingSidePanel ? <LinearProgress color="secondary" /> : null}
                         {this.props.user &&
                             <Grid container item xs alignItems="stretch" wrap="nowrap">
                                 <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
@@ -117,7 +121,6 @@ export const Workbench = withStyles(styles)(
                                 </Grid>
                                 <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
                                     <Grid item>
-                                        <WorkbenchProgress />
                                         <MainContentBar />
                                     </Grid>
                                     <Grid item xs className={classes.content}>

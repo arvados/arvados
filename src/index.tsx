@@ -37,6 +37,8 @@ import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { processResourceActionSet } from './views-components/context-menu/action-sets/process-resource-action-set';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
+import { ProgressIndicatorData } from '~/store/progress-indicator/progress-indicator-reducer';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -67,6 +69,7 @@ fetchConfig()
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
+        store.dispatch(progressIndicatorActions.START_SUBMIT({ id: ProgressIndicatorData.SIDE_PANEL_PROGRESS }));
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
         const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props} />;

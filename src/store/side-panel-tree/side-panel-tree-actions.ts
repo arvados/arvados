@@ -13,6 +13,8 @@ import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
 import { TreeItemStatus } from "~/components/tree/tree";
 import { getNodeAncestors, getNodeValue, getNodeAncestorsIds, getNode } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
+import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
+import { ProgressIndicatorData } from '~/store/progress-indicator/progress-indicator-reducer';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -99,6 +101,7 @@ export const activateSidePanelTreeItem = (nodeId: string) =>
         if (!isSidePanelTreeCategory(nodeId)) {
             await dispatch<any>(activateSidePanelTreeProject(nodeId));
         }
+        dispatch(progressIndicatorActions.STOP_SUBMIT({ id: ProgressIndicatorData.SIDE_PANEL_PROGRESS }));
     };
 
 export const activateSidePanelTreeProject = (nodeId: string) =>

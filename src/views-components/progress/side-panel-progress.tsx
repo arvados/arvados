@@ -8,6 +8,6 @@ import { withProgress } from '~/store/progress-indicator/with-progress';
 import { WithProgressStateProps } from '~/store/progress-indicator/with-progress';
 import { ProgressIndicatorData } from '~/store/progress-indicator/progress-indicator-reducer';
 
-export const DetailsPanelProgress = withProgress(ProgressIndicatorData.DETAILS_PROGRESS)((props: WithProgressStateProps) => 
-    props.started ? <CircularProgress /> : null
+export const SidePanelProgress = withProgress(ProgressIndicatorData.SIDE_PANEL_PROGRESS)((props: WithProgressStateProps) =>
+    props.started ? <span style={{ display: 'flex', justifyContent: 'center', marginTop: "40px" }}><CircularProgress /></span> : null
 );
