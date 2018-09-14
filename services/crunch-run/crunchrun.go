@@ -1428,11 +1428,11 @@ func (runner *ContainerRunner) Run() (err error) {
 		// hasn't already been assigned when Run() returns,
 		// this cleanup func will cause Run() to return the
 		// first non-nil error that is passed to checkErr().
-		checkErr := func(prefix string, e error) {
+		checkErr := func(errorIn string, e error) {
 			if e == nil {
 				return
 			}
-			runner.CrunchLog.Printf("%s error: %v", prefix, e)
+			runner.CrunchLog.Printf("error in %s: %v", errorIn, e)
 			if err == nil {
 				err = e
 			}
