@@ -1,20 +1,20 @@
-// Copyright (C) The Arvados Authors. All rights reserved.
+// // Copyright (C) The Arvados Authors. All rights reserved.
+// //
+// // SPDX-License-Identifier: AGPL-3.0
 //
-// SPDX-License-Identifier: AGPL-3.0
-
-import * as React from 'react';
-import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-
-export type WithProgressStateProps = {
-    started: boolean;
-};
-
-export const withProgress = (id: string) =>
-    (component: React.ComponentType<WithProgressStateProps>) =>
-        connect(mapStateToProps(id))(component);
-
-export const mapStateToProps = (id: string) => (state: RootState): WithProgressStateProps => {
-    const progress = state.progressIndicator[id];
-    return progress;
-};
+// import * as React from 'react';
+// import { connect } from 'react-redux';
+// import { RootState } from '~/store/store';
+//
+// export type WithProgressStateProps = {
+//     started: boolean;
+// };
+//
+// export const withProgress = (id: string) =>
+//     (component: React.ComponentType<WithProgressStateProps>) =>
+//         connect(mapStateToProps(id))(component);
+//
+// export const mapStateToProps = (id: string) => (state: RootState): WithProgressStateProps => {
+//     const progress = state.progressIndicator[id];
+//     return progress;
+// };

@@ -22,11 +22,12 @@ import { mockConfig } from '~/common/config';
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     let store: RootStore;
+    const progressFn = (id: string, working: boolean) => {};
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices(mockConfig({})));
+        store = configureStore(createBrowserHistory(), createServices(mockConfig({}), progressFn));
         localStorage.clear();
-        reducer = authReducer(createServices(mockConfig({})));
+        reducer = authReducer(createServices(mockConfig({}), progressFn));
     });
 
     it('should initialise state with user and api token from local storage', () => {

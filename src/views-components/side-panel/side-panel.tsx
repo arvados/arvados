@@ -12,7 +12,6 @@ import { navigateFromSidePanel } from '../../store/side-panel/side-panel-action'
 import { Grid } from '@material-ui/core';
 import { SidePanelButton } from '~/views-components/side-panel-button/side-panel-button';
 import { RootState } from '~/store/store';
-import { SidePanelProgress } from '~/views-components/progress/side-panel-progress';
 
 const DRAWER_WITDH = 240;
 
@@ -35,7 +34,6 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
 });
 
 const mapStateToProps = (state: RootState) => ({
-    sidePanelProgress: state.progressIndicator.sidePanelProgress.started
 });
 
 export const SidePanel = compose(
@@ -44,5 +42,5 @@ export const SidePanel = compose(
 )(({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
     <Grid item xs>
         <SidePanelButton />
-        {props.sidePanelProgress ? <SidePanelProgress /> : <SidePanelTree {...props} />}
+        <SidePanelTree {...props} />
     </Grid>);

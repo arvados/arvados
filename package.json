@@ -24,7 +24,8 @@
     "react-transition-group": "2.4.0",
     "redux": "4.0.0",
     "redux-thunk": "2.3.0",
-    "unionize": "2.1.2"
+    "unionize": "2.1.2",
+    "uuid": "3.3.2"
   },
   "scripts": {
     "start": "react-scripts-ts start",
@@ -47,6 +48,7 @@
     "@types/react-router-redux": "5.0.15",
     "@types/redux-devtools": "3.0.44",
     "@types/redux-form": "7.4.5",
+    "@types/uuid": "3.4.4",
     "axios-mock-adapter": "1.15.0",
     "enzyme": "3.4.4",
     "enzyme-adapter-react-16": "1.2.0",

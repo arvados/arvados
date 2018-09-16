@@ -5,8 +5,9 @@
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 
 export const progressIndicatorActions = unionize({
-    START_SUBMIT: ofType<{ id: string }>(),
-    STOP_SUBMIT: ofType<{ id: string }>()
+    START: ofType<string>(),
+    STOP: ofType<string>(),
+    TOGGLE: ofType<{ id: string, working: boolean }>()
 });
 
 export type ProgressIndicatorAction = UnionOf<typeof progressIndicatorActions>;

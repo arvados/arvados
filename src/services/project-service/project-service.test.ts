@@ -11,7 +11,7 @@ describe("CommonResourceService", () => {
 
     it(`#create has groupClass set to "project"`, async () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({ data: {} }));
-        const projectService = new ProjectService(axiosInstance);
+        const projectService = new ProjectService(axiosInstance, (id, working) => {});
         const resource = await projectService.create({ name: "nameValue" });
         expect(axiosInstance.post).toHaveBeenCalledWith("/groups/", {
             name: "nameValue",
@@ -21,7 +21,7 @@ describe("CommonResourceService", () => {
 
     it("#list has groupClass filter set by default", async () => {
         axiosInstance.get = jest.fn(() => Promise.resolve({ data: {} }));
-        const projectService = new ProjectService(axiosInstance);
+        const projectService = new ProjectService(axiosInstance, (id, working) => {});
         const resource = await projectService.list();
         expect(axiosInstance.get).toHaveBeenCalledWith("/groups/", {
             params: {

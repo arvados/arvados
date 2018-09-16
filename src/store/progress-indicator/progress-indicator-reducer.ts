@@ -3,45 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ProgressIndicatorAction, progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
 
 export interface ProgressIndicatorState {
-    'sidePanelProgress': { started: boolean };
-    'contentProgress': { started: boolean };
-    // 'workbenchProgress': { started: boolean };
+    [key: string]: {
+        working: boolean
+    };
 }
 
 const initialState: ProgressIndicatorState = {
-    'sidePanelProgress': { started: false },
-    'contentProgress': { started: false },
-    // 'workbenchProgress': { started: false }
 };
-
-export enum ProgressIndicatorData {
-    SIDE_PANEL_PROGRESS = 'sidePanelProgress',
-    CONTENT_PROGRESS = 'contentProgress',
-    // WORKBENCH_PROGRESS = 'workbenchProgress',
-}
 
 export const progressIndicatorReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorAction) => {
     return progressIndicatorActions.match(action, {
-        START_SUBMIT: ({ id }) => ({ ...state, [id]: { started: true } }),
-        STOP_SUBMIT: ({ id }) => ({
-            ...state,
-            [id]: state[id] ? { ...state[id], started: false } : { started: false }
-        }),
+        START: id => ({ ...state, [id]: { working: true } }),
+        STOP: id => ({ ...state, [id]: { working: false } }),
+        TOGGLE: ({ id, working }) => ({ ...state, [id]: { working }}),
         default: () => state,
     });
 };
 
-// export const getProgress = () =>
-//     (dispatch: Dispatch, getState: () => RootState) => {
-//         const progress = getState().progressIndicator;
-//         if (progress.sidePanelProgress.started || progress.contentProgress.started) {
-//             dispatch(progressIndicatorActions.START_SUBMIT({ id: ProgressIndicatorData.WORKBENCH_PROGRESS }));
-//         } else {
-//             dispatch(progressIndicatorActions.STOP_SUBMIT({ id: ProgressIndicatorData.WORKBENCH_PROGRESS }));
-//         }
-//     };
+export function isSystemWorking(state: ProgressIndicatorState): boolean {
+    return Object.keys(state).reduce((working, k) => working ? true : state[k].working, false);
+}

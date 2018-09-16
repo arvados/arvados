@@ -10,6 +10,7 @@ import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
 import { TrashableResource } from "~/models/resource";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
+import { ProgressFn } from "~/services/api/api-progress";
 
 export interface ContentsArguments {
     limit?: number;
@@ -27,8 +28,8 @@ export type GroupContentsResource =
 
 export class GroupsService<T extends TrashableResource = TrashableResource> extends TrashableResourceService<T> {
 
-    constructor(serverApi: AxiosInstance) {
-        super(serverApi, "groups");
+    constructor(serverApi: AxiosInstance, progressFn: ProgressFn) {
+        super(serverApi, "groups", progressFn);
     }
 
     contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
@@ -38,11 +39,13 @@ export class GroupsService<T extends TrashableResource = TrashableResource> exte
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
-        return this.serverApi
-            .get(this.resourceType + `${uuid}/contents`, {
-                params: CommonResourceService.mapKeys(_.snakeCase)(params)
-            })
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get(this.resourceType + `${uuid}/contents`, {
+                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                }),
+            this.progressFn
+        );
     }
 }
 

@@ -4,6 +4,8 @@
 
 import { User } from "~/models/user";
 import { AxiosInstance } from "axios";
+import { ProgressFn } from "~/services/api/api-progress";
+import * as uuid from "uuid/v4";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -25,7 +27,8 @@ export class AuthService {
 
     constructor(
         protected apiClient: AxiosInstance,
-        protected baseUrl: string) { }
+        protected baseUrl: string,
+        protected progressFn: ProgressFn) { }
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
@@ -86,15 +89,24 @@ export class AuthService {
     }
 
     public getUserDetails = (): Promise<User> => {
+        const reqId = uuid();
+        this.progressFn(reqId, true);
         return this.apiClient
             .get<UserDetailsResponse>('/users/current')
-            .then(resp => ({
-                email: resp.data.email,
-                firstName: resp.data.first_name,
-                lastName: resp.data.last_name,
-                uuid: resp.data.uuid,
-                ownerUuid: resp.data.owner_uuid
-            }));
+            .then(resp => {
+                this.progressFn(reqId, false);
+                return {
+                    email: resp.data.email,
+                    firstName: resp.data.first_name,
+                    lastName: resp.data.last_name,
+                    uuid: resp.data.uuid,
+                    ownerUuid: resp.data.owner_uuid
+                };
+            })
+            .catch(e => {
+                this.progressFn(reqId, false);
+                throw e;
+            });
     }
 
     public getRootUuid() {

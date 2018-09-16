@@ -27,7 +27,7 @@ describe("GroupsService", () => {
                 items_available: 20
             });
 
-        const groupsService = new GroupsService(axios);
+        const groupsService = new GroupsService(axios, (id, working) => {});
         const resource = await groupsService.contents("1", { limit: 10, offset: 1 });
         expect(resource).toEqual({
             kind: "kind",

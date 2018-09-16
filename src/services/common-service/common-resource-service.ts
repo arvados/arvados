@@ -5,6 +5,8 @@
 import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
 import { Resource } from "src/models/resource";
+import * as uuid from "uuid/v4";
+import { ProgressFn } from "~/services/api/api-progress";
 
 export interface ListArguments {
     limit?: number;
@@ -60,36 +62,53 @@ export class CommonResourceService<T extends Resource> {
             }
         }
 
-    static defaultResponse<R>(promise: AxiosPromise<R>): Promise<R> {
+    static defaultResponse<R>(promise: AxiosPromise<R>, progressFn: ProgressFn): Promise<R> {
+        const reqId = uuid();
+        progressFn(reqId, true);
         return promise
+            .then(data => {
+                progressFn(reqId, false);
+                return data;
+            })
             .then(CommonResourceService.mapResponseKeys)
-            .catch(({ response }) => Promise.reject<Errors>(CommonResourceService.mapResponseKeys(response)));
+            .catch(({ response }) => {
+                progressFn(reqId, false);
+                Promise.reject<Errors>(CommonResourceService.mapResponseKeys(response));
+            });
     }
 
     protected serverApi: AxiosInstance;
     protected resourceType: string;
+    protected progressFn: ProgressFn;
 
-    constructor(serverApi: AxiosInstance, resourceType: string) {
+    constructor(serverApi: AxiosInstance, resourceType: string, onProgress: ProgressFn) {
         this.serverApi = serverApi;
         this.resourceType = '/' + resourceType + '/';
+        this.progressFn = onProgress;
     }
 
     create(data?: Partial<T> | any) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post<T>(this.resourceType, data && CommonResourceService.mapKeys(_.snakeCase)(data)));
+                .post<T>(this.resourceType, data && CommonResourceService.mapKeys(_.snakeCase)(data)),
+            this.progressFn
+        );
     }
 
     delete(uuid: string): Promise<T> {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .delete(this.resourceType + uuid));
+                .delete(this.resourceType + uuid),
+            this.progressFn
+        );
     }
 
     get(uuid: string) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .get<T>(this.resourceType + uuid));
+                .get<T>(this.resourceType + uuid),
+            this.progressFn
+        );
     }
 
     list(args: ListArguments = {}): Promise<ListResults<T>> {
@@ -103,14 +122,17 @@ export class CommonResourceService<T extends Resource> {
             this.serverApi
                 .get(this.resourceType, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
-                }));
+                }),
+            this.progressFn
+        );
     }
 
     update(uuid: string, data: Partial<T>) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .put<T>(this.resourceType + uuid, data && CommonResourceService.mapKeys(_.snakeCase)(data)));
-
+                .put<T>(this.resourceType + uuid, data && CommonResourceService.mapKeys(_.snakeCase)(data)),
+            this.progressFn
+        );
     }
 }
 

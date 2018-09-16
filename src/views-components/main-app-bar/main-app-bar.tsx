@@ -13,6 +13,7 @@ import { NotificationsMenu } from "~/views-components/main-app-bar/notifications
 import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
 import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
 import { HelpMenu } from './help-menu';
+import { ReactNode } from "react";
 
 type CssRules = 'toolbar' | 'link';
 
@@ -31,6 +32,7 @@ interface MainAppBarDataProps {
     searchDebounce?: number;
     user?: User;
     buildInfo?: string;
+    children?: ReactNode;
 }
 
 export interface MainAppBarActionProps {
@@ -41,7 +43,7 @@ export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & With
 
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
-        return <AppBar position="static">
+        return <AppBar position="absolute">
             <Toolbar className={props.classes.toolbar}>
                 <Grid container justify="space-between">
                     <Grid container item xs={3} direction="column" justify="center">
@@ -80,6 +82,7 @@ export const MainAppBar = withStyles(styles)(
                     </Grid>
                 </Grid>
             </Toolbar>
+            {props.children}
         </AppBar>;
     }
 );

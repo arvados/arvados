@@ -11,10 +11,11 @@ import { mockConfig } from '~/common/config';
 
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
+    const progressFn = (id: string, working: boolean) => {};
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices(mockConfig({})));
+        reducer = authReducer(createServices(mockConfig({}), progressFn));
     });
 
     it('should correctly initialise state', () => {
