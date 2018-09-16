@@ -4,24 +4,22 @@
 
 import { ProgressIndicatorAction, progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
-export interface ProgressIndicatorState {
-    [key: string]: {
-        working: boolean
-    };
-}
+export type ProgressIndicatorState = { id: string, working: boolean }[];
 
-const initialState: ProgressIndicatorState = {
-};
+const initialState: ProgressIndicatorState = [];
 
 export const progressIndicatorReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorAction) => {
+    const startWorking = (id: string) => state.find(p => p.working) ? state : state.concat({ id, working: true });
+    const stopWorking = (id: string) => state.filter(p => p.id !== id);
+
     return progressIndicatorActions.match(action, {
-        START: id => ({ ...state, [id]: { working: true } }),
-        STOP: id => ({ ...state, [id]: { working: false } }),
-        TOGGLE: ({ id, working }) => ({ ...state, [id]: { working }}),
+        START: id => startWorking(id),
+        STOP: id => stopWorking(id),
+        TOGGLE: ({ id, working }) => working ? startWorking(id) : stopWorking(id),
         default: () => state,
     });
 };
 
 export function isSystemWorking(state: ProgressIndicatorState): boolean {
-    return Object.keys(state).reduce((working, k) => working ? true : state[k].working, false);
+    return state.length > 0;
 }
