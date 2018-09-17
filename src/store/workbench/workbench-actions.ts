@@ -85,13 +85,7 @@ export const loadProject = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(openProjectPanel(uuid));
         await dispatch(activateSidePanelTreeItem(uuid));
-        const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
-        if (ancestors.find(uuid => uuid === services.authService.getUuid())) {
-            dispatch(setProjectBreadcrumbs(uuid));
-        } else {
-            dispatch(setSharedWithMeBreadcrumbs(uuid));
-            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
-        }
+        dispatch(setProjectBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
     };
 
