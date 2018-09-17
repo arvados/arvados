@@ -120,8 +120,8 @@ export const Workbench = withStyles(styles)(
                         {this.props.user &&
                             <Grid container item xs alignItems="stretch" wrap="nowrap">
                                 <Grid container item className={classes.container}>
-                                    <SplitterLayout customClassName={classes.splitter}
-                                        primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} percentage={true}>
+                                <SplitterLayout customClassName={classes.splitter} percentage={true}
+                                    primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
                                         <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                                             <SidePanel />
                                         </Grid>
