@@ -45,7 +45,7 @@ type SidePanelProps = SidePanelDataProps & DispatchProp & WithStyles<CssRules>;
 
 const transformOrigin: PopoverOrigin = {
     vertical: -50,
-    horizontal: 45
+    horizontal: 0
 };
 
 const isButtonVisible = ({ router }: RootState) => {
@@ -70,7 +70,7 @@ export const SidePanelButton = withStyles(styles)(
                 const { anchorEl } = this.state;
                 return <Toolbar>
                     {buttonVisible  && <Grid container>
-                        <Grid container item xs alignItems="center" justify="center">
+                        <Grid container item xs alignItems="center" justify="flex-start">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
                                 aria-haspopup="true"

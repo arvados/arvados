@@ -43,8 +43,9 @@ import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import SplitterLayout from 'react-splitter-layout';
 
-type CssRules = 'root' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
+type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -52,8 +53,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100vw',
         height: '100vh'
     },
+    container: {
+        position: 'relative'
+    },
+    splitter: {
+        '& > .layout-splitter': {
+            width: '2px'
+        }
+    },
     asidePanel: {
-        maxWidth: '240px',
+        height: '100%',
         background: theme.palette.background.default
     },
     contentWrapper: {
@@ -62,7 +71,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         minWidth: 0,
-        overflow: 'auto',
         paddingLeft: theme.spacing.unit * 3,
         paddingRight: theme.spacing.unit * 3,
     },
@@ -111,28 +119,34 @@ export const Workbench = withStyles(styles)(
                         </Grid>
                         {this.props.user &&
                             <Grid container item xs alignItems="stretch" wrap="nowrap">
-                                <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
-                                    <SidePanel />
-                                </Grid>
-                                <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
-                                    <Grid item>
-                                        <MainContentBar />
-                                    </Grid>
-                                    <Grid item xs className={classes.content}>
-                                        <Switch>
-                                            <Route path={Routes.PROJECTS} component={ProjectPanel} />
-                                            <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
-                                            <Route path={Routes.FAVORITES} component={FavoritePanel} />
-                                            <Route path={Routes.PROCESSES} component={ProcessPanel} />
-                                            <Route path={Routes.TRASH} component={TrashPanel} />
-                                            <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
-                                        </Switch>
-                                    </Grid>
+                                <Grid container item className={classes.container}>
+                                <SplitterLayout customClassName={classes.splitter} percentage={true}
+                                    primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
+                                        <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
+                                            <SidePanel />
+                                        </Grid>
+                                        <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
+                                            <Grid item>
+                                                <MainContentBar />
+                                            </Grid>
+                                            <Grid item xs className={classes.content}>
+                                                <Switch>
+                                                    <Route path={Routes.PROJECTS} component={ProjectPanel} />
+                                                    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+                                                    <Route path={Routes.FAVORITES} component={FavoritePanel} />
+                                                    <Route path={Routes.PROCESSES} component={ProcessPanel} />
+                                                    <Route path={Routes.TRASH} component={TrashPanel} />
+                                                    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
+                                                </Switch>
+                                            </Grid>
+                                        </Grid>
+                                    </SplitterLayout>
                                 </Grid>
                                 <Grid item>
                                     <DetailsPanel />
                                 </Grid>
-                            </Grid>}
+                            </Grid>
+                        }
                     </Grid>
                     <ContextMenu />
                     <CopyCollectionDialog />
