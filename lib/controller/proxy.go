@@ -28,8 +28,9 @@ var dropHeaders = map[string]bool{
 	"Proxy-Authorization": true,
 	"TE":                true,
 	"Trailer":           true,
-	"Transfer-Encoding": true,
-	"Content-Encoding":  true, // interfers with Go's automatic compression/decompression
+	"Transfer-Encoding": true, // *-Encoding headers interfer with Go's automatic compression/decompression
+	"Content-Encoding":  true,
+	"Accept-Encoding":   true,
 	"Upgrade":           true,
 }
 
