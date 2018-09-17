@@ -22,12 +22,15 @@ import (
 func RefreshServiceDiscovery() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
+	var wg sync.WaitGroup
 	for _, ent := range svcListCache {
-		select {
-		case ent.clear <- struct{}{}:
-		default:
-		}
+		wg.Add(1)
+		go func() {
+			ent.clear <- struct{}{}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }
 
 // ClearCacheOnSIGHUP installs a signal handler that calls
@@ -139,7 +142,7 @@ func (kc *KeepClient) discoverServices() error {
 		arv := *kc.Arvados
 		cacheEnt = cachedSvcList{
 			latest: make(chan svcList),
-			clear:  make(chan struct{}, 1),
+			clear:  make(chan struct{}),
 			arv:    &arv,
 		}
 		go cacheEnt.poll()
