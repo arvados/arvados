@@ -4,12 +4,13 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import Drawer from '@material-ui/core/Drawer';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SidePanelTree, SidePanelTreeProps } from '~/views-components/side-panel-tree/side-panel-tree';
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { navigateFromSidePanel } from '../../store/side-panel/side-panel-action';
+import { Grid } from '@material-ui/core';
+import { SidePanelButton } from '~/views-components/side-panel-button/side-panel-button';
 
 const DRAWER_WITDH = 240;
 
@@ -35,6 +36,7 @@ export const SidePanel = compose(
     withStyles(styles),
     connect(undefined, mapDispatchToProps)
 )(({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
-    <div className={classes.root}>
+    <Grid item xs>
+        <SidePanelButton />
         <SidePanelTree {...props} />
-    </div>);
+    </Grid>);

@@ -11,7 +11,7 @@ export function joinFilters(filters0?: string, filters1?: string) {
 export class FilterBuilder {
     constructor(private filters = "") { }
 
-    public addEqual(field: string, value?: string, resourcePrefix?: string) {
+    public addEqual(field: string, value?: string | boolean, resourcePrefix?: string) {
         return this.addCondition(field, "=", value, "", "", resourcePrefix );
     }
 
@@ -35,11 +35,15 @@ export class FilterBuilder {
         return this.filters;
     }
 
-    private addCondition(field: string, cond: string, value?: string | string[], prefix: string = "", postfix: string = "", resourcePrefix?: string) {
+    private addCondition(field: string, cond: string, value?: string | string[] | boolean, prefix: string = "", postfix: string = "", resourcePrefix?: string) {
         if (value) {
-            value = typeof value === "string"
-                ? `"${prefix}${value}${postfix}"`
-                : `["${value.join(`","`)}"]`;
+            if (typeof value === "string") {
+                value = `"${prefix}${value}${postfix}"`;
+            } else if (Array.isArray(value)) {
+                value = `["${value.join(`","`)}"]`;
+            } else {
+                value = value ? "true" : "false";
+            }
 
             const resPrefix = resourcePrefix
                 ? _.snakeCase(resourcePrefix) + "."

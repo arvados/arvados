@@ -12,10 +12,16 @@ describe("FilterBuilder", () => {
         filters = new FilterBuilder();
     });
 
-    it("should add 'equal' rule", () => {
+    it("should add 'equal' rule (string)", () => {
         expect(
             filters.addEqual("etag", "etagValue").getFilters()
         ).toEqual(`["etag","=","etagValue"]`);
+    });
+
+    it("should add 'equal' rule (boolean)", () => {
+        expect(
+            filters.addEqual("is_trashed", true).getFilters()
+        ).toEqual(`["is_trashed","=",true]`);
     });
 
     it("should add 'like' rule", () => {

@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import AccessTime from '@material-ui/icons/AccessTime';
+import Add from '@material-ui/icons/Add';
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
 import BubbleChart from '@material-ui/icons/BubbleChart';
@@ -48,6 +49,7 @@ import HelpOutline from '@material-ui/icons/HelpOutline';
 
 export type IconType = React.SFC<{ className?: string }>;
 
+export const AddIcon: IconType = (props) => <Add {...props} />;
 export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
 export const AdvancedIcon: IconType = (props) => <SettingsApplications {...props} />;
 export const BackIcon: IconType = (props) => <ArrowBack {...props} />;
