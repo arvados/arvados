@@ -1,0 +1,31 @@
+---
+layout: default
+navsection: architecture
+title: "Federation"
+...
+
+Arvados federation enables clients to transparently read, create and manipulate objects and collections across clusters in different regions or organizations.  It makes it possible to run workfows that integrate and analyze data across multiple clusters by sending computation to where the data is, reducing the technical and legal barriers to analyzing large, sensitive data sets.
+
+h2. Architecture
+
+!(full-width){{site.baseurl}}/images/arvados_federation.svg.svg!
+
+h2. Identity and Authorization
+
+A federated user has a single identity across the cluster federation.  This identity is a user account on a specific "home cluster".  When arvados-controller contacts a remote cluster, the remote cluster verifies the user's identity (see below) and then creates a mirror of the user account with the same uuid of the user's home cluster.  On the remote cluster, permissions can then be granted to the federated user, and the federated user can create and own objects.
+
+h3. Identify verification
+
+When making a request to the home cluster, authorization is established by looking up the API token in the @api_client_authorizations@ table to determine the user identity.  When making a request to a remote cluster, we need to provide an API token which can be used to establish the user's identity.  The remote cluster will connect back to the home cluster to determine if the token valid and the user it corresponds to.  However, we do not want to send along the same API token used for the original request.  If the remote cluster is malicious or compromised, sending along user's regular token would compromise the user account on the home cluster.  Instead, the controller sends a "salted token".  The salted token is restricted to only to fetching the user account and group membership.  The salted token consists of the uuid of the token in @api_client_authorizations@ and the SHA1 HMAC of the original token and the cluster id of remote cluster.  To verify the token, the remote cluster contacts the home cluster and provides the token uuid, the hash, and its cluster id.  The home cluster uses the uuid to look up the token re-computes the SHA1 HMAC of the original token and cluster id.  If that hash matches, the the token is valid.  To avoid having to re-validate the token on every request, it is cached for a short period.
+
+The key properties of this scheme are:
+
+* The salted token does not expose access to the home cluster beyond what is needed to verify user identity
+* Revoking a token on the home cluster also revokes it for remote clusters
+* A salted token issued to a compromised cluster cannot be used to gain access to the user account on another remote cluster
+
+h2. record retrieval
+
+
+
+h2. Keep block retrieval
