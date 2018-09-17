@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -14,7 +13,6 @@ import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, Resource } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
-import { ArvadosTheme } from '~/common/custom-theme';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
@@ -28,14 +26,6 @@ import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-
 import { filterResources } from '~/store/resources/resources';
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-
-type CssRules = "root";
-
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-    
-    }
-});
 
 export enum ProjectPanelColumnNames {
     NAME = "Name",
@@ -120,11 +110,9 @@ interface ProjectPanelDataProps {
     resources: ResourcesState;
 }
 
-type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
-    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & RouteComponentProps<{ id: string }>;
 
-export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({
+export const ProjectPanel = connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources
     }))(
@@ -176,5 +164,4 @@ export const ProjectPanel = withStyles(styles)(
             }
 
         }
-    )
-);
+    );

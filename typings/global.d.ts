@@ -12,4 +12,4 @@ declare interface System {
 }
 declare var System: System;
 
-declare module '*';
+declare module 'react-splitter-layout';
