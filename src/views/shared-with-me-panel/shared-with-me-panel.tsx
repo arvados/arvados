@@ -9,12 +9,14 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ShareMeIcon } from '~/components/icon/icon';
-import { ResourcesState } from "~/store/resources/resources";
+import { ResourcesState, getResource } from '~/store/resources/resources';
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
-import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { GroupResource } from '~/models/group';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
 type CssRules = "toolbar" | "button";
 
@@ -40,37 +42,27 @@ export const SharedWithMePanel = withStyles(styles)(
     }))(
         class extends React.Component<SharedWithMePanelProps> {
             render() {
-                return this.hasAnyTrashedResources()
-                    ? <DataExplorer
-                        id={SHARED_WITH_ME_PANEL_ID}
-                        onRowClick={this.handleRowClick}
-                        onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={false}
-                        dataTableDefaultView={<DataTableDefaultView icon={ShareMeIcon} />} />
-                    : <PanelDefaultView
-                        icon={ShareMeIcon}
-                        messages={['No shared items.']} />;
-            }
-
-            hasAnyTrashedResources = () => {
-                // TODO: implement check if there is anything in the trash,
-                //       without taking pagination into the account
-                return true;
+                return <DataExplorer
+                    id={SHARED_WITH_ME_PANEL_ID}
+                    onRowClick={this.handleRowClick}
+                    onRowDoubleClick={this.handleRowDoubleClick}
+                    onContextMenu={this.handleContextMenu}
+                    contextMenuColumn={false}
+                    dataTableDefaultView={<DataTableDefaultView icon={ShareMeIcon} />} />;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                // const resource = getResource<TrashableResource>(resourceUuid)(this.props.resources);
-                // if (resource) {
-                //     this.props.dispatch<any>(openContextMenu(event, {
-                //         name: '',
-                //         uuid: resource.uuid,
-                //         ownerUuid: resource.ownerUuid,
-                //         isTrashed: resource.isTrashed,
-                //         kind: resource.kind,
-                //         menuKind: ContextMenuKind.TRASH
-                //     }));
-                // }
+                const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
+                if (resource) {
+                    this.props.dispatch<any>(openContextMenu(event, {
+                        name: '',
+                        uuid: resource.uuid,
+                        ownerUuid: resource.ownerUuid,
+                        isTrashed: resource.isTrashed,
+                        kind: resource.kind,
+                        menuKind: ContextMenuKind.PROJECT,
+                    }));
+                }
             }
 
             handleRowDoubleClick = (uuid: string) => {
