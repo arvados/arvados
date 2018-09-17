@@ -7,6 +7,7 @@ package controller
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -24,6 +26,7 @@ import (
 
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
 var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
+var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
 type genericFederatedRequestHandler struct {
 	next    http.Handler
@@ -75,7 +78,11 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 
 type rewriteSignaturesClusterId string
 
-func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response) (newResponse *http.Response, err error) {
+func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	if requestError != nil {
+		return resp, requestError
+	}
+
 	if resp.StatusCode != 200 {
 		return resp, nil
 	}
@@ -132,14 +139,180 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 	return resp, nil
 }
 
+type searchLocalClusterForPDH struct {
+	sentResponse bool
+}
+
+func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	if requestError != nil {
+		return resp, requestError
+	}
+
+	if resp.StatusCode == 404 {
+		// Suppress returning this result, because we want to
+		// search the federation.
+		s.sentResponse = false
+		return nil, nil
+	}
+	s.sentResponse = true
+	return resp, nil
+}
+
+type searchRemoteClusterForPDH struct {
+	remoteID      string
+	mtx           *sync.Mutex
+	sentResponse  *bool
+	sharedContext *context.Context
+	cancelFunc    func()
+	errors        *[]string
+	statusCode    *int
+}
+
+func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	if *s.sentResponse {
+		// Another request already returned a response
+		return nil, nil
+	}
+
+	if requestError != nil {
+		*s.errors = append(*s.errors, fmt.Sprintf("Request error contacting %q: %v", s.remoteID, requestError))
+		// Record the error and suppress response
+		return nil, nil
+	}
+
+	if resp.StatusCode != 200 {
+		// Suppress returning unsuccessful result.  Maybe
+		// another request will find it.
+		// TODO collect and return error responses.
+		*s.errors = append(*s.errors, fmt.Sprintf("Response from %q: %v", s.remoteID, resp.Status))
+		if resp.StatusCode != 404 {
+			// Got a non-404 error response, convert into BadGateway
+			*s.statusCode = http.StatusBadGateway
+		}
+		return nil, nil
+	}
+
+	s.mtx.Unlock()
+
+	// This reads the response body.  We don't want to hold the
+	// lock while doing this because other remote requests could
+	// also have made it to this point, and we don't want a
+	// slow response holding the lock to block a faster response
+	// that is waiting on the lock.
+	newResponse, err = rewriteSignaturesClusterId(s.remoteID).rewriteSignatures(resp, nil)
+
+	s.mtx.Lock()
+
+	if *s.sentResponse {
+		// Another request already returned a response
+		return nil, nil
+	}
+
+	if err != nil {
+		// Suppress returning unsuccessful result.  Maybe
+		// another request will be successful.
+		*s.errors = append(*s.errors, fmt.Sprintf("Error parsing response from %q: %v", s.remoteID, err))
+		return nil, nil
+	}
+
+	// We have a successful response.  Suppress/cancel all the
+	// other requests/responses.
+	*s.sentResponse = true
+	s.cancelFunc()
+
+	return newResponse, nil
+}
+
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := collectionRe.FindStringSubmatch(req.URL.Path)
-	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
+	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
+	if len(m) != 2 {
+		// Not a collection PDH request
+		m = collectionRe.FindStringSubmatch(req.URL.Path)
+		if len(m) == 2 && m[1] != h.handler.Cluster.ClusterID {
+			// request for remote collection by uuid
+			h.handler.remoteClusterRequest(m[1], w, req,
+				rewriteSignaturesClusterId(m[1]).rewriteSignatures)
+			return
+		}
+		// not a collection UUID request, or it is a request
+		// for a local UUID, either way, continue down the
+		// handler stack.
 		h.next.ServeHTTP(w, req)
 		return
 	}
-	h.handler.remoteClusterRequest(m[1], w, req,
-		rewriteSignaturesClusterId(m[1]).rewriteSignatures)
+
+	// Request for collection by PDH.  Search the federation.
+
+	// First, query the local cluster.
+	urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	urlOut = &url.URL{
+		Scheme:   urlOut.Scheme,
+		Host:     urlOut.Host,
+		Path:     req.URL.Path,
+		RawPath:  req.URL.RawPath,
+		RawQuery: req.URL.RawQuery,
+	}
+	client := h.handler.secureClient
+	if insecure {
+		client = h.handler.insecureClient
+	}
+	sf := &searchLocalClusterForPDH{}
+	h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
+	if sf.sentResponse {
+		return
+	}
+
+	sharedContext, cancelFunc := context.WithCancel(req.Context())
+	defer cancelFunc()
+	req = req.WithContext(sharedContext)
+
+	// Create a goroutine for each cluster in the
+	// RemoteClusters map.  The first valid result gets
+	// returned to the client.  When that happens, all
+	// other outstanding requests are cancelled or
+	// suppressed.
+	sentResponse := false
+	mtx := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	var errors []string
+	var errorCode int = 404
+
+	// use channel as a semaphore to limit it to 4
+	// parallel requests at a time
+	sem := make(chan bool, 4)
+	defer close(sem)
+	for remoteID := range h.handler.Cluster.RemoteClusters {
+		// blocks until it can put a value into the
+		// channel (which has a max queue capacity)
+		sem <- true
+		if sentResponse {
+			break
+		}
+		search := &searchRemoteClusterForPDH{remoteID, &mtx, &sentResponse,
+			&sharedContext, cancelFunc, &errors, &errorCode}
+		wg.Add(1)
+		go func() {
+			h.handler.remoteClusterRequest(search.remoteID, w, req, search.filterRemoteClusterResponse)
+			wg.Done()
+			<-sem
+		}()
+	}
+	wg.Wait()
+
+	if sentResponse {
+		return
+	}
+
+	// No successful responses, so return the error
+	httpserver.Errors(w, errors, errorCode)
 }
 
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
@@ -149,6 +322,24 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux.Handle("/arvados/v1/collections", next)
 	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		parts := strings.Split(req.Header.Get("Authorization"), "/")
+		alreadySalted := (len(parts) == 3 && parts[0] == "Bearer v2" && len(parts[2]) == 40)
+
+		if alreadySalted ||
+			strings.Index(req.Header.Get("Via"), "arvados-controller") != -1 {
+			// The token is already salted, or this is a
+			// request from another instance of
+			// arvados-controller.  In either case, we
+			// don't want to proxy this query, so just
+			// continue down the instance handler stack.
+			next.ServeHTTP(w, req)
+			return
+		}
+
+		mux.ServeHTTP(w, req)
+	})
 
 	return mux
 }

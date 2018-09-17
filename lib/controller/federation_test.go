@@ -335,7 +335,16 @@ func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
 	c.Check(col.ManifestText, check.Matches,
 		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+Rzzzzz-[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
 `)
+}
 
+func (s *FederationSuite) TestGetRemoteCollectionError(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/zzzzz-4zz18-fakefakefakefak", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+}
+
+func (s *FederationSuite) TestSignedLocatorPattern(c *check.C) {
 	// Confirm the regular expression identifies other groups of hints correctly
 	c.Check(keepclient.SignedLocatorRe.FindStringSubmatch(`6a4ff0499484c6c79c95cd8c566bd25f+249025+B1+C2+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b+D3+E4`),
 		check.DeepEquals,
@@ -346,4 +355,122 @@ func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
 			"+A05227438989d04712ea9ca1c91b556cef01d5cc7@5ba5405b",
 			"05227438989d04712ea9ca1c91b556cef01d5cc7", "5ba5405b",
 			"+D3+E4", "+E4"})
+}
+
+func (s *FederationSuite) TestGetLocalCollectionByPDH(c *check.C) {
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.PortableDataHash, check.Equals, arvadostest.UserAgreementPDH)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+A[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+}
+
+func (s *FederationSuite) TestGetRemoteCollectionByPDH(c *check.C) {
+	srv := &httpserver.Server{
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(404)
+			}),
+		},
+	}
+
+	c.Assert(srv.Start(), check.IsNil)
+	defer srv.Close()
+
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
+			TLS: false, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.PortableDataHash, check.Equals, arvadostest.UserAgreementPDH)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+Rzzzzz-[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+}
+
+func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
+	srv := &httpserver.Server{
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(404)
+			}),
+		},
+	}
+
+	c.Assert(srv.Start(), check.IsNil)
+	defer srv.Close()
+
+	// Make the "local" cluster to a service that always returns 404
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
+			TLS: false, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+
+	resp := s.testRequest(req)
+	defer resp.Body.Close()
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+}
+
+func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
+	req.Header.Set("Authorization", "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/282d7d172b6cfdce364c5ed12ddf7417b2d00065")
+	resp := s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.PortableDataHash, check.Equals, arvadostest.UserAgreementPDH)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+A[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+}
+
+func (s *FederationSuite) TestSaltedTokenGetCollectionByPDHError(c *check.C) {
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
+	req.Header.Set("Authorization", "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/282d7d172b6cfdce364c5ed12ddf7417b2d00065")
+	resp := s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }

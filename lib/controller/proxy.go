@@ -28,11 +28,13 @@ var dropHeaders = map[string]bool{
 	"Proxy-Authorization": true,
 	"TE":                true,
 	"Trailer":           true,
-	"Transfer-Encoding": true,
+	"Transfer-Encoding": true, // *-Encoding headers interfer with Go's automatic compression/decompression
+	"Content-Encoding":  true,
+	"Accept-Encoding":   true,
 	"Upgrade":           true,
 }
 
-type ResponseFilter func(*http.Response) (*http.Response, error)
+type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
 func (p *proxy) Do(w http.ResponseWriter,
 	reqIn *http.Request,
@@ -72,18 +74,21 @@ func (p *proxy) Do(w http.ResponseWriter,
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
+
 	resp, err := client.Do(reqOut)
-	if err != nil {
+	if filter == nil && err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	// make sure original response body gets closed
 	originalBody := resp.Body
-	defer originalBody.Close()
+	if originalBody != nil {
+		defer originalBody.Close()
+	}
 
 	if filter != nil {
-		resp, err = filter(resp)
+		resp, err = filter(resp, err)
 
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusBadGateway)
@@ -101,6 +106,7 @@ func (p *proxy) Do(w http.ResponseWriter,
 			defer resp.Body.Close()
 		}
 	}
+
 	for k, v := range resp.Header {
 		for _, v := range v {
 			w.Header().Add(k, v)
