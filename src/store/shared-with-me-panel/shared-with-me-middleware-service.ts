@@ -48,9 +48,10 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
-    return new FilterBuilder()
+    const filters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)
         .getFilters();
+    return `[${filters}]`;
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
