@@ -10,6 +10,7 @@ import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
 import { TrashableResource } from "~/models/resource";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
+import { GroupResource } from '~/models/group';
 
 export interface ContentsArguments {
     limit?: number;
@@ -29,7 +30,7 @@ export type GroupContentsResource =
     ProjectResource |
     ProcessResource;
 
-export class GroupsService<T extends TrashableResource = TrashableResource> extends TrashableResourceService<T> {
+export class GroupsService<T extends GroupResource = GroupResource> extends TrashableResourceService<T> {
 
     constructor(serverApi: AxiosInstance) {
         super(serverApi, "groups");

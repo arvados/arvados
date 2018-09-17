@@ -10,6 +10,10 @@ import { TreePicker } from '../tree-picker/tree-picker';
 import { getSidePanelTreeBranch } from '../side-panel-tree/side-panel-tree-actions';
 import { propertiesActions } from '../properties/properties-actions';
 import { getProcess } from '~/store/processes/process';
+import { ServiceRepository } from '~/services/services';
+import { SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { updateResources } from '../resources/resources-actions';
+import { ResourceKind } from '~/models/resource';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -33,6 +37,22 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
         const { treePicker } = getState();
         const breadcrumbs = getSidePanelTreeBreadcrumbs(uuid)(treePicker);
         dispatch(setBreadcrumbs(breadcrumbs));
+    };
+
+export const setSharedWithMeBreadcrumbs = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const ancestors = await services.ancestorsService.ancestors(uuid, '');
+        dispatch(updateResources(ancestors));
+        const initialBreadcrumbs: ResourceBreadcrumb[] = [
+            { label: SidePanelTreeCategory.SHARED_WITH_ME, uuid: SidePanelTreeCategory.SHARED_WITH_ME }
+        ];
+        const breadrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
+            ancestor.kind === ResourceKind.GROUP
+                ? [...breadcrumbs, { label: ancestor.name, uuid: ancestor.uuid }]
+                : breadcrumbs,
+            initialBreadcrumbs);
+
+        dispatch(setBreadcrumbs(breadrumbs));
     };
 
 export const setProjectBreadcrumbs = setSidePanelBreadcrumbs;

@@ -9,13 +9,13 @@ import { loadCollectionPanel } from '~/store/collection-panel/collection-panel-a
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
 import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
+import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects, getSidePanelTreeNodeAncestorsIds } from '../side-panel-tree/side-panel-tree-actions';
 import { loadResource, updateResources } from '../resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -82,10 +82,16 @@ export const loadTrash = () =>
     };
 
 export const loadProject = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        dispatch<any>(openProjectPanel(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(uuid));
-        dispatch<any>(setProjectBreadcrumbs(uuid));
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(openProjectPanel(uuid));
+        await dispatch(activateSidePanelTreeItem(uuid));
+        const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
+        if (ancestors.find(uuid => uuid === services.authService.getUuid())) {
+            dispatch(setProjectBreadcrumbs(uuid));
+        } else {
+            dispatch(setSharedWithMeBreadcrumbs(uuid));
+            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+        }
         dispatch(loadDetailsPanel(uuid));
     };
 

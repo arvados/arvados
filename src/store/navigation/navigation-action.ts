@@ -24,6 +24,8 @@ export const navigateTo = (uuid: string) =>
         }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);
+        } else if(uuid === SidePanelTreeCategory.SHARED_WITH_ME){
+            dispatch(navigateToSharedWithMe);
         }
     };
 

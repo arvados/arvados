@@ -14,17 +14,21 @@ export class AncestorService {
         private userService: UserService
     ) { }
 
-    async ancestors(uuid: string, rootUuid: string): Promise<Array<UserResource | GroupResource | TrashableResource>> {
+    async ancestors(uuid: string, rootUuid: string): Promise<Array<UserResource | GroupResource>> {
         const service = this.getService(extractUuidObjectType(uuid));
         if (service) {
-            const resource = await service.get(uuid);
-            if (uuid === rootUuid) {
-                return [resource];
-            } else {
-                return [
-                    ...await this.ancestors(resource.ownerUuid, rootUuid),
-                    resource
-                ];
+            try {
+                const resource = await service.get(uuid);
+                if (uuid === rootUuid) {
+                    return [resource];
+                } else {
+                    return [
+                        ...await this.ancestors(resource.ownerUuid, rootUuid),
+                        resource
+                    ];
+                }
+            } catch (e) {
+                return [];
             }
         } else {
             return [];
