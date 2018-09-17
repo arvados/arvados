@@ -14,11 +14,21 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     Rails.configuration.permit_create_collection_with_unsigned_manifest = isok
   end
 
-  def assert_signed_manifest manifest_text, label=''
+  def assert_signed_manifest manifest_text, label='', token: false
     assert_not_nil manifest_text, "#{label} manifest_text was nil"
     manifest_text.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
       assert_match(PERM_TOKEN_RE, tok,
                    "Locator in #{label} manifest_text was not signed")
+      if token
+        bare = tok.gsub(/\+A[^\+]*/, '').sub(/^ /, '')
+        exp = tok[/\+A[[:xdigit:]]+@([[:xdigit:]]+)/, 1].to_i(16)
+        sig = Blob.sign_locator(
+          bare,
+          key: Rails.configuration.blob_signing_key,
+          expire: exp,
+          api_token: token)[/\+A[^\+]*/, 0]
+        assert_includes tok, sig
+      end
     end
   end
 
@@ -50,6 +60,33 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_response :success
     assert_signed_manifest json_response['manifest_text'], 'foo_file'
     refute_includes json_response, 'unsigned_manifest_text'
+  end
+
+  ['v1token', 'v2token'].each do |token_method|
+    test "correct signatures are given for #{token_method}" do
+      token = api_client_authorizations(:active).send(token_method)
+      authorize_with_token token
+      get :show, {id: collections(:foo_file).uuid}
+      assert_response :success
+      assert_signed_manifest json_response['manifest_text'], 'foo_file', token: token
+    end
+
+    test "signatures with #{token_method} are accepted" do
+      token = api_client_authorizations(:active).send(token_method)
+      signed = Blob.sign_locator(
+        'acbd18db4cc2f85cedef654fccc4a4d8+3',
+        key: Rails.configuration.blob_signing_key,
+        api_token: token)
+      authorize_with_token token
+      put :update, {
+            id: collections(:collection_owned_by_active).uuid,
+            collection: {
+              manifest_text: ". #{signed} 0:3:foo.txt\n",
+            },
+          }
+      assert_response :success
+      assert_signed_manifest json_response['manifest_text'], 'updated', token: token
+    end
   end
 
   test "index with manifest_text selected returns signed locators" do
