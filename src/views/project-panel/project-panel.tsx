@@ -139,25 +139,21 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div className={classes.root}>
-                    {this.hasAnyItems()
-                        ? <DataExplorer
-                            id={PROJECT_PANEL_ID}
-                            onRowClick={this.handleRowClick}
-                            onRowDoubleClick={this.handleRowDoubleClick}
-                            onContextMenu={this.handleContextMenu}
-                            contextMenuColumn={true}
-                            dataTableDefaultView={<DataTableDefaultView icon={ProjectIcon}/>} />
-                        : <PanelDefaultView
-                            icon={ProjectIcon}
-                            messages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />
-                    }
-
+                    <DataExplorer
+                        id={PROJECT_PANEL_ID}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        dataTableDefaultView={
+                            <DataTableDefaultView
+                                icon={ProjectIcon}
+                                messages={[
+                                    'Your project is empty.',
+                                    'Please create a project or create a collection and upload a data.'
+                                ]}/>
+                        }/>
                 </div>;
-            }
-
-            hasAnyItems = () => {
-                const resources = filterResources(this.isCurrentItemChild)(this.props.resources);
-                return resources.length > 0;
             }
 
             isCurrentItemChild = (resource: Resource) => {

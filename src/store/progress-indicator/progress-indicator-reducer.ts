@@ -15,11 +15,15 @@ export const progressIndicatorReducer = (state: ProgressIndicatorState = initial
     return progressIndicatorActions.match(action, {
         START: id => startWorking(id),
         STOP: id => stopWorking(id),
+        PERSIST_STOP: id => state.map(p => ({
+            id,
+            working: p.id === id ? false : p.working
+        })),
         TOGGLE: ({ id, working }) => working ? startWorking(id) : stopWorking(id),
         default: () => state,
     });
 };
 
 export function isSystemWorking(state: ProgressIndicatorState): boolean {
-    return state.length > 0;
+    return state.length > 0 && state.reduce((working, p) => working ? true : p.working, false);
 }

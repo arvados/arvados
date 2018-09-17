@@ -155,23 +155,17 @@ export const TrashPanel = withStyles(styles)(
     }))(
         class extends React.Component<TrashPanelProps> {
             render() {
-                return this.hasAnyTrashedResources()
-                    ? <DataExplorer
-                        id={TRASH_PANEL_ID}
-                        onRowClick={this.handleRowClick}
-                        onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={false}
-                        dataTableDefaultView={<DataTableDefaultView icon={TrashIcon} />} />
-                    : <PanelDefaultView
-                        icon={TrashIcon}
-                        messages={['Your trash list is empty.']} />;
-            }
-
-            hasAnyTrashedResources = () => {
-                // TODO: implement check if there is anything in the trash,
-                //       without taking pagination into the account
-                return true;
+                return <DataExplorer
+                    id={TRASH_PANEL_ID}
+                    onRowClick={this.handleRowClick}
+                    onRowDoubleClick={this.handleRowDoubleClick}
+                    onContextMenu={this.handleContextMenu}
+                    contextMenuColumn={false}
+                    dataTableDefaultView={
+                        <DataTableDefaultView
+                            icon={TrashIcon}
+                            messages={['Your trash list is empty.']}/>
+                    } />;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

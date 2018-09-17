@@ -21,7 +21,9 @@ interface Props {
 }
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
-    return getDataExplorer(state.dataExplorer, id);
+    const progress = state.progressIndicator.find(p => p.id === id);
+    const working = progress && progress.working;
+    return { ...getDataExplorer(state.dataExplorer, id), working };
 };
 
 const mapDispatchToProps = () => {

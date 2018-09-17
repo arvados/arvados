@@ -15,6 +15,7 @@ export interface DataExplorer {
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     searchValue: string;
+    working?: boolean;
 }
 
 export const initialDataExplorer: DataExplorer = {
