@@ -58,7 +58,8 @@ export const setSharedWithMeBreadcrumbs = (uuid: string) =>
 export const setProjectBreadcrumbs = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
-        if (ancestors.find(uuid => uuid === services.authService.getUuid())) {
+        const rootUuid = services.authService.getUuid();
+        if (uuid === rootUuid ||ancestors.find(uuid => uuid === rootUuid)) {
             dispatch(setSidePanelBreadcrumbs(uuid));
         } else {
             dispatch(setSharedWithMeBreadcrumbs(uuid));
