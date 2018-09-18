@@ -22,9 +22,15 @@ import (
 func RefreshServiceDiscovery() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
+	var wg sync.WaitGroup
 	for _, ent := range svcListCache {
-		ent.clear <- struct{}{}
+		wg.Add(1)
+		go func() {
+			ent.clear <- struct{}{}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }
 
 // ClearCacheOnSIGHUP installs a signal handler that calls

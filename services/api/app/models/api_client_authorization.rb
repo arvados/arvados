@@ -204,6 +204,18 @@ class ApiClientAuthorization < ArvadosModel
     return nil
   end
 
+  def token
+    v2token
+  end
+
+  def v1token
+    api_token
+  end
+
+  def v2token
+    'v2/' + uuid + '/' + api_token
+  end
+
   protected
 
   def permission_to_create
