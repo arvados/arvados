@@ -47,13 +47,13 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                 <Typography
                     className={classes.sizeInfo}
                     variant="caption">{formatFileSize(item.data.size)}</Typography>
-                <IconButton
-                    className={classes.button}
-                    onClick={this.handleClick}>
-                    <Tooltip title="More options">
+                <Tooltip title="More options">
+                    <IconButton
+                        className={classes.button}
+                        onClick={this.handleClick}>
                         <MoreOptionsIcon />
-                    </Tooltip>
-                </IconButton>
+                    </IconButton>
+                </Tooltip>
             </div >;
         }
 

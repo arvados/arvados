@@ -67,11 +67,11 @@ export const SearchBar = withStyles(styles)(
                         placeholder="Search"
                         value={this.state.value}
                     />
-                    <IconButton className={classes.button}>
-                        <Tooltip title='Search'>
+                    <Tooltip title='Search'>
+                        <IconButton className={classes.button}>
                             <SearchIcon />
-                        </Tooltip>
-                    </IconButton>
+                        </IconButton>
+                    </Tooltip>
                 </form>
             </Paper>;
         }

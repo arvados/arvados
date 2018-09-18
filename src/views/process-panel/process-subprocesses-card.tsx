@@ -83,14 +83,14 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                         <Typography noWrap variant="body2" className={classes.status}>
                             {getProcessStatus(subprocess)}
                         </Typography>
-                        <IconButton
-                            className={classes.options}
-                            aria-label="More options"
-                            onClick={onContextMenu}>
-                            <Tooltip title="More options">
+                        <Tooltip title="More options">
+                            <IconButton
+                                className={classes.options}
+                                aria-label="More options"
+                                onClick={onContextMenu}>
                                 <MoreOptionsIcon />
-                            </Tooltip>
-                        </IconButton>
+                            </IconButton>
+                        </Tooltip>
                     </div>
                 }
                 title={

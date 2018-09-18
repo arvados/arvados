@@ -86,13 +86,13 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                         <Chip label={getProcessStatus(process)}
                             className={classes.chip}
                             style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
-                        <IconButton
-                            aria-label="More options"
-                            onClick={event => onContextMenu(event)}>
-                            <Tooltip title="More options">
+                        <Tooltip title="More options">
+                            <IconButton
+                                aria-label="More options"
+                                onClick={event => onContextMenu(event)}>
                                 <MoreOptionsIcon />
-                            </Tooltip>
-                        </IconButton>
+                            </IconButton>
+                        </Tooltip>
                     </div>
                 }
                 title={

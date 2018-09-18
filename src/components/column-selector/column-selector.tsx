@@ -29,34 +29,34 @@ export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>
 
 export const ColumnSelector = withStyles(styles)(
     ({ columns, onColumnToggle, classes }: ColumnSelectorProps) =>
-    <Popover triggerComponent={ColumnSelectorTrigger}>
-        <Paper>
-            <List dense>
-                {columns
-                    .filter(column => column.configurable)
-                    .map((column, index) =>
-                        <ListItem
-                            button
-                            key={index}
-                            onClick={() => onColumnToggle(column)}>
-                            <Checkbox
-                                disableRipple
-                                color="primary"
-                                checked={column.selected}
-                                className={classes.checkbox} />
-                            <ListItemText>
-                                {column.name}
-                            </ListItemText>
-                        </ListItem>
-                    )}
-            </List>
-        </Paper>
-    </Popover>
+        <Popover triggerComponent={ColumnSelectorTrigger}>
+            <Paper>
+                <List dense>
+                    {columns
+                        .filter(column => column.configurable)
+                        .map((column, index) =>
+                            <ListItem
+                                button
+                                key={index}
+                                onClick={() => onColumnToggle(column)}>
+                                <Checkbox
+                                    disableRipple
+                                    color="primary"
+                                    checked={column.selected}
+                                    className={classes.checkbox} />
+                                <ListItemText>
+                                    {column.name}
+                                </ListItemText>
+                            </ListItem>
+                        )}
+                </List>
+            </Paper>
+        </Popover>
 );
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>
-    <IconButton {...props}>
-        <Tooltip title="Filters">
-            <MenuIcon />
-        </Tooltip>
-    </IconButton>;
+    <Tooltip title="Filters">
+        <IconButton {...props}>
+            <MenuIcon aria-label="Filters" />
+        </IconButton>
+    </Tooltip>;

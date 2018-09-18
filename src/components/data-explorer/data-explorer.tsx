@@ -114,11 +114,11 @@ export const DataExplorer = withStyles(styles)(
 
         renderContextMenuTrigger = (item: T) =>
             <Grid container justify="flex-end">
-                <IconButton onClick={event => this.props.onContextMenu(event, item)}>
-                    <Tooltip title="More options">
+                <Tooltip title="More options">
+                    <IconButton onClick={event => this.props.onContextMenu(event, item)}>
                         <MoreVertIcon />
-                    </Tooltip>
-                </IconButton>
+                    </IconButton>
+                </Tooltip>
             </Grid>
 
         contextMenuColumn: DataColumn<any> = {

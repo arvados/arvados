@@ -63,20 +63,20 @@ export const ResourceRestore =
         const resource = getResource<TrashableResource>(props.uuid)(state.resources);
         return { resource, dispatch: props.dispatch };
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
-        <IconButton onClick={() => {
-            if (props.resource && props.dispatch) {
-                props.dispatch(toggleTrashed(
-                    props.resource.kind,
-                    props.resource.uuid,
-                    props.resource.ownerUuid,
-                    props.resource.isTrashed
-                ));
-            }
-        }}>
-            <Tooltip title="Restore">
+        <Tooltip title="Restore">
+            <IconButton onClick={() => {
+                if (props.resource && props.dispatch) {
+                    props.dispatch(toggleTrashed(
+                        props.resource.kind,
+                        props.resource.uuid,
+                        props.resource.ownerUuid,
+                        props.resource.isTrashed
+                    ));
+                }
+            }}>
                 <RestoreFromTrashIcon />
-            </Tooltip>
-        </IconButton>
+            </IconButton>
+        </Tooltip>
     );
 
 export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [

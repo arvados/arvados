@@ -78,13 +78,13 @@ export const CollectionPanel = withStyles(styles)(
                         <CardHeader
                             avatar={<CollectionIcon className={classes.iconHeader} />}
                             action={
-                                <IconButton
-                                    aria-label="More options"
-                                    onClick={this.handleContextMenu}>
-                                    <Tooltip title="More options">
+                                <Tooltip title="More options">
+                                    <IconButton
+                                        aria-label="More options"
+                                        onClick={this.handleContextMenu}>
                                         <MoreOptionsIcon />
-                                    </Tooltip>
-                                </IconButton>
+                                    </IconButton>
+                                </Tooltip>
                             }
                             title={item && item.name}
                             subheader={item && item.description} />
