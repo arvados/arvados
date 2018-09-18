@@ -68,8 +68,8 @@ fetchConfig()
                 store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
             },
             errorFn: (id, error) => {
-                console.error("Backend error:", error);
-                store.dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Backend error", kind: SnackbarKind.ERROR }));
+                // console.error("Backend error:", error);
+                // store.dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Backend error", kind: SnackbarKind.ERROR }));
             }
         });
         const store = configureStore(history, services);
