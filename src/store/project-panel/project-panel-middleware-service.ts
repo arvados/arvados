@@ -17,7 +17,8 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
 import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from "~/store/properties/properties";
-import { snackbarActions } from '../snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '../snackbar/snackbar-actions';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { DataExplorer, getDataExplorer } from '../data-explorer/data-explorer-reducer';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { loadContainers } from '../processes/processes-actions';
@@ -38,12 +39,21 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer));
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
                 api.dispatch(updateResources(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(projectPanelActions.SET_ITEMS({
+                    items: [],
+                    itemsAvailable: 0,
+                    page: 0,
+                    rowsPerPage: dataExplorer.rowsPerPage
+                }));
                 api.dispatch(couldNotFetchProjectContents());
             }
         }
@@ -116,7 +126,8 @@ const projectPanelCurrentUuidIsNotSet = () =>
 
 const couldNotFetchProjectContents = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch project contents.'
+        message: 'Could not fetch project contents.',
+        kind: SnackbarKind.ERROR
     });
 
 const projectPanelDataExplorerIsNotSet = () =>

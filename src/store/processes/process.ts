@@ -61,7 +61,7 @@ export const getProcessRuntime = ({ container }: Process) =>
         ? getTimeDiff(container.finishedAt || '', container.startedAt || '')
         : 0;
 
-export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
+export const getProcessStatusColor = (status: string, { customs, palette }: ArvadosTheme) => {
     switch (status) {
         case ProcessStatus.RUNNING:
             return customs.colors.blue500;
@@ -71,7 +71,7 @@ export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme)
         case ProcessStatus.FAILED:
             return customs.colors.red900;
         default:
-            return customs.colors.grey500;
+            return palette.grey["500"];
     }
 };
 

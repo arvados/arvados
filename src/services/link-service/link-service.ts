@@ -5,9 +5,10 @@
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
 import { LinkResource } from "~/models/link";
 import { AxiosInstance } from "axios";
+import { ApiActions } from "~/services/api/api-actions";
 
 export class LinkService extends CommonResourceService<LinkResource> {
-    constructor(serverApi: AxiosInstance) {
-        super(serverApi, "links");
+    constructor(serverApi: AxiosInstance, actions: ApiActions) {
+        super(serverApi, "links", actions);
     }
 }

@@ -19,7 +19,7 @@ export interface FavoriteListArguments {
 export class FavoriteService {
     constructor(
         private linkService: LinkService,
-        private groupsService: GroupsService
+        private groupsService: GroupsService,
     ) {}
 
     create(data: { userUuid: string; resource: { uuid: string; name: string } }) {

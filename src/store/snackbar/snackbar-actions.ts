@@ -4,9 +4,23 @@
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 
+export interface SnackbarMessage {
+    message: string;
+    hideDuration: number;
+    kind: SnackbarKind;
+}
+
+export enum SnackbarKind {
+    SUCCESS = 1,
+    ERROR = 2,
+    INFO = 3,
+    WARNING = 4
+}
+
 export const snackbarActions = unionize({
-    OPEN_SNACKBAR: ofType<{message: string; hideDuration?: number}>(),
-    CLOSE_SNACKBAR: ofType<{}>()
+    OPEN_SNACKBAR: ofType<{message: string; hideDuration?: number, kind?: SnackbarKind}>(),
+    CLOSE_SNACKBAR: ofType<{}>(),
+    SHIFT_MESSAGES: ofType<{}>()
 });
 
 export type SnackbarAction = UnionOf<typeof snackbarActions>;

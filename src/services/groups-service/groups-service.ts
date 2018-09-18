@@ -10,7 +10,8 @@ import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
 import { TrashableResource } from "~/models/resource";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
-import { GroupResource } from '~/models/group';
+import { ApiActions } from "~/services/api/api-actions";
+import { GroupResource } from "~/models/group";
 
 export interface ContentsArguments {
     limit?: number;
@@ -32,8 +33,8 @@ export type GroupContentsResource =
 
 export class GroupsService<T extends GroupResource = GroupResource> extends TrashableResourceService<T> {
 
-    constructor(serverApi: AxiosInstance) {
-        super(serverApi, "groups");
+    constructor(serverApi: AxiosInstance, actions: ApiActions) {
+        super(serverApi, "groups", actions);
     }
 
     contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
@@ -43,17 +44,21 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
-        return this.serverApi
-            .get(this.resourceType + `${uuid}/contents`, {
-                params: CommonResourceService.mapKeys(_.snakeCase)(params)
-            })
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get(this.resourceType + `${uuid}/contents`, {
+                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                }),
+            this.actions
+        );
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {
-        return this.serverApi
-            .get(this.resourceType + 'shared', { params })
-            .then(CommonResourceService.mapResponseKeys);
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get(this.resourceType + 'shared', { params }),
+            this.actions
+        );
     }
 }
 

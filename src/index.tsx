@@ -37,6 +37,8 @@ import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { processResourceActionSet } from './views-components/context-menu/action-sets/process-resource-action-set';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -61,7 +63,15 @@ addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 fetchConfig()
     .then(({ config, apiHost }) => {
         const history = createBrowserHistory();
-        const services = createServices(config);
+        const services = createServices(config, {
+            progressFn: (id, working) => {
+                store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
+            },
+            errorFn: (id, error) => {
+                console.error("Backend error:", error);
+                store.dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Backend error", kind: SnackbarKind.ERROR }));
+            }
+        });
         const store = configureStore(history, services);
 
         store.subscribe(initListener(history, store, services, config));
@@ -87,8 +97,6 @@ fetchConfig()
             <App />,
             document.getElementById('root') as HTMLElement
         );
-
-
     });
 
 const initListener = (history: History, store: RootStore, services: ServiceRepository, config: Config) => {

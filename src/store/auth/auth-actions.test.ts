@@ -18,15 +18,20 @@ import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 import { mockConfig } from '~/common/config';
+import { ApiActions } from "~/services/api/api-actions";
 
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     let store: RootStore;
+    const actions: ApiActions = {
+        progressFn: (id: string, working: boolean) => {},
+        errorFn: (id: string, message: string) => {}
+    };
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices(mockConfig({})));
+        store = configureStore(createBrowserHistory(), createServices(mockConfig({}), actions));
         localStorage.clear();
-        reducer = authReducer(createServices(mockConfig({})));
+        reducer = authReducer(createServices(mockConfig({}), actions));
     });
 
     it('should initialise state with user and api token from local storage', () => {

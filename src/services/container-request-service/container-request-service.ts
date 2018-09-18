@@ -4,10 +4,11 @@
 
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
 import { AxiosInstance } from "axios";
-import { ContainerRequestResource } from '../../models/container-request';
+import { ContainerRequestResource } from '~/models/container-request';
+import { ApiActions } from "~/services/api/api-actions";
 
 export class ContainerRequestService extends CommonResourceService<ContainerRequestResource> {
-    constructor(serverApi: AxiosInstance) {
-        super(serverApi, "container_requests");
+    constructor(serverApi: AxiosInstance, actions: ApiActions) {
+        super(serverApi, "container_requests", actions);
     }
 }

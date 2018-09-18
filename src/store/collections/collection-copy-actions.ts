@@ -10,6 +10,7 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 
@@ -25,11 +26,13 @@ export const copyCollection = (resource: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
         try {
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_COPY_FORM_NAME));
             const collection = await services.collectionService.get(resource.uuid);
             const uuidKey = 'uuid';
             delete collection[uuidKey];
             await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
             return collection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -39,6 +42,7 @@ export const copyCollection = (resource: CopyFormDialogData) =>
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
                 throw new Error('Could not copy the collection.');
             }
-            return ;
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
+            return;
         }
     };

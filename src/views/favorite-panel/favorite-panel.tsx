@@ -164,23 +164,18 @@ export const FavoritePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<FavoritePanelProps> {
             render() {
-                return this.hasAnyFavorites()
-                    ? <DataExplorer
-                        id={FAVORITE_PANEL_ID}
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu}
-                        contextMenuColumn={true}
-                        dataTableDefaultView={<DataTableDefaultView icon={FavoriteIcon}/>} />
-                    : <PanelDefaultView
-                        icon={FavoriteIcon}
-                        messages={['Your favorites list is empty.']} />;
-            }
-
-            hasAnyFavorites = () => {
-                return Object
-                    .keys(this.props.favorites)
-                    .find(uuid => this.props.favorites[uuid]);
+                return <DataExplorer
+                    id={FAVORITE_PANEL_ID}
+                    onRowClick={this.props.onItemClick}
+                    onRowDoubleClick={this.props.onItemDoubleClick}
+                    onContextMenu={this.props.onContextMenu}
+                    contextMenuColumn={true}
+                    dataTableDefaultView={
+                        <DataTableDefaultView
+                            icon={FavoriteIcon}
+                            messages={['Your favorites list is empty.']}
+                            />
+                    } />;
             }
         }
     )

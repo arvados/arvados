@@ -16,7 +16,8 @@ import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
 import { LinkResource } from "~/models/link";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { resourcesActions } from "~/store/resources/resources-actions";
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
 
@@ -30,7 +31,6 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
-
             const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
             const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
             const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
@@ -50,6 +50,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     .addOrder(direction, "name", GroupContentsResourcePrefix.PROJECT);
             }
             try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const response = await this.services.favoriteService
                     .list(this.services.authService.getUuid()!, {
                         limit: dataExplorer.rowsPerPage,
@@ -61,6 +62,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                             .addILike("name", dataExplorer.searchValue)
                             .getFilters()
                     });
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
@@ -71,12 +73,14 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 }));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             } catch (e) {
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
                     page: 0,
                     rowsPerPage: dataExplorer.rowsPerPage
                 }));
+                api.dispatch(couldNotFetchFavoritesContents());
             }
         }
     }
@@ -85,4 +89,10 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
 const favoritesPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
         message: 'Favorites panel is not ready.'
+    });
+
+const couldNotFetchFavoritesContents = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Could not fetch favorites contents.',
+        kind: SnackbarKind.ERROR
     });

@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import { navigateFromSidePanel } from '../../store/side-panel/side-panel-action';
 import { Grid } from '@material-ui/core';
 import { SidePanelButton } from '~/views-components/side-panel-button/side-panel-button';
+import { RootState } from '~/store/store';
 
 const DRAWER_WITDH = 240;
 
@@ -32,9 +33,12 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
     }
 });
 
+const mapStateToProps = (state: RootState) => ({
+});
+
 export const SidePanel = compose(
     withStyles(styles),
-    connect(undefined, mapDispatchToProps)
+    connect(mapStateToProps, mapDispatchToProps)
 )(({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
     <Grid item xs>
         <SidePanelButton />

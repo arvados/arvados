@@ -33,6 +33,7 @@ interface DataExplorerDataProps<T> {
     page: number;
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
+    working?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -60,7 +61,7 @@ export const DataExplorer = withStyles(styles)(
         }
         render() {
             const {
-                columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
+                columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView
@@ -87,6 +88,7 @@ export const DataExplorer = withStyles(styles)(
                     onFiltersChange={onFiltersChange}
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
+                    working={working}
                     defaultView={dataTableDefaultView}
                 />
                 <Toolbar>

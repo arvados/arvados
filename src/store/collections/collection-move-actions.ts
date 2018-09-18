@@ -8,10 +8,11 @@ import { startSubmit, stopSubmit, initialize } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const COLLECTION_MOVE_FORM_NAME = 'collectionMoveFormName';
 
@@ -26,11 +27,17 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_MOVE_FORM_NAME));
         try {
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
             const collection = await services.collectionService.get(resource.uuid);
             await services.collectionService.update(resource.uuid, { ...collection, ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'Collection has been moved',
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
             return collection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -40,6 +47,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the collection.', hideDuration: 2000 }));
             }
-            return ;
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
+            return;
         }
     };

@@ -23,9 +23,23 @@ import { ProjectResource } from '~/models/project';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
-import { filterResources } from '~/store/resources/resources';
-import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { StyleRulesCallback, WithStyles } from "@material-ui/core";
+import { ArvadosTheme } from "~/common/custom-theme";
+import withStyles from "@material-ui/core/styles/withStyles";
+
+type CssRules = 'root' | "button";
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        position: 'relative',
+        width: '100%',
+        height: '100%'
+    },
+    button: {
+        marginLeft: theme.spacing.unit
+    },
+});
 
 export enum ProjectPanelColumnNames {
     NAME = "Name",
@@ -110,30 +124,33 @@ interface ProjectPanelDataProps {
     resources: ResourcesState;
 }
 
-type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & RouteComponentProps<{ id: string }>;
+type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
+    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-export const ProjectPanel = connect((state: RootState) => ({
+export const ProjectPanel = withStyles(styles)(
+    connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources
     }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
-                return this.hasAnyItems()
-                    ? <DataExplorer
+                const { classes } = this.props;
+                return <div className={classes.root}>
+                    <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
                         contextMenuColumn={true}
-                        dataTableDefaultView={<DataTableDefaultView icon={ProjectIcon}/>} />
-                    : <PanelDefaultView
-                        icon={ProjectIcon}
-                        messages={['Your project is empty.', 'Please create a project or create a collection and upload a data.']} />;
-            }
-
-            hasAnyItems = () => {
-                const resources = filterResources(this.isCurrentItemChild)(this.props.resources);
-                return resources.length > 0;
+                        dataTableDefaultView={
+                            <DataTableDefaultView
+                                icon={ProjectIcon}
+                                messages={[
+                                    'Your project is empty.',
+                                    'Please create a project or create a collection and upload a data.'
+                                ]}/>
+                        }/>
+                </div>;
             }
 
             isCurrentItemChild = (resource: Resource) => {
@@ -164,4 +181,5 @@ export const ProjectPanel = connect((state: RootState) => ({
             }
 
         }
-    );
+    )
+);

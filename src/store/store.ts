@@ -34,6 +34,7 @@ import { processLogsPanelReducer } from './process-logs-panel/process-logs-panel
 import { processPanelReducer } from '~/store/process-panel/process-panel-reducer';
 import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { SharedWithMeMiddlewareService } from './shared-with-me-panel/shared-with-me-middleware-service';
+import { progressIndicatorReducer } from './progress-indicator/progress-indicator-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -89,5 +90,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,
     fileUploader: fileUploaderReducer,
-    processPanel: processPanelReducer
+    processPanel: processPanelReducer,
+    progressIndicator: progressIndicatorReducer
 });

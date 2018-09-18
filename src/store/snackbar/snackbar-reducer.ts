@@ -2,26 +2,43 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { SnackbarAction, snackbarActions } from "./snackbar-actions";
+import { SnackbarAction, snackbarActions, SnackbarKind, SnackbarMessage } from "./snackbar-actions";
 
 export interface SnackbarState {
-    message: string;
+    messages: SnackbarMessage[];
     open: boolean;
-    hideDuration: number;
 }
 
 const DEFAULT_HIDE_DURATION = 3000;
 
 const initialState: SnackbarState = {
-    message: "",
-    open: false,
-    hideDuration: DEFAULT_HIDE_DURATION
+    messages: [],
+    open: false
 };
 
 export const snackbarReducer = (state = initialState, action: SnackbarAction) => {
     return snackbarActions.match(action, {
-        OPEN_SNACKBAR: data => ({ ...initialState, ...data, open: true }),
-        CLOSE_SNACKBAR: () => initialState,
+        OPEN_SNACKBAR: data => {
+            return {
+                open: true,
+                messages: state.messages.concat({
+                    message: data.message,
+                    hideDuration: data.hideDuration ? data.hideDuration : DEFAULT_HIDE_DURATION,
+                    kind: data.kind ? data.kind : SnackbarKind.INFO
+                })
+            };
+        },
+        CLOSE_SNACKBAR: () => ({
+            ...state,
+            open: false
+        }),
+        SHIFT_MESSAGES: () => {
+            const messages = state.messages.filter((m, idx) => idx > 0);
+            return {
+                open: messages.length > 0,
+                messages
+            };
+        },
         default: () => state,
     });
 };

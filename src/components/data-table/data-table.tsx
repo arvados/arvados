@@ -19,6 +19,7 @@ export interface DataTableDataProps<T> {
     onSortToggle: (column: DataColumn<T>) => void;
     onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
     extractKey?: (item: T) => React.Key;
+    working?: boolean;
     defaultView?: React.ReactNode;
 }
 
@@ -63,7 +64,7 @@ export const DataTable = withStyles(styles)(
                             {items.map(this.renderBodyRow)}
                         </TableBody>
                     </Table>
-                    {items.length === 0 && this.renderNoItemsPlaceholder()}
+                    {items.length === 0 && this.props.working !== undefined && !this.props.working && this.renderNoItemsPlaceholder()}
                 </div>
             </div>;
         }
@@ -71,7 +72,7 @@ export const DataTable = withStyles(styles)(
         renderNoItemsPlaceholder = () => {
             return this.props.defaultView
                 ? this.props.defaultView
-                : <DataTableDefaultView />;
+                : <DataTableDefaultView/>;
         }
 
         renderHeadCell = (column: DataColumn<T>, index: number) => {

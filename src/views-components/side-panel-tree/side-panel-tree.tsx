@@ -16,6 +16,7 @@ import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-acti
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
+    sidePanelProgress?: boolean;
 }
 
 type SidePanelTreeActionProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
