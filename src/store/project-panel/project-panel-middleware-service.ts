@@ -66,19 +66,19 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
         }
     };
 
-const setItems = (listResults: ListResults<GroupContentsResource>) =>
+export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     projectPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const getParams = (dataExplorer: DataExplorer) => ({
+export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer),
 });
 
-const getFilters = (dataExplorer: DataExplorer) => {
+export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectPanelFilter>;
     const typeFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE);
     const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
@@ -90,7 +90,7 @@ const getFilters = (dataExplorer: DataExplorer) => {
         .getFilters();
 };
 
-const getOrder = (dataExplorer: DataExplorer) => {
+export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn) {

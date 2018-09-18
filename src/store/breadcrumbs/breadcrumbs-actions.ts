@@ -7,9 +7,13 @@ import { RootState } from '~/store/store';
 import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { getResource } from '~/store/resources/resources';
 import { TreePicker } from '../tree-picker/tree-picker';
-import { getSidePanelTreeBranch } from '../side-panel-tree/side-panel-tree-actions';
+import { getSidePanelTreeBranch, getSidePanelTreeNodeAncestorsIds } from '../side-panel-tree/side-panel-tree-actions';
 import { propertiesActions } from '../properties/properties-actions';
 import { getProcess } from '~/store/processes/process';
+import { ServiceRepository } from '~/services/services';
+import { SidePanelTreeCategory, activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { updateResources } from '../resources/resources-actions';
+import { ResourceKind } from '~/models/resource';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -35,7 +39,33 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
         dispatch(setBreadcrumbs(breadcrumbs));
     };
 
-export const setProjectBreadcrumbs = setSidePanelBreadcrumbs;
+export const setSharedWithMeBreadcrumbs = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const ancestors = await services.ancestorsService.ancestors(uuid, '');
+        dispatch(updateResources(ancestors));
+        const initialBreadcrumbs: ResourceBreadcrumb[] = [
+            { label: SidePanelTreeCategory.SHARED_WITH_ME, uuid: SidePanelTreeCategory.SHARED_WITH_ME }
+        ];
+        const breadrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
+            ancestor.kind === ResourceKind.GROUP
+                ? [...breadcrumbs, { label: ancestor.name, uuid: ancestor.uuid }]
+                : breadcrumbs,
+            initialBreadcrumbs);
+
+        dispatch(setBreadcrumbs(breadrumbs));
+    };
+
+export const setProjectBreadcrumbs = (uuid: string) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
+        const rootUuid = services.authService.getUuid();
+        if (uuid === rootUuid ||ancestors.find(uuid => uuid === rootUuid)) {
+            dispatch(setSidePanelBreadcrumbs(uuid));
+        } else {
+            dispatch(setSharedWithMeBreadcrumbs(uuid));
+            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+        }
+    };
 
 export const setCollectionBreadcrumbs = (collectionUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
