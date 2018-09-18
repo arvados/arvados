@@ -192,11 +192,16 @@ class Collection < ArvadosModel
   def manifest_files
     return '' if !self.manifest_text
 
+    done = {}
     names = ''
     self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+      next if done[name]
+      done[name] = true
       names << name.first.gsub('\040',' ') + "\n"
     end
     self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+      next if done[stream_name]
+      done[stream_name] = true
       names << stream_name.first.gsub('\040',' ') + "\n"
     end
     names
