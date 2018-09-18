@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService, ListResults } from "~/services/common-service/common-resource-service";
+import { CommonResourceService, ListResults, ListArguments } from '~/services/common-service/common-resource-service';
 import { AxiosInstance } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
@@ -11,6 +11,7 @@ import { ProcessResource } from "~/models/process";
 import { TrashableResource } from "~/models/resource";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
+import { GroupResource } from "~/models/group";
 
 export interface ContentsArguments {
     limit?: number;
@@ -21,12 +22,16 @@ export interface ContentsArguments {
     includeTrash?: boolean;
 }
 
+export interface SharedArguments extends ListArguments {
+    include?: string;
+}
+
 export type GroupContentsResource =
     CollectionResource |
     ProjectResource |
     ProcessResource;
 
-export class GroupsService<T extends TrashableResource = TrashableResource> extends TrashableResourceService<T> {
+export class GroupsService<T extends GroupResource = GroupResource> extends TrashableResourceService<T> {
 
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, "groups", actions);
@@ -44,6 +49,14 @@ export class GroupsService<T extends TrashableResource = TrashableResource> exte
                 .get(this.resourceType + `${uuid}/contents`, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
+            this.actions
+        );
+    }
+
+    shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .get(this.resourceType + 'shared', { params }),
             this.actions
         );
     }

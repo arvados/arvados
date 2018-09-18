@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles, Tooltip } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 
 type CssRules = 'container' | 'input' | 'button';
@@ -58,7 +58,7 @@ export const SearchBar = withStyles(styles)(
         timeout: number;
 
         render() {
-            const {classes} = this.props;
+            const { classes } = this.props;
             return <Paper className={classes.container}>
                 <form onSubmit={this.handleSubmit}>
                     <input
@@ -68,19 +68,21 @@ export const SearchBar = withStyles(styles)(
                         value={this.state.value}
                     />
                     <IconButton className={classes.button}>
-                        <SearchIcon/>
+                        <Tooltip title='Search'>
+                            <SearchIcon />
+                        </Tooltip>
                     </IconButton>
                 </form>
             </Paper>;
         }
 
         componentDidMount() {
-            this.setState({value: this.props.value});
+            this.setState({ value: this.props.value });
         }
 
         componentWillReceiveProps(nextProps: SearchBarProps) {
             if (nextProps.value !== this.props.value) {
-                this.setState({value: nextProps.value});
+                this.setState({ value: nextProps.value });
             }
         }
 
@@ -96,7 +98,7 @@ export const SearchBar = withStyles(styles)(
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             clearTimeout(this.timeout);
-            this.setState({value: event.target.value});
+            this.setState({ value: event.target.value });
             this.timeout = window.setTimeout(
                 () => this.props.onSearch(this.state.value),
                 this.props.debounce || DEFAULT_SEARCH_DEBOUNCE

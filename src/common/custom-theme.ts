@@ -10,6 +10,7 @@ import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
+import teal from '@material-ui/core/colors/teal';
 
 export interface ArvadosThemeOptions extends ThemeOptions {
     customs: any;
@@ -28,10 +29,8 @@ interface Colors {
     blue500: string;
 }
 
-const red900 = red["900"];
+const arvadosPurple = '#361336';
 const purple800 = purple["800"];
-const grey200 = grey["200"];
-const grey300 = grey["300"];
 const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
@@ -55,7 +54,7 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiAppBar: {
             colorPrimary: {
-                backgroundColor: purple800
+                backgroundColor: arvadosPurple
             }
         },
         MuiTabs: {
@@ -63,13 +62,13 @@ export const themeOptions: ArvadosThemeOptions = {
                 color: grey600
             },
             indicator: {
-                backgroundColor: purple800
+                backgroundColor: arvadosPurple
             }
         },
         MuiTab: {
             selected: {
                 fontWeight: 700,
-                color: purple800
+                color: arvadosPurple
             }
         },
         MuiList: {
@@ -108,7 +107,7 @@ export const themeOptions: ArvadosThemeOptions = {
             },
             underline: {
                 '&:after': {
-                    borderBottomColor: purple800
+                    borderBottomColor: arvadosPurple
                 },
                 '&:hover:not($disabled):not($focused):not($error):before': {
                     borderBottom: '1px solid inherit'
@@ -121,7 +120,7 @@ export const themeOptions: ArvadosThemeOptions = {
             },
             focused: {
                 "&$focused:not($error)": {
-                    color: purple800
+                    color: arvadosPurple
                 }
             }
         }
@@ -133,8 +132,9 @@ export const themeOptions: ArvadosThemeOptions = {
     },
     palette: {
         primary: {
-            main: rocheBlue,
-            dark: blue.A100
+            main: teal.A700,
+            dark: blue.A100,
+            contrastText: '#fff'
         }
     }
 };

@@ -18,7 +18,8 @@ import {
     Card,
     CardActions,
     Typography,
-    CardContent
+    CardContent,
+    Tooltip
 } from "@material-ui/core";
 import * as classnames from "classnames";
 import { DefaultTransformOrigin } from "../popover/helpers";
@@ -88,16 +89,18 @@ export const DataTableFilters = withStyles(styles)(
             const { name, classes, children } = this.props;
             const isActive = this.state.filters.some(f => f.selected);
             return <>
-                <ButtonBase
-                    className={classnames([classes.root, { [classes.active]: isActive }])}
-                    component="span"
-                    onClick={this.open}
-                    disableRipple>
-                    {children}
-                    <i className={classnames(["fas fa-filter", classes.icon])}
-                        data-fa-transform="shrink-3"
-                        ref={this.icon} />
-                </ButtonBase>
+                <Tooltip title='Filters'>
+                    <ButtonBase
+                        className={classnames([classes.root, { [classes.active]: isActive }])}
+                        component="span"
+                        onClick={this.open}
+                        disableRipple>
+                        {children}
+                        <i className={classnames(["fas fa-filter", classes.icon])}
+                            data-fa-transform="shrink-3"
+                            ref={this.icon} />
+                    </ButtonBase>
+                </Tooltip>
                 <Popover
                     anchorEl={this.state.anchorEl}
                     open={!!this.state.anchorEl}

@@ -9,7 +9,7 @@ export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
     constructor(protected item: T) {}
 
     getTitle(): string {
-        return this.item.name;
+        return this.item.name || 'Projects';
     }
 
     abstract getIcon(className?: string): React.ReactElement<any>;

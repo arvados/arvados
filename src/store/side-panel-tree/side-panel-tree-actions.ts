@@ -148,14 +148,14 @@ export const expandSidePanelTreeItem = (nodeId: string) =>
         }
     };
 
-const getSidePanelTreeNode = (nodeId: string) => (treePicker: TreePicker) => {
+export const getSidePanelTreeNode = (nodeId: string) => (treePicker: TreePicker) => {
     const sidePanelTree = getTreePicker(SIDE_PANEL_TREE)(treePicker);
     return sidePanelTree
         ? getNodeValue(nodeId)(sidePanelTree)
         : undefined;
 };
 
-const getSidePanelTreeNodeAncestorsIds = (nodeId: string) => (treePicker: TreePicker) => {
+export const getSidePanelTreeNodeAncestorsIds = (nodeId: string) => (treePicker: TreePicker) => {
     const sidePanelTree = getTreePicker(SIDE_PANEL_TREE)(treePicker);
     return sidePanelTree
         ? getNodeAncestorsIds(nodeId)(sidePanelTree)

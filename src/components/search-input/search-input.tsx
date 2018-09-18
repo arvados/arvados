@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconButton, StyleRulesCallback, withStyles, WithStyles, FormControl, InputLabel, Input, InputAdornment } from '@material-ui/core';
+import { IconButton, StyleRulesCallback, withStyles, WithStyles, FormControl, InputLabel, Input, InputAdornment, Tooltip } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 
 type CssRules = 'container' | 'input' | 'button';
@@ -70,10 +70,12 @@ export const SearchInput = withStyles(styles)(
                             <InputAdornment position="end">
                                 <IconButton
                                     onClick={this.handleSubmit}>
-                                    <SearchIcon/>
+                                    <Tooltip title='Search'>
+                                        <SearchIcon />
+                                    </Tooltip>
                                 </IconButton>
                             </InputAdornment>
-                        }/>
+                        } />
                 </FormControl>
             </form>;
         }
