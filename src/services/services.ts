@@ -20,28 +20,29 @@ import { ResourceKind } from "~/models/resource";
 import { ContainerRequestService } from './container-request-service/container-request-service';
 import { ContainerService } from './container-service/container-service';
 import { LogService } from './log-service/log-service';
+import { ApiActions } from "~/services/api/api-actions";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
-export const createServices = (config: Config, progressFn: (id: string, working: boolean) => void) => {
+export const createServices = (config: Config, actions: ApiActions) => {
     const apiClient = Axios.create();
     apiClient.defaults.baseURL = config.baseUrl;
 
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
-    const containerRequestService = new ContainerRequestService(apiClient, progressFn);
-    const containerService = new ContainerService(apiClient, progressFn);
-    const groupsService = new GroupsService(apiClient, progressFn);
-    const keepService = new KeepService(apiClient, progressFn);
-    const linkService = new LinkService(apiClient, progressFn);
-    const logService = new LogService(apiClient, progressFn);
-    const projectService = new ProjectService(apiClient, progressFn);
-    const userService = new UserService(apiClient, progressFn);
+    const containerRequestService = new ContainerRequestService(apiClient, actions);
+    const containerService = new ContainerService(apiClient, actions);
+    const groupsService = new GroupsService(apiClient, actions);
+    const keepService = new KeepService(apiClient, actions);
+    const linkService = new LinkService(apiClient, actions);
+    const logService = new LogService(apiClient, actions);
+    const projectService = new ProjectService(apiClient, actions);
+    const userService = new UserService(apiClient, actions);
 
     const ancestorsService = new AncestorService(groupsService, userService);
-    const authService = new AuthService(apiClient, config.rootUrl, progressFn);
-    const collectionService = new CollectionService(apiClient, webdavClient, authService, progressFn);
+    const authService = new AuthService(apiClient, config.rootUrl, actions);
+    const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
     const collectionFilesService = new CollectionFilesService(collectionService);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);

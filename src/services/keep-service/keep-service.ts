@@ -5,10 +5,10 @@
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
 import { AxiosInstance } from "axios";
 import { KeepResource } from "~/models/keep";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
 
 export class KeepService extends CommonResourceService<KeepResource> {
-    constructor(serverApi: AxiosInstance, progressFn: ProgressFn) {
-        super(serverApi, "keep_services", progressFn);
+    constructor(serverApi: AxiosInstance, actions: ApiActions) {
+        super(serverApi, "keep_services", actions);
     }
 }

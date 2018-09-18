@@ -11,13 +11,13 @@ import { mapTreeValues } from "~/models/tree";
 import { parseFilesResponse } from "./collection-service-files-response";
 import { fileToArrayBuffer } from "~/common/file";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
-    constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, progressFn: ProgressFn) {
-        super(serverApi, "collections", progressFn);
+    constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
+        super(serverApi, "collections", actions);
     }
 
     async files(uuid: string) {

@@ -6,19 +6,19 @@ import * as _ from "lodash";
 import { AxiosInstance } from "axios";
 import { TrashableResource } from "src/models/resource";
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
 
 export class TrashableResourceService<T extends TrashableResource> extends CommonResourceService<T> {
 
-    constructor(serverApi: AxiosInstance, resourceType: string, progressFn: ProgressFn) {
-        super(serverApi, resourceType, progressFn);
+    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
+        super(serverApi, resourceType, actions);
     }
 
     trash(uuid: string): Promise<T> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .post(this.resourceType + `${uuid}/trash`),
-            this.progressFn
+            this.actions
         );
     }
 
@@ -31,7 +31,7 @@ export class TrashableResourceService<T extends TrashableResource> extends Commo
                 .post(this.resourceType + `${uuid}/untrash`, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
-            this.progressFn
+            this.actions
         );
     }
 }

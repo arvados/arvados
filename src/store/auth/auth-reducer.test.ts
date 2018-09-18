@@ -8,14 +8,18 @@ import { AuthAction, authActions } from "./auth-action";
 import 'jest-localstorage-mock';
 import { createServices } from "~/services/services";
 import { mockConfig } from '~/common/config';
+import { ApiActions } from "~/services/api/api-actions";
 
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
-    const progressFn = (id: string, working: boolean) => {};
+    const actions: ApiActions = {
+        progressFn: (id: string, working: boolean) => {},
+        errorFn: (id: string, message: string) => {}
+    };
 
     beforeAll(() => {
         localStorage.clear();
-        reducer = authReducer(createServices(mockConfig({}), progressFn));
+        reducer = authReducer(createServices(mockConfig({}), actions));
     });
 
     it('should correctly initialise state', () => {

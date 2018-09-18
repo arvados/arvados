@@ -5,10 +5,10 @@
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
 import { AxiosInstance } from "axios";
 import { ContainerRequestResource } from '~/models/container-request';
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
 
 export class ContainerRequestService extends CommonResourceService<ContainerRequestResource> {
-    constructor(serverApi: AxiosInstance, progressFn: ProgressFn) {
-        super(serverApi, "container_requests", progressFn);
+    constructor(serverApi: AxiosInstance, actions: ApiActions) {
+        super(serverApi, "container_requests", actions);
     }
 }

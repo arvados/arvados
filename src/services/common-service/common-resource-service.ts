@@ -6,7 +6,7 @@ import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
 import { Resource } from "src/models/resource";
 import * as uuid from "uuid/v4";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
 
 export interface ListArguments {
     limit?: number;
@@ -62,36 +62,37 @@ export class CommonResourceService<T extends Resource> {
             }
         }
 
-    static defaultResponse<R>(promise: AxiosPromise<R>, progressFn: ProgressFn): Promise<R> {
+    static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions): Promise<R> {
         const reqId = uuid();
-        progressFn(reqId, true);
+        actions.progressFn(reqId, true);
         return promise
             .then(data => {
-                progressFn(reqId, false);
+                actions.progressFn(reqId, false);
                 return data;
             })
             .then(CommonResourceService.mapResponseKeys)
             .catch(({ response }) => {
-                progressFn(reqId, false);
+                actions.progressFn(reqId, false);
+                actions.errorFn(reqId, response.message);
                 Promise.reject<Errors>(CommonResourceService.mapResponseKeys(response));
             });
     }
 
     protected serverApi: AxiosInstance;
     protected resourceType: string;
-    protected progressFn: ProgressFn;
+    protected actions: ApiActions;
 
-    constructor(serverApi: AxiosInstance, resourceType: string, onProgress: ProgressFn) {
+    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
         this.serverApi = serverApi;
         this.resourceType = '/' + resourceType + '/';
-        this.progressFn = onProgress;
+        this.actions = actions;
     }
 
     create(data?: Partial<T> | any) {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .post<T>(this.resourceType, data && CommonResourceService.mapKeys(_.snakeCase)(data)),
-            this.progressFn
+            this.actions
         );
     }
 
@@ -99,7 +100,7 @@ export class CommonResourceService<T extends Resource> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .delete(this.resourceType + uuid),
-            this.progressFn
+            this.actions
         );
     }
 
@@ -107,7 +108,7 @@ export class CommonResourceService<T extends Resource> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .get<T>(this.resourceType + uuid),
-            this.progressFn
+            this.actions
         );
     }
 
@@ -123,7 +124,7 @@ export class CommonResourceService<T extends Resource> {
                 .get(this.resourceType, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
-            this.progressFn
+            this.actions
         );
     }
 
@@ -131,7 +132,7 @@ export class CommonResourceService<T extends Resource> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .put<T>(this.resourceType + uuid, data && CommonResourceService.mapKeys(_.snakeCase)(data)),
-            this.progressFn
+            this.actions
         );
     }
 }

@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { SnackbarAction, snackbarActions } from "./snackbar-actions";
+import { SnackbarAction, snackbarActions, SnackbarKind } from "./snackbar-actions";
 
 export interface SnackbarState {
     message: string;
     open: boolean;
     hideDuration: number;
+    kind: SnackbarKind;
 }
 
 const DEFAULT_HIDE_DURATION = 3000;
@@ -15,7 +16,8 @@ const DEFAULT_HIDE_DURATION = 3000;
 const initialState: SnackbarState = {
     message: "",
     open: false,
-    hideDuration: DEFAULT_HIDE_DURATION
+    hideDuration: DEFAULT_HIDE_DURATION,
+    kind: SnackbarKind.INFO
 };
 
 export const snackbarReducer = (state = initialState, action: SnackbarAction) => {

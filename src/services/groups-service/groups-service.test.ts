@@ -5,10 +5,16 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { GroupsService } from "./groups-service";
+import { ApiActions } from "~/services/api/api-actions";
 
 describe("GroupsService", () => {
 
     const axiosMock = new MockAdapter(axios);
+
+    const actions: ApiActions = {
+        progressFn: (id: string, working: boolean) => {},
+        errorFn: (id: string, message: string) => {}
+    };
 
     beforeEach(() => {
         axiosMock.reset();
@@ -27,7 +33,7 @@ describe("GroupsService", () => {
                 items_available: 20
             });
 
-        const groupsService = new GroupsService(axios, (id, working) => {});
+        const groupsService = new GroupsService(axios, actions);
         const resource = await groupsService.contents("1", { limit: 10, offset: 1 });
         expect(resource).toEqual({
             kind: "kind",

@@ -6,13 +6,18 @@ import { CommonResourceService } from "./common-resource-service";
 import axios, { AxiosInstance } from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { Resource } from "src/models/resource";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions } from "~/services/api/api-actions";
+
+const actions: ApiActions = {
+    progressFn: (id: string, working: boolean) => {},
+    errorFn: (id: string, message: string) => {}
+};
 
 export const mockResourceService = <R extends Resource, C extends CommonResourceService<R>>(
-    Service: new (client: AxiosInstance, progressFn: ProgressFn) => C) => {
+    Service: new (client: AxiosInstance, actions: ApiActions) => C) => {
     const axiosInstance = axios.create();
     const axiosMock = new MockAdapter(axiosInstance);
-    const service = new Service(axiosInstance, (id, working) => {});
+    const service = new Service(axiosInstance, actions);
     Object.keys(service).map(key => service[key] = jest.fn());
     return service;
 };
@@ -20,7 +25,6 @@ export const mockResourceService = <R extends Resource, C extends CommonResource
 describe("CommonResourceService", () => {
     const axiosInstance = axios.create();
     const axiosMock = new MockAdapter(axiosInstance);
-    const progressFn = (id: string, working: boolean) => {};
 
     beforeEach(() => {
         axiosMock.reset();
@@ -31,14 +35,14 @@ describe("CommonResourceService", () => {
             .onPost("/resource/")
             .reply(200, { owner_uuid: "ownerUuidValue" });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", progressFn);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
         expect(resource).toEqual({ ownerUuid: "ownerUuidValue" });
     });
 
     it("#create maps request params to snake case", async () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", progressFn);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
         expect(axiosInstance.post).toHaveBeenCalledWith("/resource/", {owner_uuid: "ownerUuidValue"});
     });
@@ -48,7 +52,7 @@ describe("CommonResourceService", () => {
             .onDelete("/resource/uuid")
             .reply(200, { deleted_at: "now" });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", progressFn);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.delete("uuid");
         expect(resource).toEqual({ deletedAt: "now" });
     });
@@ -58,7 +62,7 @@ describe("CommonResourceService", () => {
             .onGet("/resource/uuid")
             .reply(200, { modified_at: "now" });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", progressFn);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.get("uuid");
         expect(resource).toEqual({ modifiedAt: "now" });
     });
@@ -76,7 +80,7 @@ describe("CommonResourceService", () => {
                 items_available: 20
             });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", progressFn);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.list({ limit: 10, offset: 1 });
         expect(resource).toEqual({
             kind: "kind",

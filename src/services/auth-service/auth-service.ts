@@ -4,7 +4,7 @@
 
 import { User } from "~/models/user";
 import { AxiosInstance } from "axios";
-import { ProgressFn } from "~/services/api/api-progress";
+import { ApiActions, ProgressFn } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
 
 export const API_TOKEN_KEY = 'apiToken';
@@ -28,7 +28,7 @@ export class AuthService {
     constructor(
         protected apiClient: AxiosInstance,
         protected baseUrl: string,
-        protected progressFn: ProgressFn) { }
+        protected actions: ApiActions) { }
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
@@ -90,11 +90,11 @@ export class AuthService {
 
     public getUserDetails = (): Promise<User> => {
         const reqId = uuid();
-        this.progressFn(reqId, true);
+        this.actions.progressFn(reqId, true);
         return this.apiClient
             .get<UserDetailsResponse>('/users/current')
             .then(resp => {
-                this.progressFn(reqId, false);
+                this.actions.progressFn(reqId, false);
                 return {
                     email: resp.data.email,
                     firstName: resp.data.first_name,
@@ -104,7 +104,8 @@ export class AuthService {
                 };
             })
             .catch(e => {
-                this.progressFn(reqId, false);
+                this.actions.progressFn(reqId, false);
+                this.actions.errorFn(reqId, e);
                 throw e;
             });
     }
