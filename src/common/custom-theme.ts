@@ -133,7 +133,7 @@ export const themeOptions: ArvadosThemeOptions = {
     palette: {
         primary: {
             main: teal.A700,
-            dark: blue.A100,
+            dark: teal.A400,
             contrastText: '#fff'
         }
     }
