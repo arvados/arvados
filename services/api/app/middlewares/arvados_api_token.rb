@@ -39,6 +39,7 @@ class ArvadosApiToken
     # Set current_user etc. based on the primary session token if a
     # valid one is present. Otherwise, use the first valid token in
     # reader_tokens.
+    accepted = false
     auth = nil
     [params["api_token"],
      params["oauth_token"],
@@ -50,6 +51,7 @@ class ArvadosApiToken
                  validate(token: supplied, remote: remote)
       if try_auth.andand.user
         auth = try_auth
+        accepted = supplied
         break
       end
     end
@@ -58,6 +60,7 @@ class ArvadosApiToken
     Thread.current[:api_client_authorization] = auth
     Thread.current[:api_client_uuid] = auth.andand.api_client.andand.uuid
     Thread.current[:api_client] = auth.andand.api_client
+    Thread.current[:token] = accepted
     Thread.current[:user] = auth.andand.user
 
     @app.call env if @app

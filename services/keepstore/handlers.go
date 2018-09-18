@@ -4,13 +4,6 @@
 
 package main
 
-// REST handlers for Keep are implemented here.
-//
-// GetBlockHandler (GET /locator)
-// PutBlockHandler (PUT /locator)
-// IndexHandler    (GET /index, GET /index/prefix)
-// StatusHandler   (GET /status.json)
-
 import (
 	"container/list"
 	"context"
@@ -29,27 +22,33 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 type router struct {
 	*mux.Router
-	limiter httpserver.RequestCounter
+	limiter     httpserver.RequestCounter
+	cluster     *arvados.Cluster
+	remoteProxy remoteProxy
 }
 
 // MakeRESTRouter returns a new router that forwards all Keep requests
 // to the appropriate handlers.
-func MakeRESTRouter() http.Handler {
-	rtr := &router{Router: mux.NewRouter()}
+func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
+	rtr := &router{
+		Router:  mux.NewRouter(),
+		cluster: cluster,
+	}
 
 	rtr.HandleFunc(
-		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+		`/{hash:[0-9a-f]{32}}`, rtr.handleGET).Methods("GET", "HEAD")
 	rtr.HandleFunc(
 		`/{hash:[0-9a-f]{32}}+{hints}`,
-		GetBlockHandler).Methods("GET", "HEAD")
+		rtr.handleGET).Methods("GET", "HEAD")
 
-	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, rtr.handlePUT).Methods("PUT")
 	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
 	// List all blocks stored here. Privileged client only.
 	rtr.HandleFunc(`/index`, rtr.IndexHandler).Methods("GET", "HEAD")
@@ -98,10 +97,15 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, BadRequestError.Error(), BadRequestError.HTTPCode)
 }
 
-// GetBlockHandler is a HandleFunc to address Get block requests.
-func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
 	ctx, cancel := contextForResponse(context.TODO(), resp)
 	defer cancel()
+
+	locator := req.URL.Path[1:]
+	if strings.Contains(locator, "+R") && !strings.Contains(locator, "+A") {
+		rtr.remoteProxy.Get(resp, req, rtr.cluster)
+		return
+	}
 
 	if theConfig.RequireSignatures {
 		locator := req.URL.Path[1:] // strip leading slash
@@ -177,8 +181,7 @@ func getBufferWithContext(ctx context.Context, bufs *bufferPool, bufSize int) ([
 	}
 }
 
-// PutBlockHandler is a HandleFunc to address Put block requests.
-func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 	ctx, cancel := contextForResponse(context.TODO(), resp)
 	defer cancel()
 
@@ -826,7 +829,7 @@ func IsValidLocator(loc string) bool {
 	return validLocatorRe.MatchString(loc)
 }
 
-var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
+var authRe = regexp.MustCompile(`^(OAuth2|Bearer)\s+(.*)`)
 
 // GetAPIToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
@@ -834,7 +837,7 @@ var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
 func GetAPIToken(req *http.Request) string {
 	if auth, ok := req.Header["Authorization"]; ok {
 		if match := authRe.FindStringSubmatch(auth[0]); match != nil {
-			return match[1]
+			return match[2]
 		}
 	}
 	return ""
