@@ -9,17 +9,17 @@ export type ProgressIndicatorState = { id: string, working: boolean }[];
 const initialState: ProgressIndicatorState = [];
 
 export const progressIndicatorReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorAction) => {
-    const startWorking = (id: string) => state.find(p => p.working) ? state : state.concat({ id, working: true });
+    const startWorking = (id: string) => state.find(p => p.id === id) ? state : state.concat({ id, working: true });
     const stopWorking = (id: string) => state.filter(p => p.id !== id);
 
     return progressIndicatorActions.match(action, {
-        START: id => startWorking(id),
-        STOP: id => stopWorking(id),
-        PERSIST_STOP: id => state.map(p => ({
-            id,
+        START_WORKING: id => startWorking(id),
+        STOP_WORKING: id => stopWorking(id),
+        PERSIST_STOP_WORKING: id => state.map(p => ({
+            ...p,
             working: p.id === id ? false : p.working
         })),
-        TOGGLE: ({ id, working }) => working ? startWorking(id) : stopWorking(id),
+        TOGGLE_WORKING: ({ id, working }) => working ? startWorking(id) : stopWorking(id),
         default: () => state,
     });
 };

@@ -20,18 +20,25 @@ import { ArvadosTheme } from "~/common/custom-theme";
 import { amber, green } from "@material-ui/core/colors";
 import * as classNames from 'classnames';
 
-const mapStateToProps = (state: RootState): SnackbarProps => ({
-    anchorOrigin: { vertical: "bottom", horizontal: "right" },
-    open: state.snackbar.open,
-    message: <span>{state.snackbar.message}</span>,
-    autoHideDuration: state.snackbar.hideDuration,
-});
+const mapStateToProps = (state: RootState): SnackbarProps & ArvadosSnackbarProps => {
+    const messages = state.snackbar.messages;
+    return {
+        anchorOrigin: { vertical: "bottom", horizontal: "right" },
+        open: state.snackbar.open,
+        message: <span>{messages.length > 0 ? messages[0].message : ""}</span>,
+        autoHideDuration: messages.length > 0 ? messages[0].hideDuration : 0,
+        kind: messages.length > 0 ? messages[0].kind : SnackbarKind.INFO
+    };
+};
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<SnackbarProps, "onClose"> => ({
+const mapDispatchToProps = (dispatch: Dispatch) => ({
     onClose: (event: any, reason: string) => {
         if (reason !== "clickaway") {
             dispatch(snackbarActions.CLOSE_SNACKBAR());
         }
+    },
+    onExited: () => {
+        dispatch(snackbarActions.SHIFT_MESSAGES());
     }
 });
 
@@ -43,27 +50,27 @@ type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     success: {
-        backgroundColor: green[600],
+        backgroundColor: green[600]
     },
     error: {
-        backgroundColor: theme.palette.error.dark,
+        backgroundColor: theme.palette.error.dark
     },
     info: {
-        backgroundColor: theme.palette.primary.dark,
+        backgroundColor: theme.palette.primary.dark
     },
     warning: {
-        backgroundColor: amber[700],
+        backgroundColor: amber[700]
     },
     icon: {
-        fontSize: 20,
+        fontSize: 20
     },
     iconVariant: {
         opacity: 0.9,
-        marginRight: theme.spacing.unit,
+        marginRight: theme.spacing.unit
     },
     message: {
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'center'
     },
 });
 
@@ -72,10 +79,11 @@ interface ArvadosSnackbarProps {
 }
 
 const ArvadosSnackbarContent = (props: SnackbarProps & ArvadosSnackbarProps & WithStyles<CssRules>) => {
-    const { classes, className, message, onClose, kind, ...other } = props;
+    const { classes, className, message, onClose, kind } = props;
 
     let Icon = InfoIcon;
-    let cssClass;
+    let cssClass = classes.info;
+
     switch (kind) {
         case SnackbarKind.INFO:
             Icon = InfoIcon;

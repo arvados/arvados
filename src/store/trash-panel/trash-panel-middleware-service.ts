@@ -19,7 +19,7 @@ import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/tra
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
-import { snackbarActions } from "~/store/snackbar/snackbar-actions";
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
@@ -48,7 +48,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         }
 
         try {
-            api.dispatch(progressIndicatorActions.START(this.getId()));
+            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const userUuid = this.services.authService.getUuid()!;
             const listResults = await this.services.groupsService
                 .contents(userUuid, {
@@ -63,7 +63,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                     recursive: true,
                     includeTrash: true
                 });
-            api.dispatch(progressIndicatorActions.PERSIST_STOP(this.getId()));
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
 
             const items = listResults.items.map(it => it.uuid);
 
@@ -74,7 +74,13 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch<any>(updateFavorites(items));
             api.dispatch(updateResources(listResults.items));
         } catch (e) {
-            api.dispatch(progressIndicatorActions.PERSIST_STOP(this.getId()));
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            api.dispatch(trashPanelActions.SET_ITEMS({
+                items: [],
+                itemsAvailable: 0,
+                page: 0,
+                rowsPerPage: dataExplorer.rowsPerPage
+            }));
             api.dispatch(couldNotFetchTrashContents());
         }
     }
@@ -82,5 +88,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
 const couldNotFetchTrashContents = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch trash contents.'
+        message: 'Could not fetch trash contents.',
+        kind: SnackbarKind.ERROR
     });
+

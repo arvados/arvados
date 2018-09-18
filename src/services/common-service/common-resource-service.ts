@@ -41,7 +41,7 @@ export enum CommonResourceServiceError {
 
 export class CommonResourceService<T extends Resource> {
 
-    static mapResponseKeys = (response: { data: any }): Promise<any> =>
+    static mapResponseKeys = (response: { data: any }) =>
         CommonResourceService.mapKeys(_.camelCase)(response.data)
 
     static mapKeys = (mapFn: (key: string) => string) =>
@@ -73,8 +73,9 @@ export class CommonResourceService<T extends Resource> {
             .then(CommonResourceService.mapResponseKeys)
             .catch(({ response }) => {
                 actions.progressFn(reqId, false);
-                actions.errorFn(reqId, response.message);
-                Promise.reject<Errors>(CommonResourceService.mapResponseKeys(response));
+                const errors = CommonResourceService.mapResponseKeys(response) as Errors;
+                actions.errorFn(reqId, errors);
+                throw errors;
             });
     }
 
