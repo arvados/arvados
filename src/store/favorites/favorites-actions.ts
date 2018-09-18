@@ -6,8 +6,9 @@ import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
 import { checkFavorite } from "./favorites-reducer";
-import { snackbarActions } from "../snackbar/snackbar-actions";
+import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "~/services/services";
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -19,10 +20,16 @@ export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
 export const toggleFavorite = (resource: { uuid: string; name: string }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+        dispatch(progressIndicatorActions.START_WORKING("toggleFavorite"));
         const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Working..." }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: isFavorite
+                ? "Removing from favorites..."
+                : "Adding to favorites..."
+        }));
+
         const promise: any = isFavorite
             ? services.favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
             : services.favoriteService.create({ userUuid, resource });
@@ -35,8 +42,14 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     message: isFavorite
                         ? "Removed from favorites"
                         : "Added to favorites",
-                    hideDuration: 2000
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
                 }));
+                dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
+            })
+            .catch((e: any) => {
+                dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
+                throw e;
             });
     };
 

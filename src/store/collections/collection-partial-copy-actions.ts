@@ -9,8 +9,9 @@ import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { ServiceRepository } from '~/services/services';
 import { filterCollectionFilesBySelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 
@@ -42,6 +43,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
         const currentCollection = state.collectionPanel.item;
         if (currentCollection) {
             try {
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 const collection = await services.collectionService.get(currentCollection.uuid);
                 const collectionCopy = {
                     ...collection,
@@ -54,7 +56,12 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                 const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
                 await services.collectionService.deleteFiles(newCollection.uuid, paths);
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'New collection created.', hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'New collection created.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
@@ -66,6 +73,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000 }));
                 }
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
     };

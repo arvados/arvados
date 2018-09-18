@@ -10,6 +10,7 @@ import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { uploadCollectionFiles } from './collection-upload-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export interface CollectionCreateFormDialogData {
     ownerUuid: string;
@@ -30,16 +31,19 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_CREATE_FORM_NAME));
         try {
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
             const newCollection = await services.collectionService.create(data);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME, { name: 'Collection with the same name already exists.' }));
             }
-            return ;
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
+            return;
         }
     };

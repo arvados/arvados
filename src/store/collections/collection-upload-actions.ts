@@ -7,9 +7,10 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { loadCollectionFiles } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 import { reset, startSubmit } from 'redux-form';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -31,11 +32,21 @@ export const submitCollectionFiles = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
-            dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
-            await dispatch<any>(uploadCollectionFiles(currentCollection.uuid));
-            dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-            dispatch(closeUploadCollectionFilesDialog());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Data has been uploaded.', hideDuration: 2000 }));
+            try {
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+                dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
+                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid));
+                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch(closeUploadCollectionFilesDialog());
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Data has been uploaded.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+            } catch (e) {
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+            }
         }
     };
 
