@@ -15,7 +15,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export const TextField = withStyles(styles)((props: WrappedFieldProps & WithStyles<CssRules> & { label?: string }) =>
+export const TextField = withStyles(styles)((props: WrappedFieldProps & WithStyles<CssRules> & { label?: string, autoFocus?: boolean }) =>
     <MaterialTextField
         helperText={props.meta.touched && props.meta.error}
         className={props.classes.textField}
@@ -23,6 +23,7 @@ export const TextField = withStyles(styles)((props: WrappedFieldProps & WithStyl
         disabled={props.meta.submitting}
         error={props.meta.touched && !!props.meta.error}
         autoComplete='off'
+        autoFocus={props.autoFocus}
         fullWidth={true}
         {...props.input}
     />);

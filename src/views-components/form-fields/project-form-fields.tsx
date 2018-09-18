@@ -12,7 +12,8 @@ export const ProjectNameField = () =>
         name='name'
         component={TextField}
         validate={PROJECT_NAME_VALIDATION}
-        label="Project Name" />;
+        label="Project Name"
+        autoFocus={true} />;
 
 export const ProjectDescriptionField = () =>
     <Field

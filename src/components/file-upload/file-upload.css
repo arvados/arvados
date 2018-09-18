@@ -1,0 +1,67 @@
+.dropzone-border-left {
+    left: -1px;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    content: "";
+    position: absolute;
+    transform: scaleY(0);
+    transition: transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+    pointer-events: none;
+    background-color: #6a1b9a;
+}
+
+.dropzone-border-right {
+    right: -1px;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    content: "";
+    position: absolute;
+    transform: scaleY(0);
+    transition: transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+    pointer-events: none;
+    background-color: #6a1b9a;
+}
+
+.dropzone-border-top {
+    left: 0;
+    right: 0;
+    top: -1px;
+    height: 2px;
+    content: "";
+    position: absolute;
+    transform: scaleX(0);
+    transition: transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+    pointer-events: none;
+    background-color: #6a1b9a;
+}
+
+.dropzone-border-bottom {
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    content: "";
+    position: absolute;
+    transform: scaleX(0);
+    transition: transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+    pointer-events: none;
+    background-color: #6a1b9a;
+}
+
+.dropzone-border-left-active {
+    transform: scaleY(1);
+}
+
+.dropzone-border-right-active {
+    transform: scaleY(1);
+}
+
+.dropzone-border-top-active {
+    transform: scaleX(1);
+}
+
+.dropzone-border-bottom-active {
+    transform: scaleX(1);
+}

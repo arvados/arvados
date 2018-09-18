@@ -13,7 +13,8 @@ export const CollectionNameField = () =>
         name='name'
         component={TextField}
         validate={COLLECTION_NAME_VALIDATION}
-        label="Collection Name" />;
+        label="Collection Name"
+        autoFocus={true} />;
 
 export const CollectionDescriptionField = () =>
     <Field
