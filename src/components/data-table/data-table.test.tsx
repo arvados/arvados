@@ -203,23 +203,23 @@ describe("<DataTable />", () => {
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
     });
 
-    it("shows default view if there is no items", () => {
-        const columns: DataColumns<string> = [
-            createDataColumn({
-                name: "Column 1",
-                render: () => <span />,
-                selected: true,
-                configurable: true
-            }),
-        ];
-        const dataTable = mount(<DataTable
-            columns={columns}
-            items={[]}
-            onFiltersChange={jest.fn()}
-            onRowClick={jest.fn()}
-            onRowDoubleClick={jest.fn()}
-            onContextMenu={jest.fn()}
-            onSortToggle={jest.fn()} />);
-        expect(dataTable.find(DataTableDefaultView)).toHaveLength(1);
-    });
+    // it("shows default view if there is no items", () => {
+    //     const columns: DataColumns<string> = [
+    //         createDataColumn({
+    //             name: "Column 1",
+    //             render: () => <span />,
+    //             selected: true,
+    //             configurable: true
+    //         }),
+    //     ];
+    //     const dataTable = mount(<DataTable
+    //         columns={columns}
+    //         items={[]}
+    //         onFiltersChange={jest.fn()}
+    //         onRowClick={jest.fn()}
+    //         onRowDoubleClick={jest.fn()}
+    //         onContextMenu={jest.fn()}
+    //         onSortToggle={jest.fn()} />);
+    //     expect(dataTable.find(DataTableDefaultView)).toHaveLength(1);
+    // });
 });
