@@ -53,11 +53,11 @@ export const CollectionPanelFiles =
                 <CardHeader
                     className={classes.cardSubheader}
                     action={
-                        <IconButton onClick={onOptionsMenuOpen}>
-                            <Tooltip title="More options">
+                        <Tooltip title="More options">
+                            <IconButton onClick={onOptionsMenuOpen}>
                                 <CustomizeTableIcon />
-                            </Tooltip>
-                        </IconButton>
+                            </IconButton>
+                        </Tooltip>
                     } />
                 <Grid container justify="space-between">
                     <Typography variant="caption" className={classes.nameHeader}>

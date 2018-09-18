@@ -73,11 +73,11 @@ export const ProcessLogMainCard = withStyles(styles)(
                 <CardHeader
                     avatar={<ProcessIcon className={classes.iconHeader} />}
                     action={
-                        <IconButton onClick={event => onContextMenu(event, process)} aria-label="More options">
-                            <Tooltip title="More options">
+                        <Tooltip title="More options">
+                            <IconButton onClick={event => onContextMenu(event, process)} aria-label="More options">
                                 <MoreOptionsIcon />
-                            </Tooltip>
-                        </IconButton>}
+                            </IconButton>
+                        </Tooltip>}
                     title={
                         <Tooltip title={process.containerRequest.name} placement="bottom-start">
                             <Typography noWrap variant="title" className={classes.title}>

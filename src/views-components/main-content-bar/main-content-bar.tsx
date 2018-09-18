@@ -22,11 +22,11 @@ export const MainContentBar = connect(undefined, {
                 <Breadcrumbs />
             </Grid>
             <Grid item>
-                <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
-                    <Tooltip title="Additional Info">
+                <Tooltip title="Additional Info">
+                    <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
                         <DetailsIcon />
-                    </Tooltip>
-                </IconButton>
+                    </IconButton>
+                </Tooltip>
             </Grid>
         </Grid>
     </Toolbar>);

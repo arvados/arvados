@@ -68,12 +68,12 @@ export const SearchInput = withStyles(styles)(
                         onChange={this.handleChange}
                         endAdornment={
                             <InputAdornment position="end">
-                                <IconButton
-                                    onClick={this.handleSubmit}>
-                                    <Tooltip title='Search'>
+                                <Tooltip title='Search'>
+                                    <IconButton
+                                        onClick={this.handleSubmit}>
                                         <SearchIcon />
-                                    </Tooltip>
-                                </IconButton>
+                                    </IconButton>
+                                </Tooltip>
                             </InputAdornment>
                         } />
                 </FormControl>

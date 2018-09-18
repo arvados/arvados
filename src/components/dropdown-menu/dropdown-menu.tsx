@@ -33,15 +33,15 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
         const { anchorEl } = this.state;
         return (
             <div>
-                <IconButton
-                    aria-owns={anchorEl ? id : undefined}
-                    aria-haspopup="true"
-                    color="inherit"
-                    onClick={this.handleOpen}>
-                    <Tooltip title={title}>
+                <Tooltip title={title}>
+                    <IconButton
+                        aria-owns={anchorEl ? id : undefined}
+                        aria-haspopup="true"
+                        color="inherit"
+                        onClick={this.handleOpen}>
                         {icon}
-                    </Tooltip>
-                </IconButton>
+                    </IconButton>
+                </Tooltip>
                 <Menu
                     id={id}
                     anchorEl={anchorEl}
