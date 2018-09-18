@@ -32,6 +32,8 @@ import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-mid
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
 import { processLogsPanelReducer } from './process-logs-panel/process-logs-panel-reducer';
 import { processPanelReducer } from '~/store/process-panel/process-panel-reducer';
+import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import { SharedWithMeMiddlewareService } from './shared-with-me-panel/shared-with-me-middleware-service';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -54,13 +56,17 @@ export function configureStore(history: History, services: ServiceRepository): R
     const trashPanelMiddleware = dataExplorerMiddleware(
         new TrashPanelMiddlewareService(services, TRASH_PANEL_ID)
     );
+    const sharedWithMePanelMiddleware = dataExplorerMiddleware(
+        new SharedWithMeMiddlewareService(services, SHARED_WITH_ME_PANEL_ID)
+    );
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
         projectPanelMiddleware,
         favoritePanelMiddleware,
-        trashPanelMiddleware
+        trashPanelMiddleware,
+        sharedWithMePanelMiddleware,
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

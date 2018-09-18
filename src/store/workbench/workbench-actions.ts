@@ -9,13 +9,13 @@ import { loadCollectionPanel } from '~/store/collection-panel/collection-panel-a
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
 import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
+import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects, getSidePanelTreeNodeAncestorsIds } from '../side-panel-tree/side-panel-tree-actions';
 import { loadResource, updateResources } from '../resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { setCollectionBreadcrumbs, setProjectBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -36,6 +36,9 @@ import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
 import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
+import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
+
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 
 export const loadWorkbench = () =>
@@ -48,6 +51,7 @@ export const loadWorkbench = () =>
                 dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
+                dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -78,10 +82,10 @@ export const loadTrash = () =>
     };
 
 export const loadProject = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        await dispatch<any>(activateSidePanelTreeItem(uuid));
-        dispatch<any>(setProjectBreadcrumbs(uuid));
-        dispatch<any>(openProjectPanel(uuid));
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(openProjectPanel(uuid));
+        await dispatch(activateSidePanelTreeItem(uuid));
+        dispatch(setProjectBreadcrumbs(uuid));
         dispatch(loadDetailsPanel(uuid));
     };
 
@@ -266,3 +270,9 @@ export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
             dispatch<any>(loadProject(currentProjectPanelUuid));
         }
     };
+
+export const loadSharedWithMe = (dispatch: Dispatch) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+    dispatch<any>(loadSharedWithMePanel());
+    dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
+};
