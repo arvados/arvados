@@ -88,8 +88,19 @@ SPDX-License-Identifier: AGPL-3.0 %>
             No recent pipelines or processes.
           <% else %>
           <% wus.each do |p, wu| %>
+            <%
+            # Set up tooltip containing useful runtime information
+            runtime_status_tooltip = nil
+            if wu.runtime_status
+              if wu.runtime_status[:error]
+                runtime_status_tooltip = "Error: #{wu.runtime_status[:error]}"
+              elsif wu.runtime_status[:warning]
+                runtime_status_tooltip = "Warning: #{wu.runtime_status[:warning]}"
+              end
+            end
+            %>
             <% if wu.is_finished? %>
-            <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=sanitize(runtime_status_tooltip)%>">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>
@@ -114,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
             </div>
             <% else %>
-            <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>" title="<%=sanitize(runtime_status_tooltip)%>">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>

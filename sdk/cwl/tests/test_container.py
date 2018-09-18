@@ -5,6 +5,7 @@
 import arvados_cwl
 import arvados_cwl.context
 from arvados_cwl.arvdocker import arv_docker_clear_cache
+import copy
 import arvados.config
 import logging
 import mock
@@ -17,6 +18,7 @@ from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 
 from .matcher import JsonDiffMatcher
+from .mock_discovery import get_rootDesc
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -488,10 +490,81 @@ class TestContainer(unittest.TestCase):
         })
 
         self.assertFalse(api.collections().create.called)
+        self.assertFalse(runner.runtime_status_error.called)
 
         arvjob.collect_outputs.assert_called_with("keep:abc+123")
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
+
+    @mock.patch("arvados_cwl.get_current_container")
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("arvados.collection.Collection")
+    def test_child_failure(self, col, reader, gcc_mock):
+        api = mock.MagicMock()
+        api._rootDesc = copy.deepcopy(get_rootDesc())
+        del api._rootDesc.get('resources')['jobs']['methods']['create']
+
+        # Set up runner with mocked runtime_status_update()
+        self.assertFalse(gcc_mock.called)
+        runtime_status_update = mock.MagicMock()
+        arvados_cwl.ArvCwlRunner.runtime_status_update = runtime_status_update
+        runner = arvados_cwl.ArvCwlRunner(api)
+        self.assertEqual(runner.work_api, 'containers')
+
+        # Make sure ArvCwlRunner thinks it's running inside a container so it
+        # adds the logging handler that will call runtime_status_update() mock
+        gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
+        self.assertTrue(gcc_mock.called)
+        root_logger = logging.getLogger('')
+        handlerClasses = [h.__class__ for h in root_logger.handlers]
+        self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
+
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.num_retries = 0
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.label = mock.MagicMock()
+        runner.label.return_value = '[container testjob]'
+
+        runner.api.containers().get().execute.return_value = {
+            "state":"Complete",
+            "output": "abc+123",
+            "exit_code": 1,
+            "log": "def+234"
+        }
+
+        col().open.return_value = []
+
+        arvjob = arvados_cwl.ArvadosContainer(runner,
+                                              mock.MagicMock(),
+                                              {},
+                                              None,
+                                              [],
+                                              [],
+                                              "testjob")
+        arvjob.output_callback = mock.MagicMock()
+        arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
+        arvjob.outdir = "/var/spool/cwl"
+        arvjob.output_ttl = 3600
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
+
+        arvjob.done({
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z"
+        })
+
+        runtime_status_update.assert_called_with(
+            'error',
+            'arvados.cwl-runner: [container testjob] (zzzzz-xvhdp-zzzzzzzzzzzzzzz) error log:',
+            '  ** log is empty **'
+        )
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "permanentFail")
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}

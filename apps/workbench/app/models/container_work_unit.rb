@@ -117,9 +117,32 @@ class ContainerWorkUnit < ProxyWorkUnit
       else
         'Failed'
       end
+    when 'Running'
+      if runtime_status[:error]
+        'Failing'
+      elsif runtime_status[:warning]
+        'Warning'
+      else
+        state
+      end
     else
-      # Cancelled, Running, or Uncommitted (no container assigned)
+      # Cancelled, or Uncommitted (no container assigned)
       state
+    end
+  end
+
+  def runtime_status
+    return get(:runtime_status, @container) || get(:runtime_status, @proxied)
+  end
+
+  def state_bootstrap_class
+    case state_label
+    when 'Failing'
+      'danger'
+    when 'Warning'
+      'warning'
+    else
+      super
     end
   end
 

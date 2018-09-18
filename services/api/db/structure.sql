@@ -354,7 +354,8 @@ CREATE TABLE public.containers (
     locked_by_uuid character varying(255),
     scheduling_parameters text,
     secret_mounts jsonb DEFAULT '{}'::jsonb,
-    secret_mounts_md5 character varying DEFAULT '99914b932bd37a50b983c5e7c90ae93b'::character varying
+    secret_mounts_md5 character varying DEFAULT '99914b932bd37a50b983c5e7c90ae93b'::character varying,
+    runtime_status jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -1942,6 +1943,13 @@ CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree 
 
 
 --
+-- Name: index_containers_on_runtime_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_containers_on_runtime_status ON public.containers USING gin (runtime_status);
+
+
+--
 -- Name: index_containers_on_secret_mounts_md5; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3158,4 +3166,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180820135808');
 INSERT INTO schema_migrations (version) VALUES ('20180824152014');
 
 INSERT INTO schema_migrations (version) VALUES ('20180824155207');
+
+INSERT INTO schema_migrations (version) VALUES ('20180904110712');
 
