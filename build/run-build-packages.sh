@@ -465,7 +465,7 @@ fi
 # Python 2 dependencies
 declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
 # Add --no-use-wheel if this pip knows it.
-pip wheel --help >/dev/null 2>&1
+pip install --no-use-wheel >/dev/null 2>&1
 case "$?" in
     0) PIP_DOWNLOAD_SWITCHES+=(--no-use-wheel) ;;
     2) ;;
@@ -529,7 +529,12 @@ while read -r line || [[ -n "$line" ]]; do
             pyfpm_workdir=$(mktemp --tmpdir -d pyfpm-XXXXXX) && (
                 set -e
                 cd "$pyfpm_workdir"
-                pip install "${PIP_DOWNLOAD_SWITCHES[@]}" --download . "$name==$version"
+                PIP_VERSION=`python$PYTHON2_VERSION -c "import pip; print(pip.__version__)" |cut -f1 -d.`
+                if (( $PIP_VERSION < 8 )); then
+                  pip install "${PIP_DOWNLOAD_SWITCHES[@]}" --download . "$name==$version"
+                else
+                  pip download --no-deps --no-binary :all: "$name==$version"
+                fi
                 # Sometimes pip gives us a tarball, sometimes a zip file...
                 DOWNLOADED=`ls $name-*`
                 [[ "$DOWNLOADED" =~ ".tar" ]] && tar -xf $DOWNLOADED
