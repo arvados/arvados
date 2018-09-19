@@ -19,7 +19,7 @@ export interface CollectionPanelFilesProps {
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
 }
 
-type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon';
+type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -37,6 +37,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     uploadIcon: {
         transform: 'rotate(180deg)'
+    },
+    button: {
+        marginRight: -theme.spacing.unit,
+        marginTop: '0px'
     }
 });
 
@@ -46,12 +50,13 @@ export const CollectionPanelFiles =
             <Card className={classes.root}>
                 <CardHeader
                     title="Files"
+                    classes={{ action: classes.button }}
                     action={
                         <Button onClick={onUploadDataClick}
                             variant='raised'
                             color='primary'
                             size='small'>
-                            <DownloadIcon className={classes.uploadIcon}/>
+                            <DownloadIcon className={classes.uploadIcon} />
                             Upload data
                     </Button>
                     } />
