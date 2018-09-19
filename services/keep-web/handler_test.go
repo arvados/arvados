@@ -736,6 +736,43 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
+	arv := arvados.NewClientFromEnv()
+	var newCollection arvados.Collection
+	err := arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", arv.UpdateBody(&arvados.Collection{
+		OwnerUUID:    arvadostest.ActiveUserUUID,
+		ManifestText: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt 0:3:bar.txt\n",
+		Name:         "keep-web test collection",
+	}), map[string]bool{"ensure_unique_name": true})
+	c.Assert(err, check.IsNil)
+	defer arv.RequestAndDecode(&newCollection, "DELETE", "arvados/v1/collections/"+newCollection.UUID, nil, nil)
+
+	var updated arvados.Collection
+	for _, fnm := range []string{"foo.txt", "bar.txt"} {
+		s.testServer.Config.AttachmentOnlyHost = "example.com"
+		u, _ := url.Parse("http://example.com/c=" + newCollection.UUID + "/" + fnm)
+		req := &http.Request{
+			Method:     "DELETE",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusNoContent)
+
+		updated = arvados.Collection{}
+		err = arv.RequestAndDecode(&updated, "GET", "arvados/v1/collections/"+newCollection.UUID, nil, nil)
+		c.Check(err, check.IsNil)
+		c.Check(updated.ManifestText, check.Not(check.Matches), ".*"+fnm+".*")
+		c.Logf("updated manifest_text %q", updated.ManifestText)
+	}
+	c.Check(updated.ManifestText, check.Equals, "")
+}
+
 func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 	s.testServer.Config.ManagementToken = arvadostest.ManagementToken
 	authHeader := http.Header{
