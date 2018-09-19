@@ -27,3 +27,7 @@ export const progressIndicatorReducer = (state: ProgressIndicatorState = initial
 export function isSystemWorking(state: ProgressIndicatorState): boolean {
     return state.length > 0 && state.reduce((working, p) => working ? true : p.working, false);
 }
+
+export const getProgressIndicator = (id: string) =>
+    (state: ProgressIndicatorState) =>
+        state.find(state => state.id === id);
