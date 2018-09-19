@@ -4,13 +4,27 @@ navsection: architecture
 title: "Federation"
 ...
 
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
 Arvados federation enables clients to transparently read, create and manipulate objects and collections across clusters in different regions or organizations.  Federation supports workfows that integrate and analyze data across multiple clusters by sending computation to where the data is, reducing the technical and legal barriers to analyzing large, sensitive data sets.
+
+_This feature is under development.  Support for federation is limited to certain types of requests.  The behaviors described here should not be interpreted as a stable API._
 
 h2(#cluster_id). Cluster identifiers
 
-Clusters are identified by a five-digit alphanumeric id (numbers and lowercase letters).  There are 36^5^ = 60466176 possible cluster identifiers.  Cluster identifiers are mapped API server hosts one of two ways:
+Clusters are identified by a five-digit alphanumeric id (numbers and lowercase letters).  There are 36^5^ = 60466176 possible cluster identifiers.
 
-* Through DNS resolution, under the @arvadosapi.com@ domain.  For example, the API server for the cluster @qr1hi@ can be found at @qr1hi.arvadosapi.com@.
+* For automated tests purposes, use "z****"
+* For experimental/local-only/private clusters that won't ever be visible on the public Internet, use "x****"
+* For long-lived clusters, we recommend reserving a cluster id.  Contact "mailto:support@curoverse.com":support@curoverse.com
+
+Cluster identifiers are mapped API server hosts one of two ways:
+
+* Through DNS resolution, under the @arvadosapi.com@ domain.  For example, the API server for the cluster @qr1hi@ can be found at @qr1hi.arvadosapi.com@.  To register a cluster id for free under @arvadosapi.com@, contact "mailto:support@curoverse.com":support@curoverse.com
 * Through explicit configuration:
 
 The @RemoteClusters@ section of @/etc/arvados/config.yml@ (for arvados-controller)
