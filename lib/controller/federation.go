@@ -8,9 +8,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/md5"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -76,9 +78,12 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 	h.handler.remoteClusterRequest(m[1], w, req, nil)
 }
 
-type rewriteSignaturesClusterId string
+type rewriteSignaturesClusterId struct {
+	clusterID  string
+	expectHash string
+}
 
-func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
 		return resp, requestError
 	}
@@ -100,6 +105,10 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 	// capacity accordingly
 	updatedManifest := bytes.NewBuffer(make([]byte, 0, int(float64(len(col.ManifestText))*1.1)))
 
+	hasher := md5.New()
+	mw := io.MultiWriter(hasher, updatedManifest)
+	sz := 0
+
 	scanner := bufio.NewScanner(strings.NewReader(col.ManifestText))
 	scanner.Buffer(make([]byte, 1048576), len(col.ManifestText))
 	for scanner.Scan() {
@@ -109,19 +118,56 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 			return nil, fmt.Errorf("Invalid stream (<3 tokens): %q", line)
 		}
 
-		updatedManifest.WriteString(tokens[0])
+		n, err := mw.Write([]byte(tokens[0]))
+		if err != nil {
+			return nil, fmt.Errorf("Error updating manifest: %v", err)
+		}
+		sz += n
 		for _, token := range tokens[1:] {
-			updatedManifest.WriteString(" ")
+			n, err = mw.Write([]byte(" "))
+			if err != nil {
+				return nil, fmt.Errorf("Error updating manifest: %v", err)
+			}
+			sz += n
+
 			m := keepclient.SignedLocatorRe.FindStringSubmatch(token)
 			if m != nil {
 				// Rewrite the block signature to be a remote signature
-				fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], clusterId, m[5][2:], m[8])
-			} else {
-				updatedManifest.WriteString(token)
-			}
+				_, err = fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], rw.clusterID, m[5][2:], m[8])
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
 
+				// for hash checking, ignore signatures
+				n, err = fmt.Fprintf(hasher, "%s%s", m[1], m[2])
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
+				sz += n
+			} else {
+				n, err = mw.Write([]byte(token))
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
+				sz += n
+			}
 		}
-		updatedManifest.WriteString("\n")
+		n, err = mw.Write([]byte("\n"))
+		if err != nil {
+			return nil, fmt.Errorf("Error updating manifest: %v", err)
+		}
+		sz += n
+	}
+
+	// Certify that the computed hash of the manifest matches our expectation
+	if rw.expectHash == "" {
+		rw.expectHash = col.PortableDataHash
+	}
+
+	sum := hasher.Sum(nil)
+	computedHash := fmt.Sprintf("%x+%v", sum, sz)
+	if computedHash != rw.expectHash {
+		return nil, fmt.Errorf("Computed hash %q did not match expected hash %q", computedHash, rw.expectHash)
 	}
 
 	col.ManifestText = updatedManifest.String()
@@ -159,6 +205,7 @@ func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Respons
 }
 
 type searchRemoteClusterForPDH struct {
+	pdh           string
 	remoteID      string
 	mtx           *sync.Mutex
 	sentResponse  *bool
@@ -202,7 +249,7 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 	// also have made it to this point, and we don't want a
 	// slow response holding the lock to block a faster response
 	// that is waiting on the lock.
-	newResponse, err = rewriteSignaturesClusterId(s.remoteID).rewriteSignatures(resp, nil)
+	newResponse, err = rewriteSignaturesClusterId{s.remoteID, s.pdh}.rewriteSignatures(resp, nil)
 
 	s.mtx.Lock()
 
@@ -234,7 +281,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		if len(m) == 2 && m[1] != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
 			h.handler.remoteClusterRequest(m[1], w, req,
-				rewriteSignaturesClusterId(m[1]).rewriteSignatures)
+				rewriteSignaturesClusterId{m[1], ""}.rewriteSignatures)
 			return
 		}
 		// not a collection UUID request, or it is a request
@@ -296,7 +343,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		if sentResponse {
 			break
 		}
-		search := &searchRemoteClusterForPDH{remoteID, &mtx, &sentResponse,
+		search := &searchRemoteClusterForPDH{m[1], remoteID, &mtx, &sentResponse,
 			&sharedContext, cancelFunc, &errors, &errorCode}
 		wg.Add(1)
 		go func() {
