@@ -21,6 +21,7 @@ import { ContainerRequestService } from './container-request-service/container-r
 import { ContainerService } from './container-service/container-service';
 import { LogService } from './log-service/log-service';
 import { ApiActions } from "~/services/api/api-actions";
+import { WorkflowService } from './workflow-service/workflow-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -39,6 +40,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const logService = new LogService(apiClient, actions);
     const projectService = new ProjectService(apiClient, actions);
     const userService = new UserService(apiClient, actions);
+    const workflowService = new WorkflowService(apiClient, actions);
 
     const ancestorsService = new AncestorService(groupsService, userService);
     const authService = new AuthService(apiClient, config.rootUrl, actions);
@@ -64,6 +66,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         tagService,
         userService,
         webdavClient,
+        workflowService
     };
 };
 

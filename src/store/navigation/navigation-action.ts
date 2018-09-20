@@ -24,14 +24,18 @@ export const navigateTo = (uuid: string) =>
         }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);
-        } else if(uuid === SidePanelTreeCategory.SHARED_WITH_ME){
+        } else if (uuid === SidePanelTreeCategory.SHARED_WITH_ME) {
             dispatch(navigateToSharedWithMe);
+        } else if (uuid === SidePanelTreeCategory.WORKFLOWS) {
+            dispatch(navigateToWorkflows);
         }
     };
 
 export const navigateToFavorites = push(Routes.FAVORITES);
 
 export const navigateToTrash = push(Routes.TRASH);
+
+export const navigateToWorkflows = push(Routes.WORKFLOWS);
 
 export const navigateToProject = compose(push, getProjectUrl);
 

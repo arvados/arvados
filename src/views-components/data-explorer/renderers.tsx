@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Grid, Typography, withStyles } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect } from 'react-redux';
@@ -48,6 +48,8 @@ export const renderIcon = (item: { kind: string }) => {
             return <CollectionIcon />;
         case ResourceKind.PROCESS:
             return <ProcessIcon />;
+        case ResourceKind.WORKFLOW:
+            return <WorkflowIcon />;
         default:
             return <DefaultIcon />;
     }

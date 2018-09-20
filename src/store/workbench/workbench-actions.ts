@@ -38,8 +38,9 @@ import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-a
 import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
-
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
+import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel';
 
 export const loadWorkbench = () =>
     async (dispatch: Dispatch, getState: () => RootState) => {
@@ -52,6 +53,7 @@ export const loadWorkbench = () =>
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+                dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns}));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -275,4 +277,10 @@ export const loadSharedWithMe = (dispatch: Dispatch) => {
     dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
     dispatch<any>(loadSharedWithMePanel());
     dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
+};
+
+export const loadWorkflow = (dispatch: Dispatch<any>) => {
+    dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.WORKFLOWS));
+    dispatch(loadWorkflowPanel());
+    dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
 };
