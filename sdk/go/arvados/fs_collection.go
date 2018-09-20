@@ -31,6 +31,8 @@ type CollectionFileSystem interface {
 	// Prefix (normally ".") is a top level directory, effectively
 	// prepended to all paths in the returned manifest.
 	MarshalManifest(prefix string) (string, error)
+
+	Size() int64
 }
 
 type collectionFileSystem struct {
@@ -137,6 +139,10 @@ func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
 	return fs.fileSystem.root.(*dirnode).marshalManifest(prefix)
+}
+
+func (fs *collectionFileSystem) Size() int64 {
+	return fs.fileSystem.root.(*dirnode).Size()
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
@@ -874,6 +880,18 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 			return child, ErrInvalidArgument
 		}
 	})
+	return
+}
+
+func (dn *dirnode) Size() (bytes int64) {
+	dn.RLock()
+	defer dn.RUnlock()
+	for _, i := range dn.inodes {
+		switch i := i.(type) {
+		case *filenode, *dirnode:
+			bytes += i.Size()
+		}
+	}
 	return
 }
 
