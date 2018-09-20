@@ -8,6 +8,7 @@ import { FileTreeData } from '../file-tree/file-tree-data';
 import { FileTree } from '../file-tree/file-tree';
 import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip } from '@material-ui/core';
 import { CustomizeTableIcon } from '../icon/icon';
+import { DownloadIcon } from '~/components/icon/icon';
 
 export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;
@@ -18,7 +19,7 @@ export interface CollectionPanelFilesProps {
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
 }
 
-type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader';
+type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -33,6 +34,13 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     fileSizeHeader: {
         marginRight: '65px'
+    },
+    uploadIcon: {
+        transform: 'rotate(180deg)'
+    },
+    button: {
+        marginRight: -theme.spacing.unit,
+        marginTop: '0px'
     }
 });
 
@@ -42,11 +50,13 @@ export const CollectionPanelFiles =
             <Card className={classes.root}>
                 <CardHeader
                     title="Files"
+                    classes={{ action: classes.button }}
                     action={
                         <Button onClick={onUploadDataClick}
                             variant='raised'
                             color='primary'
                             size='small'>
+                            <DownloadIcon className={classes.uploadIcon} />
                             Upload data
                     </Button>
                     } />
