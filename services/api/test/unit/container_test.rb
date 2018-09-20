@@ -652,32 +652,41 @@ class ContainerTest < ActiveSupport::TestCase
     assert c.update_attributes(exit_code: 1, state: Container::Complete)
   end
 
-  test "locked_by_uuid can set output on running container" do
+  test "locked_by_uuid can update log when locked/running, and output when running" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
-
     assert_equal c.locked_by_uuid, Thread.current[:api_client_authorization].uuid
+    assert c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+    assert c.update_attributes(state: Container::Running)
 
-    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
-    assert c.update_attributes! state: Container::Complete
+    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update_attributes(log: nil)
+    assert c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+    assert c.update_attributes(state: Container::Complete, log: collections(:real_log_collection).portable_data_hash)
+    c.reload
+    assert_equal c.output, collections(:collection_owned_by_active).portable_data_hash
+    assert_equal c.log, collections(:real_log_collection).portable_data_hash
+    refute c.update_attributes(output: nil)
+    refute c.update_attributes(log: nil)
   end
 
-  test "auth_uuid can set output on running container, but not change container state" do
+  test "auth_uuid can set output, progress on running container -- but not state, log" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
     c.update_attributes! state: Container::Running
 
-    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
-    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
-    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
+    auth = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:api_client_authorization] = auth
+    Thread.current[:api_client] = auth.api_client
+    Thread.current[:token] = auth.token
+    Thread.current[:user] = auth.user
 
-    assert_raises ArvadosModel::PermissionDeniedError do
-      # auth_uuid cannot set container state
-      c.update_attributes state: Container::Complete
-    end
+    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update_attributes(progress: 0.5)
+    refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+    refute c.update_attributes(state: Container::Complete)
   end
 
   test "not allowed to set output that is not readable by current user" do
@@ -701,9 +710,7 @@ class ContainerTest < ActiveSupport::TestCase
     c.update_attributes! state: Container::Running
 
     set_user_from_auth :running_to_be_deleted_container_auth
-    assert_raises ArvadosModel::PermissionDeniedError do
-      c.update_attributes! output: collections(:foo_file).portable_data_hash
-    end
+    refute c.update_attributes(output: collections(:foo_file).portable_data_hash)
   end
 
   test "can set trashed output on running container" do
