@@ -159,15 +159,19 @@ func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requ
 		sz += n
 	}
 
-	// Certify that the computed hash of the manifest matches our expectation
+	// Check that expected hash is consistent with
+	// portable_data_hash field of the returned record
 	if rw.expectHash == "" {
 		rw.expectHash = col.PortableDataHash
+	} else if rw.expectHash != col.PortableDataHash {
+		return nil, fmt.Errorf("portable_data_hash %q on returned record did not match expected hash %q ", rw.expectHash, col.PortableDataHash)
 	}
 
+	// Certify that the computed hash of the manifest_text matches our expectation
 	sum := hasher.Sum(nil)
 	computedHash := fmt.Sprintf("%x+%v", sum, sz)
 	if computedHash != rw.expectHash {
-		return nil, fmt.Errorf("Computed hash %q did not match expected hash %q", computedHash, rw.expectHash)
+		return nil, fmt.Errorf("Computed manifest_text hash %q did not match expected hash %q", computedHash, rw.expectHash)
 	}
 
 	col.ManifestText = updatedManifest.String()
