@@ -9,7 +9,8 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel python-devel python-setuptools fuse-devel xz-libs git
 
 # Install RVM
-RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+ADD generated/rvm.asc /tmp/
+RUN gpg --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
