@@ -78,7 +78,7 @@ export const MainAppBar = withStyles(styles)(
                                 <AccountMenu />
                                 <HelpMenu />
                             </>
-                            : <AnonymousMenu />}
+                            : <HelpMenu />}
                     </Grid>
                 </Grid>
             </Toolbar>

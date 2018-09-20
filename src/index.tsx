@@ -5,7 +5,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from "react-redux";
-import { Workbench } from './views/workbench/workbench';
+import { MainPanel } from './views/main-panel/main-panel';
 import './index.css';
 import { Route } from 'react-router';
 import createBrowserHistory from "history/createBrowserHistory";
@@ -38,7 +38,6 @@ import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { processResourceActionSet } from './views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -79,7 +78,7 @@ fetchConfig()
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
-        const WorkbenchComponent = (props: any) => <Workbench authService={services.authService} buildInfo={buildInfo} {...props} />;
+        const MainPanelComponent = (props: any) => <MainPanel buildInfo={buildInfo} {...props} />;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
@@ -87,7 +86,7 @@ fetchConfig()
                     <ConnectedRouter history={history}>
                         <div>
                             <Route path={Routes.TOKEN} component={TokenComponent} />
-                            <Route path={Routes.ROOT} component={WorkbenchComponent} />
+                            <Route path={Routes.ROOT} component={MainPanelComponent} />
                         </div>
                     </ConnectedRouter>
                 </Provider>
