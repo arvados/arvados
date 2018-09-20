@@ -145,6 +145,7 @@ navbar:
       - api/storage.html.textile.liquid
       - api/execution.html.textile.liquid
       - api/permission-model.html.textile.liquid
+      - architecture/federation.html.textile.liquid
   admin:
     - Topics:
       - admin/index.html.textile.liquid
