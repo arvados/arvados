@@ -439,6 +439,62 @@ func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
+func (s *FederationSuite) TestGetCollectionByPDHErrorBadHash(c *check.C) {
+	srv := &httpserver.Server{
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(404)
+			}),
+		},
+	}
+
+	c.Assert(srv.Start(), check.IsNil)
+	defer srv.Close()
+
+	// Make the "local" cluster to a service that always returns 404
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
+			TLS: false, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	srv2 := &httpserver.Server{
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(200)
+				// Return a collection where the hash
+				// of the manifest text doesn't match
+				// PDH that was requested.
+				var col arvados.Collection
+				col.PortableDataHash = "99999999999999999999999999999999+99"
+				col.ManifestText = `. 6a4ff0499484c6c79c95cd8c566bd25f\+249025 0:249025:GNU_General_Public_License,_version_3.pdf
+`
+				enc := json.NewEncoder(w)
+				enc.Encode(col)
+			}),
+		},
+	}
+
+	c.Assert(srv2.Start(), check.IsNil)
+	defer srv2.Close()
+
+	// Direct zzzzz to service that returns a 200 result with a bogus manifest_text
+	s.testHandler.Cluster.RemoteClusters["zzzzz"] = arvados.RemoteCluster{
+		Host:   srv2.Addr,
+		Proxy:  true,
+		Scheme: "http",
+	}
+
+	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+
+	resp := s.testRequest(req)
+	defer resp.Body.Close()
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+}
+
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
 	np := arvados.NodeProfile{
 		Controller: arvados.SystemServiceInstance{Listen: ":"},
