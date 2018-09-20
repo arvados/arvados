@@ -15,10 +15,22 @@ type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' |
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        background: theme.palette.background.default
+        position: 'relative',
+        backgroundColor: theme.palette.grey["200"],
+        '&::after': {
+            content: `''`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            background: 'url("arvados-logo-big.png") no-repeat center center',
+            opacity: 0.2,
+        }
     },
     container: {
-        width: '560px'
+        width: '560px',
+        zIndex: 10
     },
     title: {
         marginBottom: theme.spacing.unit * 6,
@@ -49,9 +61,8 @@ export const LoginPanel = compose(
                 Welcome to the Arvados Wrokbench
             </Typography>
             <Typography variant="body1" className={classes.content}>
-                The "Log in" button below will show you a Google sign-in page.
-                After you assure Google that you want to log in here with your Google account,
-                you will be redirected back here to Arvados Workbench.
+                The "Log in" button below will show you a Google sign-in page. 
+                After you assure Google that you want to log in here with your Google account, you will be redirected back here to Arvados Workbench.
             </Typography>
             <Typography variant="body1" className={classes.content}>
                 If you have never used Arvados Workbench before, logging in for the first time will automatically create a new account.
