@@ -10,5 +10,7 @@ require_relative 'load_config.rb'
 require 'enable_jobs_api'
 
 Server::Application.configure do
-  check_enable_legacy_jobs_api
+  if ActiveRecord::Base.connection.tables.include?('jobs')
+    check_enable_legacy_jobs_api
+  end
 end
