@@ -27,12 +27,15 @@ import (
 )
 
 var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
+var containersRe = regexp.MustCompile(`^/arvados/v1/containers/([0-9a-z]{5})-[^/]+$`)
+var containerRequestsRe = regexp.MustCompile(`^/arvados/v1/container_requests/([0-9a-z]{5})-[^/]+$`)
 var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
 var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
 type genericFederatedRequestHandler struct {
 	next    http.Handler
 	handler *Handler
+	matcher *regexp.Regexp
 }
 
 type collectionFederatedRequestHandler struct {
@@ -70,7 +73,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 }
 
 func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := wfRe.FindStringSubmatch(req.URL.Path)
+	m := h.matcher.FindStringSubmatch(req.URL.Path)
 	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
 		return
@@ -278,9 +281,15 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 }
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		// Only handle GET requests right now
+		h.next.ServeHTTP(w, req)
+		return
+	}
+
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
 	if len(m) != 2 {
-		// Not a collection PDH request
+		// Not a collection PDH GET request
 		m = collectionRe.FindStringSubmatch(req.URL.Path)
 		if len(m) == 2 && m[1] != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
@@ -368,8 +377,13 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
+
 	mux.Handle("/arvados/v1/workflows", next)
-	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h, wfRe})
+	mux.Handle("/arvados/v1/containers", next)
+	mux.Handle("/arvados/v1/containers/", &genericFederatedRequestHandler{next, h, containersRe})
+	mux.Handle("/arvados/v1/container_requests", next)
+	mux.Handle("/arvados/v1/container_requests/", &genericFederatedRequestHandler{next, h, containerRequestsRe})
 	mux.Handle("/arvados/v1/collections", next)
 	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)
