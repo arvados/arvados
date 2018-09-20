@@ -46,6 +46,8 @@ import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel'
 import SplitterLayout from 'react-splitter-layout';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 import { isSystemWorking } from "~/store/progress-indicator/progress-indicator-reducer";
+import { WorkbenchLoadingScreen } from './workbench-loading-screen';
+import { isWorkbenchLoading } from '../../store/workbench/workbench-actions';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content' | 'appBar';
 
@@ -86,6 +88,7 @@ interface WorkbenchDataProps {
     user?: User;
     currentToken?: string;
     working: boolean;
+    loading: boolean;
 }
 
 interface WorkbenchGeneralProps {
@@ -104,7 +107,8 @@ export const Workbench = withStyles(styles)(
         (state: RootState) => ({
             user: state.auth.user,
             currentToken: state.auth.apiToken,
-            working: isSystemWorking(state.progressIndicator)
+            working: isSystemWorking(state.progressIndicator),
+            loading: isWorkbenchLoading(state),
         })
     )(
         class extends React.Component<WorkbenchProps, WorkbenchState> {
@@ -112,69 +116,71 @@ export const Workbench = withStyles(styles)(
                 searchText: "",
             };
             render() {
-                const { classes } = this.props;
-                return <>
-                    <MainAppBar
-                        searchText={this.state.searchText}
-                        user={this.props.user}
-                        onSearch={this.onSearch}
-                        buildInfo={this.props.buildInfo}>
-                        {this.props.working ? <LinearProgress color="secondary" /> : null}
-                    </MainAppBar>
-                    <Grid container direction="column" className={classes.root}>
-                        {this.props.user &&
-                            <Grid container item xs alignItems="stretch" wrap="nowrap">
-                                <Grid container item className={classes.container}>
-                                <SplitterLayout customClassName={classes.splitter} percentage={true}
-                                    primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
-                                        <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
-                                            <SidePanel />
-                                        </Grid>
-                                        <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
-                                            <Grid item>
-                                                <MainContentBar />
+                const { classes, loading } = this.props;
+                return loading
+                    ? <WorkbenchLoadingScreen />
+                    : <>
+                        <MainAppBar
+                            searchText={this.state.searchText}
+                            user={this.props.user}
+                            onSearch={this.onSearch}
+                            buildInfo={this.props.buildInfo}>
+                            {this.props.working ? <LinearProgress color="secondary" /> : null}
+                        </MainAppBar>
+                        <Grid container direction="column" className={classes.root}>
+                            {this.props.user &&
+                                <Grid container item xs alignItems="stretch" wrap="nowrap">
+                                    <Grid container item className={classes.container}>
+                                        <SplitterLayout customClassName={classes.splitter} percentage={true}
+                                            primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
+                                            <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
+                                                <SidePanel />
                                             </Grid>
-                                            <Grid item xs className={classes.content}>
-                                                <Switch>
-                                                    <Route path={Routes.PROJECTS} component={ProjectPanel} />
-                                                    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
-                                                    <Route path={Routes.FAVORITES} component={FavoritePanel} />
-                                                    <Route path={Routes.PROCESSES} component={ProcessPanel} />
-                                                    <Route path={Routes.TRASH} component={TrashPanel} />
-                                                    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
-                                                    <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
-                                                </Switch>
+                                            <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
+                                                <Grid item>
+                                                    <MainContentBar />
+                                                </Grid>
+                                                <Grid item xs className={classes.content}>
+                                                    <Switch>
+                                                        <Route path={Routes.PROJECTS} component={ProjectPanel} />
+                                                        <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+                                                        <Route path={Routes.FAVORITES} component={FavoritePanel} />
+                                                        <Route path={Routes.PROCESSES} component={ProcessPanel} />
+                                                        <Route path={Routes.TRASH} component={TrashPanel} />
+                                                        <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
+                                                        <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+                                                    </Switch>
+                                                </Grid>
                                             </Grid>
-                                        </Grid>
-                                    </SplitterLayout>
+                                        </SplitterLayout>
+                                    </Grid>
+                                    <Grid item>
+                                        <DetailsPanel />
+                                    </Grid>
                                 </Grid>
-                                <Grid item>
-                                    <DetailsPanel />
-                                </Grid>
-                            </Grid>
-                        }
-                    </Grid>
-                    <ContextMenu />
-                    <CopyCollectionDialog />
-                    <CopyProcessDialog />
-                    <CreateCollectionDialog />
-                    <CreateProjectDialog />
-                    <CurrentTokenDialog />
-                    <FileRemoveDialog />
-                    <FileRemoveDialog />
-                    <FilesUploadCollectionDialog />
-                    <MoveCollectionDialog />
-                    <MoveProcessDialog />
-                    <MoveProjectDialog />
-                    <MultipleFilesRemoveDialog />
-                    <PartialCopyCollectionDialog />
-                    <ProcessCommandDialog />
-                    <RenameFileDialog />
-                    <Snackbar />
-                    <UpdateCollectionDialog />
-                    <UpdateProcessDialog />
-                    <UpdateProjectDialog />
-                </>;
+                            }
+                        </Grid>
+                        <ContextMenu />
+                        <CopyCollectionDialog />
+                        <CopyProcessDialog />
+                        <CreateCollectionDialog />
+                        <CreateProjectDialog />
+                        <CurrentTokenDialog />
+                        <FileRemoveDialog />
+                        <FileRemoveDialog />
+                        <FilesUploadCollectionDialog />
+                        <MoveCollectionDialog />
+                        <MoveProcessDialog />
+                        <MoveProjectDialog />
+                        <MultipleFilesRemoveDialog />
+                        <PartialCopyCollectionDialog />
+                        <ProcessCommandDialog />
+                        <RenameFileDialog />
+                        <Snackbar />
+                        <UpdateCollectionDialog />
+                        <UpdateProcessDialog />
+                        <UpdateProjectDialog />
+                    </>;
             }
 
             onSearch = (searchText: string) => {
