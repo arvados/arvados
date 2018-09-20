@@ -197,6 +197,8 @@ var crunchLogThrottleLines int64 = 1024
 var crunchLogPartialLineThrottlePeriod time.Duration = time.Second * 5
 var crunchLogBytesPerEvent int64 = 4096
 var crunchLogSecondsBetweenEvents time.Duration = time.Second * 1
+var crunchLogCheckpointMaxDuration = time.Hour / 2
+var crunchLogCheckpointMaxBytes = int64(1 << 25)
 
 // ArvLogWriter is an io.WriteCloser that processes each write by
 // writing it through to another io.WriteCloser (typically a
