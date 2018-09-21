@@ -82,6 +82,7 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
                 selected: true,
             }
         ],
+        // do zmiany na ResourceAuthorisation
         render: (uuid: string) => <ResourceName uuid={uuid} />,
     },
     {
@@ -101,8 +102,8 @@ export const WorkflowPanel = connect((state: RootState) => ({
 }))(
     class extends React.Component<WorkflowPanelProps> {
         render() {
-            return <Grid container>
-                <Grid item xs={6} style={{ paddingRight: '24px', display: 'grid' }}>
+            return <Grid container spacing={16}>
+                <Grid item xs={6}>
                     <DataExplorer
                         id={WORKFLOW_PANEL_ID}
                         onRowClick={this.handleRowClick}

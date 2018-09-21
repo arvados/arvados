@@ -73,6 +73,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         favoritePanelMiddleware,
         trashPanelMiddleware,
         sharedWithMePanelMiddleware,
+        workflowPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

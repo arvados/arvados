@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
+import { Dispatch, AnyAction } from 'redux';
 import { RootState } from "../store";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { loadCollectionPanel } from '~/store/collection-panel/collection-panel-action';
@@ -41,9 +41,31 @@ import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-pa
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
+import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
+
+export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
+
+export const isWorkbenchLoading = (state: RootState) => {
+    const progress = getProgressIndicator(WORKBENCH_LOADING_SCREEN)(state.progressIndicator);
+    return progress ? progress.working : false;
+};
+
+const handleFirstTimeLoad = (action: any) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState) => {
+        try {
+            await dispatch(action);
+        } finally {
+            if (isWorkbenchLoading(getState())) {
+                dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+            }
+        }
+    };
+
 
 export const loadWorkbench = () =>
     async (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
         const { auth, router } = getState();
         const { user } = auth;
         if (user) {
@@ -53,7 +75,7 @@ export const loadWorkbench = () =>
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
-                dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns}));
+                dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -70,26 +92,29 @@ export const loadWorkbench = () =>
     };
 
 export const loadFavorites = () =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.FAVORITES));
-        dispatch<any>(loadFavoritePanel());
-        dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
-    };
+    handleFirstTimeLoad(
+        (dispatch: Dispatch) => {
+            dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.FAVORITES));
+            dispatch<any>(loadFavoritePanel());
+            dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
+        });
 
 export const loadTrash = () =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-        dispatch<any>(loadTrashPanel());
-        dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.TRASH));
-    };
+    handleFirstTimeLoad(
+        (dispatch: Dispatch) => {
+            dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+            dispatch<any>(loadTrashPanel());
+            dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.TRASH));
+        });
 
 export const loadProject = (uuid: string) =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(openProjectPanel(uuid));
-        await dispatch(activateSidePanelTreeItem(uuid));
-        dispatch(setProjectBreadcrumbs(uuid));
-        dispatch(loadDetailsPanel(uuid));
-    };
+    handleFirstTimeLoad(
+        async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+            dispatch(openProjectPanel(uuid));
+            await dispatch(activateSidePanelTreeItem(uuid));
+            dispatch(setProjectBreadcrumbs(uuid));
+            dispatch(loadDetailsPanel(uuid));
+        });
 
 export const createProject = (data: projectCreateActions.ProjectCreateFormDialogData) =>
     async (dispatch: Dispatch) => {
@@ -136,12 +161,13 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
     };
 
 export const loadCollection = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        const collection = await dispatch<any>(loadCollectionPanel(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
-        dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
-        dispatch(loadDetailsPanel(uuid));
-    };
+    handleFirstTimeLoad(
+        async (dispatch: Dispatch) => {
+            const collection = await dispatch<any>(loadCollectionPanel(uuid));
+            await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
+            dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
+            dispatch(loadDetailsPanel(uuid));
+        });
 
 export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData) =>
     async (dispatch: Dispatch) => {
@@ -194,14 +220,14 @@ export const moveCollection = (data: MoveToFormDialogData) =>
     };
 
 export const loadProcess = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch<any>(loadProcessPanel(uuid));
-        const process = await dispatch<any>(processesActions.loadProcess(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
-        dispatch<any>(setProcessBreadcrumbs(uuid));
-        dispatch(loadDetailsPanel(uuid));
-
-    };
+    handleFirstTimeLoad(
+        async (dispatch: Dispatch, getState: () => RootState) => {
+            dispatch<any>(loadProcessPanel(uuid));
+            const process = await dispatch<any>(processesActions.loadProcess(uuid));
+            await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
+            dispatch<any>(setProcessBreadcrumbs(uuid));
+            dispatch(loadDetailsPanel(uuid));
+        });
 
 export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) =>
     async (dispatch: Dispatch) => {
@@ -245,12 +271,13 @@ export const copyProcess = (data: CopyFormDialogData) =>
     };
 
 export const loadProcessLog = (uuid: string) =>
-    async (dispatch: Dispatch) => {
-        const process = await dispatch<any>(processesActions.loadProcess(uuid));
-        dispatch<any>(setProcessBreadcrumbs(uuid));
-        dispatch<any>(initProcessLogsPanel(uuid));
-        await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
-    };
+    handleFirstTimeLoad(
+        async (dispatch: Dispatch) => {
+            const process = await dispatch<any>(processesActions.loadProcess(uuid));
+            dispatch<any>(setProcessBreadcrumbs(uuid));
+            dispatch<any>(initProcessLogsPanel(uuid));
+            await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
+        });
 
 export const resourceIsNotLoaded = (uuid: string) =>
     snackbarActions.OPEN_SNACKBAR({
@@ -273,14 +300,14 @@ export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
         }
     };
 
-export const loadSharedWithMe = (dispatch: Dispatch) => {
-    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+export const loadSharedWithMe = handleFirstTimeLoad(async (dispatch: Dispatch) => {
     dispatch<any>(loadSharedWithMePanel());
-    dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
-};
+    await dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+    await dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
+});
 
-export const loadWorkflow = (dispatch: Dispatch<any>) => {
+export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.WORKFLOWS));
-    dispatch(loadWorkflowPanel());
+    await dispatch(loadWorkflowPanel());
     dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
-};
+});

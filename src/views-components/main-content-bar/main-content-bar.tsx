@@ -16,14 +16,14 @@ interface MainContentBarProps {
     buttonVisible: boolean;
 }
 
-const isButtonVisible = ({ router }: RootState) => {
+const isWorkflowPath = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    const match = !matchWorkflowRoute(pathname);
+    const match = matchWorkflowRoute(pathname);
     return !!match;
 };
 
 export const MainContentBar = connect((state: RootState) => ({
-    buttonVisible: isButtonVisible(state)
+    buttonVisible: !isWorkflowPath(state)
 }), {
         onDetailsPanelToggle: detailsPanelActions.TOGGLE_DETAILS_PANEL
     })((props: MainContentBarProps) =>

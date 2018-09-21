@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardHeader, Typography } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, Card, CardHeader, Typography, CardContent } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
@@ -28,8 +28,10 @@ export const WorkflowDescriptionCard = withStyles(styles)(
                 title={<Typography noWrap variant="body2">
                     Workflow description:
                 </Typography>} />
-            <DataTableDefaultView
-                icon={WorkflowIcon}
-                messages={['Please select a workflow to see its description.']} />
+            <CardContent>
+                <DataTableDefaultView
+                    icon={WorkflowIcon}
+                    messages={['Please select a workflow to see its description.']} />
+            </CardContent>
         </Card>;
     });

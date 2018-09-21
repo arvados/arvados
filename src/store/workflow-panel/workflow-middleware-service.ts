@@ -7,7 +7,7 @@ import { MiddlewareAPI, Dispatch } from 'redux';
 import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from '~/store/data-explorer/data-explorer-middleware-service';
 import { RootState } from '~/store/store';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { DataExplorer } from '~/store/data-explorer/data-explorer-reducer';
+import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { SortDirection } from '~/components/data-table/data-column';
@@ -23,10 +23,12 @@ export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
     }
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            const response = await this.services.workflowService;
-            api.dispatch(updateResources([]));
-            api.dispatch(setItems({ kind: '', offset: 4, limit: 4, items: [], itemsAvailable: 4 }));
+            const response = await this.services.workflowService.list({ order: getOrder(dataExplorer) });
+            api.dispatch(updateResources(response.items));
+            api.dispatch(setItems(response));
         } catch {
             api.dispatch(couldNotFetchWorkflows());
         }
