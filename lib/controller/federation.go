@@ -89,7 +89,7 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		}
 	}
 
-	if clusterId == "" && req.Method == "POST" {
+	if clusterId == "" && req.Method == "POST" && req.Header.Get("Content-Type") == "application/json" {
 		var hasClusterId struct {
 			ClusterID string `json:"cluster_id"`
 		}
@@ -104,7 +104,8 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 
 		err := json.NewDecoder(rdr).Decode(&hasClusterId)
 		if err != nil {
-			// TODO
+			httpserver.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 		req.Body = ioutil.NopCloser(postBody)
 
