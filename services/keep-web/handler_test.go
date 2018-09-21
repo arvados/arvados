@@ -767,7 +767,7 @@ func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 		updated = arvados.Collection{}
 		err = arv.RequestAndDecode(&updated, "GET", "arvados/v1/collections/"+newCollection.UUID, nil, nil)
 		c.Check(err, check.IsNil)
-		c.Check(updated.ManifestText, check.Not(check.Matches), ".*"+fnm+".*")
+		c.Check(updated.ManifestText, check.Not(check.Matches), `(?ms).*\Q`+fnm+`\E.*`)
 		c.Logf("updated manifest_text %q", updated.ManifestText)
 	}
 	c.Check(updated.ManifestText, check.Equals, "")
