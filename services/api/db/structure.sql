@@ -1829,7 +1829,7 @@ CREATE INDEX index_collections_on_owner_uuid ON public.collections USING btree (
 -- Name: index_collections_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON public.collections USING btree (owner_uuid, name) WHERE (is_trashed = false);
+CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON public.collections USING btree (owner_uuid, name) WHERE ((is_trashed = false) AND ((current_version_uuid)::text = (uuid)::text));
 
 
 --
@@ -3181,4 +3181,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180904110712');
 INSERT INTO schema_migrations (version) VALUES ('20180913175443');
 
 INSERT INTO schema_migrations (version) VALUES ('20180915155335');
+
+INSERT INTO schema_migrations (version) VALUES ('20180919001158');
 

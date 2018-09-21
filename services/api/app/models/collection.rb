@@ -28,6 +28,7 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
   before_save :set_file_names
+  before_create :set_current_version_uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -204,6 +205,45 @@ class Collection < ArvadosModel
 
   def default_empty_manifest
     self.manifest_text ||= ''
+  end
+
+  def skip_uuid_existence_check
+    # Avoid checking the existence of current_version_uuid, as it's
+    # assigned on creation of a new 'current version' collection, so
+    # the collection's UUID only lives on memory when the validation check
+    # is performed.
+    ['current_version_uuid']
+  end
+
+  def set_current_version_uuid
+    self.current_version_uuid ||= self.uuid
+  end
+
+  def save *arg
+    if !Rails.configuration.collection_versioning || new_record?
+      return super
+    end
+    versionable_updates = ['manifest_text', 'description', 'properties', 'name'] & self.changed_attributes.keys
+    if versionable_updates.empty?
+      return super
+    end
+    # Create a snapshot of the current collection before saving
+    Collection.transaction do
+      attrs = {}
+      # Collect attributes with pre-update values
+      versionable_updates.each do |attr|
+        attrs[attr] = self.changed_attributes[attr]
+      end
+      # Reset UUID
+      attrs[:uuid] = nil
+      snapshot = self.dup
+      # Update current version number & save
+      self.version += 1
+      super
+      # Save the snapshot with required attributes
+      snapshot.update_attributes!(attrs)
+      return true
+    end
   end
 
   def check_encoding
@@ -434,11 +474,11 @@ class Collection < ArvadosModel
   end
 
   def self.searchable_columns operator
-    super - ["manifest_text"]
+    super - ["manifest_text", "current_version_uuid"]
   end
 
   def self.full_text_searchable_columns
-    super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed"]
+    super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
   end
 
   def self.where *args

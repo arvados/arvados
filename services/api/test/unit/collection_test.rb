@@ -11,7 +11,7 @@ class CollectionTest < ActiveSupport::TestCase
   def create_collection name, enc=nil
     txt = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:#{name}.txt\n"
     txt.force_encoding(enc) if enc
-    return Collection.create(manifest_text: txt)
+    return Collection.create(manifest_text: txt, name: name)
   end
 
   test 'accept ASCII manifest_text' do
@@ -102,6 +102,49 @@ class CollectionTest < ActiveSupport::TestCase
 
         c.update_attribute 'manifest_text', manifest_text
         assert c.valid?
+      end
+    end
+  end
+
+  [
+    [false, 'name', 'bar'],
+    [false, 'description', 'The quick brown fox jumps over the lazy dog'],
+    [false, 'properties', {'new_version' => true}],
+    [false, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"],
+    [true, 'name', 'bar'],
+    [true, 'description', 'The quick brown fox jumps over the lazy dog'],
+    [true, 'properties', {'new_version' => true}],
+    [true, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"],
+  ].each do |versioning, attr, val|
+    test "collection's #{attr} update with versioning #{versioning ? '' : 'not '}enabled" do
+      Rails.configuration.collection_versioning = versioning
+      act_as_system_user do
+        # Create initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 'foo', c.name
+
+        # Check current version attributes
+        assert_equal 1, c.version
+        assert_equal c.uuid, c.current_version_uuid
+
+        # Update attribute and check if version number should be incremented
+        old_value = c.attributes[attr]
+        c.update_attribute attr, val
+        assert_equal val, c.attributes[attr]
+        assert_equal versioning, c.version == 2
+
+        if versioning
+          # Search for the snapshot & previous value
+          assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+          s = Collection.where(current_version_uuid: c.uuid, version: 1).first
+          assert_not_nil s
+          assert_equal old_value, s.attributes[attr]
+        else
+          # If versioning is disabled, only the current version should exist
+          assert_equal 1, Collection.where(current_version_uuid: c.uuid).count
+          assert_equal c, Collection.where(current_version_uuid: c.uuid).first
+        end
       end
     end
   end

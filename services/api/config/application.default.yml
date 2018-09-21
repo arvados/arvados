@@ -500,6 +500,10 @@ common:
   # keep_web_service_url: https://download.uuid_prefix.arvadosapi.com/
   keep_web_service_url: false
 
+  # If true, enable collection versioning: With every update, a snapshot of the
+  # collection's previous state is created and linked to the current collection.
+  collection_versioning: false
+
 development:
   force_ssl: false
   cache_classes: false
