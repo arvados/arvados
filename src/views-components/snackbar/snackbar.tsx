@@ -84,7 +84,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
-    const { classes, message, onClose, kind } = props;
+    const { classes } = props;
 
     const variants = {
         [SnackbarKind.INFO]: [InfoIcon, classes.info],
@@ -93,7 +93,7 @@ const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithSty
         [SnackbarKind.ERROR]: [ErrorIcon, classes.error]
     };
 
-    const [Icon, cssClass] = variants[kind];
+    const [Icon, cssClass] = variants[props.kind];
 
     return (
         <MaterialSnackbar
@@ -108,7 +108,7 @@ const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithSty
                 message={
                     <span id="client-snackbar" className={classes.message}>
                         <Icon className={classNames(classes.icon, classes.iconVariant)}/>
-                        {message}
+                        {props.message}
                     </span>
                 }
                 action={
@@ -116,7 +116,7 @@ const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithSty
                         key="close"
                         aria-label="Close"
                         color="inherit"
-                        onClick={e => onClose && onClose(e, '')}>
+                        onClick={e => props.onClose && props.onClose(e, '')}>
                         <CloseIcon className={classes.icon}/>
                     </IconButton>
                 }
