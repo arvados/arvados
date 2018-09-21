@@ -302,6 +302,27 @@ func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *http.Response,
 	c.Check(jresp.Errors[0], check.Matches, re)
 }
 
+func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server {
+	srv := &httpserver.Server{
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(404)
+			}),
+		},
+	}
+
+	c.Assert(srv.Start(), check.IsNil)
+
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
+			TLS: false, Insecure: true}}
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	return srv
+}
+
 func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
 	np := arvados.NodeProfile{
 		Controller: arvados.SystemServiceInstance{Listen: ":"},
@@ -325,6 +346,8 @@ func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
@@ -338,6 +361,8 @@ func (s *FederationSuite) TestGetRemoteCollection(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetRemoteCollectionError(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/zzzzz-4zz18-fakefakefakefak", nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
@@ -379,29 +404,14 @@ func (s *FederationSuite) TestGetLocalCollectionByPDH(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetRemoteCollectionByPDH(c *check.C) {
-	srv := &httpserver.Server{
-		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(404)
-			}),
-		},
-	}
-
-	c.Assert(srv.Start(), check.IsNil)
-	defer srv.Close()
-
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
-			TLS: false, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	defer s.localServiceReturns404(c).Close()
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
 
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+
 	var col arvados.Collection
 	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
 	c.Check(col.PortableDataHash, check.Equals, arvadostest.UserAgreementPDH)
@@ -411,24 +421,7 @@ func (s *FederationSuite) TestGetRemoteCollectionByPDH(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
-	srv := &httpserver.Server{
-		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(404)
-			}),
-		},
-	}
-
-	c.Assert(srv.Start(), check.IsNil)
-	defer srv.Close()
-
-	// Make the "local" cluster to a service that always returns 404
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
-			TLS: false, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	defer s.localServiceReturns404(c).Close()
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
@@ -440,24 +433,7 @@ func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetCollectionByPDHErrorBadHash(c *check.C) {
-	srv := &httpserver.Server{
-		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(404)
-			}),
-		},
-	}
-
-	c.Assert(srv.Start(), check.IsNil)
-	defer srv.Close()
-
-	// Make the "local" cluster to a service that always returns 404
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
-			TLS: false, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	defer s.localServiceReturns404(c).Close()
 
 	srv2 := &httpserver.Server{
 		Server: http.Server{
@@ -529,4 +505,88 @@ func (s *FederationSuite) TestSaltedTokenGetCollectionByPDHError(c *check.C) {
 	resp := s.testRequest(req)
 
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+}
+
+func (s *FederationSuite) TestGetRemoteContainerRequest(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", "/arvados/v1/container_requests/"+arvadostest.QueuedContainerRequestUUID, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr arvados.ContainerRequest
+	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+	c.Check(cr.UUID, check.Equals, arvadostest.QueuedContainerRequestUUID)
+	c.Check(cr.Priority, check.Equals, 1)
+}
+
+func (s *FederationSuite) TestUpdateRemoteContainerRequest(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("PATCH", "/arvados/v1/container_requests/"+arvadostest.QueuedContainerRequestUUID,
+		strings.NewReader(`{"container_request": {"priority": 696}}`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr arvados.ContainerRequest
+	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+	c.Check(cr.UUID, check.Equals, arvadostest.QueuedContainerRequestUUID)
+	c.Check(cr.Priority, check.Equals, 696)
+}
+
+func (s *FederationSuite) TestCreateRemoteContainerRequest1(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests",
+		strings.NewReader(`{
+  "cluster_id": "zzzzz",
+  "container_request": {
+    "name": "hello world",
+    "state": "Uncommitted",
+    "output_path": "/",
+    "container_image": "123",
+    "command": ["abc"]
+  }
+}
+`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr arvados.ContainerRequest
+	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+	c.Check(cr.Name, check.Equals, "hello world")
+}
+
+func (s *FederationSuite) TestCreateRemoteContainerRequest2(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zzzzz",
+		strings.NewReader(`{
+  "container_request": {
+    "name": "hello world",
+    "state": "Uncommitted",
+    "output_path": "/",
+    "container_image": "123",
+    "command": ["abc"]
+  }
+}
+`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr arvados.ContainerRequest
+	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+	c.Check(cr.Name, check.Equals, "hello world")
+}
+
+func (s *FederationSuite) TestGetRemoteContainer(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", "/arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cn arvados.Container
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.UUID, check.Equals, arvadostest.QueuedContainerUUID)
 }

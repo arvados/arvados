@@ -24,6 +24,40 @@ type Container struct {
 	SchedulingParameters SchedulingParameters `json:"scheduling_parameters"`
 }
 
+// Container is an arvados#container resource.
+type ContainerRequest struct {
+	UUID                    string                 `json:"uuid"`
+	OwnerUUID               string                 `json:"owner_uuid"`
+	CreatedAt               time.Time              `json:"created_at"`
+	ModifiedByClientUUID    string                 `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID      string                 `json:"modified_by_user_uuid"`
+	ModifiedAt              time.Time              `json:"modified_at"`
+	Href                    string                 `json:"href"`
+	Kind                    string                 `json:"kind"`
+	Etag                    string                 `json:"etag"`
+	Name                    string                 `json:"name"`
+	Description             string                 `json:"description"`
+	Properties              map[string]interface{} `json:"properties"`
+	State                   ContainerRequestState  `json:"state"`
+	RequestingContainerUUID string                 `json:"requesting_container_uuid"`
+	ContainerUUID           string                 `json:"container_uuid"`
+	ContainerCountMax       int                    `json:"container_count_max"`
+	Mounts                  map[string]Mount       `json:"mounts"`
+	RuntimeConstraints      RuntimeConstraints     `json:"runtime_constraints"`
+	SchedulingParameters    SchedulingParameters   `json:"scheduling_parameters"`
+	ContainerImage          string                 `json:"container_image"`
+	Environment             map[string]string      `json:"environment"`
+	Cwd                     string                 `json:"cwd"`
+	Command                 []string               `json:"command"`
+	OutputPath              string                 `json:"output_path"`
+	OutputName              string                 `json:"output_name"`
+	OutputTTL               int                    `json:"output_ttl"`
+	Priority                int                    `json:"priority"`
+	UseExisting             bool                   `json:"use_existing"`
+	LogUUID                 string                 `json:"log_uuid"`
+	OutputUUID              string                 `json:"output_uuid"`
+}
+
 // Mount is special behavior to attach to a filesystem path or device.
 type Mount struct {
 	Kind              string      `json:"kind"`
@@ -74,4 +108,13 @@ const (
 	ContainerStateRunning   = ContainerState("Running")
 	ContainerStateComplete  = ContainerState("Complete")
 	ContainerStateCancelled = ContainerState("Cancelled")
+)
+
+// ContainerState is a string corresponding to a valid Container state.
+type ContainerRequestState string
+
+const (
+	ContainerRequestStateUncomitted = ContainerState("Uncommitted")
+	ContainerRequestStateCommitted  = ContainerState("Committed")
+	ContainerRequestStateFinal      = ContainerState("Final")
 )
