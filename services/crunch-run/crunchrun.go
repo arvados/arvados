@@ -1197,11 +1197,21 @@ func (runner *ContainerRunner) checkpointLogs() {
 		}
 		logCheckpointTime = time.Now().Add(crunchLogCheckpointMaxDuration)
 		logCheckpointBytes = runner.LogCollection.Size() + crunchLogCheckpointMaxBytes
-		_, err := runner.saveLogCollection()
+		saved, err := runner.saveLogCollection()
 		if err != nil {
 			runner.CrunchLog.Printf("error updating log collection: %s", err)
 			continue
 		}
+
+		var updated arvados.Container
+		err = runner.ArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+			"container": arvadosclient.Dict{"log": saved.PortableDataHash},
+		}, &updated)
+		if err != nil {
+			runner.CrunchLog.Printf("error updating container log to %s: %s", saved.PortableDataHash, err)
+			continue
+		}
+
 		savedSize = size
 	}
 }
