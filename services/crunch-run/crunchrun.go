@@ -1178,13 +1178,13 @@ func (runner *ContainerRunner) WaitFinish() error {
 }
 
 func (runner *ContainerRunner) checkpointLogs() {
-	logCheckpointTicker := time.NewTicker(crunchLogCheckpointMaxDuration / 360)
-	defer logCheckpointTicker.Stop()
+	ticker := time.NewTicker(crunchLogCheckpointMaxDuration / 360)
+	defer ticker.Stop()
 
-	logCheckpointTime := time.Now().Add(crunchLogCheckpointMaxDuration)
-	logCheckpointBytes := crunchLogCheckpointMaxBytes
+	saveAtTime := time.Now().Add(crunchLogCheckpointMaxDuration)
+	saveAtSize := crunchLogCheckpointMaxBytes
 	var savedSize int64
-	for range logCheckpointTicker.C {
+	for range ticker.C {
 		runner.logMtx.Lock()
 		done := runner.LogsPDH != nil
 		runner.logMtx.Unlock()
@@ -1192,11 +1192,11 @@ func (runner *ContainerRunner) checkpointLogs() {
 			return
 		}
 		size := runner.LogCollection.Size()
-		if size == savedSize || (time.Now().Before(logCheckpointTime) && size < logCheckpointBytes) {
+		if size == savedSize || (time.Now().Before(saveAtTime) && size < saveAtSize) {
 			continue
 		}
-		logCheckpointTime = time.Now().Add(crunchLogCheckpointMaxDuration)
-		logCheckpointBytes = runner.LogCollection.Size() + crunchLogCheckpointMaxBytes
+		saveAtTime = time.Now().Add(crunchLogCheckpointMaxDuration)
+		saveAtSize = runner.LogCollection.Size() + crunchLogCheckpointMaxBytes
 		saved, err := runner.saveLogCollection()
 		if err != nil {
 			runner.CrunchLog.Printf("error updating log collection: %s", err)
