@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddVersionInfoToCollections < ActiveRecord::Migration
   def change
     # Do changes in bulk to save time on huge tables
