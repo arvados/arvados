@@ -5,7 +5,7 @@
 import * as React from "react";
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
-import MaterialSnackbar, { SnackbarProps } from "@material-ui/core/Snackbar";
+import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
 import { Dispatch } from "redux";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import IconButton from '@material-ui/core/IconButton';
@@ -20,7 +20,20 @@ import { ArvadosTheme } from "~/common/custom-theme";
 import { amber, green } from "@material-ui/core/colors";
 import * as classNames from 'classnames';
 
-const mapStateToProps = (state: RootState): SnackbarProps & ArvadosSnackbarProps => {
+interface SnackbarDataProps {
+    anchorOrigin?: SnackbarOrigin;
+    autoHideDuration?: number;
+    open: boolean;
+    message?: React.ReactElement<any>;
+    kind: SnackbarKind;
+}
+
+interface SnackbarEventProps {
+    onClose?: (event: React.SyntheticEvent<any>, reason: string) => void;
+    onExited: () => void;
+}
+
+const mapStateToProps = (state: RootState): SnackbarDataProps => {
     const messages = state.snackbar.messages;
     return {
         anchorOrigin: { vertical: "bottom", horizontal: "right" },
@@ -31,7 +44,7 @@ const mapStateToProps = (state: RootState): SnackbarProps & ArvadosSnackbarProps
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
     onClose: (event: any, reason: string) => {
         if (reason !== "clickaway") {
             dispatch(snackbarActions.CLOSE_SNACKBAR());
@@ -41,10 +54,6 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         dispatch(snackbarActions.SHIFT_MESSAGES());
     }
 });
-
-const ArvadosSnackbar = (props: any) => <MaterialSnackbar {...props}>
-    <ArvadosSnackbarContent {...props}/>
-</MaterialSnackbar>;
 
 type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant" | "message";
 
@@ -74,62 +83,46 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-interface ArvadosSnackbarProps {
-    kind: SnackbarKind;
-}
+const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
+    const { classes, message, onClose, kind } = props;
 
-const ArvadosSnackbarContent = (props: SnackbarProps & ArvadosSnackbarProps & WithStyles<CssRules>) => {
-    const { classes, className, message, onClose, kind } = props;
+    const variants = {
+        [SnackbarKind.INFO]: [InfoIcon, classes.info],
+        [SnackbarKind.WARNING]: [WarningIcon, classes.warning],
+        [SnackbarKind.SUCCESS]: [CheckCircleIcon, classes.success],
+        [SnackbarKind.ERROR]: [ErrorIcon, classes.error]
+    };
 
-    let Icon = InfoIcon;
-    let cssClass = classes.info;
-
-    switch (kind) {
-        case SnackbarKind.INFO:
-            Icon = InfoIcon;
-            cssClass = classes.info;
-            break;
-        case SnackbarKind.WARNING:
-            Icon = WarningIcon;
-            cssClass = classes.warning;
-            break;
-        case SnackbarKind.SUCCESS:
-            Icon = CheckCircleIcon;
-            cssClass = classes.success;
-            break;
-        case SnackbarKind.ERROR:
-            Icon = ErrorIcon;
-            cssClass = classes.error;
-            break;
-    }
+    const [Icon, cssClass] = variants[kind];
 
     return (
-        <SnackbarContent
-            className={classNames(cssClass, className)}
-            aria-describedby="client-snackbar"
-            message={
-                <span id="client-snackbar" className={classes.message}>
-                    <Icon className={classNames(classes.icon, classes.iconVariant)}/>
-                    {message}
-                </span>
-            }
-            action={
-                <IconButton
-                    key="close"
-                    aria-label="Close"
-                    color="inherit"
-                    onClick={e => {
-                        if (onClose) {
-                            onClose(e, '');
-                        }
-                    }}>
-                    <CloseIcon className={classes.icon}/>
-                </IconButton>
-            }
-        />
+        <MaterialSnackbar
+            open={props.open}
+            message={props.message}
+            onClose={props.onClose}
+            anchorOrigin={props.anchorOrigin}
+            autoHideDuration={props.autoHideDuration}>
+            <SnackbarContent
+                className={classNames(cssClass)}
+                aria-describedby="client-snackbar"
+                message={
+                    <span id="client-snackbar" className={classes.message}>
+                        <Icon className={classNames(classes.icon, classes.iconVariant)}/>
+                        {message}
+                    </span>
+                }
+                action={
+                    <IconButton
+                        key="close"
+                        aria-label="Close"
+                        color="inherit"
+                        onClick={e => onClose && onClose(e, '')}>
+                        <CloseIcon className={classes.icon}/>
+                    </IconButton>
+                }
+            />
+        </MaterialSnackbar>
     );
 };
 
-export const Snackbar = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(ArvadosSnackbar)
-);
+export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ArvadosSnackbar));
