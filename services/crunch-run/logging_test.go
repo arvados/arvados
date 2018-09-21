@@ -169,7 +169,10 @@ func (s *LoggingTestSuite) TestLogCheckpoint(c *C) {
 
 		mt, err := cr.LogCollection.MarshalManifest(".")
 		c.Check(err, IsNil)
-		c.Check(mt, Equals, ". 4dc76e0a212bfa30c39d76d8c16da0c0+1038 afc503bc1b9a828b4bb543cb629e936c+78 0:1077:crunch-run.txt 1077:39:stdout.txt\n")
+		// Block packing depends on whether there's a
+		// checkpoint between the two Goodbyes -- either way
+		// the first block will be 4dc76.
+		c.Check(mt, Matches, `. 4dc76e0a212bfa30c39d76d8c16da0c0\+1038 (afc503bc1b9a828b4bb543cb629e936c\+78|90699dc22545cd74a0664303f70bc05a\+39 276b49339fd5203d15a93ff3de11bfb9\+39) 0:1077:crunch-run.txt 1077:39:stdout.txt\n`)
 	}
 }
 
