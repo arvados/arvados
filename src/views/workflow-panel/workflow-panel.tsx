@@ -6,7 +6,7 @@ import * as React from 'react';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
-import { WorkflowIcon } from '~/components/icon/icon';
+import { WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
@@ -17,18 +17,20 @@ import { GroupResource } from '~/models/group';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import {
     ResourceLastModifiedDate,
-    ResourceName,
+    RosurceWorkflowName,
+    ResourceWorkflowStatus
 } from "~/views-components/data-explorer/renderers";
 import { SortDirection } from '~/components/data-table/data-column';
 import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { Grid } from '@material-ui/core';
+import { Grid, Tooltip, IconButton } from '@material-ui/core';
 import { WorkflowDescriptionCard } from './workflow-description-card';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",
     AUTHORISATION = "Authorisation",
     LAST_MODIFIED = "Last modified",
+    SHARE = 'Share'
 }
 
 interface WorkflowPanelDataProps {
@@ -54,6 +56,14 @@ const resourceStatus = (type: string) => {
     }
 };
 
+const ResourceShare = (props: { uuid: string }) => {
+    return <Tooltip title="Share">
+        <IconButton onClick={() => undefined}>
+            <ShareIcon />
+        </IconButton>
+    </Tooltip>;
+};
+
 export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
     {
         name: WorkflowPanelColumnNames.NAME,
@@ -61,7 +71,7 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: [],
-        render: (uuid: string) => <ResourceName uuid={uuid} />
+        render: (uuid: string) => <RosurceWorkflowName uuid={uuid} />
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
@@ -82,8 +92,7 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
                 selected: true,
             }
         ],
-        // do zmiany na ResourceAuthorisation
-        render: (uuid: string) => <ResourceName uuid={uuid} />,
+        render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
     },
     {
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
@@ -92,6 +101,14 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
         sortDirection: SortDirection.NONE,
         filters: [],
         render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
+    },
+    {
+        name: '',
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: [],
+        render: (uuid: string) => <ResourceShare uuid={uuid} />
     }
 ];
 

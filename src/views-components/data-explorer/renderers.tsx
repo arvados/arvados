@@ -16,6 +16,7 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose } from 'redux';
+import { WorkflowResource } from '~/models/workflow';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -55,9 +56,37 @@ export const renderIcon = (item: { kind: string }) => {
     }
 };
 
+export const renderWorkflowName = (item: { name: string; uuid: string, kind: string }) =>
+    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
+        <Grid item>
+            {renderIcon(item)}
+        </Grid>
+        <Grid item>
+            <Typography color="primary" style={{ width: '100px' }}>
+                {item.name}
+            </Typography>
+        </Grid>
+    </Grid>;
+
+export const RosurceWorkflowName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        return resource || { name: '', uuid: '', kind: '' };
+    })(renderWorkflowName);
+
 export const renderDate = (date?: string) => {
     return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
+
+export const renderWorkflowStatus = () => {
+    return <Typography noWrap style={{ width: '60px' }}>{"Public"}</Typography>;
+};
+
+export const ResourceWorkflowStatus = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        return {};
+    })((props: { status?: string }) => renderWorkflowStatus());
 
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {
