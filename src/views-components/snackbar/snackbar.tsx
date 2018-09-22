@@ -83,46 +83,47 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const ArvadosSnackbar = (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
-    const { classes } = props;
+// const ArvadosSnackbar =
+export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(
+    (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
+        const { classes } = props;
 
-    const variants = {
-        [SnackbarKind.INFO]: [InfoIcon, classes.info],
-        [SnackbarKind.WARNING]: [WarningIcon, classes.warning],
-        [SnackbarKind.SUCCESS]: [CheckCircleIcon, classes.success],
-        [SnackbarKind.ERROR]: [ErrorIcon, classes.error]
-    };
+        const variants = {
+            [SnackbarKind.INFO]: [InfoIcon, classes.info],
+            [SnackbarKind.WARNING]: [WarningIcon, classes.warning],
+            [SnackbarKind.SUCCESS]: [CheckCircleIcon, classes.success],
+            [SnackbarKind.ERROR]: [ErrorIcon, classes.error]
+        };
 
-    const [Icon, cssClass] = variants[props.kind];
+        const [Icon, cssClass] = variants[props.kind];
 
-    return (
-        <MaterialSnackbar
-            open={props.open}
-            message={props.message}
-            onClose={props.onClose}
-            anchorOrigin={props.anchorOrigin}
-            autoHideDuration={props.autoHideDuration}>
-            <SnackbarContent
-                className={classNames(cssClass)}
-                aria-describedby="client-snackbar"
-                message={
-                    <span id="client-snackbar" className={classes.message}>
-                        <Icon className={classNames(classes.icon, classes.iconVariant)}/>
-                        {props.message}
-                    </span>
-                }
-                action={
-                    <IconButton
-                        key="close"
-                        aria-label="Close"
-                        color="inherit"
-                        onClick={e => props.onClose && props.onClose(e, '')}>
-                        <CloseIcon className={classes.icon}/>
-                    </IconButton>
-                }
-            />
-        </MaterialSnackbar>
-    );
-};
-
-export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ArvadosSnackbar));
+        return (
+            <MaterialSnackbar
+                open={props.open}
+                message={props.message}
+                onClose={props.onClose}
+                anchorOrigin={props.anchorOrigin}
+                autoHideDuration={props.autoHideDuration}>
+                <SnackbarContent
+                    className={classNames(cssClass)}
+                    aria-describedby="client-snackbar"
+                    message={
+                        <span id="client-snackbar" className={classes.message}>
+                            <Icon className={classNames(classes.icon, classes.iconVariant)}/>
+                            {props.message}
+                        </span>
+                    }
+                    action={
+                        <IconButton
+                            key="close"
+                            aria-label="Close"
+                            color="inherit"
+                            onClick={e => props.onClose && props.onClose(e, '')}>
+                            <CloseIcon className={classes.icon}/>
+                        </IconButton>
+                    }
+                />
+            </MaterialSnackbar>
+        );
+    }
+));
