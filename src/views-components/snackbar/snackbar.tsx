@@ -101,6 +101,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                 open={props.open}
                 message={props.message}
                 onClose={props.onClose}
+                onExited={props.onExited}
                 anchorOrigin={props.anchorOrigin}
                 autoHideDuration={props.autoHideDuration}>
                 <SnackbarContent
