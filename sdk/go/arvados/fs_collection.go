@@ -548,9 +548,10 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 	return dn.treenode.Child(name, replace)
 }
 
-// sync flushes in-memory data (for all files in the tree rooted at
-// dn) to persistent storage. Caller must hold dn.Lock().
-func (dn *dirnode) sync() error {
+// sync flushes in-memory data (for the children with the given names,
+// which must be children of dn) to persistent storage. Caller must
+// have write lock on dn and the named children.
+func (dn *dirnode) sync(names []string) error {
 	type shortBlock struct {
 		fn  *filenode
 		idx int
@@ -586,19 +587,11 @@ func (dn *dirnode) sync() error {
 		return nil
 	}
 
-	names := make([]string, 0, len(dn.inodes))
-	for name := range dn.inodes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
 	for _, name := range names {
 		fn, ok := dn.inodes[name].(*filenode)
 		if !ok {
 			continue
 		}
-		fn.Lock()
-		defer fn.Unlock()
 		for idx, seg := range fn.segments {
 			seg, ok := seg.(*memSegment)
 			if !ok {
@@ -636,18 +629,19 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	var subdirs string
 	var blocks []string
 
-	if err := dn.sync(); err != nil {
-		return "", err
-	}
-
 	names := make([]string, 0, len(dn.inodes))
-	for name, node := range dn.inodes {
+	for name := range dn.inodes {
 		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		node := dn.inodes[name]
 		node.Lock()
 		defer node.Unlock()
 	}
-	sort.Strings(names)
-
+	if err := dn.sync(names); err != nil {
+		return "", err
+	}
 	for _, name := range names {
 		switch node := dn.inodes[name].(type) {
 		case *dirnode:

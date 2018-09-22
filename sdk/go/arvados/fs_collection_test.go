@@ -491,15 +491,19 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 			c.Assert(err, check.IsNil)
 			defer f.Close()
 			for i := 0; i < 6502; i++ {
-				switch rand.Int() & 3 {
-				case 0:
+				r := rand.Uint32()
+				switch {
+				case r%11 == 0:
+					_, err := s.fs.MarshalManifest(".")
+					c.Check(err, check.IsNil)
+				case r&3 == 0:
 					f.Truncate(int64(rand.Intn(64)))
-				case 1:
+				case r&3 == 1:
 					f.Seek(int64(rand.Intn(64)), io.SeekStart)
-				case 2:
+				case r&3 == 2:
 					_, err := f.Write([]byte("beep boop"))
 					c.Check(err, check.IsNil)
-				case 3:
+				case r&3 == 3:
 					_, err := ioutil.ReadAll(f)
 					c.Check(err, check.IsNil)
 				}
