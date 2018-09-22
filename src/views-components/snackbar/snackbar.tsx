@@ -83,7 +83,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-// const ArvadosSnackbar =
 export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(
     (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
         const { classes } = props;
