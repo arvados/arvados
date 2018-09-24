@@ -16,7 +16,6 @@ import { DetailsAttribute } from '~/components/details-attribute/details-attribu
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
@@ -55,7 +54,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
-    tags: TagResource[];
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -71,7 +69,7 @@ export const CollectionPanel = withStyles(styles)(
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, tags } = this.props;
+                const { classes, item } = this.props;
                 return <div>
                     <Card className={classes.card}>
                         <CardHeader
