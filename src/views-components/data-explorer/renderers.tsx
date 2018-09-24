@@ -17,6 +17,7 @@ import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
+import { ResourceStatus } from '~/views/workflow-panel/workflow-panel';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -78,15 +79,19 @@ export const renderDate = (date?: string) => {
     return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
 
-export const renderWorkflowStatus = () => {
-    return <Typography noWrap style={{ width: '60px' }}>{"Public"}</Typography>;
+export const renderWorkflowStatus = (ownerUuid?: string) => {
+    if (ownerUuid === 'qr1hi-j7d0g-2ax8o1pscovq2lg') {
+        return <Typography noWrap style={{ width: '60px' }}>{ResourceStatus.PUBLIC}</Typography>;
+    } else {
+        return <Typography noWrap style={{ width: '60px' }}>{ResourceStatus.PRIVATE}</Typography>;
+    }
 };
 
 export const ResourceWorkflowStatus = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-        return {};
-    })((props: { status?: string }) => renderWorkflowStatus());
+        return { ownerUuid: resource ? resource.ownerUuid : '' };
+    })((props: { ownerUuid?: string }) => renderWorkflowStatus(props.ownerUuid));
 
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {

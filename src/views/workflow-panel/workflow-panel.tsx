@@ -33,14 +33,18 @@ export enum WorkflowPanelColumnNames {
     SHARE = 'Share'
 }
 
+export interface WorkflowPanelFilter extends DataTableFilterItem {
+    type: ResourceStatus;
+}
+
 interface WorkflowPanelDataProps {
     resources: ResourcesState;
 }
 
 export enum ResourceStatus {
-    PUBLIC = 'public',
-    PRIVATE = 'private',
-    SHARED = 'shared'
+    PUBLIC = "Public",
+    PRIVATE = "Private",
+    SHARED = "Shared"
 }
 
 const resourceStatus = (type: string) => {
@@ -64,7 +68,7 @@ const ResourceShare = (props: { uuid: string }) => {
     </Tooltip>;
 };
 
-export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
+export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,
@@ -77,19 +81,21 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
         name: WorkflowPanelColumnNames.AUTHORISATION,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: [
             {
                 name: resourceStatus(ResourceStatus.PUBLIC),
                 selected: true,
+                type: ResourceStatus.PUBLIC
             },
             {
                 name: resourceStatus(ResourceStatus.PRIVATE),
                 selected: true,
+                type: ResourceStatus.PRIVATE
             },
             {
                 name: resourceStatus(ResourceStatus.SHARED),
                 selected: true,
+                type: ResourceStatus.SHARED
             }
         ],
         render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
@@ -105,8 +111,7 @@ export const workflowPanelColumns: DataColumns<string, DataTableFilterItem> = [
     {
         name: '',
         selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
+        configurable: false,
         filters: [],
         render: (uuid: string) => <ResourceShare uuid={uuid} />
     }
