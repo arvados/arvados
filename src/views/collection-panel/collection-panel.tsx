@@ -66,8 +66,7 @@ export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const collection = getResource(props.match.params.id)(state.resources);
         return {
-            item: collection,
-            tags: state.collectionPanel.tags
+            item: collection
         };
     })(
         class extends React.Component<CollectionPanelProps> {
@@ -118,10 +117,10 @@ export const CollectionPanel = withStyles(styles)(
                                 <Grid item xs={12}><CollectionTagForm /></Grid>
                                 <Grid item xs={12}>
                                     {
-                                        tags.map(tag => {
-                                            return <Chip key={tag.etag} className={classes.tag}
-                                                onDelete={this.handleDelete(tag.uuid)}
-                                                label={renderTagLabel(tag)} />;
+                                        Object.keys(item.properties).map( key => {
+                                            return <Chip key={key} className={classes.tag}
+                                                onDelete={this.handleDelete(key)}
+                                                label={`${key}: ${item.properties[key]}`} />;
                                         })
                                     }
                                 </Grid>
@@ -147,8 +146,8 @@ export const CollectionPanel = withStyles(styles)(
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
 
-            handleDelete = (uuid: string) => () => {
-                this.props.dispatch<any>(deleteCollectionTag(uuid));
+            handleDelete = (key: string) => () => {
+                this.props.dispatch<any>(deleteCollectionTag(key));
             }
 
             onCopy = () => {
@@ -160,8 +159,3 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
-
-const renderTagLabel = (tag: TagResource) => {
-    const { properties } = tag;
-    return `${properties.key}: ${properties.value}`;
-};
