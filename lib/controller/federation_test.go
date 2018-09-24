@@ -554,6 +554,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest1(c *check.C) {
 	var cr arvados.ContainerRequest
 	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
 	c.Check(cr.Name, check.Equals, "hello world")
+	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequest2(c *check.C) {
