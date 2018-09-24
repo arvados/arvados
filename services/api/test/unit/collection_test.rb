@@ -116,7 +116,7 @@ class CollectionTest < ActiveSupport::TestCase
     [true, 'properties', {'new_version' => true}],
     [true, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"],
   ].each do |versioning, attr, val|
-    test "collection's #{attr} update with versioning #{versioning ? '' : 'not '}enabled" do
+    test "update collection #{attr} with versioning #{versioning ? '' : 'not '}enabled" do
       Rails.configuration.collection_versioning = versioning
       act_as_system_user do
         # Create initial collection
@@ -130,9 +130,9 @@ class CollectionTest < ActiveSupport::TestCase
 
         # Update attribute and check if version number should be incremented
         old_value = c.attributes[attr]
-        c.update_attribute attr, val
-        assert_equal val, c.attributes[attr]
+        c.update_attributes!({attr => val})
         assert_equal versioning, c.version == 2
+        assert_equal val, c.attributes[attr]
 
         if versioning
           # Search for the snapshot & previous value
@@ -146,6 +146,29 @@ class CollectionTest < ActiveSupport::TestCase
           assert_equal c, Collection.where(current_version_uuid: c.uuid).first
         end
       end
+    end
+  end
+
+  test 'with versioning enabled, simultaneous updates increment version correctly' do
+    Rails.configuration.collection_versioning = true
+    act_as_system_user do
+      # Create initial collection
+      col = create_collection 'foo', Encoding::US_ASCII
+      assert col.valid?
+      assert_equal 1, col.version
+
+      # Simulate simultaneous updates
+      c1 = Collection.where(uuid: col.uuid).first
+      assert_equal 1, c1.version
+      c1.name = 'bar'
+      c2 = Collection.where(uuid: col.uuid).first
+      c2.description = 'foo collection'
+      c1.save!
+      assert_equal 1, c2.version
+      # with_lock forces a reload, so this shouldn't produce an unique violation error
+      c2.save!
+      assert_equal 3, c2.version
+      assert_equal 'foo collection', c2.description
     end
   end
 

@@ -219,30 +219,33 @@ class Collection < ArvadosModel
     self.current_version_uuid ||= self.uuid
   end
 
-  def save *arg
+  def save!
     if !Rails.configuration.collection_versioning || new_record?
       return super
     end
-    versionable_updates = ['manifest_text', 'description', 'properties', 'name'] & self.changed_attributes.keys
-    if versionable_updates.empty?
+    changes = self.changes
+    versionable_updates = ['manifest_text', 'description', 'properties', 'name']
+    if (changes.keys & versionable_updates).empty?
+      # Updates don't include interesting attributes, don't save a new snapshot.
       return super
     end
-    # Create a snapshot of the current collection before saving
-    Collection.transaction do
-      attrs = {}
-      # Collect attributes with pre-update values
-      versionable_updates.each do |attr|
-        attrs[attr] = self.changed_attributes[attr]
-      end
-      # Reset UUID
-      attrs[:uuid] = nil
+    # Create a snapshot of the current collection before saving.
+    # Does row locking because 'version' is incremented.
+    with_lock do
+      # Note that 'with_lock' reloads the object after locking.
+      # Create a snapshot of the original collection
       snapshot = self.dup
-      # Update current version number & save
+      snapshot.uuid = nil # Reset UUID so it's created as a new record
+      # Restore requested changes on the current version
+      changes.keys.each do |attr|
+        next if attr == 'version'
+        self.attributes = {attr => changes[attr].last}
+      end
+      # Update current version number & save first to avoid index collision
       self.version += 1
       super
-      # Save the snapshot with required attributes
-      snapshot.update_attributes!(attrs)
-      return true
+      # Save the snapshot with previous state
+      snapshot.save!
     end
   end
 
