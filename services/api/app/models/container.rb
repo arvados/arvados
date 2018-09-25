@@ -39,6 +39,7 @@ class Container < ArvadosModel
   before_save :update_secret_mounts_md5
   before_save :scrub_secret_mounts
   before_save :clear_runtime_status_when_queued
+  after_save :update_cr_logs
   after_save :handle_completed
   after_save :propagate_priority
   after_commit { UpdatePriority.run_update_thread }
@@ -491,6 +492,19 @@ class Container < ArvadosModel
             first
       if !c
         errors.add :output, "collection must exist and be readable by current user."
+      end
+    end
+  end
+
+  def update_cr_logs
+    # If self.final?, this update is superfluous: the final log/output
+    # update will be done when handle_completed calls finalize! on
+    # each requesting CR.
+    return if self.final? || !self.log_changed?
+    leave_modified_by_user_alone do
+      ContainerRequest.where(container_uuid: self.uuid).each do |cr|
+        cr.update_collections(container: self, collections: ['log'])
+        cr.save!
       end
     end
   end
