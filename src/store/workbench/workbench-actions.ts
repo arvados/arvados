@@ -41,10 +41,10 @@ import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-pa
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { ProjectResource } from '~/models/project';
-
+import { CollectionResource } from '~/models/collection';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -189,7 +189,7 @@ export const moveProject = (data: MoveToFormDialogData) =>
     };
 
 export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch) => {
         const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data));
         if (updatedProject) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -203,11 +203,45 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
 
 export const loadCollection = (uuid: string) =>
     handleFirstTimeLoad(
-        async (dispatch: Dispatch) => {
-            const collection = await dispatch<any>(loadCollectionPanel(uuid));
-            await dispatch<any>(activateSidePanelTreeItem(collection.ownerUuid));
-            dispatch<any>(setCollectionBreadcrumbs(collection.uuid));
-            dispatch(loadDetailsPanel(uuid));
+        async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+            const userUuid = services.authService.getUuid();
+            if (userUuid) {
+                let collection: CollectionResource | null = null;
+
+                if (extractUuidKind(uuid) === ResourceKind.COLLECTION) {
+                    /**
+                     * Use of /group/contents API is the only way to get trashed item
+                     * A get method of a service will throw an exception with 404 status for resources that are trashed
+                     */
+                    const resource = await loadGroupContentsResource(uuid, userUuid, services);
+                    if (resource) {
+                        if (resource.kind === ResourceKind.COLLECTION) {
+                            collection = resource;
+                            if (collection.isTrashed) {
+                                dispatch(setTrashBreadcrumbs(''));
+                                dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                            } else {
+                                await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
+                                dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
+                            }
+                        }
+                    } else {
+                        /**
+                         * If item is not accesible using loadGroupContentsResource,
+                         * but it can be obtained using the get method of the service
+                         * then it is shared with the user
+                         */
+                        collection = await services.collectionService.get(uuid);
+                        if (collection) {
+                            dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
+                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                        }
+                    }
+                    if (collection) {
+                        dispatch(updateResources([collection]));
+                    }
+                }
+            }
         });
 
 export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData) =>
