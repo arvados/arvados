@@ -134,14 +134,16 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind } = this.props.item;
+                const { uuid, ownerUuid, name, description, kind, isTrashed } = this.props.item;
                 const resource = {
                     uuid,
                     ownerUuid,
                     name,
                     description,
                     kind,
-                    menuKind: ContextMenuKind.COLLECTION
+                    menuKind: isTrashed
+                        ? ContextMenuKind.TRASHED_COLLECTION
+                        : ContextMenuKind.COLLECTION
                 };
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
