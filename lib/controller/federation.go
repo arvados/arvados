@@ -8,9 +8,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/md5"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -24,13 +26,17 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
-var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
+var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-)?.*$`
+var wfRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "workflows", "7fd4e"))
+var containersRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "containers", "dz642"))
+var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container_requests", "xvhdp"))
+var collectionRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
 var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
 type genericFederatedRequestHandler struct {
 	next    http.Handler
 	handler *Handler
+	matcher *regexp.Regexp
 }
 
 type collectionFederatedRequestHandler struct {
@@ -68,17 +74,57 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 }
 
 func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := wfRe.FindStringSubmatch(req.URL.Path)
-	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
-		h.next.ServeHTTP(w, req)
-		return
+	m := h.matcher.FindStringSubmatch(req.URL.Path)
+	clusterId := ""
+
+	if len(m) == 3 {
+		clusterId = m[2]
 	}
-	h.handler.remoteClusterRequest(m[1], w, req, nil)
+
+	if clusterId == "" {
+		if values, err := url.ParseQuery(req.URL.RawQuery); err == nil {
+			if len(values["cluster_id"]) == 1 {
+				clusterId = values["cluster_id"][0]
+			}
+		}
+	}
+
+	if clusterId == "" && req.Method == "POST" && req.Header.Get("Content-Type") == "application/json" {
+		var hasClusterId struct {
+			ClusterID string `json:"cluster_id"`
+		}
+		var cl int64
+		if req.ContentLength > 0 {
+			cl = req.ContentLength
+		}
+		postBody := bytes.NewBuffer(make([]byte, 0, cl))
+		defer req.Body.Close()
+
+		rdr := io.TeeReader(req.Body, postBody)
+
+		err := json.NewDecoder(rdr).Decode(&hasClusterId)
+		if err != nil {
+			httpserver.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		req.Body = ioutil.NopCloser(postBody)
+
+		clusterId = hasClusterId.ClusterID
+	}
+
+	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
+		h.next.ServeHTTP(w, req)
+	} else {
+		h.handler.remoteClusterRequest(clusterId, w, req, nil)
+	}
 }
 
-type rewriteSignaturesClusterId string
+type rewriteSignaturesClusterId struct {
+	clusterID  string
+	expectHash string
+}
 
-func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
 		return resp, requestError
 	}
@@ -100,6 +146,10 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 	// capacity accordingly
 	updatedManifest := bytes.NewBuffer(make([]byte, 0, int(float64(len(col.ManifestText))*1.1)))
 
+	hasher := md5.New()
+	mw := io.MultiWriter(hasher, updatedManifest)
+	sz := 0
+
 	scanner := bufio.NewScanner(strings.NewReader(col.ManifestText))
 	scanner.Buffer(make([]byte, 1048576), len(col.ManifestText))
 	for scanner.Scan() {
@@ -109,19 +159,60 @@ func (clusterId rewriteSignaturesClusterId) rewriteSignatures(resp *http.Respons
 			return nil, fmt.Errorf("Invalid stream (<3 tokens): %q", line)
 		}
 
-		updatedManifest.WriteString(tokens[0])
+		n, err := mw.Write([]byte(tokens[0]))
+		if err != nil {
+			return nil, fmt.Errorf("Error updating manifest: %v", err)
+		}
+		sz += n
 		for _, token := range tokens[1:] {
-			updatedManifest.WriteString(" ")
+			n, err = mw.Write([]byte(" "))
+			if err != nil {
+				return nil, fmt.Errorf("Error updating manifest: %v", err)
+			}
+			sz += n
+
 			m := keepclient.SignedLocatorRe.FindStringSubmatch(token)
 			if m != nil {
 				// Rewrite the block signature to be a remote signature
-				fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], clusterId, m[5][2:], m[8])
-			} else {
-				updatedManifest.WriteString(token)
-			}
+				_, err = fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], rw.clusterID, m[5][2:], m[8])
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
 
+				// for hash checking, ignore signatures
+				n, err = fmt.Fprintf(hasher, "%s%s", m[1], m[2])
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
+				sz += n
+			} else {
+				n, err = mw.Write([]byte(token))
+				if err != nil {
+					return nil, fmt.Errorf("Error updating manifest: %v", err)
+				}
+				sz += n
+			}
 		}
-		updatedManifest.WriteString("\n")
+		n, err = mw.Write([]byte("\n"))
+		if err != nil {
+			return nil, fmt.Errorf("Error updating manifest: %v", err)
+		}
+		sz += n
+	}
+
+	// Check that expected hash is consistent with
+	// portable_data_hash field of the returned record
+	if rw.expectHash == "" {
+		rw.expectHash = col.PortableDataHash
+	} else if rw.expectHash != col.PortableDataHash {
+		return nil, fmt.Errorf("portable_data_hash %q on returned record did not match expected hash %q ", rw.expectHash, col.PortableDataHash)
+	}
+
+	// Certify that the computed hash of the manifest_text matches our expectation
+	sum := hasher.Sum(nil)
+	computedHash := fmt.Sprintf("%x+%v", sum, sz)
+	if computedHash != rw.expectHash {
+		return nil, fmt.Errorf("Computed manifest_text hash %q did not match expected hash %q", computedHash, rw.expectHash)
 	}
 
 	col.ManifestText = updatedManifest.String()
@@ -159,6 +250,7 @@ func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Respons
 }
 
 type searchRemoteClusterForPDH struct {
+	pdh           string
 	remoteID      string
 	mtx           *sync.Mutex
 	sentResponse  *bool
@@ -202,7 +294,7 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 	// also have made it to this point, and we don't want a
 	// slow response holding the lock to block a faster response
 	// that is waiting on the lock.
-	newResponse, err = rewriteSignaturesClusterId(s.remoteID).rewriteSignatures(resp, nil)
+	newResponse, err = rewriteSignaturesClusterId{s.remoteID, s.pdh}.rewriteSignatures(resp, nil)
 
 	s.mtx.Lock()
 
@@ -227,14 +319,26 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 }
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		// Only handle GET requests right now
+		h.next.ServeHTTP(w, req)
+		return
+	}
+
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
 	if len(m) != 2 {
-		// Not a collection PDH request
+		// Not a collection PDH GET request
 		m = collectionRe.FindStringSubmatch(req.URL.Path)
-		if len(m) == 2 && m[1] != h.handler.Cluster.ClusterID {
+		clusterId := ""
+
+		if len(m) == 3 {
+			clusterId = m[2]
+		}
+
+		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			h.handler.remoteClusterRequest(m[1], w, req,
-				rewriteSignaturesClusterId(m[1]).rewriteSignatures)
+			h.handler.remoteClusterRequest(clusterId, w, req,
+				rewriteSignaturesClusterId{clusterId, ""}.rewriteSignatures)
 			return
 		}
 		// not a collection UUID request, or it is a request
@@ -296,7 +400,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		if sentResponse {
 			break
 		}
-		search := &searchRemoteClusterForPDH{remoteID, &mtx, &sentResponse,
+		search := &searchRemoteClusterForPDH{m[1], remoteID, &mtx, &sentResponse,
 			&sharedContext, cancelFunc, &errors, &errorCode}
 		wg.Add(1)
 		go func() {
@@ -317,8 +421,12 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/arvados/v1/workflows", next)
-	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/workflows", &genericFederatedRequestHandler{next, h, wfRe})
+	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h, wfRe})
+	mux.Handle("/arvados/v1/containers", next)
+	mux.Handle("/arvados/v1/containers/", &genericFederatedRequestHandler{next, h, containersRe})
+	mux.Handle("/arvados/v1/container_requests", &genericFederatedRequestHandler{next, h, containerRequestsRe})
+	mux.Handle("/arvados/v1/container_requests/", &genericFederatedRequestHandler{next, h, containerRequestsRe})
 	mux.Handle("/arvados/v1/collections", next)
 	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)

@@ -36,7 +36,8 @@ const (
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 
-	QueuedContainerUUID = "zzzzz-dz642-queuedcontainer"
+	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
+	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
 	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
 	ArvadosRepoName = "arvados"

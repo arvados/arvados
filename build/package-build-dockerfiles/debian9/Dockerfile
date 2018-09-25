@@ -12,8 +12,8 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip
 
 # Install RVM
-COPY D39DC0E3.asc /tmp
-RUN gpg --import /tmp/D39DC0E3.asc && \
+ADD generated/rvm.asc /tmp/
+RUN gpg --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \

@@ -563,7 +563,13 @@ class ApplicationController < ActionController::Base
         location: "query",
         required: false,
         default: false
-      }
+      },
+      cluster_id: {
+        type: 'string',
+        description: "Create object on a remote federated cluster instead of the current one.",
+        location: "query",
+        required: false,
+      },
     }
   end
 

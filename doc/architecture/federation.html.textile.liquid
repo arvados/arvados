@@ -1,0 +1,111 @@
+---
+layout: default
+navsection: architecture
+title: "Federation"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados federation enables clients to transparently read, create and manipulate objects and collections across clusters in different regions or organizations.  Federation supports workfows that integrate and analyze data across multiple clusters by sending computation to where the data is, reducing the technical and legal barriers to analyzing large, sensitive data sets.
+
+_This feature is under development.  Support for federation is limited to certain types of requests.  The behaviors described here should not be interpreted as a stable API._
+
+h2(#cluster_id). Cluster identifiers
+
+Clusters are identified by a five-digit alphanumeric id (numbers and lowercase letters).  There are 36^5^ = 60466176 possible cluster identifiers.
+
+* For automated tests purposes, use "z****"
+* For experimental/local-only/private clusters that won't ever be visible on the public Internet, use "x****"
+* For long-lived clusters, we recommend reserving a cluster id.  Contact "mailto:support@curoverse.com":support@curoverse.com
+
+Cluster identifiers are mapped API server hosts one of two ways:
+
+* Through DNS resolution, under the @arvadosapi.com@ domain.  For example, the API server for the cluster @qr1hi@ can be found at @qr1hi.arvadosapi.com@.  To register a cluster id for free under @arvadosapi.com@, contact "mailto:support@curoverse.com":support@curoverse.com
+* Through explicit configuration:
+
+The @RemoteClusters@ section of @/etc/arvados/config.yml@ (for arvados-controller)
+
+<pre>
+Clusters:
+  clsr1:
+    RemoteClusters:
+      clsr2:
+        Host: api.cluster2.com
+        Proxy: true
+      clsr3:
+        Host: api.cluster3.com
+        Proxy: true
+</pre>
+
+The @remote_hosts@ section of @application.yml@ (for the API server)
+
+<pre>
+production:
+  remote_hosts:
+    clsr2: api.cluster2.com
+    clsr3: api.cluster3.com
+</pre>
+
+In this example, the cluster @clsr1@ is configured to contact @api.cluster2.com@ for requests involving @clsr2@ and @api.cluster3.com@ for requests involving @clsr3@.
+
+h2(#identity). Identity
+
+A federated user has a single identity across the cluster federation.  This identity is a user account on a specific "home cluster".  When arvados-controller contacts a remote cluster, the remote cluster verifies the user's identity (see below) and then creates a mirror of the user account with the same uuid of the user's home cluster.  On the remote cluster, permissions can then be granted to the federated user, and the federated user can create and own objects.
+
+h3. Authenticating remote users with salted tokens
+
+When making a request to the home cluster, authorization is established by looking up the API token in the @api_client_authorizations@ table to determine the user identity.  When making a request to a remote cluster, we need to provide an API token which can be used to establish the user's identity.  The remote cluster will connect back to the home cluster to determine if the token valid and the user it corresponds to.  However, we do not want to send along the same API token used for the original request.  If the remote cluster is malicious or compromised, sending along user's regular token would compromise the user account on the home cluster.  Instead, the controller sends a "salted token".  The salted token is restricted to only to fetching the user account and group membership.  The salted token consists of the uuid of the token in @api_client_authorizations@ and the SHA1 HMAC of the original token and the cluster id of remote cluster.  To verify the token, the remote cluster contacts the home cluster and provides the token uuid, the hash, and its cluster id.  The home cluster uses the uuid to look up the token re-computes the SHA1 HMAC of the original token and cluster id.  If that hash matches, the the token is valid.  To avoid having to re-validate the token on every request, it is cached for a short period.
+
+The security properties of this scheme are:
+
+* The salted token does not grant access on the home cluster beyond what is needed to verify user identity
+* Revoking a token on the home cluster also revokes it for remote clusters (after the cache period)
+* A salted token given to a malicious/compromised cluster cannot be used to gain access to the user account on another remote cluster
+
+h2(#retrieval). Federated records
+
+!(full-width){{site.baseurl}}/images/arvados_federation.svg!
+
+h3. Retrieving and updating records
+
+In the REST API, GET and PUT/PATCH requests are used to fetch and update records.
+
+# the client begins by making a request to the home arvados-controller to retrieve or update a specific record owned by a remote cluster
+# arvados-controller determines the 5-digit cluster id from the first part of the uuid string
+# arvados-controller determines the API server host corresponding to the cluster id
+# arvados-controller creates a "salted" token by combining the API token used for the request and the target cluster id
+# arvados-controller contacts the remote cluster to request the desired record, providing the salted token
+# the remote cluster verifies the salted token
+# the remote cluster processes the request and returns a response
+# arvados-controller forwards the response to the client
+
+h3. Creating records
+
+In the REST API, POST requests create new records, so there is no uuid to use for the cluster id.  In this case, to create an object on a remote cluster, the request includes the @cluster_id@ parameter.  The flow is otherwise the same as described above.
+
+h3. Collections and Keep block retrieval
+
+Each collection record has @manifest_text@, which describes how to reassemble keep blocks into files as described in the "Storage in Keep.":{{site.baseurl}}/api/storage.html.  Each block identifier in the manifest has an added signature which is used to confirm permission to read the block.  To read a block from a keepstore server, the client must provide the block identifier, the signature, and the same API token used to retrieve the collection record.
+
+When a collection record is returned through a federation request, the keep blocks listed in the manifest may not be available on the local cluster, and the keep block signatures returned by the remote cluster are not valid for the local cluster.  To solve this, arvados-controller rewrites the signatures in the manifest to "remote cluster" signatures.
+
+A local signature comes after the block identifier and block size, and starts with @+A@:
+
+<code>930625b054ce894ac40596c3f5a0d947+33+A1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
+
+A remote cluster signature starts with @+R@, then the cluster id of the cluster it originated from (@zzzzz@ in this example), a dash, and then the original signature:
+
+<code>930625b054ce894ac40596c3f5a0d947+33+Rzzzzz-1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
+
+When the client provides a remote-signed block locator to keepstore, the keepstore proxies the request to the remote cluster.
+
+# keepstore determines the cluster id to contact from the first part of the @+R@ signature
+# creates a salted token using the API token and cluster id
+# contacts the "accessible" endpoint on the remote cluster to determine the remote cluster's keepstore or keepproxy hosts
+# converts the remote signature @+R@ back to a local signature @+A@
+# contacts the remote keepstore or keepproxy host and requests the block using the local signature
+# returns the block contents back to the client
