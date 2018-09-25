@@ -32,6 +32,7 @@ type CollectionFileSystem interface {
 	// prepended to all paths in the returned manifest.
 	MarshalManifest(prefix string) (string, error)
 
+	// Total data bytes in all files.
 	Size() int64
 }
 
@@ -142,7 +143,7 @@ func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 }
 
 func (fs *collectionFileSystem) Size() int64 {
-	return fs.fileSystem.root.(*dirnode).Size()
+	return fs.fileSystem.root.(*dirnode).TreeSize()
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
@@ -877,13 +878,15 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	return
 }
 
-func (dn *dirnode) Size() (bytes int64) {
+func (dn *dirnode) TreeSize() (bytes int64) {
 	dn.RLock()
 	defer dn.RUnlock()
 	for _, i := range dn.inodes {
 		switch i := i.(type) {
-		case *filenode, *dirnode:
+		case *filenode:
 			bytes += i.Size()
+		case *dirnode:
+			bytes += i.TreeSize()
 		}
 	}
 	return
