@@ -106,17 +106,76 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "uuid updates on current version make older versions update their pointers" do
+    Rails.configuration.collection_versioning = true
+    act_as_system_user do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+      new_uuid = 'zzzzz-4zz18-somefakeuuidnow'
+      assert_empty Collection.where(uuid: new_uuid)
+      # Update UUID on current version, check that both collections point to it
+      c.update_attributes!({'uuid' => new_uuid})
+      c.reload
+      assert_equal new_uuid, c.uuid
+      assert_equal 2, Collection.where(current_version_uuid: new_uuid).count
+    end
+  end
+
   [
-    [false, 'name', 'bar'],
-    [false, 'description', 'The quick brown fox jumps over the lazy dog'],
-    [false, 'properties', {'new_version' => true}],
-    [false, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"],
-    [true, 'name', 'bar'],
-    [true, 'description', 'The quick brown fox jumps over the lazy dog'],
-    [true, 'properties', {'new_version' => true}],
-    [true, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"],
-  ].each do |versioning, attr, val|
-    test "update collection #{attr} with versioning #{versioning ? '' : 'not '}enabled" do
+    ['owner_uuid', 'zzzzz-tpzed-d9tiejq69daie8f', 'zzzzz-tpzed-xurymjxw79nv3jz'],
+    ['replication_desired', 2, 3],
+    ['storage_classes_desired', ['hot'], ['archive']],
+    ['is_trashed', true, false],
+  ].each do |attr, first_val, second_val|
+    test "sync #{attr} with older versions" do
+      Rails.configuration.collection_versioning = true
+      act_as_system_user do
+        # Set up initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 1, c.version
+        assert_not_equal first_val, c.attributes[attr]
+        # Make changes so that a new version is created and a synced field is
+        # updated on both
+        c.update_attributes!({'name' => 'bar', attr => first_val})
+        c.reload
+        assert_equal 2, c.version
+        assert_equal first_val, c.attributes[attr]
+        assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+        assert_equal first_val, Collection.where(current_version_uuid: c.uuid, version: 1).first.attributes[attr]
+        # Only make an update on the same synced field & check that the previously
+        # created version also gets it.
+        c.update_attributes!({attr => second_val})
+        c.reload
+        assert_equal 2, c.version
+        assert_equal second_val, c.attributes[attr]
+        assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+        assert_equal second_val, Collection.where(current_version_uuid: c.uuid, version: 1).first.attributes[attr]
+      end
+    end
+  end
+
+  [
+    [false, 'name', 'bar', false],
+    [false, 'description', 'The quick brown fox jumps over the lazy dog', false],
+    [false, 'properties', {'new_version' => true}, false],
+    [false, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", false],
+    [true, 'name', 'bar', true],
+    [true, 'description', 'The quick brown fox jumps over the lazy dog', true],
+    [true, 'properties', {'new_version' => true}, true],
+    [true, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", true],
+    # Non-versionable attribute updates shouldn't create new versions
+    [true, 'replication_desired', 5, false],
+    [false, 'replication_desired', 5, false],
+  ].each do |versioning, attr, val, new_version_expected|
+    test "update #{attr} with versioning #{versioning ? '' : 'not '}enabled should #{new_version_expected ? '' : 'not '}create a new version" do
       Rails.configuration.collection_versioning = versioning
       act_as_system_user do
         # Create initial collection
@@ -131,17 +190,18 @@ class CollectionTest < ActiveSupport::TestCase
         # Update attribute and check if version number should be incremented
         old_value = c.attributes[attr]
         c.update_attributes!({attr => val})
-        assert_equal versioning, c.version == 2
+        assert_equal new_version_expected, c.version == 2
         assert_equal val, c.attributes[attr]
 
-        if versioning
+        if versioning && new_version_expected
           # Search for the snapshot & previous value
           assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
           s = Collection.where(current_version_uuid: c.uuid, version: 1).first
           assert_not_nil s
           assert_equal old_value, s.attributes[attr]
         else
-          # If versioning is disabled, only the current version should exist
+          # If versioning is disabled or no versionable attribute was updated,
+          # only the current version should exist
           assert_equal 1, Collection.where(current_version_uuid: c.uuid).count
           assert_equal c, Collection.where(current_version_uuid: c.uuid).first
         end

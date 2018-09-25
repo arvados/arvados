@@ -220,32 +220,63 @@ class Collection < ArvadosModel
   end
 
   def save!
-    if !Rails.configuration.collection_versioning || new_record?
+    if !Rails.configuration.collection_versioning || new_record? || (!self.changes.include?('uuid') && current_version_uuid != uuid)
       return super
     end
     changes = self.changes
-    versionable_updates = ['manifest_text', 'description', 'properties', 'name']
-    if (changes.keys & versionable_updates).empty?
-      # Updates don't include interesting attributes, don't save a new snapshot.
+    # Updates that will be synced with older versions
+    synced_updates = ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed',
+                      'replication_desired', 'storage_classes_desired'] & changes.keys
+    # Updates that will produce a new version
+    versionable_updates = ['manifest_text', 'description', 'properties', 'name'] & changes.keys
+
+    if versionable_updates.empty? && synced_updates.empty?
+      # Updates don't include interesting attributes, so don't save a new snapshot nor
+      # sync older versions.
       return super
     end
-    # Create a snapshot of the current collection before saving.
-    # Does row locking because 'version' is incremented.
+
+    # Does row locking (transaction is implicit) because 'version'
+    # may be incremented and the older versions synced.
+    # Note that 'with_lock' reloads the object after locking.
     with_lock do
-      # Note that 'with_lock' reloads the object after locking.
-      # Create a snapshot of the original collection
-      snapshot = self.dup
-      snapshot.uuid = nil # Reset UUID so it's created as a new record
+      # Sync older versions.
+      if !synced_updates.empty?
+        updates = {}
+        synced_updates.each do |attr|
+          if attr == 'uuid'
+            # Point old versions to current version's new UUID
+            updates['current_version_uuid'] = changes[attr].last
+          else
+            updates[attr] = changes[attr].last
+          end
+        end
+        Collection.where('current_version_uuid = ? AND uuid != ?', uuid, uuid).each do |c|
+          c.update_attributes!(updates)
+        end
+        # Also update current object just in case a new version will be created,
+        # as it has to receive the same values for the synced attributes.
+        self.attributes = updates
+      end
+      snapshot = nil
+      # Make a new version if applicable.
+      if !versionable_updates.empty?
+        # Create a snapshot of the original collection
+        snapshot = self.dup
+        snapshot.uuid = nil # Reset UUID so it's created as a new record
+        # Update current version number
+        self.version += 1
+      end
       # Restore requested changes on the current version
       changes.keys.each do |attr|
         next if attr == 'version'
         self.attributes = {attr => changes[attr].last}
       end
-      # Update current version number & save first to avoid index collision
-      self.version += 1
+      # Save current version first to avoid index collision
       super
-      # Save the snapshot with previous state
-      snapshot.save!
+      # Save the snapshot with previous state (if applicable)
+      snapshot.andand.save!
+      return true
     end
   end
 
