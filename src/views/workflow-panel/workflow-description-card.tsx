@@ -3,35 +3,56 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardHeader, Typography, CardContent } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs, Paper } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { WorkflowResource } from '~/models/workflow';
 
-export type CssRules = 'card';
+export type CssRules = 'root' | 'tab';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    card: {
-        height: '100%'
+    root: {
+        height: '100%',
+    },
+    tab: {
+        minWidth: '50%'
     }
 });
 
-interface WorkflowDescriptionCardDataProps {
+interface WorkflowDetailsCardDataProps {
+    workflow?: WorkflowResource;
 }
 
-type WorkflowDescriptionCardProps = WorkflowDescriptionCardDataProps & WithStyles<CssRules>;
+type WorkflowDetailsCardProps = WorkflowDetailsCardDataProps & WithStyles<CssRules>;
 
-export const WorkflowDescriptionCard = withStyles(styles)(
-    ({ classes }: WorkflowDescriptionCardProps) => {
-        return <Card className={classes.card}>
-            <CardHeader
-                title={<Typography noWrap variant="body2">
-                    Workflow description:
-                </Typography>} />
-            <CardContent>
-                <DataTableDefaultView
-                    icon={WorkflowIcon}
-                    messages={['Please select a workflow to see its description.']} />
-            </CardContent>
-        </Card>;
+export const WorkflowDetailsCard = withStyles(styles)(
+    class extends React.Component<WorkflowDetailsCardProps> {
+        state = {
+            value: 0,
+        };
+
+        handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+            this.setState({ value });
+        }
+
+        render() {
+            const { classes } = this.props;
+            const { value } = this.state;
+            return <Paper className={classes.root}>
+                <Tabs value={value} onChange={this.handleChange} centered={true}>
+                    <Tab className={classes.tab} label="Description" />
+                    <Tab className={classes.tab} label="Inputs" />
+                </Tabs>
+                {value === 0 && <CardContent>
+                    Description
+                    <DataTableDefaultView
+                        icon={WorkflowIcon}
+                        messages={['Please select a workflow to see its description.']} />
+                </CardContent>}
+                {value === 1 && <CardContent>
+                    Inputs
+                </CardContent>}
+            </Paper>;
+        }
     });

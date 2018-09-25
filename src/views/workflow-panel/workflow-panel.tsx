@@ -6,25 +6,23 @@ import * as React from 'react';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
-import { WorkflowIcon, ShareIcon } from '~/components/icon/icon';
-import { ResourcesState, getResource } from '~/store/resources/resources';
-import { navigateTo } from "~/store/navigation/navigation-action";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
+import { WorkflowIcon } from '~/components/icon/icon';
+import { ResourcesState } from '~/store/resources/resources';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { WORKFLOW_PANEL_ID } from '~/store/workflow-panel/workflow-panel-actions';
-import { openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { GroupResource } from '~/models/group';
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import {
     ResourceLastModifiedDate,
     RosurceWorkflowName,
-    ResourceWorkflowStatus
+    ResourceWorkflowStatus,
+    ResourceShare
 } from "~/views-components/data-explorer/renderers";
 import { SortDirection } from '~/components/data-table/data-column';
 import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { Grid, Tooltip, IconButton } from '@material-ui/core';
-import { WorkflowDescriptionCard } from './workflow-description-card';
+import { Grid } from '@material-ui/core';
+import { WorkflowDetailsCard } from './workflow-description-card';
+import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",
@@ -58,14 +56,6 @@ const resourceStatus = (type: string) => {
         default:
             return "Unknown";
     }
-};
-
-const ResourceShare = (props: { uuid: string }) => {
-    return <Tooltip title="Share">
-        <IconButton onClick={() => undefined}>
-            <ShareIcon />
-        </IconButton>
-    </Tooltip>;
 };
 
 export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
@@ -130,29 +120,15 @@ export const WorkflowPanel = connect((state: RootState) => ({
                         id={WORKFLOW_PANEL_ID}
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
                         contextMenuColumn={false}
                         dataTableDefaultView={<DataTableDefaultView icon={WorkflowIcon} />} />
                 </Grid>
                 <Grid item xs={6}>
-                    <WorkflowDescriptionCard />
+                    <WorkflowDetailsCard />
                 </Grid>
             </Grid>;
         }
 
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-            const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
-            if (resource) {
-                this.props.dispatch<any>(openContextMenu(event, {
-                    name: '',
-                    uuid: resource.uuid,
-                    ownerUuid: resource.ownerUuid,
-                    isTrashed: resource.isTrashed,
-                    kind: resource.kind,
-                    menuKind: ContextMenuKind.PROJECT,
-                }));
-            }
-        }
 
         handleRowDoubleClick = (uuid: string) => {
             this.props.dispatch<any>(navigateTo(uuid));

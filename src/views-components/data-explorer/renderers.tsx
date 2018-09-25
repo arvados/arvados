@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography, withStyles } from '@material-ui/core';
+import { Grid, Typography, withStyles, Tooltip, IconButton } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon } from '~/components/icon/icon';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect } from 'react-redux';
@@ -57,7 +57,13 @@ export const renderIcon = (item: { kind: string }) => {
     }
 };
 
-export const renderWorkflowName = (item: { name: string; uuid: string, kind: string }) =>
+export const renderDate = (date?: string) => {
+    return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
+};
+
+export const PublicUuid = 'qr1hi-tpzed-anonymouspublic';
+
+export const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ownerUuid: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item)}
@@ -71,21 +77,35 @@ export const renderWorkflowName = (item: { name: string; uuid: string, kind: str
 
 export const RosurceWorkflowName = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return resource || { name: '', uuid: '', kind: '' };
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
     })(renderWorkflowName);
 
-export const renderDate = (date?: string) => {
-    return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
+// do share onClick
+export const resourceShare = (props: { ownerUuid: string }) => {
+    return <Tooltip title="Share">
+        <IconButton onClick={() => undefined}>
+            {props.ownerUuid === PublicUuid ? <ShareIcon /> : null}
+        </IconButton>
+    </Tooltip>;
 };
 
+export const ResourceShare = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        return resource || { ownerUuid: '' };
+    })(resourceShare);
+
 export const renderWorkflowStatus = (ownerUuid?: string) => {
-    if (ownerUuid === 'qr1hi-j7d0g-2ax8o1pscovq2lg') {
-        return <Typography noWrap style={{ width: '60px' }}>{ResourceStatus.PUBLIC}</Typography>;
+    if (ownerUuid === PublicUuid) {
+        return renderStatus(ResourceStatus.PUBLIC);
     } else {
-        return <Typography noWrap style={{ width: '60px' }}>{ResourceStatus.PRIVATE}</Typography>;
+        return renderStatus(ResourceStatus.PRIVATE);
     }
 };
+
+const renderStatus = (status: string) =>
+    <Typography noWrap style={{ width: '60px' }}>{status}</Typography>;
 
 export const ResourceWorkflowStatus = connect(
     (state: RootState, props: { uuid: string }) => {
