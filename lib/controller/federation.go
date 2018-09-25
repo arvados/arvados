@@ -26,13 +26,17 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-var wfRe = regexp.MustCompile(`^/arvados/v1/workflows/([0-9a-z]{5})-[^/]+$`)
-var collectionRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-z]{5})-[^/]+$`)
+var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-)?.*$`
+var wfRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "workflows", "7fd4e"))
+var containersRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "containers", "dz642"))
+var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container_requests", "xvhdp"))
+var collectionRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
 var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
 type genericFederatedRequestHandler struct {
 	next    http.Handler
 	handler *Handler
+	matcher *regexp.Regexp
 }
 
 type collectionFederatedRequestHandler struct {
@@ -70,12 +74,49 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 }
 
 func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := wfRe.FindStringSubmatch(req.URL.Path)
-	if len(m) < 2 || m[1] == h.handler.Cluster.ClusterID {
-		h.next.ServeHTTP(w, req)
-		return
+	m := h.matcher.FindStringSubmatch(req.URL.Path)
+	clusterId := ""
+
+	if len(m) == 3 {
+		clusterId = m[2]
 	}
-	h.handler.remoteClusterRequest(m[1], w, req, nil)
+
+	if clusterId == "" {
+		if values, err := url.ParseQuery(req.URL.RawQuery); err == nil {
+			if len(values["cluster_id"]) == 1 {
+				clusterId = values["cluster_id"][0]
+			}
+		}
+	}
+
+	if clusterId == "" && req.Method == "POST" && req.Header.Get("Content-Type") == "application/json" {
+		var hasClusterId struct {
+			ClusterID string `json:"cluster_id"`
+		}
+		var cl int64
+		if req.ContentLength > 0 {
+			cl = req.ContentLength
+		}
+		postBody := bytes.NewBuffer(make([]byte, 0, cl))
+		defer req.Body.Close()
+
+		rdr := io.TeeReader(req.Body, postBody)
+
+		err := json.NewDecoder(rdr).Decode(&hasClusterId)
+		if err != nil {
+			httpserver.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		req.Body = ioutil.NopCloser(postBody)
+
+		clusterId = hasClusterId.ClusterID
+	}
+
+	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
+		h.next.ServeHTTP(w, req)
+	} else {
+		h.handler.remoteClusterRequest(clusterId, w, req, nil)
+	}
 }
 
 type rewriteSignaturesClusterId struct {
@@ -278,14 +319,26 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 }
 
 func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		// Only handle GET requests right now
+		h.next.ServeHTTP(w, req)
+		return
+	}
+
 	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
 	if len(m) != 2 {
-		// Not a collection PDH request
+		// Not a collection PDH GET request
 		m = collectionRe.FindStringSubmatch(req.URL.Path)
-		if len(m) == 2 && m[1] != h.handler.Cluster.ClusterID {
+		clusterId := ""
+
+		if len(m) == 3 {
+			clusterId = m[2]
+		}
+
+		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			h.handler.remoteClusterRequest(m[1], w, req,
-				rewriteSignaturesClusterId{m[1], ""}.rewriteSignatures)
+			h.handler.remoteClusterRequest(clusterId, w, req,
+				rewriteSignaturesClusterId{clusterId, ""}.rewriteSignatures)
 			return
 		}
 		// not a collection UUID request, or it is a request
@@ -368,8 +421,12 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/arvados/v1/workflows", next)
-	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/workflows", &genericFederatedRequestHandler{next, h, wfRe})
+	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h, wfRe})
+	mux.Handle("/arvados/v1/containers", next)
+	mux.Handle("/arvados/v1/containers/", &genericFederatedRequestHandler{next, h, containersRe})
+	mux.Handle("/arvados/v1/container_requests", &genericFederatedRequestHandler{next, h, containerRequestsRe})
+	mux.Handle("/arvados/v1/container_requests/", &genericFederatedRequestHandler{next, h, containerRequestsRe})
 	mux.Handle("/arvados/v1/collections", next)
 	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)

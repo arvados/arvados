@@ -82,9 +82,12 @@ func (p *proxy) Do(w http.ResponseWriter,
 	}
 
 	// make sure original response body gets closed
-	originalBody := resp.Body
-	if originalBody != nil {
-		defer originalBody.Close()
+	var originalBody io.ReadCloser
+	if resp != nil {
+		originalBody = resp.Body
+		if originalBody != nil {
+			defer originalBody.Close()
+		}
 	}
 
 	if filter != nil {
