@@ -22,12 +22,9 @@ export const RichTextEditorDialog = withDialog(RICH_TEXT_EDITOR_DIALOG_NAME)(
             maxWidth='sm'>
             <DialogTitle>{props.data.title}</DialogTitle>
             <DialogContent>
-                <DialogContentText>
-                    <RichTextEditor 
-                        value={RichTextEditor.createValueFromString(props.data.text, 'html')}
-                        readOnly={true}
-                        onChange={() => { return; }} />
-                </DialogContentText>
+                <RichTextEditor 
+                    value={RichTextEditor.createValueFromString(props.data.text, 'html')}
+                    readOnly={true} />
             </DialogContent>
             <DialogActions>
                 <Button

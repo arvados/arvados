@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DispatchProp } from 'react-redux';
+import { Dispatch } from 'redux';
+import { connect } from 'react-redux';
 import { withStyles, StyleRulesCallback, WithStyles, Typography } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { openRichTextEditorDialog } from '~/store/rich-text-editor-dialog/rich-text-editor-dialog-actions';
@@ -23,13 +24,20 @@ interface RichTextEditorLinkData {
     content: string;
 }
 
-type RichTextEditorLinkProps = RichTextEditorLinkData & WithStyles<CssRules>;
+interface RichTextEditorLinkActions {
+    onClick: (title: string, content: string) => void;
+}
 
-export const RichTextEditorLink = withStyles(styles)(
-    ({ classes, title, content, label }: RichTextEditorLinkProps) =>
-        <Typography component='span' className={classes.root} 
-            // onClick={() => dispatch<any>(openRichTextEditorDialog(title, content))}
-            >
+type RichTextEditorLinkProps = RichTextEditorLinkData & RichTextEditorLinkActions & WithStyles<CssRules>;
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onClick: (title: string, content: string) => dispatch<any>(openRichTextEditorDialog(title, content))
+});
+
+export const RichTextEditorLink = connect(undefined, mapDispatchToProps)(
+    withStyles(styles)(({ classes, title, content, label, onClick }: RichTextEditorLinkProps) =>
+        <Typography component='span' className={classes.root}
+            onClick={() => onClick(title, content) }>
             {label}
         </Typography>
-);
+    ));

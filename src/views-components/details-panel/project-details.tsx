@@ -29,10 +29,13 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
             {/* Missing attr */}
             <DetailsAttribute label='File size' value='1.4 GB' />
             <DetailsAttribute label='Description'>
-                <RichTextEditorLink 
-                    title={`Description of ${this.item.name}`}
-                    content={this.item.description} 
-                    label='Show full description' />
+                {this.item.description ? 
+                    <RichTextEditorLink
+                        title={`Description of ${this.item.name}`}
+                        content={this.item.description} 
+                        label='Show full description' />
+                    : '---'
+                }
             </DetailsAttribute>
         </div>;
     }
