@@ -70,76 +70,80 @@ export const CollectionPanel = withStyles(styles)(
         class extends React.Component<CollectionPanelProps> {
             render() {
                 const { classes, item } = this.props;
-                return <div>
-                    <Card className={classes.card}>
-                        <CardHeader
-                            avatar={<CollectionIcon className={classes.iconHeader} />}
-                            action={
-                                <Tooltip title="More options">
-                                    <IconButton
-                                        aria-label="More options"
-                                        onClick={this.handleContextMenu}>
-                                        <MoreOptionsIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            }
-                            title={item && item.name}
-                            subheader={item && item.description} />
-                        <CardContent>
-                            <Grid container direction="column">
-                                <Grid item xs={6}>
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Collection UUID'
-                                        value={item && item.uuid}>
-                                        <Tooltip title="Copy uuid">
-                                            <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy()}>
-                                                <CopyIcon className={classes.copyIcon} />
-                                            </CopyToClipboard>
-                                        </Tooltip>
-                                    </DetailsAttribute>
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Number of files' value='14' />
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Content size' value='54 MB' />
-                                    <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                        label='Owner' value={item && item.ownerUuid} />
+                return item
+                    ? <>
+                        <Card className={classes.card}>
+                            <CardHeader
+                                avatar={<CollectionIcon className={classes.iconHeader} />}
+                                action={
+                                    <Tooltip title="More options">
+                                        <IconButton
+                                            aria-label="More options"
+                                            onClick={this.handleContextMenu}>
+                                            <MoreOptionsIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                }
+                                title={item && item.name}
+                                subheader={item && item.description} />
+                            <CardContent>
+                                <Grid container direction="column">
+                                    <Grid item xs={6}>
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Collection UUID'
+                                            value={item && item.uuid}>
+                                            <Tooltip title="Copy uuid">
+                                                <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy()}>
+                                                    <CopyIcon className={classes.copyIcon} />
+                                                </CopyToClipboard>
+                                            </Tooltip>
+                                        </DetailsAttribute>
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Number of files' value='14' />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Content size' value='54 MB' />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Owner' value={item && item.ownerUuid} />
+                                    </Grid>
                                 </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className={classes.card}>
-                        <CardHeader title="Properties" />
-                        <CardContent>
-                            <Grid container direction="column">
-                                <Grid item xs={12}><CollectionTagForm /></Grid>
-                                <Grid item xs={12}>
-                                    {
-                                        Object.keys(item.properties).map( key => {
-                                            return <Chip key={key} className={classes.tag}
-                                                onDelete={this.handleDelete(key)}
-                                                label={`${key}: ${item.properties[key]}`} />;
-                                        })
-                                    }
+                        <Card className={classes.card}>
+                            <CardHeader title="Properties" />
+                            <CardContent>
+                                <Grid container direction="column">
+                                    <Grid item xs={12}><CollectionTagForm /></Grid>
+                                    <Grid item xs={12}>
+                                        {
+                                            Object.keys(item.properties).map(key => {
+                                                return <Chip key={key} className={classes.tag}
+                                                    onDelete={this.handleDelete(key)}
+                                                    label={`${key}: ${item.properties[key]}`} />;
+                                            })
+                                        }
+                                    </Grid>
                                 </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
-                    <div className={classes.card}>
-                        <CollectionPanelFiles />
-                    </div>
-                </div>;
+                            </CardContent>
+                        </Card>
+                        <div className={classes.card}>
+                            <CollectionPanelFiles />
+                        </div>
+                    </>
+                    : null;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind } = this.props.item;
+                const { uuid, ownerUuid, name, description, kind, isTrashed } = this.props.item;
                 const resource = {
                     uuid,
                     ownerUuid,
                     name,
                     description,
                     kind,
-                    menuKind: ContextMenuKind.COLLECTION
+                    menuKind: isTrashed
+                        ? ContextMenuKind.TRASHED_COLLECTION
+                        : ContextMenuKind.COLLECTION
                 };
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
