@@ -16,7 +16,6 @@ import { DetailsAttribute } from '~/components/details-attribute/details-attribu
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { TagResource } from '~/models/tag';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
@@ -55,7 +54,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
-    tags: TagResource[];
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -66,13 +64,12 @@ export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const collection = getResource(props.match.params.id)(state.resources);
         return {
-            item: collection,
-            tags: state.collectionPanel.tags
+            item: collection
         };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, tags } = this.props;
+                const { classes, item } = this.props;
                 return <div>
                     <Card className={classes.card}>
                         <CardHeader
@@ -118,10 +115,10 @@ export const CollectionPanel = withStyles(styles)(
                                 <Grid item xs={12}><CollectionTagForm /></Grid>
                                 <Grid item xs={12}>
                                     {
-                                        tags.map(tag => {
-                                            return <Chip key={tag.etag} className={classes.tag}
-                                                onDelete={this.handleDelete(tag.uuid)}
-                                                label={renderTagLabel(tag)} />;
+                                        Object.keys(item.properties).map( key => {
+                                            return <Chip key={key} className={classes.tag}
+                                                onDelete={this.handleDelete(key)}
+                                                label={`${key}: ${item.properties[key]}`} />;
                                         })
                                     }
                                 </Grid>
@@ -147,8 +144,8 @@ export const CollectionPanel = withStyles(styles)(
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
 
-            handleDelete = (uuid: string) => () => {
-                this.props.dispatch<any>(deleteCollectionTag(uuid));
+            handleDelete = (key: string) => () => {
+                this.props.dispatch<any>(deleteCollectionTag(key));
             }
 
             onCopy = () => {
@@ -160,8 +157,3 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
-
-const renderTagLabel = (tag: TagResource) => {
-    const { properties } = tag;
-    return `${properties.key}: ${properties.value}`;
-};

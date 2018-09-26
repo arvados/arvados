@@ -9,6 +9,7 @@
     "@types/react-copy-to-clipboard": "4.2.6",
     "@types/react-dropzone": "4.2.2",
     "@types/redux-form": "7.4.5",
+    "@types/shell-quote": "1.6.0",
     "axios": "0.18.0",
     "classnames": "2.2.6",
     "lodash": "4.17.10",
@@ -25,6 +26,7 @@
     "react-transition-group": "2.4.0",
     "redux": "4.0.0",
     "redux-thunk": "2.3.0",
+    "shell-quote": "1.6.1",
     "unionize": "2.1.2",
     "uuid": "3.3.2"
   },

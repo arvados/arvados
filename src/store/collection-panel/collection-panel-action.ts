@@ -9,20 +9,14 @@ import { collectionPanelFilesAction } from "./collection-panel-files/collection-
 import { createTree } from "~/models/tree";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
-import { TagResource, TagProperty } from "~/models/tag";
+import { TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
 import { resourcesActions } from "~/store/resources/resources-actions";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 
 export const collectionPanelActions = unionize({
     LOAD_COLLECTION: ofType<{ uuid: string }>(),
-    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
-    LOAD_COLLECTION_TAGS: ofType<{ uuid: string }>(),
-    LOAD_COLLECTION_TAGS_SUCCESS: ofType<{ tags: TagResource[] }>(),
-    CREATE_COLLECTION_TAG: ofType<{ data: any }>(),
-    CREATE_COLLECTION_TAG_SUCCESS: ofType<{ tag: TagResource }>(),
-    DELETE_COLLECTION_TAG: ofType<{ uuid: string }>(),
-    DELETE_COLLECTION_TAG_SUCCESS: ofType<{ uuid: string }>()
+    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>()
 });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -37,46 +31,41 @@ export const loadCollectionPanel = (uuid: string) =>
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         dispatch<any>(loadCollectionFiles(collection.uuid));
-        dispatch<any>(loadCollectionTags(collection.uuid));
         return collection;
     };
 
-export const loadCollectionTags = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(collectionPanelActions.LOAD_COLLECTION_TAGS({ uuid }));
-        return services.tagService
-            .list(uuid)
-            .then(tags => {
-                dispatch(collectionPanelActions.LOAD_COLLECTION_TAGS_SUCCESS({ tags }));
-            });
-    };
-
-export const createCollectionTag = (data: TagProperty) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(collectionPanelActions.CREATE_COLLECTION_TAG({ data }));
+export const createCollectionTag = (data: TagProperty) => 
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const item = getState().collectionPanel.item;
         const uuid = item ? item.uuid : '';
-        return services.tagService
-            .create(uuid, data)
-            .then(tag => {
-                dispatch(collectionPanelActions.CREATE_COLLECTION_TAG_SUCCESS({ tag }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Tag has been successfully added.",
-                    hideDuration: 2000
-                }));
-            });
+        try {
+            if (item) {
+                item.properties[data.key] = data.value;
+                const updatedCollection = await services.collectionService.update(uuid, item);
+                dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000 }));
+                return updatedCollection;
+            }
+            return;
+        } catch (e) {
+            return;
+        }
     };
 
-export const deleteCollectionTag = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(collectionPanelActions.DELETE_COLLECTION_TAG({ uuid }));
-        return services.linkService
-            .delete(uuid)
-            .then(tag => {
-                dispatch(collectionPanelActions.DELETE_COLLECTION_TAG_SUCCESS({ uuid: tag.uuid }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Tag has been successfully deleted.",
-                    hideDuration: 2000
-                }));
-            });
+export const deleteCollectionTag = (key: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const item = getState().collectionPanel.item;
+        const uuid = item ? item.uuid : '';
+        try {
+            if (item) {
+                delete item.properties[key];
+                const updatedCollection = await services.collectionService.update(uuid, item);
+                dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000 }));
+                return updatedCollection;
+            }
+            return;
+        } catch (e) {
+            return;
+        }
     };
