@@ -40,11 +40,17 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
     };
 
 export const setSharedWithMeBreadcrumbs = (uuid: string) =>
+    setCategoryBreadcrumbs(uuid, SidePanelTreeCategory.SHARED_WITH_ME);
+
+export const setTrashBreadcrumbs = (uuid: string) =>
+    setCategoryBreadcrumbs(uuid, SidePanelTreeCategory.TRASH);
+
+export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCategory) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const ancestors = await services.ancestorsService.ancestors(uuid, '');
         dispatch(updateResources(ancestors));
         const initialBreadcrumbs: ResourceBreadcrumb[] = [
-            { label: SidePanelTreeCategory.SHARED_WITH_ME, uuid: SidePanelTreeCategory.SHARED_WITH_ME }
+            { label: category, uuid: category }
         ];
         const breadrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
             ancestor.kind === ResourceKind.GROUP
@@ -59,7 +65,7 @@ export const setProjectBreadcrumbs = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
         const rootUuid = services.authService.getUuid();
-        if (uuid === rootUuid ||ancestors.find(uuid => uuid === rootUuid)) {
+        if (uuid === rootUuid || ancestors.find(uuid => uuid === rootUuid)) {
             dispatch(setSidePanelBreadcrumbs(uuid));
         } else {
             dispatch(setSharedWithMeBreadcrumbs(uuid));
