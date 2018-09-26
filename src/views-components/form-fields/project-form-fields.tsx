@@ -5,7 +5,7 @@
 import * as React from "react";
 import { Field } from "redux-form";
 import { TextField, RichEditorTextField } from "~/components/text-field/text-field";
-import { PROJECT_NAME_VALIDATION, PROJECT_DESCRIPTION_VALIDATION } from "~/validators/validators";
+import { PROJECT_NAME_VALIDATION } from "~/validators/validators";
 
 export const ProjectNameField = () =>
     <Field
@@ -19,5 +19,4 @@ export const ProjectDescriptionField = () =>
     <Field
         name='description'
         component={RichEditorTextField}
-        validate={PROJECT_DESCRIPTION_VALIDATION}
         label="Description - optional" />;
