@@ -14,6 +14,7 @@ import { TreeItemStatus } from "~/components/tree/tree";
 import { getNodeAncestors, getNodeValue, getNodeAncestorsIds, getNode } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
+import { OrderBuilder } from '../../services/api/order-builder';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -79,7 +80,10 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
             const params = {
                 filters: new FilterBuilder()
                     .addEqual('ownerUuid', projectUuid)
-                    .getFilters()
+                    .getFilters(),
+                order: new OrderBuilder<ProjectResource>()
+                    .addAsc('name')
+                    .getOrder()
             };
             const { items } = await services.projectService.list(params);
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
