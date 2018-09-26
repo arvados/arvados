@@ -36,7 +36,7 @@ import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { processResourceActionSet } from './views-components/context-menu/action-sets/process-resource-action-set';
+import { processResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 
