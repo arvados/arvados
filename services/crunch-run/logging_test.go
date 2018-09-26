@@ -37,8 +37,8 @@ var _ = Suite(&LoggingTestSuite{})
 
 func (s *LoggingTestSuite) SetUpTest(c *C) {
 	s.client = arvados.NewClientFromEnv()
-	crunchLogCheckpointMaxDuration = time.Hour * 24 * 365
-	crunchLogCheckpointMaxBytes = 1 << 50
+	crunchLogUpdatePeriod = time.Hour * 24 * 365
+	crunchLogUpdateSize = 1 << 50
 }
 
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
@@ -131,7 +131,7 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	c.Check(mt, Equals, ". 48f9023dc683a850b1c9b482b14c4b97+163 0:83:crunch-run.txt 83:80:stdout.txt\n")
 }
 
-func (s *LoggingTestSuite) TestLogCheckpoint(c *C) {
+func (s *LoggingTestSuite) TestLogUpdate(c *C) {
 	for _, trial := range []struct {
 		maxBytes    int64
 		maxDuration time.Duration
@@ -140,8 +140,8 @@ func (s *LoggingTestSuite) TestLogCheckpoint(c *C) {
 		{1000000, time.Millisecond},
 	} {
 		c.Logf("max %d bytes, %s", trial.maxBytes, trial.maxDuration)
-		crunchLogCheckpointMaxBytes = trial.maxBytes
-		crunchLogCheckpointMaxDuration = trial.maxDuration
+		crunchLogUpdateSize = trial.maxBytes
+		crunchLogUpdatePeriod = trial.maxDuration
 
 		api := &ArvTestClient{}
 		kc := &KeepTestClient{}
@@ -169,9 +169,9 @@ func (s *LoggingTestSuite) TestLogCheckpoint(c *C) {
 
 		mt, err := cr.LogCollection.MarshalManifest(".")
 		c.Check(err, IsNil)
-		// Block packing depends on whether there's a
-		// checkpoint between the two Goodbyes -- either way
-		// the first block will be 4dc76.
+		// Block packing depends on whether there's an update
+		// between the two Goodbyes -- either way the first
+		// block will be 4dc76.
 		c.Check(mt, Matches, `. 4dc76e0a212bfa30c39d76d8c16da0c0\+1038 (afc503bc1b9a828b4bb543cb629e936c\+78|90699dc22545cd74a0664303f70bc05a\+39 276b49339fd5203d15a93ff3de11bfb9\+39) 0:1077:crunch-run.txt 1077:39:stdout.txt\n`)
 	}
 }

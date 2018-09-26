@@ -279,6 +279,17 @@ common:
 
   crunch_log_partial_line_throttle_period: 5
 
+  # Container logs are written to Keep and saved in a collection,
+  # which is updated periodically while the container runs.  This
+  # value sets the interval (given in seconds) between collection
+  # updates.
+  crunch_log_update_period: 1800
+
+  # The log collection is also updated when the specified amount of
+  # log data (given in bytes) is produced in less than one update
+  # period.
+  crunch_log_update_size: 33554432
+
   # Attributes to suppress in events and audit logs.  Notably,
   # specifying ["manifest_text"] here typically makes the database
   # smaller and faster.

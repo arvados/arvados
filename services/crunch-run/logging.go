@@ -197,8 +197,8 @@ var crunchLogThrottleLines int64 = 1024
 var crunchLogPartialLineThrottlePeriod time.Duration = time.Second * 5
 var crunchLogBytesPerEvent int64 = 4096
 var crunchLogSecondsBetweenEvents = time.Second
-var crunchLogCheckpointMaxDuration = time.Hour / 2
-var crunchLogCheckpointMaxBytes = int64(1 << 25)
+var crunchLogUpdatePeriod = time.Hour / 2
+var crunchLogUpdateSize = int64(1 << 25)
 
 // ArvLogWriter is an io.WriteCloser that processes each write by
 // writing it through to another io.WriteCloser (typically a
@@ -401,7 +401,7 @@ func loadLogThrottleParams(clnt IArvadosClient) {
 	loadDuration(&crunchLogPartialLineThrottlePeriod, "crunchLogPartialLineThrottlePeriod")
 	loadInt64(&crunchLogBytesPerEvent, "crunchLogBytesPerEvent")
 	loadDuration(&crunchLogSecondsBetweenEvents, "crunchLogSecondsBetweenEvents")
-	loadInt64(&crunchLogCheckpointMaxBytes, "crunchLogCheckpointMaxBytes")
-	loadDuration(&crunchLogCheckpointMaxDuration, "crunchLogCheckpointMaxDuration")
+	loadInt64(&crunchLogUpdateSize, "crunchLogUpdateSize")
+	loadDuration(&crunchLogUpdatePeriod, "crunchLogUpdatePeriod")
 
 }

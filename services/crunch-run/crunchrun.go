@@ -1177,14 +1177,23 @@ func (runner *ContainerRunner) WaitFinish() error {
 	}
 }
 
-func (runner *ContainerRunner) checkpointLogs() {
-	ticker := time.NewTicker(crunchLogCheckpointMaxDuration / 360)
+func (runner *ContainerRunner) updateLogs() {
+	ticker := time.NewTicker(crunchLogUpdatePeriod / 360)
 	defer ticker.Stop()
 
-	saveAtTime := time.Now().Add(crunchLogCheckpointMaxDuration)
-	saveAtSize := crunchLogCheckpointMaxBytes
+	sigusr1 := make(chan os.Signal, 1)
+	signal.Notify(sigusr1, syscall.SIGUSR1)
+	defer signal.Stop(sigusr1)
+
+	saveAtTime := time.Now().Add(crunchLogUpdatePeriod)
+	saveAtSize := crunchLogUpdateSize
 	var savedSize int64
-	for range ticker.C {
+	for {
+		select {
+		case <-ticker.C:
+		case <-sigusr1:
+			saveAtTime = time.Now()
+		}
 		runner.logMtx.Lock()
 		done := runner.LogsPDH != nil
 		runner.logMtx.Unlock()
@@ -1195,8 +1204,8 @@ func (runner *ContainerRunner) checkpointLogs() {
 		if size == savedSize || (time.Now().Before(saveAtTime) && size < saveAtSize) {
 			continue
 		}
-		saveAtTime = time.Now().Add(crunchLogCheckpointMaxDuration)
-		saveAtSize = runner.LogCollection.Size() + crunchLogCheckpointMaxBytes
+		saveAtTime = time.Now().Add(crunchLogUpdatePeriod)
+		saveAtSize = runner.LogCollection.Size() + crunchLogUpdateSize
 		saved, err := runner.saveLogCollection()
 		if err != nil {
 			runner.CrunchLog.Printf("error updating log collection: %s", err)
@@ -1690,7 +1699,7 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
 
 	loadLogThrottleParams(api)
-	go cr.checkpointLogs()
+	go cr.updateLogs()
 
 	return cr, nil
 }
