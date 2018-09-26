@@ -13,3 +13,4 @@ declare interface System {
 declare var System: System;
 
 declare module 'react-splitter-layout';
+declare module 'react-rte';
