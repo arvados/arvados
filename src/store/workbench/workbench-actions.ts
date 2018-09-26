@@ -5,17 +5,16 @@
 import { Dispatch } from 'redux';
 import { RootState } from "../store";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { loadCollectionPanel } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
 import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects, getSidePanelTreeNodeAncestorsIds } from '../side-panel-tree/side-panel-tree-actions';
+import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
 import { loadResource, updateResources } from '../resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setCollectionBreadcrumbs, setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -43,8 +42,8 @@ import { progressIndicatorActions } from '~/store/progress-indicator/progress-in
 import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { ProjectResource } from '~/models/project';
-import { CollectionResource } from '~/models/collection';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -113,46 +112,29 @@ export const loadProject = (uuid: string) =>
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = services.authService.getUuid();
             if (userUuid) {
-                let project: ProjectResource | null = null;
                 if (userUuid !== uuid) {
-                    /**
-                     * Use of /group/contents API is the only way to get trashed item
-                     * A get method of a service will throw an exception with 404 status for resources that are trashed
-                     */
-                    const resource = await loadGroupContentsResource(uuid, userUuid, services);
-                    if (resource) {
-                        if (resource.kind === ResourceKind.PROJECT) {
-                            project = resource;
-                            if (project.isTrashed) {
-                                dispatch<any>(setTrashBreadcrumbs(uuid));
-                                dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                            } else {
-                                await dispatch(activateSidePanelTreeItem(uuid));
-                                dispatch<any>(setSidePanelBreadcrumbs(uuid));
-                            }
-                        }
-                    } else {
-                        /**
-                         * If item is not accesible using loadGroupContentsResource,
-                         * but it can be obtained using the get method of the service
-                         * then it is shared with the user
-                         */
-                        project = await services.projectService.get(uuid);
-                        if (project) {
+                    const match = await loadGroupContentsResource({ uuid, userUuid, services });
+                    match({
+                        OWNED: async project => {
+                            await dispatch(activateSidePanelTreeItem(uuid));
+                            dispatch<any>(setSidePanelBreadcrumbs(uuid));
+                            dispatch(finishLoadingProject(project));
+                        },
+                        SHARED: project => {
                             dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
                             dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                            dispatch(finishLoadingProject(project));
+                        },
+                        TRASHED: project => {
+                            dispatch<any>(setTrashBreadcrumbs(uuid));
+                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                            dispatch(finishLoadingProject(project));
                         }
-                    }
-                    if (project) {
-                        dispatch(updateResources([project]));
-                    }
+                    });
                 } else {
                     await dispatch(activateSidePanelTreeItem(userUuid));
                     dispatch<any>(setSidePanelBreadcrumbs(userUuid));
-                }
-                if (project) {
-                    dispatch(openProjectPanel(uuid));
-                    dispatch(loadDetailsPanel(uuid));
+                    dispatch(finishLoadingProject(userUuid));
                 }
             }
         });
@@ -206,41 +188,25 @@ export const loadCollection = (uuid: string) =>
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = services.authService.getUuid();
             if (userUuid) {
-                let collection: CollectionResource | null = null;
-
-                if (extractUuidKind(uuid) === ResourceKind.COLLECTION) {
-                    /**
-                     * Use of /group/contents API is the only way to get trashed item
-                     * A get method of a service will throw an exception with 404 status for resources that are trashed
-                     */
-                    const resource = await loadGroupContentsResource(uuid, userUuid, services);
-                    if (resource) {
-                        if (resource.kind === ResourceKind.COLLECTION) {
-                            collection = resource;
-                            if (collection.isTrashed) {
-                                dispatch(setTrashBreadcrumbs(''));
-                                dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                            } else {
-                                await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                                dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
-                            }
-                        }
-                    } else {
-                        /**
-                         * If item is not accesible using loadGroupContentsResource,
-                         * but it can be obtained using the get method of the service
-                         * then it is shared with the user
-                         */
-                        collection = await services.collectionService.get(uuid);
-                        if (collection) {
-                            dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
-                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
-                        }
-                    }
-                    if (collection) {
+                const match = await loadGroupContentsResource({ uuid, userUuid, services });
+                match({
+                    OWNED: async collection => {
                         dispatch(updateResources([collection]));
-                    }
-                }
+                        await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
+                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
+                    },
+                    SHARED: collection => {
+                        dispatch(updateResources([collection]));
+                        dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
+                        dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                    },
+                    TRASHED: collection => {
+                        dispatch(updateResources([collection]));
+                        dispatch(setTrashBreadcrumbs(''));
+                        dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                    },
+
+                });
             }
         });
 
@@ -381,18 +347,58 @@ export const loadSharedWithMe = handleFirstTimeLoad(async (dispatch: Dispatch) =
     await dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
 });
 
-const loadGroupContentsResource = async (uuid: string, ownerUuid: string, services: ServiceRepository) => {
+const finishLoadingProject = (project: GroupContentsResource | string) =>
+    async (dispatch: Dispatch<any>) => {
+        const uuid = typeof project === 'string' ? project : project.uuid;
+        dispatch(openProjectPanel(uuid));
+        dispatch(loadDetailsPanel(uuid));
+        if (typeof project !== 'string') {
+            dispatch(updateResources([project]));
+        }
+    };
 
+const loadGroupContentsResource = async (params: {
+    uuid: string,
+    userUuid: string,
+    services: ServiceRepository
+}) => {
     const filters = new FilterBuilder()
-        .addEqual('uuid', uuid)
+        .addEqual('uuid', params.uuid)
         .getFilters();
-
-    const { items } = await services.groupsService.contents(ownerUuid, {
+    const { items } = await params.services.groupsService.contents(params.userUuid, {
         filters,
         recursive: true,
         includeTrash: true,
     });
-
-    return items.shift();
+    const resource = items.shift();
+    let handler: GroupContentsHandler;
+    if (resource) {
+        handler = (resource.kind === ResourceKind.COLLECTION || resource.kind === ResourceKind.PROJECT) && resource.isTrashed
+            ? groupContentsHandlers.TRASHED(resource)
+            : groupContentsHandlers.OWNED(resource);
+    } else {
+        const kind = extractUuidKind(params.uuid);
+        let resource: GroupContentsResource;
+        if (kind === ResourceKind.COLLECTION) {
+            resource = await params.services.collectionService.get(params.uuid);
+        } else if (kind === ResourceKind.PROJECT) {
+            resource = await params.services.projectService.get(params.uuid);
+        } else {
+            resource = await params.services.containerRequestService.get(params.uuid);
+        }
+        handler = groupContentsHandlers.SHARED(resource);
+    }
+    return (cases: MatchCases<typeof groupContentsHandlersRecord, GroupContentsHandler, void>) =>
+        groupContentsHandlers.match(handler, cases);
 
 };
+
+const groupContentsHandlersRecord = {
+    TRASHED: ofType<GroupContentsResource>(),
+    SHARED: ofType<GroupContentsResource>(),
+    OWNED: ofType<GroupContentsResource>(),
+};
+
+const groupContentsHandlers = unionize(groupContentsHandlersRecord);
+
+type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
