@@ -10,6 +10,7 @@ import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
+import { RichTextEditorLink } from '~/components/rich-text-editor-link/rich-text-editor-link';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
 
@@ -27,7 +28,12 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Missing attr */}
             <DetailsAttribute label='File size' value='1.4 GB' />
-            <DetailsAttribute label='Description' value={this.item.description} />
+            <DetailsAttribute label='Description'>
+                <RichTextEditorLink 
+                    title={`Description of ${this.item.name}`}
+                    content={this.item.description} 
+                    label='Show full description' />
+            </DetailsAttribute>
         </div>;
     }
 }
