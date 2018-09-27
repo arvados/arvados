@@ -14,6 +14,7 @@ import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
 import { matchProjectRoute } from '~/routes/routes';
+import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -88,7 +89,7 @@ export const SidePanelButton = withStyles(styles)(
                                 <MenuItem className={classes.menuItem} onClick={this.handleNewCollectionClick}>
                                     <CollectionIcon className={classes.icon} /> New collection
                                 </MenuItem>
-                                <MenuItem className={classes.menuItem}>
+                                <MenuItem className={classes.menuItem} onClick={this.handleRunProcessClick}>
                                     <ProcessIcon className={classes.icon} /> Run a process
                                 </MenuItem>
                                 <MenuItem className={classes.menuItem} onClick={this.handleNewProjectClick}>
@@ -102,6 +103,10 @@ export const SidePanelButton = withStyles(styles)(
 
             handleNewProjectClick = () => {
                 this.props.dispatch<any>(openProjectCreateDialog(this.props.currentItemId));
+            }
+
+            handleRunProcessClick = () => {
+                this.props.dispatch<any>(navigateToRunProcess);
             }
 
             handleNewCollectionClick = () => {

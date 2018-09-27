@@ -33,12 +33,13 @@ import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
-import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
+import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-panel';
+import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
-import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -94,6 +95,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.TRASH} component={TrashPanel} />
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+                                <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

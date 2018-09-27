@@ -51,3 +51,5 @@ export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootSt
 };
 
 export const navigateToSharedWithMe = push(Routes.SHARED_WITH_ME);
+
+export const navigateToRunProcess = push(Routes.RUN_PROCESS);
