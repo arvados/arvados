@@ -7,7 +7,8 @@ import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs, Pap
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WorkflowResource } from '~/models/workflow';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, stringifyInputType } from '~/models/workflow';
+import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 
 export type CssRules = 'root' | 'tab';
 
@@ -37,7 +38,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
         }
 
         render() {
-            const { classes } = this.props;
+            const { classes, workflow } = this.props;
             const { value } = this.state;
             return <Paper className={classes.root}>
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
@@ -45,14 +46,29 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     <Tab className={classes.tab} label="Inputs" />
                 </Tabs>
                 {value === 0 && <CardContent>
-                    Description
-                    <DataTableDefaultView
-                        icon={WorkflowIcon}
-                        messages={['Please select a workflow to see its description.']} />
+                    {workflow
+                        ? workflow.description
+                        : <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its description.']} />}
                 </CardContent>}
                 {value === 1 && <CardContent>
-                    Inputs
+                    {workflow && this.inputs
+                        ? this.inputs.map(input => <DetailsAttribute key={input.id} label={input.label || ''} value={stringifyInputType(input)} />)
+                        : <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its description.']} />}
                 </CardContent>}
             </Paper>;
+        }
+
+        get inputs() {
+            if (this.props.workflow) {
+                const definition = parseWorkflowDefinition(this.props.workflow);
+                if (definition) {
+                    return getWorkflowInputs(definition);
+                }
+            }
+            return;
         }
     });
