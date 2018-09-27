@@ -6,7 +6,9 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -612,4 +614,29 @@ func (s *FederationSuite) TestGetRemoteContainer(c *check.C) {
 	var cn arvados.Container
 	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
 	c.Check(cn.UUID, check.Equals, arvadostest.QueuedContainerUUID)
+}
+
+func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", "/arvados/v1/containers?filters="+
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v"]]]`, arvadostest.QueuedContainerUUID)), nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items[0].UUID, check.Equals, arvadostest.QueuedContainerUUID)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", "/arvados/v1/containers?filters="+
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`, arvadostest.QueuedContainerUUID)), nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	log.Printf("got %+v", resp)
+	c.Assert(resp.StatusCode, check.Equals, http.StatusOK)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items[0].UUID, check.Equals, arvadostest.QueuedContainerUUID)
 }
