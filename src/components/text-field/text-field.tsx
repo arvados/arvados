@@ -48,12 +48,10 @@ export const RichEditorTextField = withStyles(styles)(
         }
 
         render() {
-            return (
-                <RichTextEditor 
-                    value={this.state.value}
-                    onChange={this.onChange}
-                    placeholder={this.props.label} />
-            );
+            return <RichTextEditor 
+                value={this.state.value}
+                onChange={this.onChange}
+                placeholder={this.props.label} />;
         }
     }
 );
