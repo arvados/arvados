@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -304,12 +303,10 @@ func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *http.Response,
 	c.Check(jresp.Errors[0], check.Matches, re)
 }
 
-func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server {
+func (s *FederationSuite) localServiceHandler(c *check.C, h http.Handler) *httpserver.Server {
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(404)
-			}),
+			Handler: h,
 		},
 	}
 
@@ -323,6 +320,12 @@ func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server 
 	s.testHandler.NodeProfile = &np
 
 	return srv
+}
+
+func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server {
+	return s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(404)
+	}))
 }
 
 func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
@@ -629,14 +632,23 @@ func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
 }
 
 func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
-	defer s.localServiceReturns404(c).Close()
+	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bd, _ := ioutil.ReadAll(req.Body)
+		c.Check(string(bd), check.Equals, `_method=GET&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D`)
+		w.WriteHeader(200)
+		w.Write([]byte(`{"items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr"}]}`))
+	})).Close()
 	req := httptest.NewRequest("GET", "/arvados/v1/containers?filters="+
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`, arvadostest.QueuedContainerUUID)), nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
-	log.Printf("got %+v", resp)
-	c.Assert(resp.StatusCode, check.Equals, http.StatusOK)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var cn arvados.ContainerList
 	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
-	c.Check(cn.Items[0].UUID, check.Equals, arvadostest.QueuedContainerUUID)
+	if cn.Items[0].UUID == arvadostest.QueuedContainerUUID {
+		c.Check(cn.Items[1].UUID, check.Equals, "zhome-xvhdp-cr5queuedcontnr")
+	} else {
+		c.Check(cn.Items[1].UUID, check.Equals, arvadostest.QueuedContainerUUID)
+		c.Check(cn.Items[0].UUID, check.Equals, "zhome-xvhdp-cr5queuedcontnr")
+	}
 }

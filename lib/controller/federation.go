@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -129,7 +128,11 @@ func (c *responseCollector) collectResponse(resp *http.Response, requestError er
 	defer c.mtx.Unlock()
 
 	if err == nil {
-		c.responses = append(c.responses, loadInto["items"].([]interface{})...)
+		if resp.StatusCode != http.StatusOK {
+			c.errors = append(c.errors, fmt.Errorf("error %v", loadInto["errors"]))
+		} else {
+			c.responses = append(c.responses, loadInto["items"].([]interface{})...)
+		}
 	} else {
 		c.errors = append(c.errors, err)
 	}
@@ -186,19 +189,17 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 				wg.Done()
 				<-sem
 			}()
-			remoteReq := *req
+			var remoteReq http.Request
+			remoteReq.Header = req.Header
 			remoteReq.Method = "POST"
-			remoteReq.URL = &url.URL{
-				Path:    req.URL.Path,
-				RawPath: req.URL.RawPath,
-			}
+			remoteReq.URL = &url.URL{Path: req.URL.Path}
 			remoteParams := make(url.Values)
 			remoteParams["_method"] = []string{"GET"}
 			content, err := json.Marshal(v)
 			if err != nil {
 				rc.mtx.Lock()
+				defer rc.mtx.Unlock()
 				rc.errors = append(rc.errors, err)
-				rc.mtx.Unlock()
 				return
 			}
 			remoteParams["filters"] = []string{fmt.Sprintf(`[["uuid", "in", %s]]`, content)}
@@ -206,8 +207,8 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 			remoteReq.Body = ioutil.NopCloser(bytes.NewBufferString(enc))
 
 			if k == h.handler.Cluster.ClusterID {
-				h.handler.proxy.Do(w, &remoteReq, remoteReq.URL,
-					h.handler.secureClient, rc.collectResponse)
+				h.handler.localClusterRequest(w, &remoteReq,
+					rc.collectResponse)
 			} else {
 				h.handler.remoteClusterRequest(k, w, &remoteReq,
 					rc.collectResponse)
@@ -222,17 +223,13 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 		for _, e := range rc.errors {
 			strerr = append(strerr, e.Error())
 		}
-		httpserver.Errors(w, strerr, http.StatusBadRequest)
+		httpserver.Errors(w, strerr, http.StatusBadGateway)
 	} else {
-		log.Printf("Sending status ok %+v", rc)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		itemList := make(map[string]interface{})
 		itemList["items"] = rc.responses
-		//x, _ := json.Marshal(itemList)
-		//log.Printf("Sending response %v", string(x))
 		json.NewEncoder(w).Encode(itemList)
-		log.Printf("Sent?")
 	}
 
 	return true
@@ -285,7 +282,7 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 			return
 		}
 	}
-	log.Printf("Clusterid is %q", clusterId)
+	//log.Printf("Clusterid is %q", clusterId)
 
 	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
@@ -405,11 +402,7 @@ func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requ
 	return resp, nil
 }
 
-type searchLocalClusterForPDH struct {
-	sentResponse bool
-}
-
-func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+func filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
 		return resp, requestError
 	}
@@ -417,10 +410,8 @@ func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Respons
 	if resp.StatusCode == 404 {
 		// Suppress returning this result, because we want to
 		// search the federation.
-		s.sentResponse = false
 		return nil, nil
 	}
-	s.sentResponse = true
 	return resp, nil
 }
 
@@ -526,26 +517,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	// Request for collection by PDH.  Search the federation.
 
 	// First, query the local cluster.
-	urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	urlOut = &url.URL{
-		Scheme:   urlOut.Scheme,
-		Host:     urlOut.Host,
-		Path:     req.URL.Path,
-		RawPath:  req.URL.RawPath,
-		RawQuery: req.URL.RawQuery,
-	}
-	client := h.handler.secureClient
-	if insecure {
-		client = h.handler.insecureClient
-	}
-	sf := &searchLocalClusterForPDH{}
-	h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
-	if sf.sentResponse {
+	if h.handler.localClusterRequest(w, req, filterLocalClusterResponse) {
 		return
 	}
 
