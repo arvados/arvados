@@ -38,7 +38,15 @@ export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer)
 });
+
+export const getFilters = (dataExplorer: DataExplorer) => {
+    const filters = new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue)
+        .getFilters();
+    return filters;
+};
 
 export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
