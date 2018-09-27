@@ -35,6 +35,8 @@ import { processPanelReducer } from '~/store/process-panel/process-panel-reducer
 import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { SharedWithMeMiddlewareService } from './shared-with-me-panel/shared-with-me-middleware-service';
 import { progressIndicatorReducer } from './progress-indicator/progress-indicator-reducer';
+import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-service';
+import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -60,6 +62,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     const sharedWithMePanelMiddleware = dataExplorerMiddleware(
         new SharedWithMeMiddlewareService(services, SHARED_WITH_ME_PANEL_ID)
     );
+    const workflowPanelMiddleware = dataExplorerMiddleware(
+        new WorkflowMiddlewareService(services, WORKFLOW_PANEL_ID)
+    );
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
@@ -68,6 +73,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         favoritePanelMiddleware,
         trashPanelMiddleware,
         sharedWithMePanelMiddleware,
+        workflowPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

@@ -11,6 +11,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
+import { RichTextEditorDialog } from '~/views-components/rich-text-editor-dialog/rich-text-editor-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
@@ -38,6 +39,7 @@ import { Grid } from '@material-ui/core';
 import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -93,6 +95,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.TRASH} component={TrashPanel} />
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+                                <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -117,6 +120,7 @@ export const WorkbenchPanel =
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <RenameFileDialog />
+            <RichTextEditorDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />

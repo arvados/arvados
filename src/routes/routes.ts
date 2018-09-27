@@ -17,6 +17,7 @@ export const Routes = {
     TRASH: '/trash',
     PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`,
     SHARED_WITH_ME: '/shared-with-me',
+    WORKFLOWS: '/workflows'
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -64,3 +65,6 @@ export const matchProcessLogRoute = (route: string) =>
 
 export const matchSharedWithMeRoute = (route: string) =>
     matchPath(route, { path: Routes.SHARED_WITH_ME });
+
+export const matchWorkflowRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.WORKFLOWS });
