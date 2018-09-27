@@ -155,12 +155,6 @@ func (c *multiClusterQueryResponseCollector) collectResponse(resp *http.Response
 func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter, req *http.Request,
 	params url.Values, clusterId *string) bool {
 
-	if !(len(params["count"]) == 1 && (params["count"][0] == `none` ||
-		params["count"][0] == `"none"`)) {
-		// don't federate unless params has count=none
-		return false
-	}
-
 	var filters [][]interface{}
 	err := json.Unmarshal([]byte(params["filters"][0]), &filters)
 	if err != nil {
@@ -173,20 +167,41 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 	if len(filters) == 1 && len(filters[0]) == 3 {
 		f1 := filters[0]
 		lhs := f1[0].(string)
-		op := f1[1].(string)
-		rhs := f1[2].([]interface{})
-		if lhs == "uuid" && op == "in" {
-			for _, i := range rhs {
-				u := i.(string)
-				*clusterId = u[0:5]
-				queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+		if lhs == "uuid" {
+			op, ok := f1[1].(string)
+			if !ok {
+				return false
+			}
+
+			if op == "in" {
+				rhs, ok := f1[2].([]interface{})
+				if ok {
+					for _, i := range rhs {
+						u := i.(string)
+						*clusterId = u[0:5]
+						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+					}
+				}
+			} else if op == "=" {
+				u, ok := f1[2].(string)
+				if ok {
+					*clusterId = u[0:5]
+					queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+				}
 			}
 		}
+
 	}
 
-	if len(queryClusters) == 0 {
-		// Didn't find any ["uuid", "in", ...] filters
+	if len(queryClusters) <= 1 {
+		// Didn't find ["uuid", "in", ...] filters for multiple clusters
 		return false
+	}
+
+	if !(len(params["count"]) == 1 && (params["count"][0] == `none` ||
+		params["count"][0] == `"none"`)) {
+		httpserver.Error(w, "Federated multi-object query must have count=none", http.StatusBadRequest)
+		return true
 	}
 
 	wg := sync.WaitGroup{}
@@ -285,18 +300,10 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		clusterId = params["cluster_id"][0]
 	}
 
-	// TODO: decide if this actually makes sense...
-	if clusterId == "" && req.Method == "POST" && req.Header.Get("Content-Type") == "application/json" {
-		var hasClusterId struct {
-			ClusterID string `json:"cluster_id"`
-		}
-		if err = loadParamsFromJson(req, &hasClusterId); err != nil {
-			httpserver.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		clusterId = hasClusterId.ClusterID
-	}
-
+	// Handle the POST-as-GET special case (workaround for large
+	// GET requests that potentially exceed maximum URL length,
+	// like multi-object queries where the filter has 100s of
+	// items)
 	effectiveMethod := req.Method
 	if req.Method == "POST" && len(params["_method"]) == 1 {
 		effectiveMethod = params["_method"][0]

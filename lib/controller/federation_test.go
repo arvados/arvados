@@ -538,31 +538,7 @@ func (s *FederationSuite) TestUpdateRemoteContainerRequest(c *check.C) {
 	c.Check(cr.Priority, check.Equals, 696)
 }
 
-func (s *FederationSuite) TestCreateRemoteContainerRequest1(c *check.C) {
-	defer s.localServiceReturns404(c).Close()
-	req := httptest.NewRequest("POST", "/arvados/v1/container_requests",
-		strings.NewReader(`{
-  "cluster_id": "zzzzz",
-  "container_request": {
-    "name": "hello world",
-    "state": "Uncommitted",
-    "output_path": "/",
-    "container_image": "123",
-    "command": ["abc"]
-  }
-}
-`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	req.Header.Set("Content-type", "application/json")
-	resp := s.testRequest(req)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr arvados.ContainerRequest
-	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
-	c.Check(cr.Name, check.Equals, "hello world")
-	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
-}
-
-func (s *FederationSuite) TestCreateRemoteContainerRequest2(c *check.C) {
+func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
 	// to avoid parsing the body
