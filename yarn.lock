@@ -188,6 +188,10 @@
     "@types/react" "*"
     redux "^3.6.0 || ^4.0.0"
 
+"@types/shell-quote@1.6.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@types/shell-quote/-/shell-quote-1.6.0.tgz#537b2949a2ebdcb0d353e448fee45b081021963f"
+
 "@types/uuid@3.4.4":
   version "3.4.4"
   resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-3.4.4.tgz#7af69360fa65ef0decb41fd150bf4ca5c0cefdf5"

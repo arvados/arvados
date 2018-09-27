@@ -31,13 +31,18 @@ export type ContextMenuResource = {
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
 };
-
+export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) =>
+    event.nativeEvent.detail === 0;
 export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) =>
     (dispatch: Dispatch) => {
         event.preventDefault();
+        const { left, top } = event.currentTarget.getBoundingClientRect();
         dispatch(
             contextMenuActions.OPEN_CONTEXT_MENU({
-                position: { x: event.clientX, y: event.clientY },
+                position: {
+                    x: event.clientX || left,
+                    y: event.clientY || top,
+                },
                 resource
             })
         );
