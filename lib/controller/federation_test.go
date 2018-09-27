@@ -610,21 +610,34 @@ func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
 func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
 	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		bd, _ := ioutil.ReadAll(req.Body)
-		c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D`)
+		c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D&select=%5B%22uuid%22%2C+%22command%22%5D`)
 		w.WriteHeader(200)
-		w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr"}]}`))
+		w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr", "command": ["abc"]}]}`))
 	})).Close()
-	req := httptest.NewRequest("GET", "/arvados/v1/containers?count=none&filters="+
-		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`, arvadostest.QueuedContainerUUID)), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&select=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID)),
+		url.QueryEscape(`["uuid", "command"]`)),
+		nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var cn arvados.ContainerList
 	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
 	if cn.Items[0].UUID == arvadostest.QueuedContainerUUID {
+		c.Check(cn.Items[0].Command, check.DeepEquals, []string{"echo", "hello"})
+		c.Check(cn.Items[0].ContainerImage, check.Equals, "")
+
 		c.Check(cn.Items[1].UUID, check.Equals, "zhome-xvhdp-cr5queuedcontnr")
+		c.Check(cn.Items[1].Command, check.DeepEquals, []string{"abc"})
+		c.Check(cn.Items[1].ContainerImage, check.Equals, "")
 	} else {
-		c.Check(cn.Items[1].UUID, check.Equals, arvadostest.QueuedContainerUUID)
 		c.Check(cn.Items[0].UUID, check.Equals, "zhome-xvhdp-cr5queuedcontnr")
+		c.Check(cn.Items[0].Command, check.DeepEquals, []string{"abc"})
+		c.Check(cn.Items[0].ContainerImage, check.Equals, "")
+
+		c.Check(cn.Items[1].UUID, check.Equals, arvadostest.QueuedContainerUUID)
+		c.Check(cn.Items[1].Command, check.DeepEquals, []string{"echo", "hello"})
+		c.Check(cn.Items[1].ContainerImage, check.Equals, "")
 	}
 }
