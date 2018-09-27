@@ -11,6 +11,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
+import { RichTextEditorDialog } from '~/views-components/rich-text-editor-dialog/rich-text-editor-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
@@ -119,6 +120,7 @@ export const WorkbenchPanel =
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <RenameFileDialog />
+            <RichTextEditorDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />

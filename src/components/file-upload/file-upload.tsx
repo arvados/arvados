@@ -17,10 +17,9 @@ import { CloudUploadIcon } from "../icon/icon";
 import { formatFileSize, formatProgress, formatUploadSpeed } from "~/common/formatters";
 import { UploadFile } from '~/store/file-uploader/file-uploader-actions';
 
-type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadIcon";
-
-import './file-upload.css';
-import { DOMElement, RefObject } from "react";
+type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadIcon"
+    | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"
+    | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -35,6 +34,47 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         height: "200px",
         position: "relative",
         border: "1px solid rgba(0, 0, 0, 0.42)"
+    },
+    dropzoneBorder: {
+        content: "",
+        position: "absolute",
+        transition: "transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms",
+        pointerEvents: "none",
+        backgroundColor: "#6a1b9a"
+    },
+    dropzoneBorderLeft: {
+        left: -1,
+        top: -1,
+        bottom: -1,
+        width: 2,
+        transform: "scaleY(0)",
+    },
+    dropzoneBorderRight: {
+        right: -1,
+        top: -1,
+        bottom: -1,
+        width: 2,
+        transform: "scaleY(0)",
+    },
+    dropzoneBorderTop: {
+        left: 0,
+        right: 0,
+        top: -1,
+        height: 2,
+        transform: "scaleX(0)",
+    },
+    dropzoneBorderBottom: {
+        left: 0,
+        right: 0,
+        bottom: -1,
+        height: 2,
+        transform: "scaleX(0)",
+    },
+    dropzoneBorderHorzActive: {
+        transform: "scaleY(1)"
+    },
+    dropzoneBorderVertActive: {
+        transform: "scaleX(1)"
     },
     container: {
         height: "100%"
@@ -67,13 +107,13 @@ export const FileUpload = withStyles(styles)(
         render() {
             const { classes, onDrop, disabled, files } = this.props;
             return <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
-                <div className={classnames("dropzone-border-left", { "dropzone-border-left-active": this.state.focused })}/>
-                <div className={classnames("dropzone-border-right", { "dropzone-border-right-active": this.state.focused })}/>
-                <div className={classnames("dropzone-border-top", { "dropzone-border-top-active": this.state.focused })}/>
-                <div className={classnames("dropzone-border-bottom", { "dropzone-border-bottom-active": this.state.focused })}/>
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })}/>
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })}/>
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })}/>
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })}/>
                 <Dropzone className={classes.dropzone}
                     onDrop={files => onDrop(files)}
-                    onClick={(e) => {
+                    onClick={() => {
                         const el = document.getElementsByClassName("file-upload-dropzone")[0];
                         const inputs = el.getElementsByTagName("input");
                         if (inputs.length > 0) {

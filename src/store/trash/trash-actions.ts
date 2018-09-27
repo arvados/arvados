@@ -10,6 +10,8 @@ import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { ResourceKind } from "~/models/resource";
+import { navigateToTrash } from '../navigation/navigation-action';
+import { matchTrashRoute, matchCollectionRoute } from '../../routes/routes';
 
 export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
@@ -46,8 +48,12 @@ export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         try {
             if (isTrashed) {
+                const { location } = getState().router;
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
                 await services.collectionService.untrash(uuid);
+                if (matchCollectionRoute(location ? location.pathname : '')) {
+                    dispatch(navigateToTrash);
+                }
                 dispatch(trashPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Restored from trash",

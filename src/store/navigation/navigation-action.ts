@@ -28,6 +28,8 @@ export const navigateTo = (uuid: string) =>
             dispatch(navigateToSharedWithMe);
         } else if (uuid === SidePanelTreeCategory.WORKFLOWS) {
             dispatch(navigateToWorkflows);
+        } else if (uuid === SidePanelTreeCategory.TRASH) {
+            dispatch(navigateToTrash);
         }
     };
 
