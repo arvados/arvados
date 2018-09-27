@@ -164,10 +164,12 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 
 	// Split the list of uuids by prefix
 	queryClusters := make(map[string][]string)
-	if len(filters) == 1 && len(filters[0]) == 3 {
-		f1 := filters[0]
-		lhs := f1[0].(string)
-		if lhs == "uuid" {
+	for _, f1 := range filters {
+		if len(f1) != 3 {
+			return false
+		}
+		lhs, ok := f1[0].(string)
+		if ok && lhs == "uuid" {
 			op, ok := f1[1].(string)
 			if !ok {
 				return false
@@ -188,19 +190,27 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 					*clusterId = u[0:5]
 					queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
 				}
+			} else {
+				return false
 			}
+		} else {
+			return false
 		}
-
 	}
 
 	if len(queryClusters) <= 1 {
-		// Didn't find ["uuid", "in", ...] filters for multiple clusters
+		// Did not find a list query to search for uuids
+		// across multiple clusters.
 		return false
 	}
 
 	if !(len(params["count"]) == 1 && (params["count"][0] == `none` ||
 		params["count"][0] == `"none"`)) {
-		httpserver.Error(w, "Federated multi-object query must have count=none", http.StatusBadRequest)
+		httpserver.Error(w, "Federated multi-object query must have 'count=none'", http.StatusBadRequest)
+		return true
+	}
+	if len(params["limit"]) != 0 || len(params["offset"]) != 0 || len(params["order"]) != 0 {
+		httpserver.Error(w, "Federated multi-object may not provide 'limit', 'offset' or 'order'.", http.StatusBadRequest)
 		return true
 	}
 
@@ -230,6 +240,9 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 			remoteParams := make(url.Values)
 			remoteParams["_method"] = []string{"GET"}
 			remoteParams["count"] = []string{"none"}
+			if _, ok := params["select"]; ok {
+				remoteParams["select"] = params["select"]
+			}
 			content, err := json.Marshal(v)
 			if err != nil {
 				rc.mtx.Lock()
