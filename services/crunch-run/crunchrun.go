@@ -1364,7 +1364,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	}
 	saved, err := runner.saveLogCollection()
 	if err != nil {
-		return err
+		return fmt.Errorf("error saving log collection: %s", err)
 	}
 	runner.logMtx.Lock()
 	defer runner.logMtx.Unlock()
@@ -1396,7 +1396,6 @@ func (runner *ContainerRunner) saveLogCollection() (response arvados.Collection,
 		err = runner.ArvClient.Update("collections", runner.logUUID, reqBody, &response)
 	}
 	if err != nil {
-		err = fmt.Errorf("error saving log collection: %v", err)
 		return
 	}
 	runner.logUUID = response.UUID
