@@ -69,7 +69,7 @@ export interface ProcessSubprocessesCardDataProps {
     subprocess: Process;
 }
 
-type ProcessSubprocessesCardProps = ProcessSubprocessesCardDataProps & WithStyles<CssRules>;
+type ProcessSubprocessesCardProps = ProcessSubprocessesCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
     ({ classes, onContextMenu, subprocess, theme }: ProcessSubprocessesCardProps) => {

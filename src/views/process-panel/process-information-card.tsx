@@ -70,7 +70,7 @@ export interface ProcessInformationCardDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
-type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules>;
+type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
     ({ classes, process, onContextMenu, theme }: ProcessInformationCardProps) =>
