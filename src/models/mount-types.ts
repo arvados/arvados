@@ -8,7 +8,7 @@ export enum MountKind {
     TEMPORARY_DIRECTORY = 'tmp',
     KEEP = 'keep',
     MOUNTED_FILE = 'file',
-    JSON = 'JSON'
+    JSON = 'json'
 }
 
 export type MountType =
@@ -16,7 +16,8 @@ export type MountType =
     GitTreeMount |
     TemporaryDirectoryMount |
     KeepMount |
-    JSONMount;
+    JSONMount |
+    FileMount;
 
 export interface CollectionMount {
     kind: MountKind.COLLECTION;
@@ -52,5 +53,10 @@ export interface KeepMount {
 
 export interface JSONMount {
     kind: MountKind.JSON;
-    content: string;
+    content: any;
+}
+
+export interface FileMount {
+    kind: MountKind.MOUNTED_FILE;
+    path: string;
 }

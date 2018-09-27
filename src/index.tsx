@@ -39,6 +39,8 @@ import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/curre
 import { processResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
+import { ContainerRequestState } from '~/models/container-request';
+import { MountKind } from './models/mount-types';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
 const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
@@ -109,8 +111,130 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
+            // createSampleProcess(services);
         }
     };
 };
 
+
+const createSampleProcess = ({ containerRequestService }: ServiceRepository) => {
+    containerRequestService.create({
+        ownerUuid: 'c97qk-j7d0g-s3ngc1z0748hsmf',
+        name: 'Simple process 7',
+        state: ContainerRequestState.COMMITTED,
+        mounts: {
+            '/var/spool/cwl': {
+                kind: MountKind.COLLECTION,
+                writable: true,
+            },
+            'stdout': {
+                kind: MountKind.MOUNTED_FILE,
+                path: '/var/spool/cwl/cwl.output.json'
+            },
+            '/var/lib/cwl/workflow.json': {
+                kind: MountKind.JSON,
+                content: {
+                    "cwlVersion": "v1.0",
+                    "$graph": [
+                        {
+                            "class": "CommandLineTool",
+                            "requirements": [
+                                {
+                                  "listing": [
+                                    {
+                                      "entryname": "input_collector.log",
+                                      "entry": "$(inputs.single_file.basename)\n"
+                                    }
+                                  ],
+                                  "class": "InitialWorkDirRequirement"
+                                }
+                              ],
+                            "inputs": [
+                                {
+                                    "type": "File",
+                                    "id": "#input_collector.cwl/single_file"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "type": "File",
+                                    "outputBinding": {
+                                        "glob": "*"
+                                    },
+                                    "id": "#input_collector.cwl/output"
+                                }
+                            ],
+                            "baseCommand": [
+                                "echo"
+                            ],
+                            "id": "#input_collector.cwl"
+                        },
+                        {
+                            "class": "Workflow",
+                            "doc": "This is the description of the workflow",
+                            "inputs": [
+                                {
+                                    "type": "File",
+                                    "label": "Single File",
+                                    "doc": "This should allow for single File selection only.",
+                                    "id": "#main/single_file"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "type": "File",
+                                    "outputSource": "#main/input_collector/output",
+                                    "id": "#main/log_file"
+                                }
+                            ],
+                            "steps": [
+                                {
+                                    "run": "#input_collector.cwl",
+                                    "in": [
+                                        {
+                                            "source": "#main/single_file",
+                                            "id": "#main/input_collector/single_file"
+                                        }
+                                    ],
+                                    "out": [
+                                        "#main/input_collector/output"
+                                    ],
+                                    "id": "#main/input_collector"
+                                }
+                            ],
+                            "id": "#main"
+                        }
+                    ]
+                },
+            },
+            '/var/lib/cwl/cwl.input.json': {
+                kind: MountKind.JSON,
+                content: {
+                    "single_file": {
+                        "class": "File",
+                        "location": "keep:233454526794c0a2d56a305baeff3d30+145/1.txt",
+                        "basename": "fileA"
+                      }
+                },
+            }
+        },
+        runtimeConstraints: {
+            API: true,
+            vcpus: 1,
+            ram: 1073741824,
+        },
+        containerImage: 'arvados/jobs:1.1.4.20180618144723',
+        cwd: '/var/spool/cwl',
+        command: [
+            'arvados-cwl-runner',
+            '--local',
+            '--api=containers',
+            "--project-uuid=c97qk-j7d0g-s3ngc1z0748hsmf",
+            '/var/lib/cwl/workflow.json#main',
+            '/var/lib/cwl/cwl.input.json'
+        ],
+        outputPath: '/var/spool/cwl',
+        priority: 1,
+    });
+};
 
