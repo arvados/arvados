@@ -621,7 +621,7 @@ func (s *FederationSuite) TestGetRemoteContainer(c *check.C) {
 
 func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
-	req := httptest.NewRequest("GET", "/arvados/v1/containers?filters="+
+	req := httptest.NewRequest("GET", "/arvados/v1/containers?count=none&filters="+
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v"]]]`, arvadostest.QueuedContainerUUID)), nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
@@ -634,11 +634,11 @@ func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
 func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
 	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		bd, _ := ioutil.ReadAll(req.Body)
-		c.Check(string(bd), check.Equals, `_method=GET&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D`)
+		c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D`)
 		w.WriteHeader(200)
-		w.Write([]byte(`{"items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr"}]}`))
+		w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr"}]}`))
 	})).Close()
-	req := httptest.NewRequest("GET", "/arvados/v1/containers?filters="+
+	req := httptest.NewRequest("GET", "/arvados/v1/containers?count=none&filters="+
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`, arvadostest.QueuedContainerUUID)), nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
