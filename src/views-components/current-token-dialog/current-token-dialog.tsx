@@ -10,7 +10,6 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import { CurrentTokenDialogData, getCurrentTokenDialogData } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { RootState } from '~/store/store';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 
 type CssRules = 'link' | 'paper' | 'button';

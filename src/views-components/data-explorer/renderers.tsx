@@ -17,7 +17,8 @@ import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
-import { ResourceStatus } from '~/views/workflow-panel/workflow-panel';
+import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
+import { getUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -61,8 +62,6 @@ export const renderDate = (date?: string) => {
     return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
 
-export const PublicUuid = 'qr1hi-tpzed-anonymouspublic';
-
 export const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ownerUuid: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
@@ -81,11 +80,15 @@ export const RosurceWorkflowName = connect(
         return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
     })(renderWorkflowName);
 
+const getPublicUuid = (uuidPrefix: string) => {
+    return `${uuidPrefix}-tpzed-anonymouspublic`;
+};
+
 // do share onClick
-export const resourceShare = (props: { ownerUuid: string }) => {
+export const resourceShare = (uuidPrefix: string, ownerUuid?: string) => {
     return <Tooltip title="Share">
         <IconButton onClick={() => undefined}>
-            {props.ownerUuid === PublicUuid ? <ShareIcon /> : null}
+            {ownerUuid === getPublicUuid(uuidPrefix) ? <ShareIcon /> : null}
         </IconButton>
     </Tooltip>;
 };
@@ -93,11 +96,15 @@ export const resourceShare = (props: { ownerUuid: string }) => {
 export const ResourceShare = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-        return resource || { ownerUuid: '' };
-    })(resourceShare);
+        const uuidPrefix = getUuidPrefix(state);
+        return {
+            ownerUuid: resource ? resource.ownerUuid : '',
+            uuidPrefix
+        };
+    })((props: { ownerUuid?: string, uuidPrefix: string }) => resourceShare(props.uuidPrefix, props.ownerUuid));
 
-export const renderWorkflowStatus = (ownerUuid?: string) => {
-    if (ownerUuid === PublicUuid) {
+export const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
+    if (ownerUuid === getPublicUuid(uuidPrefix)) {
         return renderStatus(ResourceStatus.PUBLIC);
     } else {
         return renderStatus(ResourceStatus.PRIVATE);
@@ -110,8 +117,12 @@ const renderStatus = (status: string) =>
 export const ResourceWorkflowStatus = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-        return { ownerUuid: resource ? resource.ownerUuid : '' };
-    })((props: { ownerUuid?: string }) => renderWorkflowStatus(props.ownerUuid));
+        const uuidPrefix = getUuidPrefix(state);
+        return {
+            ownerUuid: resource ? resource.ownerUuid : '',
+            uuidPrefix
+        };
+    })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {

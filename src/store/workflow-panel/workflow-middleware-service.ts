@@ -11,7 +11,7 @@ import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explor
 import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { SortDirection } from '~/components/data-table/data-column';
-import { WorkflowPanelColumnNames } from '~/views/workflow-panel/workflow-panel';
+import { WorkflowPanelColumnNames } from '~/views/workflow-panel/workflow-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { WorkflowResource } from '~/models/workflow';
 import { ListResults } from '~/services/common-service/common-resource-service';

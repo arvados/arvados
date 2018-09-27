@@ -40,7 +40,7 @@ import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-wi
 import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
-import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel';
+import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
 
