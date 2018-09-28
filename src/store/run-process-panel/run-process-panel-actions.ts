@@ -8,7 +8,7 @@ import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
 
 export const runProcessPanelActions = unionize({
-    CHANGE_STEP: ofType<number>()
+    SET_CURRENT_STEP: ofType<number>()
 });
 
 export type RunProcessPanelAction = UnionOf<typeof runProcessPanelActions>;
@@ -18,4 +18,4 @@ export const loadRunProcessPanel = () =>
         
     };
 
-export const goToStep = (step: number) => runProcessPanelActions.CHANGE_STEP(step);
+export const goToStep = (step: number) => runProcessPanelActions.SET_CURRENT_STEP(step);

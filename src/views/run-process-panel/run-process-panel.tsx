@@ -15,7 +15,7 @@ const mapStateToProps = ({ runProcessPanel }: RootState): RunProcessPanelRootDat
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): RunProcessPanelRootActionProps => ({
-    onClick: (step: number) => {
+    onSetStep: (step: number) => {
         dispatch<any>(goToStep(step));
     }
 });

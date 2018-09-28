@@ -10,17 +10,17 @@ export interface RunProcessPanelRootDataProps {
 }
 
 export interface RunProcessPanelRootActionProps {
-    onClick: (step: number) => void;
+    onSetStep: (step: number) => void;
 }
 
 type RunProcessPanelRootProps = RunProcessPanelRootDataProps & RunProcessPanelRootActionProps;
 
-export const RunProcessPanelRoot = ({ currentStep, onClick, ...props }: RunProcessPanelRootProps) =>
+export const RunProcessPanelRoot = ({ currentStep, onSetStep, ...props }: RunProcessPanelRootProps) =>
     <Stepper activeStep={currentStep} orientation="vertical" elevation={2}>
         <Step>
             <StepLabel>Choose a workflow</StepLabel>
             <StepContent>
-                <Button variant="contained" color="primary" onClick={() => onClick(1)}>
+                <Button variant="contained" color="primary" onClick={() => onSetStep(1)}>
                     Next
                 </Button>
             </StepContent>
@@ -28,7 +28,7 @@ export const RunProcessPanelRoot = ({ currentStep, onClick, ...props }: RunProce
         <Step>
             <StepLabel>Select inputs</StepLabel>
             <StepContent>
-                <Button color="primary" onClick={() => onClick(0)}>
+                <Button color="primary" onClick={() => onSetStep(0)}>
                     Back
                 </Button>
                 <Button variant="contained" color="primary">

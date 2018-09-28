@@ -14,6 +14,6 @@ const initialState: RunProcessPanel = {
 
 export const runProcessPanelReducer = (state = initialState, action: RunProcessPanelAction): RunProcessPanel =>
     runProcessPanelActions.match(action, {
-        CHANGE_STEP: currentStep => ({ ...state, currentStep }),
+        SET_CURRENT_STEP: currentStep => ({ ...state, currentStep }),
         default: () => state
     });
