@@ -117,39 +117,106 @@ func loadParamsFromJson(req *http.Request, loadInto interface{}) error {
 }
 
 type multiClusterQueryResponseCollector struct {
-	mtx       sync.Mutex
 	responses []interface{}
-	errors    []error
+	error     error
 	kind      string
 }
 
 func (c *multiClusterQueryResponseCollector) collectResponse(resp *http.Response,
 	requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
-		c.mtx.Lock()
-		defer c.mtx.Unlock()
-		c.errors = append(c.errors, requestError)
+		c.error = requestError
 		return nil, nil
 	}
 	defer resp.Body.Close()
 	loadInto := make(map[string]interface{})
 	err = json.NewDecoder(resp.Body).Decode(&loadInto)
 
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
 	if err == nil {
 		if resp.StatusCode != http.StatusOK {
-			c.errors = append(c.errors, fmt.Errorf("error %v", loadInto["errors"]))
+			c.error = fmt.Errorf("error %v", loadInto["errors"])
 		} else {
-			c.responses = append(c.responses, loadInto["items"].([]interface{})...)
-			c.kind = loadInto["kind"].(string)
+			c.responses = loadInto["items"].([]interface{})
+			c.kind, _ = loadInto["kind"].(string)
 		}
 	} else {
-		c.errors = append(c.errors, err)
+		c.error = err
 	}
 
 	return nil, nil
+}
+
+func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
+	req *http.Request, params url.Values,
+	clusterID string, uuids []string) (rp []interface{}, kind string, err error) {
+
+	found := make(map[string]bool)
+	for len(uuids) > 0 {
+		var remoteReq http.Request
+		remoteReq.Header = req.Header
+		remoteReq.Method = "POST"
+		remoteReq.URL = &url.URL{Path: req.URL.Path}
+		remoteParams := make(url.Values)
+		remoteParams["_method"] = []string{"GET"}
+		remoteParams["count"] = []string{"none"}
+		if len(params["select"]) != 0 {
+			remoteParams["select"] = params["select"]
+		}
+		content, err := json.Marshal(uuids)
+		if err != nil {
+			return nil, "", err
+		}
+		remoteParams["filters"] = []string{fmt.Sprintf(`[["uuid", "in", %s]]`, content)}
+		enc := remoteParams.Encode()
+		remoteReq.Body = ioutil.NopCloser(bytes.NewBufferString(enc))
+
+		rc := multiClusterQueryResponseCollector{}
+
+		if clusterID == h.handler.Cluster.ClusterID {
+			h.handler.localClusterRequest(w, &remoteReq,
+				rc.collectResponse)
+		} else {
+			h.handler.remoteClusterRequest(clusterID, w, &remoteReq,
+				rc.collectResponse)
+		}
+		if rc.error != nil {
+			return nil, "", rc.error
+		}
+
+		kind = rc.kind
+
+		if len(rc.responses) == 0 {
+			// We got zero responses, no point in doing
+			// another query.
+			return rp, kind, nil
+		}
+
+		rp = append(rp, rc.responses...)
+
+		// Go through the responses and determine what was
+		// returned.  If there are remaining items, loop
+		// around and do another request with just the
+		// stragglers.
+		for _, i := range rc.responses {
+			m, ok := i.(map[string]interface{})
+			if ok {
+				uuid, ok := m["uuid"].(string)
+				if ok {
+					found[uuid] = true
+				}
+			}
+		}
+
+		l := []string{}
+		for _, u := range uuids {
+			if !found[u] {
+				l = append(l, u)
+			}
+		}
+		uuids = l
+	}
+
+	return rp, kind, nil
 }
 
 func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter, req *http.Request,
@@ -164,6 +231,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 
 	// Split the list of uuids by prefix
 	queryClusters := make(map[string][]string)
+	expectCount := 0
 	for _, f1 := range filters {
 		if len(f1) != 3 {
 			return false
@@ -183,12 +251,14 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 						*clusterId = u[0:5]
 						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
 					}
+					expectCount += len(rhs)
 				}
 			} else if op == "=" {
 				u, ok := f1[2].(string)
 				if ok {
 					*clusterId = u[0:5]
 					queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+					expectCount += 1
 				}
 			} else {
 				return false
@@ -199,11 +269,12 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 	}
 
 	if len(queryClusters) <= 1 {
-		// Did not find a list query to search for uuids
-		// across multiple clusters.
+		// Query does not search for uuids across multiple
+		// clusters.
 		return false
 	}
 
+	// Validations
 	if !(len(params["count"]) == 1 && (params["count"][0] == `none` ||
 		params["count"][0] == `"none"`)) {
 		httpserver.Error(w, "Federated multi-object query must have 'count=none'", http.StatusBadRequest)
@@ -213,73 +284,87 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 		httpserver.Error(w, "Federated multi-object may not provide 'limit', 'offset' or 'order'.", http.StatusBadRequest)
 		return true
 	}
+	if expectCount > h.handler.Cluster.MaxItemsPerResponse {
+		httpserver.Error(w, fmt.Sprintf("Federated multi-object request for %v objects which is more than max page size %v.",
+			expectCount, h.handler.Cluster.MaxItemsPerResponse), http.StatusBadRequest)
+		return true
+	}
+	if len(params["select"]) == 1 {
+		foundUUID := false
+		var selects []interface{}
+		err := json.Unmarshal([]byte(params["select"][0]), &selects)
+		if err != nil {
+			httpserver.Error(w, err.Error(), http.StatusBadRequest)
+			return true
+		}
 
+		for _, r := range selects {
+			if r.(string) == "uuid" {
+				foundUUID = true
+				break
+			}
+		}
+		if !foundUUID {
+			httpserver.Error(w, "Federated multi-object request must include 'uuid' in 'select'", http.StatusBadRequest)
+			return true
+		}
+	}
+
+	// Perform parallel requests to each cluster
+
+	// use channel as a semaphore to limit the number of parallel
+	// requests at a time
+	sem := make(chan bool, h.handler.Cluster.ParallelRemoteRequests)
+	defer close(sem)
 	wg := sync.WaitGroup{}
 
-	// use channel as a semaphore to limit it to 4
-	// parallel requests at a time
-	sem := make(chan bool, 4)
-	defer close(sem)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	mtx := sync.Mutex{}
+	errors := []error{}
+	var completeResponses []interface{}
+	var kind string
 
-	rc := multiClusterQueryResponseCollector{}
 	for k, v := range queryClusters {
+		if len(v) == 0 {
+			// Nothing to query
+			continue
+		}
+
 		// blocks until it can put a value into the
 		// channel (which has a max queue capacity)
 		sem <- true
 		wg.Add(1)
 		go func(k string, v []string) {
-			defer func() {
-				wg.Done()
-				<-sem
-			}()
-			var remoteReq http.Request
-			remoteReq.Header = req.Header
-			remoteReq.Method = "POST"
-			remoteReq.URL = &url.URL{Path: req.URL.Path}
-			remoteParams := make(url.Values)
-			remoteParams["_method"] = []string{"GET"}
-			remoteParams["count"] = []string{"none"}
-			if _, ok := params["select"]; ok {
-				remoteParams["select"] = params["select"]
-			}
-			content, err := json.Marshal(v)
-			if err != nil {
-				rc.mtx.Lock()
-				defer rc.mtx.Unlock()
-				rc.errors = append(rc.errors, err)
-				return
-			}
-			remoteParams["filters"] = []string{fmt.Sprintf(`[["uuid", "in", %s]]`, content)}
-			enc := remoteParams.Encode()
-			remoteReq.Body = ioutil.NopCloser(bytes.NewBufferString(enc))
-
-			if k == h.handler.Cluster.ClusterID {
-				h.handler.localClusterRequest(w, &remoteReq,
-					rc.collectResponse)
+			rp, kn, err := h.remoteQueryUUIDs(w, req, params, k, v)
+			mtx.Lock()
+			if err == nil {
+				completeResponses = append(completeResponses, rp...)
+				kind = kn
 			} else {
-				h.handler.remoteClusterRequest(k, w, &remoteReq,
-					rc.collectResponse)
+				errors = append(errors, err)
 			}
+			mtx.Unlock()
+			wg.Done()
+			<-sem
 		}(k, v)
 	}
 	wg.Wait()
 
-	if len(rc.errors) > 0 {
-		// parallel query
+	if len(errors) > 0 {
 		var strerr []string
-		for _, e := range rc.errors {
+		for _, e := range errors {
 			strerr = append(strerr, e.Error())
 		}
 		httpserver.Errors(w, strerr, http.StatusBadGateway)
-	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		itemList := make(map[string]interface{})
-		itemList["items"] = rc.responses
-		itemList["kind"] = rc.kind
-		json.NewEncoder(w).Encode(itemList)
+		return true
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	itemList := make(map[string]interface{})
+	itemList["items"] = completeResponses
+	itemList["kind"] = kind
+	json.NewEncoder(w).Encode(itemList)
 
 	return true
 }
@@ -580,9 +665,9 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	var errors []string
 	var errorCode int = 404
 
-	// use channel as a semaphore to limit it to 4
-	// parallel requests at a time
-	sem := make(chan bool, 4)
+	// use channel as a semaphore to limit the number of parallel
+	// requests at a time
+	sem := make(chan bool, h.handler.Cluster.ParallelRemoteRequests)
 	defer close(sem)
 	for remoteID := range h.handler.Cluster.RemoteClusters {
 		// blocks until it can put a value into the

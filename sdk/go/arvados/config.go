@@ -51,13 +51,15 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 }
 
 type Cluster struct {
-	ClusterID          string `json:"-"`
-	ManagementToken    string
-	NodeProfiles       map[string]NodeProfile
-	InstanceTypes      InstanceTypeMap
-	HTTPRequestTimeout Duration
-	RemoteClusters     map[string]RemoteCluster
-	PostgreSQL         PostgreSQL
+	ClusterID              string `json:"-"`
+	ManagementToken        string
+	NodeProfiles           map[string]NodeProfile
+	InstanceTypes          InstanceTypeMap
+	HTTPRequestTimeout     Duration
+	RemoteClusters         map[string]RemoteCluster
+	PostgreSQL             PostgreSQL
+	MaxItemsPerResponse    int
+	ParallelRemoteRequests int
 }
 
 type PostgreSQL struct {
