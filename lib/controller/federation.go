@@ -120,6 +120,7 @@ type multiClusterQueryResponseCollector struct {
 	responses []interface{}
 	error     error
 	kind      string
+	clusterID string
 }
 
 func (c *multiClusterQueryResponseCollector) collectResponse(resp *http.Response,
@@ -128,19 +129,20 @@ func (c *multiClusterQueryResponseCollector) collectResponse(resp *http.Response
 		c.error = requestError
 		return nil, nil
 	}
+
 	defer resp.Body.Close()
 	loadInto := make(map[string]interface{})
 	err = json.NewDecoder(resp.Body).Decode(&loadInto)
 
 	if err == nil {
 		if resp.StatusCode != http.StatusOK {
-			c.error = fmt.Errorf("error %v", loadInto["errors"])
+			c.error = fmt.Errorf("error fetching from %v (%v): %v", c.clusterID, resp.Status, loadInto["errors"])
 		} else {
 			c.responses = loadInto["items"].([]interface{})
 			c.kind, _ = loadInto["kind"].(string)
 		}
 	} else {
-		c.error = err
+		c.error = fmt.Errorf("error fetching from %v (%v): %v", c.clusterID, resp.Status, err)
 	}
 
 	return nil, nil
@@ -170,7 +172,7 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 		enc := remoteParams.Encode()
 		remoteReq.Body = ioutil.NopCloser(bytes.NewBufferString(enc))
 
-		rc := multiClusterQueryResponseCollector{}
+		rc := multiClusterQueryResponseCollector{clusterID: clusterID}
 
 		if clusterID == h.handler.Cluster.ClusterID {
 			h.handler.localClusterRequest(w, &remoteReq,

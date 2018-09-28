@@ -637,6 +637,19 @@ func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
 	c.Check(mp["zhome-xvhdp-cr5queuedcontnr"].ContainerImage, check.Equals, "")
 }
 
+func (s *FederationSuite) TestListMultiRemoteContainerError(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&select=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID)),
+		url.QueryEscape(`["uuid", "command"]`)),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
+	s.checkJSONErrorMatches(c, resp, `error fetching from zhome \(404 Not Found\): EOF`)
+}
+
 func (s *FederationSuite) TestListMultiRemoteContainersPaged(c *check.C) {
 
 	callCount := 0
