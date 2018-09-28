@@ -1206,7 +1206,7 @@ func (runner *ContainerRunner) updateLogs() {
 		}
 		saveAtTime = time.Now().Add(crunchLogUpdatePeriod)
 		saveAtSize = runner.LogCollection.Size() + crunchLogUpdateSize
-		saved, err := runner.saveLogCollection()
+		saved, err := runner.saveLogCollection(false)
 		if err != nil {
 			runner.CrunchLog.Printf("error updating log collection: %s", err)
 			continue
@@ -1362,7 +1362,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 		// -- it exists only to send logs to other channels.
 		return nil
 	}
-	saved, err := runner.saveLogCollection()
+	saved, err := runner.saveLogCollection(true)
 	if err != nil {
 		return fmt.Errorf("error saving log collection: %s", err)
 	}
@@ -1372,7 +1372,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	return nil
 }
 
-func (runner *ContainerRunner) saveLogCollection() (response arvados.Collection, err error) {
+func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.Collection, err error) {
 	runner.logMtx.Lock()
 	defer runner.logMtx.Unlock()
 	if runner.LogsPDH != nil {
@@ -1384,11 +1384,18 @@ func (runner *ContainerRunner) saveLogCollection() (response arvados.Collection,
 		err = fmt.Errorf("error creating log manifest: %v", err)
 		return
 	}
-	reqBody := arvadosclient.Dict{
-		"collection": arvadosclient.Dict{
-			"is_trashed":    true,
-			"name":          "logs for " + runner.Container.UUID,
-			"manifest_text": mt}}
+	updates := arvadosclient.Dict{
+		"name":          "logs for " + runner.Container.UUID,
+		"manifest_text": mt,
+	}
+	if final {
+		updates["is_trashed"] = true
+	} else {
+		exp := time.Now().Add(crunchLogUpdatePeriod * 24)
+		updates["trash_at"] = exp
+		updates["delete_at"] = exp
+	}
+	reqBody := arvadosclient.Dict{"collection": updates}
 	if runner.logUUID == "" {
 		reqBody["ensure_unique_name"] = true
 		err = runner.ArvClient.Create("collections", reqBody, &response)
