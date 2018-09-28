@@ -47,6 +47,7 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
+import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -198,16 +199,19 @@ export const loadCollection = (uuid: string) =>
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
                     SHARED: collection => {
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
                     TRASHED: collection => {
                         dispatch(updateResources([collection]));
                         dispatch(setTrashBreadcrumbs(''));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
 
                 });
