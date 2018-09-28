@@ -6,7 +6,7 @@ import * as React from "react";
 import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
+import { WorkflowTreePickerField } from '~/views-components/workflow-tree-picker/workflow-tree-picker';
 import { MOVE_TO_VALIDATION } from '~/validators/validators';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 
@@ -21,6 +21,6 @@ export const DialogMoveTo = (props: WithDialogProps<string> & InjectedFormProps<
 const MoveToDialogFields = () =>
     <Field
         name="ownerUuid"
-        component={ProjectTreePickerField}
+        component={WorkflowTreePickerField}
         validate={MOVE_TO_VALIDATION} />;
 

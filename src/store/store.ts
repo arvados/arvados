@@ -37,6 +37,7 @@ import { SharedWithMeMiddlewareService } from './shared-with-me-panel/shared-wit
 import { progressIndicatorReducer } from './progress-indicator/progress-indicator-reducer';
 import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-service';
 import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
+import { workflowTreePickerReducer } from './workflow-tree-picker/workflow-tree-picker-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -97,5 +98,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     treePicker: treePickerReducer,
     fileUploader: fileUploaderReducer,
     processPanel: processPanelReducer,
-    progressIndicator: progressIndicatorReducer
+    progressIndicator: progressIndicatorReducer,
+    workflowTreePicker: workflowTreePickerReducer
 });
