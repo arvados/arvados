@@ -35,6 +35,7 @@ import { processPanelReducer } from '~/store/process-panel/process-panel-reducer
 import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { SharedWithMeMiddlewareService } from './shared-with-me-panel/shared-with-me-middleware-service';
 import { progressIndicatorReducer } from './progress-indicator/progress-indicator-reducer';
+import { runProcessPanelReducer } from '~/store/run-process-panel/run-process-panel-reducer';
 import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-service';
 import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
 import { workflowTreePickerReducer } from './workflow-tree-picker/workflow-tree-picker-reducer';
@@ -99,5 +100,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     fileUploader: fileUploaderReducer,
     processPanel: processPanelReducer,
     progressIndicator: progressIndicatorReducer,
-    workflowTreePicker: workflowTreePickerReducer
+    workflowTreePicker: workflowTreePickerReducer,
+    runProcessPanel: runProcessPanelReducer
 });
