@@ -26,6 +26,8 @@ export const navigateTo = (uuid: string) =>
             dispatch<any>(navigateToFavorites);
         } else if (uuid === SidePanelTreeCategory.SHARED_WITH_ME) {
             dispatch(navigateToSharedWithMe);
+        } else if (uuid === SidePanelTreeCategory.WORKFLOWS) {
+            dispatch(navigateToWorkflows);
         } else if (uuid === SidePanelTreeCategory.TRASH) {
             dispatch(navigateToTrash);
         }
@@ -34,6 +36,8 @@ export const navigateTo = (uuid: string) =>
 export const navigateToFavorites = push(Routes.FAVORITES);
 
 export const navigateToTrash = push(Routes.TRASH);
+
+export const navigateToWorkflows = push(Routes.WORKFLOWS);
 
 export const navigateToProject = compose(push, getProjectUrl);
 

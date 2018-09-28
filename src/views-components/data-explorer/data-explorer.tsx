@@ -15,7 +15,7 @@ import { DataColumns } from "~/components/data-table/data-table";
 interface Props {
     id: string;
     onRowClick: (item: any) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
 }

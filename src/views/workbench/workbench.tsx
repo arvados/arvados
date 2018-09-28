@@ -39,6 +39,7 @@ import { Grid } from '@material-ui/core';
 import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -94,6 +95,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.TRASH} component={TrashPanel} />
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+                                <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
