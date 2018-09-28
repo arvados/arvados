@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography, withStyles } from '@material-ui/core';
+import { Grid, Typography, withStyles, Tooltip, IconButton } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon } from '~/components/icon/icon';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect } from 'react-redux';
@@ -16,6 +16,9 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose } from 'redux';
+import { WorkflowResource } from '~/models/workflow';
+import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
+import { getUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -48,6 +51,8 @@ export const renderIcon = (item: { kind: string }) => {
             return <CollectionIcon />;
         case ResourceKind.PROCESS:
             return <ProcessIcon />;
+        case ResourceKind.WORKFLOW:
+            return <WorkflowIcon />;
         default:
             return <DefaultIcon />;
     }
@@ -56,6 +61,68 @@ export const renderIcon = (item: { kind: string }) => {
 export const renderDate = (date?: string) => {
     return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
+
+export const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ownerUuid: string }) =>
+    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
+        <Grid item>
+            {renderIcon(item)}
+        </Grid>
+        <Grid item>
+            <Typography color="primary" style={{ width: '100px' }}>
+                {item.name}
+            </Typography>
+        </Grid>
+    </Grid>;
+
+export const RosurceWorkflowName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
+    })(renderWorkflowName);
+
+const getPublicUuid = (uuidPrefix: string) => {
+    return `${uuidPrefix}-tpzed-anonymouspublic`;
+};
+
+// do share onClick
+export const resourceShare = (uuidPrefix: string, ownerUuid?: string) => {
+    return <Tooltip title="Share">
+        <IconButton onClick={() => undefined}>
+            {ownerUuid === getPublicUuid(uuidPrefix) ? <ShareIcon /> : null}
+        </IconButton>
+    </Tooltip>;
+};
+
+export const ResourceShare = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        const uuidPrefix = getUuidPrefix(state);
+        return {
+            ownerUuid: resource ? resource.ownerUuid : '',
+            uuidPrefix
+        };
+    })((props: { ownerUuid?: string, uuidPrefix: string }) => resourceShare(props.uuidPrefix, props.ownerUuid));
+
+export const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
+    if (ownerUuid === getPublicUuid(uuidPrefix)) {
+        return renderStatus(ResourceStatus.PUBLIC);
+    } else {
+        return renderStatus(ResourceStatus.PRIVATE);
+    }
+};
+
+const renderStatus = (status: string) =>
+    <Typography noWrap style={{ width: '60px' }}>{status}</Typography>;
+
+export const ResourceWorkflowStatus = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        const uuidPrefix = getUuidPrefix(state);
+        return {
+            ownerUuid: resource ? resource.ownerUuid : '',
+            uuidPrefix
+        };
+    })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {

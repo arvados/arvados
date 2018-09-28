@@ -28,6 +28,7 @@ const mergeProps = (
         ...props
     });
 
+// TODO: Remove as any
 export const [FileRemoveDialog] = [ConfirmationDialog]
-    .map(connect(mapStateToProps, mapDispatchToProps, mergeProps))
+    .map(connect(mapStateToProps, mapDispatchToProps, mergeProps) as any)
     .map(withDialog(FILE_REMOVE_DIALOG));

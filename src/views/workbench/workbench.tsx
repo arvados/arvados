@@ -40,6 +40,7 @@ import { TrashPanel } from "~/views/trash-panel/trash-panel";
 import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-panel';
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
+import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -96,6 +97,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
+                                <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
