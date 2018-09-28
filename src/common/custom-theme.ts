@@ -123,6 +123,16 @@ export const themeOptions: ArvadosThemeOptions = {
                     color: arvadosPurple
                 }
             }
+        },
+        MuiStepIcon: {
+            root: {
+                '&$active': {
+                    color: arvadosPurple
+                },
+                '&$completed': {
+                    color: 'inherited'
+                },
+            }
         }
     },
     mixins: {

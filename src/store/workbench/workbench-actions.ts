@@ -46,6 +46,7 @@ import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
+import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -350,11 +351,18 @@ export const loadSharedWithMe = handleFirstTimeLoad(async (dispatch: Dispatch) =
     await dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
 });
 
+export const loadRunProcess = handleFirstTimeLoad(
+    async (dispatch: Dispatch) => {
+        dispatch<any>(loadRunProcessPanel());
+    }
+);
+
 export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.WORKFLOWS));
     await dispatch(loadWorkflowPanel());
     dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
 });
+
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {
         const uuid = typeof project === 'string' ? project : project.uuid;
