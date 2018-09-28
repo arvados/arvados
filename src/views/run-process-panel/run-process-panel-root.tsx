@@ -28,11 +28,11 @@ export const RunProcessPanelRoot = ({ currentStep, onClick, ...props }: RunProce
         <Step>
             <StepLabel>Select inputs</StepLabel>
             <StepContent>
-                <Button onClick={() => onClick(0)}>
+                <Button color="primary" onClick={() => onClick(0)}>
                     Back
                 </Button>
                 <Button variant="contained" color="primary">
-                    Finish
+                    Run Process
                 </Button>
             </StepContent>
         </Step>
