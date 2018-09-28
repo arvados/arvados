@@ -697,7 +697,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal [logpdh_time2], Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq
   end
 
-  test "auth_uuid can set output, progress on running container -- but not state, log" do
+  test "auth_uuid can set output, progress, runtime_status, state on running container -- but not log" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -710,9 +710,11 @@ class ContainerTest < ActiveSupport::TestCase
     Thread.current[:user] = auth.user
 
     assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
     assert c.update_attributes(progress: 0.5)
     refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
-    refute c.update_attributes(state: Container::Complete)
+    c.reload
+    assert c.update_attributes(state: Container::Complete, exit_code: 0)
   end
 
   test "not allowed to set output that is not readable by current user" do
