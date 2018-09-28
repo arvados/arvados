@@ -31,13 +31,19 @@ export interface CommandLineTool {
     outputs: any[];
 }
 
-export interface CommandInputParameter {
-    id: string;
-    label?: string;
-    doc?: string | string[];
-    default?: any;
-    type?: CWLType | CWLType[] | CommandInputEnumSchema | CommandInputArraySchema;
-}
+export type CommandInputParameter =
+    BooleanCommandInputParameter |
+    IntCommandInputParameter |
+    LongCommandInputParameter |
+    FloatCommandInputParameter |
+    DoubleCommandInputParameter |
+    StringCommandInputParameter |
+    FileCommandInputParameter |
+    DirectoryCommandInputParameter |
+    StringArrayCommandInputParameter |
+    FileArrayCommandInputParameter |
+    DirectoryArrayCommandInputParameter |
+    EnumCommandInputParameter;
 
 export enum CWLType {
     NULL = 'null',
@@ -58,8 +64,8 @@ export interface CommandInputEnumSchema {
     name?: string;
 }
 
-export interface CommandInputArraySchema {
-    items: CWLType;
+export interface CommandInputArraySchema<ItemType> {
+    items: ItemType;
     type: 'array';
     label?: string;
 }
@@ -77,6 +83,29 @@ export interface Directory {
     path?: string;
     basename?: string;
 }
+
+export interface GenericCommandInputParameter<Type, Value> {
+    id: string;
+    label?: string;
+    doc?: string | string[];
+    default?: Value;
+    type?: Type | Array<Type | CWLType.NULL>;
+}
+export type GenericArrayCommandInputParameter<Type, Value> = GenericCommandInputParameter<CommandInputArraySchema<Type>, Value[]>;
+
+export type BooleanCommandInputParameter = GenericCommandInputParameter<CWLType.BOOLEAN, boolean>;
+export type IntCommandInputParameter = GenericCommandInputParameter<CWLType.INT, number>;
+export type LongCommandInputParameter = GenericCommandInputParameter<CWLType.LONG, number>;
+export type FloatCommandInputParameter = GenericCommandInputParameter<CWLType.FLOAT, number>;
+export type DoubleCommandInputParameter = GenericCommandInputParameter<CWLType.DOUBLE, number>;
+export type StringCommandInputParameter = GenericCommandInputParameter<CWLType.STRING, string>;
+export type FileCommandInputParameter = GenericCommandInputParameter<CWLType.FILE, File>;
+export type DirectoryCommandInputParameter = GenericCommandInputParameter<CWLType.DIRECTORY, Directory>;
+export type EnumCommandInputParameter = GenericCommandInputParameter<CommandInputEnumSchema, string>;
+
+export type StringArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.STRING, string>;
+export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
+export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
 
 export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResoruceDefinition => {
     const definition = safeLoad(workflow.definition);

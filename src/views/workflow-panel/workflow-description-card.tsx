@@ -7,8 +7,8 @@ import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs, Pap
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, stringifyInputType } from '~/models/workflow';
-import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs } from '~/models/workflow';
+import { WorkflowInput } from '~/components/workflow-inputs-form/workflow-input';
 
 export type CssRules = 'root' | 'tab';
 
@@ -54,7 +54,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 </CardContent>}
                 {value === 1 && <CardContent>
                     {workflow && this.inputs
-                        ? this.inputs.map(input => <DetailsAttribute key={input.id} label={input.label || ''} value={stringifyInputType(input)} />)
+                        ? this.inputs.map(input => <WorkflowInput key={input.id} input={input}/>)
                         : <DataTableDefaultView
                             icon={WorkflowIcon}
                             messages={['Please select a workflow to see its description.']} />}
