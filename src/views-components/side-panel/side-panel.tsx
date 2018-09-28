@@ -36,11 +36,11 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
 const mapStateToProps = (state: RootState) => ({
 });
 
-export const SidePanel = compose(
-    withStyles(styles),
-    connect(mapStateToProps, mapDispatchToProps)
-)(({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
+export const SidePanel = withStyles(styles)(
+    connect(mapStateToProps, mapDispatchToProps)(
+    ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps) =>
     <Grid item xs>
         <SidePanelButton />
         <SidePanelTree {...props} />
-    </Grid>);
+    </Grid>
+));

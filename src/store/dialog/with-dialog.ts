@@ -18,9 +18,9 @@ export type WithDialogDispatchProps = {
 };
 
 export type WithDialogProps<T> = WithDialogStateProps<T> & WithDialogDispatchProps;
-
 export const withDialog = (id: string) =>
-    <T, P>(component: React.ComponentType<WithDialogProps<T> & P>) =>
+    // TODO: How to make compiler happy with & P instead of & any?
+    <T, P>(component: React.ComponentType<WithDialogProps<T> & any>) =>
         connect(mapStateToProps(id), mapDispatchToProps(id))(component);
 
 export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {

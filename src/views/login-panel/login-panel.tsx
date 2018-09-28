@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { compose } from 'redux';
 import { connect, DispatchProp } from 'react-redux';
 import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
@@ -51,17 +50,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules>;
 
-export const LoginPanel = compose(
-    withStyles(styles),
-    connect()
-)(({ classes, dispatch }: LoginPanelProps) => 
+export const LoginPanel = withStyles(styles)(connect()(
+    ({ classes, dispatch }: LoginPanelProps) =>
     <Grid container direction="column" item xs alignItems="center" justify="center" className={classes.root}>
         <Grid item className={classes.container}>
             <Typography variant="title" align="center" className={classes.title}>
                 Welcome to the Arvados Wrokbench
             </Typography>
             <Typography variant="body1" className={classes.content}>
-                The "Log in" button below will show you a Google sign-in page. 
+                The "Log in" button below will show you a Google sign-in page.
                 After you assure Google that you want to log in here with your Google account, you will be redirected back here to Arvados Workbench.
             </Typography>
             <Typography variant="body1" className={classes.content}>
@@ -80,4 +77,4 @@ export const LoginPanel = compose(
             </Typography>
         </Grid>
     </Grid>
-);
+));

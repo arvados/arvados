@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, DialogContentText } from "@material-ui/core";
-import { WithDialogProps } from "../../store/dialog/with-dialog";
+import { WithDialogProps } from "~/store/dialog/with-dialog";
 
 export interface ConfirmationDialogDataProps {
     title: string;
