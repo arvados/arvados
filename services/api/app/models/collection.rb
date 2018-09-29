@@ -27,6 +27,7 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
+  validate :old_versions_cannot_be_updated, on: :update
   before_save :set_file_names
   before_create :set_current_version_uuid
 
@@ -252,7 +253,10 @@ class Collection < ArvadosModel
           end
         end
         Collection.where('current_version_uuid = ? AND uuid != ?', uuid, uuid).each do |c|
-          c.update_attributes!(updates)
+          c.attributes = updates
+          # Use a different validation context to skip the 'old_versions_cannot_be_updated'
+          # validator, as on this case it is legal to update some fields.
+          c.save(context: :update_old_versions)
         end
         # Also update current object just in case a new version will be created,
         # as it has to receive the same values for the synced attributes.
@@ -583,6 +587,14 @@ class Collection < ArvadosModel
       if !c.is_a?(String) || c == ''
         raise ArvadosModel::InvalidStateTransitionError.new("storage classes should only be non-empty strings")
       end
+    end
+  end
+
+  def old_versions_cannot_be_updated
+    # We check for the '_was' values just in case the update operation
+    # includes a change on current_version_uuid or uuid.
+    if current_version_uuid_was != uuid_was
+      raise ArvadosModel::PermissionDeniedError.new("previous versions cannot be updated")
     end
   end
 end

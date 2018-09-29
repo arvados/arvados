@@ -128,6 +128,42 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "older versions should no be directly updatable" do
+    Rails.configuration.collection_versioning = true
+    act_as_system_user do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      # Get the old version
+      c_old = Collection.where(current_version_uuid: c.uuid, version: 1).first
+      assert_not_nil c_old
+      # With collection versioning still being enabled, try to update
+      assert_raises ArvadosModel::PermissionDeniedError do
+        c_old.update_attributes(name: 'this was foo')
+      end
+      c_old.reload
+      assert_equal 'foo', c_old.name
+      # Try to fool the validator attempting to make c_old to look like a
+      # current version, it should also fail.
+      assert_raises ArvadosModel::PermissionDeniedError do
+        c_old.update_attributes(current_version_uuid: c_old.uuid)
+      end
+      c_old.reload
+      assert_equal c.uuid, c_old.current_version_uuid
+      # Now disable collection versioning, it should behave the same way
+      Rails.configuration.collection_versioning = false
+      assert_raises ArvadosModel::PermissionDeniedError do
+        c_old.update_attributes(name: 'this was foo')
+      end
+      c_old.reload
+      assert_equal 'foo', c_old.name
+    end
+  end
+
   [
     ['owner_uuid', 'zzzzz-tpzed-d9tiejq69daie8f', 'zzzzz-tpzed-xurymjxw79nv3jz'],
     ['replication_desired', 2, 3],
