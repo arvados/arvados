@@ -4,12 +4,13 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { WorkflowResource, CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter } from '~/models/workflow';
+import { WorkflowResource, CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
-import { StringCommandInputParameter, FloatCommandInputParameter } from '../../models/workflow';
+import { StringCommandInputParameter, FloatCommandInputParameter, File } from '../../models/workflow';
 import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
 import { BooleanInput } from './inputs/boolean-input';
+import { FileInput } from './inputs/file-input';
 
 const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -33,6 +34,8 @@ export const RunProcessInputsForm = reduxForm<any, RunProcessInputFormProps>({
                     return <FloatInput key={input.id} input={input as FloatCommandInputParameter} />;
                 case input.type === CWLType.STRING:
                     return <StringInput key={input.id} input={input as StringCommandInputParameter} />;
+                case input.type === CWLType.FILE:
+                    return <FileInput key={input.id} input={input as FileCommandInputParameter} />;
                 default:
                     return null;
             }
