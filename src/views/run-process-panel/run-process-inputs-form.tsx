@@ -4,11 +4,12 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { WorkflowResource, CommandInputParameter, CWLType, IntCommandInputParameter } from '~/models/workflow';
+import { WorkflowResource, CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
 import { StringCommandInputParameter, FloatCommandInputParameter } from '../../models/workflow';
 import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
+import { BooleanInput } from './inputs/boolean-input';
 
 const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -22,6 +23,8 @@ export const RunProcessInputsForm = reduxForm<any, RunProcessInputFormProps>({
     <form>
         {props.inputs.map(input => {
             switch (true) {
+                case input.type === CWLType.BOOLEAN:
+                    return <BooleanInput key={input.id} input={input as BooleanCommandInputParameter} />;
                 case input.type === CWLType.INT:
                 case input.type === CWLType.LONG:
                     return <IntInput key={input.id} input={input as IntCommandInputParameter} />;
