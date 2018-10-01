@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { getInputLabel, FloatCommandInputParameter } from '~/models/workflow';
+import { getInputLabel, FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
 import { Field, WrappedFieldProps } from 'redux-form';
 import { TextField } from '~/components/text-field/text-field';
 import { isNumber } from '~/validators/is-number';
@@ -17,8 +17,10 @@ export const FloatInput = ({ input }: FloatInputProps) =>
         component={DecimalInput}
         parse={parseFloat}
         format={value => isNaN(value) ? '' : JSON.stringify(value)}
-        validate={[isNumber]} />;
-
+        validate={[
+            isRequiredInput(input)
+                ? isNumber
+                : () => undefined,]} />;
 
 class DecimalInput extends React.Component<WrappedFieldProps & { label?: string }> {
     state = {
