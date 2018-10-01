@@ -17,8 +17,9 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { WrappedFieldProps } from 'redux-form';
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 type WorkflowTreePickerProps = Pick<MainWorkflowTreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
 
@@ -55,7 +56,7 @@ const getNotSelectedTreePickerKind = (pickerId: string) => {
     return [TreePickerId.PROJECTS, TreePickerId.FAVORITES, TreePickerId.SHARED_WITH_ME].filter(nodeId => nodeId !== pickerId);
 };
 
-export enum TreePickerId {
+enum TreePickerId {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
     FAVORITES = 'Favorites'
@@ -75,6 +76,8 @@ export const WorkflowTreePicker = connect(undefined, mapDispatchToProps)((props:
 
 export const loadProjectTreePicker = (nodeId: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log(nodeId);
+        console.log(extractUuidKind(nodeId));
         dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.PROJECTS }));
 
         const ownerUuid = nodeId.length === 0 ? services.authService.getUuid() || '' : nodeId;
@@ -84,9 +87,11 @@ export const loadProjectTreePicker = (nodeId: string) =>
             .addEqual('ownerUuid', ownerUuid)
             .getFilters();
 
-        const { items } = await services.groupsService.contents(ownerUuid, { filters });
+        const { items } = (extractUuidKind(nodeId) === ResourceKind.COLLECTION)
+            ? dispatch<any>(loadCollectionFiles(nodeId))
+            : await services.groupsService.contents(ownerUuid, { filters });
 
-        dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.PROJECTS));
+        await dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.PROJECTS));
     };
 
 export const loadFavoriteTreePicker = (nodeId: string) =>
@@ -111,7 +116,6 @@ export const loadFavoriteTreePicker = (nodeId: string) =>
     };
 
 const getProjectPickerIcon = (item: TreeItem<ProjectResource>) => {
-    console.log(item);
     switch (item.data.name) {
         case TreePickerId.FAVORITES:
             return FavoriteIcon;
@@ -129,7 +133,7 @@ const getResourceIcon = (item: TreeItem<GroupContentsResource>) => {
         case ResourceKind.COLLECTION:
             return CollectionIcon;
         case ResourceKind.PROJECT:
-            return ProjectsIcon;
+            return ProjectIcon;
         default:
             return ProjectIcon;
     }
@@ -143,7 +147,7 @@ const renderTreeItem = (item: TreeItem<ProjectResource>) =>
         hasMargin={true} />;
 
 
-export const receiveTreePickerData = (nodeId: string, items: GroupContentsResource[], pickerId: string) =>
+export const receiveTreePickerData = (nodeId: string, items: GroupContentsResource[] = [], pickerId: string) =>
     (dispatch: Dispatch) => {
         dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             nodeId,
