@@ -131,7 +131,8 @@ def upload_dependencies(arvrunner, name, document_loader,
     def only_real(obj):
         # Only interested in local files than need to be uploaded,
         # don't include file literals, keep references, etc.
-        if obj.get("location", "").startswith("file:"):
+        sp = obj.get("location", "").split(":")
+        if len(sp) > 1 and sp[0] in ("file", "http", "https"):
             sc.append(obj)
 
     visit_class(sc_result, ("File", "Directory"), only_real)

@@ -18,7 +18,7 @@ type Collection struct {
 	UUID                      string     `json:"uuid,omitempty"`
 	OwnerUUID                 string     `json:"owner_uuid,omitempty"`
 	TrashAt                   *time.Time `json:"trash_at,omitempty"`
-	ManifestText              string     `json:"manifest_text,omitempty"`
+	ManifestText              string     `json:"manifest_text"`
 	UnsignedManifestText      string     `json:"unsigned_manifest_text,omitempty"`
 	Name                      string     `json:"name,omitempty"`
 	CreatedAt                 *time.Time `json:"created_at,omitempty"`
