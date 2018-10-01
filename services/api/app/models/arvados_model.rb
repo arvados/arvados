@@ -537,12 +537,12 @@ class ArvadosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     current_time = db_current_time
-    self.created_at = created_at_was || current_time
+    self.created_at ||= created_at_was || current_time
     self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
-    self.modified_at = current_time
     if !anonymous_updater
       self.modified_by_user_uuid = current_user ? current_user.uuid : nil
+      self.modified_at = current_time
     end
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true

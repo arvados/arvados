@@ -128,9 +128,42 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "older versions' modified_at indicate when they're created" do
+    Rails.configuration.collection_versioning = true
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      # Get the old version
+      c_old = Collection.where(current_version_uuid: c.uuid, version: 1).first
+      assert_not_nil c_old
+
+      version_creation_datetime = c_old.modified_at.to_f
+      assert_equal c.created_at.to_f, c_old.created_at.to_f
+      # Current version is updated just a few milliseconds before the version is
+      # saved on the database.
+      assert_operator c.modified_at.to_f, :<, version_creation_datetime
+
+      # Make update on current version so old version get the attribute synced;
+      # its modified_at should not change.
+      new_replication = 3
+      c.update_attributes!({'replication_desired' => new_replication})
+      c.reload
+      assert_equal new_replication, c.replication_desired
+      c_old.reload
+      assert_equal new_replication, c_old.replication_desired
+      assert_equal version_creation_datetime, c_old.modified_at.to_f
+      assert_operator c.modified_at.to_f, :>, c_old.modified_at.to_f
+    end
+  end
+
   test "older versions should no be directly updatable" do
     Rails.configuration.collection_versioning = true
-    act_as_system_user do
+    act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
@@ -213,7 +246,7 @@ class CollectionTest < ActiveSupport::TestCase
   ].each do |versioning, attr, val, new_version_expected|
     test "update #{attr} with versioning #{versioning ? '' : 'not '}enabled should #{new_version_expected ? '' : 'not '}create a new version" do
       Rails.configuration.collection_versioning = versioning
-      act_as_system_user do
+      act_as_user users(:active) do
         # Create initial collection
         c = create_collection 'foo', Encoding::US_ASCII
         assert c.valid?
@@ -247,7 +280,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test 'with versioning enabled, simultaneous updates increment version correctly' do
     Rails.configuration.collection_versioning = true
-    act_as_system_user do
+    act_as_user users(:active) do
       # Create initial collection
       col = create_collection 'foo', Encoding::US_ASCII
       assert col.valid?

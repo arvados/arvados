@@ -220,7 +220,7 @@ class Collection < ArvadosModel
     self.current_version_uuid ||= self.uuid
   end
 
-  def save!
+  def save! *args
     if !Rails.configuration.collection_versioning || new_record? || (!self.changes.include?('uuid') && current_version_uuid != uuid)
       return super
     end
@@ -256,7 +256,9 @@ class Collection < ArvadosModel
           c.attributes = updates
           # Use a different validation context to skip the 'old_versions_cannot_be_updated'
           # validator, as on this case it is legal to update some fields.
-          c.save(context: :update_old_versions)
+          leave_modified_by_user_alone do
+            c.save(context: :update_old_versions)
+          end
         end
         # Also update current object just in case a new version will be created,
         # as it has to receive the same values for the synced attributes.
@@ -268,6 +270,7 @@ class Collection < ArvadosModel
         # Create a snapshot of the original collection
         snapshot = self.dup
         snapshot.uuid = nil # Reset UUID so it's created as a new record
+        snapshot.created_at = created_at
         # Update current version number
         self.version += 1
       end
