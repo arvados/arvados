@@ -55,7 +55,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
   def contents
     load_searchable_objects
-    send_json({
+    list = {
       :kind => "arvados#objectList",
       :etag => "",
       :self_link => "",
@@ -63,7 +63,30 @@ class Arvados::V1::GroupsController < ApplicationController
       :limit => @limit,
       :items_available => @items_available,
       :items => @objects.as_api_response(nil)
-    })
+    }
+    if @extra_included
+      list[:included] = @extra_included.as_api_response(nil, {select: @select})
+    end
+    send_json(list)
+  end
+
+  def exclude_home objectlist, klass
+    # select records that are readable by current user AND
+    #   the owner_uuid is a user (but not the current user) OR
+    #   the owner_uuid is not readable by the current user
+    #   the owner_uuid is a group but group_class is not a project
+
+    read_parent_check = if current_user.is_admin
+                          ""
+                        else
+                          "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} WHERE "+
+                            "user_uuid=(:user_uuid) AND target_uuid=#{klass.table_name}.owner_uuid AND perm_level >= 1) OR "
+                        end
+
+    objectlist.where("#{klass.table_name}.owner_uuid IN (SELECT users.uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
+                     read_parent_check+
+                     "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=#{klass.table_name}.owner_uuid and gp.group_class != 'project')",
+                     user_uuid: current_user.uuid)
   end
 
   def shared
@@ -76,10 +99,6 @@ class Arvados::V1::GroupsController < ApplicationController
     # This also returns (in the "included" field) the objects that own
     # those projects (users or non-project groups).
     #
-    # select groups that are readable by current user AND
-    #   the owner_uuid is a user (but not the current user) OR
-    #   the owner_uuid is not readable by the current user
-    #   the owner_uuid is a group but group_class is not a project
     #
     # The intended use of this endpoint is to support clients which
     # wish to browse those projects which are visible to the user but
@@ -88,22 +107,12 @@ class Arvados::V1::GroupsController < ApplicationController
     load_limit_offset_order_params
     load_filters_param
 
-    read_parent_check = if current_user.is_admin
-                          ""
-                        else
-                          "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} WHERE "+
-                            "user_uuid=(:user_uuid) AND target_uuid=groups.owner_uuid AND perm_level >= 1) OR "
-                        end
+    @objects = exclude_home Group.readable_by(*@read_users), Group
 
-    @objects = Group.readable_by(*@read_users).where("groups.owner_uuid IN (SELECT users.uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
-                                                     read_parent_check+
-                                                     "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=groups.owner_uuid and gp.group_class != 'project')",
-                                            user_uuid: current_user.uuid)
     apply_where_limit_order_params
 
-    owners = @objects.map(&:owner_uuid).to_a
-
     if params["include"] == "owner_uuid"
+      owners = @objects.map(&:owner_uuid).to_a
       @extra_included = []
       [Group, User].each do |klass|
         @extra_included += klass.readable_by(*@read_users).where(uuid: owners).to_a
@@ -178,7 +187,13 @@ class Arvados::V1::GroupsController < ApplicationController
       else
         filter_by_owner[:owner_uuid] = @object.uuid
       end
+
+      if params['exclude_home_project']
+        raise ArgumentError.new "Cannot use 'exclude_home_project' with a parent object"
+      end
     end
+
+    included_by_uuid = {}
 
     seen_last_class = false
     klasses.each do |klass|
@@ -227,6 +242,10 @@ class Arvados::V1::GroupsController < ApplicationController
       @objects = klass.readable_by(*@read_users, {:include_trash => params[:include_trash]}).
                  order(request_order).where(where_conds)
 
+      if params['exclude_home_project']
+        @objects = exclude_home @objects, klass
+      end
+
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass
@@ -242,6 +261,19 @@ class Arvados::V1::GroupsController < ApplicationController
         # with limit=0 and just accumulate items_available.
         limit_all = all_objects.count
       end
+
+      if params["include"] == "owner_uuid"
+        owners = klass_object_list[:items].map {|i| i[:owner_uuid]}
+        [Group, User].each do |ownerklass|
+          ownerklass.readable_by(*@read_users).where(uuid: owners).each do |ow|
+            included_by_uuid[ow.uuid] = ow
+          end
+        end
+      end
+    end
+
+    if params["include"]
+      @extra_included = included_by_uuid.values
     end
 
     @objects = all_objects
