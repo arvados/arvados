@@ -91,37 +91,39 @@ type PsProcess interface {
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
-	Docker    ThinDockerClient
-	client    *arvados.Client
-	ArvClient IArvadosClient
-	Kc        IKeepClient
-	arvados.Container
+	Docker          ThinDockerClient
+	client          *arvados.Client
+	ArvClient       IArvadosClient
+	Kc              IKeepClient
+	Container       arvados.Container
 	ContainerConfig dockercontainer.Config
-	dockercontainer.HostConfig
-	token       string
-	ContainerID string
-	ExitCode    *int
-	NewLogWriter
-	loggingDone   chan bool
-	CrunchLog     *ThrottledLogger
-	Stdout        io.WriteCloser
-	Stderr        io.WriteCloser
-	LogCollection arvados.CollectionFileSystem
-	LogsPDH       *string
-	RunArvMount
-	MkTempDir
-	ArvMount      *exec.Cmd
-	ArvMountPoint string
-	HostOutputDir string
-	Binds         []string
-	Volumes       map[string]struct{}
-	OutputPDH     *string
-	SigChan       chan os.Signal
-	ArvMountExit  chan error
-	SecretMounts  map[string]arvados.Mount
-	MkArvClient   func(token string) (IArvadosClient, error)
-	finalState    string
-	parentTemp    string
+	HostConfig      dockercontainer.HostConfig
+	token           string
+	ContainerID     string
+	ExitCode        *int
+	NewLogWriter    NewLogWriter
+	loggingDone     chan bool
+	CrunchLog       *ThrottledLogger
+	Stdout          io.WriteCloser
+	Stderr          io.WriteCloser
+	logUUID         string
+	logMtx          sync.Mutex
+	LogCollection   arvados.CollectionFileSystem
+	LogsPDH         *string
+	RunArvMount     RunArvMount
+	MkTempDir       MkTempDir
+	ArvMount        *exec.Cmd
+	ArvMountPoint   string
+	HostOutputDir   string
+	Binds           []string
+	Volumes         map[string]struct{}
+	OutputPDH       *string
+	SigChan         chan os.Signal
+	ArvMountExit    chan error
+	SecretMounts    map[string]arvados.Mount
+	MkArvClient     func(token string) (IArvadosClient, error)
+	finalState      string
+	parentTemp      string
 
 	ListProcesses func() ([]PsProcess, error)
 
@@ -1175,6 +1177,54 @@ func (runner *ContainerRunner) WaitFinish() error {
 	}
 }
 
+func (runner *ContainerRunner) updateLogs() {
+	ticker := time.NewTicker(crunchLogUpdatePeriod / 360)
+	defer ticker.Stop()
+
+	sigusr1 := make(chan os.Signal, 1)
+	signal.Notify(sigusr1, syscall.SIGUSR1)
+	defer signal.Stop(sigusr1)
+
+	saveAtTime := time.Now().Add(crunchLogUpdatePeriod)
+	saveAtSize := crunchLogUpdateSize
+	var savedSize int64
+	for {
+		select {
+		case <-ticker.C:
+		case <-sigusr1:
+			saveAtTime = time.Now()
+		}
+		runner.logMtx.Lock()
+		done := runner.LogsPDH != nil
+		runner.logMtx.Unlock()
+		if done {
+			return
+		}
+		size := runner.LogCollection.Size()
+		if size == savedSize || (time.Now().Before(saveAtTime) && size < saveAtSize) {
+			continue
+		}
+		saveAtTime = time.Now().Add(crunchLogUpdatePeriod)
+		saveAtSize = runner.LogCollection.Size() + crunchLogUpdateSize
+		saved, err := runner.saveLogCollection(false)
+		if err != nil {
+			runner.CrunchLog.Printf("error updating log collection: %s", err)
+			continue
+		}
+
+		var updated arvados.Container
+		err = runner.ArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+			"container": arvadosclient.Dict{"log": saved.PortableDataHash},
+		}, &updated)
+		if err != nil {
+			runner.CrunchLog.Printf("error updating container log to %s: %s", saved.PortableDataHash, err)
+			continue
+		}
+
+		savedSize = size
+	}
+}
+
 // CaptureOutput saves data from the container's output directory if
 // needed, and updates the container output accordingly.
 func (runner *ContainerRunner) CaptureOutput() error {
@@ -1312,26 +1362,51 @@ func (runner *ContainerRunner) CommitLogs() error {
 		// -- it exists only to send logs to other channels.
 		return nil
 	}
+	saved, err := runner.saveLogCollection(true)
+	if err != nil {
+		return fmt.Errorf("error saving log collection: %s", err)
+	}
+	runner.logMtx.Lock()
+	defer runner.logMtx.Unlock()
+	runner.LogsPDH = &saved.PortableDataHash
+	return nil
+}
 
+func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.Collection, err error) {
+	runner.logMtx.Lock()
+	defer runner.logMtx.Unlock()
+	if runner.LogsPDH != nil {
+		// Already finalized.
+		return
+	}
 	mt, err := runner.LogCollection.MarshalManifest(".")
 	if err != nil {
-		return fmt.Errorf("While creating log manifest: %v", err)
+		err = fmt.Errorf("error creating log manifest: %v", err)
+		return
 	}
-
-	var response arvados.Collection
-	err = runner.ArvClient.Create("collections",
-		arvadosclient.Dict{
-			"ensure_unique_name": true,
-			"collection": arvadosclient.Dict{
-				"is_trashed":    true,
-				"name":          "logs for " + runner.Container.UUID,
-				"manifest_text": mt}},
-		&response)
+	updates := arvadosclient.Dict{
+		"name":          "logs for " + runner.Container.UUID,
+		"manifest_text": mt,
+	}
+	if final {
+		updates["is_trashed"] = true
+	} else {
+		exp := time.Now().Add(crunchLogUpdatePeriod * 24)
+		updates["trash_at"] = exp
+		updates["delete_at"] = exp
+	}
+	reqBody := arvadosclient.Dict{"collection": updates}
+	if runner.logUUID == "" {
+		reqBody["ensure_unique_name"] = true
+		err = runner.ArvClient.Create("collections", reqBody, &response)
+	} else {
+		err = runner.ArvClient.Update("collections", runner.logUUID, reqBody, &response)
+	}
 	if err != nil {
-		return fmt.Errorf("While creating log collection: %v", err)
+		return
 	}
-	runner.LogsPDH = &response.PortableDataHash
-	return nil
+	runner.logUUID = response.UUID
+	return
 }
 
 // UpdateContainerRunning updates the container state to "Running"
@@ -1630,6 +1705,7 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
 
 	loadLogThrottleParams(api)
+	go cr.updateLogs()
 
 	return cr, nil
 }

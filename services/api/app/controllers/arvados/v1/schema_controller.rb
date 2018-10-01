@@ -58,6 +58,8 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogThrottleLines: Rails.application.config.crunch_log_throttle_lines,
         crunchLimitLogBytesPerJob: Rails.application.config.crunch_limit_log_bytes_per_job,
         crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
+        crunchLogUpdatePeriod: Rails.application.config.crunch_log_update_period,
+        crunchLogUpdateSize: Rails.application.config.crunch_log_update_size,
         remoteHosts: Rails.configuration.remote_hosts,
         remoteHostsViaDNS: Rails.configuration.remote_hosts_via_dns,
         websocketUrl: Rails.application.config.websocket_address,

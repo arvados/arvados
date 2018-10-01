@@ -652,32 +652,69 @@ class ContainerTest < ActiveSupport::TestCase
     assert c.update_attributes(exit_code: 1, state: Container::Complete)
   end
 
-  test "locked_by_uuid can set output on running container" do
-    c, _ = minimal_new
+  test "locked_by_uuid can update log when locked/running, and output when running" do
+    logcoll = collections(:real_log_collection)
+    c, cr1 = minimal_new
+    cr2 = ContainerRequest.new(DEFAULT_ATTRS)
+    cr2.state = ContainerRequest::Committed
+    act_as_user users(:active) do
+      cr2.save!
+    end
+    assert_equal cr1.container_uuid, cr2.container_uuid
+
+    logpdh_time1 = logcoll.portable_data_hash
+
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
-
     assert_equal c.locked_by_uuid, Thread.current[:api_client_authorization].uuid
+    c.update_attributes!(log: logpdh_time1)
+    c.update_attributes!(state: Container::Running)
+    cr1.reload
+    cr2.reload
+    cr1log_uuid = cr1.log_uuid
+    cr2log_uuid = cr2.log_uuid
+    assert_not_nil cr1log_uuid
+    assert_not_nil cr2log_uuid
+    assert_not_equal logcoll.uuid, cr1log_uuid
+    assert_not_equal logcoll.uuid, cr2log_uuid
+    assert_not_equal cr1log_uuid, cr2log_uuid
 
-    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
-    assert c.update_attributes! state: Container::Complete
+    logcoll.update_attributes!(manifest_text: logcoll.manifest_text + ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n")
+    logpdh_time2 = logcoll.portable_data_hash
+
+    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update_attributes(log: logpdh_time2)
+    assert c.update_attributes(state: Container::Complete, log: logcoll.portable_data_hash)
+    c.reload
+    assert_equal collections(:collection_owned_by_active).portable_data_hash, c.output
+    assert_equal logpdh_time2, c.log
+    refute c.update_attributes(output: nil)
+    refute c.update_attributes(log: nil)
+    cr1.reload
+    cr2.reload
+    assert_equal cr1log_uuid, cr1.log_uuid
+    assert_equal cr2log_uuid, cr2.log_uuid
+    assert_equal [logpdh_time2], Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq
   end
 
-  test "auth_uuid can set output on running container, but not change container state" do
+  test "auth_uuid can set output, progress, runtime_status, state on running container -- but not log" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
     c.update_attributes! state: Container::Running
 
-    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
-    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
-    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
+    auth = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:api_client_authorization] = auth
+    Thread.current[:api_client] = auth.api_client
+    Thread.current[:token] = auth.token
+    Thread.current[:user] = auth.user
 
-    assert_raises ArvadosModel::PermissionDeniedError do
-      # auth_uuid cannot set container state
-      c.update_attributes state: Container::Complete
-    end
+    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
+    assert c.update_attributes(progress: 0.5)
+    refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+    c.reload
+    assert c.update_attributes(state: Container::Complete, exit_code: 0)
   end
 
   test "not allowed to set output that is not readable by current user" do
@@ -701,9 +738,7 @@ class ContainerTest < ActiveSupport::TestCase
     c.update_attributes! state: Container::Running
 
     set_user_from_auth :running_to_be_deleted_container_auth
-    assert_raises ArvadosModel::PermissionDeniedError do
-      c.update_attributes! output: collections(:foo_file).portable_data_hash
-    end
+    refute c.update_attributes(output: collections(:foo_file).portable_data_hash)
   end
 
   test "can set trashed output on running container" do

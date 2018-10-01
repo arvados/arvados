@@ -353,6 +353,7 @@ func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	c.Check(err, check.IsNil)
 	m = regexp.MustCompile(`\+A[^\+ ]+`).ReplaceAllLiteralString(m, "")
 	c.Check(m, check.Equals, "./dir1 3858f62230ac3c915f300c664312c63f+6 25d55ad283aa400af464c76d713c07ad+8 3:3:bar 6:3:foo\n")
+	c.Check(s.fs.Size(), check.Equals, int64(6))
 }
 
 func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
@@ -490,15 +491,19 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 			c.Assert(err, check.IsNil)
 			defer f.Close()
 			for i := 0; i < 6502; i++ {
-				switch rand.Int() & 3 {
-				case 0:
+				r := rand.Uint32()
+				switch {
+				case r%11 == 0:
+					_, err := s.fs.MarshalManifest(".")
+					c.Check(err, check.IsNil)
+				case r&3 == 0:
 					f.Truncate(int64(rand.Intn(64)))
-				case 1:
+				case r&3 == 1:
 					f.Seek(int64(rand.Intn(64)), io.SeekStart)
-				case 2:
+				case r&3 == 2:
 					_, err := f.Write([]byte("beep boop"))
 					c.Check(err, check.IsNil)
-				case 3:
+				case r&3 == 3:
 					_, err := ioutil.ReadAll(f)
 					c.Check(err, check.IsNil)
 				}
@@ -1060,6 +1065,7 @@ func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
 	f, err := coll.FileSystem(nil, nil)
 	c.Check(err, check.IsNil)
 	c.Logf("%s loaded", time.Now())
+	c.Check(f.Size(), check.Equals, int64(42*dirCount*fileCount))
 
 	for i := 0; i < dirCount; i++ {
 		for j := 0; j < fileCount; j++ {

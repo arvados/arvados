@@ -37,6 +37,8 @@ var _ = Suite(&LoggingTestSuite{})
 
 func (s *LoggingTestSuite) SetUpTest(c *C) {
 	s.client = arvados.NewClientFromEnv()
+	crunchLogUpdatePeriod = time.Hour * 24 * 365
+	crunchLogUpdateSize = 1 << 50
 }
 
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
@@ -127,6 +129,51 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	mt, err := cr.LogCollection.MarshalManifest(".")
 	c.Check(err, IsNil)
 	c.Check(mt, Equals, ". 48f9023dc683a850b1c9b482b14c4b97+163 0:83:crunch-run.txt 83:80:stdout.txt\n")
+}
+
+func (s *LoggingTestSuite) TestLogUpdate(c *C) {
+	for _, trial := range []struct {
+		maxBytes    int64
+		maxDuration time.Duration
+	}{
+		{1000, 10 * time.Second},
+		{1000000, time.Millisecond},
+	} {
+		c.Logf("max %d bytes, %s", trial.maxBytes, trial.maxDuration)
+		crunchLogUpdateSize = trial.maxBytes
+		crunchLogUpdatePeriod = trial.maxDuration
+
+		api := &ArvTestClient{}
+		kc := &KeepTestClient{}
+		defer kc.Close()
+		cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+		c.Assert(err, IsNil)
+		ts := &TestTimestamper{}
+		cr.CrunchLog.Timestamper = ts.Timestamp
+		w, err := cr.NewLogWriter("stdout")
+		c.Assert(err, IsNil)
+		stdout := NewThrottledLogger(w)
+		stdout.Timestamper = ts.Timestamp
+
+		c.Check(cr.logUUID, Equals, "")
+		cr.CrunchLog.Printf("Hello %1000s", "space")
+		for i, t := 0, time.NewTicker(time.Millisecond); i < 5000 && cr.logUUID == ""; i++ {
+			<-t.C
+		}
+		c.Check(cr.logUUID, Not(Equals), "")
+		cr.CrunchLog.Print("Goodbye")
+		fmt.Fprint(stdout, "Goodbye\n")
+		cr.CrunchLog.Close()
+		stdout.Close()
+		w.Close()
+
+		mt, err := cr.LogCollection.MarshalManifest(".")
+		c.Check(err, IsNil)
+		// Block packing depends on whether there's an update
+		// between the two Goodbyes -- either way the first
+		// block will be 4dc76.
+		c.Check(mt, Matches, `. 4dc76e0a212bfa30c39d76d8c16da0c0\+1038 (afc503bc1b9a828b4bb543cb629e936c\+78|90699dc22545cd74a0664303f70bc05a\+39 276b49339fd5203d15a93ff3de11bfb9\+39) 0:1077:crunch-run.txt 1077:39:stdout.txt\n`)
+	}
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytes(c *C) {

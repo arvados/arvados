@@ -230,6 +230,7 @@ func (client *ArvTestClient) Create(resourceType string,
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
 		outmap := output.(*arvados.Collection)
 		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
+		outmap.UUID = fmt.Sprintf("zzzzz-4zz18-%15.15x", md5.Sum([]byte(mt)))
 	}
 
 	return nil
@@ -316,6 +317,10 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			client.WasSetRunning = true
 		}
+	} else if resourceType == "collections" {
+		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
+		output.(*arvados.Collection).UUID = uuid
+		output.(*arvados.Collection).PortableDataHash = fmt.Sprintf("%x", md5.Sum([]byte(mt)))
 	}
 	return nil
 }
@@ -1142,7 +1147,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 		cr.statInterval = 5 * time.Second
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
@@ -1161,7 +1166,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/out"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
-		cr.OutputPath = "/out"
+		cr.Container.OutputPath = "/out"
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
@@ -1179,7 +1184,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 
 		apiflag := true
 		cr.Container.RuntimeConstraints.API = &apiflag
@@ -1203,7 +1208,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/keeptmp": {Kind: "collection", Writable: true},
 		}
-		cr.OutputPath = "/keeptmp"
+		cr.Container.OutputPath = "/keeptmp"
 
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
@@ -1225,7 +1230,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
 			"/keepout": {Kind: "collection", Writable: true},
 		}
-		cr.OutputPath = "/keepout"
+		cr.Container.OutputPath = "/keepout"
 
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
@@ -1251,7 +1256,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
 			"/keepout": {Kind: "collection", Writable: true},
 		}
-		cr.OutputPath = "/keepout"
+		cr.Container.OutputPath = "/keepout"
 
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
@@ -1332,7 +1337,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"/tmp":     {Kind: "tmp"},
 			"/tmp/foo": {Kind: "collection"},
 		}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
@@ -1362,7 +1367,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 				Path:             "baz",
 				Writable:         true},
 		}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541d+53/baz", os.ModePerm)
@@ -1391,7 +1396,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"/tmp":     {Kind: "tmp"},
 			"/tmp/foo": {Kind: "tmp"},
 		}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
@@ -1439,7 +1444,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 				Path:   "/",
 			},
 		}
-		cr.OutputPath = "/tmp"
+		cr.Container.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
