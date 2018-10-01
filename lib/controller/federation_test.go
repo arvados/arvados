@@ -63,8 +63,8 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": nodeProfile,
 		},
-		MaxItemsPerResponse:    1000,
-		ParallelRemoteRequests: 4,
+		MaxItemsPerResponse:         1000,
+		FederatedRequestConcurrency: 4,
 	}, NodeProfile: &nodeProfile}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.log, s.testHandler))

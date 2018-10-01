@@ -125,13 +125,13 @@ h4. Federated listing
 
 Federated listing forwards a request to multiple clusters and combines the results.  Currently only a very restricted form of the "list" method is supported.
 
-To query multiple clusters, the list method must:
+To query multiple clusters, the list request must:
 
 * Have filters only matching @[["uuid", "in", [...]]@ or @["uuid", "=", "..."]@
-* Must specify @count=none@
+* Specify @count=none@
 * If @select@ is specified, it must include @uuid@
-* Must not specify @limit@, @offset@ or @order@
-* Must not request more items than the maximum response size
+* Not specify @limit@, @offset@ or @order@
+* Not request more items than the maximum response size
 
 This form may be used to request a specific list of objects by uuid which are owned by multiple clusters.
 
