@@ -70,25 +70,6 @@ class Arvados::V1::GroupsController < ApplicationController
     send_json(list)
   end
 
-  def exclude_home objectlist, klass
-    # select records that are readable by current user AND
-    #   the owner_uuid is a user (but not the current user) OR
-    #   the owner_uuid is not readable by the current user
-    #   the owner_uuid is a group but group_class is not a project
-
-    read_parent_check = if current_user.is_admin
-                          ""
-                        else
-                          "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} WHERE "+
-                            "user_uuid=(:user_uuid) AND target_uuid=#{klass.table_name}.owner_uuid AND perm_level >= 1) OR "
-                        end
-
-    objectlist.where("#{klass.table_name}.owner_uuid IN (SELECT users.uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
-                     read_parent_check+
-                     "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=#{klass.table_name}.owner_uuid and gp.group_class != 'project')",
-                     user_uuid: current_user.uuid)
-  end
-
   def shared
     # The purpose of this endpoint is to return the toplevel set of
     # groups which are *not* reachable through a direct ownership
@@ -112,10 +93,10 @@ class Arvados::V1::GroupsController < ApplicationController
     apply_where_limit_order_params
 
     if params["include"] == "owner_uuid"
-      owners = @objects.map(&:owner_uuid).to_a
+      owners = @objects.map(&:owner_uuid).to_set
       @extra_included = []
       [Group, User].each do |klass|
-        @extra_included += klass.readable_by(*@read_users).where(uuid: owners).to_a
+        @extra_included += klass.readable_by(*@read_users).where(uuid: owners.to_a).to_a
       end
     end
 
@@ -263,9 +244,9 @@ class Arvados::V1::GroupsController < ApplicationController
       end
 
       if params["include"] == "owner_uuid"
-        owners = klass_object_list[:items].map {|i| i[:owner_uuid]}
+        owners = klass_object_list[:items].map {|i| i[:owner_uuid]}.to_set
         [Group, User].each do |ownerklass|
-          ownerklass.readable_by(*@read_users).where(uuid: owners).each do |ow|
+          ownerklass.readable_by(*@read_users).where(uuid: owners.to_a).each do |ow|
             included_by_uuid[ow.uuid] = ow
           end
         end
@@ -279,6 +260,27 @@ class Arvados::V1::GroupsController < ApplicationController
     @objects = all_objects
     @limit = limit_all
     @offset = offset_all
+  end
+
+  protected
+
+  def exclude_home objectlist, klass
+    # select records that are readable by current user AND
+    #   the owner_uuid is a user (but not the current user) OR
+    #   the owner_uuid is not readable by the current user
+    #   the owner_uuid is a group but group_class is not a project
+
+    read_parent_check = if current_user.is_admin
+                          ""
+                        else
+                          "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} WHERE "+
+                            "user_uuid=(:user_uuid) AND target_uuid=#{klass.table_name}.owner_uuid AND perm_level >= 1) OR "
+                        end
+
+    objectlist.where("#{klass.table_name}.owner_uuid IN (SELECT users.uuid FROM users WHERE users.uuid != (:user_uuid)) OR "+
+                     read_parent_check+
+                     "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=#{klass.table_name}.owner_uuid and gp.group_class != 'project')",
+                     user_uuid: current_user.uuid)
   end
 
 end
