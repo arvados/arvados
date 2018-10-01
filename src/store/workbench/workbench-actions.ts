@@ -48,6 +48,8 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
 import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
+import { CollectionResource } from "~/models/collection";
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -196,18 +198,21 @@ export const loadCollection = (uuid: string) =>
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({
                     OWNED: async collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
                         dispatch(loadCollectionFiles(collection.uuid));
                     },
                     SHARED: collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
                         dispatch(loadCollectionFiles(collection.uuid));
                     },
                     TRASHED: collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch(setTrashBreadcrumbs(''));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
