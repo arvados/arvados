@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "~/models/tree";
-import { TreePicker, TreePickerNode } from "./workflow-tree-picker";
-import { fileTreePickerActions, FileTreePickerAction } from "./workflow-tree-picker-actions";
+import { TreePicker, TreePickerNode } from "./file-tree-picker";
+import { fileTreePickerActions, FileTreePickerAction } from "./file-tree-picker-actions";
 import { TreeItemStatus } from "~/components/tree/tree";
 import { compose } from "redux";
 import { getNode } from '~/models/tree';
 
-export const workflowTreePickerReducer = (state: TreePicker = {}, action: FileTreePickerAction) =>
+export const fileTreePickerReducer = (state: TreePicker = {}, action: FileTreePickerAction) =>
     fileTreePickerActions.match(action, {
         LOAD_TREE_PICKER_NODE: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, setNodeValueWith(setPending)(nodeId)),

@@ -9,7 +9,7 @@ import { Typography } from "@material-ui/core";
 import { MainFileTreePicker, MainFileTreePickerProps } from "./main-file-tree-picker";
 import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
-import { fileTreePickerActions } from "~/store/workflow-tree-picker/workflow-tree-picker-actions";
+import { fileTreePickerActions } from "~/store/file-tree-picker/file-tree-picker-actions";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, CollectionIcon } from '~/components/icon/icon';
 import { createTreePickerNode } from "~/store/tree-picker/tree-picker";

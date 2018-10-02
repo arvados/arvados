@@ -4,7 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 
-import { TreePickerNode } from "./workflow-tree-picker";
+import { TreePickerNode } from "./file-tree-picker";
 
 export const fileTreePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ nodeId: string, pickerId: string }>(),

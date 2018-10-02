@@ -5,7 +5,7 @@
 import { connect } from "react-redux";
 import { Tree, TreeProps, TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { RootState } from "~/store/store";
-import { createTreePickerNode, TreePickerNode } from "~/store/workflow-tree-picker/workflow-tree-picker";
+import { createTreePickerNode, TreePickerNode } from "~/store/file-tree-picker/file-tree-picker";
 import { getNodeValue, getNodeChildrenIds, Tree as Ttree, createTree } from "~/models/tree";
 import { Dispatch } from "redux";
 
