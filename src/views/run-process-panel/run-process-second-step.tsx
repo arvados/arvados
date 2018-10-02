@@ -3,60 +3,45 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, Grid, Button } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { Field, reduxForm, InjectedFormProps } from 'redux-form';
-import { TextField } from '~/components/text-field/text-field';
-import { RunProcessSecondStepDataFormProps, RUN_PROCESS_SECOND_STEP_FORM_NAME } from '~/store/run-process-panel/run-process-panel-actions';
+import { Grid, Button } from '@material-ui/core';
+import { RunProcessBasicForm, RUN_PROCESS_BASIC_FORM } from './run-process-basic-form';
+import { RunProcessInputsForm } from '~/views/run-process-panel/run-process-inputs-form';
+import { CommandInputParameter } from '~/models/workflow';
+import { connect } from 'react-redux';
+import { RootState } from '~/store/store';
+import { isValid } from 'redux-form';
+import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
 
-type CssRules = 'root';
+export interface RunProcessSecondStepFormDataProps {
+    inputs: CommandInputParameter[];
+    valid: boolean;
+}
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
+export interface RunProcessSecondStepFormActionProps {
+    goBack: () => void;
+    runProcess: () => void;
+}
 
-    }
+const mapStateToProps = (state: RootState): RunProcessSecondStepFormDataProps => ({
+    inputs: state.runProcessPanel.inputs,
+    valid: isValid(RUN_PROCESS_BASIC_FORM)(state.form) &&
+        isValid(RUN_PROCESS_INPUTS_FORM)(state.form),
 });
 
-export interface RunProcessSecondStepDataProps {
-
-}
-
-export interface RunProcessSecondStepActionProps {
-    onSetStep: (step: number) => void;
-    onRunProcess: (data: RunProcessSecondStepDataFormProps) => void;
-}
-
-type RunProcessSecondStepProps = RunProcessSecondStepDataProps 
-    & RunProcessSecondStepActionProps 
-    & WithStyles<CssRules> 
-    & InjectedFormProps<RunProcessSecondStepDataFormProps>;
-
-const RunProcessSecondStep = withStyles(styles)(
-    ({ onSetStep, classes }: RunProcessSecondStepProps) =>
+export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
+export const RunProcessSecondStepForm = connect(mapStateToProps)(
+    ({ inputs, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
         <Grid container spacing={16}>
             <Grid item xs={12}>
-                <form>
-                    <Field
-                        name='name'
-                        component={TextField}
-                        label="Enter a new name for run process" />
-                    <Field
-                        name='description'
-                        component={TextField}
-                        label="Enter a description for run process" />
-                </form>
+                <RunProcessBasicForm />
+                <RunProcessInputsForm inputs={inputs} />
             </Grid>
             <Grid item xs={12}>
-                <Button color="primary" onClick={() => onSetStep(0)}>
+                <Button color="primary" onClick={goBack}>
                     Back
                 </Button>
-                <Button variant="contained" color="primary">
+                <Button disabled={!valid} variant="contained" color="primary" onClick={runProcess}>
                     Run Process
                 </Button>
             </Grid>
-        </Grid>
-);
-
-export const RunProcessSecondStepForm = reduxForm<RunProcessSecondStepDataFormProps>({
-    form: RUN_PROCESS_SECOND_STEP_FORM_NAME
-})(RunProcessSecondStep);
+        </Grid>);

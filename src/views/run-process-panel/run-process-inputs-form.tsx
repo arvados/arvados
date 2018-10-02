@@ -15,7 +15,7 @@ import { connect } from 'react-redux';
 import { compose } from 'redux';
 import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 
-const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
+export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
 export interface RunProcessInputFormProps {
     inputs: CommandInputParameter[];
@@ -32,7 +32,7 @@ export const RunProcessInputsForm = compose(
     }))(
         (props: InjectedFormProps & RunProcessInputFormProps) =>
             <form>
-                <Grid container>
+                <Grid container spacing={16}>
                     {props.inputs.map(input =>
                         <InputItem input={input} key={input.id} />)}
                 </Grid>
@@ -48,7 +48,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 const InputItem = withStyles(styles)(
     (props: WithStyles<CssRules> & { input: CommandInputParameter }) =>
-        <Grid item xs={12} className={props.classes.inputItem}>
+        <Grid item xs={12} md={6} className={props.classes.inputItem}>
             {getInputComponent(props.input)}
         </Grid>);
 

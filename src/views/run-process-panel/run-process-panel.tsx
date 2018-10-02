@@ -24,8 +24,8 @@ const mapDispatchToProps = (dispatch: Dispatch): RunProcessPanelRootActionProps 
     onSetWorkflow: (workflow: WorkflowResource) => {
         dispatch<any>(setWorkflow(workflow));
     },
-    onRunProcess: () => {
-        
+    runProcess: () => {
+        console.log('run process!');
     }
 });
 
