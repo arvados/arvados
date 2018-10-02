@@ -62,7 +62,7 @@ enum TreePickerId {
     FAVORITES = 'Favorites'
 }
 
-export const WorkflowTreePicker = connect(undefined, mapDispatchToProps)((props: FileTreePickerProps) =>
+export const FileTreePicker = connect(undefined, mapDispatchToProps)((props: FileTreePickerProps) =>
     <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ flexGrow: 1, overflow: 'auto' }}>
             <MainFileTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
@@ -159,7 +159,7 @@ export const receiveTreePickerData = (nodeId: string, items: GroupContentsResour
 
 export const FileTreePickerField = (props: WrappedFieldProps) =>
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
-        <WorkflowTreePicker onChange={handleChange(props)} />
+        <FileTreePicker onChange={handleChange(props)} />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>
                 {props.meta.error}

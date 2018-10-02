@@ -12,7 +12,6 @@ import { openProjectCreateDialog } from '~/store/projects/project-create-actions
 import { openProjectUpdateDialog } from '~/store/projects/project-update-actions';
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleProjectTrashed } from "~/store/trash/trash-actions";
-import { openFileSelectionDialog } from '../../../store/file-selection/file-selection-actions';
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -46,7 +45,7 @@ export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openFileSelectionDialog())
+        execute: (dispatch, resource) => dispatch<any>(openMoveProjectDialog(resource))
     },
     {
         icon: CopyIcon,
