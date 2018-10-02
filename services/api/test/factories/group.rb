@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FactoryGirl.define do
+FactoryBot.define do
   factory :group do
   end
 end
