@@ -8,11 +8,18 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowResource } from '~/models/workflow';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { WorkflowDetailsCard } from '../workflow-panel/workflow-description-card';
+import { SearchInput } from '~/components/search-input/search-input';
 
-type CssRules = 'rightGrid' | 'list' | 'listItem' | 'itemSelected' | 'listItemText' | 'listItemIcon';
+type CssRules = 'root' | 'searchGrid' | 'workflowDetailsGrid' | 'list' | 'listItem' | 'itemSelected' | 'listItemText' | 'listItemIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    rightGrid: {
+    root: {
+        alignSelf: 'flex-start'
+    },
+    searchGrid: {
+        marginBottom: theme.spacing.unit * 2
+    },
+    workflowDetailsGrid: {
         borderLeft: `1px solid ${theme.palette.grey["300"]}`
     },
     list: {
@@ -40,6 +47,7 @@ export interface RunProcessFirstStepDataProps {
 }
 
 export interface RunProcessFirstStepActionProps {
+    onSearch: (term: string) => void;
     onSetStep: (step: number) => void;
     onSetWorkflow: (workflow: WorkflowResource) => void;
 }
@@ -47,11 +55,11 @@ export interface RunProcessFirstStepActionProps {
 type RunProcessFirstStepProps = RunProcessFirstStepDataProps & RunProcessFirstStepActionProps & WithStyles<CssRules>;
 
 export const RunProcessFirstStep = withStyles(styles)(
-    ({ onSetStep, onSetWorkflow, workflows, selectedWorkflow, classes }: RunProcessFirstStepProps) =>
+    ({ onSearch, onSetStep, onSetWorkflow, workflows, selectedWorkflow, classes }: RunProcessFirstStepProps) =>
         <Grid container spacing={16}>
-            <Grid container item xs={6}>
-                <Grid item xs={12}>
-                    {/* TODO: add filters */}
+            <Grid container item xs={6} className={classes.root}>
+                <Grid item xs={12} className={classes.searchGrid}>
+                    <SearchInput value='' onSearch={onSearch} />
                 </Grid>
                 <Grid item xs={12}>
                     <List className={classes.list}>
@@ -69,7 +77,7 @@ export const RunProcessFirstStep = withStyles(styles)(
                     </List>
                 </Grid>
             </Grid>
-            <Grid item xs={6} className={classes.rightGrid}>
+            <Grid item xs={6} className={classes.workflowDetailsGrid}>
                 <WorkflowDetailsCard workflow={selectedWorkflow}/>
             </Grid>
             <Grid item xs={12}>
