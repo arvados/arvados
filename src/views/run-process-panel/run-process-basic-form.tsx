@@ -6,6 +6,7 @@ import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { Grid } from '@material-ui/core';
 import { TextField } from '~/components/text-field/text-field';
+import { PROCESS_NAME_VALIDATION } from '~/validators/validators';
 
 export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 
@@ -18,12 +19,14 @@ export const RunProcessBasicForm =
         form: RUN_PROCESS_BASIC_FORM
     })(() =>
         <form>
-            <Grid container spacing={16}>
+            <Grid container spacing={32}>
                 <Grid item xs={12} md={6}>
                     <Field
                         name='name'
                         component={TextField}
-                        label="Enter a new name for run process" />
+                        label="Enter a new name for run process"
+                        required
+                        validate={PROCESS_NAME_VALIDATION} />
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <Field

@@ -22,9 +22,7 @@ export const GenericInput = ({ component: Component, ...props }: GenericInputCon
             error={props.meta.touched && !!props.meta.error}>
             {getInputLabel(props.commandInput)}
         </FormLabel>
-        <FormControl>
-            <Component {...props} />
-        </FormControl>
+        <Component {...props} />
         <FormHelperText error={props.meta.touched && !!props.meta.error}>
             {
                 props.meta.touched && props.meta.error

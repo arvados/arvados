@@ -24,8 +24,8 @@ export interface RunProcessSecondStepFormActionProps {
 
 const mapStateToProps = (state: RootState): RunProcessSecondStepFormDataProps => ({
     inputs: state.runProcessPanel.inputs,
-    valid: isValid(RUN_PROCESS_BASIC_FORM)(state.form) &&
-        isValid(RUN_PROCESS_INPUTS_FORM)(state.form),
+    valid: isValid(RUN_PROCESS_BASIC_FORM)(state) &&
+        isValid(RUN_PROCESS_INPUTS_FORM)(state),
 });
 
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;

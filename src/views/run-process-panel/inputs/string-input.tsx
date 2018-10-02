@@ -29,4 +29,4 @@ const StringInputComponent = (props: GenericInputProps) =>
         {...props} />;
 
 const Input = (props: GenericInputProps) =>
-    <MaterialInput fullWidth {...props.input} />;
+    <MaterialInput fullWidth {...props.input} error={props.meta.touched && !!props.meta.error} />;

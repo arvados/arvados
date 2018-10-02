@@ -51,4 +51,4 @@ class FloatInputComponent extends React.Component<GenericInputProps> {
 }
 
 const Input = (props: GenericInputProps) =>
-    <MaterialInput fullWidth {...props.input} />;
+    <MaterialInput fullWidth {...props.input} error={props.meta.touched && !!props.meta.error} />;
