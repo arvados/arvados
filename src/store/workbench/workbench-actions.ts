@@ -48,6 +48,7 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
 import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -262,7 +263,7 @@ export const moveCollection = (data: MoveToFormDialogData) =>
             const collection = await dispatch<any>(collectionMoveActions.moveCollection(data));
             dispatch<any>(updateResources([collection]));
             dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
         }

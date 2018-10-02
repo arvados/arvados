@@ -64,9 +64,6 @@ enum TreePickerId {
 
 export const WorkflowTreePicker = connect(undefined, mapDispatchToProps)((props: WorkflowTreePickerProps) =>
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Typography variant='caption' style={{ flexShrink: 0 }}>
-            Select a project
-        </Typography>
         <div style={{ flexGrow: 1, overflow: 'auto' }}>
             <MainWorkflowTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
             <MainWorkflowTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.SHARED_WITH_ME} />
@@ -109,7 +106,10 @@ export const loadFavoriteTreePicker = (nodeId: string) =>
                 .addEqual('ownerUuid', nodeId)
                 .getFilters();
 
-            const { items } = await services.groupsService.contents(parentId, { filters });
+                const { items } = (extractUuidKind(nodeId) === ResourceKind.COLLECTION)
+                ? dispatch<any>(loadCollectionFiles(nodeId))
+                : await services.groupsService.contents(parentId, { filters });
+
 
             dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.FAVORITES));
         }
