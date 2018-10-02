@@ -113,16 +113,24 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
-            
+            // createEnumCollectorWorkflow(services);
         }
     };
 };
 
-const createSampleWorkflow = ({workflowService}:ServiceRepository) => {
+const createPrimitivesCollectorWorkflow = ({workflowService}:ServiceRepository) => {
     workflowService.create({
             name: 'Primitive values collector',
             description: 'Workflow for collecting primitive values',
             definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"flag\":\n          $(inputs.example_flag)\n        \"string\":\n          $(inputs.example_string)\n        \"int\":\n          $(inputs.example_int)\n        \"long\":\n          $(inputs.example_long)\n        \"float\":\n          $(inputs.example_float)\n        \"double\":\n          $(inputs.example_double)\n    class: InitialWorkDirRequirement\n  inputs:\n  - type: double\n    id: '#input_collector.cwl/example_double'\n  - type: boolean\n    id: '#input_collector.cwl/example_flag'\n  - type: float\n    id: '#input_collector.cwl/example_float'\n  - type: int\n    id: '#input_collector.cwl/example_int'\n  - type: long\n    id: '#input_collector.cwl/example_long'\n  - type: string\n    id: '#input_collector.cwl/example_string'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: Workflw for collecting primitive values\n  inputs:\n  - type: double\n    label: Double value\n    doc: This should allow for entering a decimal number (64-bit).\n    id: '#main/example_double'\n    default: 0.3333333333333333\n  - type: boolean\n    label: Boolean Flag\n    doc: This should render as in checkbox.\n    id: '#main/example_flag'\n    default: true\n  - type: float\n    label: Float value\n    doc: This should allow for entering a decimal number (32-bit).\n    id: '#main/example_float'\n    default: 0.15625\n  - type: int\n    label: Integer Number\n    doc: This should allow for entering a number (32-bit signed).\n    id: '#main/example_int'\n    default: 2147483647\n  - type: long\n    label: Long Number\n    doc: This should allow for entering a number (64-bit signed).\n    id: '#main/example_long'\n    default: 9223372036854775807\n  - type: string\n    label: Freetext\n    doc: This should allow for entering an arbitrary char sequence.\n    id: '#main/example_string'\n    default: This is a string\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/example_double'\n      id: '#main/input_collector/example_double'\n    - source: '#main/example_flag'\n      id: '#main/input_collector/example_flag'\n    - source: '#main/example_float'\n      id: '#main/input_collector/example_float'\n    - source: '#main/example_int'\n      id: '#main/input_collector/example_int'\n    - source: '#main/example_long'\n      id: '#main/input_collector/example_long'\n    - source: '#main/example_string'\n      id: '#main/input_collector/example_string'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+        });
+};
+
+const createEnumCollectorWorkflow = ({workflowService}:ServiceRepository) => {
+    workflowService.create({
+            name: 'Enum values collector',
+            description: 'Workflow for collecting enum values',
+            definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"enum_type\":\n          $(inputs.enum_type)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n      type: enum\n      symbols: ['#input_collector.cwl/enum_type/OTU table', '#input_collector.cwl/enum_type/Pathway\n          table', '#input_collector.cwl/enum_type/Function table', '#input_collector.cwl/enum_type/Ortholog\n          table']\n    id: '#input_collector.cwl/enum_type'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n      type: enum\n      symbols: ['#main/enum_type/OTU table', '#main/enum_type/Pathway table', '#main/enum_type/Function\n          table', '#main/enum_type/Ortholog table']\n      name: '#enum_typef4179c7f-45f9-482d-a5db-1abb86698384'\n    label: Enumeration Type\n    doc: This should render as a drop-down menu.\n    id: '#main/enum_type'\n    default: OTU table\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/enum_type'\n      id: '#main/input_collector/enum_type'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
         });
 };
 

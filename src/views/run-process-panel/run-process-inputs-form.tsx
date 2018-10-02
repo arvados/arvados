@@ -7,13 +7,14 @@ import { reduxForm, InjectedFormProps } from 'redux-form';
 import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
-import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData } from '../../models/workflow';
+import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData, EnumCommandInputParameter } from '../../models/workflow';
 import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
 import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { EnumInput } from './inputs/enum-input';
 
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -70,6 +71,11 @@ const getInputComponent = (input: CommandInputParameter) => {
 
         case isPrimitiveOfType(input, CWLType.FILE):
             return <FileInput input={input as FileCommandInputParameter} />;
+
+        case typeof input.type === 'object' &&
+            !(input.type instanceof Array) &&
+            input.type.type === 'enum':
+            return <EnumInput input={input as EnumCommandInputParameter} />;
 
         default:
             return null;
