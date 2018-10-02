@@ -3,10 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles, Tooltip } from '@material-ui/core';
+import {
+    IconButton,
+    Paper,
+    StyleRulesCallback,
+    withStyles,
+    WithStyles,
+    Tooltip,
+    InputAdornment, Input
+} from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 
-type CssRules = 'container' | 'input' | 'button';
+type CssRules = 'container' | 'input';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
@@ -17,17 +25,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         input: {
             border: 'none',
             borderRadius: theme.spacing.unit / 4,
-            boxSizing: 'border-box',
-            padding: theme.spacing.unit,
-            paddingRight: theme.spacing.unit * 4,
-            width: '100%',
-        },
-        button: {
-            position: 'absolute',
-            top: theme.spacing.unit / 2,
-            right: theme.spacing.unit / 2,
-            width: theme.spacing.unit * 3,
-            height: theme.spacing.unit * 3
+            padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px`
         }
     };
 };
@@ -61,17 +59,22 @@ export const SearchBar = withStyles(styles)(
             const { classes } = this.props;
             return <Paper className={classes.container}>
                 <form onSubmit={this.handleSubmit}>
-                    <input
+                    <Input
                         className={classes.input}
                         onChange={this.handleChange}
                         placeholder="Search"
                         value={this.state.value}
-                    />
-                    <Tooltip title='Search'>
-                        <IconButton className={classes.button}>
-                            <SearchIcon />
-                        </IconButton>
-                    </Tooltip>
+                        fullWidth={true}
+                        disableUnderline={true}
+                        endAdornment={
+                            <InputAdornment position="end">
+                                <Tooltip title='Search'>
+                                    <IconButton>
+                                        <SearchIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            </InputAdornment>
+                        }/>
                 </form>
             </Paper>;
         }

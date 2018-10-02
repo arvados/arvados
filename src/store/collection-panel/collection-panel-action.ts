@@ -15,6 +15,7 @@ import { resourcesActions } from "~/store/resources/resources-actions";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 
 export const collectionPanelActions = unionize({
+    SET_COLLECTION: ofType<CollectionResource>(),
     LOAD_COLLECTION: ofType<{ uuid: string }>(),
     LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>()
 });
@@ -34,7 +35,7 @@ export const loadCollectionPanel = (uuid: string) =>
         return collection;
     };
 
-export const createCollectionTag = (data: TagProperty) => 
+export const createCollectionTag = (data: TagProperty) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const item = getState().collectionPanel.item;
         const uuid = item ? item.uuid : '';

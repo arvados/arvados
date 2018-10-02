@@ -17,7 +17,7 @@ export type RunProcessPanelRootActionProps = RunProcessFirstStepActionProps & {
 
 type RunProcessPanelRootProps = RunProcessPanelRootDataProps & RunProcessPanelRootActionProps;
 
-export const RunProcessPanelRoot = ({ runProcess, currentStep, onSetStep, onSetWorkflow, workflows, selectedWorkflow }: RunProcessPanelRootProps) =>
+export const RunProcessPanelRoot = ({ runProcess, currentStep, onSearch, onSetStep, onSetWorkflow, workflows, selectedWorkflow }: RunProcessPanelRootProps) =>
     <Stepper activeStep={currentStep} orientation="vertical" elevation={2}>
         <Step>
             <StepLabel>Choose a workflow</StepLabel>
@@ -25,7 +25,8 @@ export const RunProcessPanelRoot = ({ runProcess, currentStep, onSetStep, onSetW
                 <RunProcessFirstStep
                     workflows={workflows}
                     selectedWorkflow={selectedWorkflow}
-                    onSetStep={onSetStep}
+                    onSearch={onSearch}
+                    onSetStep={onSetStep} 
                     onSetWorkflow={onSetWorkflow} />
             </StepContent>
         </Step>

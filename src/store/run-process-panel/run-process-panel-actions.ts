@@ -21,6 +21,7 @@ export const runProcessPanelActions = unionize({
     SET_CURRENT_STEP: ofType<number>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
+    SEARCH_WORKFLOWS: ofType<string>()
 });
 
 export interface RunProcessSecondStepDataFormProps {
@@ -91,3 +92,4 @@ const normalizeInputKeys = (inputs: WorkflowInputsData): WorkflowInputsData =>
         ...normalizedInputs,
         [key.split('/').slice(1).join('/')]: inputs[key],
     }), {});
+export const searchWorkflows = (term: string) => runProcessPanelActions.SEARCH_WORKFLOWS(term);
