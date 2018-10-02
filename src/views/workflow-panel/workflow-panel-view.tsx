@@ -122,7 +122,7 @@ export const WorkflowPanelView = (props: WorkflowPanelProps) => {
         </Grid>
         <Grid item xs={6}>
             <Paper>
-                <WorkflowDetailsCard />
+                <WorkflowDetailsCard workflow={props.workflow} />
             </Paper>
         </Grid>
     </Grid>;

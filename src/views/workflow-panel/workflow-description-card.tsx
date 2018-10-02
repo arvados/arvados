@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs, Typography, List, ListItem, Table, TableHead, TableCell, TableBody, TableRow } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs } from '~/models/workflow';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from '~/models/workflow';
 
 export type CssRules = 'root' | 'tab';
 
@@ -48,19 +48,18 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     {workflow ? (
                         workflow.description
                     ) : (
-                        <DataTableDefaultView
-                            icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its description.']} />
-                    )}
+                            <DataTableDefaultView
+                                icon={WorkflowIcon}
+                                messages={['Please select a workflow to see its description.']} />
+                        )}
                 </CardContent>}
                 {value === 1 && <CardContent>
-                    {workflow ? (
-                        workflow.name
-                    ) : (
-                        <DataTableDefaultView
+                    {workflow
+                        ? this.renderInputsTable()
+                        : <DataTableDefaultView
                             icon={WorkflowIcon}
                             messages={['Please select a workflow to see its inputs.']} />
-                    )}
+                    }
                 </CardContent>}
             </div>;
         }
@@ -73,5 +72,25 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 }
             }
             return;
+        }
+
+        renderInputsTable() {
+            return <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Label</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Description</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {this.inputs && this.inputs.map(input =>
+                        <TableRow key={input.id}>
+                            <TableCell>{getInputLabel(input)}</TableCell>
+                            <TableCell>{stringifyInputType(input)}</TableCell>
+                            <TableCell>{input.doc}</TableCell>
+                        </TableRow>)}
+                </TableBody>
+            </Table>;
         }
     });
