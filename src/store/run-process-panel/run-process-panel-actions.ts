@@ -12,6 +12,7 @@ export const runProcessPanelActions = unionize({
     SET_CURRENT_STEP: ofType<number>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
+    SEARCH_WORKFLOWS: ofType<string>()
 });
 
 export interface RunProcessSecondStepDataFormProps {
@@ -39,3 +40,5 @@ export const setWorkflow = (workflow: WorkflowResource) =>
     };
 
 export const goToStep = (step: number) => runProcessPanelActions.SET_CURRENT_STEP(step);
+
+export const searchWorkflows = (term: string) => runProcessPanelActions.SEARCH_WORKFLOWS(term);
