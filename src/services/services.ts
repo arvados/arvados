@@ -21,7 +21,7 @@ import { ContainerRequestService } from './container-request-service/container-r
 import { ContainerService } from './container-service/container-service';
 import { LogService } from './log-service/log-service';
 import { ApiActions } from "~/services/api/api-actions";
-import { WorkflowService } from './workflow-service/workflow-service';
+import { WorkflowService } from "~/services/workflow-service/workflow-service";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -66,7 +66,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         tagService,
         userService,
         webdavClient,
-        workflowService
+        workflowService,
     };
 };
 

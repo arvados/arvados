@@ -6,7 +6,7 @@ import * as React from 'react';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WORKFLOW_PANEL_ID } from '~/store/workflow-panel/workflow-panel-actions';
+import { WORKFLOW_PANEL_ID, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import {
     ResourceLastModifiedDate,
     RosurceWorkflowName,
@@ -18,6 +18,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
+import { WorkflowResource } from '../../models/workflow';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",
@@ -30,10 +31,16 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceStatus;
 }
 
-interface WorkflowPanelDataProps {
-    handleRowDoubleClick: any;
-    handleRowClick: any;
+export interface WorkflowPanelDataProps {
+    workflow?: WorkflowResource;
 }
+
+export interface WorfklowPanelActionProps {
+    handleRowDoubleClick: (workflowUuid: string) => void;
+    handleRowClick: (workflowUuid: string) => void;
+}
+
+export type WorkflowPanelProps = WorkflowPanelDataProps & WorfklowPanelActionProps;
 
 export enum ResourceStatus {
     PUBLIC = "Public",
@@ -103,7 +110,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
     }
 ];
 
-export const WorkflowPanelView = ({ ...props }) => {
+export const WorkflowPanelView = (props: WorkflowPanelProps) => {
     return <Grid container spacing={16}>
         <Grid item xs={6}>
             <DataExplorer
@@ -116,7 +123,7 @@ export const WorkflowPanelView = ({ ...props }) => {
         </Grid>
         <Grid item xs={6}>
             <Paper style={{ height: '100%' }}>
-                <WorkflowDetailsCard />
+                <WorkflowDetailsCard workflow={props.workflow} />
             </Paper>
         </Grid>
     </Grid>;

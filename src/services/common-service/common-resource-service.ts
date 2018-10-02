@@ -89,7 +89,7 @@ export class CommonResourceService<T extends Resource> {
         this.actions = actions;
     }
 
-    create(data?: Partial<T> | any) {
+    create(data?: Partial<T>) {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .post<T>(this.resourceType, data && CommonResourceService.mapKeys(_.snakeCase)(data)),

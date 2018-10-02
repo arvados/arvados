@@ -2,23 +2,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { WorkflowPanelView } from '~/views/workflow-panel/workflow-panel-view';
+import { WorfklowPanelActionProps, WorkflowPanelDataProps } from './workflow-panel-view';
+import { showWorkflowDetails, getWorkflowDetails } from '../../store/workflow-panel/workflow-panel-actions';
+import { RootState } from '~/store/store';
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
+const mapStateToProps = (state: RootState): WorkflowPanelDataProps => ({ 
+    workflow: getWorkflowDetails(state)
+});
+
+const mapDispatchToProps = (dispatch: Dispatch): WorfklowPanelActionProps => ({
 
     handleRowDoubleClick: (uuid: string) => {
         dispatch<any>(navigateTo(uuid));
     },
-    
+
     handleRowClick: (uuid: string) => {
-        dispatch(loadDetailsPanel(uuid));
+        dispatch(showWorkflowDetails(uuid));
     }
 });
 
-export const WorkflowPanel= connect(undefined, mapDispatchToProps)(
-    (props) => <WorkflowPanelView {...props}/>);
+export const WorkflowPanel = connect(mapStateToProps, mapDispatchToProps)(WorkflowPanelView);
