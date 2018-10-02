@@ -63,8 +63,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": nodeProfile,
 		},
-		MaxItemsPerResponse:         1000,
-		FederatedRequestConcurrency: 4,
+		RequestLimits: arvados.RequestLimits{
+			MaxItemsPerResponse:            1000,
+			MultiClusterRequestConcurrency: 4,
+		},
 	}, NodeProfile: &nodeProfile}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.log, s.testHandler))
@@ -722,7 +724,7 @@ func (s *FederationSuite) TestListMultiRemoteContainersMissing(c *check.C) {
 }
 
 func (s *FederationSuite) TestListMultiRemoteContainerPageSizeError(c *check.C) {
-	s.testHandler.Cluster.MaxItemsPerResponse = 1
+	s.testHandler.Cluster.RequestLimits.MaxItemsPerResponse = 1
 	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
 			arvadostest.QueuedContainerUUID))),

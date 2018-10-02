@@ -213,20 +213,6 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 	return rp, kind, nil
 }
 
-func (h *Handler) FederatedRequestConcurrency() int {
-	if h.Cluster.FederatedRequestConcurrency == 0 {
-		return 4
-	}
-	return h.Cluster.FederatedRequestConcurrency
-}
-
-func (h *Handler) MaxItemsPerResponse() int {
-	if h.Cluster.MaxItemsPerResponse == 0 {
-		return 1000
-	}
-	return h.Cluster.MaxItemsPerResponse
-}
-
 func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter,
 	req *http.Request, clusterId *string) bool {
 
@@ -292,9 +278,9 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 		httpserver.Error(w, "Federated multi-object may not provide 'limit', 'offset' or 'order'.", http.StatusBadRequest)
 		return true
 	}
-	if expectCount > h.handler.MaxItemsPerResponse() {
+	if expectCount > h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse() {
 		httpserver.Error(w, fmt.Sprintf("Federated multi-object request for %v objects which is more than max page size %v.",
-			expectCount, h.handler.MaxItemsPerResponse()), http.StatusBadRequest)
+			expectCount, h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse()), http.StatusBadRequest)
 		return true
 	}
 	if req.Form.Get("select") != "" {
@@ -322,7 +308,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 
 	// use channel as a semaphore to limit the number of concurrent
 	// requests at a time
-	sem := make(chan bool, h.handler.FederatedRequestConcurrency())
+	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
 	defer close(sem)
 	wg := sync.WaitGroup{}
 
@@ -666,7 +652,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 	// use channel as a semaphore to limit the number of concurrent
 	// requests at a time
-	sem := make(chan bool, h.handler.FederatedRequestConcurrency())
+	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
 	defer close(sem)
 	for remoteID := range h.handler.Cluster.RemoteClusters {
 		// blocks until it can put a value into the
