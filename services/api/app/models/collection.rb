@@ -221,9 +221,19 @@ class Collection < ArvadosModel
   end
 
   def save! *args
-    if !Rails.configuration.collection_versioning || new_record? || (!self.changes.include?('uuid') && current_version_uuid != uuid)
+    # Skip if feature is disabled or saving a new record
+    if !Rails.configuration.collection_versioning || new_record?
       return super
     end
+    # Skip if updating a past version
+    if !self.changes.include?('uuid') && current_version_uuid != uuid
+      return super
+    end
+    # Skip if current version shouldn't (explicitly or implicitly) be preserved
+    if !should_preserve_version?
+      return super
+    end
+
     changes = self.changes
     # Updates that will be synced with older versions
     synced_updates = ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed',
@@ -231,10 +241,18 @@ class Collection < ArvadosModel
     # Updates that will produce a new version
     versionable_updates = ['manifest_text', 'description', 'properties', 'name'] & changes.keys
 
-    if versionable_updates.empty? && synced_updates.empty?
-      # Updates don't include interesting attributes, so don't save a new snapshot nor
-      # sync older versions.
-      return super
+    if versionable_updates.empty?
+      # Keep preserve_version enabled for the next update, if applicable.
+      self.preserve_version ||= self.preserve_version_was
+      if !self.changes.include?('preserve_version')
+        changes.delete('preserve_version')
+      end
+
+      if synced_updates.empty?
+        # Updates don't include interesting attributes, so don't save a new
+        # snapshot nor sync older versions.
+        return super
+      end
     end
 
     # Does row locking (transaction is implicit) because 'version'
@@ -273,6 +291,7 @@ class Collection < ArvadosModel
         snapshot.created_at = created_at
         # Update current version number
         self.version += 1
+        self.preserve_version = false
       end
       # Restore requested changes on the current version
       changes.keys.each do |attr|
@@ -285,6 +304,16 @@ class Collection < ArvadosModel
       snapshot.andand.save!
       return true
     end
+  end
+
+  def should_preserve_version?
+    idle_threshold = Rails.configuration.preserve_version_if_idle
+    if !self.preserve_version_was &&
+      (idle_threshold < 0 ||
+        (idle_threshold > 0 && self.modified_at_was > db_current_time-idle_threshold.seconds))
+      return false
+    end
+    return true
   end
 
   def check_encoding

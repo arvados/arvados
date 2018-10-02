@@ -174,7 +174,8 @@ CREATE TABLE public.collections (
     storage_classes_confirmed jsonb DEFAULT '[]'::jsonb,
     storage_classes_confirmed_at timestamp without time zone,
     current_version_uuid character varying,
-    version integer DEFAULT 1 NOT NULL
+    version integer DEFAULT 1 NOT NULL,
+    preserve_version boolean DEFAULT false
 );
 
 
@@ -3183,4 +3184,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180913175443');
 INSERT INTO schema_migrations (version) VALUES ('20180915155335');
 
 INSERT INTO schema_migrations (version) VALUES ('20180919001158');
+
+INSERT INTO schema_migrations (version) VALUES ('20181001175023');
 

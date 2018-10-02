@@ -106,8 +106,76 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "auto-create version after idle setting" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 600 # 10 minutes
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      assert_equal false, c.preserve_version
+      # Make a versionable update, it shouldn't create a new version yet
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 'bar', c.name
+      assert_equal 1, c.version
+      # Update modified_at to trigger a version auto-creation
+      fifteen_min_ago = Time.now - 15.minutes
+      c.update_column('modified_at', fifteen_min_ago) # Update without validations/callbacks
+      c.reload
+      assert_equal fifteen_min_ago.to_i, c.modified_at.to_i
+      c.update_attributes!({'name' => 'baz'})
+      c.reload
+      assert_equal 'baz', c.name
+      assert_equal 2, c.version
+      # Make another update, no new version should be created
+      c.update_attributes!({'name' => 'foobar'})
+      c.reload
+      assert_equal 'foobar', c.name
+      assert_equal 2, c.version
+    end
+  end
+
+  test "preserve_version=false assignment is ignored while being true and not producing a new version" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 3600
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      assert_equal false, c.preserve_version
+      # This update shouldn't produce a new version, as the idle time is not up
+      c.update_attributes!({
+        'name' => 'bar',
+        'preserve_version' => true
+      })
+      c.reload
+      assert_equal 1, c.version
+      assert_equal 'bar', c.name
+      assert_equal true, c.preserve_version
+      # Make sure preserve_version is not disabled after being enabled, unless
+      # a new version is created.
+      c.update_attributes!({
+        'preserve_version' => false,
+        'replication_desired' => 2
+      })
+      c.reload
+      assert_equal 1, c.version
+      assert_equal 2, c.replication_desired
+      assert_equal true, c.preserve_version
+      c.update_attributes!({'name' => 'foobar'})
+      c.reload
+      assert_equal 2, c.version
+      assert_equal false, c.preserve_version
+      assert_equal 'foobar', c.name
+    end
+  end
+
   test "uuid updates on current version make older versions update their pointers" do
     Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
     act_as_system_user do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -130,6 +198,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test "older versions' modified_at indicate when they're created" do
     Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -163,6 +232,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test "older versions should no be directly updatable" do
     Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -205,6 +275,7 @@ class CollectionTest < ActiveSupport::TestCase
   ].each do |attr, first_val, second_val|
     test "sync #{attr} with older versions" do
       Rails.configuration.collection_versioning = true
+      Rails.configuration.preserve_version_if_idle = 0
       act_as_system_user do
         # Set up initial collection
         c = create_collection 'foo', Encoding::US_ASCII
@@ -246,6 +317,7 @@ class CollectionTest < ActiveSupport::TestCase
   ].each do |versioning, attr, val, new_version_expected|
     test "update #{attr} with versioning #{versioning ? '' : 'not '}enabled should #{new_version_expected ? '' : 'not '}create a new version" do
       Rails.configuration.collection_versioning = versioning
+      Rails.configuration.preserve_version_if_idle = 0
       act_as_user users(:active) do
         # Create initial collection
         c = create_collection 'foo', Encoding::US_ASCII
@@ -280,6 +352,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test 'with versioning enabled, simultaneous updates increment version correctly' do
     Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
     act_as_user users(:active) do
       # Create initial collection
       col = create_collection 'foo', Encoding::US_ASCII
