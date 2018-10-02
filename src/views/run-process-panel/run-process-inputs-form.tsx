@@ -7,7 +7,7 @@ import { reduxForm, InjectedFormProps } from 'redux-form';
 import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
-import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType } from '../../models/workflow';
+import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData } from '../../models/workflow';
 import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
 import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
@@ -27,7 +27,7 @@ export const RunProcessInputsForm = compose(
             (values, input) => ({ ...values, [input.id]: input.default }),
             {}),
     })),
-    reduxForm<any, RunProcessInputFormProps>({
+    reduxForm<WorkflowInputsData, RunProcessInputFormProps>({
         form: RUN_PROCESS_INPUTS_FORM
     }))(
         (props: InjectedFormProps & RunProcessInputFormProps) =>

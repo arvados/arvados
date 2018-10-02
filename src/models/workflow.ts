@@ -107,6 +107,9 @@ export type StringArrayCommandInputParameter = GenericArrayCommandInputParameter
 export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
 
+export type WorkflowInputsData = {
+    [key: string]: boolean | number | string | File | Directory;
+};
 export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResoruceDefinition => {
     const definition = safeLoad(workflow.definition);
     return definition;
