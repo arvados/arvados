@@ -6,10 +6,10 @@ import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { Typography } from "@material-ui/core";
-import { MainWorkflowTreePicker, MainWorkflowTreePickerProps } from "./main-workflow-tree-picker";
+import { MainFileTreePicker, MainFileTreePickerProps } from "./main-file-tree-picker";
 import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
-import { workflowTreePickerActions } from "~/store/workflow-tree-picker/workflow-tree-picker-actions";
+import { fileTreePickerActions } from "~/store/workflow-tree-picker/workflow-tree-picker-actions";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, CollectionIcon } from '~/components/icon/icon';
 import { createTreePickerNode } from "~/store/tree-picker/tree-picker";
@@ -21,14 +21,14 @@ import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
-type WorkflowTreePickerProps = Pick<MainWorkflowTreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
+type FileTreePickerProps = Pick<MainFileTreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
 
-const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): WorkflowTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): FileTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (nodeId, status, pickerId) => {
         getNotSelectedTreePickerKind(pickerId)
-            .forEach(pickerId => dispatch(workflowTreePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));
-        dispatch(workflowTreePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId }));
+            .forEach(pickerId => dispatch(fileTreePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));
+        dispatch(fileTreePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId }));
 
         props.onChange(nodeId);
     },
@@ -48,7 +48,7 @@ const toggleItemOpen = (nodeId: string, status: TreeItemStatus, pickerId: string
                 // TODO: load sharedWithMe
             }
         } else {
-            dispatch(workflowTreePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
+            dispatch(fileTreePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
         }
     };
 
@@ -62,20 +62,18 @@ enum TreePickerId {
     FAVORITES = 'Favorites'
 }
 
-export const WorkflowTreePicker = connect(undefined, mapDispatchToProps)((props: WorkflowTreePickerProps) =>
+export const WorkflowTreePicker = connect(undefined, mapDispatchToProps)((props: FileTreePickerProps) =>
     <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ flexGrow: 1, overflow: 'auto' }}>
-            <MainWorkflowTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
-            <MainWorkflowTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.SHARED_WITH_ME} />
-            <MainWorkflowTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.FAVORITES} />
+            <MainFileTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
+            <MainFileTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.SHARED_WITH_ME} />
+            <MainFileTreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.FAVORITES} />
         </div>
     </div>);
 
 export const loadProjectTreePicker = (nodeId: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log(nodeId);
-        console.log(extractUuidKind(nodeId));
-        dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.PROJECTS }));
+        dispatch(fileTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.PROJECTS }));
 
         const ownerUuid = nodeId.length === 0 ? services.authService.getUuid() || '' : nodeId;
 
@@ -84,6 +82,7 @@ export const loadProjectTreePicker = (nodeId: string) =>
             .addEqual('ownerUuid', ownerUuid)
             .getFilters();
 
+            // TODO: loadfiles from collections
         const { items } = (extractUuidKind(nodeId) === ResourceKind.COLLECTION)
             ? dispatch<any>(loadCollectionFiles(nodeId))
             : await services.groupsService.contents(ownerUuid, { filters });
@@ -96,12 +95,12 @@ export const loadFavoriteTreePicker = (nodeId: string) =>
         const parentId = services.authService.getUuid() || '';
 
         if (nodeId === '') {
-            dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: parentId, pickerId: TreePickerId.FAVORITES }));
+            dispatch(fileTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: parentId, pickerId: TreePickerId.FAVORITES }));
             const { items } = await services.favoriteService.list(parentId);
 
             dispatch<any>(receiveTreePickerData(parentId, items as ProjectResource[], TreePickerId.FAVORITES));
         } else {
-            dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.FAVORITES }));
+            dispatch(fileTreePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.FAVORITES }));
             const filters = new FilterBuilder()
                 .addEqual('ownerUuid', nodeId)
                 .getFilters();
@@ -149,16 +148,16 @@ const renderTreeItem = (item: TreeItem<ProjectResource>) =>
 
 export const receiveTreePickerData = (nodeId: string, items: GroupContentsResource[] = [], pickerId: string) =>
     (dispatch: Dispatch) => {
-        dispatch(workflowTreePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+        dispatch(fileTreePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             nodeId,
             nodes: items.map(item => createTreePickerNode({ nodeId: item.uuid, value: item })),
             pickerId,
         }));
 
-        dispatch(workflowTreePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
+        dispatch(fileTreePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
     };
 
-export const WorkflowTreePickerField = (props: WrappedFieldProps) =>
+export const FileTreePickerField = (props: WrappedFieldProps) =>
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
         <WorkflowTreePicker onChange={handleChange(props)} />
         {props.meta.dirty && props.meta.error &&

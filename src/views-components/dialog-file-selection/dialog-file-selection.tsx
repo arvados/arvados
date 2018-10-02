@@ -8,7 +8,7 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { require } from '~/validators/require';
-import { WorkflowTreePickerField } from '~/views-components/workflow-tree-picker/workflow-tree-picker';
+import { FileTreePickerField } from '~/views-components/file-tree-picker/file-tree-picker';
 
 type FileSelectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -24,6 +24,6 @@ const FileSelectionFields = () =>
     <Field
         name='tree'
         validate={FILES_FIELD_VALIDATION}
-        component={WorkflowTreePickerField} />;
+        component={FileTreePickerField} />;
 
 const FILES_FIELD_VALIDATION = [require];

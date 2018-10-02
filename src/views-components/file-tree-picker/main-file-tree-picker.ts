@@ -9,7 +9,7 @@ import { createTreePickerNode, TreePickerNode } from "~/store/workflow-tree-pick
 import { getNodeValue, getNodeChildrenIds, Tree as Ttree, createTree } from "~/models/tree";
 import { Dispatch } from "redux";
 
-export interface MainWorkflowTreePickerProps {
+export interface MainFileTreePickerProps {
     pickerId: string;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, nodeId: string, pickerId: string) => void;
     toggleItemOpen: (nodeId: string, status: TreeItemStatus, pickerId: string) => void;
@@ -19,7 +19,7 @@ export interface MainWorkflowTreePickerProps {
 const memoizedMapStateToProps = () => {
     let prevTree: Ttree<TreePickerNode>;
     let mappedProps: Pick<TreeProps<any>, 'items'>;
-    return (state: RootState, props: MainWorkflowTreePickerProps): Pick<TreeProps<any>, 'items'> => {
+    return (state: RootState, props: MainFileTreePickerProps): Pick<TreeProps<any>, 'items'> => {
         const tree = state.treePicker[props.pickerId] || createTree();
         if(tree !== prevTree){
             prevTree = tree;
@@ -32,13 +32,13 @@ const memoizedMapStateToProps = () => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch, props: MainWorkflowTreePickerProps): Pick<TreeProps<any>, 'onContextMenu' | 'toggleItemOpen' | 'toggleItemActive'> => ({
+const mapDispatchToProps = (dispatch: Dispatch, props: MainFileTreePickerProps): Pick<TreeProps<any>, 'onContextMenu' | 'toggleItemOpen' | 'toggleItemActive'> => ({
     onContextMenu: (event, item) => props.onContextMenu(event, item.id, props.pickerId),
     toggleItemActive: (id, status) => props.toggleItemActive(id, status, props.pickerId),
     toggleItemOpen: (id, status) => props.toggleItemOpen(id, status, props.pickerId)
 });
 
-export const MainWorkflowTreePicker = connect(memoizedMapStateToProps(), mapDispatchToProps)(Tree);
+export const MainFileTreePicker = connect(memoizedMapStateToProps(), mapDispatchToProps)(Tree);
 
 const treePickerToTreeItems = (tree: Ttree<TreePickerNode>) =>
     (id: string): TreeItem<any> => {

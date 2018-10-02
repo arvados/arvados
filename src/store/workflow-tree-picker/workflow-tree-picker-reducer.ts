@@ -4,13 +4,13 @@
 
 import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "~/models/tree";
 import { TreePicker, TreePickerNode } from "./workflow-tree-picker";
-import { workflowTreePickerActions, WorkflowTreePickerAction } from "./workflow-tree-picker-actions";
+import { fileTreePickerActions, FileTreePickerAction } from "./workflow-tree-picker-actions";
 import { TreeItemStatus } from "~/components/tree/tree";
 import { compose } from "redux";
 import { getNode } from '~/models/tree';
 
-export const workflowTreePickerReducer = (state: TreePicker = {}, action: WorkflowTreePickerAction) =>
-    workflowTreePickerActions.match(action, {
+export const workflowTreePickerReducer = (state: TreePicker = {}, action: FileTreePickerAction) =>
+    fileTreePickerActions.match(action, {
         LOAD_TREE_PICKER_NODE: ({ nodeId, pickerId }) =>
             updateOrCreatePicker(state, pickerId, setNodeValueWith(setPending)(nodeId)),
         LOAD_TREE_PICKER_NODE_SUCCESS: ({ nodeId, nodes, pickerId }) =>

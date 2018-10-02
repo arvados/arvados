@@ -103,7 +103,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
     }
 ];
 
-export const WorkflowPanelView = ({...props}) => {
+export const WorkflowPanelView = ({ ...props }) => {
     return <Grid container spacing={16}>
         <Grid item xs={6}>
             <DataExplorer
@@ -111,11 +111,11 @@ export const WorkflowPanelView = ({...props}) => {
                 onRowClick={props.handleRowClick}
                 onRowDoubleClick={props.handleRowDoubleClick}
                 contextMenuColumn={false}
-                onContextMenu={e=>e}
+                onContextMenu={e => e}
                 dataTableDefaultView={<DataTableDefaultView icon={WorkflowIcon} />} />
         </Grid>
         <Grid item xs={6}>
-            <Paper>
+            <Paper style={{ height: '100%' }}>
                 <WorkflowDetailsCard />
             </Paper>
         </Grid>
