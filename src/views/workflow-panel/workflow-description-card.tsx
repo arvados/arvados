@@ -59,7 +59,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     ) : (
                         <DataTableDefaultView
                             icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its inpust.']} />
+                            messages={['Please select a workflow to see its inputs.']} />
                     )}
                 </CardContent>}
             </div>;
