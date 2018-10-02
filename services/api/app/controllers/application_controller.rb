@@ -346,7 +346,7 @@ class ApplicationController < ActionController::Base
     if request.get? and params[:reader_tokens] and
       params[:reader_tokens].size < 100
       secrets = params[:reader_tokens].map { |t|
-        if t.starts_with? "v2/"
+        if t.is_a? String and t.starts_with? "v2/"
           t.split("/")[2]
         else
           t
