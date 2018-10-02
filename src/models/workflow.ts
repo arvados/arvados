@@ -119,7 +119,7 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResoruceDefinition
         : undefined;
 };
 export const getInputLabel = (input: CommandInputParameter) => {
-    return `${input.label || input.id}${isRequiredInput(input) ? '*' : ''}`;
+    return `${input.label || input.id}`;
 };
 
 export const isRequiredInput = ({ type }: CommandInputParameter) => {
@@ -132,6 +132,12 @@ export const isRequiredInput = ({ type }: CommandInputParameter) => {
     }
     return true;
 };
+
+export const isPrimitiveOfType = (input: GenericCommandInputParameter<any, any>, type: CWLType) =>
+    input.type instanceof Array
+        ? input.type.indexOf(type) > -1
+        : input.type === type;
+
 export const stringifyInputType = ({ type }: CommandInputParameter) => {
     if (typeof type === 'string') {
         return type;

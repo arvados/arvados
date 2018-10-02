@@ -4,8 +4,8 @@
 
 import * as React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { FormGroup, FormLabel, Input, FormHelperText } from '@material-ui/core';
-import { GenericCommandInputParameter, getInputLabel } from '../../../models/workflow';
+import { FormGroup, FormLabel, Input, FormHelperText, FormControl } from '@material-ui/core';
+import { GenericCommandInputParameter, getInputLabel, isRequiredInput } from '../../../models/workflow';
 
 export type GenericInputProps = WrappedFieldProps & {
     commandInput: GenericCommandInputParameter<any, any>;
@@ -16,9 +16,16 @@ type GenericInputContainerProps = GenericInputProps & {
 };
 export const GenericInput = ({ component: Component, ...props }: GenericInputContainerProps) => {
     return <FormGroup>
-        <FormLabel error={props.meta.touched && props.meta.error}>{getInputLabel(props.commandInput)}</FormLabel>
-        <Component {...props} />
-        <FormHelperText error={props.meta.touched && props.meta.error}>
+        <FormLabel
+            focused={props.meta.active}
+            required={isRequiredInput(props.commandInput)}
+            error={props.meta.touched && !!props.meta.error}>
+            {getInputLabel(props.commandInput)}
+        </FormLabel>
+        <FormControl>
+            <Component {...props} />
+        </FormControl>
+        <FormHelperText error={props.meta.touched && !!props.meta.error}>
             {
                 props.meta.touched && props.meta.error
                     ? props.meta.error

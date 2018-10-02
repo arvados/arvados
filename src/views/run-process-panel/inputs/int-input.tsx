@@ -32,5 +32,5 @@ const IntInputComponent = (props: GenericInputProps) =>
 
 
 const Input = (props: GenericInputProps) =>
-    <MaterialInput type='number' {...props.input} />;
+    <MaterialInput fullWidth type='number' {...props.input} />;
 

@@ -38,5 +38,5 @@ export const FileInput = ({ input }: FileInputProps) =>
 const FileInputComponent = (props: GenericInputProps) =>
     <GenericInput
         component={props =>
-            <Input readOnly value={props.input.value} />}
+            <Input readOnly fullWidth value={props.input.value} />}
         {...props} />;

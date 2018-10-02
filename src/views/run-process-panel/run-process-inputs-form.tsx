@@ -4,15 +4,16 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { WorkflowResource, CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
+import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
-import { StringCommandInputParameter, FloatCommandInputParameter, File } from '../../models/workflow';
+import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType } from '../../models/workflow';
 import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
 import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
+import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 
 const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -28,29 +29,49 @@ export const RunProcessInputsForm = compose(
     })),
     reduxForm<any, RunProcessInputFormProps>({
         form: RUN_PROCESS_INPUTS_FORM
-    }))((props: InjectedFormProps & RunProcessInputFormProps) =>
-        <form>
-            {props.inputs.map(input => {
-                switch (true) {
-                    case input.type === CWLType.BOOLEAN:
-                        return <BooleanInput key={input.id} input={input as BooleanCommandInputParameter} />;
+    }))(
+        (props: InjectedFormProps & RunProcessInputFormProps) =>
+            <form>
+                <Grid container>
+                    {props.inputs.map(input =>
+                        <InputItem input={input} key={input.id} />)}
+                </Grid>
+            </form>);
 
-                    case input.type === CWLType.INT:
-                    case input.type === CWLType.LONG:
-                        return <IntInput key={input.id} input={input as IntCommandInputParameter} />;
+type CssRules = 'inputItem';
 
-                    case input.type === CWLType.FLOAT:
-                    case input.type === CWLType.DOUBLE:
-                        return <FloatInput key={input.id} input={input as FloatCommandInputParameter} />;
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    inputItem: {
+        marginBottom: theme.spacing.unit * 2,
+    }
+});
 
-                    case input.type === CWLType.STRING:
-                        return <StringInput key={input.id} input={input as StringCommandInputParameter} />;
+const InputItem = withStyles(styles)(
+    (props: WithStyles<CssRules> & { input: CommandInputParameter }) =>
+        <Grid item xs={12} className={props.classes.inputItem}>
+            {getInputComponent(props.input)}
+        </Grid>);
 
-                    case input.type === CWLType.FILE:
-                        return <FileInput key={input.id} input={input as FileCommandInputParameter} />;
+const getInputComponent = (input: CommandInputParameter) => {
+    switch (true) {
+        case isPrimitiveOfType(input, CWLType.BOOLEAN):
+            return <BooleanInput input={input as BooleanCommandInputParameter} />;
 
-                    default:
-                        return null;
-                }
-            })}
-        </form>);
+        case isPrimitiveOfType(input, CWLType.INT):
+        case isPrimitiveOfType(input, CWLType.LONG):
+            return <IntInput input={input as IntCommandInputParameter} />;
+
+        case isPrimitiveOfType(input, CWLType.FLOAT):
+        case isPrimitiveOfType(input, CWLType.DOUBLE):
+            return <FloatInput input={input as FloatCommandInputParameter} />;
+
+        case isPrimitiveOfType(input, CWLType.STRING):
+            return <StringInput input={input as StringCommandInputParameter} />;
+
+        case isPrimitiveOfType(input, CWLType.FILE):
+            return <FileInput input={input as FileCommandInputParameter} />;
+
+        default:
+            return null;
+    }
+};
