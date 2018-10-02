@@ -6,7 +6,7 @@ import { Dispatch } from 'redux';
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
-import { WorkflowResource, CommandInputParameter } from '~/models/workflow';
+import { WorkflowResource } from '~/models/workflow';
 import { getFormValues } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
@@ -14,6 +14,7 @@ import { WorkflowInputsData } from '~/models/workflow';
 import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
@@ -52,6 +53,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
+    const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {
         const newProcessData = {
@@ -77,6 +79,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             ],
             outputPath: '/var/spool/cwl',
             priority: 1,
+            outputName: advancedForm && advancedForm.output ? advancedForm.output : undefined,
         };
         const newProcess = await services.containerRequestService.create(newProcessData);
         dispatch(navigateToProcess(newProcess.uuid));
