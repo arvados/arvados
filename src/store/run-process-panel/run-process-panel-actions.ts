@@ -6,9 +6,17 @@ import { Dispatch } from 'redux';
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
-import { WorkflowResource } from '~/models/workflow';
+import { WorkflowResource, CommandInputParameter } from '~/models/workflow';
+import { getFormValues } from 'redux-form';
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
+import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
+import { WorkflowInputsData } from '~/models/workflow';
+import { createWorkflowMounts } from '~/models/process';
+import { ContainerRequestState } from '~/models/container-request';
+import { navigateToProcess } from '../navigation/navigation-action';
 
 export const runProcessPanelActions = unionize({
+    SET_PROCESS_OWNER_UUID: ofType<string>(),
     SET_CURRENT_STEP: ofType<number>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
@@ -33,9 +41,50 @@ export const loadRunProcessPanel = () =>
         }
     };
 
-export const setWorkflow = (workflow: WorkflowResource) => 
+export const setWorkflow = (workflow: WorkflowResource) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
     };
 
 export const goToStep = (step: number) => runProcessPanelActions.SET_CURRENT_STEP(step);
+
+export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    const state = getState();
+    const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
+    const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
+    const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
+    if (selectedWorkflow) {
+        const newProcessData = {
+            ownerUuid: processOwnerUuid,
+            name: basicForm.name,
+            description: basicForm.description,
+            state: ContainerRequestState.COMMITTED,
+            mounts: createWorkflowMounts(selectedWorkflow, normalizeInputKeys(inputsForm)),
+            runtimeConstraints: {
+                API: true,
+                vcpus: 1,
+                ram: 1073741824,
+            },
+            containerImage: 'arvados/jobs:1.1.4.20180618144723',
+            cwd: '/var/spool/cwl',
+            command: [
+                'arvados-cwl-runner',
+                '--local',
+                '--api=containers',
+                `--project-uuid=${processOwnerUuid}`,
+                '/var/lib/cwl/workflow.json#main',
+                '/var/lib/cwl/cwl.input.json'
+            ],
+            outputPath: '/var/spool/cwl',
+            priority: 1,
+        };
+        const newProcess = await services.containerRequestService.create(newProcessData);
+        dispatch(navigateToProcess(newProcess.uuid));
+    }
+};
+
+const normalizeInputKeys = (inputs: WorkflowInputsData): WorkflowInputsData =>
+    Object.keys(inputs).reduce((normalizedInputs, key) => ({
+        ...normalizedInputs,
+        [key.split('/').slice(1).join('/')]: inputs[key],
+    }), {});

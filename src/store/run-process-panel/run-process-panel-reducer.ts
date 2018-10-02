@@ -6,6 +6,7 @@ import { RunProcessPanelAction, runProcessPanelActions } from '~/store/run-proce
 import { WorkflowResource, CommandInputParameter, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
 
 interface RunProcessPanel {
+    processOwnerUuid: string;
     currentStep: number;
     workflows: WorkflowResource[];
     selectedWorkflow: WorkflowResource | undefined;
@@ -13,6 +14,7 @@ interface RunProcessPanel {
 }
 
 const initialState: RunProcessPanel = {
+    processOwnerUuid: '',
     currentStep: 0,
     workflows: [],
     selectedWorkflow: undefined,
@@ -21,6 +23,7 @@ const initialState: RunProcessPanel = {
 
 export const runProcessPanelReducer = (state = initialState, action: RunProcessPanelAction): RunProcessPanel =>
     runProcessPanelActions.match(action, {
+        SET_PROCESS_OWNER_UUID: processOwnerUuid => ({ ...state, processOwnerUuid }),
         SET_CURRENT_STEP: currentStep => ({ ...state, currentStep }),
         SET_WORKFLOWS: workflows => ({ ...state, workflows }),
         SET_SELECTED_WORKFLOW: selectedWorkflow => ({

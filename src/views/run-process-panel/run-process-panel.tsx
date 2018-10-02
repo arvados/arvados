@@ -6,7 +6,7 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { RunProcessPanelRootDataProps, RunProcessPanelRootActionProps, RunProcessPanelRoot } from '~/views/run-process-panel/run-process-panel-root';
-import { goToStep, setWorkflow } from '~/store/run-process-panel/run-process-panel-actions';
+import { goToStep, setWorkflow, runProcess } from '~/store/run-process-panel/run-process-panel-actions';
 import { WorkflowResource } from '~/models/workflow';
 
 const mapStateToProps = ({ runProcessPanel }: RootState): RunProcessPanelRootDataProps => {
@@ -25,7 +25,7 @@ const mapDispatchToProps = (dispatch: Dispatch): RunProcessPanelRootActionProps 
         dispatch<any>(setWorkflow(workflow));
     },
     runProcess: () => {
-        console.log('run process!');
+        dispatch<any>(runProcess);
     }
 });
 
