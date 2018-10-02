@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { isValid } from 'redux-form';
 import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
+import { RunProcessAdvancedForm } from './run-process-advanced-form';
 
 export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];
@@ -35,6 +36,7 @@ export const RunProcessSecondStepForm = connect(mapStateToProps)(
             <Grid item xs={12}>
                 <RunProcessBasicForm />
                 <RunProcessInputsForm inputs={inputs} />
+                <RunProcessAdvancedForm />
             </Grid>
             <Grid item xs={12}>
                 <Button color="primary" onClick={goBack}>
