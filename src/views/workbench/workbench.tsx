@@ -79,7 +79,7 @@ export const WorkbenchPanel =
         <Grid container item xs className={classes.root}>
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
-                    primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
+                    primaryIndex={0} primaryMinSize={15} secondaryInitialSize={85} secondaryMinSize={40}>
                     <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                         <SidePanel />
                     </Grid>

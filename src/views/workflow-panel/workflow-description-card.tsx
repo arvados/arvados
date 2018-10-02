@@ -37,22 +37,31 @@ export const WorkflowDetailsCard = withStyles(styles)(
         }
 
         render() {
-            const { classes } = this.props;
+            const { classes, workflow } = this.props;
             const { value } = this.state;
-            return <Paper className={classes.root}>
+            return <div className={classes.root}>
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
                 </Tabs>
                 {value === 0 && <CardContent>
-                    Description
-                    <DataTableDefaultView
-                        icon={WorkflowIcon}
-                        messages={['Please select a workflow to see its description.']} />
+                    {workflow ? (
+                        workflow.description
+                    ) : (
+                        <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its description.']} />
+                    )}
                 </CardContent>}
                 {value === 1 && <CardContent>
-                    Inputs
+                    {workflow ? (
+                        workflow.name
+                    ) : (
+                        <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its inputs.']} />
+                    )}
                 </CardContent>}
-            </Paper>;
+            </div>;
         }
     });
