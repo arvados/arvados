@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { getInputLabel, isRequiredInput, StringCommandInputParameter } from '~/models/workflow';
+import { isRequiredInput, StringCommandInputParameter } from '~/models/workflow';
 import { Field } from 'redux-form';
-import { TextField } from '~/components/text-field/text-field';
 import { require } from '~/validators/require';
+import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
+import { Input as MaterialInput } from '@material-ui/core';
 
 export interface StringInputProps {
     input: StringCommandInputParameter;
@@ -14,11 +15,18 @@ export interface StringInputProps {
 export const StringInput = ({ input }: StringInputProps) =>
     <Field
         name={input.id}
-        label={getInputLabel(input)}
-        component={TextField}
+        commandInput={input}
+        component={StringInputComponent}
         validate={[
             isRequiredInput(input)
                 ? require
                 : () => undefined,
         ]} />;
 
+const StringInputComponent = (props: GenericInputProps) =>
+    <GenericInput
+        component={Input}
+        {...props} />;
+
+const Input = (props: GenericInputProps) =>
+    <MaterialInput {...props.input} />;

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { BooleanCommandInputParameter, getInputLabel, isRequiredInput } from '~/models/workflow';
-import { Field, WrappedFieldProps } from 'redux-form';
-import { TextField } from '~/components/text-field/text-field';
-import { FormGroup, FormLabel, FormHelperText, Switch } from '@material-ui/core';
+import { BooleanCommandInputParameter } from '~/models/workflow';
+import { Field } from 'redux-form';
+import { Switch } from '@material-ui/core';
+import { GenericInputProps, GenericInput } from './generic-input';
 
 export interface BooleanInputProps {
     input: BooleanCommandInputParameter;
@@ -14,16 +14,18 @@ export interface BooleanInputProps {
 export const BooleanInput = ({ input }: BooleanInputProps) =>
     <Field
         name={input.id}
-        label={getInputLabel(input)}
+        commandInput={input}
         component={BooleanInputComponent}
         normalize={(value, prevValue) => !prevValue}
     />;
 
-const BooleanInputComponent = (props: WrappedFieldProps & { label?: string }) =>
-    <FormGroup>
-        <FormLabel>{props.label}</FormLabel>
-        <Switch
-            color='primary'
-            checked={props.input.value}
-            onChange={() => props.input.onChange(props.input.value)} />
-    </FormGroup>;
+const BooleanInputComponent = (props: GenericInputProps) =>
+    <GenericInput
+        component={Input}
+        {...props} />;
+
+const Input = (props: GenericInputProps) =>
+    <Switch
+        color='primary'
+        checked={props.input.value}
+        onChange={() => props.input.onChange(props.input.value)} />;

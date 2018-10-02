@@ -3,18 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { getInputLabel, FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
-import { Field, WrappedFieldProps } from 'redux-form';
-import { TextField } from '~/components/text-field/text-field';
+import { FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
+import { Field } from 'redux-form';
 import { isNumber } from '~/validators/is-number';
+import { GenericInput } from '~/views/run-process-panel/inputs/generic-input';
+import { Input as MaterialInput } from '@material-ui/core';
+import { GenericInputProps } from './generic-input';
 export interface FloatInputProps {
     input: FloatCommandInputParameter;
 }
 export const FloatInput = ({ input }: FloatInputProps) =>
     <Field
         name={input.id}
-        label={getInputLabel(input)}
-        component={DecimalInput}
+        commandInput={input}
+        component={FloatInputComponent}
         parse={parseFloat}
         format={value => isNaN(value) ? '' : JSON.stringify(value)}
         validate={[
@@ -22,7 +24,7 @@ export const FloatInput = ({ input }: FloatInputProps) =>
                 ? isNumber
                 : () => undefined,]} />;
 
-class DecimalInput extends React.Component<WrappedFieldProps & { label?: string }> {
+class FloatInputComponent extends React.Component<GenericInputProps> {
     state = {
         endsWithDecimalSeparator: false,
     };
@@ -42,6 +44,11 @@ class DecimalInput extends React.Component<WrappedFieldProps & { label?: string 
                 onChange: this.handleChange,
             },
         };
-        return <TextField {...props} />;
+        return <GenericInput
+            component={Input}
+            {...props} />;
     }
 }
+
+const Input = (props: GenericInputProps) =>
+    <MaterialInput {...props.input} />;

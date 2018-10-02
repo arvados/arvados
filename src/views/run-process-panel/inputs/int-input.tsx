@@ -5,8 +5,9 @@
 import * as React from 'react';
 import { IntCommandInputParameter, getInputLabel, isRequiredInput } from '~/models/workflow';
 import { Field } from 'redux-form';
-import { TextField } from '~/components/text-field/text-field';
 import { isInteger } from '~/validators/is-integer';
+import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
+import { Input as MaterialInput } from '@material-ui/core';
 
 export interface IntInputProps {
     input: IntCommandInputParameter;
@@ -14,8 +15,8 @@ export interface IntInputProps {
 export const IntInput = ({ input }: IntInputProps) =>
     <Field
         name={input.id}
-        label={getInputLabel(input)}
-        component={TextField}
+        commandInput={input}
+        component={IntInputComponent}
         parse={value => parseInt(value, 10)}
         format={value => isNaN(value) ? '' : JSON.stringify(value)}
         validate={[
@@ -23,4 +24,13 @@ export const IntInput = ({ input }: IntInputProps) =>
                 ? isInteger
                 : () => undefined,
         ]} />;
+
+const IntInputComponent = (props: GenericInputProps) =>
+    <GenericInput
+        component={Input}
+        {...props} />;
+
+
+const Input = (props: GenericInputProps) =>
+    <MaterialInput type='number' {...props.input} />;
 
