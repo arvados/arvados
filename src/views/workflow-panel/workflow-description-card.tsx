@@ -3,13 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs, Paper } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, CardContent, Tab, Tabs } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs } from '~/models/workflow';
-import { WorkflowInput } from '~/components/workflow-inputs-form/workflow-input';
-import { RunProcessInputsForm } from '../run-process-panel/run-process-inputs-form';
 
 export type CssRules = 'root' | 'tab';
 
@@ -41,26 +39,30 @@ export const WorkflowDetailsCard = withStyles(styles)(
         render() {
             const { classes, workflow } = this.props;
             const { value } = this.state;
-            return <Paper className={classes.root}>
+            return <div className={classes.root}>
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
                 </Tabs>
                 {value === 0 && <CardContent>
-                    {workflow
-                        ? workflow.description
-                        : <DataTableDefaultView
+                    {workflow ? (
+                        workflow.description
+                    ) : (
+                        <DataTableDefaultView
                             icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its description.']} />}
+                            messages={['Please select a workflow to see its description.']} />
+                    )}
                 </CardContent>}
                 {value === 1 && <CardContent>
-                    {workflow && this.inputs
-                        ? <RunProcessInputsForm inputs={this.inputs} />
-                        : <DataTableDefaultView
+                    {workflow ? (
+                        workflow.name
+                    ) : (
+                        <DataTableDefaultView
                             icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its description.']} />}
+                            messages={['Please select a workflow to see its inputs.']} />
+                    )}
                 </CardContent>}
-            </Paper>;
+            </div>;
         }
 
         get inputs() {

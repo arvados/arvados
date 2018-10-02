@@ -357,7 +357,7 @@ export const loadSharedWithMe = handleFirstTimeLoad(async (dispatch: Dispatch) =
 
 export const loadRunProcess = handleFirstTimeLoad(
     async (dispatch: Dispatch) => {
-        dispatch<any>(loadRunProcessPanel());
+        await dispatch<any>(loadRunProcessPanel());
     }
 );
 

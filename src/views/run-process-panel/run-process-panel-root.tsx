@@ -3,37 +3,35 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Stepper, Step, StepLabel, StepContent, Button } from '@material-ui/core';
+import { Stepper, Step, StepLabel, StepContent } from '@material-ui/core';
+import { RunProcessFirstStepDataProps, RunProcessFirstStepActionProps, RunProcessFirstStep } from '~/views/run-process-panel/run-process-first-step';
+import { RunProcessSecondStepDataProps, RunProcessSecondStepActionProps, RunProcessSecondStepForm } from '~/views/run-process-panel/run-process-second-step';
 
-export interface RunProcessPanelRootDataProps {
+export type RunProcessPanelRootDataProps = {
     currentStep: number;
-}
+} & RunProcessFirstStepDataProps & RunProcessSecondStepDataProps;
 
-export interface RunProcessPanelRootActionProps {
-    onSetStep: (step: number) => void;
-}
+export type RunProcessPanelRootActionProps = RunProcessFirstStepActionProps & RunProcessSecondStepActionProps;
 
 type RunProcessPanelRootProps = RunProcessPanelRootDataProps & RunProcessPanelRootActionProps;
 
-export const RunProcessPanelRoot = ({ currentStep, onSetStep, ...props }: RunProcessPanelRootProps) =>
+export const RunProcessPanelRoot = ({ currentStep, onSetStep, onRunProcess, onSetWorkflow, workflows, selectedWorkflow }: RunProcessPanelRootProps) =>
     <Stepper activeStep={currentStep} orientation="vertical" elevation={2}>
         <Step>
             <StepLabel>Choose a workflow</StepLabel>
             <StepContent>
-                <Button variant="contained" color="primary" onClick={() => onSetStep(1)}>
-                    Next
-                </Button>
+                <RunProcessFirstStep 
+                    workflows={workflows}
+                    selectedWorkflow={selectedWorkflow}
+                    onSetStep={onSetStep} 
+                    onSetWorkflow={onSetWorkflow} />
             </StepContent>
         </Step>
         <Step>
             <StepLabel>Select inputs</StepLabel>
             <StepContent>
-                <Button color="primary" onClick={() => onSetStep(0)}>
-                    Back
-                </Button>
-                <Button variant="contained" color="primary">
-                    Run Process
-                </Button>
+                <RunProcessSecondStepForm />
+                {/* <RunProcessSecondStep onSetStep={onSetStep} onRunProcess={onRunProcess} /> */}
             </StepContent>
         </Step>
     </Stepper>;

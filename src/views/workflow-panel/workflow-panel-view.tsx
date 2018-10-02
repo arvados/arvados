@@ -16,7 +16,7 @@ import {
 import { SortDirection } from '~/components/data-table/data-column';
 import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { Grid } from '@material-ui/core';
+import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
 import { WorkflowResource } from '../../models/workflow';
 
@@ -121,7 +121,9 @@ export const WorkflowPanelView = (props: WorkflowPanelProps) => {
                 dataTableDefaultView={<DataTableDefaultView icon={WorkflowIcon} />} />
         </Grid>
         <Grid item xs={6}>
-            <WorkflowDetailsCard workflow={props.workflow} />
+            <Paper>
+                <WorkflowDetailsCard />
+            </Paper>
         </Grid>
     </Grid>;
 };
