@@ -344,13 +344,20 @@ class ApplicationController < ActionController::Base
     # If there are too many reader tokens, assume the request is malicious
     # and ignore it.
     if request.get? and params[:reader_tokens] and
-        params[:reader_tokens].size < 100
+      params[:reader_tokens].size < 100
+      secrets = params[:reader_tokens].map { |t|
+        if t.starts_with? "v2/"
+          t.split("/")[2]
+        else
+          t
+        end
+      }
       @read_auths += ApiClientAuthorization
         .includes(:user)
         .where('api_token IN (?) AND
                 (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               params[:reader_tokens])
-        .all
+               secrets)
+        .to_a
     end
     @read_auths.select! { |auth| auth.scopes_allow_request? request }
     @read_users = @read_auths.map(&:user).uniq
