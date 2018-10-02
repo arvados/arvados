@@ -22,7 +22,7 @@ export interface ContainerRequestResource extends Resource {
     requestingContainerUuid: string | null;
     containerUuid: string | null;
     containerCountMax: number;
-    mounts: MountType[];
+    mounts: {[path: string]: MountType};
     runtimeConstraints: RuntimeConstraints;
     schedulingParameters: SchedulingParameters;
     containerImage: string;

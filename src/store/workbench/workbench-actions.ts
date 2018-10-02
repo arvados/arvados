@@ -38,12 +38,18 @@ import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
+import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
+import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
+import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
+import { CollectionResource } from "~/models/collection";
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -76,6 +82,7 @@ export const loadWorkbench = () =>
                 dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+                dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -191,19 +198,25 @@ export const loadCollection = (uuid: string) =>
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({
                     OWNED: async collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
                     SHARED: collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
                     TRASHED: collection => {
+                        dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch(setTrashBreadcrumbs(''));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                        dispatch(loadCollectionFiles(collection.uuid));
                     },
 
                 });
@@ -345,6 +358,18 @@ export const loadSharedWithMe = handleFirstTimeLoad(async (dispatch: Dispatch) =
     dispatch<any>(loadSharedWithMePanel());
     await dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
     await dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.SHARED_WITH_ME));
+});
+
+export const loadRunProcess = handleFirstTimeLoad(
+    async (dispatch: Dispatch) => {
+        await dispatch<any>(loadRunProcessPanel());
+    }
+);
+
+export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
+    dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.WORKFLOWS));
+    await dispatch(loadWorkflowPanel());
+    dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
 });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

@@ -37,7 +37,6 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         } catch (e) {
             api.dispatch(couldNotFetchSharedItems());
         }
-
     }
 }
 

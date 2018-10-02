@@ -12,7 +12,7 @@ import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 
-type CssRules = 'searchBox' | "toolbar";
+type CssRules = 'searchBox' | "toolbar" | "footer" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -21,6 +21,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
         paddingTop: theme.spacing.unit * 2
     },
+    footer: {
+        overflow: 'auto'
+    },
+    root: {
+        height: '100%'
+    }
 });
 
 interface DataExplorerDataProps<T> {
@@ -66,7 +72,7 @@ export const DataExplorer = withStyles(styles)(
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView
             } = this.props;
-            return <Paper>
+            return <Paper className={classes.root}>
                 <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
@@ -91,7 +97,7 @@ export const DataExplorer = withStyles(styles)(
                     working={working}
                     defaultView={dataTableDefaultView}
                 />
-                <Toolbar>
+                <Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
                         <TablePagination
                             count={itemsAvailable}

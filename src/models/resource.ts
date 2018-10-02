@@ -40,6 +40,7 @@ export enum ResourceObjectType {
     GROUP = 'j7d0g',
     LOG = '57u5n',
     USER = 'tpzed',
+    WORKFLOW = '7fd4e',
 }
 
 export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
@@ -70,6 +71,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.CONTAINER;
         case ResourceObjectType.LOG:
             return ResourceKind.LOG;
+        case ResourceObjectType.WORKFLOW:
+            return ResourceKind.WORKFLOW;
         default:
             return undefined;
     }

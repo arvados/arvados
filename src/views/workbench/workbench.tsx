@@ -11,6 +11,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ContextMenu } from "~/views-components/context-menu/context-menu";
 import { FavoritePanel } from "../favorite-panel/favorite-panel";
 import { CurrentTokenDialog } from '~/views-components/current-token-dialog/current-token-dialog';
+import { RichTextEditorDialog } from '~/views-components/rich-text-editor-dialog/rich-text-editor-dialog';
 import { Snackbar } from '~/views-components/snackbar/snackbar';
 import { CollectionPanel } from '../collection-panel/collection-panel';
 import { RenameFileDialog } from '~/views-components/rename-file-dialog/rename-file-dialog';
@@ -32,12 +33,14 @@ import { MoveProjectDialog } from '~/views-components/dialog-forms/move-project-
 import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
-import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
-import { SharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel';
+import { TrashPanel } from "~/views/trash-panel/trash-panel";
+import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-panel';
+import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
-import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -76,7 +79,7 @@ export const WorkbenchPanel =
         <Grid container item xs className={classes.root}>
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
-                    primaryIndex={0} primaryMinSize={20} secondaryInitialSize={80} secondaryMinSize={40}>
+                    primaryIndex={0} primaryMinSize={15} secondaryInitialSize={85} secondaryMinSize={40}>
                     <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                         <SidePanel />
                     </Grid>
@@ -93,6 +96,8 @@ export const WorkbenchPanel =
                                 <Route path={Routes.TRASH} component={TrashPanel} />
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+                                <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
+                                <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -117,6 +122,7 @@ export const WorkbenchPanel =
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <RenameFileDialog />
+            <RichTextEditorDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />

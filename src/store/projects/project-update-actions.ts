@@ -10,6 +10,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/ser
 import { ServiceRepository } from "~/services/services";
 import { ProjectResource } from '~/models/project';
 import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
+import { getResource } from '~/store/resources/resources';
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
@@ -20,8 +21,9 @@ export interface ProjectUpdateFormDialogData {
 export const PROJECT_UPDATE_FORM_NAME = 'projectUpdateFormName';
 
 export const openProjectUpdateDialog = (resource: ContextMenuResource) =>
-    (dispatch: Dispatch) => {
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const project = getResource(resource.uuid)(getState().resources);
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, project));
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {} }));
     };
 

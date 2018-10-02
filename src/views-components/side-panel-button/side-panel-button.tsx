@@ -14,6 +14,8 @@ import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
 import { matchProjectRoute } from '~/routes/routes';
+import { navigateToRunProcess } from '~/store/navigation/navigation-action';
+import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -66,10 +68,10 @@ export const SidePanelButton = withStyles(styles)(
             };
 
             render() {
-                const { classes, buttonVisible  } = this.props;
+                const { classes, buttonVisible } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
-                    {buttonVisible  && <Grid container>
+                    {buttonVisible && <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
@@ -88,7 +90,7 @@ export const SidePanelButton = withStyles(styles)(
                                 <MenuItem className={classes.menuItem} onClick={this.handleNewCollectionClick}>
                                     <CollectionIcon className={classes.icon} /> New collection
                                 </MenuItem>
-                                <MenuItem className={classes.menuItem}>
+                                <MenuItem className={classes.menuItem} onClick={this.handleRunProcessClick}>
                                     <ProcessIcon className={classes.icon} /> Run a process
                                 </MenuItem>
                                 <MenuItem className={classes.menuItem} onClick={this.handleNewProjectClick}>
@@ -96,12 +98,17 @@ export const SidePanelButton = withStyles(styles)(
                                 </MenuItem>
                             </Menu>
                         </Grid>
-                    </Grid> }
+                    </Grid>}
                 </Toolbar>;
             }
 
             handleNewProjectClick = () => {
                 this.props.dispatch<any>(openProjectCreateDialog(this.props.currentItemId));
+            }
+
+            handleRunProcessClick = () => {
+                this.props.dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.props.currentItemId));
+                this.props.dispatch<any>(navigateToRunProcess);
             }
 
             handleNewCollectionClick = () => {
