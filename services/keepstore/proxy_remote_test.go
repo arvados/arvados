@@ -120,30 +120,47 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 
 	path := "/" + strings.Replace(s.remoteKeepLocator, "+A", "+R"+s.remoteClusterID+"-", 1)
 
-	var req *http.Request
-	var resp *httptest.ResponseRecorder
-	tryWithToken := func(token string) {
+	for _, trial := range []struct {
+		label            string
+		token            string
+		expectRemoteReqs int64
+		expectCode       int
+	}{
+		{
+			label:            "happy path",
+			token:            arvadostest.ActiveTokenV2,
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusOK,
+		},
+		{
+			label:            "obsolete token",
+			token:            arvadostest.ActiveToken,
+			expectRemoteReqs: 0,
+			expectCode:       http.StatusBadRequest,
+		},
+		{
+			label:            "bad token",
+			token:            arvadostest.ActiveTokenV2[:len(arvadostest.ActiveTokenV2)-3] + "xxx",
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusNotFound,
+		},
+	} {
+		c.Logf("trial: %s", trial.label)
+
+		s.remoteKeepRequests = 0
+
+		var req *http.Request
+		var resp *httptest.ResponseRecorder
 		req = httptest.NewRequest("GET", path, nil)
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
 		resp = httptest.NewRecorder()
 		s.rtr.ServeHTTP(resp, req)
+		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
+		c.Check(resp.Code, check.Equals, trial.expectCode)
+		if resp.Code == http.StatusOK {
+			c.Check(resp.Body.String(), check.Equals, string(data))
+		} else {
+			c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
+		}
 	}
-
-	// Happy path
-	tryWithToken(arvadostest.ActiveTokenV2)
-	c.Check(s.remoteKeepRequests, check.Equals, int64(1))
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(resp.Body.String(), check.Equals, string(data))
-
-	// Obsolete token
-	tryWithToken(arvadostest.ActiveToken)
-	c.Check(s.remoteKeepRequests, check.Equals, int64(1))
-	c.Check(resp.Code, check.Equals, http.StatusBadRequest)
-	c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
-
-	// Bad token
-	tryWithToken(arvadostest.ActiveTokenV2[:len(arvadostest.ActiveTokenV2)-3] + "xxx")
-	c.Check(s.remoteKeepRequests, check.Equals, int64(2))
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
 }
