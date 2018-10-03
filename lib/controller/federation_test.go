@@ -6,6 +6,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -61,6 +62,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 		PostgreSQL: integrationTestCluster().PostgreSQL,
 		NodeProfiles: map[string]arvados.NodeProfile{
 			"*": nodeProfile,
+		},
+		RequestLimits: arvados.RequestLimits{
+			MaxItemsPerResponse:            1000,
+			MultiClusterRequestConcurrency: 4,
 		},
 	}, NodeProfile: &nodeProfile}
 	s.testServer = newServerFromIntegrationTestEnv(c)
@@ -192,7 +197,7 @@ func (s *FederationSuite) TestOptionsMethod(c *check.C) {
 func (s *FederationSuite) TestRemoteWithTokenInQuery(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1)+"?api_token="+arvadostest.ActiveToken, nil)
 	s.testRequest(req)
-	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	c.Assert(s.remoteMockRequests, check.HasLen, 1)
 	pr := s.remoteMockRequests[0]
 	// Token is salted and moved from query to Authorization header.
 	c.Check(pr.URL.String(), check.Not(check.Matches), `.*api_token=.*`)
@@ -203,7 +208,7 @@ func (s *FederationSuite) TestLocalTokenSalted(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1), nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	s.testRequest(req)
-	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	c.Assert(s.remoteMockRequests, check.HasLen, 1)
 	pr := s.remoteMockRequests[0]
 	// The salted token here has a "zzzzz-" UUID instead of a
 	// "ztest-" UUID because ztest's local database has the
@@ -219,7 +224,7 @@ func (s *FederationSuite) TestRemoteTokenNotSalted(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+strings.Replace(arvadostest.WorkflowWithDefinitionYAMLUUID, "zzzzz-", "zmock-", 1), nil)
 	req.Header.Set("Authorization", "Bearer "+remoteToken)
 	s.testRequest(req)
-	c.Assert(len(s.remoteMockRequests), check.Equals, 1)
+	c.Assert(s.remoteMockRequests, check.HasLen, 1)
 	pr := s.remoteMockRequests[0]
 	c.Check(pr.Header.Get("Authorization"), check.Equals, "Bearer "+remoteToken)
 }
@@ -298,16 +303,14 @@ func (s *FederationSuite) checkJSONErrorMatches(c *check.C, resp *http.Response,
 	var jresp httpserver.ErrorResponse
 	err := json.NewDecoder(resp.Body).Decode(&jresp)
 	c.Check(err, check.IsNil)
-	c.Assert(len(jresp.Errors), check.Equals, 1)
+	c.Assert(jresp.Errors, check.HasLen, 1)
 	c.Check(jresp.Errors[0], check.Matches, re)
 }
 
-func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server {
+func (s *FederationSuite) localServiceHandler(c *check.C, h http.Handler) *httpserver.Server {
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(404)
-			}),
+			Handler: h,
 		},
 	}
 
@@ -321,6 +324,12 @@ func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server 
 	s.testHandler.NodeProfile = &np
 
 	return srv
+}
+
+func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server {
+	return s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(404)
+	}))
 }
 
 func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
@@ -533,31 +542,7 @@ func (s *FederationSuite) TestUpdateRemoteContainerRequest(c *check.C) {
 	c.Check(cr.Priority, check.Equals, 696)
 }
 
-func (s *FederationSuite) TestCreateRemoteContainerRequest1(c *check.C) {
-	defer s.localServiceReturns404(c).Close()
-	req := httptest.NewRequest("POST", "/arvados/v1/container_requests",
-		strings.NewReader(`{
-  "cluster_id": "zzzzz",
-  "container_request": {
-    "name": "hello world",
-    "state": "Uncommitted",
-    "output_path": "/",
-    "container_image": "123",
-    "command": ["abc"]
-  }
-}
-`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	req.Header.Set("Content-type", "application/json")
-	resp := s.testRequest(req)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr arvados.ContainerRequest
-	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
-	c.Check(cr.Name, check.Equals, "hello world")
-	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
-}
-
-func (s *FederationSuite) TestCreateRemoteContainerRequest2(c *check.C) {
+func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
 	// to avoid parsing the body
@@ -612,4 +597,185 @@ func (s *FederationSuite) TestGetRemoteContainer(c *check.C) {
 	var cn arvados.Container
 	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
 	c.Check(cn.UUID, check.Equals, arvadostest.QueuedContainerUUID)
+}
+
+func (s *FederationSuite) TestListRemoteContainer(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", "/arvados/v1/containers?count=none&filters="+
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v"]]]`, arvadostest.QueuedContainerUUID)), nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items[0].UUID, check.Equals, arvadostest.QueuedContainerUUID)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
+	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bd, _ := ioutil.ReadAll(req.Body)
+		c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D&select=%5B%22uuid%22%2C+%22command%22%5D`)
+		w.WriteHeader(200)
+		w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr", "command": ["abc"]}]}`))
+	})).Close()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&select=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID)),
+		url.QueryEscape(`["uuid", "command"]`)),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items, check.HasLen, 2)
+	mp := make(map[string]arvados.Container)
+	for _, cr := range cn.Items {
+		mp[cr.UUID] = cr
+	}
+	c.Check(mp[arvadostest.QueuedContainerUUID].Command, check.DeepEquals, []string{"echo", "hello"})
+	c.Check(mp[arvadostest.QueuedContainerUUID].ContainerImage, check.Equals, "")
+	c.Check(mp["zhome-xvhdp-cr5queuedcontnr"].Command, check.DeepEquals, []string{"abc"})
+	c.Check(mp["zhome-xvhdp-cr5queuedcontnr"].ContainerImage, check.Equals, "")
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerError(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&select=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID)),
+		url.QueryEscape(`["uuid", "command"]`)),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
+	s.checkJSONErrorMatches(c, resp, `error fetching from zhome \(404 Not Found\): EOF`)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainersPaged(c *check.C) {
+
+	callCount := 0
+	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bd, _ := ioutil.ReadAll(req.Body)
+		if callCount == 0 {
+			c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%2C%22zhome-xvhdp-cr6queuedcontnr%22%5D%5D%5D`)
+			w.WriteHeader(200)
+			w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr5queuedcontnr", "command": ["abc"]}]}`))
+		} else if callCount == 1 {
+			c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr6queuedcontnr%22%5D%5D%5D`)
+			w.WriteHeader(200)
+			w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr6queuedcontnr", "command": ["efg"]}]}`))
+		}
+		callCount += 1
+	})).Close()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr", "zhome-xvhdp-cr6queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	c.Check(callCount, check.Equals, 2)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items, check.HasLen, 3)
+	mp := make(map[string]arvados.Container)
+	for _, cr := range cn.Items {
+		mp[cr.UUID] = cr
+	}
+	c.Check(mp[arvadostest.QueuedContainerUUID].Command, check.DeepEquals, []string{"echo", "hello"})
+	c.Check(mp["zhome-xvhdp-cr5queuedcontnr"].Command, check.DeepEquals, []string{"abc"})
+	c.Check(mp["zhome-xvhdp-cr6queuedcontnr"].Command, check.DeepEquals, []string{"efg"})
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainersMissing(c *check.C) {
+
+	callCount := 0
+	defer s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bd, _ := ioutil.ReadAll(req.Body)
+		if callCount == 0 {
+			c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%2C%22zhome-xvhdp-cr6queuedcontnr%22%5D%5D%5D`)
+			w.WriteHeader(200)
+			w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr6queuedcontnr", "command": ["efg"]}]}`))
+		} else if callCount == 1 {
+			c.Check(string(bd), check.Equals, `_method=GET&count=none&filters=%5B%5B%22uuid%22%2C+%22in%22%2C+%5B%22zhome-xvhdp-cr5queuedcontnr%22%5D%5D%5D`)
+			w.WriteHeader(200)
+			w.Write([]byte(`{"kind": "arvados#containerList", "items": []}`))
+		}
+		callCount += 1
+	})).Close()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr", "zhome-xvhdp-cr6queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	c.Check(callCount, check.Equals, 2)
+	var cn arvados.ContainerList
+	c.Check(json.NewDecoder(resp.Body).Decode(&cn), check.IsNil)
+	c.Check(cn.Items, check.HasLen, 2)
+	mp := make(map[string]arvados.Container)
+	for _, cr := range cn.Items {
+		mp[cr.UUID] = cr
+	}
+	c.Check(mp[arvadostest.QueuedContainerUUID].Command, check.DeepEquals, []string{"echo", "hello"})
+	c.Check(mp["zhome-xvhdp-cr6queuedcontnr"].Command, check.DeepEquals, []string{"efg"})
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerPageSizeError(c *check.C) {
+	s.testHandler.Cluster.RequestLimits.MaxItemsPerResponse = 1
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadRequest)
+	s.checkJSONErrorMatches(c, resp, `Federated multi-object request for 2 objects which is more than max page size 1.`)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerLimitError(c *check.C) {
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&limit=1",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadRequest)
+	s.checkJSONErrorMatches(c, resp, `Federated multi-object may not provide 'limit', 'offset' or 'order'.`)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerOffsetError(c *check.C) {
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&offset=1",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadRequest)
+	s.checkJSONErrorMatches(c, resp, `Federated multi-object may not provide 'limit', 'offset' or 'order'.`)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerOrderError(c *check.C) {
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&order=uuid",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID))),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadRequest)
+	s.checkJSONErrorMatches(c, resp, `Federated multi-object may not provide 'limit', 'offset' or 'order'.`)
+}
+
+func (s *FederationSuite) TestListMultiRemoteContainerSelectError(c *check.C) {
+	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s&select=%s",
+		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr"]]]`,
+			arvadostest.QueuedContainerUUID)),
+		url.QueryEscape(`["command"]`)),
+		nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadRequest)
+	s.checkJSONErrorMatches(c, resp, `Federated multi-object request must include 'uuid' in 'select'`)
 }

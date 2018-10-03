@@ -36,11 +36,15 @@ var dropHeaders = map[string]bool{
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
+// Do sends a request, passes the result to the filter (if provided)
+// and then if the result is not suppressed by the filter, sends the
+// request to the ResponseWriter.  Returns true if a response was written,
+// false if not.
 func (p *proxy) Do(w http.ResponseWriter,
 	reqIn *http.Request,
 	urlOut *url.URL,
 	client *http.Client,
-	filter ResponseFilter) {
+	filter ResponseFilter) bool {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -78,7 +82,7 @@ func (p *proxy) Do(w http.ResponseWriter,
 	resp, err := client.Do(reqOut)
 	if filter == nil && err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadGateway)
-		return
+		return true
 	}
 
 	// make sure original response body gets closed
@@ -95,13 +99,13 @@ func (p *proxy) Do(w http.ResponseWriter,
 
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusBadGateway)
-			return
+			return true
 		}
 		if resp == nil {
 			// filter() returned a nil response, this means suppress
 			// writing a response, for the case where there might
 			// be multiple response writers.
-			return
+			return false
 		}
 
 		// the filter gave us a new response body, make sure that gets closed too.
@@ -120,4 +124,5 @@ func (p *proxy) Do(w http.ResponseWriter,
 	if err != nil {
 		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
 	}
+	return true
 }

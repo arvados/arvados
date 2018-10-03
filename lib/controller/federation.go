@@ -26,7 +26,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-)?.*$`
+var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-[0-9a-z]{15})?(.*)$`
 var wfRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "workflows", "7fd4e"))
 var containersRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "containers", "dz642"))
 var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container_requests", "xvhdp"))
@@ -73,43 +73,329 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	h.proxy.Do(w, req, urlOut, client, filter)
 }
 
-func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	m := h.matcher.FindStringSubmatch(req.URL.Path)
-	clusterId := ""
-
-	if len(m) == 3 {
-		clusterId = m[2]
-	}
-
-	if clusterId == "" {
-		if values, err := url.ParseQuery(req.URL.RawQuery); err == nil {
-			if len(values["cluster_id"]) == 1 {
-				clusterId = values["cluster_id"][0]
-			}
-		}
-	}
-
-	if clusterId == "" && req.Method == "POST" && req.Header.Get("Content-Type") == "application/json" {
-		var hasClusterId struct {
-			ClusterID string `json:"cluster_id"`
-		}
+// Buffer request body, parse form parameters in request, and then
+// replace original body with the buffer so it can be re-read by
+// downstream proxy steps.
+func loadParamsFromForm(req *http.Request) error {
+	var postBody *bytes.Buffer
+	if req.Body != nil && req.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
 		var cl int64
 		if req.ContentLength > 0 {
 			cl = req.ContentLength
 		}
-		postBody := bytes.NewBuffer(make([]byte, 0, cl))
-		defer req.Body.Close()
+		postBody = bytes.NewBuffer(make([]byte, 0, cl))
+		originalBody := req.Body
+		defer originalBody.Close()
+		req.Body = ioutil.NopCloser(io.TeeReader(req.Body, postBody))
+	}
 
-		rdr := io.TeeReader(req.Body, postBody)
+	err := req.ParseForm()
+	if err != nil {
+		return err
+	}
 
-		err := json.NewDecoder(rdr).Decode(&hasClusterId)
+	if req.Body != nil && postBody != nil {
+		req.Body = ioutil.NopCloser(postBody)
+	}
+	return nil
+}
+
+type multiClusterQueryResponseCollector struct {
+	responses []map[string]interface{}
+	error     error
+	kind      string
+	clusterID string
+}
+
+func (c *multiClusterQueryResponseCollector) collectResponse(resp *http.Response,
+	requestError error) (newResponse *http.Response, err error) {
+	if requestError != nil {
+		c.error = requestError
+		return nil, nil
+	}
+
+	defer resp.Body.Close()
+	var loadInto struct {
+		Kind   string                   `json:"kind"`
+		Items  []map[string]interface{} `json:"items"`
+		Errors []string                 `json:"errors"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&loadInto)
+
+	if err != nil {
+		c.error = fmt.Errorf("error fetching from %v (%v): %v", c.clusterID, resp.Status, err)
+		return nil, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.error = fmt.Errorf("error fetching from %v (%v): %v", c.clusterID, resp.Status, loadInto.Errors)
+		return nil, nil
+	}
+
+	c.responses = loadInto.Items
+	c.kind = loadInto.Kind
+
+	return nil, nil
+}
+
+func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
+	req *http.Request,
+	clusterID string, uuids []string) (rp []map[string]interface{}, kind string, err error) {
+
+	found := make(map[string]bool)
+	prev_len_uuids := len(uuids) + 1
+	// Loop while
+	// (1) there are more uuids to query
+	// (2) we're making progress - on each iteration the set of
+	// uuids we are expecting for must shrink.
+	for len(uuids) > 0 && len(uuids) < prev_len_uuids {
+		var remoteReq http.Request
+		remoteReq.Header = req.Header
+		remoteReq.Method = "POST"
+		remoteReq.URL = &url.URL{Path: req.URL.Path}
+		remoteParams := make(url.Values)
+		remoteParams.Set("_method", "GET")
+		remoteParams.Set("count", "none")
+		if req.Form.Get("select") != "" {
+			remoteParams.Set("select", req.Form.Get("select"))
+		}
+		content, err := json.Marshal(uuids)
+		if err != nil {
+			return nil, "", err
+		}
+		remoteParams["filters"] = []string{fmt.Sprintf(`[["uuid", "in", %s]]`, content)}
+		enc := remoteParams.Encode()
+		remoteReq.Body = ioutil.NopCloser(bytes.NewBufferString(enc))
+
+		rc := multiClusterQueryResponseCollector{clusterID: clusterID}
+
+		if clusterID == h.handler.Cluster.ClusterID {
+			h.handler.localClusterRequest(w, &remoteReq,
+				rc.collectResponse)
+		} else {
+			h.handler.remoteClusterRequest(clusterID, w, &remoteReq,
+				rc.collectResponse)
+		}
+		if rc.error != nil {
+			return nil, "", rc.error
+		}
+
+		kind = rc.kind
+
+		if len(rc.responses) == 0 {
+			// We got zero responses, no point in doing
+			// another query.
+			return rp, kind, nil
+		}
+
+		rp = append(rp, rc.responses...)
+
+		// Go through the responses and determine what was
+		// returned.  If there are remaining items, loop
+		// around and do another request with just the
+		// stragglers.
+		for _, i := range rc.responses {
+			uuid, ok := i["uuid"].(string)
+			if ok {
+				found[uuid] = true
+			}
+		}
+
+		l := []string{}
+		for _, u := range uuids {
+			if !found[u] {
+				l = append(l, u)
+			}
+		}
+		prev_len_uuids = len(uuids)
+		uuids = l
+	}
+
+	return rp, kind, nil
+}
+
+func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter,
+	req *http.Request, clusterId *string) bool {
+
+	var filters [][]interface{}
+	err := json.Unmarshal([]byte(req.Form.Get("filters")), &filters)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return true
+	}
+
+	// Split the list of uuids by prefix
+	queryClusters := make(map[string][]string)
+	expectCount := 0
+	for _, filter := range filters {
+		if len(filter) != 3 {
+			return false
+		}
+
+		if lhs, ok := filter[0].(string); !ok || lhs != "uuid" {
+			return false
+		}
+
+		op, ok := filter[1].(string)
+		if !ok {
+			return false
+		}
+
+		if op == "in" {
+			if rhs, ok := filter[2].([]interface{}); ok {
+				for _, i := range rhs {
+					if u, ok := i.(string); ok {
+						*clusterId = u[0:5]
+						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+						expectCount += 1
+					}
+				}
+			}
+		} else if op == "=" {
+			if u, ok := filter[2].(string); ok {
+				*clusterId = u[0:5]
+				queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
+				expectCount += 1
+			}
+		} else {
+			return false
+		}
+
+	}
+
+	if len(queryClusters) <= 1 {
+		// Query does not search for uuids across multiple
+		// clusters.
+		return false
+	}
+
+	// Validations
+	count := req.Form.Get("count")
+	if count != "" && count != `none` && count != `"none"` {
+		httpserver.Error(w, "Federated multi-object query must have 'count=none'", http.StatusBadRequest)
+		return true
+	}
+	if req.Form.Get("limit") != "" || req.Form.Get("offset") != "" || req.Form.Get("order") != "" {
+		httpserver.Error(w, "Federated multi-object may not provide 'limit', 'offset' or 'order'.", http.StatusBadRequest)
+		return true
+	}
+	if expectCount > h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse() {
+		httpserver.Error(w, fmt.Sprintf("Federated multi-object request for %v objects which is more than max page size %v.",
+			expectCount, h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse()), http.StatusBadRequest)
+		return true
+	}
+	if req.Form.Get("select") != "" {
+		foundUUID := false
+		var selects []string
+		err := json.Unmarshal([]byte(req.Form.Get("select")), &selects)
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			return true
 		}
-		req.Body = ioutil.NopCloser(postBody)
 
-		clusterId = hasClusterId.ClusterID
+		for _, r := range selects {
+			if r == "uuid" {
+				foundUUID = true
+				break
+			}
+		}
+		if !foundUUID {
+			httpserver.Error(w, "Federated multi-object request must include 'uuid' in 'select'", http.StatusBadRequest)
+			return true
+		}
+	}
+
+	// Perform concurrent requests to each cluster
+
+	// use channel as a semaphore to limit the number of concurrent
+	// requests at a time
+	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
+	defer close(sem)
+	wg := sync.WaitGroup{}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	mtx := sync.Mutex{}
+	errors := []error{}
+	var completeResponses []map[string]interface{}
+	var kind string
+
+	for k, v := range queryClusters {
+		if len(v) == 0 {
+			// Nothing to query
+			continue
+		}
+
+		// blocks until it can put a value into the
+		// channel (which has a max queue capacity)
+		sem <- true
+		wg.Add(1)
+		go func(k string, v []string) {
+			rp, kn, err := h.remoteQueryUUIDs(w, req, k, v)
+			mtx.Lock()
+			if err == nil {
+				completeResponses = append(completeResponses, rp...)
+				kind = kn
+			} else {
+				errors = append(errors, err)
+			}
+			mtx.Unlock()
+			wg.Done()
+			<-sem
+		}(k, v)
+	}
+	wg.Wait()
+
+	if len(errors) > 0 {
+		var strerr []string
+		for _, e := range errors {
+			strerr = append(strerr, e.Error())
+		}
+		httpserver.Errors(w, strerr, http.StatusBadGateway)
+		return true
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	itemList := make(map[string]interface{})
+	itemList["items"] = completeResponses
+	itemList["kind"] = kind
+	json.NewEncoder(w).Encode(itemList)
+
+	return true
+}
+
+func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	m := h.matcher.FindStringSubmatch(req.URL.Path)
+	clusterId := ""
+
+	if len(m) > 0 && m[2] != "" {
+		clusterId = m[2]
+	}
+
+	// Get form parameters from URL and form body (if POST).
+	if err := loadParamsFromForm(req); err != nil {
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the parameters have an explicit cluster_id
+	if req.Form.Get("cluster_id") != "" {
+		clusterId = req.Form.Get("cluster_id")
+	}
+
+	// Handle the POST-as-GET special case (workaround for large
+	// GET requests that potentially exceed maximum URL length,
+	// like multi-object queries where the filter has 100s of
+	// items)
+	effectiveMethod := req.Method
+	if req.Method == "POST" && req.Form.Get("_method") != "" {
+		effectiveMethod = req.Form.Get("_method")
+	}
+
+	if effectiveMethod == "GET" &&
+		clusterId == "" &&
+		req.Form.Get("filters") != "" &&
+		h.handleMultiClusterQuery(w, req, &clusterId) {
+		return
 	}
 
 	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
@@ -230,11 +516,7 @@ func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requ
 	return resp, nil
 }
 
-type searchLocalClusterForPDH struct {
-	sentResponse bool
-}
-
-func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
+func filterLocalClusterResponse(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
 		return resp, requestError
 	}
@@ -242,10 +524,8 @@ func (s *searchLocalClusterForPDH) filterLocalClusterResponse(resp *http.Respons
 	if resp.StatusCode == 404 {
 		// Suppress returning this result, because we want to
 		// search the federation.
-		s.sentResponse = false
 		return nil, nil
 	}
-	s.sentResponse = true
 	return resp, nil
 }
 
@@ -331,7 +611,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		m = collectionRe.FindStringSubmatch(req.URL.Path)
 		clusterId := ""
 
-		if len(m) == 3 {
+		if len(m) > 0 {
 			clusterId = m[2]
 		}
 
@@ -351,26 +631,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	// Request for collection by PDH.  Search the federation.
 
 	// First, query the local cluster.
-	urlOut, insecure, err := findRailsAPI(h.handler.Cluster, h.handler.NodeProfile)
-	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	urlOut = &url.URL{
-		Scheme:   urlOut.Scheme,
-		Host:     urlOut.Host,
-		Path:     req.URL.Path,
-		RawPath:  req.URL.RawPath,
-		RawQuery: req.URL.RawQuery,
-	}
-	client := h.handler.secureClient
-	if insecure {
-		client = h.handler.insecureClient
-	}
-	sf := &searchLocalClusterForPDH{}
-	h.handler.proxy.Do(w, req, urlOut, client, sf.filterLocalClusterResponse)
-	if sf.sentResponse {
+	if h.handler.localClusterRequest(w, req, filterLocalClusterResponse) {
 		return
 	}
 
@@ -389,9 +650,9 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	var errors []string
 	var errorCode int = 404
 
-	// use channel as a semaphore to limit it to 4
-	// parallel requests at a time
-	sem := make(chan bool, 4)
+	// use channel as a semaphore to limit the number of concurrent
+	// requests at a time
+	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
 	defer close(sem)
 	for remoteID := range h.handler.Cluster.RemoteClusters {
 		// blocks until it can put a value into the
@@ -423,7 +684,7 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/arvados/v1/workflows", &genericFederatedRequestHandler{next, h, wfRe})
 	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h, wfRe})
-	mux.Handle("/arvados/v1/containers", next)
+	mux.Handle("/arvados/v1/containers", &genericFederatedRequestHandler{next, h, containersRe})
 	mux.Handle("/arvados/v1/containers/", &genericFederatedRequestHandler{next, h, containersRe})
 	mux.Handle("/arvados/v1/container_requests", &genericFederatedRequestHandler{next, h, containerRequestsRe})
 	mux.Handle("/arvados/v1/container_requests/", &genericFederatedRequestHandler{next, h, containerRequestsRe})
