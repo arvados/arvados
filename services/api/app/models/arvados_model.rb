@@ -240,7 +240,7 @@ class ArvadosModel < ActiveRecord::Base
     end.compact.uniq
   end
 
-  # Return a query with read permissions restricted to the union of of the
+  # Return a query with read permissions restricted to the union of the
   # permissions of the members of users_list, i.e. if something is readable by
   # any user in users_list, it will be readable in the query returned by this
   # function.
@@ -258,6 +258,7 @@ class ArvadosModel < ActiveRecord::Base
     # Collect the UUIDs of the authorized users.
     sql_table = kwargs.fetch(:table_name, table_name)
     include_trash = kwargs.fetch(:include_trash, false)
+    include_old_versions = kwargs.fetch(:include_old_versions, false)
 
     sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
@@ -268,6 +269,11 @@ class ArvadosModel < ActiveRecord::Base
       exclude_trashed_records = "AND #{sql_table}.is_trashed = false"
     end
 
+    exclude_old_versions = ""
+    if !include_old_versions && sql_table == "collections"
+      exclude_old_versions = "AND #{sql_table}.uuid = #{sql_table}.current_version_uuid"
+    end
+
     if users_list.select { |u| u.is_admin }.any?
       # Admin skips most permission checks, but still want to filter on trashed items.
       if !include_trash
@@ -275,7 +281,7 @@ class ArvadosModel < ActiveRecord::Base
           # Only include records where the owner is not trashed
           sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
                       "WHERE trashed = 1 AND "+
-                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
+                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records} #{exclude_old_versions}"
         end
       end
     else
@@ -312,7 +318,7 @@ class ArvadosModel < ActiveRecord::Base
                        "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
       end
 
-      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
+      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records} #{exclude_old_versions}"
 
     end
 

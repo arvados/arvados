@@ -47,6 +47,9 @@ class Collection < ArvadosModel
     t.add :delete_at
     t.add :trash_at
     t.add :is_trashed
+    t.add :version
+    t.add :current_version_uuid
+    t.add :preserve_version
   end
 
   after_initialize do

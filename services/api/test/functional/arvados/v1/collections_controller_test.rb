@@ -41,6 +41,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert(assigns(:objects).andand.any?, "no Collections returned in index")
     refute(json_response["items"].any? { |c| c.has_key?("manifest_text") },
            "basic Collections index included manifest_text")
+    refute(json_response["items"].any? { |c| c["uuid"] == collections(:collection_owned_by_active_past_version_1).uuid },
+           "basic Collections index included past version")
   end
 
   test "collections.get returns signed locators, and no unsigned_manifest_text" do
