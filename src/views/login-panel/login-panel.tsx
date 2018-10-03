@@ -55,7 +55,7 @@ export const LoginPanel = withStyles(styles)(connect()(
     <Grid container direction="column" item xs alignItems="center" justify="center" className={classes.root}>
         <Grid item className={classes.container}>
             <Typography variant="title" align="center" className={classes.title}>
-                Welcome to the Arvados Wrokbench
+                Welcome to the Arvados Workbench
             </Typography>
             <Typography variant="body1" className={classes.content}>
                 The "Log in" button below will show you a Google sign-in page.

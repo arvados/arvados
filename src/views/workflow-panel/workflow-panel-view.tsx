@@ -118,10 +118,11 @@ export const WorkflowPanelView = (props: WorkflowPanelProps) => {
                 onRowClick={props.handleRowClick}
                 onRowDoubleClick={props.handleRowDoubleClick}
                 contextMenuColumn={false}
+                onContextMenu={e => e}
                 dataTableDefaultView={<DataTableDefaultView icon={WorkflowIcon} />} />
         </Grid>
         <Grid item xs={6}>
-            <Paper>
+            <Paper style={{ height: '100%' }}>
                 <WorkflowDetailsCard workflow={props.workflow} />
             </Paper>
         </Grid>
