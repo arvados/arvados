@@ -1173,4 +1173,23 @@ EOS
                    'response includes a version from a different collection'
     end
   end
+
+  test 'version and current_version_uuid are ignored at creation time' do
+    permit_unsigned_manifests
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        name: 'Test collection',
+        version: 42,
+        current_version_uuid: collections(:collection_owned_by_active).uuid,
+        manifest_text: manifest_text,
+        # portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+      }
+    }
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal 1, resp['version']
+    assert_equal resp['uuid'], resp['current_version_uuid']
+  end
 end

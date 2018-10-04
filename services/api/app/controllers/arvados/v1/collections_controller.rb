@@ -15,6 +15,9 @@ class Arvados::V1::CollectionsController < ApplicationController
         include_trash: {
           type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
         },
+        include_old_versions: {
+          type: 'boolean', required: false, description: "Include past collection versions."
+        },
       })
   end
 
@@ -23,6 +26,8 @@ class Arvados::V1::CollectionsController < ApplicationController
       resource_attrs[:portable_data_hash] = loc.to_s
       resource_attrs.delete :uuid
     end
+    resource_attrs.delete :version
+    resource_attrs.delete :current_version_uuid
     super
   end
 
