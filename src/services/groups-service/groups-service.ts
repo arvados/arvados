@@ -8,11 +8,10 @@ import { AxiosInstance } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
-import { TrashableResource, ResourceKind } from '~/models/resource';
+import { ResourceKind } from '~/models/resource';
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 import { GroupResource } from "~/models/group";
-import { snakeCase } from 'lodash';
 
 export interface ContentsArguments {
     limit?: number;
@@ -49,25 +48,24 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         const response = await CommonResourceService.customResponse(
             this.serverApi
                 .get(this.resourceType + `${uuid}/contents`, {
-                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                    params: CommonResourceService.mapKeys(_.camelCase)(params)
                 }),
             this.actions
         );
-
         const { items, ...res } = response;
         const mappedItems = items.map((item: any) => {
             if (item.kind === ResourceKind.COLLECTION) {
                 const { properties } = item;
                 return {
-                    ...TrashableResourceService.mapKeys(snakeCase)(item),
+                    ...TrashableResourceService.mapKeys(_.camelCase)(item),
                     properties,
                 };
             } else {
-                return TrashableResourceService.mapKeys(item);
+                return TrashableResourceService.mapKeys(_.camelCase)(item);
             }
         });
-        const mappedResponse = TrashableResourceService.mapResponseKeys(res);
-        return  { ...mappedResponse, items: mappedItems };
+        const mappedResponse = { ...TrashableResourceService.mapKeys(_.camelCase)(res) };
+        return { ...mappedResponse, items: mappedItems };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {
