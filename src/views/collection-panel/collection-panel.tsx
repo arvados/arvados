@@ -113,13 +113,16 @@ export const CollectionPanel = withStyles(styles)(
                             <CardHeader title="Properties" />
                             <CardContent>
                                 <Grid container direction="column">
-                                    <Grid item xs={12}><CollectionTagForm /></Grid>
+                                    <Grid item xs={12}>
+                                        <CollectionTagForm />
+                                    </Grid>
                                     <Grid item xs={12}>
                                         {
-                                            Object.keys(item.properties).map(key => {
-                                                return <Chip key={key} className={classes.tag}
-                                                    onDelete={this.handleDelete(key)}
-                                                    label={`${key}: ${item.properties[key]}`} />;
+                                            Object.keys(item.properties).map(k => {
+                                                console.log('k: ', k);
+                                                return <Chip key={k} className={classes.tag}
+                                                    onDelete={this.handleDelete(k)}
+                                                    label={`${k}: ${item.properties[k]}`} />;
                                             })
                                         }
                                     </Grid>

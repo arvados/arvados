@@ -8,10 +8,11 @@ import { AxiosInstance } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
-import { TrashableResource } from "~/models/resource";
+import { TrashableResource, ResourceKind } from '~/models/resource';
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 import { GroupResource } from "~/models/group";
+import { snakeCase } from 'lodash';
 
 export interface ContentsArguments {
     limit?: number;
@@ -37,20 +38,36 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         super(serverApi, "groups", actions);
     }
 
-    contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    async contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
-        return CommonResourceService.defaultResponse(
+
+        const response = await CommonResourceService.customResponse(
             this.serverApi
                 .get(this.resourceType + `${uuid}/contents`, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
             this.actions
         );
+
+        const { items, ...res } = response;
+        const mappedItems = items.map((item: any) => {
+            if (item.kind === ResourceKind.COLLECTION) {
+                const { properties } = item;
+                return {
+                    ...TrashableResourceService.mapKeys(snakeCase)(item),
+                    properties,
+                };
+            } else {
+                return TrashableResourceService.mapKeys(item);
+            }
+        });
+        const mappedResponse = TrashableResourceService.mapResponseKeys(res);
+        return  { ...mappedResponse, items: mappedItems };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {

@@ -79,6 +79,18 @@ export class CommonResourceService<T extends Resource> {
             });
     }
 
+    static customResponse<R>(promise: AxiosPromise<R>, actions: ApiActions): Promise<R> {
+        const reqId = uuid();
+        actions.progressFn(reqId, true);
+        return promise
+            .then(data => {
+                actions.progressFn(reqId, false);
+                return data;
+            })
+            .then((response: { data: any }) => response.data);
+    }
+
+
     protected serverApi: AxiosInstance;
     protected resourceType: string;
     protected actions: ApiActions;
