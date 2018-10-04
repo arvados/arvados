@@ -26,6 +26,11 @@ type remoteProxy struct {
 }
 
 func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, cluster *arvados.Cluster) {
+	// Intervening proxies must not return a cached GET response
+	// to a prior request if a X-Keep-Signature request header has
+	// been added or changed.
+	w.Header().Add("Vary", "X-Keep-Signature")
+
 	token := GetAPIToken(r)
 	if token == "" {
 		http.Error(w, "no token provided in Authorization header", http.StatusUnauthorized)
