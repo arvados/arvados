@@ -45,12 +45,13 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             order: order ? order : undefined
         };
 
-        const response = await CommonResourceService.customResponse(
+        const response = await CommonResourceService.defaultResponse(
             this.serverApi
                 .get(this.resourceType + `${uuid}/contents`, {
                     params: CommonResourceService.mapKeys(_.camelCase)(params)
                 }),
-            this.actions
+            this.actions, 
+            false
         );
         const { items, ...res } = response;
         const mappedItems = items.map((item: any) => {

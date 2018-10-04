@@ -119,7 +119,6 @@ export const CollectionPanel = withStyles(styles)(
                                     <Grid item xs={12}>
                                         {
                                             Object.keys(item.properties).map(k => {
-                                                console.log('k: ', k);
                                                 return <Chip key={k} className={classes.tag}
                                                     onDelete={this.handleDelete(k)}
                                                     label={`${k}: ${item.properties[k]}`} />;

@@ -70,8 +70,6 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     }
 
-    // ToDo: add get method
-
     update(uuid: string, data: Partial<CollectionResource>) {
         if (uuid && data) {
             const { properties } = data;
@@ -84,7 +82,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                     .defaultResponse(
                         this.serverApi
                             .put<CollectionResource>(this.resourceType + uuid, mappedData),
-                        this.actions
+                        this.actions,
+                        false
                     );
             }
         }
