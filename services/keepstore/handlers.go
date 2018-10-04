@@ -101,9 +101,14 @@ func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
 	ctx, cancel := contextForResponse(context.TODO(), resp)
 	defer cancel()
 
+	// Intervening proxies must not return a cached GET response
+	// to a prior request if a X-Keep-Signature request header has
+	// been added or changed.
+	resp.Header().Add("Vary", "X-Keep-Signature")
+
 	locator := req.URL.Path[1:]
 	if strings.Contains(locator, "+R") && !strings.Contains(locator, "+A") {
-		rtr.remoteProxy.Get(resp, req, rtr.cluster)
+		rtr.remoteProxy.Get(ctx, resp, req, rtr.cluster)
 		return
 	}
 

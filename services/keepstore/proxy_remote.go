@@ -5,10 +5,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -21,7 +25,28 @@ type remoteProxy struct {
 	mtx     sync.Mutex
 }
 
-func (rp *remoteProxy) Get(w http.ResponseWriter, r *http.Request, cluster *arvados.Cluster) {
+func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, cluster *arvados.Cluster) {
+	token := GetAPIToken(r)
+	if token == "" {
+		http.Error(w, "no token provided in Authorization header", http.StatusUnauthorized)
+		return
+	}
+	if sign := r.Header.Get("X-Keep-Signature"); sign != "" {
+		buf, err := getBufferWithContext(ctx, bufs, BlockSize)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		defer bufs.Put(buf)
+		rrc := &remoteResponseCacher{
+			Locator:        r.URL.Path[1:],
+			Token:          token,
+			Buffer:         buf[:0],
+			ResponseWriter: w,
+		}
+		defer rrc.Flush(ctx)
+		w = rrc
+	}
 	var remoteClient *keepclient.KeepClient
 	var parts []string
 	for i, part := range strings.Split(r.URL.Path[1:], "+") {
@@ -36,11 +61,6 @@ func (rp *remoteProxy) Get(w http.ResponseWriter, r *http.Request, cluster *arva
 			remote, ok := cluster.RemoteClusters[remoteID]
 			if !ok {
 				http.Error(w, "remote cluster not configured", http.StatusBadGateway)
-				return
-			}
-			token := GetAPIToken(r)
-			if token == "" {
-				http.Error(w, "no token provided in Authorization header", http.StatusUnauthorized)
 				return
 			}
 			kc, err := rp.remoteClient(remoteID, remote, token)
@@ -110,4 +130,63 @@ func (rp *remoteProxy) remoteClient(remoteID string, remoteCluster arvados.Remot
 	}
 	kccopy.Arvados.ApiToken = token
 	return &kccopy, nil
+}
+
+var localOrRemoteSignature = regexp.MustCompile(`\+[AR][^\+]*`)
+
+// remoteResponseCacher wraps http.ResponseWriter. It buffers the
+// response data in the provided buffer, writes/touches a copy on a
+// local volume, adds a response header with a locally-signed locator,
+// and finally writes the data through.
+type remoteResponseCacher struct {
+	Locator string
+	Token   string
+	Buffer  []byte
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rrc *remoteResponseCacher) Write(p []byte) (int, error) {
+	if len(rrc.Buffer)+len(p) > cap(rrc.Buffer) {
+		return 0, errors.New("buffer full")
+	}
+	rrc.Buffer = append(rrc.Buffer, p...)
+	return len(p), nil
+}
+
+func (rrc *remoteResponseCacher) WriteHeader(statusCode int) {
+	rrc.statusCode = statusCode
+}
+
+func (rrc *remoteResponseCacher) Flush(ctx context.Context) {
+	if rrc.statusCode == 0 {
+		rrc.statusCode = http.StatusOK
+	} else if rrc.statusCode != http.StatusOK {
+		rrc.ResponseWriter.WriteHeader(rrc.statusCode)
+		rrc.ResponseWriter.Write(rrc.Buffer)
+		return
+	}
+	_, err := PutBlock(ctx, rrc.Buffer, rrc.Locator[:32])
+	if err == RequestHashError {
+		http.Error(rrc.ResponseWriter, "checksum mismatch in remote response", http.StatusBadGateway)
+		return
+	}
+	if err, ok := err.(*KeepError); ok {
+		http.Error(rrc.ResponseWriter, err.Error(), err.HTTPCode)
+		return
+	}
+	if err != nil {
+		http.Error(rrc.ResponseWriter, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	unsigned := localOrRemoteSignature.ReplaceAllLiteralString(rrc.Locator, "")
+	signed := SignLocator(unsigned, rrc.Token, time.Now().Add(theConfig.BlobSignatureTTL.Duration()))
+	if signed == unsigned {
+		http.Error(rrc.ResponseWriter, "could not sign locator", http.StatusInternalServerError)
+		return
+	}
+	rrc.Header().Set("X-Keep-Locator", signed)
+	rrc.ResponseWriter.WriteHeader(rrc.statusCode)
+	rrc.ResponseWriter.Write(rrc.Buffer)
 }
