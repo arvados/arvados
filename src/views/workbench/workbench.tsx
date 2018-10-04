@@ -41,7 +41,6 @@ import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-p
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
-import { FileSelectionDialog } from '~/views-components/dialog-forms/file-selection-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -114,8 +113,6 @@ export const WorkbenchPanel =
             <CreateProjectDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
-            <FileRemoveDialog />
-            <FileSelectionDialog />
             <FilesUploadCollectionDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />

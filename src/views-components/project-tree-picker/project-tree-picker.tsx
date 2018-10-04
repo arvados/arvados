@@ -12,40 +12,43 @@ import { ProjectResource } from "~/models/project";
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon } from "~/components/icon/icon";
-import { createTreePickerNode } from "~/store/tree-picker/tree-picker";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { WrappedFieldProps } from 'redux-form';
+import { initTreeNode } from '~/models/tree';
 
-type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
+type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): ProjectTreePickerProps => ({
     onContextMenu: () => { return; },
-    toggleItemActive: (nodeId, status, pickerId) => {
+    toggleItemActive: (id, status, pickerId) => {
         getNotSelectedTreePickerKind(pickerId)
-            .forEach(pickerId => dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId }));
+            .forEach(pickerId => dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: '', pickerId })));
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId }));
 
-        props.onChange(nodeId);
+        props.onChange(id);
     },
-    toggleItemOpen: (nodeId, status, pickerId) => {
-        dispatch<any>(toggleItemOpen(nodeId, status, pickerId));
-    }
+    toggleItemOpen: (id, status, pickerId) => {
+        dispatch<any>(toggleItemOpen(id, status, pickerId));
+    },
+    toggleItemSelection: (id, pickerId) => {
+        dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id, pickerId }));
+    },
 });
 
-const toggleItemOpen = (nodeId: string, status: TreeItemStatus, pickerId: string) =>
+const toggleItemOpen = (id: string, status: TreeItemStatus, pickerId: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (status === TreeItemStatus.INITIAL) {
             if (pickerId === TreePickerId.PROJECTS) {
-                dispatch<any>(loadProjectTreePickerProjects(nodeId));
+                dispatch<any>(loadProjectTreePickerProjects(id));
             } else if (pickerId === TreePickerId.FAVORITES) {
-                dispatch<any>(loadFavoriteTreePickerProjects(nodeId === services.authService.getUuid() ? '' : nodeId));
+                dispatch<any>(loadFavoriteTreePickerProjects(id === services.authService.getUuid() ? '' : id));
             } else {
                 // TODO: load sharedWithMe
             }
         } else {
-            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
         }
     };
 
@@ -73,11 +76,11 @@ export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: 
 
 
 // TODO: move action creator to store directory
-export const loadProjectTreePickerProjects = (nodeId: string) =>
+export const loadProjectTreePickerProjects = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.PROJECTS }));
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.PROJECTS }));
 
-        const ownerUuid = nodeId.length === 0 ? services.authService.getUuid() || '' : nodeId;
+        const ownerUuid = id.length === 0 ? services.authService.getUuid() || '' : id;
 
         const filters = new FilterBuilder()
             .addEqual('ownerUuid', ownerUuid)
@@ -85,27 +88,27 @@ export const loadProjectTreePickerProjects = (nodeId: string) =>
 
         const { items } = await services.projectService.list({ filters });
 
-        dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.PROJECTS));
+        dispatch<any>(receiveTreePickerData(id, items, TreePickerId.PROJECTS));
     };
 
-export const loadFavoriteTreePickerProjects = (nodeId: string) =>
+export const loadFavoriteTreePickerProjects = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const parentId = services.authService.getUuid() || '';
 
-        if (nodeId === '') {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: parentId, pickerId: TreePickerId.FAVORITES }));
+        if (id === '') {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: parentId, pickerId: TreePickerId.FAVORITES }));
             const { items } = await services.favoriteService.list(parentId);
 
             dispatch<any>(receiveTreePickerData(parentId, items as ProjectResource[], TreePickerId.FAVORITES));
         } else {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId, pickerId: TreePickerId.FAVORITES }));
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.FAVORITES }));
             const filters = new FilterBuilder()
-                .addEqual('ownerUuid', nodeId)
+                .addEqual('ownerUuid', id)
                 .getFilters();
 
             const { items } = await services.projectService.list({ filters });
 
-            dispatch<any>(receiveTreePickerData(nodeId, items, TreePickerId.FAVORITES));
+            dispatch<any>(receiveTreePickerData(id, items, TreePickerId.FAVORITES));
         }
 
     };
@@ -132,15 +135,15 @@ const renderTreeItem = (item: TreeItem<ProjectResource>) =>
 
 
 // TODO: move action creator to store directory
-export const receiveTreePickerData = (nodeId: string, projects: ProjectResource[], pickerId: string) =>
+export const receiveTreePickerData = (id: string, projects: ProjectResource[], pickerId: string) =>
     (dispatch: Dispatch) => {
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-            nodeId,
-            nodes: projects.map(project => createTreePickerNode({ nodeId: project.uuid, value: project })),
+            id,
+            nodes: projects.map(project => initTreeNode({ id: project.uuid, value: project })),
             pickerId,
         }));
 
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId }));
+        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
     };
 
 export const ProjectTreePickerField = (props: WrappedFieldProps) =>

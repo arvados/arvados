@@ -60,7 +60,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: theme.spacing.unit * 3,
         height: theme.spacing.unit * 3,
         margin: `0 ${theme.spacing.unit}px`,
-        color: theme.palette.grey["500"]
+        padding: 0,
+        color: theme.palette.grey["500"],
     }
 });
 
@@ -88,7 +89,7 @@ export interface TreeProps<T> {
     level?: number;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     showSelection?: boolean;
-    onSelectionChange?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     disableRipple?: boolean;
 }
 
@@ -134,7 +135,7 @@ export const Tree = withStyles(styles)(
                                     toggleItemActive={toggleItemActive}
                                     level={level + 1}
                                     onContextMenu={onContextMenu}
-                                    onSelectionChange={this.props.onSelectionChange} />
+                                    toggleItemSelection={this.props.toggleItemSelection} />
                             </Collapse>}
                     </div>)}
             </List>;
@@ -164,10 +165,11 @@ export const Tree = withStyles(styles)(
                 this.props.onContextMenu(event, item)
 
         handleCheckboxChange = (item: TreeItem<T>) => {
-            const { onSelectionChange } = this.props;
-            return onSelectionChange
+            const { toggleItemSelection } = this.props;
+            return toggleItemSelection
                 ? (event: React.MouseEvent<HTMLElement>) => {
-                    onSelectionChange(event, item);
+                    event.stopPropagation();
+                    toggleItemSelection(event, item);
                 }
                 : undefined;
         }
