@@ -29,7 +29,6 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :old_versions_cannot_be_updated, on: :update
   before_save :set_file_names
-  before_create :set_current_version_uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -217,10 +216,6 @@ class Collection < ArvadosModel
     # the collection's UUID only lives on memory when the validation check
     # is performed.
     ['current_version_uuid']
-  end
-
-  def set_current_version_uuid
-    self.current_version_uuid ||= self.uuid
   end
 
   def save! *args
@@ -547,7 +542,7 @@ class Collection < ArvadosModel
   end
 
   def self.searchable_columns operator
-    super - ["manifest_text", "current_version_uuid"]
+    super - ["manifest_text"]
   end
 
   def self.full_text_searchable_columns
@@ -631,5 +626,11 @@ class Collection < ArvadosModel
     if current_version_uuid_was != uuid_was
       raise ArvadosModel::PermissionDeniedError.new("previous versions cannot be updated")
     end
+  end
+
+  def assign_uuid
+    super
+    self.current_version_uuid ||= self.uuid
+    true
   end
 end

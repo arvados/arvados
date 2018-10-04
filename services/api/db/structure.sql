@@ -1634,7 +1634,7 @@ CREATE INDEX collections_full_text_search_idx ON public.collections USING gin (t
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_search_index ON public.collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name);
+CREATE INDEX collections_search_index ON public.collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name, current_version_uuid);
 
 
 --
@@ -3186,4 +3186,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180915155335');
 INSERT INTO schema_migrations (version) VALUES ('20180919001158');
 
 INSERT INTO schema_migrations (version) VALUES ('20181001175023');
+
+INSERT INTO schema_migrations (version) VALUES ('20181004131141');
 

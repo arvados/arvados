@@ -45,6 +45,17 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "basic Collections index included past version")
   end
 
+  test "get index with include_old_versions" do
+    authorize_with :active
+    get :index, {
+      include_old_versions: true
+    }
+    assert_response :success
+    assert(assigns(:objects).andand.any?, "no Collections returned in index")
+    assert(json_response["items"].any? { |c| c["uuid"] == collections(:collection_owned_by_active_past_version_1).uuid },
+           "past version not included on index")
+  end
+
   test "collections.get returns signed locators, and no unsigned_manifest_text" do
     permit_unsigned_manifests
     authorize_with :active
@@ -1144,5 +1155,22 @@ EOS
       item['uuid']
     end
     assert_includes(item_uuids, collections(:collection_in_trashed_subproject).uuid)
+  end
+
+  test 'can get collection with past versions' do
+    authorize_with :active
+    get :index, {
+      filters: [['uuid','=',collections(:collection_owned_by_active).uuid]],
+      include_old_versions: true
+    }
+    assert_response :success
+    assert_equal 2, assigns(:objects).length
+    assert_equal 2, json_response['items_available']
+    assert_equal 2, json_response['items'].count
+    json_response['items'].each do |c|
+      assert_equal collections(:collection_owned_by_active).uuid,
+                   c['current_version_uuid'],
+                   'response includes a version from a different collection'
+    end
   end
 end

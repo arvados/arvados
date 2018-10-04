@@ -369,7 +369,13 @@ class ArvadosModel < ActiveRecord::Base
         end
 
         self[:name] = new_name
-        self[:uuid] = nil if uuid_was.nil? && !uuid.nil?
+        if uuid_was.nil? && !uuid.nil?
+          self[:uuid] = nil
+          if self.is_a? Collection
+            # Reset so that is assigned to the new UUID
+            self[:current_version_uuid] = nil
+          end
+        end
         conn.exec_query 'SAVEPOINT save_with_unique_name'
         retry
       ensure

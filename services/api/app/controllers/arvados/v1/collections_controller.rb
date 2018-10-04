@@ -27,9 +27,14 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_objects_for_index
+    opts = {}
     if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
-      @objects = Collection.readable_by(*@read_users, {include_trash: true})
+      opts.update({include_trash: true})
     end
+    if params[:include_old_versions]
+      opts.update({include_old_versions: true})
+    end
+    @objects = Collection.readable_by(*@read_users, opts) if !opts.empty?
     super
   end
 
@@ -221,6 +226,19 @@ class Arvados::V1::CollectionsController < ApplicationController
     if action_name == 'index'
       # Omit manifest_text and unsigned_manifest_text from index results unless expressly selected.
       @select ||= model_class.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
+    end
+  end
+
+  def load_filters_param
+    super
+    return if !params[:include_old_versions]
+    @filters = @filters.map do |col, operator, operand|
+      # Replace uuid filters when including past versions
+      if col == 'uuid'
+        ['current_version_uuid', operator, operand]
+      else
+        [col, operator, operand]
+      end
     end
   end
 end
