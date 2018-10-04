@@ -10,22 +10,45 @@ import {
     withStyles,
     WithStyles,
     Tooltip,
-    InputAdornment, Input
+    InputAdornment, Input,
+    List, ListItem, ListItemText
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 
-type CssRules = 'container' | 'input';
+type CssRules = 'container' | 'input' | 'advanced' | 'searchQueryList' | 'list' | 'searchView' | 'searchBar';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
         container: {
             position: 'relative',
-            width: '100%'
+            width: '100%',
+            borderRadius: '0px'
         },
         input: {
             border: 'none',
-            borderRadius: theme.spacing.unit / 4,
-            padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px`
+            padding: `0px ${theme.spacing.unit}px`
+        },
+        advanced: {
+            display: 'flex',
+            justifyContent: 'flex-end',
+            paddingRight: theme.spacing.unit * 2,
+            paddingBottom: theme.spacing.unit,
+            fontSize: '14px'
+        },
+        searchQueryList: {
+            padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
+            background: '#f2f2f2',
+            fontSize: '14px'
+        },
+        list: {
+            padding: '0px'
+        },
+        searchView: {
+            color: '#000',
+            zIndex: 1000
+        },
+        searchBar: {
+            height: '30px'
         }
     };
 };
@@ -43,6 +66,7 @@ type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<Css
 
 interface SearchBarState {
     value: string;
+    isSearchViewOpen: boolean;
 }
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
@@ -50,15 +74,16 @@ export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 export const SearchBar = withStyles(styles)(
     class extends React.Component<SearchBarProps> {
         state: SearchBarState = {
-            value: ""
+            value: "",
+            isSearchViewOpen: false
         };
 
         timeout: number;
 
         render() {
             const { classes } = this.props;
-            return <Paper className={classes.container}>
-                <form onSubmit={this.handleSubmit}>
+            return <Paper className={classes.container} onBlur={this.closeSearchView}>
+                <form onSubmit={this.handleSubmit} className={classes.searchBar}>
                     <Input
                         className={classes.input}
                         onChange={this.handleChange}
@@ -66,6 +91,7 @@ export const SearchBar = withStyles(styles)(
                         value={this.state.value}
                         fullWidth={true}
                         disableUnderline={true}
+                        onFocus={this.openSearchView}
                         endAdornment={
                             <InputAdornment position="end">
                                 <Tooltip title='Search'>
@@ -74,7 +100,21 @@ export const SearchBar = withStyles(styles)(
                                     </IconButton>
                                 </Tooltip>
                             </InputAdornment>
-                        }/>
+                        } />
+                    {this.state.isSearchViewOpen
+                        ? <Paper className={classes.searchView}>
+                            <div className={classes.searchQueryList}>Saved search queries</div>
+                            <List component="nav" className={classes.list}>
+                                {this.renderListItem('Trash')}
+                                {this.renderListItem('Spam')}
+                            </List>
+                            <div className={classes.searchQueryList}>Recent search queries</div>
+                            <List component="nav" className={classes.list}>
+                                {this.renderListItem('Trash')}
+                                {this.renderListItem('Spam')}
+                            </List>
+                            <div className={classes.advanced}>Advanced</div>
+                        </Paper> : null}
                 </form>
             </Paper>;
         }
@@ -92,6 +132,19 @@ export const SearchBar = withStyles(styles)(
         componentWillUnmount() {
             clearTimeout(this.timeout);
         }
+
+        closeSearchView = () =>
+            this.setState({ isSearchViewOpen: false })
+
+
+        openSearchView = () =>
+            this.setState({ isSearchViewOpen: true })
+
+
+        renderListItem = (text: string) =>
+            <ListItem button>
+                <ListItemText secondary={text} />
+            </ListItem>
 
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
