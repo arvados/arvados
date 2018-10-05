@@ -11,10 +11,8 @@ import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, initialize, stopSubmit, reset } from 'redux-form';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
+import { startSubmit, stopSubmit, reset } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
