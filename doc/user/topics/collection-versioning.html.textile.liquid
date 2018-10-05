@@ -1,0 +1,189 @@
+---
+layout: default
+navsection: userguide
+title: Using collection versioning
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Collection versioning (if enabled system-wide) adds the possibility to store different collection states as it is modified. Depending on the cluster configuration it can work automatically, but there's also a way to manually control it by the user.
+
+Versioning only triggers when selected collection attributes are updated: @name@, @description@, @properties@ and @manifest_text@.
+When one of these attributes change and the cluster-wide's configured collection idle time is up, or the individual collection's @preserve_version@ attribute is @true@, a new copy is made before saving the changes.
+
+Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. Also, all collections point to their most current version via the @current_version_uuid@ attribute.
+
+h3. Accessing past versions of a collection
+
+To request a particular collection with all its versions you should request a list with filters including the collection's UUID and passing the @include_old_versions@ query parameter. For example, using the @arv@ command line client:
+
+<pre>
+$ arv collection index --filters '[["uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]' --include-old-versions
+{
+ "kind":"arvados#collectionList",
+ "etag":"",
+ "self_link":"",
+ "offset":0,
+ "limit":100,
+ "items":[
+  {
+   "href":"/collections/o967z-4zz18-i3ucessyo6xxadt",
+   "kind":"arvados#collection",
+   "etag":"7bhgspoi4rg9d33o925y8k277",
+   "uuid":"o967z-4zz18-i3ucessyo6xxadt",
+   "owner_uuid":"o967z-tpzed-dvuag6geduje1ub",
+   "created_at":"2018-10-05T14:43:38.916885000Z",
+   "modified_by_client_uuid":"o967z-ozdt8-ac1bob2unkhev15",
+   "modified_by_user_uuid":"o967z-tpzed-dvuag6geduje1ub",
+   "modified_at":"2018-10-05T14:44:31.098019000Z",
+   "name":"Test collection",
+   "description":"This is the first version",
+   "properties":{},
+   "portable_data_hash":"d41d8cd98f00b204e9800998ecf8427e+0",
+   "replication_desired":null,
+   "replication_confirmed":null,
+   "replication_confirmed_at":null,
+   "storage_classes_desired":[
+    "default"
+   ],
+   "storage_classes_confirmed":[],
+   "storage_classes_confirmed_at":null,
+   "delete_at":null,
+   "trash_at":null,
+   "is_trashed":false,
+   "version":1,
+   "current_version_uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+   "preserve_version":true
+  },
+  {
+   "href":"/collections/o967z-4zz18-ynmlhyjbg1arnr2",
+   "kind":"arvados#collection",
+   "etag":"1b995we7yilwyh7sc0w746urv",
+   "uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+   "owner_uuid":"o967z-tpzed-dvuag6geduje1ub",
+   "created_at":"2018-10-05T14:43:38.916885000Z",
+   "modified_by_client_uuid":"o967z-ozdt8-ac1bob2unkhev15",
+   "modified_by_user_uuid":"o967z-tpzed-dvuag6geduje1ub",
+   "modified_at":"2018-10-05T14:44:31.078643000Z",
+   "name":"Test collection",
+   "description":"This is the second (and current) version",
+   "properties":{},
+   "portable_data_hash":"d41d8cd98f00b204e9800998ecf8427e+0",
+   "replication_desired":null,
+   "replication_confirmed":null,
+   "replication_confirmed_at":null,
+   "storage_classes_desired":[
+    "default"
+   ],
+   "storage_classes_confirmed":[],
+   "storage_classes_confirmed_at":null,
+   "delete_at":null,
+   "trash_at":null,
+   "is_trashed":false,
+   "version":2,
+   "current_version_uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+   "preserve_version":false
+  }
+ ],
+ "items_available":2
+}
+</pre>
+
+You can also access a past version directly by its UUID:
+
+<pre>
+$ arv collection get --uuid o967z-4zz18-i3ucessyo6xxadt
+{
+ "href":"/collections/o967z-4zz18-i3ucessyo6xxadt",
+ "kind":"arvados#collection",
+ "etag":"1ej4d9klu70bez72cy7yjrz7o",
+ "uuid":"o967z-4zz18-i3ucessyo6xxadt",
+ "owner_uuid":"o967z-tpzed-dvuag6geduje1ub",
+ "created_at":"2018-10-05T14:43:38.916885000Z",
+ "modified_by_client_uuid":"o967z-ozdt8-ac1bob2unkhev15",
+ "modified_by_user_uuid":"o967z-tpzed-dvuag6geduje1ub",
+ "modified_at":"2018-10-05T14:44:31.098019000Z",
+ "name":"Test collection",
+ "description":"This is the first version",
+ "properties":{},
+ "portable_data_hash":"d41d8cd98f00b204e9800998ecf8427e+0",
+ "manifest_text":"",
+ "replication_desired":null,
+ "replication_confirmed":null,
+ "replication_confirmed_at":null,
+ "storage_classes_desired":[
+  "default"
+ ],
+ "storage_classes_confirmed":[],
+ "storage_classes_confirmed_at":null,
+ "delete_at":null,
+ "trash_at":null,
+ "is_trashed":false,
+ "version":1,
+ "current_version_uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+ "preserve_version":true
+}
+</pre>
+
+h3. Manually preserving a version
+
+Regardless of the collection's auto-save idle time cluster configuration, the user has the option to request that a particular collection state should be preserved.
+
+When working on a collection, if there's a need to preserve the current state as a new version, the @preserve_version@ attribute should be set to @true@. This will trigger a new version creation on the next update, keeping this "version 2" state as a snapshot.
+
+<pre>
+$ arv collection update --uuid o967z-4zz18-ynmlhyjbg1arnr2 -c '{"preserve_version":true}'
+{
+ "href":"/collections/o967z-4zz18-ynmlhyjbg1arnr2",
+ "kind":"arvados#collection",
+ "etag":"8vhdwnahk8jcr84mqitmd5stu",
+ "uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+ "owner_uuid":"o967z-tpzed-dvuag6geduje1ub",
+ "created_at":"2018-10-05T14:43:38.916885000Z",
+ "modified_by_client_uuid":"o967z-ozdt8-ac1bob2unkhev15",
+ "modified_by_user_uuid":"o967z-tpzed-dvuag6geduje1ub",
+ "modified_at":"2018-10-05T15:12:57.986454000Z",
+ "name":"Test collection",
+ "description":"This is the second (and current) version",
+ "properties":{},
+ "portable_data_hash":"d41d8cd98f00b204e9800998ecf8427e+0",
+ "manifest_text":"",
+ "replication_desired":null,
+ "replication_confirmed":null,
+ "replication_confirmed_at":null,
+ "storage_classes_desired":[
+  "default"
+ ],
+ "storage_classes_confirmed":[],
+ "storage_classes_confirmed_at":null,
+ "delete_at":null,
+ "trash_at":null,
+ "is_trashed":false,
+ "version":2,
+ "current_version_uuid":"o967z-4zz18-ynmlhyjbg1arnr2",
+ "preserve_version":true
+}
+</pre>
+
+Once the @preserve_version@ attribute is set to @true@, it cannot be manually changed to @false@ and it will only be reset when a versionable update on the collection triggers a new version snapshot.
+
+h3. Collection versions behavior & limitations
+
+Past version collections are read-only, if you need to make changes to one of them, the suggested approach is to copy it into a new collection before updating.
+
+Some attributes get automatically synced when they change on the current version:
+
+* @owner_uuid@
+* @delete_at@
+* @trash_at@
+* @is_trashed@
+* @replication_desired@
+* @storage_classes_desired@
+
+This way, old versions follow the current one on several configurations. In the special case that a current version's UUID gets updated, their past versions get also updated to point to the newer UUID.
+
+Permissions on past versions are the same as their current version, the system does not allow attaching permission links to old versions. If you need to give special access to someone to a particular old version, the correct procedure is by copying it as a new collection.
